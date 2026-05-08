@@ -73,6 +73,7 @@ class TemporizadorApp(ctk.CTk):
         except Exception:
             pass
 
+        self._estado_ventana = "zoomed"
         self.protocol("WM_DELETE_WINDOW", self._al_cerrar)
         self._centrar_ventana()
         self._construir_ui()
@@ -86,6 +87,8 @@ class TemporizadorApp(ctk.CTk):
         if event.widget is not self:
             return
         estado = self.state()
+        if estado in ("zoomed", "normal"):
+            self._estado_ventana = estado
         if self._prev_state == "zoomed" and estado == "normal":
             self.after(20, self._recentrar)
         self._prev_state = estado
@@ -622,6 +625,9 @@ class TemporizadorApp(ctk.CTk):
 
     def _restaurar_ventana(self):
         self.deiconify()
+        estado = getattr(self, "_estado_ventana", "zoomed")
+        if estado == "zoomed":
+            self.state("zoomed")
         self.lift()
         self.focus_force()
 

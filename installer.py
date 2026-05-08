@@ -70,7 +70,7 @@ APPS = [
         "id": "checklist",
         "exe": "ChecklistRutina.exe",
         "nombre": "Checklist de Rutina",
-        "desc": "Organizá tus tareas de mañana, tarde y noche con seguimiento de racha diaria",
+        "desc": "Organizá tus tareas de mañana, tarde y noche con seguimiento diario",
         "grupo": None,
         "default": True,
     },

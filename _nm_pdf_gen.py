@@ -466,7 +466,7 @@ APPS_DATA = [
             "Elegí la duración con los botones rápidos (5'–30') o ingresá un valor personalizado en el campo <b>min</b>.",
             "Presioná <b>Iniciar</b> para arrancar el temporizador.",
             "Usá <b>Pausar / Reanudar</b> para interrumpir la sesión. Al finalizar, el registro se guarda automáticamente.",
-            "Si necesitás seguir usando la computadora, cerrá la ventana para enviar el temporizador a la bandeja del sistema. Al vencer el tiempo, la ventana se restaura automáticamente con una alerta visual y sonora.",
+            "Cerrá la ventana para enviar el temporizador a la bandeja del sistema mientras seguís usando la computadora. Al vencer el tiempo, la ventana se restaura automáticamente en el mismo estado (maximizada o normal) con una alerta visual y sonora.",
         ],
     },
     {
@@ -492,7 +492,7 @@ APPS_DATA = [
         "screenshot": "checklist.png",
         "description": (
             "Organizador de tareas cotidianas dividido en secciones de Mañana, Tarde y "
-            "Noche con seguimiento de progreso diario y racha semanal. Permite agregar "
+            "Noche con seguimiento de progreso diario y semanal. Permite agregar "
             "tareas personalizadas a cada sección y consultar el cumplimiento en un "
             "calendario semanal con vista por día."
         ),
@@ -500,7 +500,7 @@ APPS_DATA = [
             "Seleccioná la sección del día: Mañana, Tarde o Noche.",
             "Ingresá el nombre de una tarea y presioná el botón <b>+</b> para agregarla.",
             "Marcá cada tarea como completada tildando la casilla correspondiente.",
-            "Consultá el progreso del día y la racha semanal en la parte inferior.",
+            "Consultá el progreso del día y el seguimiento semanal en la parte inferior.",
         ],
     },
     {
@@ -509,15 +509,16 @@ APPS_DATA = [
         "screenshot": "recordatorios.png",
         "description": (
             "Sistema de recordatorios personalizados con horarios y días específicos de "
-            "la semana. Funciona en segundo plano desde la bandeja del sistema y emite "
-            "alertas visuales y sonoras en los horarios configurados. Soporta múltiples "
-            "recordatorios independientes con estado activo/inactivo."
+            "la semana. Al cerrar la ventana continúa activo en la bandeja del sistema y "
+            "emite alertas visuales y sonoras en los horarios configurados. Al dispararse "
+            "un recordatorio, la ventana se restaura automáticamente en el mismo estado "
+            "en que estaba. Soporta múltiples recordatorios con estado activo/inactivo."
         ),
         "instructions": [
             "Presioná <b>+ Nuevo recordatorio</b> para crear una entrada.",
             "Ingresá el mensaje, seleccioná la hora y los días de la semana activos.",
             "Activá o desactivá el recordatorio con el interruptor correspondiente.",
-            "La app continúa monitoreando los horarios aunque esté minimizada en la bandeja del sistema.",
+            "Cerrá la ventana para enviarla a la bandeja del sistema; seguirá monitoreando en segundo plano. Al dispararse un recordatorio, la ventana se restaura automáticamente en el mismo estado (maximizada o normal).",
         ],
     },
     {

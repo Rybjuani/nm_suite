@@ -23,7 +23,7 @@ from shared.utils import hora_actual
 
 try:
     import pystray
-    from PIL import Image
+    from PIL import Image as PILImage
     TRAY_DISPONIBLE = True
 except ImportError:
     TRAY_DISPONIBLE = False
@@ -55,7 +55,7 @@ def _generar_tono(frecuencia: float, duracion: float, volumen: float = 0.25) -> 
 
 
 def _reproducir_check():
-    s = _generar_tono(1046.5, 0.12)  # Do6 — breve y limpio
+    s = _generar_tono(1046.5, 0.12)
     if s:
         s.play()
 
@@ -90,6 +90,7 @@ class RecordatoriosApp(ctk.CTk):
         self.silencio_inicio = leer_config("silencio_inicio", "23:00")
         self.silencio_fin = leer_config("silencio_fin", "07:00")
         self.tray_icon = None
+        self._estado_ventana = "zoomed"
         self._hora_temp = ""
         self._mensaje_temp = ""
         self._dias_temp = {i: True for i in range(1, 8)}
@@ -122,6 +123,8 @@ class RecordatoriosApp(ctk.CTk):
         if event.widget is not self:
             return
         estado = self.state()
+        if estado in ("zoomed", "normal"):
+            self._estado_ventana = estado
         if self._prev_state == "zoomed" and estado == "normal":
             self.after(20, self._recentrar)
         self._prev_state = estado
@@ -554,6 +557,12 @@ class RecordatoriosApp(ctk.CTk):
         hilo.start()
 
     def _mostrar_popup(self, mensaje):
+        # Restaurar ventana si está en bandeja o minimizada
+        if self.tray_icon is not None:
+            self._restaurar_desde_bandeja()
+        elif self.state() == "iconic":
+            self._restaurar_ventana()
+
         colores = COLORS[self.modo]
         popup = NMToplevel(self, modo=self.modo)
         popup.title("Recordatorio")
@@ -592,6 +601,72 @@ class RecordatoriosApp(ctk.CTk):
             command=popup.destroy
         ).pack()
 
+    def _al_cerrar(self):
+        self._enviar_a_bandeja()
+
+    def _enviar_a_bandeja(self):
+        if not TRAY_DISPONIBLE:
+            self.hilo_activo = False
+            self.destroy()
+            return
+        self.withdraw()
+
+        def _crear_imagen():
+            try:
+                ruta = obtener_ruta_recurso("LOGO.png")
+                img = PILImage.open(ruta).convert("RGBA").resize((64, 64), PILImage.LANCZOS)
+                return img
+            except Exception:
+                img = PILImage.new("RGBA", (64, 64), (30, 200, 212, 255))
+                return img
+
+        menu = pystray.Menu(
+            pystray.MenuItem(
+                "Abrir Recordatorios",
+                lambda icon, item: self.after(0, self._restaurar_desde_bandeja),
+                default=True
+            ),
+            pystray.MenuItem(
+                "Salir",
+                lambda icon, item: self.after(0, self._salir_desde_bandeja)
+            ),
+        )
+        self.tray_icon = pystray.Icon(
+            "NM_Recordatorios",
+            _crear_imagen(),
+            "Recordatorios de Bienestar",
+            menu=menu
+        )
+        hilo = threading.Thread(target=self.tray_icon.run, daemon=True)
+        hilo.start()
+
+    def _restaurar_desde_bandeja(self):
+        if self.tray_icon is not None:
+            try:
+                self.tray_icon.stop()
+            except Exception:
+                pass
+            self.tray_icon = None
+        self._restaurar_ventana()
+
+    def _salir_desde_bandeja(self):
+        self.hilo_activo = False
+        if self.tray_icon is not None:
+            try:
+                self.tray_icon.stop()
+            except Exception:
+                pass
+            self.tray_icon = None
+        self.destroy()
+
+    def _restaurar_ventana(self):
+        self.deiconify()
+        estado = getattr(self, "_estado_ventana", "zoomed")
+        if estado == "zoomed":
+            self.state("zoomed")
+        self.lift()
+        self.focus_force()
+
     def _toggle_modo(self):
         estado = self.state()
         self._hora_temp = self.entry_hora.get().strip() if hasattr(self, 'entry_hora') else ""
@@ -614,10 +689,6 @@ class RecordatoriosApp(ctk.CTk):
         aplicar_captionbar_flush(self, self.modo)
         if estado == "zoomed":
             self.state("zoomed")
-
-    def _al_cerrar(self):
-        self.hilo_activo = False
-        self.destroy()
 
 
 if __name__ == "__main__":
