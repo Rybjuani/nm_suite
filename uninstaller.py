@@ -186,10 +186,10 @@ def vaciar_carpeta(carpeta: str):
     )
 
 
-def lanzar_bat_limpieza(install_dir: str, appdata_dir: str):
+def lanzar_bat_limpieza(install_dir: str, appdata_dir: str, eliminar_appdata: bool = True):
     """
-    Escribe un bat en %TEMP% que borra install_dir, appdata_dir y el exe temporal.
-    El proceso ya corre desde TEMP, sin ningún handle a esas carpetas.
+    Escribe un bat en %TEMP% que borra install_dir y opcionalmente appdata_dir,
+    más el exe temporal. El proceso ya corre desde TEMP.
     """
     temp_dir = os.environ.get("TEMP", os.path.expanduser("~"))
     temp_exe = str(Path(temp_dir) / "_nm_desinstalar.exe")
@@ -199,7 +199,10 @@ def lanzar_bat_limpieza(install_dir: str, appdata_dir: str):
         f'cd /d "{temp_dir}"',
         "ping 127.0.0.1 -n 5 > nul",
         f'rd /s /q "{install_dir}" 2>nul',
-        f'rd /s /q "{appdata_dir}" 2>nul',
+    ]
+    if eliminar_appdata:
+        lines.append(f'rd /s /q "{appdata_dir}" 2>nul')
+    lines += [
         f'del /f /q "{temp_exe}" 2>nul',
         'del /f /q "%~f0"',
     ]
@@ -247,14 +250,14 @@ class DesinstaladorNeuroMood(ctk.CTk):
         ctk.set_default_color_theme("blue")
 
         self.title("Desinstalar — NeuroMood Suite")
-        self.geometry("480x300")
+        self.geometry("480x340")
         self.resizable(False, False)
         self.configure(fg_color=BG_PRIMARY)
 
         self.update_idletasks()
         x = (self.winfo_screenwidth() - 480) // 2
-        y = (self.winfo_screenheight() - 300) // 2
-        self.geometry(f"480x300+{x}+{y}")
+        y = (self.winfo_screenheight() - 340) // 2
+        self.geometry(f"480x340+{x}+{y}")
 
         try:
             self.iconbitmap(recurso("no_symbol.ico"))
@@ -306,6 +309,7 @@ class DesinstaladorNeuroMood(ctk.CTk):
 
     def _mostrar_confirmacion(self):
         self._limpiar_body()
+        self._conservar_datos = ctk.BooleanVar(value=True)
 
         ctk.CTkLabel(self.body, text="Desinstalar NeuroMood Suite",
                      font=("Segoe UI", 16, "bold"), text_color=TEXT_PRIMARY).pack(anchor="w", pady=(0, 8))
@@ -313,12 +317,23 @@ class DesinstaladorNeuroMood(ctk.CTk):
         ctk.CTkLabel(
             self.body,
             text=(
-                "Se eliminará NeuroMood Suite de tu computadora,\n"
-                "incluyendo archivos de instalación y datos guardados.\n\n"
-                f"Carpeta: {self._install_dir}"
+                "Se eliminarán los archivos de instalación de NeuroMood Suite\n"
+                f"de tu computadora.\n\nCarpeta: {self._install_dir}"
             ),
             font=("Segoe UI", 12), text_color=TEXT_SEC, justify="left", anchor="w",
-        ).pack(anchor="w", pady=(0, 24))
+        ).pack(anchor="w", pady=(0, 12))
+
+        ctk.CTkCheckBox(
+            self.body,
+            text="Conservar mis datos personales (registros, historial y configuración)",
+            variable=self._conservar_datos,
+            font=("Segoe UI", 11),
+            text_color=TEXT_SEC,
+            fg_color=ACCENT,
+            hover_color=ACCENT_HOVER,
+            border_color=BORDER,
+            checkmark_color=BG_PRIMARY,
+        ).pack(anchor="w", pady=(0, 20))
 
         btn_row = ctk.CTkFrame(self.body, fg_color="transparent")
         btn_row.pack(fill="x", side="bottom")
@@ -338,6 +353,7 @@ class DesinstaladorNeuroMood(ctk.CTk):
         ).pack(side="right")
 
     def _iniciar_desinstalacion(self):
+        self._conservar = self._conservar_datos.get()
         self._limpiar_body()
 
         ctk.CTkLabel(self.body, text="Desinstalando...",
@@ -381,13 +397,12 @@ class DesinstaladorNeuroMood(ctk.CTk):
             self._set(0.75, "Eliminando archivos de instalación...")
             vaciar_carpeta(self._install_dir)
 
-            self._set(0.85, "Eliminando datos de usuario...")
-            vaciar_carpeta(appdata_nm)
+            if not self._conservar:
+                self._set(0.85, "Eliminando datos de usuario...")
+                vaciar_carpeta(appdata_nm)
 
-            # El bat borra los directorios raíz después de que este proceso muera.
-            # Como corremos desde %TEMP%, no hay ningún handle a esas carpetas.
             self._set(0.90, "Finalizando...")
-            lanzar_bat_limpieza(self._install_dir, appdata_nm)
+            lanzar_bat_limpieza(self._install_dir, appdata_nm, eliminar_appdata=not self._conservar)
 
             self._set(1.0, "¡Desinstalación completada!")
             time.sleep(1.0)
