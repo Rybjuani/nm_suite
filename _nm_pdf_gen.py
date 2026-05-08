@@ -354,7 +354,7 @@ def _build_installer():
         "<b>Ejecutá el instalador</b> — Hacé doble clic en NM_Installer.exe. Si Windows solicita permiso UAC, hacé clic en Sí para continuar.",
         "<b>Seleccioná las aplicaciones</b> — Elegí cuáles herramientas instalar. El Visualizador de Evolución requiere el Termómetro Emocional: seleccionar uno activa el otro automáticamente.",
         "<b>Elegí la carpeta de instalación</b> — La carpeta predeterminada es C:\\Users\\[usuario]\\NeuroMood. Podés cambiarla con el botón Examinar.",
-        "<b>Completá la instalación</b> — Hacé clic en Instalar. Al finalizar, elegí si crear accesos directos en el Escritorio y en el Menú Inicio.",
+        "<b>Completá la instalación</b> — Hacé clic en Instalar. Al finalizar, elegí si crear accesos directos en el Escritorio.",
     ]
     fl.extend(_steps(steps))
     return fl
@@ -384,8 +384,8 @@ def _build_uninstaller():
         Spacer(1, 14),
         Paragraph(
             "El desinstalador elimina de forma segura todas las aplicaciones, accesos "
-            "directos, archivos y entradas del registro de Windows. También elimina los "
-            "datos de usuario almacenados en AppData.",
+            "directos, archivos y entradas del registro de Windows. Ofrece la opción de "
+            "conservar o eliminar los datos personales (registros, historial y configuración).",
             S["body"],
         ),
         Spacer(1, 14),
@@ -399,7 +399,7 @@ def _build_uninstaller():
         "Abrí el Panel de control → Programas → Desinstalar un programa, buscá <b>NeuroMood Suite</b> y hacé doble clic. También podés ejecutar NM_Uninstaller.exe directamente desde la carpeta de instalación.",
         "En la pantalla de confirmación revisá la carpeta de instalación detectada y presioná <b>Desinstalar</b>.",
         "El proceso cerrará automáticamente las apps abiertas, eliminará los archivos de instalación, los accesos directos y la entrada del registro de Windows.",
-        "Al finalizar, la suite queda completamente eliminada. Los datos de la base de datos también se eliminan — realizá una copia previa si necesitás conservarlos.",
+        "Al finalizar, la suite queda completamente eliminada. Los datos personales se eliminan o conservan según la opción elegida en el paso anterior.",
     ]))
     fl += [
         Spacer(1, 16),
@@ -417,16 +417,16 @@ def _build_uninstaller():
 APPS_DATA = [
     {
         "name": "Termómetro Emocional",
-        "tagline": "Registrá tu estado emocional del 1 al 10 con notas personales",
+        "tagline": "Registrá tu estado emocional del 0 al 10 con notas personales",
         "screenshot": "termometro.png",
         "description": (
             "Herramienta de autorregistro emocional que permite puntuar el estado de "
-            "ánimo en una escala del 1 al 10 cada día. Admite notas personales para "
+            "ánimo en una escala del 0 al 10 cada día. Admite notas personales para "
             "contextualizar el registro y muestra el historial de los últimos días con "
-            "código de colores que varía del rojo (1) al verde (10)."
+            "código de colores que varía del rojo (0) al verde (10)."
         ),
         "instructions": [
-            "Ajustá el deslizador al valor que mejor represente tu estado emocional actual (1 = muy bajo, 10 = excelente).",
+            "Ajustá el deslizador al valor que mejor represente tu estado emocional actual (0 = muy bajo, 10 = excelente).",
             "Escribí una nota opcional en el campo de texto para contextualizar el registro del día.",
             "Presioná <b>Guardar registro</b> para confirmar la entrada.",
             "Revisá el historial de los últimos días en el panel lateral derecho.",
@@ -438,13 +438,13 @@ APPS_DATA = [
         "screenshot": "visualizador.png",
         "description": (
             "Genera gráficos interactivos con la evolución emocional registrada en el "
-            "Termómetro Emocional. Permite visualizar tendencias en períodos de 7, 14 o "
-            "30 días y exportar el informe completo a PDF. Requiere datos previos en el "
-            "Termómetro Emocional para mostrar contenido."
+            "Termómetro Emocional. Permite visualizar tendencias en períodos de 7 días, "
+            "30 días, 3 meses o el historial completo, y exportar el informe a PDF. "
+            "Requiere datos previos en el Termómetro Emocional para mostrar contenido."
         ),
         "instructions": [
             "Requiere registros previos en el <b>Termómetro Emocional</b>.",
-            "Seleccioná el período de análisis con los botones de la barra superior (7, 14 o 30 días).",
+            "Seleccioná el período de análisis con los botones de la barra superior (7 días, 30 días, 3 meses o Todo).",
             "Explorá el gráfico de línea para identificar tendencias y patrones emocionales.",
             "Presioná <b>Exportar PDF</b> para generar un informe descargable con los datos del período.",
         ],
@@ -520,37 +520,36 @@ APPS_DATA = [
     },
     {
         "name": "Registro de Pensamientos",
-        "tagline": "Reestructuración cognitiva con exportación a PDF",
+        "tagline": "Identificá y reformulá pensamientos automáticos en 4 pasos",
         "screenshot": "pensamientos.png",
         "description": (
             "Herramienta de reestructuración cognitiva para identificar, analizar y "
             "reformular pensamientos automáticos negativos. Permite registrar la situación "
             "disparadora, el pensamiento automático, la emoción asociada y un pensamiento "
-            "alternativo más equilibrado. Todos los registros pueden exportarse a PDF."
+            "alternativo más equilibrado. Todos los registros quedan guardados en el historial."
         ),
         "instructions": [
-            "Presioná <b>Nuevo registro</b> para iniciar una entrada.",
-            "Describí la situación que desencadenó el pensamiento.",
-            "Escribí el pensamiento automático negativo y la emoción que generó.",
-            "Formulá un pensamiento alternativo más realista y equilibrado.",
-            "Guardá la entrada. Presioná <b>Exportar</b> para generar un PDF con todos los registros.",
+            "Completá el paso 1: describí la situación que desencadenó el pensamiento.",
+            "Avanzá con el botón <b>Siguiente →</b> e identificá el pensamiento automático negativo.",
+            "En el paso 3, registrá la emoción que generó ese pensamiento.",
+            "En el paso 4, formulá un pensamiento alternativo más equilibrado y guardá el registro en el historial.",
         ],
     },
     {
         "name": "Asistente de Activación",
-        "tagline": "Activación conductual adaptada al nivel de energía y ánimo",
+        "tagline": "Activación conductual adaptada al nivel de energía actual",
         "screenshot": "activacion.png",
         "description": (
             "Genera sugerencias de actividades conductuales adaptadas al nivel de energía "
-            "y estado de ánimo actual. Basado en principios de activación conductual "
-            "terapéutica, propone tareas de bajo, medio o alto nivel de demanda según el "
-            "estado reportado y registra un historial de actividades realizadas."
+            "actual. Basado en principios de activación conductual terapéutica, propone "
+            "tareas de bajo, medio o alto nivel de demanda según la energía reportada y "
+            "registra un historial de actividades realizadas."
         ),
         "instructions": [
-            "Ajustá el indicador de energía actual (0 = agotado, 10 = máxima energía).",
-            "Ajustá el indicador de ánimo actual de la misma manera.",
-            "Presioná <b>Sugerir actividad</b> para recibir una recomendación adaptada.",
-            "Realizá la actividad y presioná <b>Marcar como realizada</b> para registrarla.",
+            "Ajustá el deslizador de Energía (0 = agotado, 10 = máxima energía).",
+            "Presioná <b>Proponé actividades</b> para recibir sugerencias adaptadas.",
+            "Revisá las actividades sugeridas y elegí la que mejor se ajuste a tu estado.",
+            "Usá los botones <b>Hecha</b>, <b>Intentada</b> o <b>No pude</b> para registrar el resultado en tu historial.",
         ],
     },
 ]
