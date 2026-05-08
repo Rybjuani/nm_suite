@@ -1,0 +1,28 @@
+# Compilación PyInstaller
+build/
+dist/
+
+# Caché de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Bases de datos locales
+*.db
+*.sqlite
+*.sqlite3
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# Windows
+Thumbs.db
+Desktop.ini
