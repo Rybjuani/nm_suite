@@ -21,7 +21,7 @@ from shared.components import (
     mostrar_acerca_de, obtener_ruta_recurso, obtener_icono_solido, mostrar_mensaje,
     aplicar_captionbar_flush, _freeze_window, _unfreeze_window
 )
-from shared.utils import configurar_matplotlib_nm, color_por_puntaje
+from shared.utils import color_por_puntaje
 
 MESES = {1: "Ene", 2: "Feb", 3: "Mar", 4: "Abr", 5: "May", 6: "Jun",
          7: "Jul", 8: "Ago", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dic"}
@@ -189,8 +189,8 @@ class VisualizadorApp(ctk.CTk):
         card_grafico = CardFrame(parent, modo=self.modo)
         card_grafico.pack(fill="both", expand=True)
 
-        subtitulos = {7: "Promedio por semana", 30: "Promedio mensual",
-                      90: "Promedio trimestral", None: "Historial completo"}
+        subtitulos = {7: "Últimos 7 días", 30: "Últimos 30 días",
+                      90: "Últimos 3 meses", None: "Historial completo"}
         header_g = ctk.CTkFrame(card_grafico, fg_color="transparent")
         header_g.pack(fill="x", padx=LAYOUT["padding_card"], pady=(LAYOUT["padding_card"], 0))
         ctk.CTkLabel(
@@ -330,8 +330,6 @@ class VisualizadorApp(ctk.CTk):
                               text=p["etiq"],
                               fill=dim, font=("Segoe UI", 9), anchor="n")
 
-        # ── Tooltip (inicialmente oculto) ─────────────────────────────────────
-        self._tooltip_id = None
 
     def _on_hover_canvas(self, event):
         c = self._canvas_grafico
@@ -607,13 +605,18 @@ class VisualizadorApp(ctk.CTk):
         delta = val / steps
 
         def tick(i=0, cur=0.0):
-            if i >= steps:
-                lbl.configure(text=target_str, text_color=color_final)
-                return
-            lbl.configure(
-                text=f"{cur:.1f}" if '.' in target_str else str(int(round(cur)))
-            )
-            lbl.after(22, lambda: tick(i + 1, cur + delta))
+            try:
+                if not lbl.winfo_exists():
+                    return
+                if i >= steps:
+                    lbl.configure(text=target_str, text_color=color_final)
+                    return
+                lbl.configure(
+                    text=f"{cur:.1f}" if '.' in target_str else str(int(round(cur)))
+                )
+                lbl.after(22, lambda: tick(i + 1, cur + delta))
+            except Exception:
+                pass
 
         tick()
 

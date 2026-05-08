@@ -404,15 +404,6 @@ class TemporizadorApp(ctk.CTk):
     def _on_categoria(self, valor):
         self.categoria_actual = valor
 
-    def _seleccionar_categoria(self, categoria: str):
-        self.categoria_actual = categoria
-        colores = COLORS[self.modo]
-        for cat, btn in self.cat_btns.items():
-            if cat == categoria:
-                btn.configure(fg_color=colores["accent"], text_color=colores["text_on_accent"])
-            else:
-                btn.configure(fg_color=colores["bg_hover"], text_color=colores["text_secondary"])
-
     def _iniciar(self):
         if self.corriendo:
             return
@@ -509,9 +500,9 @@ class TemporizadorApp(ctk.CTk):
             wave = (wave * 32767).astype(np.int16)
             stereo = np.column_stack((wave, wave))
             sound = pygame.sndarray.make_sound(stereo)
-            for _ in range(3):
-                sound.play()
-                pygame.time.wait(500)
+            sound.play()
+            self.after(500, sound.play)
+            self.after(1000, sound.play)
         except Exception:
             pass
 

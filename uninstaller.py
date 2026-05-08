@@ -27,14 +27,14 @@ WARNING_C    = "#F0A500"
 ERROR_C      = "#E8505B"
 
 NM_PROCESOS = [
-    "NM_TermometroEmocional.exe",
-    "NM_VisualizadorEmocional.exe",
-    "NM_RecordatoriosBienestar.exe",
-    "NM_Temporizador.exe",
-    "NM_DiarioPensamientos.exe",
-    "NM_Respiracion.exe",
-    "NM_ChecklistBienestar.exe",
-    "NM_ActivacionConductual.exe",
+    "TermometroEmocional.exe",
+    "VisualizadorEvolucion.exe",
+    "RecordatoriosBienestar.exe",
+    "TemporizadorActividades.exe",
+    "RegistroPensamientos.exe",
+    "GuiaRespiracion.exe",
+    "ChecklistRutina.exe",
+    "AsistenteActivacion.exe",
 ]
 
 APPS_NOMBRES = [

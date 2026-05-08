@@ -411,7 +411,6 @@ class ActivacionApp(ctk.CTk):
         else:
             pool = ACTIVIDADES_ALTA
 
-
         self.actividades_propuestas = random.sample(pool, min(3, len(pool)))
         self._refrescar_propuestas()
 

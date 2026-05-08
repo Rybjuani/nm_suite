@@ -423,7 +423,7 @@ class RecordatoriosApp(ctk.CTk):
         try:
             conn = obtener_conexion()
             conn.execute(
-                "INSERT INTO recordatorios (hora, mensaje, dias, activo) VALUES (?, ?, ?, 0)",
+                "INSERT INTO recordatorios (hora, mensaje, dias, activo) VALUES (?, ?, ?, 1)",
                 (hora, mensaje, ",".join(dias_activos))
             )
             conn.commit()
@@ -519,12 +519,14 @@ class RecordatoriosApp(ctk.CTk):
 
                 conn = obtener_conexion()
                 recordatorios = conn.execute(
-                    "SELECT mensaje FROM recordatorios WHERE hora = ? AND activo = 1",
+                    "SELECT mensaje, dias FROM recordatorios WHERE hora = ? AND activo = 1",
                     (minuto_actual,)
                 ).fetchall()
                 conn.close()
 
                 for rec in recordatorios:
+                    if str(dia_semana) not in rec["dias"].split(","):
+                        continue
                     self.ultimo_minuto_notificado = minuto_actual
                     self.after(0, lambda m=rec["mensaje"]: (self._mostrar_popup(m), _reproducir_alarma()))
 

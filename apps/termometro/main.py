@@ -371,6 +371,8 @@ class TermometroApp(ctk.CTk):
             self._mostrar_alerta_apoyo()
 
     def _mostrar_alerta_apoyo(self):
+        if hasattr(self, '_alerta_apoyo') and self._alerta_apoyo.winfo_exists():
+            return
         colores = COLORS[self.modo]
         alerta = ctk.CTkFrame(
             self, fg_color=colores["bg_surface"],
@@ -378,6 +380,7 @@ class TermometroApp(ctk.CTk):
             border_color=colores["warning"],
             border_width=2
         )
+        self._alerta_apoyo = alerta
         alerta.place(relx=0.5, rely=0.5, anchor="center")
 
         ctk.CTkLabel(

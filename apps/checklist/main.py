@@ -505,20 +505,23 @@ class ChecklistApp(ctk.CTk):
         hoy = datetime.now().date()
         conn = obtener_conexion()
         total_tareas = max(conn.execute("SELECT COUNT(*) as c FROM checklist_tareas").fetchone()["c"], 1)
+        hace_365 = (hoy - timedelta(days=364)).isoformat()
+        rows = conn.execute(
+            "SELECT fecha, COUNT(*) as c FROM checklist_completadas WHERE fecha >= ? GROUP BY fecha",
+            (hace_365,)
+        ).fetchall()
+        conn.close()
 
+        conteos = {r["fecha"]: r["c"] for r in rows}
         racha = 0
         for i in range(365):
             dia = hoy - timedelta(days=i)
-            completadas = conn.execute(
-                "SELECT COUNT(*) as c FROM checklist_completadas WHERE fecha = ?",
-                (dia.isoformat(),)
-            ).fetchone()["c"]
+            completadas = conteos.get(dia.isoformat(), 0)
             if completadas / total_tareas >= 0.7:
                 racha += 1
             else:
                 if i > 0:
                     break
-        conn.close()
         return racha
 
     def _verificar_cambio_dia(self):
