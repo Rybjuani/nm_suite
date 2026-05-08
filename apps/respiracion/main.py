@@ -154,8 +154,6 @@ class RespiracionApp(ctk.CTk):
         )
         self.lbl_tiempo_sesion.pack(pady=(0, LAYOUT["padding_card"]))
 
-        self._dibujar_circulo(0.5)
-
     def _construir_controles(self, parent):
         colores = COLORS[self.modo]
 
@@ -313,11 +311,13 @@ class RespiracionApp(ctk.CTk):
         self.ciclos_completados = 0
         self.tiempo_total_transcurrido = 0
         self._tiempo_inicio_real = _time_mod.time()
+        self._detener_al_terminar_ciclo = False
         self.btn_iniciar.configure(text="Detener", fg_color=COLORS[self.modo]["error"])
         self._ejecutar_ciclo()
 
     def _detener(self):
         self.corriendo = False
+        self._detener_al_terminar_ciclo = False
         if self.timer_id:
             self.after_cancel(self.timer_id)
             self.timer_id = None
@@ -342,15 +342,26 @@ class RespiracionApp(ctk.CTk):
         if not self.corriendo:
             return
 
-        if self.duracion_sesion > 0 and self.tiempo_total_transcurrido >= self.duracion_sesion:
-            self._detener()
-            return
-
         if indice >= len(fases):
+            if self._detener_al_terminar_ciclo:
+                self._detener_al_terminar_ciclo = False
+                self.ciclos_completados += 1
+                self.lbl_ciclos.configure(text=f"Ciclos: {self.ciclos_completados}")
+                self._detener()
+                return
             self.ciclos_completados += 1
             self.lbl_ciclos.configure(text=f"Ciclos: {self.ciclos_completados}")
             self._ejecutar_ciclo()
             return
+
+        if self.duracion_sesion > 0 and not self._detener_al_terminar_ciclo:
+            elapsed = _time_mod.time() - self._tiempo_inicio_real
+            if elapsed >= self.duracion_sesion:
+                if indice < 2:
+                    self._detener()
+                    return
+                else:
+                    self._detener_al_terminar_ciclo = True
 
         texto, duracion = fases[indice]
         self.fase_actual = texto.replace("...", "")

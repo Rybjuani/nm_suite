@@ -500,6 +500,26 @@ class RecordatoriosApp(ctk.CTk):
     def _toggle_pausa(self):
         self.pausado = not self.pausado
         self._construir_ui()
+        if not self.pausado:
+            self.after(0, self._verificar_recordatorios_al_reanudar)
+
+    def _verificar_recordatorios_al_reanudar(self):
+        if self.pausado or self._en_silencio():
+            return
+        ahora = datetime.now()
+        minuto_actual = ahora.strftime("%H:%M")
+        dia_semana = ahora.isoweekday()
+        conn = obtener_conexion()
+        recordatorios = conn.execute(
+            "SELECT mensaje, dias FROM recordatorios WHERE hora = ? AND activo = 1",
+            (minuto_actual,)
+        ).fetchall()
+        conn.close()
+        for rec in recordatorios:
+            if str(dia_semana) not in rec["dias"].split(","):
+                continue
+            self.ultimo_minuto_notificado = minuto_actual
+            self.after(0, lambda m=rec["mensaje"]: (self._mostrar_popup(m), _reproducir_alarma()))
 
     def _iniciar_monitor(self):
         self.ultimo_minuto_notificado = ""
