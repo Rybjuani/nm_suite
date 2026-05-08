@@ -262,7 +262,7 @@ class ChecklistApp(ctk.CTk):
 
         racha = self._calcular_racha()
         self.lbl_racha = ctk.CTkLabel(
-            card, text=f"Racha: {racha} día{'s' if racha != 1 else ''}",
+            card, text=f"Seguimiento: {racha} día{'s' if racha != 1 else ''}",
             font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_body"], "bold"),
             text_color=colores["accent"]
         )

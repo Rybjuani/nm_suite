@@ -457,7 +457,8 @@ APPS_DATA = [
             "Cronómetro con categorías para delimitar y registrar actividades terapéuticas "
             "en el tiempo. Admite duraciones predefinidas (5, 10, 15, 20 y 30 minutos) o "
             "personalizadas. Guarda automáticamente cada sesión completada con nombre, "
-            "categoría y duración real."
+            "categoría y duración real. Puede enviarse a la bandeja del sistema mientras "
+            "el temporizador está en ejecución y emite una alerta visual y sonora al finalizar."
         ),
         "instructions": [
             "Ingresá el nombre de la actividad en el campo de texto.",
@@ -465,6 +466,7 @@ APPS_DATA = [
             "Elegí la duración con los botones rápidos (5'–30') o ingresá un valor personalizado en el campo <b>min</b>.",
             "Presioná <b>Iniciar</b> para arrancar el temporizador.",
             "Usá <b>Pausar / Reanudar</b> para interrumpir la sesión. Al finalizar, el registro se guarda automáticamente.",
+            "Si necesitás seguir usando la computadora, cerrá la ventana para enviar el temporizador a la bandeja del sistema. Al vencer el tiempo, la ventana se restaura automáticamente con una alerta visual y sonora.",
         ],
     },
     {
@@ -486,7 +488,7 @@ APPS_DATA = [
     },
     {
         "name": "Checklist de Rutina",
-        "tagline": "Organización de tareas por turno con seguimiento de racha diaria",
+        "tagline": "Organización de tareas por turno con seguimiento diario",
         "screenshot": "checklist.png",
         "description": (
             "Organizador de tareas cotidianas dividido en secciones de Mañana, Tarde y "

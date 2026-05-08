@@ -42,6 +42,7 @@ class RespiracionApp(ctk.CTk):
         self.tiempo_total_transcurrido = 0
         self.timer_id = None
         self._tiempo_inicio_real = 0
+        self._ultima_escala = 0.5
 
         self.title("NeuroMood · Guía de Respiración")
         w, h = 960, 720
@@ -252,11 +253,12 @@ class RespiracionApp(ctk.CTk):
 
     def _dibujar_circulo(self, escala: float):
         canvas = self.canvas
+        w = canvas.winfo_width()
+        h = canvas.winfo_height()
+        if w < 50 or h < 50:
+            return
         canvas.delete("all")
         colores = COLORS[self.modo]
-
-        w = canvas.winfo_width() or 400
-        h = canvas.winfo_height() or 400
         cx, cy = w // 2, h // 2
 
         radio_max = min(w, h) // 2 - 40
@@ -380,6 +382,15 @@ class RespiracionApp(ctk.CTk):
             if not self.corriendo:
                 return
 
+            if self.duracion_sesion > 0 and not self._detener_al_terminar_ciclo:
+                elapsed = _time_mod.time() - self._tiempo_inicio_real
+                if elapsed >= self.duracion_sesion:
+                    if es_exhalar:
+                        self._detener_al_terminar_ciclo = True
+                    else:
+                        self._detener()
+                        return
+
             progreso = frame_actual[0] / max(total_frames, 1)
             self.segundos_fase_restantes = duracion_seg - (frame_actual[0] // 20)
 
@@ -390,6 +401,7 @@ class RespiracionApp(ctk.CTk):
             else:
                 escala = 0.5 + math.sin(progreso * math.pi * 2) * 0.1
 
+            self._ultima_escala = escala
             self._dibujar_circulo(escala)
 
             if hasattr(self, 'lbl_tiempo_sesion') and self.corriendo:
@@ -482,6 +494,8 @@ class RespiracionApp(ctk.CTk):
         if self.corriendo:
             self.btn_iniciar.configure(text="Detener", fg_color=COLORS[self.modo]["error"])
         self.update_idletasks()
+        if self.corriendo:
+            self._dibujar_circulo(self._ultima_escala)
         _unfreeze_window(hwnd)
         aplicar_captionbar_flush(self, self.modo)
         if estado == "zoomed":

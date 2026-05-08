@@ -12,15 +12,23 @@ import customtkinter as ctk
 import tkinter as tk
 from datetime import datetime
 import math
+import threading
 
 from shared.theme import COLORS, TYPOGRAPHY, LAYOUT
 from shared.db import obtener_conexion, inicializar_tablas
 from shared.components import (
     HeaderFrame, CardFrame, BotonPrimario, BotonSecundario,
     InputTexto, BadgeLabel, mostrar_acerca_de, obtener_ruta_recurso, obtener_icono_solido,
-    aplicar_captionbar_flush, _freeze_window, _unfreeze_window
+    NMToplevel, aplicar_captionbar_flush, _freeze_window, _unfreeze_window
 )
 from shared.utils import fecha_hoy, hora_actual
+
+try:
+    import pystray
+    from PIL import Image as PILImage
+    TRAY_DISPONIBLE = True
+except ImportError:
+    TRAY_DISPONIBLE = False
 
 try:
     import pygame
@@ -41,6 +49,8 @@ class TemporizadorApp(ctk.CTk):
         self.modo = "dark"
         self._nombre_temp = ""
         self._actividad_texto = ""
+        self._nombre_actividad = ""
+        self.tray_icon = None
 
         self.duracion_total = 300
         self.tiempo_restante = 300
@@ -63,6 +73,7 @@ class TemporizadorApp(ctk.CTk):
         except Exception:
             pass
 
+        self.protocol("WM_DELETE_WINDOW", self._al_cerrar)
         self._centrar_ventana()
         self._construir_ui()
 
@@ -411,6 +422,8 @@ class TemporizadorApp(ctk.CTk):
         if not nombre:
             nombre = "Actividad sin nombre"
 
+        self._nombre_actividad = nombre
+
         colores = COLORS[self.modo]
         self.lbl_actividad.configure(text=nombre, text_color=colores["accent"])
 
@@ -469,7 +482,7 @@ class TemporizadorApp(ctk.CTk):
         self.timer_id = self.after(1000, self._tick)
 
     def _finalizar(self):
-        nombre = self.entry_nombre.get().strip()
+        nombre = self._nombre_actividad or self.entry_nombre.get().strip()
         duracion_real = self.duracion_total - self.tiempo_restante
 
         try:
@@ -485,7 +498,10 @@ class TemporizadorApp(ctk.CTk):
 
         self._cargar_historial()
         self._reproducir_alarma()
-        self._mostrar_finalizado()
+
+        if self.tray_icon is not None:
+            self._restaurar_desde_bandeja()
+        self._mostrar_finalizado(nombre)
 
     def _reproducir_alarma(self):
         if not SONIDO_DISPONIBLE:
@@ -506,9 +522,108 @@ class TemporizadorApp(ctk.CTk):
         except Exception:
             pass
 
-    def _mostrar_finalizado(self):
+    def _mostrar_finalizado(self, nombre: str = ""):
+        self._restaurar_ventana()
         colores = COLORS[self.modo]
-        self.lbl_actividad.configure(text="¡Actividad completada!", text_color=colores["success"])
+        if hasattr(self, 'lbl_actividad'):
+            self.lbl_actividad.configure(
+                text=nombre or "Actividad",
+                text_color=colores["success"]
+            )
+
+        popup = NMToplevel(self, modo=self.modo)
+        popup.title("Actividad completada")
+        _w, _h = 380, 200
+        _sw = popup.winfo_screenwidth()
+        _sh = popup.winfo_screenheight()
+        _x = (_sw - _w) // 2
+        _y = (_sh - _h) // 2
+        popup.geometry(f"{_w}x{_h}+{_x}+{_y}")
+        popup.resizable(False, False)
+        popup.configure(fg_color=colores["bg_surface"])
+        popup.attributes("-topmost", True)
+        popup.grab_set()
+        popup.after(10, lambda: popup.focus_force())
+
+        frame = ctk.CTkFrame(popup, fg_color="transparent")
+        frame.pack(expand=True, fill="both", padx=LAYOUT["padding_container"],
+                   pady=LAYOUT["padding_container"])
+
+        ctk.CTkLabel(
+            frame, text="⏰ Actividad completada",
+            font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_h3"], "bold"),
+            text_color=colores["accent"]
+        ).pack(pady=(0, 12))
+
+        ctk.CTkLabel(
+            frame,
+            text=nombre if nombre else "El tiempo de tu actividad ha finalizado.",
+            font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_body"]),
+            text_color=colores["text_primary"],
+            wraplength=320
+        ).pack(pady=(0, 16))
+
+        BotonPrimario(
+            frame, text="Entendido", modo=self.modo, width=120,
+            command=popup.destroy
+        ).pack()
+
+    def _al_cerrar(self):
+        if self.corriendo:
+            self._enviar_a_bandeja()
+        else:
+            self.destroy()
+
+    def _enviar_a_bandeja(self):
+        if not TRAY_DISPONIBLE:
+            self.destroy()
+            return
+        self.withdraw()
+
+        def _crear_imagen():
+            try:
+                ruta = obtener_ruta_recurso("LOGO.png")
+                img = PILImage.open(ruta).convert("RGBA").resize((64, 64), PILImage.LANCZOS)
+                return img
+            except Exception:
+                img = PILImage.new("RGBA", (64, 64), (30, 200, 212, 255))
+                return img
+
+        menu = pystray.Menu(
+            pystray.MenuItem("Abrir Temporizador", lambda icon, item: self.after(0, self._restaurar_desde_bandeja), default=True),
+            pystray.MenuItem("Salir", lambda icon, item: self.after(0, self._salir_desde_bandeja)),
+        )
+        self.tray_icon = pystray.Icon(
+            "NM_Temporizador",
+            _crear_imagen(),
+            "Temporizador en ejecución",
+            menu=menu
+        )
+        hilo = threading.Thread(target=self.tray_icon.run, daemon=True)
+        hilo.start()
+
+    def _restaurar_desde_bandeja(self):
+        if self.tray_icon is not None:
+            try:
+                self.tray_icon.stop()
+            except Exception:
+                pass
+            self.tray_icon = None
+        self._restaurar_ventana()
+
+    def _salir_desde_bandeja(self):
+        if self.tray_icon is not None:
+            try:
+                self.tray_icon.stop()
+            except Exception:
+                pass
+            self.tray_icon = None
+        self.destroy()
+
+    def _restaurar_ventana(self):
+        self.deiconify()
+        self.lift()
+        self.focus_force()
 
     def _toggle_modo(self):
         estado = self.state()
