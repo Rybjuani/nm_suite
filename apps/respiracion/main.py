@@ -15,7 +15,7 @@ import math
 import time as _time_mod
 
 from shared.theme import COLORS, TYPOGRAPHY, LAYOUT
-from shared.db import obtener_conexion, inicializar_tablas
+from shared.db import obtener_conexion, inicializar_tablas, guardar_config, leer_config
 from shared.components import (
     HeaderFrame, CardFrame, BotonPrimario, BotonSecundario,
     mostrar_acerca_de, obtener_ruta_recurso, obtener_icono_solido,
@@ -27,12 +27,28 @@ from shared.utils import fecha_hoy, hora_actual
 TECNICA_478 = {"inhalar": 4, "retener": 7, "exhalar": 8}
 
 
+def _blend_hex(c1: str, c2: str, t: float) -> str:
+    t = max(0.0, min(1.0, t))
+    h1 = [int(c1.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)]
+    h2 = [int(c2.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)]
+    return "#{:02x}{:02x}{:02x}".format(
+        int(h1[0] + (h2[0] - h1[0]) * t),
+        int(h1[1] + (h2[1] - h1[1]) * t),
+        int(h1[2] + (h2[2] - h1[2]) * t),
+    )
+
+
 class RespiracionApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
         inicializar_tablas()
-        self.modo = "dark"
+        try:
+            from shared.sync import sync_al_abrir as _sync_al_abrir
+            _sync_al_abrir()
+        except Exception:
+            pass
+        self.modo = leer_config("theme", "dark")
 
         self.duracion_sesion = 180
         self.corriendo = False
@@ -42,7 +58,9 @@ class RespiracionApp(ctk.CTk):
         self.tiempo_total_transcurrido = 0
         self.timer_id = None
         self._tiempo_inicio_real = 0
+        self._elapsed_final = 0.0
         self._ultima_escala = 0.5
+        self._duracion_fase_total = 0
 
         self.title("NeuroMood · Guía de Respiración")
         w, h = 960, 720
@@ -59,6 +77,7 @@ class RespiracionApp(ctk.CTk):
 
         self._centrar_ventana()
         self._construir_ui()
+        self.after(1000, self._poll_tema)
 
     def _centrar_ventana(self):
         self._prev_state = "zoomed"
@@ -98,6 +117,15 @@ class RespiracionApp(ctk.CTk):
         )
         self.header.pack(fill="x")
 
+        barra_inferior = ctk.CTkFrame(self, fg_color=colores["bg_secondary"], height=40, corner_radius=0)
+        barra_inferior.pack(fill="x", side="bottom")
+        barra_inferior.pack_propagate(False)
+
+        BotonSecundario(
+            barra_inferior, text="Acerca de", modo=self.modo, width=100, height=30,
+            command=lambda: mostrar_acerca_de(self, self.modo)
+        ).pack(side="right", padx=12, pady=5)
+
         contenido = ctk.CTkFrame(self, fg_color="transparent")
         contenido.pack(fill="both", expand=True, padx=LAYOUT["padding_container"],
                        pady=LAYOUT["padding_container"])
@@ -111,15 +139,6 @@ class RespiracionApp(ctk.CTk):
         self._construir_circulo(col_izq)
         self._construir_controles(col_der)
         self._construir_historial(col_der)
-
-        barra_inferior = ctk.CTkFrame(self, fg_color=colores["bg_secondary"], height=40, corner_radius=0)
-        barra_inferior.pack(fill="x", side="bottom")
-        barra_inferior.pack_propagate(False)
-
-        BotonSecundario(
-            barra_inferior, text="Acerca de", modo=self.modo, width=100, height=30,
-            command=lambda: mostrar_acerca_de(self, self.modo)
-        ).pack(side="right", padx=12, pady=5)
 
     def _construir_circulo(self, parent):
         colores = COLORS[self.modo]
@@ -186,17 +205,18 @@ class RespiracionApp(ctk.CTk):
             es_activa = seg == self.duracion_sesion
             ctk.CTkButton(
                 dur_frame, text=texto, width=55, height=34,
-                fg_color=colores["accent"] if es_activa else colores["bg_hover"],
-                hover_color=colores["accent_hover"],
-                text_color=colores["text_on_accent"] if es_activa else colores["text_primary"],
+                fg_color=("#4A7EA5" if self.modo == "light" else colores["accent"]) if es_activa else ("#B5D0E8" if self.modo == "light" else colores["bg_hover"]),
+                hover_color=("#3A6E95" if self.modo == "light" else colores["accent_hover"]) if es_activa else ("#9ABDD8" if self.modo == "light" else colores["accent_hover"]),
+                text_color=(colores["text_on_accent"] if es_activa else "#1E4D78") if self.modo == "light" else colores["text_on_accent"],
                 corner_radius=LAYOUT["radius_button"],
-                font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_small"]),
+                font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_small"], "bold"),
                 command=lambda s=seg: self._set_duracion(s)
             ).pack(side="left", padx=2)
 
+        _kw_verde = {"fg_color": colores["success"], "hover_color": "#4A8A70"} if self.modo == "light" else {}
         self.btn_iniciar = BotonPrimario(
             card, text="Iniciar", modo=self.modo,
-            command=self._toggle_sesion
+            command=self._toggle_sesion, **_kw_verde
         )
         self.btn_iniciar.pack(fill="x", padx=LAYOUT["padding_card"],
                               pady=(0, LAYOUT["padding_card"]))
@@ -235,7 +255,7 @@ class RespiracionApp(ctk.CTk):
         conn.close()
 
         for ses in sesiones:
-            fila = ctk.CTkFrame(self.frame_historial, fg_color=colores["bg_hover"],
+            fila = ctk.CTkFrame(self.frame_historial, fg_color=colores["bg_list_item"],
                                 corner_radius=LAYOUT["radius_button"])
             fila.pack(fill="x", pady=2)
 
@@ -262,45 +282,70 @@ class RespiracionApp(ctk.CTk):
         cx, cy = w // 2, h // 2
 
         radio_max = min(w, h) // 2 - 40
-        radio_min = radio_max * 0.4
+        radio_min = radio_max * 0.35
         radio = radio_min + (radio_max - radio_min) * escala
 
-        canvas.create_oval(
-            cx - radio_max - 5, cy - radio_max - 5,
-            cx + radio_max + 5, cy + radio_max + 5,
-            outline=colores["border"], width=1, dash=(4, 4)
-        )
+        if not self.fase_actual:
+            _phase_color = colores["border"]
+        elif "Inhal" in self.fase_actual:
+            _phase_color = "#3A9AD4"
+        elif "Reten" in self.fase_actual:
+            _phase_color = "#F0A500"
+        else:
+            _phase_color = "#22D47E"
 
-        for i in range(3):
-            offset = i * 8
-            alpha_approx = 0.3 - i * 0.1
-            canvas.create_oval(
-                cx - radio - offset, cy - radio - offset,
-                cx + radio + offset, cy + radio + offset,
-                outline=colores["accent"], width=1
-            )
+        bg = colores["bg_surface"]
 
+        # Ondas concéntricas que emanan desde el borde del círculo
+        if self.fase_actual:
+            for offset, lw, alpha in [(24, 4, 0.50), (46, 3, 0.28), (68, 2, 0.14), (92, 1, 0.06)]:
+                rc = _blend_hex(_phase_color, bg, 1.0 - alpha)
+                r = radio + offset
+                canvas.create_oval(cx - r, cy - r, cx + r, cy + r, outline=rc, width=lw)
+
+        # Círculo principal
         canvas.create_oval(
             cx - radio, cy - radio, cx + radio, cy + radio,
-            fill=colores["bg_primary"], outline=colores["accent"], width=3
+            fill=colores["bg_primary"], outline=_phase_color, width=3
         )
 
         if self.fase_actual:
             canvas.create_text(
-                cx, cy - 14, text=self.fase_actual,
-                fill=colores["accent"],
-                font=(TYPOGRAPHY["font_family"], 16, "bold")
+                cx, cy - 22, text=self.fase_actual.upper(),
+                fill=_phase_color,
+                font=(TYPOGRAPHY["font_family"], 13, "bold")
             )
             canvas.create_text(
-                cx, cy + 18, text=f"{self.segundos_fase_restantes}s",
+                cx, cy + 8, text=str(self.segundos_fase_restantes),
                 fill=colores["text_primary"],
-                font=(TYPOGRAPHY["font_family"], 28, "bold")
+                font=(TYPOGRAPHY["font_family"], 36, "bold")
+            )
+            canvas.create_text(
+                cx, cy + 38, text="seg",
+                fill=colores["text_tertiary"],
+                font=(TYPOGRAPHY["font_family"], 11)
+            )
+        else:
+            canvas.create_oval(
+                cx - radio, cy - radio, cx + radio, cy + radio,
+                outline=colores["border"], width=1
+            )
+            canvas.create_text(
+                cx, cy, text="◎",
+                fill=colores["text_tertiary"],
+                font=(TYPOGRAPHY["font_family"], 48)
             )
 
     def _set_duracion(self, segundos):
         if not self.corriendo:
             self.duracion_sesion = segundos
+            estado = self.state()
+            hwnd = _freeze_window(self)
             self._construir_ui()
+            self.update_idletasks()
+            _unfreeze_window(hwnd)
+            if estado == "zoomed":
+                self.state("zoomed")
 
     def _toggle_sesion(self):
         if self.corriendo:
@@ -318,11 +363,22 @@ class RespiracionApp(ctk.CTk):
 
     def _detener(self):
         self.corriendo = False
+        if self._tiempo_inicio_real > 0:
+            elapsed = _time_mod.time() - self._tiempo_inicio_real
+            if self.duracion_sesion > 0:
+                elapsed = min(elapsed, float(self.duracion_sesion))
+            self._elapsed_final = elapsed
+        else:
+            self._elapsed_final = float(self.tiempo_total_transcurrido)
         if self.timer_id:
             self.after_cancel(self.timer_id)
             self.timer_id = None
 
-        self.btn_iniciar.configure(text="Iniciar", fg_color=COLORS[self.modo]["accent"])
+        _c = COLORS[self.modo]
+        self.btn_iniciar.configure(
+            text="Iniciar",
+            fg_color=_c["success"] if self.modo == "light" else _c["accent"]
+        )
         self._guardar_sesion()
         self._mostrar_finalizado()
 
@@ -364,6 +420,7 @@ class RespiracionApp(ctk.CTk):
         self._animar_fase(duracion, es_inhalar, es_exhalar, fases, indice)
 
     def _animar_fase(self, duracion_seg, es_inhalar, es_exhalar, fases, indice):
+        self._duracion_fase_total = duracion_seg
         total_frames = duracion_seg * 20
         frame_actual = [0]
 
@@ -413,7 +470,7 @@ class RespiracionApp(ctk.CTk):
         if self.ciclos_completados == 0:
             return
 
-        duracion_min = round(self.tiempo_total_transcurrido / 60, 1)
+        duracion_min = round(self._elapsed_final / 60, 1)
         try:
             conn = obtener_conexion()
             conn.execute(
@@ -423,6 +480,11 @@ class RespiracionApp(ctk.CTk):
             conn.commit()
             conn.close()
             self._cargar_historial()
+            try:
+                from shared.sync import sync_inmediato_background as _sib
+                _sib()
+            except Exception:
+                pass
         except Exception:
             pass
 
@@ -436,9 +498,8 @@ class RespiracionApp(ctk.CTk):
 
         self.lbl_instruccion.configure(text=f"✓ Sesión completada — {self.ciclos_completados} ciclos")
 
-        duracion_min = round(self.tiempo_total_transcurrido / 60, 1)
-        mm = int(self.tiempo_total_transcurrido) // 60
-        ss = int(self.tiempo_total_transcurrido) % 60
+        mm = int(self._elapsed_final) // 60
+        ss = int(self._elapsed_final) % 60
         tiempo_str = f"{mm}:{ss:02d} min" if mm > 0 else f"{ss}s"
 
         popup = ctk.CTkFrame(
@@ -452,7 +513,7 @@ class RespiracionApp(ctk.CTk):
         ctk.CTkLabel(
             popup, text="Completado",
             font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_h3"], "bold"),
-            text_color=colores["accent"]
+            text_color=colores["success"] if self.modo == "light" else colores["accent"]
         ).pack(padx=32, pady=(24, 12))
 
         ctk.CTkLabel(
@@ -467,14 +528,45 @@ class RespiracionApp(ctk.CTk):
             text_color=colores["text_tertiary"]
         ).pack(padx=32)
 
+        _kw_cont = {"fg_color": colores["success"], "hover_color": "#4A8A70"} if self.modo == "light" else {}
         BotonPrimario(
             popup, text="Continuar", modo=self.modo, width=120,
-            command=popup.destroy
+            command=popup.destroy, **_kw_cont
         ).pack(pady=(16, 24))
+
+    def _poll_tema(self):
+        try:
+            modo_config = leer_config("theme", self.modo)
+            if modo_config != self.modo:
+                self._aplicar_tema_externo(modo_config)
+        except Exception:
+            pass
+        try:
+            self.after(1000, self._poll_tema)
+        except Exception:
+            pass
+
+    def _aplicar_tema_externo(self, nuevo_modo):
+        if nuevo_modo == self.modo:
+            return
+        estado = self.state()
+        self.modo = nuevo_modo
+        hwnd = _freeze_window(self)
+        self._construir_ui()
+        if self.corriendo:
+            self.btn_iniciar.configure(text="Detener", fg_color=COLORS[self.modo]["error"])
+        self.update_idletasks()
+        if self.corriendo:
+            self._dibujar_circulo(self._ultima_escala)
+        _unfreeze_window(hwnd)
+        aplicar_captionbar_flush(self, self.modo)
+        if estado == "zoomed":
+            self.state("zoomed")
 
     def _toggle_modo(self):
         estado = self.state()
         self.modo = "light" if self.modo == "dark" else "dark"
+        guardar_config("theme", self.modo)
         hwnd = _freeze_window(self)
         self._construir_ui()
         if self.corriendo:

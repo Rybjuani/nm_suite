@@ -21,32 +21,17 @@ def fecha_legible(fecha_iso: str) -> str:
         return fecha_iso
 
 
+_GRAD_PUNTAJE = [
+    "#E74C3C", "#E96134", "#EC762C", "#EF8C24", "#F0A500",
+    "#EAB800", "#C0C030", "#7CBD50", "#3AAE70", "#2BBF7A", "#22D47E",
+]
+
+
+def color_por_puntaje_exacto(puntaje: int) -> str:
+    return _GRAD_PUNTAJE[max(0, min(10, puntaje))]
+
+
 def color_por_puntaje(puntaje: int, modo: str = "dark") -> str:
-    colores = COLORS[modo]
-    if puntaje <= 3:
-        return colores["error"]
-    elif puntaje <= 6:
-        return colores["warning"]
-    else:
-        return colores["accent"]
-
-
-def configurar_matplotlib_nm(modo: str = "dark"):
-    import matplotlib.pyplot as plt
-    colores = COLORS[modo]
-    plt.rcParams.update({
-        "figure.facecolor": colores["bg_primary"],
-        "axes.facecolor": colores["bg_surface"],
-        "axes.edgecolor": colores["border"],
-        "axes.labelcolor": colores["text_secondary"],
-        "xtick.color": colores["text_tertiary"],
-        "ytick.color": colores["text_tertiary"],
-        "text.color": colores["text_primary"],
-        "grid.color": colores["border"],
-        "grid.alpha": 0.5,
-        "lines.linewidth": 2,
-        "font.family": ["Segoe UI", "Helvetica Neue", "Arial", "sans-serif"],
-        "font.size": 10,
-    })
+    return color_por_puntaje_exacto(puntaje)
 
 

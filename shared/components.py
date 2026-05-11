@@ -59,6 +59,10 @@ def aplicar_captionbar(window, modo: str):
             hwnd = window.winfo_id()
         dark_val = ctypes.c_int(1)
         ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 20, ctypes.byref(dark_val), 4)
+        try:
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 19, ctypes.byref(dark_val), 4)
+        except Exception:
+            pass
         if _es_windows_11():
             r, g, b = int(bg[1:3], 16), int(bg[3:5], 16), int(bg[5:7], 16)
             color = ctypes.c_uint(r | (g << 8) | (b << 16))
@@ -159,16 +163,30 @@ class HeaderFrame(ctk.CTkFrame):
 
         if on_toggle_modo:
             icono_texto = "Light" if modo == "dark" else "Dark"
+            # En light: botón oscuro (accent) + texto blanco + hover más claro
+            # En dark:  comportamiento original (bg_hover + hover teal + texto primario)
+            if modo == "light":
+                _btn_fg, _btn_hover, _btn_text = (
+                    colores["accent"],
+                    colores["accent_hover"],
+                    colores["text_on_accent"],
+                )
+            else:
+                _btn_fg, _btn_hover, _btn_text = (
+                    colores["bg_hover"],
+                    colores["accent"],
+                    colores["text_primary"],
+                )
             self.btn_modo = ctk.CTkButton(
                 contenedor,
                 text=icono_texto,
                 width=50,
                 height=36,
                 corner_radius=LAYOUT["radius_button"],
-                fg_color=colores["bg_hover"],
-                hover_color=colores["accent"],
-                text_color=colores["text_primary"],
-                font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_small"]),
+                fg_color=_btn_fg,
+                hover_color=_btn_hover,
+                text_color=_btn_text,
+                font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_small"], "bold"),
                 command=on_toggle_modo
             )
             self.btn_modo.pack(side="right", padx=(8, 0))
@@ -187,6 +205,8 @@ class HeaderFrame(ctk.CTkFrame):
             aplicar_captionbar(_win, _m)
             _win.after(0, lambda: aplicar_captionbar(_win, _m))
             _win.after(100, lambda: aplicar_captionbar(_win, _m))
+            _win.after(300, lambda: aplicar_captionbar(_win, _m))
+            _win.after(600, lambda: aplicar_captionbar(_win, _m))
         except Exception:
             pass
 
@@ -195,7 +215,7 @@ class CardFrame(ctk.CTkFrame):
     def __init__(self, master, modo: str = "dark", destacada: bool = False, **kwargs):
         colores = COLORS[modo]
         border_color = colores["border_accent"] if destacada else colores["border"]
-        border_width = LAYOUT["border_accent_width"] if destacada else LAYOUT["border_width"]
+        border_width = LAYOUT["border_accent_width"] if destacada else LAYOUT["border_card_width"]
         super().__init__(
             master,
             fg_color=colores["bg_surface"],
@@ -224,16 +244,27 @@ class BotonPrimario(ctk.CTkButton):
 class BotonSecundario(ctk.CTkButton):
     def __init__(self, master, modo: str = "dark", **kwargs):
         colores = COLORS[modo]
-        defaults = {
-            "fg_color": "transparent",
-            "hover_color": colores["bg_hover"],
-            "text_color": colores["accent"],
-            "border_color": colores["accent"],
-            "border_width": LAYOUT["border_button_width"],
-            "corner_radius": LAYOUT["radius_button"],
-            "font": (TYPOGRAPHY["font_family"], TYPOGRAPHY["size_body"]),
-            "height": LAYOUT["min_touch_target"],
-        }
+        if modo == "light":
+            defaults = {
+                "fg_color": colores["warning"],
+                "hover_color": "#B06830",
+                "text_color": colores["text_on_accent"],
+                "border_width": 0,
+                "corner_radius": LAYOUT["radius_button"],
+                "font": (TYPOGRAPHY["font_family"], TYPOGRAPHY["size_body"], "bold"),
+                "height": LAYOUT["min_touch_target"],
+            }
+        else:
+            defaults = {
+                "fg_color": "transparent",
+                "hover_color": colores["bg_hover"],
+                "text_color": colores["accent"],
+                "border_color": colores["accent"],
+                "border_width": LAYOUT["border_button_width"],
+                "corner_radius": LAYOUT["radius_button"],
+                "font": (TYPOGRAPHY["font_family"], TYPOGRAPHY["size_body"], "bold"),
+                "height": LAYOUT["min_touch_target"],
+            }
         defaults.update(kwargs)
         super().__init__(master, **defaults)
 
@@ -312,26 +343,19 @@ class NMToplevel(ctk.CTkToplevel):
         except Exception:
             self.after(5, lambda: self.wm_attributes('-alpha', 1.0))
 
-    def _windows_set_titlebar_icon(self):
-        try:
-            if self.winfo_exists():
-                self.iconbitmap(obtener_icono_solido())
-        except Exception:
-            pass
-
 
 def mostrar_acerca_de(master, modo: str = "dark"):
     colores = COLORS[modo]
     ventana = NMToplevel(master, modo=modo)
     ventana.title("Acerca de")
-    _w, _h = 450, 320
+    _w, _h = 450, 360
     _sw = ventana.winfo_screenwidth()
     _sh = ventana.winfo_screenheight()
     _x = (_sw - _w) // 2
     _y = (_sh - _h) // 2
     ventana.geometry(f"{_w}x{_h}+{_x}+{_y}")
     ventana.resizable(False, False)
-    ventana.configure(fg_color=colores["bg_primary"])
+    ventana.configure(fg_color=colores["bg_primary"] if modo == "light" else colores["bg_surface"])
     ventana.grab_set()
 
     ventana.after(10, lambda: ventana.focus_force())
@@ -348,39 +372,59 @@ def mostrar_acerca_de(master, modo: str = "dark"):
         ancho_target = int(ancho_logo * alto_target / alto_logo)
         logo_mostrar = _recolorear_logo_light(logo_img.copy()) if modo == "light" else logo_img
         logo_ctk = ctk.CTkImage(light_image=logo_mostrar, dark_image=logo_mostrar, size=(ancho_target, alto_target))
-        ctk.CTkLabel(frame, image=logo_ctk, text="").pack(pady=(0, 12))
+        ctk.CTkLabel(frame, image=logo_ctk, text="").pack(pady=(0, 6))
         ventana._logo_ref = logo_ctk
     except Exception:
         pass
 
     ctk.CTkLabel(
-        frame, text="NeuroMood",
-        font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_h2"], "bold"),
-        text_color=colores["text_primary"]
-    ).pack()
-
-    ctk.CTkLabel(
         frame, text="Suite de herramientas terapéuticas",
         font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_body"]),
         text_color=colores["text_secondary"]
-    ).pack(pady=(4, 16))
+    ).pack(pady=(0, 12))
 
     ctk.CTkLabel(
         frame, text="neuromood.com.ar",
-        font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_body"]),
-        text_color=colores["accent"]
+        font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_body"], "bold"),
+        text_color=colores.get("info", colores["accent"]) if modo == "light" else colores["accent"]
     ).pack()
 
     ctk.CTkLabel(
         frame, text="Dra. Lucía Fazzito",
         font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_small"]),
-        text_color=colores["text_tertiary"]
-    ).pack(pady=(4, 0))
+        text_color=colores["text_secondary"] if modo == "light" else colores["text_tertiary"]
+    ).pack(pady=(3, 0))
 
-    BotonSecundario(
-        frame, text="Cerrar", modo=modo,
-        command=ventana.destroy, width=140
-    ).pack(pady=(20, 0))
+    ctk.CTkFrame(
+        frame,
+        fg_color=colores["accent"],
+        height=2,
+        corner_radius=0
+    ).pack(fill="x", pady=12)
+
+    ctk.CTkLabel(
+        frame, text="neuromood.com.ar@gmail.com",
+        font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_small"]),
+        text_color=colores["text_secondary"]
+    ).pack(pady=(0, 3))
+
+    ctk.CTkLabel(
+        frame, text="La Paz y Aménebar, Belgrano, CABA",
+        font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_small"]),
+        text_color=colores["text_tertiary"]
+    ).pack()
+
+    ctk.CTkLabel(
+        frame, text="® Marca Registrada 2023 – Todos los derechos reservados",
+        font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_caption"]),
+        text_color=colores["text_tertiary"]
+    ).pack(pady=(8, 0))
+
+    if modo == "light":
+        BotonPrimario(frame, text="Cerrar", modo=modo, command=ventana.destroy, width=120, height=36,
+                      fg_color=colores.get("info", colores["accent"]), hover_color="#3A6E95").pack(pady=(14, 0))
+    else:
+        BotonSecundario(frame, text="Cerrar", modo=modo, command=ventana.destroy, width=120, height=36).pack(pady=(14, 0))
 
 
 def mostrar_mensaje(master, titulo: str, mensaje: str, tipo: str = "info", modo: str = "dark"):
@@ -400,7 +444,7 @@ def mostrar_mensaje(master, titulo: str, mensaje: str, tipo: str = "info", modo:
     _sh = ventana.winfo_screenheight()
     ventana.geometry(f"{_w}x{_h}+{(_sw - _w) // 2}+{(_sh - _h) // 2}")
     ventana.resizable(False, False)
-    ventana.configure(fg_color=colores["bg_primary"])
+    ventana.configure(fg_color=colores["bg_surface"])
     ventana.grab_set()
     ctk.CTkFrame(ventana, fg_color=color_t, height=3, corner_radius=0).pack(fill="x")
     frame = ctk.CTkFrame(ventana, fg_color="transparent")
@@ -413,7 +457,7 @@ def mostrar_mensaje(master, titulo: str, mensaje: str, tipo: str = "info", modo:
     ctk.CTkLabel(
         frame, text=titulo,
         font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_h3"], "bold"),
-        text_color=colores["text_primary"]
+        text_color=color_t if modo == "light" else colores["text_primary"]
     ).pack(pady=(0, 6))
     ctk.CTkLabel(
         frame, text=mensaje,
@@ -421,6 +465,8 @@ def mostrar_mensaje(master, titulo: str, mensaje: str, tipo: str = "info", modo:
         text_color=colores["text_secondary"],
         wraplength=312, justify="center"
     ).pack(pady=(0, 16))
-    BotonPrimario(frame, text="Aceptar", modo=modo, width=110, command=ventana.destroy).pack()
+    _hover_btn = {"info": "#3A6E95", "warning": "#B06830", "error": "#BF5555", "success": "#4A8A70"}
+    _kw_btn = {"fg_color": color_t, "hover_color": _hover_btn.get(tipo, colores["accent_hover"])} if modo == "light" else {}
+    BotonPrimario(frame, text="Aceptar", modo=modo, width=110, command=ventana.destroy, **_kw_btn).pack()
     ventana.after(10, ventana.focus_force)
     ventana.wait_window()

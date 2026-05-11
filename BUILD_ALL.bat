@@ -23,9 +23,8 @@ echo   3. Temporizador de Actividades
 echo   4. Registro de Pensamientos
 echo   5. Guia de Respiracion
 echo   6. Checklist de Rutina
-echo   7. Visualizador de Evolucion
-echo   8. Asistente de Activacion
-echo   9. Todas (una por una)
+echo   7. Hub Profesional
+echo   9. Apps paciente (1-6 en secuencia)
 echo   0. Salir
 echo.
 set /p APP=Opcion:
@@ -36,8 +35,7 @@ if "%APP%"=="3" (python "%ROOT%\apps\temporizador\main.py" & goto :test)
 if "%APP%"=="4" (python "%ROOT%\apps\pensamientos\main.py" & goto :test)
 if "%APP%"=="5" (python "%ROOT%\apps\respiracion\main.py" & goto :test)
 if "%APP%"=="6" (python "%ROOT%\apps\checklist\main.py" & goto :test)
-if "%APP%"=="7" (python "%ROOT%\apps\visualizador\main.py" & goto :test)
-if "%APP%"=="8" (python "%ROOT%\apps\activacion\main.py" & goto :test)
+if "%APP%"=="7" (python "%ROOT%\apps\hub_profesional\main.py" & goto :test)
 if "%APP%"=="9" goto :testall
 if "%APP%"=="0" goto :end
 echo Opcion invalida.
@@ -45,25 +43,21 @@ goto :test
 
 :testall
 echo.
-echo Ejecutando todas las apps en secuencia...
+echo Ejecutando apps paciente en secuencia...
 echo (Cerra cada ventana para pasar a la siguiente)
 echo.
-echo [1/8] Termometro Emocional
+echo [1/6] Termometro Emocional
 python "%ROOT%\apps\termometro\main.py"
-echo [2/8] Recordatorios de Bienestar
+echo [2/6] Recordatorios de Bienestar
 python "%ROOT%\apps\recordatorios\main.py"
-echo [3/8] Temporizador de Actividades
+echo [3/6] Temporizador de Actividades
 python "%ROOT%\apps\temporizador\main.py"
-echo [4/8] Registro de Pensamientos
+echo [4/6] Registro de Pensamientos
 python "%ROOT%\apps\pensamientos\main.py"
-echo [5/8] Guia de Respiracion
+echo [5/6] Guia de Respiracion
 python "%ROOT%\apps\respiracion\main.py"
-echo [6/8] Checklist de Rutina
+echo [6/6] Checklist de Rutina
 python "%ROOT%\apps\checklist\main.py"
-echo [7/8] Visualizador de Evolucion
-python "%ROOT%\apps\visualizador\main.py"
-echo [8/8] Asistente de Activacion
-python "%ROOT%\apps\activacion\main.py"
 echo.
 echo Testing completo.
 pause
@@ -83,7 +77,8 @@ goto :end
 :: ============================================================
 :build
 echo ============================================================
-echo  NeuroMood Suite - Compilacion de las 8 aplicaciones
+echo  NeuroMood Suite - Compilacion completa
+echo  Apps paciente (dist\) + Hub Profesional (dist\pro\)
 echo  neuromood.com.ar
 echo ============================================================
 echo.
@@ -97,62 +92,70 @@ cd /d "%ROOT%"
 
 set "DIST=%ROOT%\dist"
 set "BUILD=%ROOT%\build"
+set "DIST_PRO=%ROOT%\dist\pro"
 set "ICON=%ROOT%\NM_icon.ico"
 set "LOGO=%ROOT%\LOGO.png"
 set "SHARED=%ROOT%\shared"
 
 if not exist "%DIST%" mkdir "%DIST%"
 if not exist "%BUILD%" mkdir "%BUILD%"
+if not exist "%DIST_PRO%" mkdir "%DIST_PRO%"
 
-set COMMON=--noconfirm --onefile --windowed --icon "%ICON%" --add-data "%LOGO%;." --add-data "%ICON%;." --add-data "%SHARED%;shared" --distpath "%DIST%" --workpath "%BUILD%" --paths "%ROOT%" --hidden-import shared --hidden-import shared.theme --hidden-import shared.db --hidden-import shared.components --hidden-import shared.utils --hidden-import PIL --hidden-import PIL._tkinter_finder --hidden-import sqlite3 --hidden-import _sqlite3
+:: Hidden imports comunes a todas las apps paciente
+set COMMON=--noconfirm --onefile --windowed --icon "%ICON%" --add-data "%LOGO%;." --add-data "%ICON%;." --add-data "%SHARED%;shared" --distpath "%DIST%" --workpath "%BUILD%" --paths "%ROOT%" --hidden-import shared --hidden-import shared.theme --hidden-import shared.db --hidden-import shared.components --hidden-import shared.utils --hidden-import shared.sync --hidden-import shared.identidad --hidden-import supabase --hidden-import supabase._sync --hidden-import supabase._async --hidden-import postgrest --hidden-import storage3 --hidden-import supabase_auth --hidden-import realtime --hidden-import PIL --hidden-import PIL._tkinter_finder --hidden-import sqlite3 --hidden-import _sqlite3
 
-echo [1/8] Compilando TermometroEmocional.exe...
-pyinstaller %COMMON% --name "TermometroEmocional" "%ROOT%\apps\termometro\main.py"
+:: ── Apps paciente ──────────────────────────────────────────────────────────
+
+echo [1/7] Compilando TermometroEmocional.exe...
+pyinstaller %COMMON% --paths "%ROOT%\apps\activacion" --hidden-import motor --name "TermometroEmocional" "%ROOT%\apps\termometro\main.py"
 if %ERRORLEVEL% NEQ 0 goto :error
 
-echo [2/8] Compilando RecordatoriosBienestar.exe...
+echo [2/7] Compilando RecordatoriosBienestar.exe...
 pyinstaller %COMMON% --hidden-import pystray --hidden-import pygame --hidden-import numpy --name "RecordatoriosBienestar" "%ROOT%\apps\recordatorios\main.py"
 if %ERRORLEVEL% NEQ 0 goto :error
 
-echo [3/8] Compilando TemporizadorActividades.exe...
-pyinstaller %COMMON% --hidden-import pygame --hidden-import numpy --name "TemporizadorActividades" "%ROOT%\apps\temporizador\main.py"
+echo [3/7] Compilando TemporizadorActividades.exe...
+pyinstaller %COMMON% --paths "%ROOT%\apps\temporizador" --hidden-import pygame --hidden-import numpy --hidden-import sonido --hidden-import presets --name "TemporizadorActividades" "%ROOT%\apps\temporizador\main.py"
 if %ERRORLEVEL% NEQ 0 goto :error
 
-echo [4/8] Compilando RegistroPensamientos.exe...
+echo [4/7] Compilando RegistroPensamientos.exe...
 pyinstaller %COMMON% --name "RegistroPensamientos" "%ROOT%\apps\pensamientos\main.py"
 if %ERRORLEVEL% NEQ 0 goto :error
 
-echo [5/8] Compilando GuiaRespiracion.exe...
+echo [5/7] Compilando GuiaRespiracion.exe...
 pyinstaller %COMMON% --name "GuiaRespiracion" "%ROOT%\apps\respiracion\main.py"
 if %ERRORLEVEL% NEQ 0 goto :error
 
-echo [6/8] Compilando ChecklistRutina.exe...
-pyinstaller %COMMON% --hidden-import pygame --hidden-import numpy --name "ChecklistRutina" "%ROOT%\apps\checklist\main.py"
+echo [6/7] Compilando ChecklistRutina.exe...
+pyinstaller %COMMON% --paths "%ROOT%\apps\checklist" --hidden-import pygame --hidden-import numpy --hidden-import plantillas --hidden-import editor_checklist --name "ChecklistRutina" "%ROOT%\apps\checklist\main.py"
 if %ERRORLEVEL% NEQ 0 goto :error
 
-echo [7/8] Compilando VisualizadorEvolucion.exe...
-pyinstaller %COMMON% --hidden-import matplotlib --hidden-import matplotlib.backends.backend_tkagg --hidden-import matplotlib.backends.backend_agg --hidden-import reportlab --hidden-import reportlab.lib --hidden-import reportlab.platypus --name "VisualizadorEvolucion" "%ROOT%\apps\visualizador\main.py"
+:: ── Hub Profesional ────────────────────────────────────────────────────────
+
+echo [7/7] Compilando HubProfesional.exe...
+pyinstaller --noconfirm --onefile --windowed --icon "%ICON%" --add-data "%LOGO%;." --add-data "%ICON%;." --add-data "%SHARED%;shared" --distpath "%DIST_PRO%" --workpath "%BUILD%" --paths "%ROOT%" --paths "%ROOT%\apps\activacion" --paths "%ROOT%\apps\checklist" --paths "%ROOT%\apps\temporizador" --hidden-import shared --hidden-import shared.theme --hidden-import shared.db --hidden-import shared.components --hidden-import shared.utils --hidden-import supabase --hidden-import reportlab --hidden-import reportlab.lib --hidden-import reportlab.lib.pagesizes --hidden-import reportlab.lib.styles --hidden-import reportlab.lib.units --hidden-import reportlab.platypus --hidden-import PIL --hidden-import PIL._tkinter_finder --hidden-import sqlite3 --hidden-import _sqlite3 --hidden-import terapeuta --hidden-import motor --hidden-import perfil --hidden-import analisis --hidden-import editor_checklist --hidden-import plantillas --hidden-import editor_presets --hidden-import presets --hidden-import sonido --name "HubProfesional" "%ROOT%\apps\hub_profesional\main.py"
 if %ERRORLEVEL% NEQ 0 goto :error
 
-echo [8/8] Compilando AsistenteActivacion.exe...
-pyinstaller %COMMON% --hidden-import pygame --hidden-import numpy --name "AsistenteActivacion" "%ROOT%\apps\activacion\main.py"
-if %ERRORLEVEL% NEQ 0 goto :error
+:: ── Limpieza de .spec ─────────────────────────────────────────────────────
 
-del "%ROOT%\TermometroEmocional.spec" 2>nul
+del "%ROOT%\TermometroEmocional.spec"    2>nul
 del "%ROOT%\RecordatoriosBienestar.spec" 2>nul
 del "%ROOT%\TemporizadorActividades.spec" 2>nul
-del "%ROOT%\RegistroPensamientos.spec" 2>nul
-del "%ROOT%\GuiaRespiracion.spec" 2>nul
-del "%ROOT%\ChecklistRutina.spec" 2>nul
-del "%ROOT%\VisualizadorEvolucion.spec" 2>nul
-del "%ROOT%\AsistenteActivacion.spec" 2>nul
+del "%ROOT%\RegistroPensamientos.spec"   2>nul
+del "%ROOT%\GuiaRespiracion.spec"        2>nul
+del "%ROOT%\ChecklistRutina.spec"        2>nul
+del "%ROOT%\HubProfesional.spec"         2>nul
 
 echo.
 echo ============================================================
-echo  COMPILACION EXITOSA - Los .exe estan en: %DIST%
-echo ============================================================
+echo  COMPILACION EXITOSA
 echo.
-dir "%DIST%\*.exe"
+echo  Apps paciente:    dist\
+dir "%DIST%\*.exe" /b 2>nul
+echo.
+echo  Hub Profesional:  dist\pro\
+dir "%DIST_PRO%\*.exe" /b 2>nul
+echo ============================================================
 echo.
 pause
 goto :end

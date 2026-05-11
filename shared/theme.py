@@ -5,10 +5,11 @@ COLORS = {
         "bg_surface":       "#112740",
         "bg_input":         "#112740",
         "bg_hover":         "#1A3050",
+        "bg_list_item":     "#1A3050",
 
         "accent":           "#1EC8D4",
         "accent_hover":     "#2EDDE9",
-        "accent_subtle":    "#1EC8D420",
+        "accent_subtle":    "#0F3040",
 
         "text_primary":     "#FFFFFF",
         "text_secondary":   "#E8EEF4",
@@ -29,32 +30,38 @@ COLORS = {
     },
 
     "light": {
-        "bg_primary":       "#E8EFF6",
-        "bg_secondary":     "#DCE5EF",
-        "bg_surface":       "#FFFFFF",
-        "bg_input":         "#F0F5FA",
-        "bg_hover":         "#D2E0EE",
+        # Fondos — paleta Notion light mode
+        "bg_primary":       "#E3E2DE",   # Notion Cream — body + header
+        "bg_secondary":     "#D8D7D3",   # barra inferior — un tono más oscuro
+        "bg_surface":       "#F7F7F5",   # cards — Notion Light Gray (más claro que body)
+        "bg_input":         "#FFFFFF",   # inputs blancos — más elevados
+        "bg_hover":         "#C0BFBC",   # hover en items de lista
+        "bg_list_item":     "#FFFFFF",   # filas de historial — elevadas sobre surface
 
-        "accent":           "#0BA8B5",
-        "accent_hover":     "#1EC8D4",
-        "accent_subtle":    "#0BA8B515",
+        # Interactivos — charcoal suave (no negro puro)
+        "accent":           "#404040",   # gris carbón — más pastel que #191919
+        "accent_hover":     "#5C5C5C",   # más claro en hover → interactividad visible
+        "accent_subtle":    "#DDDCDA",
 
-        "text_primary":     "#0B1928",
-        "text_secondary":   "#2A4A6A",
-        "text_tertiary":    "#5A7898",
+        # Texto — escala Notion
+        "text_primary":     "#191919",   # Notion Text Default
+        "text_secondary":   "#4A4A4A",
+        "text_tertiary":    "#6B6B6B",   # Notion Dark Gray
         "text_on_accent":   "#FFFFFF",
 
-        "border":           "#8AACC4",
-        "border_accent":    "#0BA8B5",
-        "border_focus":     "#1EC8D4",
+        # Bordes — Notion Mid Gray (#CBCAC7), visibles sin ser agresivos
+        "border":           "#CBCAC7",
+        "border_accent":    "#404040",
+        "border_focus":     "#404040",
 
-        "success":          "#1AAE60",
-        "warning":          "#D48F00",
-        "error":            "#C83040",
-        "info":             "#0BA8B5",
+        # Estados funcionales — colores Notion de contenido
+        "success":          "#5A9E82",   # verde pastel
+        "warning":          "#C87C40",   # ámbar pastel
+        "error":            "#D46868",   # rosa-rojo pastel
+        "info":             "#4A7EA5",   # azul petróleo pastel
 
-        "progress_track":   "#BCCEDD",
-        "progress_fill":    "#0BA8B5",
+        "progress_track":   "#CBCAC7",
+        "progress_fill":    "#404040",
     }
 }
 
@@ -84,6 +91,7 @@ LAYOUT = {
     "radius_input":         8,
     "radius_badge":         20,
     "border_width":         1,
+    "border_card_width":    2,
     "border_accent_width":  2,
     "border_button_width":  2,
     "header_height":        68,

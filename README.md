@@ -1,110 +1,136 @@
 # NeuroMood Suite V3
 
-Suite de 8 aplicaciones de escritorio para Windows orientadas al bienestar mental y la regulación emocional. Desarrollada en Python con CustomTkinter, basada en la identidad visual de [neuromood.com.ar](https://neuromood.com.ar).
+Suite de aplicaciones de escritorio para Windows orientadas al bienestar mental y la regulación emocional. Desarrollada en Python con CustomTkinter, basada en la identidad visual de [neuromood.com.ar](https://neuromood.com.ar).
+
+Disponible en dos ediciones:
+- **Suite paciente** — 7 apps independientes para uso clínico diario
+- **Hub Profesional** — panel de gestión de pacientes con sincronización en la nube (Supabase)
 
 ---
 
-## Aplicaciones
+## Aplicaciones — Suite Paciente
 
 ### 1. Termómetro Emocional
-Registro diario del estado emocional mediante un slider de 0 a 10 (valor inicial centrado en 5). Permite agregar una nota libre por cada registro, consultar el historial del día y exportar los datos en PDF con formato de tabla.
+Registro diario del estado emocional mediante un slider de 1 a 10. Permite agregar nota libre por registro, consultar historial del día, y exportar datos en PDF. Al registrar, sugiere actividades al checklist según el nivel de ánimo.
 
 ### 2. Visualizador de Evolución
-Gráficos de evolución emocional y conductual con tres períodos configurables:
-- **7 días** → vista diaria
-- **30 días** → agrupado por 4 semanas
-- **90 días** → agrupado por 3 meses
-
-Dos paneles independientes: estado emocional (línea + área) y activación conductual (barras apiladas por categoría). Exportación de gráficos en imagen.
+Gráficos de evolución emocional y conductual con tres períodos: 7 días (diario), 30 días (semanal) y 90 días (mensual). Panel de estado emocional (línea + área) y panel de activación conductual (barras por categoría). Exportación de gráficos en imagen.
 
 ### 3. Guía de Respiración
-Sesiones de respiración guiada con técnica **4-7-8** (inhalar 4 s · retener 7 s · exhalar 8 s). Indicador visual animado de fase, contador de ciclos completados, duración de sesión configurable (por defecto 3 minutos) y registro automático de cada sesión en la base de datos.
+Sesiones de respiración guiada con técnica 4-7-8 y otras técnicas configurables. Indicador visual animado, contador de ciclos, duración configurable y registro automático en base de datos.
 
-### 4. Asistente de Activación
-Sugiere actividades terapéuticas adaptadas al nivel de energía declarado (slider 0-10):
-- **Energía baja (0-3):** conductas de activación mínima (respiración, hidratación, contacto sensorial)
-- **Energía media (4-6):** actividades con mayor demanda (caminata, escritura, contacto social)
-- **Energía alta (7-10):** tareas cognitivas y proyectos más complejos
+### 4. Recordatorios de Bienestar
+Recordatorios con horarios programables. Se minimiza a la bandeja del sistema (pystray) y emite notificaciones sonoras en los horarios configurados.
 
-Incluye retroalimentación sonora mediante síntesis de tono (pygame + numpy).
+### 5. Checklist de Rutina
+Lista de tareas en tres secciones: Mañana, Tarde y Noche. Incluye:
+- Filtrado por nivel de ánimo (`animo_rango`: Bajo / Medio / Alto)
+- Tareas asignadas por el terapeuta vía Hub Profesional
+- **Pestaña Propuestas**: actividades del banco conductual filtradas por ánimo actual
+- Historial semanal navegable, estadísticas de 30 días, nota del día
+- Retroalimentación sonora al completar ítems
 
-### 5. Recordatorios de Bienestar
-Sistema de recordatorios con horarios programables. Se minimiza a la bandeja del sistema (pystray) y emite notificaciones sonoras en los horarios configurados. Persiste entre sesiones mediante SQLite.
+### 6. Registro de Pensamientos
+Registro estructurado para el trabajo con pensamientos automáticos: situación, emoción e intensidad, pensamiento automático, distorsión cognitiva (8 categorías), pensamiento alternativo, evidencias y creencia antes/después. Buscador de registros por texto.
 
-### 6. Checklist de Rutina
-Lista de tareas estructurada en tres secciones diarias: **Mañana**, **Tarde** y **Noche**. Historial semanal con navegación por semana. Retroalimentación sonora al completar ítems. Permite agregar, editar y eliminar tareas personalizadas.
+### 7. Temporizador de Actividades
+Temporizador con presets terapéuticos (Relajación, Cognitiva, Física, Social, Autocuidado). Presets configurables por el terapeuta vía Hub. Cuenta regresiva visual con indicador circular y registro histórico de sesiones.
 
-### 7. Registro de Pensamientos
-Registro estructurado en pasos para el trabajo con pensamientos automáticos:
-1. Descripción de la situación
-2. Emoción e intensidad
-3. Pensamiento automático
-4. Identificación de distorsión cognitiva (8 categorías: exageración, pensamiento dicotómico, catastrofización, etc.)
-5. Pensamiento alternativo
+---
 
-Incluye buscador de registros anteriores por texto.
+## Hub Profesional
 
-### 8. Temporizador de Actividades
-Temporizador con categorías terapéuticas (**Relajación, Cognitiva, Física, Social, Autocuidado**). Duración configurable, cuenta regresiva visual con indicador circular, y registro histórico de actividades completadas. Retroalimentación sonora al finalizar.
+Panel de gestión clínica con sincronización en la nube (Supabase). Acceso exclusivo mediante instalador Pro.
+
+**Funcionalidades:**
+- Gestión de pacientes: alta, baja, código de vinculación
+- Asignación de tareas al checklist del paciente con filtro de ánimo
+- Programación de recordatorios remotos
+- Visualización de progreso: checklist, termómetro, activación
+- **Herramientas de terapeuta:**
+  - Banco de actividades conductuales (editor de `activacion_actividades`)
+  - Plantillas de checklist (editor de `checklist_plantillas`)
+  - Editor de presets del temporizador
+  - Editor de pasos del Registro de Pensamientos
+
+---
+
+## Sincronización en la nube
+
+La suite Pro usa [Supabase](https://supabase.com) para sincronización bidireccional:
+- `sync_al_abrir()` — importa tareas y recordatorios asignados por el terapeuta
+- `verificar_asignaciones()` — polling periódico de nuevas asignaciones
+- `sync_inmediato_background()` — sube completados en background tras cada acción del paciente
+
+La clave anon pública y la URL del proyecto están en `shared/sync.py`. No se requiere configuración por parte del paciente — la sincronización es automática.
 
 ---
 
 ## Capturas de pantalla
 
-Las capturas de pantalla de cada aplicación se encuentran en el directorio `_doc_screenshots/`.
+Las capturas de cada aplicación están en `_doc_screenshots/`.
 
 ---
 
 ## Requisitos del sistema
 
 - Windows 10 / 11 (64-bit)
-- Python 3.10 o superior (solo para ejecución en modo desarrollo)
+- Python 3.10 o superior (solo para modo desarrollo)
 
 ---
 
 ## Instalación
 
-### Opción A — Ejecutable (usuarios finales)
+### Opción A — Ejecutable para paciente (Suite estándar)
 
-Ejecutar `dist/Instalar NeuroMood Suite.exe`. El instalador crea accesos directos en el escritorio y el menú de inicio para cada aplicación.
+Ejecutar `dist/Instalar NeuroMood Suite.exe`. Crea accesos directos en escritorio y menú de inicio.
 
 Para desinstalar: `dist/Desinstalar NeuroMood.exe`
 
-### Opción B — Modo desarrollo
+### Opción B — Ejecutable Pro (Hub Profesional)
+
+Ejecutar `dist/pro/Instalar NeuroMood Pro.exe`. Instala el Hub Profesional.
+
+Para desinstalar: `dist/pro/Desinstalar NeuroMood Pro.exe`
+
+### Opción C — Modo desarrollo
 
 ```bash
-# Clonar o copiar el directorio del proyecto
-# Instalar dependencias
 pip install -r requirements.txt
 
-# Ejecutar cualquier app individualmente
+# Apps paciente
 python apps/termometro/main.py
 python apps/visualizador/main.py
 python apps/respiracion/main.py
-python apps/activacion/main.py
 python apps/recordatorios/main.py
 python apps/checklist/main.py
 python apps/pensamientos/main.py
 python apps/temporizador/main.py
+
+# Hub Profesional
+python apps/hub_profesional/main.py
+
+# Previews de tema (herramientas de desarrollo)
+python _preview_neuromood.py   # nueva identidad visual
+python _preview_fusion.py      # fusión de identidades con comparador
 ```
 
 ---
 
 ## Compilación
 
-Para compilar todos los ejecutables:
-
 ```bat
+:: Compilar toda la suite paciente + Hub
 BUILD_ALL.bat
-```
 
-Para compilar solo el instalador:
-
-```bat
+:: Compilar instalador de la suite paciente
 BUILD_INSTALLER.bat
+
+:: Compilar instalador Pro
+BUILD_INSTALLER_PRO.bat
 ```
 
-Los ejecutables se generan en el directorio `dist/`. La compilación usa PyInstaller con los archivos `.spec` de cada app.
+Los ejecutables se generan en `dist/` (suite) y `dist/pro/` (Hub).
 
 ---
 
@@ -113,30 +139,56 @@ Los ejecutables se generan en el directorio `dist/`. La compilación usa PyInsta
 ```
 Neuromood V3/
 ├── apps/
-│   ├── activacion/          # Asistente de Activación
-│   ├── checklist/           # Checklist de Rutina
-│   ├── pensamientos/        # Registro de Pensamientos
-│   ├── recordatorios/       # Recordatorios de Bienestar
-│   ├── respiracion/         # Guía de Respiración
-│   ├── temporizador/        # Temporizador de Actividades
-│   ├── termometro/          # Termómetro Emocional
-│   └── visualizador/        # Visualizador de Evolución
+│   ├── activacion/              # Motor conductual (no app standalone)
+│   │   ├── motor.py             # Sugerencias de actividades por ánimo
+│   │   ├── terapeuta.py         # Editor del banco de actividades (Hub)
+│   │   ├── analisis.py          # Análisis de patrones conductuales
+│   │   └── perfil.py            # Perfil de preferencias del paciente
+│   ├── checklist/               # Checklist de Rutina
+│   │   ├── main.py
+│   │   ├── plantillas.py        # Plantillas de tareas
+│   │   └── editor_checklist.py  # Editor de plantillas (Hub)
+│   ├── hub_profesional/         # Hub Profesional
+│   │   ├── main.py
+│   │   └── editor_pensamientos.py
+│   ├── pensamientos/            # Registro de Pensamientos
+│   │   ├── main.py
+│   │   ├── ia.py                # Análisis asistido (Groq)
+│   │   └── editor_pensamientos.py
+│   ├── recordatorios/           # Recordatorios de Bienestar
+│   ├── respiracion/             # Guía de Respiración
+│   ├── temporizador/            # Temporizador de Actividades
+│   │   ├── main.py
+│   │   ├── presets.py           # Presets terapéuticos
+│   │   ├── editor_presets.py    # Editor de presets (Hub)
+│   │   └── sonido.py
+│   ├── termometro/              # Termómetro Emocional
+│   └── visualizador/            # Visualizador de Evolución
 ├── shared/
-│   ├── components.py        # Componentes UI reutilizables
-│   ├── db.py                # Gestión de base de datos SQLite
-│   ├── theme.py             # Sistema de diseño (colores, tipografía, layout)
-│   └── utils.py             # Funciones auxiliares
-├── dist/                    # Ejecutables compilados
-├── _doc_screenshots/        # Capturas de pantalla
-├── installer.py             # Instalador personalizado
-├── uninstaller.py           # Desinstalador
+│   ├── components.py            # Componentes UI reutilizables (HeaderFrame, CardFrame, …)
+│   ├── db.py                    # Base de datos SQLite + migraciones
+│   ├── theme.py                 # Tokens de diseño: colores, tipografía, layout
+│   ├── utils.py                 # Funciones auxiliares
+│   ├── sync.py                  # Sincronización Supabase (paciente ↔ terapeuta)
+│   └── identidad.py             # Identidad visual de marca
+├── _doc_screenshots/            # Capturas de pantalla para documentación
+├── _preview_neuromood.py        # Preview de la nueva identidad visual
+├── _preview_fusion.py           # Preview de la fusión de identidades (con comparador)
+├── _preview_light.py            # Preview del tema claro Notion
+├── dark-theme-tests.md          # Especificación del dark theme (neuromood.com.ar)
+├── white-theme-tests.md         # Especificación del white theme (neuromood.com.ar)
+├── notion-visual-identity.md    # Análisis de identidad visual Notion
+├── supabase_schema.sql          # Schema de tablas Supabase
+├── installer.py                 # Instalador suite paciente
+├── installer_pro.py             # Instalador Pro (Hub)
+├── uninstaller.py               # Desinstalador suite
+├── uninstaller_pro.py           # Desinstalador Pro
+├── NeuroMood_Suite_Manual.pdf   # Manual de usuario
 ├── requirements.txt
 ├── BUILD_ALL.bat
 ├── BUILD_INSTALLER.bat
-└── IDENTIDAD_VISUAL.md      # Sistema de diseño y branding
+└── BUILD_INSTALLER_PRO.bat
 ```
-
-Cada app es independiente y se ejecuta como proceso separado. Todas comparten la misma base de datos SQLite local y el módulo `shared/` para consistencia visual y de datos.
 
 ---
 
@@ -144,7 +196,8 @@ Cada app es independiente y se ejecuta como proceso separado. Todas comparten la
 
 | Tecnología | Uso |
 |---|---|
-| [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) | Interfaz gráfica (dark mode nativo) |
+| [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) | Interfaz gráfica con soporte dark/light mode |
+| [Supabase Python](https://github.com/supabase/supabase-py) | Sincronización en la nube (Hub Pro) |
 | [Pillow](https://python-pillow.org/) | Manejo de imágenes y logo |
 | [matplotlib](https://matplotlib.org/) | Gráficos del Visualizador |
 | [ReportLab](https://www.reportlab.com/) | Exportación a PDF |
@@ -158,18 +211,21 @@ Cada app es independiente y se ejecuta como proceso separado. Todas comparten la
 
 ## Diseño visual
 
-La suite sigue la identidad visual de neuromood.com.ar: **dark mode profesional** con fondo azul marino (`#0B1928`) y acento teal (`#1EC8D4`). Tipografía Segoe UI (equivalente Windows de Roboto). Modo claro disponible como alternativa.
+El sistema de diseño está centralizado en dos archivos:
 
-El sistema de diseño completo está documentado en [`IDENTIDAD_VISUAL.md`](IDENTIDAD_VISUAL.md).
+- **`shared/theme.py`** — tokens de color (`COLORS["dark"]` / `COLORS["light"]`), tipografía (`TYPOGRAPHY`) y layout (`LAYOUT`)
+- **`shared/components.py`** — componentes reutilizables: `HeaderFrame`, `CardFrame`, `BotonPrimario`, `BotonSecundario`, `NMToplevel`, etc.
+
+La identidad visual se documenta en `dark-theme-tests.md` y `white-theme-tests.md` (análisis completo de neuromood.com.ar). Las herramientas de preview (`_preview_*.py`) permiten visualizar variantes de tema sin modificar las apps.
 
 ---
 
 ## Base de datos
 
-Todas las apps comparten una única base de datos SQLite local almacenada en el directorio de datos del usuario (`%APPDATA%/NeuroMood/`). Las tablas se inicializan automáticamente al primer lanzamiento de cualquier aplicación.
+Base de datos SQLite local en `%APPDATA%/NeuroMood/nm_data.db`, compartida entre todas las apps. Las tablas se inicializan y migran automáticamente en el primer lanzamiento. El esquema de la capa Supabase (Hub Pro) está en `supabase_schema.sql`.
 
 ---
 
 ## Manual de usuario
 
-El manual completo en PDF se encuentra en [`NeuroMood_Suite_Manual.pdf`](NeuroMood_Suite_Manual.pdf).
+[`NeuroMood_Suite_Manual.pdf`](NeuroMood_Suite_Manual.pdf)

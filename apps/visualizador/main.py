@@ -15,7 +15,7 @@ from tkinter import filedialog
 import calendar
 
 from shared.theme import COLORS, TYPOGRAPHY, LAYOUT
-from shared.db import obtener_conexion, inicializar_tablas
+from shared.db import obtener_conexion, inicializar_tablas, guardar_config, leer_config
 from shared.components import (
     HeaderFrame, CardFrame, BotonPrimario, BotonSecundario,
     mostrar_acerca_de, obtener_ruta_recurso, obtener_icono_solido, mostrar_mensaje,
@@ -43,7 +43,7 @@ class VisualizadorApp(ctk.CTk):
         super().__init__()
 
         inicializar_tablas()
-        self.modo = "dark"
+        self.modo = leer_config("theme", "dark")
         self.periodo = 7
         self._hover_id = None
 
@@ -62,6 +62,7 @@ class VisualizadorApp(ctk.CTk):
 
         self._centrar_ventana()
         self._construir_ui()
+        self.after(1000, self._poll_tema)
 
     def _centrar_ventana(self):
         self._prev_state = "zoomed"
@@ -115,15 +116,15 @@ class VisualizadorApp(ctk.CTk):
         controles.pack(fill="x", padx=LAYOUT["padding_container"], pady=(14, 0))
         controles.pack_propagate(False)
 
-        for texto, dias in [("7 días", 7), ("30 días", 30), ("3 meses", 90), ("Todo", None)]:
+        for texto, dias in [("7 días", 7), ("30 días", 30), ("Todo", None)]:
             activo = dias == self.periodo
             ctk.CTkButton(
                 controles, text=texto, height=34,
-                fg_color=colores["accent"] if activo else colores["bg_hover"],
-                hover_color=colores["accent_hover"],
-                text_color=colores["text_on_accent"] if activo else colores["text_primary"],
+                fg_color=("#4A7EA5" if self.modo == "light" else colores["accent"]) if activo else ("#B5D0E8" if self.modo == "light" else colores["bg_hover"]),
+                hover_color=("#3A6E95" if self.modo == "light" else colores["accent_hover"]) if activo else ("#9ABDD8" if self.modo == "light" else colores["accent_hover"]),
+                text_color=(colores["text_on_accent"] if activo else "#1E4D78") if self.modo == "light" else colores["text_on_accent"],
                 corner_radius=LAYOUT["radius_button"],
-                font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_body"]),
+                font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_body"], "bold"),
                 command=lambda d=dias: self._cambiar_periodo(d)
             ).pack(side="left", padx=4)
 
@@ -189,8 +190,7 @@ class VisualizadorApp(ctk.CTk):
         card_grafico = CardFrame(parent, modo=self.modo)
         card_grafico.pack(fill="both", expand=True)
 
-        subtitulos = {7: "Últimos 7 días", 30: "Últimos 30 días",
-                      90: "Últimos 3 meses", None: "Historial completo"}
+        subtitulos = {7: "Últimos 7 días", 30: "Últimos 30 días", None: "Historial completo"}
         header_g = ctk.CTkFrame(card_grafico, fg_color="transparent")
         header_g.pack(fill="x", padx=LAYOUT["padding_card"], pady=(LAYOUT["padding_card"], 0))
         ctk.CTkLabel(
@@ -632,9 +632,35 @@ class VisualizadorApp(ctk.CTk):
         if estado == "zoomed":
             self.state("zoomed")
 
+    def _poll_tema(self):
+        try:
+            modo_config = leer_config("theme", self.modo)
+            if modo_config != self.modo:
+                self._aplicar_tema_externo(modo_config)
+        except Exception:
+            pass
+        try:
+            self.after(1000, self._poll_tema)
+        except Exception:
+            pass
+
+    def _aplicar_tema_externo(self, nuevo_modo):
+        if nuevo_modo == self.modo:
+            return
+        estado = self.state()
+        self.modo = nuevo_modo
+        hwnd = _freeze_window(self)
+        self._construir_ui()
+        self.update_idletasks()
+        _unfreeze_window(hwnd)
+        aplicar_captionbar_flush(self, self.modo)
+        if estado == "zoomed":
+            self.state("zoomed")
+
     def _toggle_modo(self):
         estado = self.state()
         self.modo = "light" if self.modo == "dark" else "dark"
+        guardar_config("theme", self.modo)
         hwnd = _freeze_window(self)
         self._construir_ui()
         self.update_idletasks()

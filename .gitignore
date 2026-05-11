@@ -26,3 +26,12 @@ env/
 # Windows
 Thumbs.db
 Desktop.ini
+
+# Sesión Claude Code
+.claude/
+
+# Claves y credenciales locales
+*API*.txt
+*api*.txt
+*groq*.txt
+*secret*.txt

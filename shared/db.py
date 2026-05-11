@@ -19,23 +19,12 @@ def obtener_conexion() -> sqlite3.Connection:
     return conn
 
 
-def _migrar_termometro_0_10(conn):
-    row = conn.execute(
-        "SELECT sql FROM sqlite_master WHERE type='table' AND name='termometro'"
-    ).fetchone()
-    if row and "BETWEEN 1 AND 10" in row["sql"]:
-        conn.executescript("""
-            ALTER TABLE termometro RENAME TO termometro_old;
-            CREATE TABLE termometro (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                fecha TEXT NOT NULL,
-                hora TEXT NOT NULL,
-                puntaje INTEGER NOT NULL CHECK(puntaje BETWEEN 0 AND 10),
-                nota TEXT DEFAULT ''
-            );
-            INSERT INTO termometro SELECT * FROM termometro_old;
-            DROP TABLE termometro_old;
-        """)
+def _migrar_puntaje_min_1(conn):
+    try:
+        conn.execute("UPDATE termometro SET puntaje = 1 WHERE puntaje < 1")
+        conn.commit()
+    except Exception:
+        pass
 
 
 def _migrar_pensamientos_0_10(conn):
@@ -109,7 +98,7 @@ def inicializar_tablas():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             fecha TEXT NOT NULL,
             hora TEXT NOT NULL,
-            puntaje INTEGER NOT NULL CHECK(puntaje BETWEEN 0 AND 10),
+            puntaje INTEGER NOT NULL CHECK(puntaje BETWEEN 1 AND 10),
             nota TEXT DEFAULT ''
         );
 
@@ -186,15 +175,155 @@ def inicializar_tablas():
             fecha TEXT PRIMARY KEY,
             total_tareas INTEGER NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS recordatorios_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fecha TEXT NOT NULL,
+            hora TEXT NOT NULL,
+            mensaje TEXT NOT NULL,
+            rec_id INTEGER,
+            cerrado INTEGER NOT NULL DEFAULT 0
+        );
+
+        CREATE TABLE IF NOT EXISTS mensajes_biblioteca (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            categoria TEXT NOT NULL,
+            mensaje TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS activacion_actividades (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            descripcion TEXT NOT NULL,
+            categoria TEXT NOT NULL DEFAULT 'Autocuidado',
+            dificultad INTEGER NOT NULL DEFAULT 1 CHECK(dificultad BETWEEN 1 AND 3),
+            duracion_min INTEGER NOT NULL DEFAULT 10,
+            beneficio TEXT DEFAULT '',
+            animo_min INTEGER NOT NULL DEFAULT 0,
+            animo_max INTEGER NOT NULL DEFAULT 10,
+            activa INTEGER NOT NULL DEFAULT 1,
+            es_custom INTEGER NOT NULL DEFAULT 0
+        );
+
+        CREATE TABLE IF NOT EXISTS activacion_config (
+            clave TEXT PRIMARY KEY,
+            valor TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS activacion_perfil (
+            clave TEXT PRIMARY KEY,
+            valor TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS timer_presets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            descripcion TEXT DEFAULT '',
+            categoria TEXT DEFAULT '',
+            duracion_seg INTEGER NOT NULL DEFAULT 300,
+            orden INTEGER NOT NULL DEFAULT 0,
+            es_custom INTEGER NOT NULL DEFAULT 0,
+            animo_rango TEXT DEFAULT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS checklist_plantillas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            descripcion TEXT NOT NULL,
+            seccion TEXT NOT NULL CHECK(seccion IN ('manana', 'tarde', 'noche')),
+            categoria TEXT DEFAULT 'Logro',
+            dificultad INTEGER DEFAULT 1,
+            orden INTEGER NOT NULL DEFAULT 0,
+            es_custom INTEGER NOT NULL DEFAULT 0
+        );
+
+        CREATE TABLE IF NOT EXISTS checklist_notas_dia (
+            fecha TEXT PRIMARY KEY,
+            nota TEXT NOT NULL DEFAULT ''
+        );
     """)
 
     conn.commit()
-    _migrar_termometro_0_10(conn)
+    _migrar_puntaje_min_1(conn)
     _migrar_pensamientos_0_10(conn)
     _migrar_activacion_0_10(conn)
     _migrar_checklist_sin_cascade(conn)
+    try:
+        conn.execute("ALTER TABLE recordatorios ADD COLUMN fecha_disparo TEXT DEFAULT NULL")
+        conn.commit()
+    except Exception:
+        pass
+    _migrar_pensamientos_campos_tcc(conn)
     conn.commit()
+    try:
+        conn.execute("ALTER TABLE actividades_temporizador ADD COLUMN notas TEXT DEFAULT ''")
+        conn.commit()
+    except Exception:
+        pass
+    try:
+        conn.execute("ALTER TABLE checklist_tareas ADD COLUMN categoria TEXT DEFAULT 'Logro'")
+        conn.commit()
+    except Exception:
+        pass
+    try:
+        conn.execute("ALTER TABLE checklist_tareas ADD COLUMN dificultad INTEGER DEFAULT 1")
+        conn.commit()
+    except Exception:
+        pass
+    try:
+        conn.execute("ALTER TABLE checklist_tareas ADD COLUMN origen TEXT DEFAULT 'manual'")
+        conn.commit()
+    except Exception:
+        pass
+    try:
+        conn.execute("ALTER TABLE checklist_tareas ADD COLUMN animo_rango TEXT DEFAULT NULL")
+        conn.commit()
+    except Exception:
+        pass
+    _migrar_activacion_actividades_animo(conn)
+    try:
+        conn.execute("ALTER TABLE timer_presets ADD COLUMN animo_rango TEXT DEFAULT NULL")
+        conn.commit()
+    except Exception:
+        pass
     conn.close()
+
+
+def _migrar_pensamientos_campos_tcc(conn):
+    nuevas = [
+        ("evidencia_favor",    "TEXT DEFAULT ''"),
+        ("evidencia_contra",   "TEXT DEFAULT ''"),
+        ("creencia_antes",     "INTEGER DEFAULT 50"),
+        ("creencia_despues",   "INTEGER DEFAULT 50"),
+        ("emocion_resultante", "TEXT DEFAULT ''"),
+        ("reflexion_ia",       "TEXT DEFAULT ''"),
+    ]
+    for col, typedef in nuevas:
+        try:
+            conn.execute(f"ALTER TABLE pensamientos ADD COLUMN {col} {typedef}")
+            conn.commit()
+        except Exception:
+            pass
+
+
+def _migrar_activacion_actividades_animo(conn):
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='activacion_actividades'"
+    ).fetchone()
+    if not row:
+        return
+    sql = row["sql"]
+    if "energia_min" in sql:
+        try:
+            conn.execute("ALTER TABLE activacion_actividades RENAME COLUMN energia_min TO animo_min")
+            conn.commit()
+        except Exception:
+            pass
+    if "energia_max" in sql:
+        try:
+            conn.execute("ALTER TABLE activacion_actividades RENAME COLUMN energia_max TO animo_max")
+            conn.commit()
+        except Exception:
+            pass
 
 
 def guardar_config(clave: str, valor: str):

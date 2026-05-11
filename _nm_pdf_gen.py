@@ -30,15 +30,12 @@ CH = PAGE_H - MT - MB
 
 NAVY      = HexColor('#0B1928')
 NAVY_SEC  = HexColor('#0D2137')
+SURF      = HexColor('#112740')
 TEAL      = HexColor('#1EC8D4')
-TEAL_D    = HexColor('#0BA8B5')
 WHITE     = HexColor('#FFFFFF')
-DARK_TEXT = HexColor('#12253A')
-MED_TEXT  = HexColor('#3A5570')
+TEXT_BODY = HexColor('#E8EEF4')
 LIGHT     = HexColor('#8BA4BE')
 BORDER_C  = HexColor('#1A3050')
-ROW_BG    = HexColor('#F2F6FA')
-SEP       = HexColor('#DDE8F2')
 
 F = {"r": "Helvetica", "b": "Helvetica-Bold", "i": "Helvetica-Oblique"}
 
@@ -60,15 +57,15 @@ S = {}
 
 
 def _build_styles():
-    S["body"]   = ParagraphStyle("body",   fontName=F["r"], fontSize=10.5, textColor=DARK_TEXT, leading=16, spaceAfter=4)
-    S["bold"]   = ParagraphStyle("bold",   fontName=F["b"], fontSize=10.5, textColor=DARK_TEXT, leading=16)
-    S["head"]   = ParagraphStyle("head",   fontName=F["b"], fontSize=12,   textColor=TEAL_D,    spaceBefore=10, spaceAfter=4)
+    S["body"]   = ParagraphStyle("body",   fontName=F["r"], fontSize=10.5, textColor=TEXT_BODY, leading=16, spaceAfter=4)
+    S["bold"]   = ParagraphStyle("bold",   fontName=F["b"], fontSize=10.5, textColor=WHITE,     leading=16)
+    S["head"]   = ParagraphStyle("head",   fontName=F["b"], fontSize=12,   textColor=TEAL,      spaceBefore=10, spaceAfter=4)
     S["cap"]    = ParagraphStyle("cap",    fontName=F["i"], fontSize=9,    textColor=LIGHT,     alignment=TA_CENTER, spaceAfter=4)
-    S["step_n"] = ParagraphStyle("step_n", fontName=F["b"], fontSize=10.5, textColor=TEAL_D)
-    S["step_t"] = ParagraphStyle("step_t", fontName=F["r"], fontSize=10.5, textColor=DARK_TEXT, leading=16)
-    S["req_l"]  = ParagraphStyle("req_l",  fontName=F["b"], fontSize=10,   textColor=MED_TEXT)
-    S["req_v"]  = ParagraphStyle("req_v",  fontName=F["r"], fontSize=10,   textColor=DARK_TEXT, leading=14)
-    S["note"]   = ParagraphStyle("note",   fontName=F["i"], fontSize=9.5,  textColor=MED_TEXT,  leading=14)
+    S["step_n"] = ParagraphStyle("step_n", fontName=F["b"], fontSize=10.5, textColor=TEAL)
+    S["step_t"] = ParagraphStyle("step_t", fontName=F["r"], fontSize=10.5, textColor=TEXT_BODY, leading=16)
+    S["req_l"]  = ParagraphStyle("req_l",  fontName=F["b"], fontSize=10,   textColor=LIGHT)
+    S["req_v"]  = ParagraphStyle("req_v",  fontName=F["r"], fontSize=10,   textColor=TEXT_BODY, leading=14)
+    S["note"]   = ParagraphStyle("note",   fontName=F["i"], fontSize=9.5,  textColor=LIGHT,     leading=14)
 
 
 # ── Page callbacks ─────────────────────────────────────────────────────────
@@ -118,6 +115,10 @@ def _on_cover(c, doc):
 
 def _on_content(c, doc):
     c.saveState()
+    c.setFillColor(NAVY)
+    c.rect(0, 0, PAGE_W, PAGE_H, fill=1, stroke=0)
+    c.setFillColor(TEAL)
+    c.rect(0, PAGE_H - 5, PAGE_W, 5, fill=1, stroke=0)
     c.setStrokeColor(TEAL)
     c.setLineWidth(1.5)
     c.line(ML, PAGE_H - 46, PAGE_W - MR, PAGE_H - 46)
@@ -125,7 +126,7 @@ def _on_content(c, doc):
     c.setFillColor(LIGHT)
     c.drawString(ML, PAGE_H - 38, "NeuroMood Suite  —  Manual de Usuario")
     c.drawRightString(PAGE_W - MR, PAGE_H - 38, "neuromood.com.ar")
-    c.setStrokeColor(HexColor('#DDE8F2'))
+    c.setStrokeColor(BORDER_C)
     c.setLineWidth(1)
     c.line(ML, 38, PAGE_W - MR, 38)
     c.setFont(F["r"], 8.5)
@@ -154,7 +155,7 @@ class SectionHeader(Flowable):
 
     def draw(self):
         c = self.canv
-        c.setFillColor(NAVY_SEC)
+        c.setFillColor(SURF)
         c.rect(0, 0, self.width, self.height, fill=1, stroke=0)
         c.setFillColor(TEAL)
         c.rect(0, 0, 4, self.height, fill=1, stroke=0)
@@ -242,17 +243,17 @@ def _req_table(rows):
             Paragraph(label, S["req_l"]),
             Paragraph(val,   S["req_v"]),
         ])
-        bg = ROW_BG if i % 2 == 0 else WHITE
+        bg = NAVY_SEC if i % 2 == 0 else SURF
         ts += [
             ("BACKGROUND", (0, i), (-1, i), bg),
             ("TOPPADDING",    (0, i), (-1, i), 7),
             ("BOTTOMPADDING", (0, i), (-1, i), 7),
             ("LEFTPADDING",   (0, i), (-1, i), 10),
             ("RIGHTPADDING",  (0, i), (-1, i), 6),
-            ("LINEBELOW",     (0, i), (-1, i), 0.5, SEP),
+            ("LINEBELOW",     (0, i), (-1, i), 0.5, BORDER_C),
         ]
     ts += [
-        ("BOX", (0, 0), (-1, -1), 1, SEP),
+        ("BOX", (0, 0), (-1, -1), 1, BORDER_C),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
     ]
     return Table(data, colWidths=[CW * 0.38, CW * 0.62],
@@ -354,7 +355,7 @@ def _build_installer():
         "<b>Ejecutá el instalador</b> — Hacé doble clic en NM_Installer.exe. Si Windows solicita permiso UAC, hacé clic en Sí para continuar.",
         "<b>Seleccioná las aplicaciones</b> — Elegí cuáles herramientas instalar. El Visualizador de Evolución requiere el Termómetro Emocional: seleccionar uno activa el otro automáticamente.",
         "<b>Elegí la carpeta de instalación</b> — La carpeta predeterminada es C:\\Users\\[usuario]\\NeuroMood. Podés cambiarla con el botón Examinar.",
-        "<b>Completá la instalación</b> — Hacé clic en Instalar. Al finalizar, elegí si crear accesos directos en el Escritorio.",
+        "<b>Completá la instalación</b> — Hacé clic en Instalar. Al finalizar, elegí si crear accesos directos en el Escritorio o en el Menú de Inicio.",
     ]
     fl.extend(_steps(steps))
     return fl
@@ -434,7 +435,7 @@ APPS_DATA = [
     },
     {
         "name": "Visualizador de Evolución",
-        "tagline": "Gráficos de tendencia emocional basados en el Termómetro",
+        "tagline": "Gráficos de tu evolución emocional",
         "screenshot": "visualizador.png",
         "description": (
             "Genera gráficos interactivos con la evolución emocional registrada en el "
@@ -451,14 +452,15 @@ APPS_DATA = [
     },
     {
         "name": "Temporizador de Actividades",
-        "tagline": "Cronómetro con categorías para registrar sesiones terapéuticas",
+        "tagline": "Cronómetro con categorías para registrar actividades terapéuticas",
         "screenshot": "temporizador.png",
         "description": (
             "Cronómetro con categorías para delimitar y registrar actividades terapéuticas "
             "en el tiempo. Admite duraciones predefinidas (5, 10, 15, 20 y 30 minutos) o "
             "personalizadas. Guarda automáticamente cada sesión completada con nombre, "
-            "categoría y duración real. Puede enviarse a la bandeja del sistema mientras "
-            "el temporizador está en ejecución y emite una alerta visual y sonora al finalizar."
+            "categoría y duración real. Puede funcionar en segundo plano: minimizando la ventana "
+            "o cerrándola para enviarla a la bandeja del sistema. Al vencer el tiempo, la ventana "
+            "se restaura automáticamente con una alerta visual y sonora."
         ),
         "instructions": [
             "Ingresá el nombre de la actividad en el campo de texto.",
@@ -466,7 +468,7 @@ APPS_DATA = [
             "Elegí la duración con los botones rápidos (5'–30') o ingresá un valor personalizado en el campo <b>min</b>.",
             "Presioná <b>Iniciar</b> para arrancar el temporizador.",
             "Usá <b>Pausar / Reanudar</b> para interrumpir la sesión. Al finalizar, el registro se guarda automáticamente.",
-            "Cerrá la ventana para enviar el temporizador a la bandeja del sistema mientras seguís usando la computadora. Al vencer el tiempo, la ventana se restaura automáticamente en el mismo estado (maximizada o normal) con una alerta visual y sonora.",
+            "Podés minimizar la ventana para continuar usando la computadora sin interrumpir la cuenta regresiva. También podés cerrar la ventana: el temporizador pasa a la bandeja del sistema. En ambos casos, al vencer el tiempo, la ventana se restaura automáticamente en el mismo estado (maximizada o normal) con una alerta visual y sonora.",
         ],
     },
     {
@@ -492,33 +494,42 @@ APPS_DATA = [
         "screenshot": "checklist.png",
         "description": (
             "Organizador de tareas cotidianas dividido en secciones de Mañana, Tarde y "
-            "Noche con seguimiento de progreso diario y semanal. Permite agregar "
-            "tareas personalizadas a cada sección y consultar el cumplimiento en un "
-            "calendario semanal con vista por día."
+            "Noche con seguimiento de progreso diario y semanal. Las tareas se crean una "
+            "sola vez y persisten automáticamente día a día: cada nuevo día la lista aparece "
+            "desmarcada y lista para reutilizar, sin necesidad de volver a cargarlas. Cada "
+            "tildado queda registrado en el historial de ese día, lo que permite consultar "
+            "el nivel de cumplimiento en el calendario semanal."
         ),
         "instructions": [
             "Seleccioná la sección del día: Mañana, Tarde o Noche.",
-            "Ingresá el nombre de una tarea y presioná el botón <b>+</b> para agregarla.",
-            "Marcá cada tarea como completada tildando la casilla correspondiente.",
-            "Consultá el progreso del día y el seguimiento semanal en la parte inferior.",
+            "Ingresá el nombre de una tarea y presioná <b>+</b> para agregarla. Solo necesitás hacerlo una vez — la tarea permanece disponible todos los días.",
+            "Marcá cada tarea como completada tildando su casilla. El progreso se guarda automáticamente en el historial de ese día.",
+            "Al día siguiente, la lista aparece desmarcada y lista para reutilizar. Si ya no necesitás una tarea, eliminala con el botón <b>Cancelar</b> que aparece a su derecha.",
+            "Consultá el progreso semanal en el gráfico de barras. Tocá cualquier barra para ver el detalle de tareas completadas de ese día.",
         ],
     },
     {
         "name": "Recordatorios de Bienestar",
-        "tagline": "Notificaciones personalizadas con horarios y días específicos",
+        "tagline": "Notificaciones personalizadas con ciclo diario automático.",
         "screenshot": "recordatorios.png",
         "description": (
-            "Sistema de recordatorios personalizados con horarios y días específicos de "
-            "la semana. Al cerrar la ventana continúa activo en la bandeja del sistema y "
-            "emite alertas visuales y sonoras en los horarios configurados. Al dispararse "
-            "un recordatorio, la ventana se restaura automáticamente en el mismo estado "
-            "en que estaba. Soporta múltiples recordatorios con estado activo/inactivo."
+            "Sistema de recordatorios personalizados para reforzar hábitos y rutinas de "
+            "bienestar. Cada recordatorio se configura con hora, mensaje y días específicos "
+            "de la semana. Al activarse, emite una alerta visual y sonora, restaura la ventana "
+            "automáticamente y pasa al estado <i>Inactivo</i>. Al día siguiente, si ese día "
+            "figura entre los configurados, el recordatorio se reactiva solo — sin intervención "
+            "manual. Incluye modo silencio por rango horario, pausa global de todos los "
+            "recordatorios y opción para iniciar automáticamente con Windows en la bandeja del "
+            "sistema, garantizando que las notificaciones lleguen aunque la app no esté abierta."
         ),
         "instructions": [
-            "Presioná <b>+ Nuevo recordatorio</b> para crear una entrada.",
-            "Ingresá el mensaje, seleccioná la hora y los días de la semana activos.",
-            "Activá o desactivá el recordatorio con el interruptor correspondiente.",
-            "Cerrá la ventana para enviarla a la bandeja del sistema; seguirá monitoreando en segundo plano. Al dispararse un recordatorio, la ventana se restaura automáticamente en el mismo estado (maximizada o normal).",
+            "Completá el campo <b>Hora</b> (formato HH:MM) y escribí el <b>Mensaje</b> que querés recibir. La hora debe ser posterior a la actual para que el recordatorio pueda activarse hoy.",
+            "Seleccioná los <b>días de la semana</b> en que debe activarse. Podés elegir uno o varios días.",
+            "Presioná <b>Agregar recordatorio</b>. El nuevo recordatorio aparecerá en la lista con estado <i>Activo</i>.",
+            "En el horario configurado, la app emite una alerta sonora y visual y el recordatorio pasa automáticamente al estado <i>Inactivo</i>. Al día siguiente, si corresponde al día configurado, se reactiva solo sin que tengas que hacer nada.",
+            "Para silenciar todos los recordatorios temporalmente, usá <b>Pausar todo</b> en la barra inferior. Para silenciarlos en un rango horario fijo (por ejemplo, de noche), ingresá las horas en la sección <b>Modo silencio</b> y presioná <b>Guardar horario</b>.",
+            "Si cerrás la ventana con el botón <b>X</b> (cerrar ventana) y hay recordatorios activos, la app pasa a la bandeja del sistema y sigue monitoreando. Si todos están desactivados, la app se cierra completamente. Para cerrar definitivamente en cualquier momento sin importar el estado, usá el botón <b>Cerrar</b> de la barra inferior.",
+            "Para recibir recordatorios aunque no abras la app manualmente, activá el interruptor <b>Iniciar con Windows</b> en la barra inferior. Con solo tocarlo, la configuración queda guardada — no hace falta cerrar ni reiniciar la app. A partir del próximo inicio de Windows, la app arrancará automáticamente en la bandeja del sistema en segundo plano, sin mostrar ninguna ventana. Para desactivarlo, tocá el interruptor nuevamente.",
         ],
     },
     {

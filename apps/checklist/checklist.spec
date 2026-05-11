@@ -11,7 +11,10 @@ a = Analysis(
         ('..\\..\\NM_icon.ico', '.'),
         ('..\\..\\shared', 'shared'),
     ],
-    hiddenimports=[],
+    hiddenimports=[
+        'supabase', 'gotrue', 'storage3', 'postgrest',
+        'httpx', 'httpcore', 'anyio', 'sniffio', 'certifi', 'h11',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

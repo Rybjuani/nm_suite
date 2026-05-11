@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 
 import customtkinter as ctk
-from PIL import Image, ImageTk
+from PIL import Image
 
 BG_PRIMARY   = "#0B1928"
 BG_SECONDARY = "#0D2137"
@@ -332,7 +332,7 @@ class DesinstaladorNeuroMood(ctk.CTk):
             fg_color=ACCENT,
             hover_color=ACCENT_HOVER,
             border_color=BORDER,
-            checkmark_color=BG_PRIMARY,
+            checkmark_color="#FFFFFF",
         ).pack(anchor="w", pady=(0, 20))
 
         btn_row = ctk.CTkFrame(self.body, fg_color="transparent")
@@ -340,8 +340,8 @@ class DesinstaladorNeuroMood(ctk.CTk):
 
         ctk.CTkButton(
             btn_row, text="Cancelar", width=110, height=34,
-            fg_color="transparent", border_width=1, border_color=BORDER,
-            text_color=TEXT_SEC, hover_color=BG_SURFACE, font=("Segoe UI", 12),
+            fg_color="transparent", border_width=2, border_color=ACCENT,
+            text_color=ACCENT, hover_color=BG_SURFACE, font=("Segoe UI", 12),
             command=self.destroy,
         ).pack(side="left")
 

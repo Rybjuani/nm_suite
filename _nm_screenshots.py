@@ -127,11 +127,9 @@ def capture_app(app_id, script_rel, frag, wait=5.0, size=(960, 680)):
             proc.kill()
         return None
 
-    # Restaurar desde zoomed y fijar tamano
-    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-    time.sleep(0.45)
-    _set_size_centered(hwnd, size[0], size[1])
-    time.sleep(0.55)
+    # Maximizar ventana
+    win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
+    time.sleep(0.6)
     win32gui.SetForegroundWindow(hwnd)
     time.sleep(0.45)
 
