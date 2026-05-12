@@ -383,6 +383,23 @@ class InstaladorPro(ctk.CTk):
             except Exception:
                 pass
 
+            # Copiar .env a %APPDATA%\NeuroMoodPro\ para que HubProfesional.exe lo encuentre
+            appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
+            env_dir = os.path.join(appdata, "NeuroMoodPro")
+            os.makedirs(env_dir, exist_ok=True)
+            env_src = recurso(".env")
+            if os.path.exists(env_src):
+                try:
+                    import ctypes as _ct2
+                    env_dest = os.path.join(env_dir, ".env")
+                    shutil.copy2(env_src, env_dest)
+                    _ct2.windll.kernel32.SetFileAttributesW(env_dest, 0x2)
+                    self._log("  Configuracion de red copiada", SUCCESS)
+                except Exception as e:
+                    self._log(f"  Config red: {e}", WARNING_C)
+            else:
+                self._log("  Sin .env bundleado — configurar credenciales manualmente", WARNING_C)
+
             self._registrar_windows(install_dir)
             self._set_progress(1.0, "Completado.")
             self._log("  ¡Hub Profesional instalado correctamente!", SUCCESS)

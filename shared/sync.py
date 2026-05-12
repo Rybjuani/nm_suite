@@ -243,6 +243,47 @@ def _importar_recordatorios_asignados(sb, patient_id: str):
     conn.close()
 
 
+# ── Helpers ──────────────────────────────────────────────────────────────────
+
+def _upsert_paciente(sb, pid: str, nombre: str, pwd: str, install_code: str):
+    """Registra/actualiza al paciente en Supabase.
+
+    Intenta primero con todos los campos opcionales.
+    Si Supabase rechaza columnas que aun no existen (schema viejo),
+    reintenta con solo los campos basicos garantizados.
+    """
+    payload_full = {
+        "patient_id":   pid,
+        "patient_name": nombre,
+        "pwd":          pwd,
+        "install_code": install_code,
+    }
+    payload_min = {
+        "patient_id":   pid,
+        "patient_name": nombre,
+        "pwd":          pwd,
+    }
+    try:
+        sb.table("patients").upsert(payload_full).execute()
+        return
+    except Exception as e:
+        err = str(e)
+        # Column not found — schema incompleto, reintentar sin columna
+        if "install_code" in err or "PGRST204" in err:
+            try:
+                sb.table("patients").upsert(payload_min).execute()
+                return
+            except Exception:
+                pass
+        # RLS activo — el schema SQL no se ejecuto completo
+        if "42501" in err or "row-level security" in err:
+            raise RuntimeError(
+                "RLS activo en tabla 'patients'. "
+                "Ejecutar supabase_schema.sql en el dashboard de Supabase."
+            )
+        raise
+
+
 # ── Sync completo ─────────────────────────────────────────────────────────────
 
 def sync_completo(patient_id: str = None, nombre: str = None) -> bool:
@@ -257,10 +298,7 @@ def sync_completo(patient_id: str = None, nombre: str = None) -> bool:
     try:
         pwd = leer_config("patient_pwd", "")
         install_code = leer_config("install_code", "")
-        sb.table("patients").upsert({
-            "patient_id": pid, "patient_name": nombre, "pwd": pwd,
-            "install_code": install_code,
-        }).execute()
+        _upsert_paciente(sb, pid, nombre, pwd, install_code)
 
         # Desde la última semana (solapamos para no perder datos)
         desde = (datetime.now() - timedelta(days=_DAYS_BETWEEN_SYNC + 1)).strftime("%Y-%m-%d")
@@ -388,10 +426,7 @@ def sync_inmediato():
     try:
         pwd = leer_config("patient_pwd", "")
         install_code = leer_config("install_code", "")
-        sb.table("patients").upsert({
-            "patient_id": pid, "patient_name": nombre, "pwd": pwd,
-            "install_code": install_code,
-        }).execute()
+        _upsert_paciente(sb, pid, nombre, pwd, install_code)
         _exportar_animo(sb, pid, desde)
         _exportar_respiracion(sb, pid, desde)
         _exportar_pensamientos(sb, pid, desde)

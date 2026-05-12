@@ -9,6 +9,7 @@ a = Analysis(
         ('NM_icon.ico',                                 '.'),
         ('no_symbol.ico',                               '.'),
         ('LOGO.png',                                    '.'),
+        ('.env',                                        '.'),   # copiado a %APPDATA%\NeuroMoodPro\
         ('dist/pro/HubProfesional.exe',                 'pro'),
         ('dist/pro/Desinstalar NeuroMood Pro.exe',      'pro'),
     ],

@@ -468,17 +468,20 @@ class InstaladorNeuroMood(ctk.CTk):
         self._progress_lbl.configure(text=t)
 
     def _registrar_identidad_paciente(self):
-        """Guarda patient_id, patient_name y patient_pwd en la DB de NeuroMood."""
+        """Guarda identidad en DB local, copia .env a AppData y registra en Supabase."""
         nombre = self.nombre_paciente.get().strip()
         pwd = self.password_paciente.get()
         if not nombre or not pwd:
             return
-        # Usar la misma función canónica de identidad.py — garantiza IDs coherentes
+
         from shared.identidad import generar_patient_id
         pid = generar_patient_id(nombre, pwd, self._codigo_instalacion)
+
         db_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "NeuroMood")
         os.makedirs(db_dir, exist_ok=True)
         db_path = os.path.join(db_dir, "nm_data.db")
+
+        # 1. Guardar identidad en DB local
         try:
             conn = sqlite3.connect(db_path)
             conn.execute(
@@ -496,8 +499,53 @@ class InstaladorNeuroMood(ctk.CTk):
                 )
             conn.commit()
             conn.close()
+            self._log("  Identidad guardada", SUCCESS)
         except Exception as e:
-            self._log(f"  Advertencia: no se pudo guardar identidad ({e})", WARNING_C)
+            self._log(f"  Advertencia: identidad no guardada ({e})", WARNING_C)
+
+        # 2. Copiar .env a %APPDATA%\NeuroMood\ para que el .exe pueda leerlo
+        #    config.py busca el .env ahi primero en contexto frozen.
+        env_dest = os.path.join(db_dir, ".env")
+        env_src = recurso(".env")  # bundleado en el instalador
+        if os.path.exists(env_src):
+            try:
+                import shutil as _sh
+                _sh.copy2(env_src, env_dest)
+                # Ocultar el archivo (no molestar al usuario)
+                try:
+                    import ctypes as _ct
+                    _ct.windll.kernel32.SetFileAttributesW(env_dest, 0x2)
+                except Exception:
+                    pass
+                self._log("  Configuracion de red copiada", SUCCESS)
+            except Exception as e:
+                self._log(f"  Advertencia: configuracion de red ({e})", WARNING_C)
+        else:
+            self._log("  Sin configuracion de red (.env no bundleado)", WARNING_C)
+
+        # 3. Registrar paciente en Supabase inmediatamente
+        #    Asi el terapeuta puede verlo en el Hub sin esperar al primer sync
+        try:
+            # config.py ya encuentra el .env que acabamos de copiar
+            import importlib, sys as _sys
+            # Recargar config para que tome el .env recien copiado
+            if "shared.config" in _sys.modules:
+                importlib.reload(_sys.modules["shared.config"])
+            from shared.config import supabase_url, supabase_key
+            from supabase import create_client
+            url = supabase_url()
+            key = supabase_key()
+            if url and key:
+                sb = create_client(url, key)
+                sb.table("patients").upsert({
+                    "patient_id":   pid,
+                    "patient_name": nombre,
+                    "pwd":          pwd,
+                    "install_code": self._codigo_instalacion,
+                }).execute()
+                self._log("  Paciente registrado en la nube", SUCCESS)
+        except Exception as e:
+            self._log(f"  Registro en nube omitido ({str(e)[:60]})", WARNING_C)
 
     def _instalar(self):
         try:
