@@ -650,7 +650,7 @@ class NMToast(QWidget):
         if not self._parent_win:
             return
         self._reposition()
-        self.show()
+        super().show()   # QWidget.show() — evita recursión con classmethod show()
         self.raise_()
 
         # Fade in
