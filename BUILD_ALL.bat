@@ -7,22 +7,22 @@ if "%1"=="icon" goto :icon
 goto :build
 
 :: ============================================================
-::  MODO TEST - Ejecutar sin compilar
+::  MODO TEST - Ejecutar sin compilar (PyQt6)
 :: ============================================================
 :test
 echo ============================================================
-echo  NeuroMood V3 - Modo Testing
+echo  NeuroMood V3 - Modo Testing (PyQt6)
 echo  neuromood.com.ar
 echo ============================================================
 echo.
 echo  Selecciona:
-echo   1. App Paciente  (app\main.py)
-echo   2. Hub Profesional  (hub\main.py)
+echo   1. App Paciente      (app\main_qt.py)
+echo   2. Hub Profesional   (hub\main_qt.py)
 echo   0. Salir
 echo.
 set /p APP=Opcion:
-if "%APP%"=="1" (python "%ROOT%\app\main.py" & goto :test)
-if "%APP%"=="2" (python "%ROOT%\hub\main.py" & goto :test)
+if "%APP%"=="1" (python "%ROOT%\app\main_qt.py" & goto :test)
+if "%APP%"=="2" (python "%ROOT%\hub\main_qt.py" & goto :test)
 if "%APP%"=="0" goto :end
 echo Opcion invalida.
 goto :test
@@ -37,11 +37,19 @@ pause
 goto :end
 
 :: ============================================================
-::  MODO BUILD - 2 EXEs
+::  MODO BUILD - 2 EXEs (PyQt6)
+:: Salida:
+::   dist\NeuroMood.exe            <- app paciente
+::   dist\pro\HubProfesional.exe   <- hub profesional
+::
+:: Flujo de distribucion:
+::   1. BUILD_ALL.bat              -> genera los 2 EXEs
+::   2. BUILD_INSTALLER.bat        -> empaqueta instalador paciente
+::   3. BUILD_INSTALLER_PRO.bat    -> empaqueta instalador Hub
 :: ============================================================
 :build
 echo ============================================================
-echo  NeuroMood V3 - Compilacion
+echo  NeuroMood V3 - Compilacion (PyQt6)
 echo  [1/2] NeuroMood.exe  +  [2/2] HubProfesional.exe
 echo  neuromood.com.ar
 echo ============================================================
@@ -62,99 +70,100 @@ if not exist "%DIST%"     mkdir "%DIST%"
 if not exist "%BUILD%"    mkdir "%BUILD%"
 if not exist "%DIST_PRO%" mkdir "%DIST_PRO%"
 
-set COMMON=--noconfirm --onefile --windowed --icon "%ICON%"^
+:: ── Flags comunes (sin --collect-all aun; se agregan por EXE) ────────────────
+set BASE=--noconfirm --onefile --windowed^
+ --icon "%ICON%"^
  --add-data "%LOGO%;."^
  --add-data "%ICON%;."^
  --add-data "%SHARED%;shared"^
- --add-data "%APP_DIR%;app"^
- --distpath "%DIST%"^
  --workpath "%BUILD%"^
- --paths "%ROOT%"^
+ --paths "%ROOT%"
+
+:: ── Hidden imports compartidos (shared/ + infra) ─────────────────────────────
+set SHARED_HI=^
  --hidden-import shared^
  --hidden-import shared.theme^
+ --hidden-import shared.theme_qt^
+ --hidden-import shared.components_qt^
  --hidden-import shared.db^
- --hidden-import shared.components^
- --hidden-import shared.utils^
  --hidden-import shared.sync^
  --hidden-import shared.identidad^
  --hidden-import shared.config^
- --hidden-import shared.base_module^
- --hidden-import app.home^
- --hidden-import app.modules.animo^
- --hidden-import app.modules.respiracion^
- --hidden-import app.modules.registro_tcc^
- --hidden-import app.modules.rutina^
- --hidden-import app.modules.actividades^
- --hidden-import app.modules.timer^
- --hidden-import app.modules.avisos^
- --hidden-import app.motor_activacion^
- --hidden-import app.avisos_daemon^
- --hidden-import pystray^
- --hidden-import pystray._win32^
- --hidden-import winotify^
- --hidden-import PIL^
- --hidden-import PIL._tkinter_finder^
- --hidden-import sqlite3^
- --hidden-import _sqlite3^
+ --hidden-import shared.utils^
+ --hidden-import shared.installer_common^
  --hidden-import supabase^
  --hidden-import supabase._sync^
  --hidden-import supabase._async^
  --hidden-import postgrest^
  --hidden-import storage3^
- --hidden-import realtime
+ --hidden-import realtime^
+ --hidden-import sqlite3^
+ --hidden-import _sqlite3^
+ --hidden-import PIL^
+ --hidden-import pystray^
+ --hidden-import pystray._win32^
+ --hidden-import winotify
 
-:: ── [1/2] App Paciente ──────────────────────────────────────
+:: ============================================================
+::  [1/2] App Paciente — NeuroMood.exe
+::  Entry point: app\main_qt.py
+:: ============================================================
 echo [1/2] Compilando NeuroMood.exe...
-pyinstaller %COMMON% --name "NeuroMood" "%ROOT%\app\main.py"
+
+pyinstaller %BASE%^
+ --add-data "%APP_DIR%;app"^
+ --distpath "%DIST%"^
+ --collect-all PyQt6^
+ %SHARED_HI%^
+ --hidden-import app.home_qt^
+ --hidden-import app.modules.animo_qt^
+ --hidden-import app.modules.respiracion_qt^
+ --hidden-import app.modules.registro_tcc_qt^
+ --hidden-import app.modules.rutina_qt^
+ --hidden-import app.modules.actividades_qt^
+ --hidden-import app.modules.timer_qt^
+ --hidden-import app.modules.avisos_qt^
+ --hidden-import app.motor_activacion^
+ --hidden-import app.avisos_daemon^
+ --name "NeuroMood"^
+ "%ROOT%\app\main_qt.py"
+
 if %ERRORLEVEL% NEQ 0 goto :error
 echo     OK: dist\NeuroMood.exe
 echo.
 
-:: ── [2/2] Hub Profesional ───────────────────────────────────
+:: ============================================================
+::  [2/2] Hub Profesional — HubProfesional.exe
+::  Entry point: hub\main_qt.py
+:: ============================================================
 echo [2/2] Compilando HubProfesional.exe...
-pyinstaller --noconfirm --onefile --windowed --icon "%ICON%"^
- --add-data "%LOGO%;."^
- --add-data "%ICON%;."^
- --add-data "%SHARED%;shared"^
+
+pyinstaller %BASE%^
  --add-data "%HUB_DIR%;hub"^
  --distpath "%DIST_PRO%"^
- --workpath "%BUILD%"^
- --paths "%ROOT%"^
- --hidden-import shared^
- --hidden-import shared.theme^
- --hidden-import shared.db^
- --hidden-import shared.components^
- --hidden-import shared.utils^
- --hidden-import shared.config^
- --hidden-import hub.main^
- --hidden-import hub.pacientes^
- --hidden-import hub.visualizacion^
+ --collect-all PyQt6^
+ --collect-all pyqtgraph^
+ %SHARED_HI%^
+ --hidden-import hub.main_qt^
+ --hidden-import hub.pacientes_qt^
  --hidden-import hub.ia_asistente^
  --hidden-import hub.exportar^
  --hidden-import groq^
- --hidden-import matplotlib^
- --hidden-import matplotlib.backends.backend_tkagg^
  --hidden-import reportlab^
  --hidden-import reportlab.lib^
  --hidden-import reportlab.lib.pagesizes^
  --hidden-import reportlab.lib.styles^
  --hidden-import reportlab.lib.units^
  --hidden-import reportlab.platypus^
- --hidden-import PIL^
- --hidden-import PIL._tkinter_finder^
- --hidden-import sqlite3^
- --hidden-import _sqlite3^
- --hidden-import supabase^
- --hidden-import supabase._sync^
- --hidden-import supabase._async^
- --hidden-import postgrest^
  --hidden-import numpy^
- --name "HubProfesional" "%ROOT%\hub\main.py"
+ --name "HubProfesional"^
+ "%ROOT%\hub\main_qt.py"
+
 if %ERRORLEVEL% NEQ 0 goto :error
 echo     OK: dist\pro\HubProfesional.exe
 echo.
 
-:: ── Limpiar .spec generados ─────────────────────────────────
+:: ── Limpiar .spec generados por pyinstaller ───────────────────────────────────
 del "%ROOT%\NeuroMood.spec"       2>nul
 del "%ROOT%\HubProfesional.spec"  2>nul
 
@@ -163,6 +172,10 @@ echo  COMPILACION EXITOSA
 echo.
 echo  App paciente:      dist\NeuroMood.exe
 echo  Hub Profesional:   dist\pro\HubProfesional.exe
+echo.
+echo  Siguiente paso:
+echo    BUILD_INSTALLER.bat      -> genera Instalar NeuroMood.exe
+echo    BUILD_INSTALLER_PRO.bat  -> genera Instalar Hub Profesional.exe
 echo ============================================================
 echo.
 pause
