@@ -647,7 +647,7 @@ class HubProfesional(QMainWindow):
 def main():
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName("NeuroMood Hub")
-    app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
+    # AA_UseHighDpiPixmaps fue eliminado en PyQt6 6.x — DPI se maneja automáticamente
     window = HubProfesional()
     window.show()
     sys.exit(app.exec())

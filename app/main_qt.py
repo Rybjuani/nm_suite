@@ -166,7 +166,8 @@ class NeuroMoodApp(QMainWindow):
             mod = self._module_cache[module_id]
             self._current_module = mod
             self._stack.setCurrentWidget(mod)
-            mod.on_enter()
+            if hasattr(mod, "on_enter"):
+                mod.on_enter()
             self._sidebar.set_active(module_id)
             self._update_header_for_module(module_id)
             return
@@ -189,7 +190,8 @@ class NeuroMoodApp(QMainWindow):
 
         self._current_module = instance
         self._stack.setCurrentWidget(instance)
-        instance.on_enter()
+        if hasattr(instance, "on_enter"):
+            instance.on_enter()
         self._sidebar.set_active(module_id)
         self._update_header_for_module(module_id)
 
@@ -220,7 +222,8 @@ class NeuroMoodApp(QMainWindow):
 
     def _back_to_home(self):
         if self._current_module:
-            self._current_module.on_leave()
+            if hasattr(self._current_module, "on_leave"):
+                self._current_module.on_leave()
             self._current_module = None
 
         self._stack.setCurrentWidget(self._home)
@@ -368,9 +371,7 @@ def main():
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName("NeuroMood")
     app.setOrganizationName("NeuroMood")
-
-    # Atributos de alta DPI
-    app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
+    # AA_UseHighDpiPixmaps fue eliminado en PyQt6 6.x — DPI se maneja automáticamente
 
     window = NeuroMoodApp()
     window.show()

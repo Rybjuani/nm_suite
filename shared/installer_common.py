@@ -26,6 +26,156 @@ FONT_FAMILY = TYPOGRAPHY["font_family"]
 RADIUS_BUTTON = LAYOUT["radius_button"]
 RADIUS_CARD = LAYOUT["radius_card"]
 
+# Colores del gradiente teal→violet del tema
+_GRAD = COLORS["dark_hybrid"]
+VIOLET       = _GRAD["violet"]
+VIOLET_HOVER = _GRAD["violet_hover"]
+SUCCESS_BG   = "#091E10"   # fondo info verde oscuro
+
+
+def stylesheet_installer() -> str:
+    """
+    Stylesheet premium unificado para los 4 instaladores/desinstaladores.
+    Usa el design system dark_hybrid: gradiente teal-violet en botones primarios,
+    sidebar con borde accent, inputs y cards con la paleta exacta de la app.
+    """
+    return f"""
+* {{ font-family: "{FONT_FAMILY}", Arial; color: {TEXT_PRIMARY}; }}
+QMainWindow, QWidget {{ background: {BG_PRIMARY}; }}
+QLabel {{ background: transparent; }}
+
+/* ── Inputs ──────────────────────────────────────────────────── */
+QLineEdit {{
+    background: {BG_SURFACE};
+    color: {TEXT_PRIMARY};
+    border: 1px solid {BORDER};
+    border-radius: {RADIUS_BUTTON}px;
+    padding: 6px 12px;
+    font-size: 13px;
+    selection-background-color: {ACCENT};
+}}
+QLineEdit:focus {{ border-color: {ACCENT}; border-width: 2px; }}
+QLineEdit::placeholder {{ color: {_GRAD["text_tertiary"]}; }}
+
+/* ── Botón primario — gradiente simulado con borde accent ───── */
+QPushButton {{
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 {ACCENT}, stop:1 {VIOLET}
+    );
+    color: {BG_PRIMARY};
+    border: none;
+    border-radius: {RADIUS_BUTTON}px;
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: bold;
+}}
+QPushButton:hover {{
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 {ACCENT_HOVER}, stop:1 {VIOLET_HOVER}
+    );
+}}
+QPushButton:disabled {{
+    background: {BORDER};
+    color: {_GRAD["text_tertiary"]};
+}}
+
+/* ── Botón outline ───────────────────────────────────────────── */
+QPushButton#outline {{
+    background: transparent;
+    color: {ACCENT};
+    border: 2px solid {ACCENT};
+}}
+QPushButton#outline:hover {{
+    background: {_GRAD["bg_elevated"]};
+}}
+
+/* ── Botón danger (desinstalar) ─────────────────────────────── */
+QPushButton#danger {{
+    background: {ERROR_C};
+    color: white;
+    border: none;
+}}
+QPushButton#danger:hover {{ background: #c83040; }}
+
+/* ── Checkbox ───────────────────────────────────────────────── */
+QCheckBox {{
+    color: {TEXT_SEC};
+    font-size: 11px;
+    spacing: 8px;
+}}
+QCheckBox::indicator {{
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    border: 2px solid {BORDER};
+    background: {BG_SURFACE};
+}}
+QCheckBox::indicator:checked {{
+    background: {ACCENT};
+    border-color: {ACCENT};
+}}
+
+/* ── Progress bar ───────────────────────────────────────────── */
+QProgressBar {{
+    background: {BORDER};
+    border-radius: 4px;
+    height: 8px;
+    text-align: center;
+}}
+QProgressBar::chunk {{
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 {ACCENT}, stop:1 {VIOLET}
+    );
+    border-radius: 4px;
+}}
+
+/* ── Scroll ─────────────────────────────────────────────────── */
+QScrollArea {{ background: transparent; border: none; }}
+QScrollBar:vertical {{
+    background: {BG_PRIMARY}; width: 8px; border-radius: 4px;
+}}
+QScrollBar::handle:vertical {{
+    background: {BORDER}; border-radius: 4px; min-height: 24px;
+}}
+QScrollBar::handle:vertical:hover {{ background: {ACCENT}; }}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
+
+/* ── Sidebar ────────────────────────────────────────────────── */
+QWidget#Sidebar {{
+    background: {BG_SECONDARY};
+    border-right: 1px solid {_GRAD.get("border_card", BORDER)};
+}}
+
+/* ── Nav bar inferior ───────────────────────────────────────── */
+QWidget#NavBar {{
+    background: {BG_SECONDARY};
+    border-top: 1px solid {_GRAD.get("border_card", BORDER)};
+}}
+
+/* ── Log area ───────────────────────────────────────────────── */
+QScrollArea#LogArea {{
+    background: {BG_SURFACE};
+    border-radius: 10px;
+    border: 1px solid {BORDER};
+}}
+
+/* ── Info card verde ────────────────────────────────────────── */
+QFrame#InfoCard {{
+    background: {SUCCESS_BG};
+    border-radius: 8px;
+    border: 1px solid {SUCCESS};
+}}
+
+/* ── Card de inputs ─────────────────────────────────────────── */
+QFrame#InputCard {{
+    background: {BG_SURFACE};
+    border-radius: {RADIUS_CARD}px;
+    border: 1px solid {BORDER};
+}}
+"""
+
 
 def recurso(nombre: str) -> str:
     base = sys._MEIPASS if getattr(sys, "frozen", False) else os.path.dirname(

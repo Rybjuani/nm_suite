@@ -22,6 +22,7 @@ try:
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
         FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
+        stylesheet_installer,
     )
 except ImportError:
     _here = os.path.dirname(os.path.abspath(__file__))
@@ -31,48 +32,14 @@ except ImportError:
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
         FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
+        stylesheet_installer,
     )
 
 DEFAULT_INSTALL = os.path.join(os.path.expanduser("~"), "NeuroMood Pro")
 HUB_EXE    = "NeuroMood Hub Profesional.exe"
 UNINST_EXE = "Desinstalar NeuroMood Pro.exe"
 
-_SS = f"""
-* {{ font-family: "{FONT_FAMILY}", Arial; color: {TEXT_PRIMARY}; }}
-QMainWindow, QWidget {{ background: {BG_PRIMARY}; }}
-QLabel {{ background: transparent; }}
-QLineEdit {{
-    background: {BG_SURFACE}; color: {TEXT_PRIMARY};
-    border: 1px solid {BORDER}; border-radius: 6px; padding: 6px 10px; font-size: 13px;
-    selection-background-color: {ACCENT};
-}}
-QLineEdit:focus {{ border-color: {ACCENT}; }}
-QPushButton {{
-    background: {ACCENT}; color: {TEXT_PRIMARY}; border: none;
-    border-radius: 8px; padding: 7px 18px; font-size: 13px; font-weight: bold;
-}}
-QPushButton:hover {{ background: {ACCENT_HOVER}; }}
-QPushButton:disabled {{ background: {BORDER}; color: {TEXT_TERT}; }}
-QPushButton#outline {{
-    background: transparent; color: {ACCENT};
-    border: 2px solid {ACCENT}; border-radius: 8px;
-}}
-QPushButton#outline:hover {{ background: {BG_SURFACE}; }}
-QCheckBox {{ color: {TEXT_PRIMARY}; font-size: 13px; spacing: 8px; }}
-QCheckBox::indicator {{
-    width: 18px; height: 18px; border-radius: 4px; border: 2px solid {BORDER}; background: {BG_SURFACE};
-}}
-QCheckBox::indicator:checked {{ background: {ACCENT}; border-color: {ACCENT}; }}
-QProgressBar {{
-    background: {BORDER}; border-radius: 4px; height: 8px; text-align: center;
-}}
-QProgressBar::chunk {{ background: {ACCENT}; border-radius: 4px; }}
-QScrollArea {{ background: transparent; border: none; }}
-QScrollBar:vertical {{ background: {BG_PRIMARY}; width: 8px; border-radius: 4px; }}
-QScrollBar::handle:vertical {{ background: {BORDER}; border-radius: 4px; min-height: 24px; }}
-QScrollBar::handle:vertical:hover {{ background: {ACCENT}; }}
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
-"""
+_SS = stylesheet_installer()   # design system premium unificado
 
 
 def ruta_bundled(exe: str) -> str:

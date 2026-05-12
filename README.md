@@ -39,11 +39,14 @@ Para desinstalar: ejecutar **`Desinstalar NeuroMood.exe`** dentro de la carpeta 
 ```bash
 pip install -r requirements.txt
 
-# App paciente
-python app/main.py
+# App paciente (PyQt6)
+python app/main_qt.py
 
-# Hub Profesional
-python hub/main.py
+# Hub Profesional (PyQt6)
+python hub/main_qt.py
+
+# Modo test sin compilar
+BUILD_ALL.bat test
 ```
 
 ---
@@ -358,7 +361,8 @@ El `ThemeManager` en `shared/components.py` propaga los cambios dark/light a tod
 
 | Tecnología | Versión mínima | Uso |
 |---|---|---|
-| [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) | 5.2.0 | Interfaz gráfica con soporte dark/light |
+| [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) | 6.6.0 | Interfaz gráfica principal (migrado desde CustomTkinter) |
+| [pyqtgraph](https://www.pyqtgraph.org/) | 0.13.0 | Gráficos interactivos en el Hub |
 | [Pillow](https://python-pillow.org/) | 10.0.0 | Imágenes, logo, gradientes en Canvas |
 | [matplotlib](https://matplotlib.org/) | 3.7.0 | Gráficos de evolución en el Hub |
 | [ReportLab](https://www.reportlab.com/) | 4.0.0 | Exportación a PDF |

@@ -17,7 +17,7 @@ try:
     from shared.installer_common import (
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
-        FONT_FAMILY, recurso, aplicar_captionbar_installer,
+        FONT_FAMILY, recurso, aplicar_captionbar_installer, stylesheet_installer,
     )
 except ImportError:
     _here = os.path.dirname(os.path.abspath(__file__))
@@ -26,32 +26,12 @@ except ImportError:
     from installer_common import (
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
-        FONT_FAMILY, recurso, aplicar_captionbar_installer,
+        FONT_FAMILY, recurso, aplicar_captionbar_installer, stylesheet_installer,
     )
 
 REG_KEY = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMoodPro"
 
-_SS = f"""
-* {{ font-family: "{FONT_FAMILY}", Arial; color: {TEXT_PRIMARY}; }}
-QMainWindow, QWidget {{ background: {BG_PRIMARY}; }}
-QLabel {{ background: transparent; }}
-QPushButton {{
-    background: {ACCENT}; color: {TEXT_PRIMARY}; border: none;
-    border-radius: 8px; padding: 7px 18px; font-size: 13px; font-weight: bold;
-}}
-QPushButton:hover {{ background: {ACCENT_HOVER}; }}
-QPushButton#outline {{
-    background: transparent; color: {ACCENT};
-    border: 2px solid {ACCENT}; border-radius: 8px;
-}}
-QPushButton#outline:hover {{ background: {BG_SURFACE}; }}
-QPushButton#danger {{ background: {ERROR_C}; border-radius: 8px; }}
-QPushButton#danger:hover {{ background: #c83040; }}
-QProgressBar {{
-    background: {BORDER}; border-radius: 3px; height: 6px;
-}}
-QProgressBar::chunk {{ background: {ACCENT}; border-radius: 3px; }}
-"""
+_SS = stylesheet_installer()   # design system premium unificado
 
 # ── Lógica de negocio (preservada exacta) ─────────────────────────────────────
 
