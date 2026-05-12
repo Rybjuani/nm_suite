@@ -10,9 +10,7 @@ except ImportError:
 
 from shared.db import obtener_conexion, guardar_config, leer_config
 from shared.identidad import obtener_patient_id, obtener_nombre_paciente
-
-_SUPABASE_URL = "https://ehmqxgknkjjhdrdghdhp.supabase.co"
-_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVobXF4Z2tua2pqaGRyZGdoZGhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNzY1MTAsImV4cCI6MjA5Mzk1MjUxMH0.QeMuxbfRKdeAuFw1yrcXwwufk8Gs3YUmPc3AHM4iggk"
+from shared.config import supabase_url, supabase_key
 
 _DAYS_BETWEEN_SYNC = 7
 
@@ -20,7 +18,14 @@ _DAYS_BETWEEN_SYNC = 7
 def _get_client():
     if not _SUPABASE_OK:
         return None
-    return _sb_create(_SUPABASE_URL, _SUPABASE_KEY)
+    url = supabase_url()
+    key = supabase_key()
+    if not url or not key:
+        return None
+    try:
+        return _sb_create(url, key)
+    except Exception:
+        return None
 
 
 # ── Registro de paciente ──────────────────────────────────────────────────────

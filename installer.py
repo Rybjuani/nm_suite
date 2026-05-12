@@ -1,5 +1,5 @@
 """
-installer.py — NeuroMood Suite Installer
+installer.py — NeuroMood Installer
 Compilar con: pyinstaller installer.spec
 """
 import sys
@@ -15,123 +15,34 @@ from pathlib import Path
 import customtkinter as ctk
 from PIL import Image
 
-# ── Paleta NeuroMood ────────────────────────────────────────────
-BG_PRIMARY   = "#0B1928"
-BG_SECONDARY = "#0D2137"
-BG_SURFACE   = "#112740"
-ACCENT       = "#1EC8D4"
-ACCENT_HOVER = "#2EDDE9"
-TEXT_PRIMARY = "#FFFFFF"
-TEXT_SEC     = "#E8EEF4"
-TEXT_TERT    = "#8BA4BE"
-BORDER       = "#1A3050"
-SUCCESS      = "#22D47E"
-WARNING_C    = "#F0A500"
-ERROR_C      = "#E8505B"
+# Importar utilidades comunes (colores, recurso, acceso directo, captionbar)
+try:
+    from shared.installer_common import (
+        BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
+        TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
+        FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
+    )
+except ImportError:
+    # Fallback frozen: shared/ está junto al exe
+    _here = os.path.dirname(os.path.abspath(__file__))
+    if _here not in sys.path:
+        sys.path.insert(0, _here)
+    from installer_common import (
+        BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
+        TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
+        FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
+    )
 
 DEFAULT_INSTALL = os.path.join(os.path.expanduser("~"), "NeuroMood")
-
-# grupo: lista de IDs que deben instalarse juntos con esta app.
-# El Visualizador depende del Termómetro para mostrar datos: seleccionar uno activa el otro.
-APPS = [
-    {
-        "id": "termometro",
-        "exe": "TermometroEmocional.exe",
-        "nombre": "Termómetro Emocional",
-        "desc": "Registrá tu estado emocional del 0 al 10, con gráficos de evolución y sugerencias de activación",
-        "grupo": None,
-        "default": True,
-    },
-    {
-        "id": "temporizador",
-        "exe": "TemporizadorActividades.exe",
-        "nombre": "Temporizador de Actividades",
-        "desc": "Cronómetro con categorías para registrar actividades terapéuticas",
-        "grupo": None,
-        "default": True,
-    },
-    {
-        "id": "respiracion",
-        "exe": "GuiaRespiracion.exe",
-        "nombre": "Guía de Respiración",
-        "desc": "Técnicas guiadas de respiración con animación, ciclos y registro de sesiones",
-        "grupo": None,
-        "default": True,
-    },
-    {
-        "id": "checklist",
-        "exe": "ChecklistRutina.exe",
-        "nombre": "Checklist de Rutina",
-        "desc": "Organizá tus tareas de mañana, tarde y noche con seguimiento diario",
-        "grupo": None,
-        "default": True,
-    },
-    {
-        "id": "recordatorios",
-        "exe": "RecordatoriosBienestar.exe",
-        "nombre": "Recordatorios de Bienestar",
-        "desc": "Configurá recordatorios personalizados con horarios y días de la semana",
-        "grupo": None,
-        "default": True,
-    },
-    {
-        "id": "pensamientos",
-        "exe": "RegistroPensamientos.exe",
-        "nombre": "Registro de Pensamientos",
-        "desc": "Identificá y reformulá pensamientos automáticos en 4 pasos",
-        "grupo": None,
-        "default": True,
-    },
-]
-
-
-def recurso(nombre: str) -> str:
-    base = sys._MEIPASS if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(base, nombre)
+APP_EXE = "NeuroMood.exe"
+APP_NOMBRE = "NeuroMood"
 
 
 def ruta_app_bundled(exe: str) -> str:
-    """Las apps se incluyen en la subcarpeta 'apps' dentro del bundle."""
     base = sys._MEIPASS if getattr(sys, "frozen", False) else os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "dist"
     )
-    return os.path.join(base, "apps", exe)
-
-
-def crear_acceso_directo(origen: str, destino_lnk: str, icono: str):
-    # Usa WScript.Shell via COM directamente desde Python — sin PowerShell,
-    # sin archivos temporales, sin problemas de encoding con tildes o espacios.
-    try:
-        import win32com.client
-        shell = win32com.client.Dispatch("WScript.Shell")
-        lnk = shell.CreateShortcut(destino_lnk)
-        lnk.TargetPath = origen
-        lnk.IconLocation = f"{icono},0"
-        lnk.Save()
-    except Exception:
-        # Fallback: PowerShell con BOM UTF-8 para que detecte el encoding correcto
-        import tempfile
-        ps_script = (
-            f'$s = New-Object -ComObject WScript.Shell\n'
-            f'$l = $s.CreateShortcut("{destino_lnk}")\n'
-            f'$l.TargetPath = "{origen}"\n'
-            f'$l.IconLocation = "{icono},0"\n'
-            f'$l.Save()\n'
-        )
-        with tempfile.NamedTemporaryFile(mode="wb", suffix=".ps1", delete=False) as f:
-            f.write(b'\xef\xbb\xbf')  # BOM UTF-8
-            f.write(ps_script.encode("utf-8"))
-            ps1_path = f.name
-        subprocess.run(
-            ["powershell", "-NoProfile", "-NonInteractive",
-             "-ExecutionPolicy", "Bypass", "-File", ps1_path],
-            capture_output=True,
-            creationflags=subprocess.CREATE_NO_WINDOW,
-        )
-        try:
-            os.unlink(ps1_path)
-        except Exception:
-            pass
+    return os.path.join(base, exe)
 
 
 class InstaladorNeuroMood(ctk.CTk):
@@ -140,7 +51,7 @@ class InstaladorNeuroMood(ctk.CTk):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
-        self.title("Instalador — NeuroMood Suite")
+        self.title("Instalador — NeuroMood")
         self.geometry("740x540")
         self.resizable(False, False)
         self.configure(fg_color=BG_PRIMARY)
@@ -152,13 +63,11 @@ class InstaladorNeuroMood(ctk.CTk):
 
         # iconbitmap() activa _iconbitmap_method_called en CTk, bloqueando su override de 200ms
         self._aplicar_icono()
-        self.after(100, self._aplicar_captionbar_dark)
+        self.after(100, lambda: aplicar_captionbar_installer(self))
 
         self.pagina_actual = 0
         self.install_path = ctk.StringVar(value=DEFAULT_INSTALL)
-        self.app_vars = {a["id"]: ctk.BooleanVar(value=a["default"]) for a in APPS}
         self._install_dir_done: Path | None = None
-        self._seleccionadas_done: list = []
         self._icon_dest_done: str | None = None
 
         # Identidad del paciente
@@ -175,22 +84,6 @@ class InstaladorNeuroMood(ctk.CTk):
     def _aplicar_icono(self):
         try:
             self.iconbitmap(recurso("installer_icon.ico"))
-        except Exception:
-            pass
-
-    def _aplicar_captionbar_dark(self):
-        try:
-            import ctypes
-            hwnd = ctypes.windll.user32.GetParent(self.winfo_id())
-            if hwnd == 0:
-                hwnd = self.winfo_id()
-            v = ctypes.c_int(1)
-            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 20, ctypes.byref(v), 4)
-            if sys.getwindowsversion().build >= 22000:
-                r, g, b = 0x0D, 0x21, 0x37
-                color = ctypes.c_uint(r | (g << 8) | (b << 16))
-                ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, ctypes.byref(color), 4)
-            ctypes.windll.user32.SetWindowPos(hwnd, 0, 0, 0, 0, 0, 0x0037)
         except Exception:
             pass
 
@@ -232,12 +125,11 @@ class InstaladorNeuroMood(ctk.CTk):
         )
         self.btn_sig.pack(side="right", padx=16, pady=11)
 
-        self.paginas = [ctk.CTkFrame(self.page_area, fg_color=BG_PRIMARY) for _ in range(5)]
+        self.paginas = [ctk.CTkFrame(self.page_area, fg_color=BG_PRIMARY) for _ in range(4)]
         self._build_p0()
         self._build_p1_registro()
-        self._build_p2()
-        self._build_p3()
-        self._build_p4()
+        self._build_p2_instalacion()
+        self._build_p3_finalizar()
 
     def _sidebar_logo(self):
         try:
@@ -251,7 +143,7 @@ class InstaladorNeuroMood(ctk.CTk):
 
     def _sidebar_pasos(self):
         self._step_widgets = []
-        pasos = ["Bienvenida", "Registro", "Selección", "Instalación", "Finalizar"]
+        pasos = ["Bienvenida", "Registro", "Instalación", "Finalizar"]
         for i, nombre in enumerate(pasos):
             row = ctk.CTkFrame(self.sidebar, fg_color="transparent")
             row.pack(fill="x", padx=14, pady=3)
@@ -345,7 +237,12 @@ class InstaladorNeuroMood(ctk.CTk):
                      text_color=TEXT_SEC, anchor="w").pack(anchor="w", padx=16, pady=(8, 2))
         ctk.CTkEntry(self._frame_codigo, textvariable=self.install_code_var, font=("Segoe UI", 13),
                      fg_color=BG_PRIMARY, border_color=BORDER, text_color=TEXT_PRIMARY,
-                     height=38).pack(fill="x", padx=16, pady=(0, 12))
+                     height=38).pack(fill="x", padx=16, pady=(0, 4))
+        ctk.CTkLabel(
+            self._frame_codigo,
+            text="El código lo encontrás en tu primera instalación o lo provee tu terapeuta.",
+            font=("Segoe UI", 10), text_color=TEXT_TERT, anchor="w",
+        ).pack(anchor="w", padx=16, pady=(0, 10))
 
         info = ctk.CTkFrame(f, fg_color="#091E10", corner_radius=8,
                             border_width=1, border_color=SUCCESS)
@@ -384,45 +281,15 @@ class InstaladorNeuroMood(ctk.CTk):
             )
         self._error_registro.configure(text="")
 
-    def _build_p2(self):
+    def _build_p2_instalacion(self):
         f = self.paginas[2]
-        ctk.CTkLabel(f, text="Selección de Aplicaciones",
+        ctk.CTkLabel(f, text="Instalando...",
                      font=("Segoe UI", 20, "bold"), text_color=TEXT_PRIMARY).pack(anchor="w")
-        ctk.CTkLabel(f, text="Elegí cuáles aplicaciones instalar",
-                     font=("Segoe UI", 12), text_color=TEXT_TERT).pack(anchor="w", pady=(2, 10))
-
-        scroll = ctk.CTkScrollableFrame(f, fg_color=BG_SURFACE, corner_radius=10, height=210,
-                                       scrollbar_button_color=BORDER,
-                                       scrollbar_button_hover_color=ACCENT)
-        scroll.pack(fill="x", pady=(0, 10))
-
-        for app in APPS:
-            row = ctk.CTkFrame(scroll, fg_color="transparent")
-            row.pack(fill="x", padx=6, pady=1)
-
-            linea_top = ctk.CTkFrame(row, fg_color="transparent")
-            linea_top.pack(fill="x")
-
-            if app["grupo"]:
-                ctk.CTkLabel(linea_top, text="GRUPO",
-                             font=("Segoe UI", 9, "bold"), text_color=ACCENT).pack(side="right", padx=10)
-
-            cb = ctk.CTkCheckBox(
-                linea_top, text=app["nombre"], variable=self.app_vars[app["id"]],
-                font=("Segoe UI", 12, "bold"), text_color=TEXT_PRIMARY,
-                fg_color=ACCENT, hover_color=ACCENT_HOVER, checkmark_color="#FFFFFF",
-                border_color=BORDER,
-                command=lambda a=app: self._on_checkbox(a),
-            )
-            cb.pack(side="left", padx=(6, 4))
-
-            ctk.CTkLabel(row, text=app["desc"], font=("Segoe UI", 12),
-                         text_color=TEXT_TERT, anchor="w").pack(anchor="w", padx=(30, 6), pady=(0, 3))
 
         ctk.CTkLabel(f, text="Carpeta de instalación:", font=("Segoe UI", 12),
-                     text_color=TEXT_SEC).pack(anchor="w", pady=(6, 3))
+                     text_color=TEXT_SEC).pack(anchor="w", pady=(12, 3))
         path_row = ctk.CTkFrame(f, fg_color="transparent")
-        path_row.pack(fill="x")
+        path_row.pack(fill="x", pady=(0, 12))
         ctk.CTkEntry(path_row, textvariable=self.install_path, font=("Segoe UI", 12),
                      fg_color=BG_SURFACE, border_color=BORDER,
                      text_color=TEXT_PRIMARY, height=36).pack(side="left", fill="x", expand=True, padx=(0, 8))
@@ -431,57 +298,63 @@ class InstaladorNeuroMood(ctk.CTk):
                       text_color=TEXT_SEC, hover_color=BG_PRIMARY, font=("Segoe UI", 12),
                       command=self._browse).pack(side="right")
 
-    def _build_p3(self):
-        f = self.paginas[3]
-        ctk.CTkLabel(f, text="Instalando...",
-                     font=("Segoe UI", 20, "bold"), text_color=TEXT_PRIMARY).pack(anchor="w", pady=(0, 12))
         self._progress_bar = ctk.CTkProgressBar(f, height=8, fg_color=BORDER,
                                                 progress_color=ACCENT, corner_radius=4)
         self._progress_bar.pack(fill="x", pady=(0, 6))
         self._progress_bar.set(0)
-        self._progress_lbl = ctk.CTkLabel(f, text="Preparando...", font=("Segoe UI", 12),
-                                          text_color=TEXT_TERT, anchor="w")
+        self._progress_lbl = ctk.CTkLabel(f, text="Presioná 'Instalar' para continuar.",
+                                          font=("Segoe UI", 12), text_color=TEXT_TERT, anchor="w")
         self._progress_lbl.pack(anchor="w", pady=(0, 8))
-        self._log_frame = ctk.CTkScrollableFrame(f, fg_color=BG_SURFACE, corner_radius=8, height=230,
-                                               scrollbar_button_color=BORDER,
-                                               scrollbar_button_hover_color=ACCENT)
+        self._log_frame = ctk.CTkScrollableFrame(f, fg_color=BG_SURFACE, corner_radius=8, height=210,
+                                                 scrollbar_button_color=BORDER,
+                                                 scrollbar_button_hover_color=ACCENT)
         self._log_frame.pack(fill="both", expand=True)
 
-    def _build_p4(self):
-        f = self.paginas[4]
+    def _build_p3_finalizar(self):
+        f = self.paginas[3]
         ctk.CTkLabel(f, text="¡Instalación completada!",
                      font=("Segoe UI", 20, "bold"), text_color=SUCCESS).pack(anchor="w", pady=(0, 6))
         ctk.CTkLabel(
             f,
-            text="NeuroMood Suite se instaló correctamente.\n"
-                 "Creá accesos directos donde prefieras:",
+            text="NeuroMood se instaló correctamente.\n"
+                 "Abrí la app e ingresá con tu nombre de usuario para comenzar.",
             font=("Segoe UI", 13), text_color=TEXT_SEC, anchor="w",
-        ).pack(anchor="w", pady=(0, 18))
-        ctk.CTkFrame(f, height=1, fg_color=BORDER).pack(fill="x", pady=(0, 16))
+        ).pack(anchor="w", pady=(0, 12))
+
+        # Botón principal: abrir la app ahora
+        ctk.CTkButton(
+            f, text="Abrir NeuroMood ahora →", width=230, height=40,
+            fg_color=ACCENT, hover_color=ACCENT_HOVER,
+            text_color=TEXT_PRIMARY, font=("Segoe UI", 13, "bold"),
+            corner_radius=8,
+            command=self._abrir_app,
+        ).pack(anchor="w", pady=(0, 16))
+
+        ctk.CTkFrame(f, height=1, fg_color=BORDER).pack(fill="x", pady=(0, 12))
 
         self.var_escritorio = ctk.BooleanVar(value=True)
         ctk.CTkCheckBox(
-            f, text="Crear accesos directos en el Escritorio",
+            f, text="Crear acceso directo en el Escritorio",
             variable=self.var_escritorio,
+            font=("Segoe UI", 13), text_color=TEXT_PRIMARY,
+            fg_color=ACCENT, hover_color=ACCENT_HOVER, checkmark_color="#FFFFFF",
+            border_color=BORDER,
+        ).pack(anchor="w", pady=(0, 10))
+
+        self.var_menu_inicio = ctk.BooleanVar(value=False)
+        ctk.CTkCheckBox(
+            f, text="Crear acceso directo en el Menú de Inicio",
+            variable=self.var_menu_inicio,
             font=("Segoe UI", 13), text_color=TEXT_PRIMARY,
             fg_color=ACCENT, hover_color=ACCENT_HOVER, checkmark_color="#FFFFFF",
             border_color=BORDER,
         ).pack(anchor="w", pady=(0, 12))
 
-        self.var_menu_inicio = ctk.BooleanVar(value=False)
-        ctk.CTkCheckBox(
-            f, text="Crear accesos directos en el Menú de Inicio",
-            variable=self.var_menu_inicio,
-            font=("Segoe UI", 13), text_color=TEXT_PRIMARY,
-            fg_color=ACCENT, hover_color=ACCENT_HOVER, checkmark_color="#FFFFFF",
-            border_color=BORDER,
-        ).pack(anchor="w", pady=(0, 16))
-
         ctk.CTkButton(
             f, text="Abrir carpeta de instalación",
-            width=230, height=36,
-            fg_color="transparent", border_width=2, border_color=ACCENT,
-            text_color=ACCENT, hover_color=BG_SURFACE, font=("Segoe UI", 13),
+            width=230, height=32,
+            fg_color="transparent", border_width=1, border_color=BORDER,
+            text_color=TEXT_TERT, hover_color=BG_SURFACE, font=("Segoe UI", 11),
             command=self._abrir_carpeta,
         ).pack(anchor="w")
 
@@ -504,20 +377,17 @@ class InstaladorNeuroMood(ctk.CTk):
                 circle.configure(fg_color=BORDER, text_color=TEXT_TERT)
                 lbl.configure(text_color=TEXT_TERT, font=("Segoe UI", 12))
 
-        self.btn_ant.configure(state="normal" if n in (1, 2) else "disabled")
-        if n == 4:
+        self.btn_ant.configure(state="normal" if n == 1 else "disabled")
+        if n == 3:
             self.btn_sig.configure(text="Finalizar", state="normal")
-        elif n == 3:
-            self.btn_sig.configure(text="Instalando...", state="disabled")
+        elif n == 2:
+            self.btn_sig.configure(text="Instalar", state="normal")
         else:
             self.btn_sig.configure(text="Siguiente →", state="normal")
-
 
     def _anterior(self):
         if self.pagina_actual == 1:
             self._ir_a(0)
-        elif self.pagina_actual == 2:
-            self._ir_a(1)
 
     def _siguiente(self):
         if self.pagina_actual == 0:
@@ -548,11 +418,6 @@ class InstaladorNeuroMood(ctk.CTk):
             self._ir_a(2)
 
         elif self.pagina_actual == 2:
-            sel = [a for a in APPS if self.app_vars[a["id"]].get()]
-            if not sel:
-                from tkinter import messagebox
-                messagebox.showwarning("Selección vacía", "Seleccioná al menos una aplicación.")
-                return
             if self._es_ruta_protegida(self.install_path.get()):
                 from tkinter import messagebox
                 if messagebox.askyesno(
@@ -564,14 +429,11 @@ class InstaladorNeuroMood(ctk.CTk):
                     self.install_path.set(DEFAULT_INSTALL)
                 else:
                     return
-            self._ir_a(3)
+            self.btn_sig.configure(text="Instalando...", state="disabled")
             threading.Thread(target=self._instalar, daemon=True).start()
 
-        elif self.pagina_actual == 4:
+        elif self.pagina_actual == 3:
             self._finalizar()
-
-    def _on_checkbox(self, app):
-        pass
 
     def _browse(self):
         from tkinter import filedialog
@@ -611,8 +473,9 @@ class InstaladorNeuroMood(ctk.CTk):
         pwd = self.password_paciente.get()
         if not nombre or not pwd:
             return
-        codigo = self._codigo_instalacion.lower()
-        pid = hashlib.sha256(f"{nombre.lower()}:{pwd}:{codigo}".encode()).hexdigest()[:24]
+        # Usar la misma función canónica de identidad.py — garantiza IDs coherentes
+        from shared.identidad import generar_patient_id
+        pid = generar_patient_id(nombre, pwd, self._codigo_instalacion)
         db_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "NeuroMood")
         os.makedirs(db_dir, exist_ok=True)
         db_path = os.path.join(db_dir, "nm_data.db")
@@ -621,29 +484,25 @@ class InstaladorNeuroMood(ctk.CTk):
             conn.execute(
                 "CREATE TABLE IF NOT EXISTS config (clave TEXT PRIMARY KEY, valor TEXT)"
             )
-            conn.execute(
-                "INSERT OR REPLACE INTO config (clave, valor) VALUES ('patient_name', ?)", (nombre,)
-            )
-            conn.execute(
-                "INSERT OR REPLACE INTO config (clave, valor) VALUES ('patient_id', ?)", (pid,)
-            )
-            conn.execute(
-                "INSERT OR REPLACE INTO config (clave, valor) VALUES ('patient_pwd', ?)", (pwd,)
-            )
-            conn.execute(
-                "INSERT OR REPLACE INTO config (clave, valor) VALUES ('install_code', ?)",
-                (self._codigo_instalacion,)
-            )
+            for clave, valor in [
+                ("patient_name", nombre),
+                ("patient_id",   pid),
+                ("patient_pwd",  pwd),
+                ("install_code", self._codigo_instalacion),
+            ]:
+                conn.execute(
+                    "INSERT OR REPLACE INTO config (clave, valor) VALUES (?, ?)",
+                    (clave, valor),
+                )
             conn.commit()
             conn.close()
-        except Exception:
-            pass
+        except Exception as e:
+            self._log(f"  Advertencia: no se pudo guardar identidad ({e})", WARNING_C)
 
     def _instalar(self):
         try:
             install_dir = Path(self.install_path.get())
-            seleccionadas = [a for a in APPS if self.app_vars[a["id"]].get()]
-            total = len(seleccionadas) + 3
+            total = 4
             paso = 0
 
             self._set_progress(0, "Creando carpeta de instalación...")
@@ -652,20 +511,19 @@ class InstaladorNeuroMood(ctk.CTk):
             self._set_progress(paso / total, "Carpeta lista.")
             self._log(f"  Carpeta: {install_dir}")
 
-            for app in seleccionadas:
-                self._set_progress(paso / total, f"Instalando {app['nombre']}...")
-                src = ruta_app_bundled(app["exe"])
-                if not os.path.exists(src):
-                    self._log(f"  No encontrado: {app['exe']}", ERROR_C)
-                    paso += 1
-                    continue
-                shutil.copy2(src, install_dir / f"{app['nombre']}.exe")
-                paso += 1
-                self._set_progress(paso / total, f"{app['nombre']} instalada.")
-                self._log(f"  {app['nombre']}", SUCCESS)
-                time.sleep(0.05)
+            # Copiar NeuroMood.exe
+            self._set_progress(paso / total, "Copiando NeuroMood...")
+            src = ruta_app_bundled(APP_EXE)
+            if not os.path.exists(src):
+                self._log(f"  No encontrado: {APP_EXE}", ERROR_C)
+            else:
+                shutil.copy2(src, install_dir / APP_EXE)
+                self._log(f"  {APP_NOMBRE}", SUCCESS)
+            paso += 1
+            self._set_progress(paso / total, "NeuroMood copiado.")
+            time.sleep(0.05)
 
-            # Icono en carpeta de instalación (oculto, usado por los accesos directos)
+            # Icono (oculto, para accesos directos)
             icon_dest = None
             try:
                 import ctypes as _ct
@@ -676,8 +534,7 @@ class InstaladorNeuroMood(ctk.CTk):
             except Exception:
                 pass
 
-            # Desinstalador: vive en install_dir junto a las apps.
-            # Al ejecutarse se auto-copia a %TEMP% y corre desde ahí, evitando el lock.
+            # Desinstalador
             self._set_progress(paso / total, "Copiando desinstalador...")
             uninst_dest = install_dir / "Desinstalar NeuroMood.exe"
             try:
@@ -686,10 +543,9 @@ class InstaladorNeuroMood(ctk.CTk):
                 self._log("  Desinstalador copiado", SUCCESS)
             except Exception as e:
                 self._log(f"  Desinstalador no disponible: {e}", WARNING_C)
-
             paso += 1
 
-            # install_path.txt en install_dir para que el desinstalador encuentre la ruta
+            # install_path.txt (oculto)
             try:
                 import ctypes as _ct
                 path_txt = install_dir / "install_path.txt"
@@ -699,40 +555,42 @@ class InstaladorNeuroMood(ctk.CTk):
             except Exception:
                 pass
 
-            # Registro del desinstalador en Windows (Panel de Control)
+            # Registro en Windows (Panel de control)
             self._registrar_windows(install_dir, uninst_dest)
 
             paso += 1
             self._set_progress(1.0, "Completado.")
-
             self._log("")
-            self._log("  ¡NeuroMood Suite instalada correctamente!", SUCCESS)
+            self._log("  ¡NeuroMood instalado correctamente!", SUCCESS)
 
-            # Guardar identidad del paciente en la base de datos de la aplicación
+            # Guardar identidad del paciente en la DB
             self._registrar_identidad_paciente()
 
             self._install_dir_done = install_dir
-            self._seleccionadas_done = seleccionadas
             self._icon_dest_done = icon_dest
 
-            self.after(900, lambda: self._ir_a(4))
+            self.after(900, lambda: self._ir_a(3))
 
         except PermissionError:
             self._log("", ERROR_C)
             self._log("  Sin permisos en la carpeta seleccionada.", ERROR_C)
-            self._log("  Volvé al paso anterior y elegí otra ubicación.", TEXT_TERT)
+            self._log("  Elegí otra ubicación.", TEXT_TERT)
             self._set_progress(0, "Error de permisos.")
-            self.after(0, lambda: self._ir_a(2))
+            self.after(0, lambda: (
+                self._ir_a(2),
+                self.btn_sig.configure(text="Instalar", state="normal"),
+            ))
         except Exception as e:
             self._log(f"  Error inesperado: {e}", ERROR_C)
             self._set_progress(0, "Error durante la instalación.")
+            self.after(0, lambda: self.btn_sig.configure(text="Instalar", state="normal"))
 
     def _registrar_windows(self, install_dir: Path, uninst_path: Path):
         try:
             import winreg
             key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMood"
             with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as k:
-                winreg.SetValueEx(k, "DisplayName", 0, winreg.REG_SZ, "NeuroMood Suite")
+                winreg.SetValueEx(k, "DisplayName", 0, winreg.REG_SZ, "NeuroMood")
                 # Comillas alrededor de la ruta: Windows las necesita si hay espacios en el nombre de usuario
                 winreg.SetValueEx(k, "UninstallString", 0, winreg.REG_SZ, f'"{uninst_path}"')
                 # DisplayIcon apunta al exe del desinstalador (icono embebido, no .ico externo)
@@ -748,34 +606,35 @@ class InstaladorNeuroMood(ctk.CTk):
     # ── Finalizar ──────────────────────────────────────────────
 
     def _finalizar(self):
-        if self._seleccionadas_done and self._install_dir_done:
+        if self._install_dir_done:
+            exe_path = str(self._install_dir_done / APP_EXE)
+            icono = self._icon_dest_done or exe_path
             if self.var_escritorio.get():
                 try:
                     escritorio = Path(os.path.expanduser("~")) / "Desktop"
-                    for app in self._seleccionadas_done:
-                        crear_acceso_directo(
-                            str(self._install_dir_done / f"{app['nombre']}.exe"),
-                            str(escritorio / f"{app['nombre']}.lnk"),
-                            self._icon_dest_done or str(self._install_dir_done / f"{app['nombre']}.exe"),
-                        )
+                    crear_acceso_directo(exe_path, str(escritorio / f"{APP_NOMBRE}.lnk"), icono)
                 except Exception:
                     pass
             if self.var_menu_inicio.get():
                 try:
-                    start_menu_nm = (
+                    start_nm = (
                         Path(os.environ.get("APPDATA", ""))
                         / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "NeuroMood"
                     )
-                    start_menu_nm.mkdir(parents=True, exist_ok=True)
-                    for app in self._seleccionadas_done:
-                        crear_acceso_directo(
-                            str(self._install_dir_done / f"{app['nombre']}.exe"),
-                            str(start_menu_nm / f"{app['nombre']}.lnk"),
-                            self._icon_dest_done or str(self._install_dir_done / f"{app['nombre']}.exe"),
-                        )
+                    start_nm.mkdir(parents=True, exist_ok=True)
+                    crear_acceso_directo(exe_path, str(start_nm / f"{APP_NOMBRE}.lnk"), icono)
                 except Exception:
                     pass
         self.destroy()
+
+    def _abrir_app(self):
+        if self._install_dir_done:
+            exe = self._install_dir_done / APP_EXE
+            if exe.exists():
+                try:
+                    subprocess.Popen([str(exe)])
+                except Exception:
+                    pass
 
     def _abrir_carpeta(self):
         if self._install_dir_done and self._install_dir_done.exists():

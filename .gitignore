@@ -31,7 +31,22 @@ Desktop.ini
 .claude/
 
 # Claves y credenciales locales
+.env
+.env.*
 *API*.txt
 *api*.txt
 *groq*.txt
 *secret*.txt
+
+# Archivos residuales / borradores
+PLAN.txt
+README_new.md
+*.pdf
+_doc_screenshots/
+_nm_screenshots.py
+_nm_pdf_gen.py
+capturar_pantallas.py
+create_installer_icon.py
+generar_icono.py
+ejemplos creativos/
+_dev/

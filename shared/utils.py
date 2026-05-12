@@ -1,6 +1,5 @@
 import os
 from datetime import datetime
-from shared.theme import COLORS
 
 
 def fecha_hoy() -> str:
@@ -31,7 +30,7 @@ def color_por_puntaje_exacto(puntaje: int) -> str:
     return _GRAD_PUNTAJE[max(0, min(10, puntaje))]
 
 
-def color_por_puntaje(puntaje: int, modo: str = "dark") -> str:
+def color_por_puntaje(puntaje: int, modo: str = "dark") -> str:  # modo ignorado — se mantiene por compatibilidad
     return color_por_puntaje_exacto(puntaje)
 
 

@@ -12,8 +12,9 @@ def obtener_ruta_db() -> Path:
 
 def obtener_conexion() -> sqlite3.Connection:
     ruta = obtener_ruta_db()
-    conn = sqlite3.connect(str(ruta))
+    conn = sqlite3.connect(str(ruta), timeout=10)
     conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=5000")
     conn.execute("PRAGMA foreign_keys=ON")
     conn.row_factory = sqlite3.Row
     return conn

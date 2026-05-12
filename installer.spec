@@ -1,23 +1,21 @@
-﻿# -*- mode: python ; coding: utf-8 -*-
+# -*- mode: python ; coding: utf-8 -*-
 
 a = Analysis(
     ['installer.py'],
     pathex=['.'],
     binaries=[],
     datas=[
-        ('installer_icon.ico', '.'),
-        ('NM_icon.ico', '.'),
-        ('no_symbol.ico', '.'),
-        ('LOGO.png',    '.'),
-        ('dist/TermometroEmocional.exe',     'apps'),
-        ('dist/RecordatoriosBienestar.exe',  'apps'),
-        ('dist/TemporizadorActividades.exe', 'apps'),
-        ('dist/RegistroPensamientos.exe',    'apps'),
-        ('dist/GuiaRespiracion.exe',         'apps'),
-        ('dist/ChecklistRutina.exe',         'apps'),
-        ('dist/Desinstalar NeuroMood.exe',   'apps'),
+        ('installer_icon.ico',              '.'),
+        ('NM_icon.ico',                     '.'),
+        ('no_symbol.ico',                   '.'),
+        ('LOGO.png',                        '.'),
+        ('dist/NeuroMood.exe',              '.'),
+        ('dist/Desinstalar NeuroMood.exe',  '.'),
     ],
-    hiddenimports=['PIL', 'PIL._tkinter_finder', 'win32com', 'win32com.client', 'win32com.shell', 'pywintypes'],
+    hiddenimports=[
+        'PIL', 'PIL._tkinter_finder',
+        'win32com', 'win32com.client', 'win32com.shell', 'pywintypes',
+    ],
     hookspath=[],
     hooksconfig={},
     excludes=[],
@@ -32,7 +30,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='Instalar NeuroMood Suite',
+    name='Instalar NeuroMood',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

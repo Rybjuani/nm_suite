@@ -13,45 +13,29 @@ from pathlib import Path
 import customtkinter as ctk
 from PIL import Image
 
-BG_PRIMARY   = "#0B1928"
-BG_SECONDARY = "#0D2137"
-BG_SURFACE   = "#112740"
-ACCENT       = "#1EC8D4"
-ACCENT_HOVER = "#2EDDE9"
-TEXT_PRIMARY = "#FFFFFF"
-TEXT_SEC     = "#E8EEF4"
-TEXT_TERT    = "#8BA4BE"
-BORDER       = "#1A3050"
-SUCCESS      = "#22D47E"
-WARNING_C    = "#F0A500"
-ERROR_C      = "#E8505B"
+try:
+    from shared.installer_common import (
+        BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
+        TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
+        recurso, aplicar_captionbar_installer,
+    )
+except ImportError:
+    _here = os.path.dirname(os.path.abspath(__file__))
+    if _here not in sys.path:
+        sys.path.insert(0, _here)
+    from installer_common import (
+        BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
+        TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
+        recurso, aplicar_captionbar_installer,
+    )
 
 NM_PROCESOS = [
-    "TermometroEmocional.exe",
-    "VisualizadorEvolucion.exe",
-    "RecordatoriosBienestar.exe",
-    "TemporizadorActividades.exe",
-    "RegistroPensamientos.exe",
-    "GuiaRespiracion.exe",
-    "ChecklistRutina.exe",
-    "AsistenteActivacion.exe",
+    "NeuroMood.exe",
 ]
 
 APPS_NOMBRES = [
-    "Termómetro Emocional",
-    "Visualizador de Evolución",
-    "Recordatorios de Bienestar",
-    "Temporizador de Actividades",
-    "Registro de Pensamientos",
-    "Guía de Respiración",
-    "Checklist de Rutina",
-    "Asistente de Activación",
+    "NeuroMood",
 ]
-
-
-def recurso(nombre: str) -> str:
-    base = sys._MEIPASS if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(base, nombre)
 
 
 def detectar_install_dir() -> str:
@@ -249,7 +233,7 @@ class DesinstaladorNeuroMood(ctk.CTk):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
-        self.title("Desinstalar — NeuroMood Suite")
+        self.title("Desinstalar — NeuroMood")
         self.geometry("480x340")
         self.resizable(False, False)
         self.configure(fg_color=BG_PRIMARY)
@@ -263,26 +247,10 @@ class DesinstaladorNeuroMood(ctk.CTk):
             self.iconbitmap(recurso("no_symbol.ico"))
         except Exception:
             pass
-        self.after(100, self._aplicar_captionbar_dark)
+        self.after(100, lambda: aplicar_captionbar_installer(self))
 
         self._install_dir = detectar_install_dir()
         self._construir_ui()
-
-    def _aplicar_captionbar_dark(self):
-        try:
-            import ctypes
-            hwnd = ctypes.windll.user32.GetParent(self.winfo_id())
-            if hwnd == 0:
-                hwnd = self.winfo_id()
-            v = ctypes.c_int(1)
-            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 20, ctypes.byref(v), 4)
-            if sys.getwindowsversion().build >= 22000:
-                r, g, b = 0x0D, 0x21, 0x37
-                color = ctypes.c_uint(r | (g << 8) | (b << 16))
-                ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, ctypes.byref(color), 4)
-            ctypes.windll.user32.SetWindowPos(hwnd, 0, 0, 0, 0, 0, 0x0037)
-        except Exception:
-            pass
 
     def _construir_ui(self):
         header = ctk.CTkFrame(self, fg_color=BG_SECONDARY, corner_radius=0, height=56)
@@ -311,13 +279,13 @@ class DesinstaladorNeuroMood(ctk.CTk):
         self._limpiar_body()
         self._conservar_datos = ctk.BooleanVar(value=True)
 
-        ctk.CTkLabel(self.body, text="Desinstalar NeuroMood Suite",
+        ctk.CTkLabel(self.body, text="Desinstalar NeuroMood",
                      font=("Segoe UI", 16, "bold"), text_color=TEXT_PRIMARY).pack(anchor="w", pady=(0, 8))
 
         ctk.CTkLabel(
             self.body,
             text=(
-                "Se eliminarán los archivos de instalación de NeuroMood Suite\n"
+                "Se eliminarán los archivos de instalación de NeuroMood\n"
                 f"de tu computadora.\n\nCarpeta: {self._install_dir}"
             ),
             font=("Segoe UI", 12), text_color=TEXT_SEC, justify="left", anchor="w",

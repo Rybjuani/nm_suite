@@ -1,70 +1,97 @@
+"""
+NeuroMood Hybrid Unified Design System
+Versión: 2.0 — Mayo 2026
+Paleta fusionada premium (Dark + Light Híbrido)
+Basado en el análisis del sitio + previews unificados
+"""
+
 COLORS = {
-    "dark": {
-        "bg_primary":       "#0B1928",
-        "bg_secondary":     "#0D2137",
-        "bg_surface":       "#112740",
+    # ============================================================
+    # DARK HYBRID (Principal - Recomendado para sesiones largas)
+    # ============================================================
+    "dark_hybrid": {
+        # Backgrounds (del sitio dark premium)
+        "bg_primary":       "#050911",
+        "bg_secondary":     "#080c14",
+        "bg_surface":       "#0e1421",
+        "bg_elevated":      "#141c2e",
+        "bg_overlay":       "#1a2340",
+        "bg_glass":         "#0E1421",
         "bg_input":         "#112740",
-        "bg_hover":         "#1A3050",
-        "bg_list_item":     "#1A3050",
 
-        "accent":           "#1EC8D4",
-        "accent_hover":     "#2EDDE9",
-        "accent_subtle":    "#0F3040",
+        # Acentos (teal vibrante + violeta neuro)
+        "accent":           "#00d4c8",
+        "accent_hover":     "#00b8ad",
+        "accent_glow":      "#0B444B",
+        "violet":           "#7c5bf2",
+        "violet_hover":     "#6245d6",
+        "violet_glow":      "#2A2655",
 
-        "text_primary":     "#FFFFFF",
-        "text_secondary":   "#E8EEF4",
-        "text_tertiary":    "#8BA4BE",
-        "text_on_accent":   "#FFFFFF",
+        # Texto
+        "text_primary":     "#f0f4ff",
+        "text_secondary":   "#B1B5C1",
+        "text_tertiary":    "#747985",
+        "text_on_accent":   "#050911",
 
-        "border":           "#1A3050",
-        "border_accent":    "#1EC8D4",
-        "border_focus":     "#1EC8D4",
+        # Bordes y estados
+        "border":           "#1E2229",
+        "border_accent":    "#09575B",
+        "border_focus":     "#00d4c8",
+        "success":          "#10b981",
+        "warning":          "#f59e0b",
+        "error":            "#ef4444",
+        "info":             "#3b82f6",
 
-        "success":          "#22D47E",
-        "warning":          "#F0A500",
-        "error":            "#E8505B",
-        "info":             "#1EC8D4",
-
-        "progress_track":   "#1A3050",
-        "progress_fill":    "#1EC8D4",
+        # Progress
+        "progress_track":   "#1a3050",
+        "progress_fill":    "#00d4c8",
     },
 
-    "light": {
-        # Fondos — paleta Notion light mode
-        "bg_primary":       "#E3E2DE",   # Notion Cream — body + header
-        "bg_secondary":     "#D8D7D3",   # barra inferior — un tono más oscuro
-        "bg_surface":       "#F7F7F5",   # cards — Notion Light Gray (más claro que body)
-        "bg_input":         "#FFFFFF",   # inputs blancos — más elevados
-        "bg_hover":         "#C0BFBC",   # hover en items de lista
-        "bg_list_item":     "#FFFFFF",   # filas de historial — elevadas sobre surface
+    # ============================================================
+    # LIGHT HYBRID (Premium - Diurno / Preferencia usuario)
+    # ============================================================
+    "light_hybrid": {
+        # Backgrounds (cream premium del white theme)
+        "bg_primary":       "#f8fafc",
+        "bg_secondary":     "#f1f5f9",
+        "bg_surface":       "#ffffff",
+        "bg_elevated":      "#e8eef6",
+        "bg_overlay":       "#dde6f0",
+        "bg_glass":         "#FFFFFF",
+        "bg_input":         "#ffffff",
 
-        # Interactivos — charcoal suave (no negro puro)
-        "accent":           "#404040",   # gris carbón — más pastel que #191919
-        "accent_hover":     "#5C5C5C",   # más claro en hover → interactividad visible
-        "accent_subtle":    "#DDDCDA",
+        # Acentos (teal más profundo + violeta suave)
+        "accent":           "#0891b2",
+        "accent_hover":     "#0e7490",
+        "accent_glow":      "#CEE9F0",
+        "violet":           "#7c3aed",
+        "violet_hover":     "#6d28d9",
+        "violet_glow":      "#EBE1FC",
 
-        # Texto — escala Notion
-        "text_primary":     "#191919",   # Notion Text Default
-        "text_secondary":   "#4A4A4A",
-        "text_tertiary":    "#6B6B6B",   # Notion Dark Gray
-        "text_on_accent":   "#FFFFFF",
+        # Texto (excelente contraste)
+        "text_primary":     "#0f172a",
+        "text_secondary":   "#334155",
+        "text_tertiary":    "#64748b",
+        "text_on_accent":   "#ffffff",
 
-        # Bordes — Notion Mid Gray (#CBCAC7), visibles sin ser agresivos
-        "border":           "#CBCAC7",
-        "border_accent":    "#404040",
-        "border_focus":     "#404040",
+        # Bordes y estados
+        "border":           "#E1E3E7",
+        "border_accent":    "#9CD3E0",
+        "border_focus":     "#0891b2",
+        "success":          "#059669",
+        "warning":          "#d97706",
+        "error":            "#dc2626",
+        "info":             "#2563eb",
 
-        # Estados funcionales — colores Notion de contenido
-        "success":          "#5A9E82",   # verde pastel
-        "warning":          "#C87C40",   # ámbar pastel
-        "error":            "#D46868",   # rosa-rojo pastel
-        "info":             "#4A7EA5",   # azul petróleo pastel
-
-        "progress_track":   "#CBCAC7",
-        "progress_fill":    "#404040",
+        # Progress
+        "progress_track":   "#e2e8f0",
+        "progress_fill":    "#0891b2",
     }
 }
 
+# ============================================================
+# TOKENS ADICIONALES (compartidos)
+# ============================================================
 TYPOGRAPHY = {
     "font_family":      "Segoe UI",
     "font_fallback":    "Arial",
@@ -96,4 +123,67 @@ LAYOUT = {
     "border_button_width":  2,
     "header_height":        68,
     "min_touch_target":     44,
+}
+
+# Gradientes (usar en canvas o como referencia para botones)
+GRADIENTS = {
+    "accent_teal_violet_dark":  ("#00d4c8", "#7c5bf2"),
+    "accent_teal_violet_light": ("#0891b2", "#7c3aed"),
+}
+
+# Sombras recomendadas (para simular en CTkFrame)
+SHADOWS = {
+    "dark": {
+        "card":         "0 12px 28px rgba(0,0,0,0.45)",
+        "card_hover":   "0 20px 40px rgba(0,0,0,0.55), 0 0 1px rgba(0,212,200,0.10)",
+        "glow_teal":    "0 0 24px rgba(0,212,200,0.30), 0 0 48px rgba(0,212,200,0.10)",
+    },
+    "light": {
+        "card":         "0 4px 12px rgba(15,23,42,0.08), 0 8px 24px rgba(15,23,42,0.06)",
+        "card_hover":   "0 8px 24px rgba(15,23,42,0.10), 0 16px 48px rgba(15,23,42,0.08)",
+        "glow_teal":    "0 6px 20px rgba(8,145,178,0.25), 0 2px 8px rgba(8,145,178,0.15)",
+    }
+}
+
+TRANSITIONS = {
+    "fast":   150,
+    "normal": 250,
+    "slow":   350,
+}
+
+
+# Campos de compatibilidad (apps existentes usan estos keys)
+COLORS["dark_hybrid"]["bg_hover"] = COLORS["dark_hybrid"]["bg_overlay"]
+COLORS["dark_hybrid"]["bg_list_item"] = COLORS["dark_hybrid"]["bg_elevated"]
+COLORS["dark_hybrid"]["accent_subtle"] = COLORS["dark_hybrid"]["bg_surface"]
+COLORS["light_hybrid"]["bg_hover"] = COLORS["light_hybrid"]["bg_overlay"]
+COLORS["light_hybrid"]["bg_list_item"] = COLORS["light_hybrid"]["bg_surface"]
+COLORS["light_hybrid"]["accent_subtle"] = COLORS["light_hybrid"]["bg_elevated"]
+
+# Aliases de compatibilidad (apps existentes usan "dark"/"light")
+COLORS["dark"] = COLORS["dark_hybrid"]
+COLORS["light"] = COLORS["light_hybrid"]
+
+
+def get_colors(modo: str = "dark_hybrid"):
+    """Devuelve el diccionario de colores según el modo."""
+    if modo not in COLORS:
+        modo = "dark_hybrid"
+    return COLORS[modo]
+
+
+def get_gradient(modo: str = "dark_hybrid"):
+    if "dark" in modo:
+        return GRADIENTS["accent_teal_violet_dark"]
+    return GRADIENTS["accent_teal_violet_light"]
+
+
+# Colores canónicos de categorías de activación conductual
+CATEGORY_COLORS = {
+    "Autocuidado": "#00d4c8",
+    "Física":      "#22D47E",
+    "Cognitiva":   "#9B8FE8",
+    "Placer":      "#F0A500",
+    "Social":      "#E8505B",
+    "Maestría":    "#4A9EE8",
 }
