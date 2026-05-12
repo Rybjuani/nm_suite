@@ -96,7 +96,9 @@ class ModuloAvisos(NMModule):
         rec_id = row["id"]
         activo = bool(row["activo"])
 
-        card = ctk.CTkFrame(self._list, fg_color=c["bg_surface"], corner_radius=LAYOUT["radius_card"])
+        card = ctk.CTkFrame(self._list, fg_color=c["bg_surface"],
+                            corner_radius=LAYOUT["radius_card"],
+                            border_width=1, border_color=c.get("border_card", c["border"]))
         card.pack(fill="x", pady=(0, LAYOUT["gap_elements"]))
 
         inner = ctk.CTkFrame(card, fg_color="transparent")

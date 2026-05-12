@@ -54,7 +54,9 @@ class ModuloRutina(NMModule):
         c, font = self._c, self._font
         self._section_collapsed[key] = False
 
-        frame = ctk.CTkFrame(self._scroll, fg_color=c["bg_surface"], corner_radius=LAYOUT["radius_card"])
+        frame = ctk.CTkFrame(self._scroll, fg_color=c["bg_surface"],
+                             corner_radius=LAYOUT["radius_card"],
+                             border_width=1, border_color=c.get("border_card", c["border"]))
         frame.pack(fill="x", pady=(0, LAYOUT["gap_cards"]))
         self._section_frames[key] = frame
 
@@ -306,7 +308,9 @@ class ModuloRutina(NMModule):
 
     def _build_nota_dia(self):
         c, font = self._c, self._font
-        frame = ctk.CTkFrame(self._scroll, fg_color=c["bg_surface"], corner_radius=LAYOUT["radius_card"])
+        frame = ctk.CTkFrame(self._scroll, fg_color=c["bg_surface"],
+                             corner_radius=LAYOUT["radius_card"],
+                             border_width=1, border_color=c.get("border_card", c["border"]))
         frame.pack(fill="x", pady=(0, LAYOUT["gap_cards"]))
 
         ctk.CTkLabel(

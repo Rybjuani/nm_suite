@@ -2,7 +2,7 @@
 import customtkinter as ctk
 from shared.base_module import NMModule
 from shared.theme import COLORS, TYPOGRAPHY, LAYOUT, get_gradient
-from shared.components import draw_gradient_arc, draw_glow_arc, interpolate_color
+from shared.components import draw_gradient_arc, draw_glow_arc, interpolate_color, BotonGradiente
 from shared.db import obtener_conexion
 from shared.utils import fecha_hoy, hora_actual
 
@@ -48,7 +48,8 @@ class ModuloRespiracion(NMModule):
         self._phase_ms = 0
 
         content = ctk.CTkFrame(self, fg_color="transparent")
-        content.pack(fill="both", expand=True, padx=32, pady=20)
+        content.pack(fill="both", expand=True,
+                     padx=LAYOUT["padding_container"], pady=LAYOUT["padding_container"])
 
         # ── Preset pills ──────────────────────────────────────
         pill_frame = ctk.CTkFrame(content, fg_color="transparent")
@@ -101,9 +102,9 @@ class ModuloRespiracion(NMModule):
             card = ctk.CTkFrame(
                 steps_frame,
                 fg_color=c["bg_surface"],
-                corner_radius=10,
+                corner_radius=LAYOUT["radius_card"],
                 border_width=1,
-                border_color=c["border"],
+                border_color=c.get("border_card", c["border"]),
             )
             card.grid(row=0, column=i, padx=4, sticky="ew")
             ctk.CTkLabel(
@@ -144,7 +145,7 @@ class ModuloRespiracion(NMModule):
 
         self._btn_stop = ctk.CTkButton(
             ctrl_frame, text="Detener", width=100, height=40,
-            fg_color=c["error"], hover_color="#c0392b",
+            fg_color=c["error"], hover_color=c["error"],
             text_color="#ffffff",
             font=(font, TYPOGRAPHY["size_body"]),
             corner_radius=LAYOUT["radius_button"],
@@ -203,7 +204,8 @@ class ModuloRespiracion(NMModule):
         # Center dot
         self._canvas.create_text(
             cx, cy, text="●",
-            fill=c["accent"], font=("Segoe UI", 28),
+            fill=c["accent"],
+            font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_h1"]),
         )
 
     def _draw_phase_arc(self, progress: float):
@@ -245,12 +247,14 @@ class ModuloRespiracion(NMModule):
         secs_left = max(0, phase_dur - int(self._phase_ms / 1000))
         self._canvas.create_text(
             cx, cy - 10, text=str(secs_left),
-            fill=c["text_primary"], font=("Segoe UI", 38, "bold"),
+            fill=c["text_primary"],
+            font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_h1"] + 10, "bold"),
             tags="center_text",
         )
         self._canvas.create_text(
             cx, cy + 20, text=phase_name,
-            fill=c["text_tertiary"], font=("Segoe UI", 11),
+            fill=c["text_tertiary"],
+            font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_caption"]),
             tags="center_text",
         )
 

@@ -73,24 +73,36 @@ class NeuroMoodApp(ctk.CTk):
             pass
 
     def _build_header(self, nombre, c):
-        header = ctk.CTkFrame(self, fg_color=c["bg_secondary"], height=48, corner_radius=0)
+        header = ctk.CTkFrame(self, fg_color=c["bg_secondary"],
+                              height=LAYOUT["header_height"], corner_radius=0)
         header.pack(fill="x")
         header.pack_propagate(False)
 
         ctk.CTkLabel(
-            header, text=f"NeuroMood — Hola, {nombre}",
+            header, text=f"NeuroMood",
             font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_body"], "bold"),
-            text_color=c["text_primary"],
-        ).pack(side="left", padx=16, pady=8)
+            text_color=c["accent"],
+        ).pack(side="left", padx=16, pady=0)
+
+        ctk.CTkLabel(
+            header, text=f"Hola, {nombre}",
+            font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_small"]),
+            text_color=c["text_tertiary"],
+        ).pack(side="left", padx=(0, 0), pady=0)
 
         self._theme_btn = ctk.CTkButton(
-            header, text="☀", width=36, height=36,
-            fg_color="transparent", hover_color=c["bg_surface"],
+            header, text="☀", width=36, height=34,
+            fg_color=c["bg_elevated"], hover_color=c["bg_overlay"],
             text_color=c["text_secondary"],
-            font=(TYPOGRAPHY["font_family"], 16),
+            corner_radius=LAYOUT["radius_button"],
+            font=(TYPOGRAPHY["font_family"], TYPOGRAPHY["size_body"]),
             command=self._toggle_theme,
         )
-        self._theme_btn.pack(side="right", padx=12, pady=6)
+        self._theme_btn.pack(side="right", padx=12)
+
+        # Separador inferior — igual que HeaderFrame en components.py
+        ctk.CTkFrame(header, height=1, fg_color=c.get("border_card", c["border"]),
+                     corner_radius=0).pack(fill="x", side="bottom")
 
     def _toggle_theme(self):
         if "dark" in self._modo:

@@ -632,6 +632,149 @@ class BotonSecundario(ctk.CTkButton):
             )
 
 
+# ── BotonGradiente ────────────────────────────────────────────────────
+# Botón con gradiente real teal→violeta dibujado sobre Canvas.
+# Reemplaza botones primarios de acción principal para máximo impacto visual.
+
+class BotonGradiente(ctk.CTkFrame):
+    """Botón con gradiente teal→violeta. Úsalo para acciones primarias clave."""
+
+    def __init__(self, master, text: str, command=None,
+                 modo: str = "dark_hybrid",
+                 width: int = 180, height: int = 44,
+                 corner_radius: int = None, **kwargs):
+        modo = _norm_modo(modo)
+        c = get_colors(modo)
+        cr = corner_radius if corner_radius is not None else LAYOUT["radius_button"]
+        super().__init__(master, fg_color="transparent",
+                         width=width, height=height, **kwargs)
+        self.pack_propagate(False)
+
+        self._mode = modo
+        self._text = text
+        self._cmd = command
+        self._width = width
+        self._height = height
+        self._cr = cr
+
+        self._canvas = ctk.CTkCanvas(
+            self, width=width, height=height,
+            bg=c["bg_primary"], highlightthickness=0,
+        )
+        self._canvas.pack(fill="both", expand=True)
+        self._lbl = None
+        self._draw(modo)
+
+        self._canvas.bind("<Button-1>",   self._on_click)
+        self._canvas.bind("<Enter>",      self._on_enter)
+        self._canvas.bind("<Leave>",      self._on_leave)
+
+    def _draw(self, modo: str, hover: bool = False):
+        c = get_colors(modo)
+        grad = get_gradient(modo)
+        self._canvas.configure(bg=c["bg_primary"])
+        self._canvas.delete("all")
+
+        w, h, cr = self._width, self._height, self._cr
+        segments = 60
+
+        # Fondo redondeado con gradiente
+        for i in range(segments):
+            t = i / max(segments - 1, 1)
+            # hover: gradiente más brillante
+            c1, c2 = grad
+            if hover:
+                c1 = interpolate_color(c1, "#ffffff", 0.1)
+                c2 = interpolate_color(c2, "#ffffff", 0.1)
+            color = interpolate_color(c1, c2, t)
+            x0 = int(i * w / segments)
+            x1 = int((i + 1) * w / segments) + 1
+            self._canvas.create_rectangle(x0, 0, x1, h, fill=color, outline="")
+
+        # Máscara de esquinas redondeadas (fondo del contenedor padre)
+        bg = c["bg_primary"]
+        r = cr
+        corners = [
+            (0, 0, 2*r, 2*r, 0, 0, r, r),        # top-left
+            (w-2*r, 0, w, 2*r, w-r, 0, w, r),     # top-right
+            (0, h-2*r, 2*r, h, 0, h-r, r, h),     # bottom-left
+            (w-2*r, h-2*r, w, h, w-r, h-r, w, h), # bottom-right
+        ]
+        for rx0, ry0, rx1, ry1, cx, cy, ex, ey in corners:
+            self._canvas.create_arc(
+                cx - r, cy - r, ex + r, ey + r,
+                start=0, extent=90,
+                fill=bg, outline=bg,
+                tags="corner",
+            )
+
+        # Texto centrado
+        font_color = c.get("text_on_accent", "#0d1117") if "dark" in modo else "#ffffff"
+        f = TYPOGRAPHY["font_family"]
+        self._canvas.create_text(
+            w // 2, h // 2,
+            text=self._text,
+            fill=font_color,
+            font=(f, TYPOGRAPHY["size_body"], "bold"),
+            tags="label",
+        )
+
+    def _on_click(self, _=None):
+        if self._cmd:
+            self._cmd()
+
+    def _on_enter(self, _=None):
+        self._draw(self._mode, hover=True)
+
+    def _on_leave(self, _=None):
+        self._draw(self._mode, hover=False)
+
+    def configure(self, **kwargs):
+        if "text" in kwargs:
+            self._text = kwargs.pop("text")
+        if "command" in kwargs:
+            self._cmd = kwargs.pop("command")
+        if "state" in kwargs:
+            state = kwargs.pop("state")
+            self._canvas.configure(state=state)
+        super().configure(**kwargs)
+        self._draw(self._mode)
+
+    def apply_theme(self, new_mode: str, colores: dict):
+        self._mode = _norm_modo(new_mode)
+        c = get_colors(self._mode)
+        self._canvas.configure(bg=c["bg_primary"])
+        self._draw(self._mode)
+
+
+# ── CardFrame mejorada ────────────────────────────────────────────────
+# Versión con borde acento sutil y cambio de estado hover via método
+
+class CardFrame(ctk.CTkFrame):
+    def __init__(self, master, modo: str = "dark_hybrid",
+                 destacada: bool = False, **kwargs):
+        modo = _norm_modo(modo)
+        colores = get_colors(modo)
+        self._destacada = destacada
+        self._modo = modo
+        bc = _c(modo, "border_accent") if destacada else colores.get("border_card", colores["border"])
+        bw = LAYOUT["border_accent_width"] if destacada else 1
+        super().__init__(
+            master,
+            fg_color=colores["bg_surface"],
+            corner_radius=LAYOUT["radius_card"],
+            border_color=bc,
+            border_width=bw,
+            **kwargs,
+        )
+
+    def apply_theme(self, new_mode: str, colores: dict):
+        new_mode = _norm_modo(new_mode)
+        self._modo = new_mode
+        bc = _c(new_mode, "border_accent") if self._destacada else colores.get("border_card", colores["border"])
+        self.configure(fg_color=colores["bg_surface"], border_color=bc)
+
+
 # ── BadgeLabel ────────────────────────────────────────────────────────
 
 class BadgeLabel(ctk.CTkLabel):

@@ -45,8 +45,8 @@ class ModuloRegistroTCC(NMModule):
         for i, name in enumerate(steps):
             pill = ctk.CTkFrame(
                 self._progress_frame,
-                fg_color=c["border"],
-                corner_radius=14,
+                fg_color=c.get("border_card", c["border"]),
+                corner_radius=LAYOUT["radius_pill"],
             )
             pill.pack(side="left", padx=4)
             lbl = ctk.CTkLabel(
@@ -54,7 +54,7 @@ class ModuloRegistroTCC(NMModule):
                 font=(font, TYPOGRAPHY["size_small"]),
                 text_color=c["text_tertiary"],
             )
-            lbl.pack(padx=10, pady=5)
+            lbl.pack(padx=12, pady=6)
             self._step_pills.append((pill, lbl))
 
         # Step container

@@ -101,39 +101,46 @@ class HubProfesional(ctk.CTk):
         c = COLORS[self._modo]
         font = TYPOGRAPHY["font_family"]
 
-        # Header
+        # Header con separador
         header = ctk.CTkFrame(self, fg_color=c["bg_secondary"],
-                              height=46, corner_radius=0)
+                              height=LAYOUT["header_height"], corner_radius=0)
         header.pack(fill="x")
         header.pack_propagate(False)
 
         ctk.CTkLabel(
             header, text="Hub Profesional",
-            font=(font, TYPOGRAPHY["size_h3"], "bold"),
-            text_color=c["text_primary"],
-        ).pack(side="left", padx=16, pady=8)
+            font=(font, TYPOGRAPHY["size_body"], "bold"),
+            text_color=c["accent"],
+        ).pack(side="left", padx=16)
 
         self._lbl_status = ctk.CTkLabel(
             header, text="Conectando…",
             font=(font, TYPOGRAPHY["size_caption"]),
             text_color=c["text_tertiary"],
         )
-        self._lbl_status.pack(side="left", padx=12)
+        self._lbl_status.pack(side="left", padx=8)
 
         ctk.CTkButton(
-            header, text="↻", width=32, height=32,
-            fg_color="transparent", hover_color=c["bg_surface"],
-            text_color=c["text_secondary"], font=(font, 14),
+            header, text="↻", width=34, height=34,
+            fg_color=c["bg_elevated"], hover_color=c["bg_overlay"],
+            text_color=c["text_secondary"],
+            corner_radius=LAYOUT["radius_button"],
+            font=(font, TYPOGRAPHY["size_body"]),
             command=self._reconnect,
-        ).pack(side="right", padx=4)
+        ).pack(side="right", padx=6)
 
         ctk.CTkButton(
             header, text="☀" if "dark" in self._modo else "☾",
-            width=32, height=32,
-            fg_color="transparent", hover_color=c["bg_surface"],
-            text_color=c["text_secondary"], font=(font, 14),
+            width=34, height=34,
+            fg_color=c["bg_elevated"], hover_color=c["bg_overlay"],
+            text_color=c["text_secondary"],
+            corner_radius=LAYOUT["radius_button"],
+            font=(font, TYPOGRAPHY["size_body"]),
             command=self._toggle_theme,
-        ).pack(side="right", padx=(0, 4))
+        ).pack(side="right", padx=(0, 2))
+
+        ctk.CTkFrame(header, height=1, fg_color=c.get("border_card", c["border"]),
+                     corner_radius=0).pack(fill="x", side="bottom")
 
         # Body
         body = ctk.CTkFrame(self, fg_color="transparent")
@@ -154,43 +161,62 @@ class HubProfesional(ctk.CTk):
 
     def _build_nav(self, c, font):
         self._nav_btns: dict = {}
+
+        # Logo/marca en la nav
+        ctk.CTkLabel(
+            self._nav, text="NeuroMood",
+            font=(font, TYPOGRAPHY["size_small"], "bold"),
+            text_color=c["accent"],
+        ).pack(padx=16, pady=(16, 4), anchor="w")
+        ctk.CTkLabel(
+            self._nav, text="Hub Profesional",
+            font=(font, TYPOGRAPHY["size_caption"]),
+            text_color=c["text_tertiary"],
+        ).pack(padx=16, pady=(0, 12), anchor="w")
+        ctk.CTkFrame(self._nav, height=1, fg_color=c.get("border_card", c["border"])).pack(
+            fill="x", padx=12, pady=(0, 8))
+
         for item in NAV_ITEMS:
+            is_active = item["id"] == "dashboard"
             btn = ctk.CTkButton(
                 self._nav,
                 text=f"  {item['icon']}  {item['label']}",
                 anchor="w", height=40, width=160,
-                fg_color=c["accent"] if item["id"] == "dashboard" else "transparent",
-                hover_color=c["bg_surface"],
-                text_color=c["text_on_accent"] if item["id"] == "dashboard"
-                else c["text_secondary"],
-                corner_radius=8,
-                font=(font, TYPOGRAPHY["size_body"]),
+                fg_color=c["bg_elevated"] if is_active else "transparent",
+                hover_color=c["bg_elevated"],
+                text_color=c["text_primary"] if is_active else c["text_secondary"],
+                corner_radius=LAYOUT["radius_button"],
+                border_width=0,
+                font=(font, TYPOGRAPHY["size_small"], "bold" if is_active else "normal"),
                 command=lambda vid=item["id"]: self._show_view(vid),
             )
-            btn.pack(padx=10, pady=4, fill="x")
+            btn.pack(padx=8, pady=2, fill="x")
             self._nav_btns[item["id"]] = btn
 
-        ctk.CTkFrame(self._nav, fg_color=c["border"], height=1).pack(
+        ctk.CTkFrame(self._nav, fg_color=c.get("border_card", c["border"]), height=1).pack(
             fill="x", padx=12, pady=12)
         self._lbl_pac_sel = ctk.CTkLabel(
-            self._nav, text="Sin paciente",
-            font=(font, TYPOGRAPHY["size_small"]),
+            self._nav, text="Sin paciente seleccionado",
+            font=(font, TYPOGRAPHY["size_caption"]),
             text_color=c["text_tertiary"], wraplength=150,
         )
-        self._lbl_pac_sel.pack(padx=12, anchor="w")
+        self._lbl_pac_sel.pack(padx=14, anchor="w")
 
     # ── Routing ──────────────────────────────────────────────────────────────
 
     def _show_view(self, view_id: str):
         c = COLORS[self._modo]
         self._current_view = view_id
+        font = TYPOGRAPHY["font_family"]
         for vid, btn in self._nav_btns.items():
             if vid == view_id:
-                btn.configure(fg_color=c["accent"],
-                              text_color=c["text_on_accent"])
+                btn.configure(fg_color=c["bg_elevated"],
+                              text_color=c["text_primary"],
+                              font=(font, TYPOGRAPHY["size_small"], "bold"))
             else:
                 btn.configure(fg_color="transparent",
-                              text_color=c["text_secondary"])
+                              text_color=c["text_secondary"],
+                              font=(font, TYPOGRAPHY["size_small"], "normal"))
 
         for w in self._content.winfo_children():
             w.destroy()
@@ -237,24 +263,31 @@ class HubProfesional(ctk.CTk):
         grid.columnconfigure(1, weight=1)
         grid.columnconfigure(2, weight=1)
 
+        from shared.components import interpolate_color
+        from shared.theme import get_gradient
+        grad = get_gradient(self._modo)
+
         for i, p in enumerate(self._pacientes):
             nombre = p.get("patient_name") or p.get("patient_id", "—")
             pid = p.get("patient_id", "")
+            t = (i % 3) / 2
+            card_accent = interpolate_color(grad[0], grad[1], t)
+
             card = ctk.CTkFrame(
                 grid, fg_color=c["bg_surface"],
                 corner_radius=LAYOUT["radius_card"],
-                border_width=1, border_color=c["border"],
+                border_width=1,
+                border_color=c.get("border_card", c["border"]),
             )
             card.grid(row=i // 3, column=i % 3, sticky="nsew", padx=6, pady=6)
 
-            inner = ctk.CTkFrame(card, fg_color="transparent")
-            inner.pack(fill="both", expand=True, padx=14, pady=12)
+            # Barra de color superior
+            top_bar = ctk.CTkCanvas(card, height=4, highlightthickness=0, bg=card_accent)
+            top_bar.pack(fill="x")
 
-            # Dot de estado (verde = conectado, gris = sin datos recientes)
-            dot_c = ctk.CTkCanvas(inner, width=10, height=10,
-                                  bg=c["bg_surface"], highlightthickness=0)
-            dot_c.pack(anchor="e")
-            dot_c.create_oval(1, 1, 9, 9, fill=c["accent"], outline="")
+            inner = ctk.CTkFrame(card, fg_color="transparent")
+            inner.pack(fill="both", expand=True,
+                       padx=LAYOUT["padding_card"] - 6, pady=10)
 
             ctk.CTkLabel(
                 inner, text=nombre,

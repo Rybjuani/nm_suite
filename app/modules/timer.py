@@ -33,7 +33,8 @@ class ModuloTimer(NMModule):
         self._custom_mode = False
 
         content = ctk.CTkFrame(self, fg_color="transparent")
-        content.pack(fill="both", expand=True, padx=32, pady=20)
+        content.pack(fill="both", expand=True,
+                     padx=LAYOUT["padding_container"], pady=LAYOUT["padding_container"])
 
         # Preset chips
         chip_frame = ctk.CTkFrame(content, fg_color="transparent")
@@ -130,7 +131,7 @@ class ModuloTimer(NMModule):
 
         self._btn_stop = ctk.CTkButton(
             ctrl_frame, text="Detener", width=100, height=40,
-            fg_color=c["error"], hover_color="#c0392b",
+            fg_color=c["error"], hover_color=c["error"],
             text_color="#ffffff",
             font=(font, TYPOGRAPHY["size_body"]),
             corner_radius=LAYOUT["radius_button"],

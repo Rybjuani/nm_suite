@@ -111,7 +111,9 @@ class ModuloActividades(NMModule):
         cat = act.get("categoria", "Autocuidado")
         cat_color = CATEGORY_COLORS.get(cat, c["accent"])
 
-        card = ctk.CTkFrame(self._content, fg_color=c["bg_surface"], corner_radius=LAYOUT["radius_card"])
+        card = ctk.CTkFrame(self._content, fg_color=c["bg_surface"],
+                            corner_radius=LAYOUT["radius_card"],
+                            border_width=1, border_color=c.get("border_card", c["border"]))
         card.pack(fill="x", pady=(0, LAYOUT["gap_cards"]))
 
         # Color accent bar (simulated with a thin label)
