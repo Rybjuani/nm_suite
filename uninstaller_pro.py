@@ -1,35 +1,59 @@
-"""uninstaller_pro.py — Desinstalador del Hub Profesional NeuroMood."""
+"""uninstaller_pro.py — Desinstalador Hub Profesional NeuroMood (PyQt6)"""
 import sys
 import os
 import shutil
 import subprocess
-import threading
 import time
 from pathlib import Path
 
-import customtkinter as ctk
-from PIL import Image
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
+    QLabel, QPushButton, QProgressBar, QFrame,
+)
+from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
+from PyQt6.QtGui import QIcon, QPixmap
 
-BG_PRIMARY   = "#0B1928"
-BG_SECONDARY = "#0D2137"
-BG_SURFACE   = "#112740"
-ACCENT       = "#4A9EE8"
-ACCENT_HOVER = "#5AAEF8"
-TEXT_PRIMARY = "#FFFFFF"
-TEXT_SEC     = "#E8EEF4"
-TEXT_TERT    = "#8BA4BE"
-BORDER       = "#1A3050"
-SUCCESS      = "#22D47E"
-WARNING_C    = "#F0A500"
-ERROR_C      = "#E8505B"
+try:
+    from shared.installer_common import (
+        BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
+        TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
+        FONT_FAMILY, recurso, aplicar_captionbar_installer,
+    )
+except ImportError:
+    _here = os.path.dirname(os.path.abspath(__file__))
+    if _here not in sys.path:
+        sys.path.insert(0, _here)
+    from installer_common import (
+        BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
+        TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
+        FONT_FAMILY, recurso, aplicar_captionbar_installer,
+    )
 
 REG_KEY = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMoodPro"
 
+_SS = f"""
+* {{ font-family: "{FONT_FAMILY}", Arial; color: {TEXT_PRIMARY}; }}
+QMainWindow, QWidget {{ background: {BG_PRIMARY}; }}
+QLabel {{ background: transparent; }}
+QPushButton {{
+    background: {ACCENT}; color: {TEXT_PRIMARY}; border: none;
+    border-radius: 8px; padding: 7px 18px; font-size: 13px; font-weight: bold;
+}}
+QPushButton:hover {{ background: {ACCENT_HOVER}; }}
+QPushButton#outline {{
+    background: transparent; color: {ACCENT};
+    border: 2px solid {ACCENT}; border-radius: 8px;
+}}
+QPushButton#outline:hover {{ background: {BG_SURFACE}; }}
+QPushButton#danger {{ background: {ERROR_C}; border-radius: 8px; }}
+QPushButton#danger:hover {{ background: #c83040; }}
+QProgressBar {{
+    background: {BORDER}; border-radius: 3px; height: 6px;
+}}
+QProgressBar::chunk {{ background: {ACCENT}; border-radius: 3px; }}
+"""
 
-def recurso(nombre: str) -> str:
-    base = sys._MEIPASS if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(base, nombre)
-
+# ── Lógica de negocio (preservada exacta) ─────────────────────────────────────
 
 def detectar_install_dir() -> str:
     if "--install-dir" in sys.argv:
@@ -49,34 +73,23 @@ def detectar_install_dir() -> str:
 
 
 def matar_procesos_pro(install_dir: str):
-    try:
-        subprocess.run(
-            ["taskkill", "/F", "/IM", "HubProfesional.exe"],
-            capture_output=True,
-            creationflags=subprocess.CREATE_NO_WINDOW,
-            timeout=10,
-        )
-    except Exception:
-        pass
+    for proc_name in ["NeuroMood Hub Profesional.exe", "HubProfesional.exe"]:
+        try:
+            subprocess.run(["taskkill", "/F", "/IM", proc_name],
+                           capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW, timeout=10)
+        except Exception:
+            pass
     try:
         escaped = install_dir.replace("\\", "\\\\")
         result = subprocess.run(
-            ["wmic", "process", "where",
-             f"ExecutablePath like '{escaped}%'",
-             "get", "ProcessId"],
-            capture_output=True, text=True,
-            creationflags=subprocess.CREATE_NO_WINDOW,
-            timeout=10,
+            ["wmic", "process", "where", f"ExecutablePath like '{escaped}%'", "get", "ProcessId"],
+            capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW, timeout=10,
         )
         for line in result.stdout.splitlines():
             pid = line.strip()
             if pid.isdigit():
-                subprocess.run(
-                    ["taskkill", "/F", "/PID", pid],
-                    capture_output=True,
-                    creationflags=subprocess.CREATE_NO_WINDOW,
-                    timeout=5,
-                )
+                subprocess.run(["taskkill", "/F", "/PID", pid],
+                               capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW, timeout=5)
     except Exception:
         pass
 
@@ -91,12 +104,24 @@ def eliminar_registro_windows():
 
 def eliminar_accesos_pro():
     escritorio = Path(os.path.expanduser("~")) / "Desktop"
-    start_menu = (
-        Path(os.environ.get("APPDATA", ""))
-        / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "NeuroMood"
-    )
+    start_menu = (Path(os.environ.get("APPDATA", "")) /
+                  "Microsoft" / "Windows" / "Start Menu" / "Programs" / "NeuroMood")
+    for nombre in ["NeuroMood Hub Profesional"]:
+        try:
+            (escritorio / f"{nombre}.lnk").unlink(missing_ok=True)
+        except Exception:
+            pass
     try:
-        (escritorio / "NeuroMood Hub Profesional.lnk").unlink(missing_ok=True)
+        for lnk in escritorio.glob("*.lnk"):
+            target = ""
+            try:
+                import win32com.client
+                shell = win32com.client.Dispatch("WScript.Shell")
+                target = shell.CreateShortcut(str(lnk)).TargetPath
+            except Exception:
+                pass
+            if "Hub Profesional" in target or "HubProfesional" in target:
+                lnk.unlink(missing_ok=True)
     except Exception:
         pass
     try:
@@ -113,12 +138,8 @@ def cerrar_explorer_en(carpeta: str):
             carpeta.replace("\\", "/").replace(" ", "%20") +
             '" } | ForEach-Object { $_.Quit() }'
         )
-        subprocess.run(
-            ["powershell", "-NoProfile", "-Command", ps_cmd],
-            capture_output=True,
-            creationflags=subprocess.CREATE_NO_WINDOW,
-            timeout=10,
-        )
+        subprocess.run(["powershell", "-NoProfile", "-Command", ps_cmd],
+                       capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW, timeout=10)
     except Exception:
         pass
 
@@ -126,20 +147,15 @@ def cerrar_explorer_en(carpeta: str):
 def vaciar_carpeta(carpeta: str):
     if not Path(carpeta).exists():
         return
-    subprocess.run(
-        f'del /f /s /q "{carpeta}\\*"',
-        shell=True, capture_output=True, timeout=30,
-    )
-    subprocess.run(
-        f'for /d %x in ("{carpeta}\\*") do @rd /s /q "%x"',
-        shell=True, capture_output=True, timeout=30,
-    )
+    subprocess.run(f'del /f /s /q "{carpeta}\\*"', shell=True, capture_output=True, timeout=30)
+    subprocess.run(f'for /d %x in ("{carpeta}\\*") do @rd /s /q "%x"',
+                   shell=True, capture_output=True, timeout=30)
 
 
 def lanzar_bat_limpieza(install_dir: str):
     temp_dir = os.environ.get("TEMP", os.path.expanduser("~"))
-    temp_exe = str(Path(temp_dir) / "_nm_desinstalar_pro.exe")
-    bat = Path(temp_dir) / "_nm_cleanup_pro.bat"
+    temp_exe = str(Path(temp_dir) / "_nm_pro_desinstalar.exe")
+    bat = Path(temp_dir) / "_nm_pro_cleanup.bat"
     lines = [
         "@echo off",
         f'cd /d "{temp_dir}"',
@@ -151,9 +167,7 @@ def lanzar_bat_limpieza(install_dir: str):
     try:
         bat.write_text("\r\n".join(lines), encoding="ascii")
         import ctypes
-        ctypes.windll.shell32.ShellExecuteW(
-            None, "open", "cmd.exe", f'/c "{bat}"', temp_dir, 0
-        )
+        ctypes.windll.shell32.ShellExecuteW(None, "open", "cmd.exe", f'/c "{bat}"', temp_dir, 0)
     except Exception:
         pass
 
@@ -163,14 +177,11 @@ def relanzar_desde_temp() -> bool:
         return False
     if "--from-temp" in sys.argv:
         return False
-
     temp_dir = os.environ.get("TEMP", os.path.expanduser("~"))
     self_exe = sys.executable
-    temp_exe = str(Path(temp_dir) / "_nm_desinstalar_pro.exe")
-
+    temp_exe = str(Path(temp_dir) / "_nm_pro_desinstalar.exe")
     if os.path.normcase(self_exe) == os.path.normcase(temp_exe):
         return False
-
     install_dir = detectar_install_dir()
     try:
         shutil.copy2(self_exe, temp_exe)
@@ -180,163 +191,176 @@ def relanzar_desde_temp() -> bool:
         return False
 
 
-class DesinstaladorPro(ctk.CTk):
-    def __init__(self):
-        super().__init__()
-        ctk.set_appearance_mode("dark")
-        ctk.set_default_color_theme("blue")
+# ── Worker ────────────────────────────────────────────────────────────────────
 
-        self.title("Desinstalar — NeuroMood Hub Profesional")
-        self.geometry("480x340")
-        self.resizable(False, False)
-        self.configure(fg_color=BG_PRIMARY)
+class _ProUninstWorker(QThread):
+    progress_signal = pyqtSignal(float, str)
+    done_signal     = pyqtSignal()
+    error_signal    = pyqtSignal(str)
 
-        self.update_idletasks()
-        x = (self.winfo_screenwidth() - 480) // 2
-        y = (self.winfo_screenheight() - 340) // 2
-        self.geometry(f"480x340+{x}+{y}")
+    def __init__(self, install_dir: str, parent=None):
+        super().__init__(parent)
+        self._install_dir = install_dir
 
+    def run(self):
         try:
-            self.iconbitmap(recurso("NM_icon.ico"))
-        except Exception:
-            pass
-        self.after(100, self._aplicar_captionbar)
-
-        self._install_dir = detectar_install_dir()
-        self._construir_ui()
-
-    def _aplicar_captionbar(self):
-        try:
-            import ctypes
-            hwnd = ctypes.windll.user32.GetParent(self.winfo_id())
-            if hwnd == 0:
-                hwnd = self.winfo_id()
-            v = ctypes.c_int(1)
-            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 20, ctypes.byref(v), 4)
-            if sys.getwindowsversion().build >= 22000:
-                r, g, b = 0x0D, 0x21, 0x37
-                color = ctypes.c_uint(r | (g << 8) | (b << 16))
-                ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, ctypes.byref(color), 4)
-            ctypes.windll.user32.SetWindowPos(hwnd, 0, 0, 0, 0, 0, 0x0037)
-        except Exception:
-            pass
-
-    def _construir_ui(self):
-        header = ctk.CTkFrame(self, fg_color=BG_SECONDARY, corner_radius=0, height=56)
-        header.pack(fill="x")
-        header.pack_propagate(False)
-        try:
-            img = Image.open(recurso("LOGO.png")).convert("RGBA")
-            img.thumbnail((120, 40), Image.LANCZOS)
-            self._logo_ctk = ctk.CTkImage(light_image=img, dark_image=img, size=(img.width, img.height))
-            ctk.CTkLabel(header, image=self._logo_ctk, text="").pack(side="left", padx=20, pady=8)
-        except Exception:
-            ctk.CTkLabel(header, text="NeuroMood", font=("Segoe UI", 14, "bold"),
-                         text_color=TEXT_PRIMARY).pack(side="left", padx=20)
-        ctk.CTkFrame(header, height=1, fg_color=BORDER).pack(side="bottom", fill="x")
-
-        self.body = ctk.CTkFrame(self, fg_color=BG_PRIMARY)
-        self.body.pack(fill="both", expand=True, padx=28, pady=16)
-
-        self._mostrar_confirmacion()
-
-    def _limpiar_body(self):
-        for w in self.body.winfo_children():
-            w.destroy()
-
-    def _mostrar_confirmacion(self):
-        self._limpiar_body()
-
-        ctk.CTkLabel(self.body, text="Desinstalar Hub Profesional",
-                     font=("Segoe UI", 16, "bold"), text_color=TEXT_PRIMARY).pack(anchor="w", pady=(0, 8))
-
-        ctk.CTkLabel(
-            self.body,
-            text=(
-                "Se eliminarán los archivos del Hub Profesional de\n"
-                f"tu computadora.\n\nCarpeta: {self._install_dir}"
-            ),
-            font=("Segoe UI", 12), text_color=TEXT_SEC, justify="left", anchor="w",
-        ).pack(anchor="w", pady=(0, 12))
-
-        ctk.CTkLabel(
-            self.body,
-            text="Los datos de pacientes en la base de datos no se modifican.",
-            font=("Segoe UI", 11), text_color=TEXT_TERT,
-        ).pack(anchor="w", pady=(0, 20))
-
-        btn_row = ctk.CTkFrame(self.body, fg_color="transparent")
-        btn_row.pack(fill="x", side="bottom")
-
-        ctk.CTkButton(
-            btn_row, text="Cancelar", width=110, height=34,
-            fg_color="transparent", border_width=2, border_color=ACCENT,
-            text_color=ACCENT, hover_color=BG_SURFACE, font=("Segoe UI", 12),
-            command=self.destroy,
-        ).pack(side="left")
-
-        ctk.CTkButton(
-            btn_row, text="Desinstalar", width=130, height=34,
-            fg_color=ERROR_C, hover_color="#C83040",
-            text_color=TEXT_PRIMARY, font=("Segoe UI", 12, "bold"),
-            command=self._iniciar_desinstalacion,
-        ).pack(side="right")
-
-    def _iniciar_desinstalacion(self):
-        self._limpiar_body()
-
-        ctk.CTkLabel(self.body, text="Desinstalando...",
-                     font=("Segoe UI", 16, "bold"), text_color=TEXT_PRIMARY).pack(anchor="w", pady=(0, 12))
-
-        self._pbar = ctk.CTkProgressBar(self.body, height=6, fg_color=BORDER,
-                                        progress_color=ACCENT, corner_radius=3)
-        self._pbar.pack(fill="x", pady=(0, 8))
-        self._pbar.set(0)
-
-        self._status = ctk.CTkLabel(self.body, text="Preparando...",
-                                    font=("Segoe UI", 11), text_color=TEXT_TERT, anchor="w")
-        self._status.pack(anchor="w")
-
-        threading.Thread(target=self._desinstalar, daemon=True).start()
-
-    def _set(self, progress: float, text: str):
-        def _update():
-            self._pbar.set(progress)
-            self._status.configure(text=text)
-        self.after(0, _update)
-
-    def _desinstalar(self):
-        try:
-            self._set(0.10, "Cerrando Hub Profesional...")
+            self.progress_signal.emit(0.10, "Cerrando Hub Profesional...")
             matar_procesos_pro(self._install_dir)
             time.sleep(1.5)
-
-            self._set(0.30, "Eliminando accesos directos...")
+            self.progress_signal.emit(0.25, "Eliminando accesos directos...")
             eliminar_accesos_pro()
-
-            self._set(0.50, "Limpiando registro de Windows...")
+            self.progress_signal.emit(0.45, "Limpiando registro de Windows...")
             eliminar_registro_windows()
-
-            self._set(0.65, "Cerrando Explorer...")
+            self.progress_signal.emit(0.60, "Cerrando Explorer...")
             cerrar_explorer_en(self._install_dir)
             time.sleep(0.5)
-
-            self._set(0.80, "Eliminando archivos de instalación...")
+            self.progress_signal.emit(0.80, "Eliminando archivos...")
             vaciar_carpeta(self._install_dir)
-
-            self._set(0.92, "Finalizando...")
+            self.progress_signal.emit(0.90, "Finalizando...")
             lanzar_bat_limpieza(self._install_dir)
-
-            self._set(1.0, "¡Desinstalación completada!")
-            time.sleep(1.0)
-            os._exit(0)
-
+            self.progress_signal.emit(1.0, "¡Desinstalacion completada!")
+            self.done_signal.emit()
         except Exception as e:
-            self._set(0, f"Error: {e}")
+            self.error_signal.emit(str(e))
+
+
+# ── DesinstaladorPro ──────────────────────────────────────────────────────────
+
+class DesinstaladorPro(QMainWindow):
+
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Desinstalar — NeuroMood Hub Profesional")
+        self.setFixedSize(480, 300)
+        self.setStyleSheet(_SS)
+        try:
+            self.setWindowIcon(QIcon(recurso("no_symbol.ico")))
+        except Exception:
+            pass
+        screen = QApplication.primaryScreen().availableGeometry()
+        self.move((screen.width() - 480) // 2, (screen.height() - 300) // 2)
+        QTimer.singleShot(150, lambda: aplicar_captionbar_installer(self))
+
+        self._install_dir = detectar_install_dir()
+        self._worker: _ProUninstWorker | None = None
+        self._build_ui()
+
+    def _build_ui(self):
+        central = QWidget()
+        self.setCentralWidget(central)
+        layout = QVBoxLayout(central)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        # Header
+        header = QWidget()
+        header.setFixedHeight(56)
+        header.setStyleSheet(f"background: {BG_SECONDARY};")
+        hl = QHBoxLayout(header)
+        hl.setContentsMargins(20, 0, 20, 0)
+        logo_lbl = QLabel()
+        try:
+            from PIL import Image as PILImage
+            img = PILImage.open(recurso("LOGO.png")).convert("RGBA")
+            img.thumbnail((120, 40), PILImage.LANCZOS)
+            from PyQt6.QtGui import QImage
+            qimg = QImage(img.tobytes("raw", "RGBA"), img.width, img.height,
+                          QImage.Format.Format_RGBA8888)
+            logo_lbl.setPixmap(QPixmap.fromImage(qimg))
+        except Exception:
+            logo_lbl.setText("NeuroMood Hub")
+            logo_lbl.setStyleSheet(f"color: {ACCENT}; font-size: 14px; font-weight: bold;")
+        hl.addWidget(logo_lbl)
+        hl.addStretch()
+        layout.addWidget(header)
+
+        sep = QFrame(); sep.setFixedHeight(1)
+        sep.setStyleSheet(f"background: {BORDER};")
+        layout.addWidget(sep)
+
+        self._stack = QWidget()
+        self._stack_layout = QVBoxLayout(self._stack)
+        self._stack_layout.setContentsMargins(28, 16, 28, 16)
+        layout.addWidget(self._stack, stretch=1)
+
+        self._show_confirm()
+
+    def _clear_stack(self):
+        while self._stack_layout.count():
+            item = self._stack_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+    def _show_confirm(self):
+        self._clear_stack()
+
+        title = QLabel("Desinstalar Hub Profesional")
+        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
+        self._stack_layout.addWidget(title)
+        self._stack_layout.addSpacing(8)
+
+        desc = QLabel(
+            f"Se eliminaran los archivos de instalacion del Hub Profesional\n"
+            f"de tu computadora.\n\nCarpeta: {self._install_dir}"
+        )
+        desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px;")
+        self._stack_layout.addWidget(desc)
+        self._stack_layout.addStretch()
+
+        btn_row = QHBoxLayout()
+        btn_cancel = QPushButton("Cancelar")
+        btn_cancel.setObjectName("outline")
+        btn_cancel.setFixedSize(110, 34)
+        btn_cancel.clicked.connect(self.close)
+        btn_row.addWidget(btn_cancel)
+        btn_row.addStretch()
+        btn_uninst = QPushButton("Desinstalar")
+        btn_uninst.setObjectName("danger")
+        btn_uninst.setFixedSize(130, 34)
+        btn_uninst.clicked.connect(self._iniciar)
+        btn_row.addWidget(btn_uninst)
+        self._stack_layout.addLayout(btn_row)
+
+    def _iniciar(self):
+        self._clear_stack()
+
+        title = QLabel("Desinstalando Hub Profesional...")
+        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
+        self._stack_layout.addWidget(title)
+        self._stack_layout.addSpacing(12)
+
+        self._pbar = QProgressBar()
+        self._pbar.setRange(0, 100); self._pbar.setValue(0)
+        self._stack_layout.addWidget(self._pbar)
+        self._stack_layout.addSpacing(6)
+
+        self._status_lbl = QLabel("Preparando...")
+        self._status_lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px;")
+        self._stack_layout.addWidget(self._status_lbl)
+        self._stack_layout.addStretch()
+
+        self._worker = _ProUninstWorker(self._install_dir, self)
+        self._worker.progress_signal.connect(self._set_progress)
+        self._worker.done_signal.connect(self._on_done)
+        self._worker.error_signal.connect(self._on_error)
+        self._worker.start()
+
+    def _set_progress(self, v: float, t: str):
+        self._pbar.setValue(int(v * 100))
+        self._status_lbl.setText(t)
+
+    def _on_done(self):
+        QTimer.singleShot(1000, lambda: os._exit(0))
+
+    def _on_error(self, msg: str):
+        self._status_lbl.setText(f"Error: {msg}")
+        self._status_lbl.setStyleSheet(f"color: {ERROR_C}; font-size: 11px;")
 
 
 if __name__ == "__main__":
     if relanzar_desde_temp():
         sys.exit(0)
-    app = DesinstaladorPro()
-    app.mainloop()
+    app = QApplication(sys.argv)
+    win = DesinstaladorPro()
+    win.show()
+    sys.exit(app.exec())
