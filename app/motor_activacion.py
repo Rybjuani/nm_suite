@@ -19,6 +19,22 @@ ACTIVIDADES_DEFAULT = [
 ]
 
 
+def _obtener_recientes(conn=None) -> set:
+    cerrar = conn is None
+    if conn is None:
+        conn = obtener_conexion()
+    try:
+        rows = conn.execute(
+            "SELECT actividad FROM activacion ORDER BY fecha DESC, hora DESC LIMIT 12"
+        ).fetchall()
+        return {r[0] if isinstance(r, tuple) else r["actividad"] for r in rows}
+    except Exception:
+        return set()
+    finally:
+        if cerrar:
+            conn.close()
+
+
 def sugerir_actividades(animo: int, max_results: int = 3) -> list:
     conn = obtener_conexion()
     try:
@@ -42,18 +58,6 @@ def sugerir_actividades(animo: int, max_results: int = 3) -> list:
     pool = frescos if len(frescos) >= max_results else candidatos
 
     return pool[:max_results]
-
-
-def _obtener_recientes() -> set:
-    try:
-        conn = obtener_conexion()
-        rows = conn.execute(
-            "SELECT actividad FROM activacion ORDER BY fecha DESC, hora DESC LIMIT 12"
-        ).fetchall()
-        conn.close()
-        return {r[0] if isinstance(r, tuple) else r["actividad"] for r in rows}
-    except Exception:
-        return set()
 
 
 def registrar_resultado(nombre: str, resultado: str, animo: int):

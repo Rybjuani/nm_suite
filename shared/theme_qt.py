@@ -14,12 +14,15 @@ Uso:
 
 import os
 import sys
+import logging
+
+_log = logging.getLogger("NeuroMood.theme_qt")
 
 from PyQt6.QtCore import QPointF, QRectF, Qt
 from PyQt6.QtGui import (
     QColor, QFont, QFontDatabase,
     QLinearGradient, QRadialGradient, QConicalGradient,
-    QPalette, QBrush,
+    QPalette, QBrush, QPainter, QPixmap,
 )
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect, QApplication
 
@@ -31,6 +34,69 @@ except ImportError:
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
     from theme import COLORS, TYPOGRAPHY, LAYOUT, GRADIENTS, CATEGORY_COLORS, get_gradient
+
+
+def _load_premium_fonts():
+    """Intenta cargar Inter Variable o Satoshi si estan disponibles."""
+    font_candidates = [
+        "Inter-Variable.ttf", "Inter.ttf",
+        "Satoshi-Variable.ttf", "Satoshi-Regular.ttf",
+    ]
+    base_dirs = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "fonts"),
+        os.path.join(os.path.expanduser("~"), "NeuroMood", "assets", "fonts"),
+    ]
+    loaded = []
+    for d in base_dirs:
+        for f in font_candidates:
+            path = os.path.join(d, f)
+            if os.path.exists(path):
+                fid = QFontDatabase.addApplicationFont(path)
+                if fid >= 0:
+                    families = QFontDatabase.applicationFontFamilies(fid)
+                    loaded.extend(families)
+    return loaded[0] if loaded else None
+
+
+_PREMIUM_FONT_FAMILY = None
+_PREMIUM_FONT_ATTEMPTED = False
+_noise_pixmap_cache: dict = {}
+
+
+def _ensure_premium_font():
+    global _PREMIUM_FONT_FAMILY, _PREMIUM_FONT_ATTEMPTED
+    if _PREMIUM_FONT_ATTEMPTED or QApplication.instance() is None:
+        return
+    _PREMIUM_FONT_ATTEMPTED = True
+    try:
+        _PREMIUM_FONT_FAMILY = _load_premium_fonts()
+    except Exception:
+        _PREMIUM_FONT_FAMILY = None
+
+
+def _font_family() -> str:
+    _ensure_premium_font()
+    return _PREMIUM_FONT_FAMILY or TYPOGRAPHY.get("font_family", "Segoe UI")
+
+
+def _gradient_stops(modo: str = "dark_hybrid") -> list[tuple[str, float]]:
+    raw = get_gradient(norm_modo(modo))
+    if raw and isinstance(raw[0], (tuple, list)):
+        return [(str(color_hex), float(pos)) for color_hex, pos in raw]
+    if len(raw) >= 2:
+        return [(str(raw[0]), 0.0), (str(raw[1]), 1.0)]
+    return [("#6366f1", 0.0), ("#a855f7", 1.0)]
+
+
+def gradient_colors(modo: str = "dark_hybrid") -> list[str]:
+    """Devuelve solo los colores hex del gradiente activo."""
+    return [color_hex for color_hex, _ in _gradient_stops(modo)]
+
+
+def _as_hex(color_like) -> str:
+    if isinstance(color_like, (tuple, list)) and color_like:
+        return str(color_like[0])
+    return str(color_like)
 
 
 # ── Normalización de modo ─────────────────────────────────────────────────────
@@ -69,7 +135,7 @@ def qcolor(key: str, modo: str = "dark_hybrid", alpha: int = 255) -> QColor:
         alpha: Opacidad 0-255 (255 = opaco)
 
     Ejemplos:
-        qcolor('accent')                     -> QColor("#00d4c8")
+        qcolor('accent')                     -> QColor("#6366f1")
         qcolor('bg_surface', 'light_hybrid') -> QColor("#ffffff")
         qcolor('accent', alpha=80)           -> QColor teal semitransparente
     """
@@ -92,6 +158,8 @@ def qcolor_hex(hex_str: str, alpha: int = 255) -> QColor:
 
 def interpolate_color(c1: str, c2: str, t: float) -> str:
     """Interpolación lineal entre dos hex. t=0 → c1, t=1 → c2. Pura, sin estado."""
+    c1 = _as_hex(c1)
+    c2 = _as_hex(c2)
     c1 = c1.lstrip("#")
     c2 = c2.lstrip("#")
     r1, g1, b1 = int(c1[0:2], 16), int(c1[2:4], 16), int(c1[4:6], 16)
@@ -125,7 +193,7 @@ def qfont(size_key: str = "size_body", bold: bool = False,
         qfont('size_body')
         qfont(size_key=28, bold=True)  # tamaño directo
     """
-    fam = family or TYPOGRAPHY.get("font_family", "Segoe UI")
+    fam = family or _font_family()
     if isinstance(size_key, int):
         pt = size_key
     else:
@@ -133,6 +201,8 @@ def qfont(size_key: str = "size_body", bold: bool = False,
 
     f = QFont(fam, pt)
     f.setWeight(QFont.Weight.Bold if bold else QFont.Weight.Normal)
+    if size_key in ("size_h1", "size_h2"):
+        f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, -0.5)
     f.setHintingPreference(QFont.HintingPreference.PreferFullHinting)
     return f
 
@@ -200,6 +270,11 @@ def shadow_effect(tipo: str = "card", modo: str = "dark_hybrid",
         shadow.setBlurRadius(12)
         shadow.setOffset(0, 4)
         col = QColor(0, 0, 0, 60)
+    elif tipo == "glass":
+        shadow.setBlurRadius(48)
+        shadow.setOffset(0, 20)
+        col = QColor(C("accent", modo))
+        col.setAlpha(20)
     else:
         shadow.setBlurRadius(16)
         shadow.setOffset(0, 4)
@@ -232,11 +307,7 @@ def linear_gradient(rect: QRectF, modo: str = "dark_hybrid",
         painter.fillRect(self.rect(), grad)
     """
     modo = norm_modo(modo)
-    grad_pair = get_gradient(modo)
-    ca = QColor(color_a or grad_pair[0])
-    cb = QColor(color_b or grad_pair[1])
-    ca.setAlpha(alpha_a)
-    cb.setAlpha(alpha_b)
+    stops = _gradient_stops(modo)
 
     # Calcular puntos de inicio/fin a partir del ángulo
     import math
@@ -251,8 +322,47 @@ def linear_gradient(rect: QRectF, modo: str = "dark_hybrid",
         QPointF(cx - dx, cy - dy),
         QPointF(cx + dx, cy + dy),
     )
-    grad.setColorAt(0.0, ca)
-    grad.setColorAt(1.0, cb)
+    if color_a or color_b:
+        colors_only = gradient_colors(modo)
+        ca = QColor(color_a or colors_only[0])
+        cb = QColor(color_b or colors_only[-1])
+        ca.setAlpha(alpha_a)
+        cb.setAlpha(alpha_b)
+        grad.setColorAt(0.0, ca)
+        grad.setColorAt(1.0, cb)
+    else:
+        for color_hex, pos in stops:
+            c = QColor(color_hex)
+            if pos <= 0:
+                c.setAlpha(alpha_a)
+            elif pos >= 1:
+                c.setAlpha(alpha_b)
+            grad.setColorAt(pos, c)
+    return grad
+
+
+def rich_gradient(rect: QRectF, modo: str = "dark_hybrid",
+                  angle: float = 135) -> QLinearGradient:
+    """
+    Gradiente premium de 3 paradas (indigo -> teal -> violet).
+    Usa la estructura GRADIENTS nueva de theme.py.
+    """
+    modo = norm_modo(modo)
+    stops = _gradient_stops(modo)
+
+    import math
+    rad = math.radians(angle)
+    w, h = rect.width(), rect.height()
+    cx, cy = rect.center().x(), rect.center().y()
+    half = max(w, h) / 2
+    x1 = cx - math.cos(rad) * half
+    y1 = cy - math.sin(rad) * half
+    x2 = cx + math.cos(rad) * half
+    y2 = cy + math.sin(rad) * half
+
+    grad = QLinearGradient(x1, y1, x2, y2)
+    for color_hex, pos in stops:
+        grad.setColorAt(pos, QColor(color_hex))
     return grad
 
 
@@ -267,6 +377,41 @@ def linear_gradient_vertical(rect: QRectF, color_top: QColor,
 
 # ── QRadialGradient (glow) ────────────────────────────────────────────────────
 
+def noise_overlay(painter: QPainter, rect: QRectF,
+                  opacity: float = 0.035, modo: str = "dark_hybrid"):
+    """
+    Pinta un patron de ruido fino sobre rect para dar sensacion de material.
+    El QPixmap de ruido se genera una sola vez y se cachea.
+    """
+    global _noise_pixmap_cache
+    size = 64
+    key = f"noise_{size}"
+    if key not in _noise_pixmap_cache:
+        import random
+        px = QPixmap(size, size)
+        px.fill(Qt.GlobalColor.transparent)
+        noise_p = QPainter(px)
+        rng = random.Random(42)
+        for _ in range(size * size // 3):
+            x = rng.randint(0, size - 1)
+            y = rng.randint(0, size - 1)
+            v = rng.randint(180, 255)
+            noise_p.setPen(QColor(v, v, v, rng.randint(10, 40)))
+            noise_p.drawPoint(x, y)
+        noise_p.end()
+        _noise_pixmap_cache[key] = px
+
+    old_opacity = painter.opacity()
+    painter.setOpacity(opacity)
+    px = _noise_pixmap_cache[key]
+    x, y = int(rect.x()), int(rect.y())
+    w, h = int(rect.width()), int(rect.height())
+    for tx in range(x, x + w, size):
+        for ty in range(y, y + h, size):
+            painter.drawPixmap(tx, ty, px)
+    painter.setOpacity(old_opacity)
+
+
 def radial_glow(center: QPointF, radius: float,
                 color_hex: str, alpha: int = 80) -> QRadialGradient:
     """
@@ -275,7 +420,7 @@ def radial_glow(center: QPointF, radius: float,
     Args:
         center:    Centro del glow (QPointF)
         radius:    Radio del glow en píxeles
-        color_hex: Color hex del glow (ej: '#00d4c8')
+        color_hex: Color hex del glow (ej: '#6366f1')
         alpha:     Intensidad máxima en el centro (0-255). Decae a 0 en el borde.
 
     Uso típico en paintEvent:
@@ -320,11 +465,9 @@ def conical_arc_gradient(center: QPointF, start_angle: float,
     Nota: Qt usa ángulos en sentido antihorario para QConicalGradient.
     """
     modo = norm_modo(modo)
-    grad_pair = get_gradient(modo)
     grad = QConicalGradient(center, start_angle)
-    grad.setColorAt(0.0, QColor(grad_pair[0]))
-    grad.setColorAt(0.5, QColor(grad_pair[1]))
-    grad.setColorAt(1.0, QColor(grad_pair[0]))
+    for color_hex, pos in _gradient_stops(modo):
+        grad.setColorAt(pos, QColor(color_hex))
     return grad
 
 
@@ -341,7 +484,7 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
     QWidget {{
         background-color: {c['bg_primary']};
         color: {c['text_primary']};
-        font-family: "{TYPOGRAPHY['font_family']}";
+        font-family: "{_font_family()}";
         font-size: {TYPOGRAPHY['size_body']}pt;
     }}
     QScrollBar:vertical {{
@@ -406,13 +549,17 @@ def stylesheet_slider(modo: str = "dark_hybrid") -> str:
     """QSlider horizontal con groove gradiente y handle blanco con sombra."""
     modo = norm_modo(modo)
     c = colors(modo)
-    grad = get_gradient(modo)
+    grad = _gradient_stops(modo)
+    grad_css = ", ".join(
+        f"stop:{pos:g} {color_hex}" for color_hex, pos in grad
+    )
+    first_color = grad[0][0]
     return f"""
     QSlider::groove:horizontal {{
         height: 6px;
         background: qlineargradient(
             x1:0, y1:0, x2:1, y2:0,
-            stop:0 {grad[0]}, stop:1 {grad[1]}
+            {grad_css}
         );
         border-radius: 3px;
         margin: 0 8px;
@@ -426,7 +573,7 @@ def stylesheet_slider(modo: str = "dark_hybrid") -> str:
         border-radius: 10px;
     }}
     QSlider::handle:horizontal:hover {{
-        border-color: {grad[0]};
+        border-color: {first_color};
     }}
     QSlider::sub-page:horizontal {{
         background: transparent;
@@ -682,7 +829,7 @@ def _aplicar_acento_win10(hwnd: int, bg_hex: str):
         )
         ctypes.windll.user32.SetWindowCompositionAttribute(hwnd, ctypes.byref(data))
     except Exception:
-        pass
+        _log.exception("Win10 accent color failed")
 
 
 def aplicar_captionbar_qt(window, modo: str):
@@ -691,6 +838,7 @@ def aplicar_captionbar_qt(window, modo: str):
     Usa window.winId() en vez de window.winfo_id() (tkinter).
     Compatible con QMainWindow y QWidget.
     """
+    _ensure_premium_font()
     modo = norm_modo(modo)
     bg = C("bg_secondary", modo)
     try:
@@ -715,7 +863,7 @@ def aplicar_captionbar_qt(window, modo: str):
         if not _es_windows_11():
             ctypes.windll.user32.UpdateWindow(hwnd)
     except Exception:
-        pass
+        _log.exception("Caption bar setup failed")
 
 
 def recolorear_logo_light(img):
@@ -744,3 +892,12 @@ PAD_CARD      = LAYOUT["padding_card"]
 GAP_CARDS     = LAYOUT["gap_cards"]
 GAP_ELEMENTS  = LAYOUT["gap_elements"]
 HEADER_H      = LAYOUT["header_height"]
+
+
+def label_style(modo: str, key: str = "text_primary") -> str:
+    """Shortcut para QLabel: color del tema + fondo transparente.
+
+    Uso: lbl.setStyleSheet(label_style(modo, 'text_secondary'))
+    Equivale a: f'color: {C(key, modo)}; background: transparent;'
+    """
+    return f"color: {C(key, modo)}; background: transparent;"

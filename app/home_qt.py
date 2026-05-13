@@ -27,8 +27,10 @@ from PyQt6.QtWidgets import (
 try:
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        linear_gradient, get_gradient,
-        RADIUS_CARD, PAD_CARD, GAP_CARDS,
+        linear_gradient, linear_gradient_vertical, get_gradient, gradient_colors,
+        shadow_effect, noise_overlay,
+        RADIUS_CARD, PAD_CARD, PAD_CONTAINER, GAP_CARDS,
+        stylesheet_scrollarea,
     )
     from shared.components_qt import ThemeManager
 except ImportError:
@@ -37,8 +39,10 @@ except ImportError:
         sys.path.insert(0, _dir)
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        linear_gradient, get_gradient,
-        RADIUS_CARD, PAD_CARD, GAP_CARDS,
+        linear_gradient, linear_gradient_vertical, get_gradient, gradient_colors,
+        shadow_effect, noise_overlay,
+        RADIUS_CARD, PAD_CARD, PAD_CONTAINER, GAP_CARDS,
+        stylesheet_scrollarea,
     )
     from shared.components_qt import ThemeManager
 
@@ -64,9 +68,9 @@ MODULES_CONFIG = [
 
 def _dot_color(idx: int, modo: str) -> str:
     """Color del gradiente teal→violet según posición del módulo."""
-    grad = get_gradient(norm_modo(modo))
+    grad = gradient_colors(norm_modo(modo))
     t = idx / max(len(MODULES_CONFIG) - 1, 1)
-    return interpolate_color(grad[0], grad[1], t)
+    return interpolate_color(grad[0], grad[-1], t)
 
 
 # ── Mini-ring de progreso ─────────────────────────────────────────────────────
@@ -74,7 +78,7 @@ def _dot_color(idx: int, modo: str) -> str:
 class _MiniRing(QWidget):
     """Arco de 32×32px que muestra progreso 0.0–1.0."""
 
-    def __init__(self, parent=None, color: str = "#00d4c8"):
+    def __init__(self, parent=None, color: str = "#6366f1"):
         super().__init__(parent)
         self._progress = 0.0
         self._color = color
@@ -110,7 +114,7 @@ class _MiniRing(QWidget):
 class ModuleCard(QWidget):
     """
     Card con barra izquierda de color gradiente, mini-ring, badge de status,
-    animación de entrada stagger (fade + slide Y).
+    sombra real, hover lift, animación de entrada stagger (fade + slide Y).
     """
 
     def __init__(self, config: dict, idx: int, modo: str,
@@ -122,10 +126,13 @@ class ModuleCard(QWidget):
         self._on_click = on_click
         self._get_status = get_status_fn
         self._accent = _dot_color(idx, modo)
+        self._hover = False
 
         self.setMinimumHeight(110)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        self._setup_shadow()
 
         self._eff = QGraphicsOpacityEffect(self)
         self._eff.setOpacity(0.0)
@@ -134,11 +141,45 @@ class ModuleCard(QWidget):
         self._build_ui()
         ThemeManager.instance().theme_changed.connect(self._apply_theme)
 
+    def _setup_shadow(self):
+        self._shadow = shadow_effect("card", self._modo)
+
+    def enterEvent(self, event):
+        self._hover = True
+        self._anim_shadow(blur=38, offset=12)
+        if self._shadow:
+            col = QColor(self._accent)
+            col.setAlpha(30)
+            self._shadow.setColor(col)
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._hover = False
+        self._anim_shadow(blur=24, offset=6)
+        if self._shadow:
+            self._shadow.setColor(QColor(0, 0, 0, 90))
+        super().leaveEvent(event)
+
+    def _anim_shadow(self, blur: float, offset: float):
+        from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, QAbstractAnimation
+        if not self._shadow:
+            return
+        a1 = QPropertyAnimation(self._shadow, b"blurRadius", self)
+        a1.setDuration(200)
+        a1.setEasingCurve(QEasingCurve.Type.OutCubic)
+        a1.setEndValue(blur)
+        a1.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
+        a2 = QPropertyAnimation(self._shadow, b"yOffset", self)
+        a2.setDuration(200)
+        a2.setEasingCurve(QEasingCurve.Type.OutCubic)
+        a2.setEndValue(offset)
+        a2.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
+
     def _build_ui(self):
         c = colors(self._modo)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 10, 10, 10)
-        layout.setSpacing(4)
+        layout.setContentsMargins(PAD_CARD, 14, PAD_CARD, 14)
+        layout.setSpacing(8)
 
         # Fila top: icono + badge
         top = QHBoxLayout()
@@ -160,6 +201,7 @@ class ModuleCard(QWidget):
         title = QLabel(self._config["title"])
         title.setFont(qfont("size_h3", bold=True))
         title.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+        title.setWordWrap(True)
         title.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         layout.addWidget(title)
         self._title_lbl = title
@@ -168,6 +210,7 @@ class ModuleCard(QWidget):
         desc = QLabel(self._config["desc"])
         desc.setFont(qfont("size_caption"))
         desc.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+        desc.setWordWrap(True)
         desc.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         layout.addWidget(desc)
         self._desc_lbl = desc
@@ -182,7 +225,7 @@ class ModuleCard(QWidget):
         status = self._get_status(self._config["id"])
         c = colors(self._modo)
         if status:
-            color = "#10b981"
+            color = C("success", self._modo)
             if "activo" in status:
                 color = C("accent", self._modo)
             self._badge.setText(status)
@@ -229,12 +272,24 @@ class ModuleCard(QWidget):
         p.setPen(QPen(QColor(c.get("border_card", c["border"])), 1))
         p.drawPath(path)
 
-        # Barra izquierda
+        # Barra izquierda con gradiente vertical teal -> violet
         bar = QPainterPath()
-        bar.addRoundedRect(QRectF(0, r, 4, h - 2 * r), 0, 0)
-        bar.addRoundedRect(QRectF(0, 0, 4, r), r, r)
-        bar.addRoundedRect(QRectF(0, h - r, 4, r), r, r)
-        p.fillPath(bar, QBrush(QColor(self._accent)))
+        bar.addRoundedRect(QRectF(0, r, 5, h - 2 * r), 0, 0)
+        bar.addRoundedRect(QRectF(0, 0, 5, r), r, r)
+        bar.addRoundedRect(QRectF(0, h - r, 5, r), r, r)
+        bar_grad = linear_gradient_vertical(
+            QRectF(0, 0, 5, h),
+            QColor(C("teal", self._modo)),
+            QColor(C("violet", self._modo)),
+        )
+        p.fillPath(bar, QBrush(bar_grad))
+
+        noise_overlay(
+            p,
+            QRectF(5, 0, w - 5, h),
+            opacity=0.025,
+            modo=self._modo,
+        )
         p.end()
 
     def resizeEvent(self, event):
@@ -243,7 +298,30 @@ class ModuleCard(QWidget):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            self._on_click(self._config["id"])
+            self._scale_anim(0.97)
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._scale_anim(1.0)
+            if self.rect().contains(event.pos()):
+                self._on_click(self._config["id"])
+        super().mouseReleaseEvent(event)
+
+    def _scale_anim(self, target: float):
+        from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, QAbstractAnimation
+        if not hasattr(self, "_orig_geom") or target >= 1.0:
+            self._orig_geom = self.geometry()
+        if target < 1.0:
+            shrink = 2
+            end = self._orig_geom.adjusted(shrink, shrink, -shrink, -shrink)
+        else:
+            end = self._orig_geom
+        anim = QPropertyAnimation(self, b"geometry", self)
+        anim.setDuration(100)
+        anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        anim.setEndValue(end)
+        anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
     def animate_enter(self, delay_ms: int = 0):
         QTimer.singleShot(delay_ms, self._start_anim)
@@ -254,6 +332,14 @@ class ModuleCard(QWidget):
         anim_fade.setStartValue(0.0)
         anim_fade.setEndValue(1.0)
         anim_fade.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        def _on_fade_done():
+            if self._eff is not None:
+                self._eff.deleteLater()
+                self._eff = None
+            self.setGraphicsEffect(self._shadow)
+
+        anim_fade.finished.connect(_on_fade_done)
         anim_fade.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
         orig_y = self.y()
@@ -273,6 +359,12 @@ class ModuleCard(QWidget):
         self._desc_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
         self._ring._color = self._accent
         self._ring.update()
+        self._setup_shadow()
+        if self._eff is None or self._eff.opacity() >= 1.0:
+            if self._eff is not None:
+                self._eff.deleteLater()
+                self._eff = None
+            self.setGraphicsEffect(self._shadow)
         self._refresh_status()
         self.update()
 
@@ -298,13 +390,12 @@ class HomeView(QWidget):
         ThemeManager.instance().theme_changed.connect(self._apply_theme)
 
     def _setup(self):
-        c = colors(self._modo)
-        self.setStyleSheet(f"HomeView {{ background: {c['bg_primary']}; }}")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
 
         scroll = QScrollArea(self)
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
+        scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -315,9 +406,21 @@ class HomeView(QWidget):
         container.setStyleSheet("background: transparent;")
         scroll.setWidget(container)
 
-        grid = QGridLayout(container)
-        grid.setContentsMargins(14, 14, 14, 14)
-        grid.setSpacing(GAP_CARDS)
+        # Layout del container: título + grid
+        container_layout = QVBoxLayout(container)
+        container_layout.setContentsMargins(PAD_CONTAINER, 20, PAD_CONTAINER, 20)
+        container_layout.setSpacing(10)
+
+        title_lbl = QLabel("Herramientas")
+        title_lbl.setFont(qfont("size_h2", bold=True))
+        title_lbl.setStyleSheet(f"color: {C('text_primary', self._modo)}; background: transparent;")
+        container_layout.addWidget(title_lbl)
+
+        grid = QGridLayout()
+        grid.setContentsMargins(0, 0, 0, 0)
+        container_layout.addLayout(grid)
+        grid.setVerticalSpacing(int(GAP_CARDS * 1.4))
+        grid.setHorizontalSpacing(GAP_CARDS)
         for col in range(3):
             grid.setColumnStretch(col, 1)
 
@@ -361,5 +464,10 @@ class HomeView(QWidget):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
         c = colors(self._modo)
-        self.setStyleSheet(f"HomeView {{ background: {c['bg_primary']}; }}")
+        p.fillRect(self.rect(), QColor(c["bg_primary"]))
+        p.end()

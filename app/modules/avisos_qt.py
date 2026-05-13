@@ -9,18 +9,21 @@ LÓGICA PRESERVADA EXACTA:
 
 import os
 import sys
+import logging
 
-from PyQt6.QtCore import Qt, QTimer
+_log = logging.getLogger(__name__)
+
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QColor, QPainter, QPen, QBrush, QPainterPath
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea,
-    QFrame, QPushButton, QDialog,
+    QFrame, QPushButton,
 )
 
 try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMInput, NMToggle,
-        NMToast, ThemeManager, h_spacer,
+        NMToast, NMProgressBar, NMSkeleton, ThemeManager, h_spacer,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
@@ -35,7 +38,7 @@ except ImportError:
         sys.path.insert(0, _dir)
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMInput, NMToggle,
-        NMToast, ThemeManager, h_spacer,
+        NMToast, NMProgressBar, NMSkeleton, ThemeManager, h_spacer,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
@@ -120,7 +123,7 @@ class _DayPillToggle(QPushButton):
                 QPushButton {{
                     background-color: {c['accent']};
                     color: {c['text_on_accent']};
-                    border-radius: 15px;
+                    border-radius: {RADIUS_PILL}px;
                     border: none;
                     font-size: {10}pt;
                     font-weight: bold;
@@ -131,7 +134,7 @@ class _DayPillToggle(QPushButton):
                 QPushButton {{
                     background-color: {c['bg_elevated']};
                     color: {c['text_tertiary']};
-                    border-radius: 15px;
+                    border-radius: {RADIUS_PILL}px;
                     border: 1px solid {c.get('border_card', c['border'])};
                     font-size: {10}pt;
                 }}
@@ -195,37 +198,34 @@ class _DeleteButton(QPushButton):
         super().leaveEvent(event)
 
 
-# ── New reminder dialog ────────────────────────────────────────────────────────
+# ── New reminder inline panel ──────────────────────────────────────────────────
 
-class _NuevoAvisoDialog(QDialog):
-    """QDialog modal para crear un nuevo recordatorio."""
+class _NuevoAvisoPanel(QWidget):
+    """Panel inline para crear un nuevo recordatorio — se muestra dentro del modulo."""
+    saved = pyqtSignal(dict)
+    cancelled = pyqtSignal()
 
-    def __init__(self, parent_module, modo: str = "dark_hybrid"):
-        super().__init__(parent_module)
+    def __init__(self, parent=None, modo: str = "dark_hybrid"):
+        super().__init__(parent)
         self._modo = norm_modo(modo)
-        self._module = parent_module
         self._day_pills: list[_DayPillToggle] = []
-        self.result_data = None  # se llena si el usuario guarda
+        self._build_ui()
 
-        self.setWindowTitle("Nuevo aviso")
-        self.setModal(True)
-        self.setMinimumWidth(400)
-
+    def _build_ui(self):
         c = colors(self._modo)
+
+        # Fondo glass premium para el panel overlay
         self.setStyleSheet(f"""
-            QDialog {{
-                background-color: {c['bg_surface']};
-                color: {c['text_primary']};
+            _NuevoAvisoPanel {{
+                background-color: {c['bg_glass']};
+                border-radius: {RADIUS_CARD}px;
+                border: 1px solid {c.get('border_card', c['border'])};
             }}
             QLabel {{
                 background: transparent;
             }}
         """)
 
-        self._build_ui()
-
-    def _build_ui(self):
-        c = colors(self._modo)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 16, 20, 16)
         layout.setSpacing(12)
@@ -241,11 +241,11 @@ class _NuevoAvisoDialog(QDialog):
         lbl_hora = QLabel("Hora:")
         lbl_hora.setFont(qfont("size_body"))
         lbl_hora.setStyleSheet(f"color: {c['text_secondary']};")
-        lbl_hora.setFixedWidth(70)
+        lbl_hora.setMinimumWidth(55)
         row_hora.addWidget(lbl_hora)
 
         self._entry_hora = NMInput("HH:MM", modo=self._modo)
-        self._entry_hora.setFixedWidth(90)
+        self._entry_hora.setMinimumWidth(72)
         row_hora.addWidget(self._entry_hora)
         row_hora.addStretch()
         layout.addLayout(row_hora)
@@ -255,7 +255,7 @@ class _NuevoAvisoDialog(QDialog):
         lbl_dias = QLabel("Días:")
         lbl_dias.setFont(qfont("size_body"))
         lbl_dias.setStyleSheet(f"color: {c['text_secondary']};")
-        lbl_dias.setFixedWidth(70)
+        lbl_dias.setMinimumWidth(55)
         row_dias.addWidget(lbl_dias)
 
         for lbl in DIAS_LABELS:
@@ -281,7 +281,7 @@ class _NuevoAvisoDialog(QDialog):
         btn_cancel = NMButtonOutline("Cancelar", parent=self, modo=self._modo)
         btn_cancel.setFixedHeight(36)
         btn_cancel.setMinimumWidth(90)
-        btn_cancel.clicked.connect(self.reject)
+        btn_cancel.clicked.connect(self.cancelled.emit)
         btn_row.addWidget(btn_cancel)
 
         btn_row.addStretch()
@@ -315,8 +315,8 @@ class _NuevoAvisoDialog(QDialog):
         if not dias:
             dias = "1,2,3,4,5,6,7"
 
-        self.result_data = {"hora": hora, "mensaje": mensaje, "dias": dias}
-        self.accept()
+        data = {"hora": hora, "mensaje": mensaje, "dias": dias}
+        self.saved.emit(data)
 
 
 # ── ModuloAvisos ──────────────────────────────────────────────────────────────
@@ -375,6 +375,18 @@ class ModuloAvisos(NMModule):
         banner_layout.addWidget(banner_lbl)
         root.addWidget(banner)
 
+        # ── Progress bar ────────────────────────────────────────────────────────
+        prog_row = QHBoxLayout()
+        self._reminder_progress = NMProgressBar(height=6, modo=self._modo)
+        self._reminder_count_lbl = QLabel("")
+        self._reminder_count_lbl.setFont(qfont("size_caption"))
+        self._reminder_count_lbl.setStyleSheet(
+            f"color: {c['text_tertiary']}; background: transparent;"
+        )
+        prog_row.addWidget(self._reminder_progress, stretch=1)
+        prog_row.addWidget(self._reminder_count_lbl)
+        root.addLayout(prog_row)
+
         # ── Scroll area for reminder list ─────────────────────────────────────
         self._scroll = QScrollArea()
         self._scroll.setWidgetResizable(True)
@@ -423,10 +435,23 @@ class ModuloAvisos(NMModule):
             empty_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
             self._list_layout.addWidget(empty_lbl)
+            # Skeleton loaders
+            for _ in range(2):
+                self._list_layout.addWidget(
+                    NMSkeleton(width=280, height=48, radius=8, modo=self._modo)
+                )
             return
 
         for row in rows:
             self._build_reminder_card(row)
+
+        # Update progress bar
+        total = len(rows)
+        active = sum(1 for r in rows if (r["activo"] if hasattr(r, "keys") else r[4]))
+        self._reminder_progress.animate_to(active / total if total > 0 else 0)
+        self._reminder_count_lbl.setText(
+            f"{active}/{total} activos" if total > 0 else ""
+        )
 
     def _build_reminder_card(self, row):
         c = colors(self._modo)
@@ -436,16 +461,7 @@ class ModuloAvisos(NMModule):
         dias   = row["dias"] if hasattr(row, "keys") else row[3]
         activo = bool(row["activo"] if hasattr(row, "keys") else row[4])
 
-        # Card frame
-        card = QFrame()
-        card.setObjectName("ReminderCard")
-        card.setStyleSheet(f"""
-            QFrame#ReminderCard {{
-                background-color: {c['bg_surface']};
-                border-radius: {RADIUS_CARD}px;
-                border: 1px solid {c.get('border_card', c['border'])};
-            }}
-        """)
+        card = NMCard(parent=self._list_content, clickable=False, modo=self._modo)
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(14, 12, 14, 12)
         card_layout.setSpacing(6)
@@ -510,7 +526,7 @@ class ModuloAvisos(NMModule):
             conn.commit()
             conn.close()
         except Exception:
-            pass
+            _log.exception("Failed to save reminder")
 
     # ── _delete_reminder (lógica preservada exacta) ───────────────────────────
 
@@ -521,15 +537,17 @@ class ModuloAvisos(NMModule):
             conn.commit()
             conn.close()
         except Exception:
-            pass
+            _log.exception("Failed to delete reminder %s", rec_id)
+        self._list_layout.removeWidget(card_widget)
         card_widget.deleteLater()
 
-    # ── Show form (QDialog modal) ─────────────────────────────────────────────
+    # ── Show form (inline panel) ────────────────────────────────────────────────
 
     def _show_form(self):
-        dlg = _NuevoAvisoDialog(self, self._modo)
-        if dlg.exec() == QDialog.DialogCode.Accepted and dlg.result_data:
-            self._save_reminder(dlg.result_data)
+        panel = _NuevoAvisoPanel(self._content, self._modo)
+        panel.saved.connect(lambda data: (self._save_reminder(data), self._list_layout.removeWidget(panel), panel.deleteLater()))
+        panel.cancelled.connect(lambda: (self._list_layout.removeWidget(panel), panel.deleteLater()))
+        self._list_layout.insertWidget(0, panel)
 
     # ── _save_reminder (lógica preservada exacta, adaptada para dict) ─────────
 
@@ -548,7 +566,7 @@ class ModuloAvisos(NMModule):
             conn.commit()
             conn.close()
         except Exception:
-            pass
+            _log.exception("Failed to save reminder")
 
         self._load_reminders()
 
@@ -588,7 +606,7 @@ class ModuloAvisos(NMModule):
         sil_row.addWidget(sil_lbl)
 
         self._entry_sil_ini = NMInput("22:00", modo=self._modo)
-        self._entry_sil_ini.setFixedWidth(72)
+        self._entry_sil_ini.setMinimumWidth(64)
         self._entry_sil_ini.setFixedHeight(32)
         if sil_ini:
             self._entry_sil_ini.setText(sil_ini)
@@ -600,30 +618,15 @@ class ModuloAvisos(NMModule):
         sil_row.addWidget(arrow_lbl)
 
         self._entry_sil_fin = NMInput("08:00", modo=self._modo)
-        self._entry_sil_fin.setFixedWidth(72)
+        self._entry_sil_fin.setMinimumWidth(64)
         self._entry_sil_fin.setFixedHeight(32)
         if sil_fin:
             self._entry_sil_fin.setText(sil_fin)
         sil_row.addWidget(self._entry_sil_fin)
 
-        btn_apply = QPushButton("Aplicar")
-        btn_apply.setFont(qfont("size_small"))
+        btn_apply = NMButtonOutline("Aplicar", modo=self._modo)
         btn_apply.setFixedHeight(32)
         btn_apply.setMinimumWidth(68)
-        btn_apply.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_apply.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {c['bg_elevated']};
-                color: {c['text_primary']};
-                border-radius: 6px;
-                border: none;
-                padding: 0 10px;
-            }}
-            QPushButton:hover {{
-                background-color: {c['accent']};
-                color: {c['text_on_accent']};
-            }}
-        """)
         btn_apply.clicked.connect(self._guardar_silencio)
         sil_row.addWidget(btn_apply)
         sil_row.addStretch()
@@ -689,7 +692,7 @@ class ModuloAvisos(NMModule):
             conn.commit()
             conn.close()
         except Exception:
-            pass
+            _log.exception("Failed to save config %s", clave)
 
     # ── Autostart (lógica preservada exacta) ──────────────────────────────────
 
@@ -724,7 +727,7 @@ class ModuloAvisos(NMModule):
                     pass
             winreg.CloseKey(key)
         except Exception:
-            pass
+            _log.exception("Failed to update autostart registry")
 
     # ── Hooks ─────────────────────────────────────────────────────────────────
 
@@ -742,5 +745,5 @@ class ModuloAvisos(NMModule):
                 n = row[0]
                 return f"{n} activo{'s' if n > 1 else ''}"
         except Exception:
-            pass
+            _log.exception("Failed to get card status for avisos")
         return ""

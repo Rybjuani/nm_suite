@@ -4,21 +4,6 @@ import threading
 from datetime import datetime
 
 
-def exportar_pdf(paciente_nombre: str, paciente_id: str, datos: dict,
-                 on_done=None, on_error=None):
-    """Genera el PDF en un hilo daemon. Llama on_done(ruta) o on_error(msg)."""
-    def _run():
-        try:
-            ruta = _generar(paciente_nombre, paciente_id, datos)
-            if on_done:
-                on_done(ruta)
-        except Exception as e:
-            if on_error:
-                on_error(str(e))
-
-    threading.Thread(target=_run, daemon=True).start()
-
-
 def _generar(nombre: str, pid: str, datos: dict) -> str:
     try:
         from reportlab.lib.pagesizes import A4
@@ -42,7 +27,7 @@ def _generar(nombre: str, pid: str, datos: dict) -> str:
                             leftMargin=2*cm, rightMargin=2*cm,
                             topMargin=2*cm, bottomMargin=2*cm)
     styles = getSampleStyleSheet()
-    AC = "#00d4c8"
+    AC = __import__("shared.theme", fromlist=["COLORS"]).COLORS["dark_hybrid"]["accent"]
     titulo_st = ParagraphStyle("titulo", parent=styles["Title"],
                                fontSize=18, textColor=rl_colors.HexColor(AC))
     h2_st = ParagraphStyle("h2", parent=styles["Heading2"],
@@ -127,8 +112,26 @@ def _generar(nombre: str, pid: str, datos: dict) -> str:
                         "Cerrado" if r.get("cerrado") else "Pendiente"])
 
     doc.build(story)
-    try:
-        os.startfile(filepath)
-    except Exception:
-        pass
     return filepath
+
+
+def exportar_pdf(paciente_nombre: str, paciente_id: str, datos: dict,
+                 on_done=None, on_error=None):
+    """Genera el PDF en hilo daemon. Abre archivo en hilo principal via QTimer."""
+    def _run():
+        try:
+            from PyQt6.QtCore import QTimer
+            ruta = _generar(paciente_nombre, paciente_id, datos)
+            def _cb():
+                try:
+                    os.startfile(ruta)
+                except Exception:
+                    pass
+                if on_done:
+                    on_done(ruta)
+            QTimer.singleShot(0, _cb)
+        except Exception as e:
+            if on_error:
+                QTimer.singleShot(0, lambda: on_error(str(e)))
+
+    threading.Thread(target=_run, daemon=True).start()

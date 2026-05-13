@@ -24,6 +24,9 @@ NUEVAS CAPACIDADES UI:
 import os
 import sys
 import math
+import logging
+
+_log = logging.getLogger(__name__)
 
 from PyQt6.QtCore import (
     Qt, QTimer, QPropertyAnimation, QEasingCurve, QRectF, QPointF,
@@ -44,7 +47,7 @@ try:
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        radial_glow, conical_arc_gradient, get_gradient,
+        radial_glow, conical_arc_gradient, get_gradient, gradient_colors,
         RADIUS_CARD, RADIUS_PILL, PAD_CONTAINER, GAP_ELEMENTS,
     )
     from shared.db import obtener_conexion
@@ -56,7 +59,7 @@ except ImportError:
     from shared.components_qt import NMModule, NMButton, NMButtonOutline, ThemeManager
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        radial_glow, conical_arc_gradient, get_gradient,
+        radial_glow, conical_arc_gradient, get_gradient, gradient_colors,
         RADIUS_CARD, RADIUS_PILL, PAD_CONTAINER, GAP_ELEMENTS,
     )
     from shared.db import obtener_conexion
@@ -83,6 +86,15 @@ _R_MIN   = 88    # radio en reposo / exhala final
 _R_MAX   = 128   # radio máximo en inhala
 _R_TRACK = 140   # radio del track ring (fijo)
 _CANVAS  = 300   # tamaño del widget circular
+
+
+def _rich_color_at(modo: str, t: float) -> str:
+    palette = gradient_colors(modo)
+    if len(palette) < 3:
+        return interpolate_color(palette[0], palette[-1], t)
+    if t <= 0.45:
+        return interpolate_color(palette[0], palette[1], t / 0.45)
+    return interpolate_color(palette[1], palette[2], (t - 0.45) / 0.55)
 
 
 # ── CircleWidget — el corazón visual ─────────────────────────────────────────
@@ -167,9 +179,12 @@ class _BreathCircle(QWidget):
         self._session_progress = session_progress
         self._center_text = center_text
         self._phase_text = phase_text
-        grad = get_gradient(self._modo)
-        t = phase_idx / max(len(FASES) - 1, 1)
-        self._phase_color = interpolate_color(grad[0], grad[1], t)
+        if phase_idx == 0:
+            self._phase_color = C("teal", self._modo)
+        elif phase_idx == 2:
+            self._phase_color = C("violet", self._modo)
+        else:
+            self._phase_color = C("accent", self._modo)
 
     def animate_phase(self, phase_idx: int, phase_dur_s: int, expanding: bool):
         """
@@ -178,6 +193,7 @@ class _BreathCircle(QWidget):
           Mantén (expanding=None):  radio fijo, solo glow pulsante
           Exhala (expanding=False): radius MAX→MIN, glow 120→40
         """
+        self._render_timer.start(16)
         dur = phase_dur_s * 1000
 
         # Animar radio
@@ -234,6 +250,7 @@ class _BreathCircle(QWidget):
             self._anim_radius.stop()
         if self._anim_glow:
             self._anim_glow.stop()
+        self._render_timer.stop()
         self._circle_radius = float(_R_MIN)
         self._glow_alpha = 40
         self._text_opacity = 1.0
@@ -249,20 +266,15 @@ class _BreathCircle(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+        p.save()
 
         c = colors(self._modo)
         cx = cy = _CANVAS / 2
 
-        # ── 1. Glow radial ────────────────────────────────────────────────────
+        # ── 1. Glow radial (usando radial_glow_double premium) ─────────────────
         glow_r = self._circle_radius + 32
         glow_center = QPointF(cx, cy)
-        inner_color = QColor(self._phase_color)
-        inner_color.setAlpha(self._glow_alpha)
-        outer_color = QColor(self._phase_color)
-        outer_color.setAlpha(0)
-        glow_grad = QRadialGradient(glow_center, glow_r)
-        glow_grad.setColorAt(0.0, inner_color)
-        glow_grad.setColorAt(1.0, outer_color)
+        glow_grad = radial_glow_double(glow_center, glow_r, self._phase_color)
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QBrush(glow_grad))
         p.drawEllipse(glow_center, glow_r, glow_r)
@@ -308,16 +320,21 @@ class _BreathCircle(QWidget):
 
         # ── 4. Arco de fase con QConicalGradient ──────────────────────────────
         if self._phase_progress > 0:
-            grad_pair = get_gradient(self._modo)
             arc_r = r - 8
             rect_arc = QRectF(cx - arc_r, cy - arc_r, arc_r * 2, arc_r * 2)
 
             # Arco de progreso de la fase
-            arc_pen = QPen(QColor(self._phase_color), 6)
-            arc_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-            p.setPen(arc_pen)
-            span = int(-self._phase_progress * 360 * 16)
-            p.drawArc(rect_arc, 90 * 16, span)
+            extent = max(self._phase_progress * 360, 2)
+            segs = max(4, int(36 * self._phase_progress))
+            seg_ext = extent / segs
+            for i in range(segs):
+                t = i / max(segs - 1, 1)
+                col = _rich_color_at(self._modo, t)
+                arc_pen = QPen(QColor(col), 6)
+                arc_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+                p.setPen(arc_pen)
+                angle = 90 - i * seg_ext
+                p.drawArc(rect_arc, int(angle * 16), int(-seg_ext * 16))
 
         # ── 5. Texto central ──────────────────────────────────────────────────
         p.setOpacity(self._text_opacity)
@@ -334,10 +351,11 @@ class _BreathCircle(QWidget):
         if self._phase_text:
             font_small = qfont("size_caption")
             p.setFont(font_small)
-            p.setPen(QPen(QColor(c["text_tertiary"])))
+            p.setPen(QPen(QColor(self._phase_color)))
             text_rect_bot = QRectF(0, cy + 12, _CANVAS, 28)
             p.drawText(text_rect_bot, Qt.AlignmentFlag.AlignCenter, self._phase_text)
 
+        p.restore()
         p.end()
 
     def _apply_theme(self, modo: str):
@@ -455,6 +473,15 @@ class ModuloRespiracion(NMModule):
         self._circle = _BreathCircle(self._content, self._modo)
         layout.addWidget(self._circle, alignment=Qt.AlignmentFlag.AlignHCenter)
 
+        # ── BPM ──────────────────────────────────────────────────────────────────
+        bpm_lbl = QLabel("Calm ♥  /  60 BPM")
+        bpm_lbl.setFont(qfont("size_caption"))
+        bpm_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        bpm_lbl.setStyleSheet(
+            f"color: {C('teal', self._modo)}; background: transparent;"
+        )
+        layout.addWidget(bpm_lbl)
+
         # ── Cronómetro ─────────────────────────────────────────────────────────
         self._session_lbl = QLabel("")
         self._session_lbl.setFont(qfont("size_small"))
@@ -467,7 +494,7 @@ class ModuloRespiracion(NMModule):
         # ── Step cards ─────────────────────────────────────────────────────────
         steps_row = QHBoxLayout()
         steps_row.setSpacing(8)
-        step_data = [("Inhala ↑", "4 s"), ("Mantén", "7 s"), ("Exhala ↓", "8 s")]
+        step_data = [("Inhala ↑ durante", "4 segundos"), ("Mantén durante", "7 segundos"), ("Exhala ↓ durante", "8 segundos")]
         self._step_cards: list[_StepCard] = []
         for label, secs in step_data:
             sc = _StepCard(label, secs, self._content, self._modo)
@@ -514,6 +541,7 @@ class ModuloRespiracion(NMModule):
         if self._running and self._paused:
             self._paused = False
             self._btn_start.setText("Reanudar")
+            self._circle._render_timer.start(16)
             self._tick()
             return
         if self._running:
@@ -588,9 +616,8 @@ class ModuloRespiracion(NMModule):
         )
 
         # Resaltar step card activa
-        grad = get_gradient(self._modo)
         t = self._phase_idx / max(len(FASES) - 1, 1)
-        phase_color = interpolate_color(grad[0], grad[1], t)
+        phase_color = _rich_color_at(self._modo, t)
         for i, sc in enumerate(self._step_cards):
             sc.set_active(i == self._phase_idx, phase_color)
 
@@ -614,9 +641,9 @@ class ModuloRespiracion(NMModule):
                 self._ciclos += 1
 
         # Siguiente tick
-        self._timer_id = QTimer(self)
-        self._timer_id.setSingleShot(True)
-        self._timer_id.timeout.connect(self._tick)
+        if self._timer_id is None:
+            self._timer_id = QTimer(self)
+            self._timer_id.timeout.connect(self._tick)
         self._timer_id.start(interval)
 
     def _on_phase_change(self, phase_idx: int, phase_dur: int):
@@ -644,7 +671,7 @@ class ModuloRespiracion(NMModule):
             import winsound
             winsound.Beep(800, 300)
         except Exception:
-            pass
+            _log.exception("Operation failed")
 
     # ── DB (preservado exacto) ────────────────────────────────────────────────
 
@@ -661,7 +688,7 @@ class ModuloRespiracion(NMModule):
             conn.commit()
             conn.close()
         except Exception:
-            pass
+            _log.exception("Operation failed")
 
     def on_leave(self):
         self._stop()
@@ -678,5 +705,5 @@ class ModuloRespiracion(NMModule):
                 n = row[0]
                 return f"{n} sesión{'es' if n > 1 else ''} ✔"
         except Exception:
-            pass
+            _log.exception("Operation failed")
         return ""

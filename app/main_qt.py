@@ -3,12 +3,10 @@ app/main_qt.py — NeuroMood Plataforma Paciente (PyQt6 entry point)
 
 Layout:
     QMainWindow
-    ├── NMSidebar (200px, izquierda)
-    └── QWidget (derecha, expand)
-        ├── NMHeader (56px, solo sobre el contenido)
-        └── NMFadeWidget (contenido principal)
-            ├── HomeView
-            └── módulos cargados dinámicamente
+    ├── NMHeader (56px, ancho completo)
+    └── NMFadeWidget (contenido principal)
+        ├── HomeView
+        └── módulos cargados dinámicamente
 
 Toda la lógica de negocio está preservada exactamente del main.py CTk:
     _sync_background(), _on_close() con bandeja, _get_module_status()
@@ -18,6 +16,9 @@ import sys
 import os
 import importlib
 import threading
+import logging
+
+_log = logging.getLogger("NeuroMood")
 
 if getattr(sys, "frozen", False):
     _base = sys._MEIPASS
@@ -27,10 +28,9 @@ if _base not in sys.path:
     sys.path.insert(0, _base)
 
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-    QMessageBox, QSizePolicy,
+    QApplication, QMainWindow, QWidget, QVBoxLayout,
 )
-from PyQt6.QtCore import Qt, QTimer, QSize
+from PyQt6.QtCore import QTimer, QSize
 from PyQt6.QtGui import QIcon
 
 from shared.theme_qt import (
@@ -38,7 +38,7 @@ from shared.theme_qt import (
     obtener_ruta_recurso, aplicar_captionbar_qt,
 )
 from shared.components_qt import (
-    ThemeManager, NMSidebar, NMHeader, NMFadeWidget, NMToast,
+    ThemeManager, NMHeader, NMFadeWidget, NMToast,
 )
 from shared.db import inicializar_tablas
 from shared.identidad import obtener_nombre_paciente
@@ -56,7 +56,7 @@ _MODULE_MAP = {
     "avisos":      ("app.modules.avisos_qt",       "ModuloAvisos"),
 }
 
-# Sidebar items config
+# Metadata de módulos para títulos e íconos.
 _NAV_ITEMS = [
     ("animo",       "🎭", "Ánimo"),
     ("respiracion", "🌬️", "Respirar"),
@@ -86,11 +86,11 @@ class NeuroMoodApp(QMainWindow):
 
         # ── Ventana ────────────────────────────────────────────────────────────
         self.setWindowTitle(f"NeuroMood — Hola, {self._nombre}")
-        self.setMinimumSize(QSize(600, 520))
+        self.setMinimumSize(QSize(720, 520))
         self.resize(QSize(860, 640))
         self._center_window()
         self._apply_icon()
-        self._apply_global_style()
+        self._apply_initial_style()
 
         # ── UI ─────────────────────────────────────────────────────────────────
         self._build_ui()
@@ -109,43 +109,24 @@ class NeuroMoodApp(QMainWindow):
     def _build_ui(self):
         central = QWidget()
         self.setCentralWidget(central)
-        main_layout = QHBoxLayout(central)
+        main_layout = QVBoxLayout(central)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # Sidebar
-        self._sidebar = NMSidebar(central, modo=self._modo)
-        self._sidebar.add_header("NeuroMood", f"Hola, {self._nombre}")
-        for item_id, icon, label in _NAV_ITEMS:
-            self._sidebar.add_item(item_id, icon, label)
-        self._sidebar.add_spacer()
-        self._sidebar.add_separator()
-        self._sidebar.add_label("Sin paciente seleccionado")
-        self._sidebar.nav_changed.connect(self._on_nav)
-        main_layout.addWidget(self._sidebar)
-
-        # Área derecha: header + contenido
-        right = QWidget()
-        right.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        right_layout = QVBoxLayout(right)
-        right_layout.setContentsMargins(0, 0, 0, 0)
-        right_layout.setSpacing(0)
-        main_layout.addWidget(right)
-
-        # Header (solo sobre el contenido, no full-width)
-        self._header = NMHeader(right, modo=self._modo, username=self._nombre)
+        # Header full-width
+        self._header = NMHeader(central, modo=self._modo, username=self._nombre)
         self._header.theme_toggle.connect(self._toggle_theme)
-        right_layout.addWidget(self._header)
+        main_layout.addWidget(self._header)
 
         # Stack con fade
-        self._stack = NMFadeWidget(right)
-        right_layout.addWidget(self._stack)
+        self._stack = NMFadeWidget(central)
+        main_layout.addWidget(self._stack)
 
         # Home
         from app.home_qt import HomeView
         self._home = HomeView(
             modo=self._modo,
-            on_module_open=self._open_module,
+            on_module_open=self._navigate_to,
             get_status_fn=self._get_module_status,
         )
         self._stack.addWidget(self._home)
@@ -153,23 +134,21 @@ class NeuroMoodApp(QMainWindow):
 
     # ── Navegación ────────────────────────────────────────────────────────────
 
-    def _on_nav(self, item_id: str):
-        """Llamado por NMSidebar al hacer click en un ítem."""
-        self._open_module(item_id)
-
-    def _open_module(self, module_id: str):
+    def _navigate_to(self, module_id: str):
         if module_id not in _MODULE_MAP:
             return
 
         # Si ya fue instanciado, reusar con fade
         if module_id in self._module_cache:
             mod = self._module_cache[module_id]
+            if self._current_module and self._current_module is not mod:
+                if hasattr(self._current_module, "on_leave"):
+                    self._current_module.on_leave()
             self._current_module = mod
             self._stack.setCurrentWidget(mod)
             if hasattr(mod, "on_enter"):
                 mod.on_enter()
-            self._sidebar.set_active(module_id)
-            self._update_header_for_module(module_id)
+            self._header.set_back_action(self._go_home)
             return
 
         mod_path, cls_name = _MODULE_MAP[module_id]
@@ -183,8 +162,8 @@ class NeuroMoodApp(QMainWindow):
             return
 
         # Instanciar y conectar señal back
-        instance = cls(modo=self._modo)
-        instance.back_requested.connect(self._back_to_home)
+        instance = cls(modo=self._modo, show_header=False)
+        instance.back_requested.connect(self._go_home)
         self._module_cache[module_id] = instance
         self._stack.addWidget(instance)
 
@@ -192,35 +171,9 @@ class NeuroMoodApp(QMainWindow):
         self._stack.setCurrentWidget(instance)
         if hasattr(instance, "on_enter"):
             instance.on_enter()
-        self._sidebar.set_active(module_id)
-        self._update_header_for_module(module_id)
+        self._header.set_back_action(self._go_home)
 
-    def _update_header_for_module(self, module_id: str):
-        """Reconstruye el header para mostrar el título del módulo activo."""
-        # Buscar icono y label del item
-        icon, title = "", ""
-        for iid, ic, lbl in _NAV_ITEMS:
-            if iid == module_id:
-                icon, title = ic, lbl
-                break
-        # Reemplazar header con versión de módulo
-        old = self._header
-        self._header = NMHeader(
-            self.centralWidget().findChild(QWidget, "right_area") or self.centralWidget(),
-            modo=self._modo,
-            show_back=True,
-            module_title=title,
-            module_icon=icon,
-        )
-        self._header.theme_toggle.connect(self._toggle_theme)
-        self._header.set_back_callback(self._back_to_home)
-        # Insertar en el layout de right
-        right_widget = old.parent()
-        layout = right_widget.layout()
-        layout.replaceWidget(old, self._header)
-        old.deleteLater()
-
-    def _back_to_home(self):
+    def _go_home(self):
         if self._current_module:
             if hasattr(self._current_module, "on_leave"):
                 self._current_module.on_leave()
@@ -228,16 +181,10 @@ class NeuroMoodApp(QMainWindow):
 
         self._stack.setCurrentWidget(self._home)
         self._home.refresh_statuses()
-        self._sidebar.set_active("")
+        self._header.set_back_action(None)
 
-        # Restaurar header home
-        old = self._header
-        right_widget = old.parent()
-        self._header = NMHeader(right_widget, modo=self._modo, username=self._nombre)
-        self._header.theme_toggle.connect(self._toggle_theme)
-        layout = right_widget.layout()
-        layout.replaceWidget(old, self._header)
-        old.deleteLater()
+    def _back_to_home(self):
+        self._go_home()
 
     # ── Tema ──────────────────────────────────────────────────────────────────
 
@@ -246,24 +193,30 @@ class NeuroMoodApp(QMainWindow):
             self._modo = "light_hybrid"
         else:
             self._modo = "dark_hybrid"
-        self._tm.switch_mode(self._modo)
         self._apply_global_style()
+        self._tm.switch_mode(self._modo)
         QTimer.singleShot(50, lambda: aplicar_captionbar_qt(self, self._modo))
 
     def _apply_global_style(self):
-        c = colors(self._modo)
         QApplication.instance().setPalette(app_palette(self._modo))
-        self.setStyleSheet(
-            stylesheet_base(self._modo) +
-            f"QMainWindow {{ background-color: {c['bg_primary']}; }}"
-        )
+
+    def _apply_initial_style(self):
+        QApplication.instance().setPalette(app_palette(self._modo))
+        QApplication.instance().setStyleSheet(stylesheet_base(self._modo))
 
     # ── Ventana ────────────────────────────────────────────────────────────────
 
     def _center_window(self):
         screen = QApplication.primaryScreen().availableGeometry()
-        x = (screen.width() - self.width()) // 2
-        y = (screen.height() - self.height()) // 2
+        target_w = min(900, int(screen.width() * 0.65))
+        target_h = min(680, int(screen.height() * 0.78))
+        if target_w < self.minimumWidth():
+            target_w = self.minimumWidth()
+        if target_h < self.minimumHeight():
+            target_h = self.minimumHeight()
+        self.resize(QSize(target_w, target_h))
+        x = screen.x() + (screen.width() - self.width()) // 2
+        y = screen.y() + (screen.height() - self.height()) // 2
         self.move(x, y)
 
     def _apply_icon(self):
@@ -308,7 +261,7 @@ class NeuroMoodApp(QMainWindow):
             from shared.sync import sync_al_abrir
             threading.Thread(target=sync_al_abrir, daemon=True).start()
         except Exception:
-            pass
+            _log.debug("Sync background skipped (module not available)")
 
     # ── Status de módulos (lógica preservada exacta del main.py CTk) ──────────
 
@@ -361,7 +314,7 @@ class NeuroMoodApp(QMainWindow):
             conn.close()
             return result
         except Exception:
-            pass
+            _log.debug("Could not get module status for %s", module_id)
         return ""
 
 

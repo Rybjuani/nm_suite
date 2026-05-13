@@ -14,6 +14,10 @@ NUEVAS CAPACIDADES:
 
 import os
 import sys
+import random
+import logging
+
+_log = logging.getLogger(__name__)
 
 from PyQt6.QtCore import (
     Qt, QTimer, QPropertyAnimation, QEasingCurve, QSequentialAnimationGroup,
@@ -30,10 +34,10 @@ from PyQt6.QtWidgets import (
 )
 
 try:
-    from shared.components_qt import NMModule, NMButton, NMToast, ThemeManager
+    from shared.components_qt import NMModule, NMButton, NMToast, NMSkeleton, ThemeManager
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        get_gradient, stylesheet_slider, stylesheet_textedit,
+        get_gradient, stylesheet_slider, stylesheet_textedit, stylesheet_scrollarea,
         PAD_CONTAINER, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
     )
     from shared.db import obtener_conexion
@@ -42,10 +46,10 @@ except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
-    from shared.components_qt import NMModule, NMButton, NMToast, ThemeManager
+    from shared.components_qt import NMModule, NMButton, NMToast, NMSkeleton, ThemeManager
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        get_gradient, stylesheet_slider, stylesheet_textedit,
+        get_gradient, stylesheet_slider, stylesheet_textedit, stylesheet_scrollarea,
         PAD_CONTAINER, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
     )
     from shared.db import obtener_conexion
@@ -56,7 +60,7 @@ except ImportError:
 COLORES_PUNTAJE = {
     1: "#ef4444", 2: "#f97316", 3: "#fb923c",
     4: "#fbbf24", 5: "#facc15", 6: "#a3e635", 7: "#4ade80",
-    8: "#22d3ee", 9: "#06b6d4", 10: "#00d4c8",
+    8: "#22d3ee", 9: "#06b6d4", 10: "#14b8a6",
 }
 
 EMOJIS = {
@@ -66,6 +70,81 @@ EMOJIS = {
 
 
 # ── EmojiLabel con bounce ─────────────────────────────────────────────────────
+
+class _MoodParticle:
+    def __init__(self, x, y, color):
+        self.x = x
+        self.y = y
+        self.vx = random.uniform(-3, 3)
+        self.vy = random.uniform(-6, -2)
+        self.alpha = 255
+        self.radius = random.uniform(3, 6)
+        self.color = QColor(color)
+
+
+class MoodCelebration(QWidget):
+    """Overlay de particulas que se muestra brevemente sobre el modulo de animo."""
+
+    def __init__(self, parent, modo="dark_hybrid"):
+        super().__init__(parent)
+        self._modo = norm_modo(modo)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self._particles = []
+        self._timer = QTimer(self)
+        self._timer.setInterval(16)
+        self._timer.timeout.connect(self._tick)
+        self.hide()
+        ThemeManager.instance().theme_changed.connect(self._apply_theme)
+
+    def launch(self, origin_x: int, origin_y: int):
+        parent = self.parentWidget()
+        if parent:
+            self.resize(parent.size())
+        c = colors(self._modo)
+        colors_pool = [c["accent"], c["teal"], c["violet"], c["cyan"]]
+        self._particles = [
+            _MoodParticle(origin_x, origin_y, random.choice(colors_pool))
+            for _ in range(28)
+        ]
+        self.raise_()
+        self.show()
+        self._timer.start()
+
+    def _tick(self):
+        alive = []
+        for p in self._particles:
+            p.x += p.vx
+            p.y += p.vy
+            p.vy += 0.3
+            p.alpha = max(0, p.alpha - 6)
+            if p.alpha > 0:
+                alive.append(p)
+        self._particles = alive
+        self.update()
+        if not alive:
+            self._timer.stop()
+            self.hide()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        for part in self._particles:
+            col = QColor(part.color)
+            col.setAlpha(part.alpha)
+            painter.setBrush(col)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawEllipse(
+                int(part.x - part.radius),
+                int(part.y - part.radius),
+                int(part.radius * 2),
+                int(part.radius * 2),
+            )
+        painter.end()
+
+    def _apply_theme(self, modo):
+        self._modo = norm_modo(modo)
+
 
 class _EmojiLabel(QLabel):
     """Label de emoji con animación de bounce al cambiar."""
@@ -177,7 +256,7 @@ class ModuloAnimo(NMModule):
         layout.addWidget(nota_lbl)
 
         self._txt_nota = QTextEdit()
-        self._txt_nota.setFixedHeight(80)
+        self._txt_nota.setMinimumHeight(60)
         self._txt_nota.setPlaceholderText("¿Qué influyó en tu estado hoy?")
         self._txt_nota.setStyleSheet(stylesheet_textedit(self._modo))
         layout.addWidget(self._txt_nota)
@@ -195,12 +274,12 @@ class ModuloAnimo(NMModule):
         layout.addWidget(hist_lbl)
 
         self._hist_scroll = QScrollArea()
-        self._hist_scroll.setFixedHeight(56)
+        self._hist_scroll.setMinimumHeight(56)
         self._hist_scroll.setWidgetResizable(True)
         self._hist_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._hist_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self._hist_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self._hist_scroll.setStyleSheet("background: transparent; border: none;")
+        self._hist_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
 
         self._hist_container = QWidget()
         self._hist_container.setStyleSheet("background: transparent;")
@@ -212,6 +291,7 @@ class ModuloAnimo(NMModule):
         layout.addWidget(self._hist_scroll)
 
         self._cargar_historial()
+        self._celebration = MoodCelebration(self._content, self._modo)
 
     # ── Slider ────────────────────────────────────────────────────────────────
 
@@ -267,8 +347,14 @@ class ModuloAnimo(NMModule):
             top = self.window()
             NMToast.show(top, f"Ánimo {self.puntaje}/10 registrado ✔",
                          variant="success")
+            if self.puntaje >= 7 and hasattr(self, "_celebration"):
+                origin = self._btn_reg.mapTo(
+                    self._content,
+                    self._btn_reg.rect().center(),
+                )
+                self._celebration.launch(origin.x(), origin.y())
         except Exception:
-            pass
+            _log.exception("Operation failed")
 
     # ── Historial ─────────────────────────────────────────────────────────────
 
@@ -296,6 +382,10 @@ class ModuloAnimo(NMModule):
             c = colors(self._modo)
             empty.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
             self._hist_row.addWidget(empty)
+            # Skeleton loaders como placeholder
+            for _ in range(3):
+                sk = NMSkeleton(width=140, height=20, radius=4, modo=self._modo)
+                self._hist_row.addWidget(sk)
             return
 
         for row in rows:
@@ -307,14 +397,13 @@ class ModuloAnimo(NMModule):
 
             chip = QLabel(f"{emoji} {puntaje}  {hora_short}")
             chip.setFont(qfont("size_caption"))
-            chip.setContentsMargins(8, 4, 8, 4)
             chip.setStyleSheet(f"""
                 QLabel {{
                     color: {chip_color};
                     background: transparent;
                     border: 1px solid {chip_color};
                     border-radius: {RADIUS_PILL // 2}px;
-                    padding: 2px 6px;
+                    padding: 4px 10px;
                 }}
             """)
             self._hist_row.addWidget(chip)
@@ -337,5 +426,5 @@ class ModuloAnimo(NMModule):
                 p = row[0] if isinstance(row, tuple) else row["puntaje"]
                 return f"{p}/10 ✔"
         except Exception:
-            pass
+            _log.exception("Operation failed")
         return ""

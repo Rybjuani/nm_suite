@@ -14,8 +14,9 @@ import os
 import sys
 import threading
 
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QRectF
-from PyQt6.QtGui import QColor, QPainter, QPen, QBrush
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QRectF, QObject
+from PyQt6 import sip
+from PyQt6.QtGui import QColor, QPainter, QPen, QBrush, QLinearGradient
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea,
     QFrame, QTabWidget, QTextEdit, QSizePolicy, QComboBox,
@@ -25,12 +26,12 @@ from PyQt6.QtWidgets import (
 try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMInput,
-        NMToast, ThemeManager, separator, styled_label,
+        NMProgressBar, NMToggle, NMToast, NMSkeleton, ThemeManager, h_spacer,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        get_gradient, stylesheet_lineedit, stylesheet_textedit,
-        stylesheet_tabwidget, stylesheet_combobox,
+        get_gradient, gradient_colors, stylesheet_lineedit, stylesheet_textedit,
+        stylesheet_tabwidget, stylesheet_combobox, stylesheet_scrollarea,
         RADIUS_CARD, RADIUS_BUTTON, PAD_CONTAINER, PAD_CARD,
         GAP_CARDS, GAP_ELEMENTS, CATEGORY_COLORS,
     )
@@ -41,12 +42,12 @@ except ImportError:
         sys.path.insert(0, _dir)
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMInput,
-        NMToast, ThemeManager, separator, styled_label,
+        NMProgressBar, NMToggle, NMToast, NMSkeleton, ThemeManager, h_spacer,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        get_gradient, stylesheet_lineedit, stylesheet_textedit,
-        stylesheet_tabwidget, stylesheet_combobox,
+        get_gradient, gradient_colors, stylesheet_lineedit, stylesheet_textedit,
+        stylesheet_tabwidget, stylesheet_combobox, stylesheet_scrollarea,
         RADIUS_CARD, RADIUS_BUTTON, PAD_CONTAINER, PAD_CARD,
         GAP_CARDS, GAP_ELEMENTS,
     )
@@ -108,7 +109,7 @@ def _build_animo_graph(parent: QWidget, registros: list, modo: str) -> QWidget:
 
     modo = norm_modo(modo)
     c = colors(modo)
-    grad = get_gradient(modo)
+    grad = gradient_colors(modo)
     is_dark = "dark" in modo
 
     # Datos
@@ -164,13 +165,17 @@ def _build_animo_graph(parent: QWidget, registros: list, modo: str) -> QWidget:
         x_smooth = np.array(x, dtype=float)
         y_smooth = np.array(puntajes)
 
-    # Área bajo la curva con FillBetweenItem
-    teal = QColor(grad[0])
-    fill_color = (teal.red(), teal.green(), teal.blue(), 40)
+    # Área bajo la curva con gradiente teal → violet
+    teal_c = QColor(grad[0])
+    violet_c = QColor(grad[-1])
+    fill_grad = QLinearGradient(0, 0, 0, 1)
+    fill_grad.setCoordinateMode(QLinearGradient.CoordinateMode.ObjectBoundingMode)
+    fill_grad.setColorAt(0.0, QColor(teal_c.red(), teal_c.green(), teal_c.blue(), 80))
+    fill_grad.setColorAt(1.0, QColor(violet_c.red(), violet_c.green(), violet_c.blue(), 10))
     fill = pg.FillBetweenItem(
         pg.PlotDataItem(x_smooth, y_smooth),
         pg.PlotDataItem(x_smooth, [0] * len(x_smooth)),
-        brush=pg.mkBrush(*fill_color),
+        brush=pg.mkBrush(fill_grad),
     )
     plot.addItem(fill)
 
@@ -189,10 +194,10 @@ def _build_animo_graph(parent: QWidget, registros: list, modo: str) -> QWidget:
     # Línea de promedio
     if puntajes:
         prom = sum(puntajes) / len(puntajes)
-        prom_pen = pg.mkPen(color=grad[1], width=1, style=Qt.PenStyle.DashLine)
+        prom_pen = pg.mkPen(color=grad[-1], width=1, style=Qt.PenStyle.DashLine)
         plot.addLine(y=prom, pen=prom_pen,
                      label=f"prom {prom:.1f}",
-                     labelOpts={"color": grad[1], "size": "8pt"})
+                     labelOpts={"color": grad[-1], "size": "8pt"})
 
     return plot
 
@@ -232,7 +237,7 @@ class _TabRegistros(QWidget):
         self._scroll = QScrollArea()
         self._scroll.setWidgetResizable(True)
         self._scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self._scroll.setStyleSheet("background: transparent; border: none;")
+        self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         self._list_w = QWidget()
         self._list_w.setStyleSheet("background: transparent;")
         self._list_layout = QVBoxLayout(self._list_w)
@@ -258,11 +263,10 @@ class _TabRegistros(QWidget):
             item = self._list_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
-        loading = QLabel("Cargando…")
-        loading.setFont(qfont("size_body"))
-        loading.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        loading.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
-        self._list_layout.addWidget(loading)
+        # NMSkeleton loaders mientras carga
+        for _ in range(5):
+            sk = NMSkeleton(width=240, height=16, radius=4, modo=self._modo)
+            self._list_layout.addWidget(sk)
 
         def _fetch():
             datos = {}
@@ -282,9 +286,10 @@ class _TabRegistros(QWidget):
                     datos[clave] = res.data or []
                 except Exception:
                     datos[clave] = []
-            self._datos_cache = datos
+            self._datos_ref.cache = datos
             self._cargando = False
-            QTimer.singleShot(0, lambda: self._mostrar_registros(datos))
+            self._datos_ref.changed.emit(datos)
+            QTimer.singleShot(0, lambda d=datos: self._mostrar_registros(d) if not sip.isdeleted(self) else None)
 
         threading.Thread(target=_fetch, daemon=True).start()
 
@@ -373,9 +378,9 @@ class _TabRegistros(QWidget):
         exportar_pdf(
             self._nombre, self._pid, self._datos_cache,
             on_done=lambda ruta: QTimer.singleShot(
-                0, lambda: self._pdf_ok(ruta)),
+                0, lambda r=ruta: self._pdf_ok(r) if not sip.isdeleted(self) else None),
             on_error=lambda msg: QTimer.singleShot(
-                0, lambda: self._pdf_error(msg)),
+                0, lambda m=msg: self._pdf_error(m) if not sip.isdeleted(self) else None),
         )
 
     def _pdf_ok(self, ruta: str):
@@ -450,7 +455,7 @@ class _TabAsignar(QWidget):
         lbl_hora.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
         row_rec.addWidget(lbl_hora)
         self._entry_rec_hora = NMInput("22:00", modo=self._modo)
-        self._entry_rec_hora.setFixedWidth(90)
+        self._entry_rec_hora.setMinimumWidth(80)
         row_rec.addWidget(self._entry_rec_hora)
         row_rec.addStretch()
         btn_enviar = NMButton("Enviar", modo=self._modo, width=100, height=32)
@@ -568,7 +573,7 @@ class _TabBanco(QWidget):
         self._list_scroll = QScrollArea()
         self._list_scroll.setWidgetResizable(True)
         self._list_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self._list_scroll.setStyleSheet("background: transparent; border: none;")
+        self._list_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         self._list_w = QWidget()
         self._list_w.setStyleSheet("background: transparent;")
         self._list_layout = QVBoxLayout(self._list_w)
@@ -635,7 +640,7 @@ class _TabBanco(QWidget):
             cat = r.get("categoria", "")
             cat_color = CATEGORY_COLORS.get(cat, C("accent", self._modo))
             row_f = QFrame()
-            row_f.setFixedHeight(44)
+            row_f.setMinimumHeight(36)
             row_f.setStyleSheet(f"""
                 QFrame {{
                     background: {c['bg_surface']};
@@ -663,12 +668,27 @@ class _TabBanco(QWidget):
             info.setStyleSheet(f"color: {col}; background: transparent;")
             rl.addWidget(info, stretch=1)
 
-            btn_del = QLabel("✕")
+            rid = r.get("id")
+            if rid is None:
+                continue
+            btn_del = QPushButton("✕")
             btn_del.setFont(qfont("size_caption"))
-            btn_del.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+            btn_del.setFlat(True)
+            btn_del.setFixedSize(24, 24)
             btn_del.setCursor(Qt.CursorShape.PointingHandCursor)
-            rid = r["id"]
-            btn_del.mousePressEvent = lambda _, _rid=rid: self._eliminar(int(_rid))
+            btn_del.setStyleSheet(f"""
+                QPushButton {{
+                    color: {c['text_tertiary']};
+                    background: transparent;
+                    border: none;
+                    border-radius: 12px;
+                }}
+                QPushButton:hover {{
+                    color: white;
+                    background: {c['error']};
+                }}
+            """)
+            btn_del.clicked.connect(lambda _, _rid=rid: self._eliminar(int(_rid)))
             rl.addWidget(btn_del)
             self._list_layout.addWidget(row_f)
 
@@ -689,8 +709,8 @@ class _TabBanco(QWidget):
         from hub.ia_asistente import autocompletar_actividad
         autocompletar_actividad(
             nombre,
-            on_result=lambda txt: QTimer.singleShot(0, lambda: self._ia_ok(txt)),
-            on_error=lambda msg: QTimer.singleShot(0, lambda: self._ia_err(msg)),
+            on_result=lambda txt: QTimer.singleShot(0, lambda t=txt: self._ia_ok(t) if not sip.isdeleted(self) else None),
+            on_error=lambda msg: QTimer.singleShot(0, lambda m=msg: self._ia_err(m) if not sip.isdeleted(self) else None),
         )
 
     def _ia_ok(self, txt: str):
@@ -698,21 +718,26 @@ class _TabBanco(QWidget):
 
     def _ia_err(self, msg: str):
         self._ent_desc.clear()
-        NMToast.show(self.window(), f"IA no disponible: {msg[:60]}", variant="error")
+        import hub.ia_asistente as ia
+        NMToast.show(self.window(), ia.status_msg(), variant="error")
 
 
 # ── Tab: IA ───────────────────────────────────────────────────────────────────
 
 class _TabIA(QWidget):
     def __init__(self, modo: str, sb, pid: str, nombre: str,
-                 datos_cache_ref: dict, parent=None):
+                 datos_cache_ref, parent=None):
         super().__init__(parent)
         self._modo = norm_modo(modo)
         self._sb = sb
         self._pid = pid
         self._nombre = nombre
         self._datos_ref = datos_cache_ref
+        datos_cache_ref.changed.connect(self._on_datos_changed)
         self._setup()
+
+    def _on_datos_changed(self, datos: dict):
+        pass  # IA reads datos_ref.cache on demand
 
     def _setup(self):
         c = colors(self._modo)
@@ -730,7 +755,7 @@ class _TabIA(QWidget):
         lbl_res.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
         vl_res.addWidget(lbl_res)
         self._txt_resumen = QTextEdit()
-        self._txt_resumen.setFixedHeight(90)
+        self._txt_resumen.setMinimumHeight(80)
         self._txt_resumen.setReadOnly(True)
         self._txt_resumen.setPlaceholderText("El resumen aparecerá aquí…")
         self._txt_resumen.setStyleSheet(stylesheet_textedit(self._modo))
@@ -811,8 +836,10 @@ class _TabIA(QWidget):
         layout.addStretch()
 
     def _generar_resumen(self):
-        datos = self._datos_ref.get("_datos_cache", {})
-        if not datos:
+        datos = self._datos_ref.cache
+        if not datos or not any(
+            datos.get(k) for k in ("animo", "resp", "pens", "checklist")
+        ):
             NMToast.show(self.window(),
                          "Cargá los datos del paciente primero (Tab Registros).",
                          variant="info")
@@ -824,9 +851,9 @@ class _TabIA(QWidget):
         resumir_evolucion(
             datos, self._nombre,
             on_result=lambda txt: QTimer.singleShot(
-                0, lambda: self._resumen_ok(txt)),
+                0, lambda t=txt: self._resumen_ok(t) if not sip.isdeleted(self) else None),
             on_error=lambda msg: QTimer.singleShot(
-                0, lambda: self._resumen_err(msg)),
+                0, lambda m=msg: self._resumen_err(m) if not sip.isdeleted(self) else None),
         )
 
     def _resumen_ok(self, txt: str):
@@ -837,10 +864,10 @@ class _TabIA(QWidget):
     def _resumen_err(self, msg: str):
         self._btn_resumen.setText("Generar resumen")
         self._btn_resumen.setEnabled(True)
-        self._txt_resumen.setPlainText(f"Error: {msg}")
+        self._txt_resumen.setPlainText(msg)
 
     def _generar_sugerencias(self):
-        datos = self._datos_ref.get("_datos_cache", {})
+        datos = self._datos_ref.cache
         if not datos:
             NMToast.show(self.window(),
                          "Cargá los datos del paciente primero.",
@@ -852,9 +879,9 @@ class _TabIA(QWidget):
         sugerir_acciones(
             datos, self._nombre,
             on_result=lambda txt: QTimer.singleShot(
-                0, lambda: self._sugerencias_ok(txt)),
+                0, lambda t=txt: self._sugerencias_ok(t) if not sip.isdeleted(self) else None),
             on_error=lambda msg: QTimer.singleShot(
-                0, lambda: self._sugerencias_err(msg)),
+                0, lambda m=msg: self._sugerencias_err(m) if not sip.isdeleted(self) else None),
         )
 
     def _sugerencias_ok(self, txt: str):
@@ -894,7 +921,7 @@ class _TabIA(QWidget):
     def _sugerencias_err(self, msg: str):
         self._btn_sugerencias.setText("Generar sugerencias")
         self._btn_sugerencias.setEnabled(True)
-        NMToast.show(self.window(), f"IA: {msg[:60]}", variant="error")
+        NMToast.show(self.window(), msg, variant="error")
 
     def _generar_tarea(self):
         ctx = self._ent_ctx.text().strip()
@@ -905,10 +932,21 @@ class _TabIA(QWidget):
         generar_tarea(
             ctx,
             on_result=lambda txt: QTimer.singleShot(
-                0, lambda: self._lbl_tarea_gen.setText(txt)),
+                0, lambda t=txt: self._lbl_tarea_gen.setText(t) if not sip.isdeleted(self) else None),
             on_error=lambda msg: QTimer.singleShot(
-                0, lambda: self._lbl_tarea_gen.setText(f"Error: {msg[:60]}")),
+                0, lambda m=msg: self._lbl_tarea_gen.setText(m) if not sip.isdeleted(self) else None),
         )
+
+
+# ── Shared state between TabRegistros and TabIA ────────────────────────────────
+
+class _DatosRef(QObject):
+    """Objeto de estado compartido limpio entre Registros e IA."""
+    changed = pyqtSignal(dict)
+
+    def __init__(self):
+        super().__init__()
+        self.cache: dict = {}
 
 
 # ── DetallePacienteView ───────────────────────────────────────────────────────
@@ -925,8 +963,7 @@ class DetallePacienteView(QWidget):
         self._sb = sb
         self._pid = paciente_id
         self._nombre = paciente_nombre
-        # Referencia compartida de datos para que IA los lea
-        self._datos_ref: dict = {}
+        self._datos_ref = _DatosRef()
         self._setup()
 
     def _setup(self):
@@ -961,14 +998,8 @@ class DetallePacienteView(QWidget):
                                self._pid, self._nombre,
                                self._datos_ref)
 
-        # Compartir datos_cache entre Registros e IA
-        self._tab_reg._datos_cache = self._datos_ref
-        # Monkey-patch para que al cargar datos en Registros, IA los vea
-        orig_mostrar = self._tab_reg._mostrar_registros
-        def _patched_mostrar(datos: dict):
-            self._datos_ref["_datos_cache"] = datos
-            orig_mostrar(datos)
-        self._tab_reg._mostrar_registros = _patched_mostrar
+        # Compartir datos_cache entre Registros e IA via _DatosRef
+        self._tab_reg._datos_ref = self._datos_ref
 
         self._tabs.addTab(self._tab_reg,   "Registros")
         self._tabs.addTab(self._tab_asig,  "Asignar")

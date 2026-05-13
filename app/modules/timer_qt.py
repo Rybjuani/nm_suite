@@ -16,12 +16,16 @@ NUEVAS CAPACIDADES:
 import os
 import sys
 import math
+import logging
+
+_log = logging.getLogger(__name__)
 
 from PyQt6.QtCore import (
     Qt, QTimer, QPropertyAnimation, QEasingCurve, QRectF, QPointF,
     pyqtProperty, QAbstractAnimation, QSequentialAnimationGroup,
     QVariantAnimation,
 )
+from PyQt6 import sip
 from PyQt6.QtGui import (
     QColor, QPainter, QPen, QBrush, QPainterPath,
     QConicalGradient, QRadialGradient,
@@ -35,7 +39,7 @@ try:
     from shared.components_qt import NMModule, NMButton, NMButtonOutline, NMToast, ThemeManager
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        get_gradient, stylesheet_lineedit,
+        get_gradient, gradient_colors, stylesheet_lineedit,
         PAD_CONTAINER, GAP_ELEMENTS, RADIUS_BUTTON, RADIUS_PILL,
     )
     from shared.db import obtener_conexion
@@ -47,7 +51,7 @@ except ImportError:
     from shared.components_qt import NMModule, NMButton, NMButtonOutline, NMToast, ThemeManager
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        get_gradient, stylesheet_lineedit,
+        get_gradient, gradient_colors, stylesheet_lineedit,
         PAD_CONTAINER, GAP_ELEMENTS, RADIUS_BUTTON, RADIUS_PILL,
     )
     from shared.db import obtener_conexion
@@ -63,6 +67,15 @@ PRESETS = [
 _CANVAS = 280
 _R_BASE = 110       # radio base del arco
 _ARC_W  = 10        # grosor del arco
+
+
+def _rich_color_at(modo: str, t: float) -> str:
+    palette = gradient_colors(modo)
+    if len(palette) < 3:
+        return interpolate_color(palette[0], palette[-1], t)
+    if t <= 0.45:
+        return interpolate_color(palette[0], palette[1], t / 0.45)
+    return interpolate_color(palette[1], palette[2], (t - 0.45) / 0.55)
 
 
 # ── TimerCanvas ───────────────────────────────────────────────────────────────
@@ -212,20 +225,18 @@ class _TimerCanvas(QWidget):
                            Qt.AlignmentFlag.AlignCenter, "¡Tiempo! ✓")
                 p.restore()
         else:
-            # Arco de progreso con gradiente
+            # Arco de progreso con gradiente 3-stop
             p.setOpacity(self._arc_alpha)
-            grad_pair = get_gradient(self._modo)
             extent = max(self._progress * 360, 2)
             rect = QRectF(cx - r, cy - r, r * 2, r * 2)
-            arc_pen = QPen(QColor(grad_pair[0]), _ARC_W)
+            arc_pen = QPen(QColor(gradient_colors(self._modo)[0]), _ARC_W)
             arc_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             p.setPen(arc_pen)
-            # Gradiente manual: dividir en 3 segmentos
             segs = 36
             seg_ext = extent / segs
             for i in range(segs):
                 t = i / max(segs - 1, 1)
-                col = interpolate_color(grad_pair[0], grad_pair[1], t)
+                col = _rich_color_at(self._modo, t)
                 pen = QPen(QColor(col), _ARC_W)
                 pen.setCapStyle(Qt.PenCapStyle.RoundCap)
                 p.setPen(pen)
@@ -444,9 +455,9 @@ class ModuloTimer(NMModule):
             self._last_10s_blink = True
             self._canvas.start_blink()
 
-        self._timer_id = QTimer(self)
-        self._timer_id.setSingleShot(True)
-        self._timer_id.timeout.connect(self._tick)
+        if self._timer_id is None:
+            self._timer_id = QTimer(self)
+            self._timer_id.timeout.connect(self._tick)
         self._timer_id.start(1000)
 
     def _finish(self):
@@ -463,9 +474,9 @@ class ModuloTimer(NMModule):
             winsound.Beep(1000, 400)
             QTimer.singleShot(500, lambda: winsound.Beep(1000, 400))
         except Exception:
-            pass
+            _log.exception("Operation failed")
         # Reset después de 4 segundos
-        QTimer.singleShot(4000, self._reset_after_finish)
+        QTimer.singleShot(4000, lambda: self._reset_after_finish() if not sip.isdeleted(self) else None)
 
     def _reset_after_finish(self):
         self._canvas.reset()
@@ -488,7 +499,7 @@ class ModuloTimer(NMModule):
             conn.commit()
             conn.close()
         except Exception:
-            pass
+            _log.exception("Operation failed")
 
     def on_leave(self):
         if self._running:
@@ -506,5 +517,5 @@ class ModuloTimer(NMModule):
                 n = row[0]
                 return f"{n} sesión{'es' if n > 1 else ''} ✔"
         except Exception:
-            pass
+            _log.exception("Operation failed")
         return ""

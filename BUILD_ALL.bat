@@ -15,6 +15,9 @@ echo  NeuroMood V3 - Modo Testing (PyQt6)
 echo  neuromood.com.ar
 echo ============================================================
 echo.
+echo  Limpiando __pycache__...
+for /d /r "%ROOT%" %%d in (__pycache__) do @if exist "%%d" rd /s /q "%%d" 2>nul
+echo.
 echo  Selecciona:
 echo   1. App Paciente      (app\main_qt.py)
 echo   2. Hub Profesional   (hub\main_qt.py)
@@ -60,8 +63,9 @@ cd /d "%ROOT%"
 set "DIST=%ROOT%\dist"
 set "BUILD=%ROOT%\build"
 set "DIST_PRO=%ROOT%\dist\pro"
-set "ICON=%ROOT%\NM_icon.ico"
-set "LOGO=%ROOT%\LOGO.png"
+set "ASSETS=%ROOT%\assets"
+set "ICON=%ASSETS%\NM_icon.ico"
+set "LOGO=%ASSETS%\LOGO.png"
 set "SHARED=%ROOT%\shared"
 set "APP_DIR=%ROOT%\app"
 set "HUB_DIR=%ROOT%\hub"
@@ -81,16 +85,7 @@ set BASE=--noconfirm --onefile --windowed^
 
 :: ── Hidden imports compartidos (shared/ + infra) ─────────────────────────────
 set SHARED_HI=^
- --hidden-import shared^
- --hidden-import shared.theme^
- --hidden-import shared.theme_qt^
- --hidden-import shared.components_qt^
- --hidden-import shared.db^
- --hidden-import shared.sync^
- --hidden-import shared.identidad^
- --hidden-import shared.config^
- --hidden-import shared.utils^
- --hidden-import shared.installer_common^
+ --collect-all shared^
  --hidden-import supabase^
  --hidden-import supabase._sync^
  --hidden-import supabase._async^
@@ -115,6 +110,7 @@ pyinstaller %BASE%^
  --distpath "%DIST%"^
  --collect-all PyQt6^
  %SHARED_HI%^
+ --collect-submodules app^
  --hidden-import app.home_qt^
  --hidden-import app.modules.animo_qt^
  --hidden-import app.modules.respiracion_qt^
@@ -141,15 +137,14 @@ echo [2/2] Compilando HubProfesional.exe...
 pyinstaller %BASE%^
  --add-data "%HUB_DIR%;hub"^
  --distpath "%DIST_PRO%"^
- --collect-all PyQt6^
- --collect-all pyqtgraph^
- %SHARED_HI%^
- --hidden-import hub.main_qt^
- --hidden-import hub.pacientes_qt^
- --hidden-import hub.ia_asistente^
- --hidden-import hub.exportar^
- --hidden-import groq^
- --hidden-import reportlab^
+  --collect-all PyQt6^
+  --collect-all pyqtgraph^
+  %SHARED_HI%^
+  --collect-submodules hub^
+  --hidden-import groq^
+  --hidden-import google.generativeai^
+  --hidden-import openai^
+  --hidden-import reportlab^
  --hidden-import reportlab.lib^
  --hidden-import reportlab.lib.pagesizes^
  --hidden-import reportlab.lib.styles^

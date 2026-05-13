@@ -437,8 +437,17 @@ def sync_inmediato():
         pass
 
 
+_last_sync_time = 0
+_SYNC_DEBOUNCE_SECS = 15
+
+
 def sync_inmediato_background():
-    """Lanza sync_inmediato en hilo daemon. No bloquea la UI."""
+    """Lanza sync_inmediato en hilo daemon con debounce de 15s."""
+    global _last_sync_time
+    now = __import__("time").time()
+    if now - _last_sync_time < _SYNC_DEBOUNCE_SECS:
+        return
+    _last_sync_time = now
     t = threading.Thread(target=sync_inmediato, daemon=True)
     t.start()
 

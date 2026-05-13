@@ -248,11 +248,6 @@ def inicializar_tablas():
     _migrar_pensamientos_0_10(conn)
     _migrar_activacion_0_10(conn)
     _migrar_checklist_sin_cascade(conn)
-    try:
-        conn.execute("ALTER TABLE recordatorios ADD COLUMN fecha_disparo TEXT DEFAULT NULL")
-        conn.commit()
-    except Exception:
-        pass
     _migrar_pensamientos_campos_tcc(conn)
     conn.commit()
     try:

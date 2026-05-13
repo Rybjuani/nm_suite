@@ -9,6 +9,9 @@ LÓGICA PRESERVADA EXACTA:
 import os
 import sys
 import random
+import logging
+
+_log = logging.getLogger(__name__)
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
@@ -60,57 +63,7 @@ _FALLBACK_ACTIVIDADES = [
 ]
 
 
-# ── Result button with custom hover color ─────────────────────────────────────
-
-class _ResultButton(QPushButton):
-    """Botón de resultado con hover color personalizable."""
-
-    def __init__(self, text: str, hover_color: str, modo: str = "dark_hybrid", parent=None):
-        super().__init__(text, parent)
-        self._hover_color = hover_color
-        self._modo = norm_modo(modo)
-        self._hovered = False
-
-        self.setFont(qfont("size_small"))
-        self.setFixedHeight(30)
-        self.setMinimumWidth(76)
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setFlat(True)
-        self._apply_style()
-        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
-
-    def _apply_style(self):
-        c = colors(self._modo)
-        if self._hovered:
-            self.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {self._hover_color};
-                    color: white;
-                    border-radius: 6px;
-                    border: 1px solid {self._hover_color};
-                    padding: 0 10px;
-                }}
-            """)
-        else:
-            self.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {c['bg_elevated']};
-                    color: {c['text_primary']};
-                    border-radius: 6px;
-                    border: 1px solid {c.get('border_card', c['border'])};
-                    padding: 0 10px;
-                }}
-            """)
-
-    def enterEvent(self, event):
-        self._hovered = True
-        self._apply_style()
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):
-        self._hovered = False
-        self._apply_style()
-        super().leaveEvent(event)
+# ── Result button (NMButtonOutline wrapper with feedback) ─────────────────────
 
 
 # ── ModuloActividades ─────────────────────────────────────────────────────────
@@ -126,7 +79,7 @@ class ModuloActividades(NMModule):
         root = QVBoxLayout(self._content)
         root.setContentsMargins(PAD_CONTAINER, PAD_CONTAINER,
                                 PAD_CONTAINER, PAD_CONTAINER)
-        root.setSpacing(0)
+        root.setSpacing(8)
 
         # ── Scroll area ───────────────────────────────────────────────────────
         self._scroll = QScrollArea()
@@ -169,7 +122,7 @@ class ModuloActividades(NMModule):
         mood_frame.setStyleSheet(f"""
             QFrame#MoodBanner {{
                 background-color: {c['bg_surface']};
-                border-radius: 10px;
+                border-radius: {RADIUS_CARD}px;
                 border: 1px solid {c.get('border_card', c['border'])};
             }}
         """)
@@ -291,8 +244,10 @@ class ModuloActividades(NMModule):
             ("Intentada", "intentada", c["warning"]),
             ("No pude",   "no_pude",   c["error"]),
         ]
-        for label, resultado, hover_color in results:
-            btn = _ResultButton(label, hover_color, self._modo, card)
+        for label, resultado, _hover_color in results:
+            btn = NMButtonOutline(label, modo=self._modo)
+            btn.setFixedHeight(30)
+            btn.setMinimumWidth(76)
             btn.clicked.connect(
                 lambda checked=False, n=nombre, r=resultado, cd=card:
                     self._register_result(n, r, cd)
@@ -330,7 +285,7 @@ class ModuloActividades(NMModule):
             conn.commit()
             conn.close()
         except Exception:
-            pass
+            _log.exception("Operation failed")
 
         # Visual feedback: cambiar borde de la NMCard al color del resultado
         color_map = {
@@ -338,19 +293,7 @@ class ModuloActividades(NMModule):
             "intentada": c["warning"],
             "no_pude":   c["error"],
         }
-        try:
-            card_widget.set_accent(color_map.get(resultado, c["accent"]))
-            # también update borde via stylesheet
-            result_color = color_map.get(resultado, c["accent"])
-            card_widget.setStyleSheet(f"""
-                NMCard {{
-                    background-color: {c['bg_surface']};
-                    border-radius: {RADIUS_CARD}px;
-                    border: 2px solid {result_color};
-                }}
-            """)
-        except Exception:
-            pass
+        card_widget.set_accent(color_map.get(resultado, c["accent"]))
 
     # ── Data access (lógica preservada exacta) ────────────────────────────────
 
@@ -366,7 +309,7 @@ class ModuloActividades(NMModule):
             if row:
                 return row[0] if isinstance(row, tuple) else row["puntaje"]
         except Exception:
-            pass
+            _log.exception("Operation failed")
         return None
 
     def _get_activities(self, animo: int) -> list:
@@ -383,7 +326,7 @@ class ModuloActividades(NMModule):
             if rows:
                 return [dict(r) for r in rows]
         except Exception:
-            pass
+            _log.exception("Operation failed")
 
         # Fallback: filter by mood level heuristic
         if animo <= 3:
@@ -414,5 +357,5 @@ class ModuloActividades(NMModule):
                 n = row[0]
                 return f"{n} actividad{'es' if n > 1 else ''} ✔"
         except Exception:
-            pass
+            _log.exception("Operation failed")
         return ""

@@ -8,12 +8,16 @@ LÓGICA PRESERVADA EXACTA:
 
 import os
 import sys
+import logging
+
+_log = logging.getLogger(__name__)
 
 from PyQt6.QtCore import Qt, QTimer
+from PyQt6 import sip
 from PyQt6.QtGui import QColor, QPainter, QPen, QBrush, QPainterPath
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSlider,
-    QTextEdit, QFrame, QScrollArea, QSizePolicy,
+    QTextEdit, QLineEdit, QFrame, QScrollArea, QSizePolicy,
     QStackedWidget, QPushButton,
 )
 
@@ -26,7 +30,7 @@ try:
         C, colors, norm_modo, qfont, qcolor,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL,
-        stylesheet_textedit, stylesheet_slider,
+        stylesheet_textedit, stylesheet_slider, stylesheet_lineedit,
     )
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy, hora_actual
@@ -42,7 +46,7 @@ except ImportError:
         C, colors, norm_modo, qfont, qcolor,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL,
-        stylesheet_textedit, stylesheet_slider,
+        stylesheet_textedit, stylesheet_slider, stylesheet_lineedit,
     )
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy, hora_actual
@@ -224,7 +228,7 @@ class ModuloRegistroTCC(NMModule):
             layout.addWidget(lbl)
 
         self._txt_situacion = QTextEdit()
-        self._txt_situacion.setFixedHeight(120)
+        self._txt_situacion.setMinimumHeight(100)
         self._txt_situacion.setStyleSheet(stylesheet_textedit(self._modo))
         layout.addWidget(self._txt_situacion)
         layout.addStretch()
@@ -244,10 +248,10 @@ class ModuloRegistroTCC(NMModule):
         lbl_emo.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
         layout.addWidget(lbl_emo)
 
-        self._entry_emocion = QTextEdit()
-        self._entry_emocion.setFixedHeight(44)
+        self._entry_emocion = QLineEdit()
+        self._entry_emocion.setMinimumHeight(36)
         self._entry_emocion.setPlaceholderText("Ej: ansiedad, tristeza, enojo...")
-        self._entry_emocion.setStyleSheet(stylesheet_textedit(self._modo))
+        self._entry_emocion.setStyleSheet(stylesheet_lineedit(self._modo))
         layout.addWidget(self._entry_emocion)
 
         lbl_int = QLabel(f"Intensidad: {self._data['intensidad']}/10")
@@ -287,7 +291,7 @@ class ModuloRegistroTCC(NMModule):
             layout.addWidget(lbl)
 
         self._txt_pensamiento = QTextEdit()
-        self._txt_pensamiento.setFixedHeight(90)
+        self._txt_pensamiento.setMinimumHeight(80)
         self._txt_pensamiento.setStyleSheet(stylesheet_textedit(self._modo))
         self._txt_pensamiento.textChanged.connect(lambda: self._detect_distortions(None))
         layout.addWidget(self._txt_pensamiento)
@@ -323,7 +327,7 @@ class ModuloRegistroTCC(NMModule):
             layout.addWidget(lbl)
 
         self._txt_respuesta = QTextEdit()
-        self._txt_respuesta.setFixedHeight(120)
+        self._txt_respuesta.setMinimumHeight(100)
         self._txt_respuesta.setStyleSheet(stylesheet_textedit(self._modo))
         layout.addWidget(self._txt_respuesta)
         layout.addStretch()
@@ -358,13 +362,12 @@ class ModuloRegistroTCC(NMModule):
             for d in found:
                 badge = QLabel(f"  {d}  ")
                 badge.setFont(qfont("size_small"))
-                badge.setContentsMargins(6, 3, 6, 3)
                 badge.setStyleSheet(f"""
                     QLabel {{
                         color: {c['warning']};
                         background-color: {c['bg_elevated']};
                         border-radius: 12px;
-                        padding: 2px 4px;
+                        padding: 4px 8px;
                     }}
                 """)
                 self._distortion_layout.addWidget(badge)
@@ -384,7 +387,7 @@ class ModuloRegistroTCC(NMModule):
             self._lbl_intensidad.setText(f"{value}/10")
             self._lbl_intensidad_header.setText(f"Intensidad: {value}/10")
         except Exception:
-            pass
+            _log.exception("Operation failed")
 
     # ── Step progress indicator ───────────────────────────────────────────────
 
@@ -419,7 +422,7 @@ class ModuloRegistroTCC(NMModule):
                 pass
         elif self._step == 1:
             try:
-                self._data["emocion"] = self._entry_emocion.toPlainText().strip()
+                self._data["emocion"] = self._entry_emocion.text().strip()
             except Exception:
                 pass
         elif self._step == 2:
@@ -448,9 +451,9 @@ class ModuloRegistroTCC(NMModule):
             if not self._data.get(campo, "").strip():
                 orig = self._btn_next.text()
                 self._btn_next.setText(hint)
-                QTimer.singleShot(2200, lambda: self._btn_next.setText(
+                QTimer.singleShot(2200, lambda: (self._btn_next.setText(
                     "Guardar ✓" if self._step == 3 else "Siguiente →"
-                ))
+                ) if not sip.isdeleted(self._btn_next) else None))
                 return
 
         if self._step == 3:
@@ -473,7 +476,7 @@ class ModuloRegistroTCC(NMModule):
         d = self._data
         if not d["situacion"] or not d["pensamiento"]:
             self._btn_next.setText("Completá los campos")
-            QTimer.singleShot(2000, lambda: self._btn_next.setText("Guardar ✓"))
+            QTimer.singleShot(2000, lambda: self._btn_next.setText("Guardar ✓") if not sip.isdeleted(self._btn_next) else None)
             return
 
         try:
@@ -490,11 +493,12 @@ class ModuloRegistroTCC(NMModule):
             conn.commit()
             conn.close()
         except Exception:
-            pass
+            NMToast.show(self.window(), "Error al guardar el registro", variant="error")
+            return
 
         # Show success state in the step page
         self._show_success_page()
-        QTimer.singleShot(3000, self._reset)
+        QTimer.singleShot(3000, lambda: self._reset() if not sip.isdeleted(self) else None)
 
     def _show_success_page(self):
         c = colors(self._modo)
@@ -544,7 +548,7 @@ class ModuloRegistroTCC(NMModule):
             self._txt_respuesta.clear()
             self._slider_intensidad.setValue(5)
         except Exception:
-            pass
+            _log.exception("Operation failed")
 
         self._btn_next.setEnabled(True)
         self._btn_prev.setEnabled(True)
@@ -568,5 +572,5 @@ class ModuloRegistroTCC(NMModule):
                 n = row[0]
                 return f"{n} registro{'s' if n > 1 else ''} ✔"
         except Exception:
-            pass
+            _log.exception("Operation failed")
         return ""

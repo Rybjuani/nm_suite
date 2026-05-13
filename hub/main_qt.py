@@ -33,16 +33,17 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QTimer, QSize, QPointF
 from PyQt6.QtGui import QColor, QIcon, QPainter, QPen, QBrush
+from PyQt6 import sip
 
 from shared.theme_qt import (
     C, colors, norm_modo, qcolor, qfont, interpolate_color,
-    get_gradient, app_palette, stylesheet_base,
+    get_gradient, gradient_colors, app_palette, stylesheet_base, stylesheet_scrollarea,
     obtener_ruta_recurso, aplicar_captionbar_qt,
     RADIUS_CARD, RADIUS_BUTTON, PAD_CONTAINER, PAD_CARD, GAP_CARDS,
 )
 from shared.components_qt import (
     ThemeManager, NMSidebar, NMHeader, NMFadeWidget,
-    NMButton, NMButtonOutline, NMCard, NMToast, separator, styled_label,
+    NMButton, NMButtonOutline, NMCard, NMToast, NMSkeleton,
 )
 
 try:
@@ -74,25 +75,38 @@ def _get_sb():
 
 # ── Mini indicador de ánimo ───────────────────────────────────────────────────
 
-class _AninoIndicator(QWidget):
+class _AnimoIndicator(QWidget):
     """Círculo de 14px con color semántico del último ánimo registrado."""
 
     _COLORS = {
-        range(1, 4):  "#ef4444",   # bajo
-        range(4, 7):  "#f59e0b",   # medio
-        range(7, 11): "#10b981",   # alto
+        range(1, 4):  "error",
+        range(4, 7):  "warning",
+        range(7, 11): "success",
     }
 
-    def __init__(self, puntaje: int | None, parent=None):
+    def __init__(self, puntaje: int | None, modo: str = "dark_hybrid", parent=None):
         super().__init__(parent)
+        self._modo = modo
+        self._puntaje = puntaje
         self.setFixedSize(14, 14)
-        self._color = "#566175"   # default gris
-        if puntaje is not None:
-            for r, col in self._COLORS.items():
-                if puntaje in r:
-                    self._color = col
-                    break
+        self._update_color()
         self.setStyleSheet("background: transparent;")
+        if parent is not None:
+            ThemeManager.instance().theme_changed.connect(self.apply_theme)
+
+    def _update_color(self):
+        modo = norm_modo(self._modo)
+        self._color = C("text_tertiary", modo)
+        if self._puntaje is not None:
+            for r, key in self._COLORS.items():
+                if self._puntaje in r:
+                    self._color = C(key, modo)
+                    break
+
+    def apply_theme(self, modo: str):
+        self._modo = modo
+        self._update_color()
+        self.update()
 
     def paintEvent(self, event):
         p = QPainter(self)
@@ -123,7 +137,7 @@ class DashboardView(QWidget):
         scroll = QScrollArea(self)
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet("background: transparent; border: none;")
+        scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -156,6 +170,15 @@ class DashboardView(QWidget):
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
             layout.addWidget(empty)
+            # Skeleton loaders mientras carga
+            sk_grid = QGridLayout()
+            sk_grid.setSpacing(GAP_CARDS)
+            for col in range(3):
+                sk_grid.setColumnStretch(col, 1)
+            for i in range(3):
+                sk = NMSkeleton(width=200, height=120, radius=RADIUS_CARD, modo=self._modo)
+                sk_grid.addWidget(sk, i // 3, i % 3)
+            layout.addLayout(sk_grid)
             layout.addStretch()
             return
 
@@ -165,13 +188,13 @@ class DashboardView(QWidget):
         for col in range(3):
             grid.setColumnStretch(col, 1)
 
-        grad = get_gradient(self._modo)
+        grad = gradient_colors(self._modo)
 
         for i, p in enumerate(self._pacientes):
             nombre = p.get("patient_name") or p.get("patient_id", "—")
             pid = p.get("patient_id", "")
             t = (i % 3) / 2
-            card_accent = interpolate_color(grad[0], grad[1], t)
+            card_accent = interpolate_color(grad[0], grad[-1], t)
 
             card = NMCard(accent_color=card_accent, clickable=True, modo=self._modo)
             card.setMinimumHeight(120)
@@ -195,8 +218,9 @@ class DashboardView(QWidget):
             top_row.addWidget(name_lbl)
             top_row.addStretch()
 
-            # Indicador de ánimo (se actualizará si se tienen datos)
-            ind = _AninoIndicator(None)
+            # Indicador de animo (ultimo puntaje si existe en los datos)
+            puntaje = p.get("last_mood") if "last_mood" in p else None
+            ind = _AnimoIndicator(puntaje, self._modo)
             ind.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
             top_row.addWidget(ind)
             inner.addLayout(top_row)
@@ -213,11 +237,7 @@ class DashboardView(QWidget):
             inner.addStretch()
 
             btn = NMButton("Ver detalle", modo=self._modo, width=100, height=30)
-            btn.clicked.connect(
-                lambda checked=False, _pid=pid, _n=nombre:
-                    self._on_select(_pid, _n)
-            )
-            btn.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+            btn.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
             inner.addWidget(btn, alignment=Qt.AlignmentFlag.AlignLeft)
 
             # Montar inner en card
@@ -277,7 +297,7 @@ class PacientesView(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet("background: transparent; border: none;")
+        scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         container = QWidget()
         container.setStyleSheet("background: transparent;")
         lst = QVBoxLayout(container)
@@ -298,15 +318,8 @@ class PacientesView(QWidget):
             nombre = p.get("patient_name") or "—"
             pid = p.get("patient_id", "")
 
-            row = QFrame()
-            row.setFixedHeight(46)
-            row.setStyleSheet(f"""
-                QFrame {{
-                    background: {c['bg_surface']};
-                    border-radius: {RADIUS_BUTTON}px;
-                    border: 1px solid {c.get('border_card', c['border'])};
-                }}
-            """)
+            row = NMCard(clickable=False, modo=self._modo)
+            row.setMinimumHeight(46)
             rl = QHBoxLayout(row)
             rl.setContentsMargins(12, 0, 12, 0)
 
@@ -352,17 +365,12 @@ class ConfigView(QWidget):
         title.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
         layout.addWidget(title)
 
-        def _card(titulo: str, btn_text: str, callback) -> QFrame:
-            frame = QFrame()
-            frame.setStyleSheet(f"""
-                QFrame {{
-                    background: {c['bg_surface']};
-                    border-radius: {RADIUS_CARD}px;
-                    border: 1px solid {c.get('border_card', c['border'])};
-                }}
-            """)
-            fl = QHBoxLayout(frame)
-            fl.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
+        def _card(titulo: str, btn_text: str, callback) -> NMCard:
+            card = NMCard(clickable=False, modo=self._modo)
+            card.setMinimumHeight(52)
+            fl = QHBoxLayout(card)
+            fl.setContentsMargins(PAD_CARD, 10, PAD_CARD, 10)
+            fl.setSpacing(8)
             lbl = QLabel(titulo)
             lbl.setFont(qfont("size_body", bold=True))
             lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
@@ -372,7 +380,7 @@ class ConfigView(QWidget):
             btn.setFixedSize(130, 32)
             btn.clicked.connect(callback)
             fl.addWidget(btn)
-            return frame
+            return card
 
         layout.addWidget(_card("Tema visual", "Cambiar tema", on_toggle_theme))
         layout.addWidget(_card("Conexión Supabase", "Reconectar", on_reconnect))
@@ -399,7 +407,7 @@ class HubProfesional(QMainWindow):
         self.resize(QSize(1100, 680))
         self._center()
         self._apply_icon()
-        self._apply_style()
+        self._apply_initial_style()
         self._build_ui()
 
         QTimer.singleShot(120, lambda: aplicar_captionbar_qt(self, self._modo))
@@ -409,8 +417,15 @@ class HubProfesional(QMainWindow):
 
     def _center(self):
         screen = QApplication.primaryScreen().availableGeometry()
-        x = (screen.width() - self.width()) // 2
-        y = (screen.height() - self.height()) // 2
+        target_w = min(1100, int(screen.width() * 0.75))
+        target_h = min(720, int(screen.height() * 0.82))
+        if target_w < self.minimumWidth():
+            target_w = self.minimumWidth()
+        if target_h < self.minimumHeight():
+            target_h = self.minimumHeight()
+        self.resize(QSize(target_w, target_h))
+        x = screen.x() + (screen.width() - self.width()) // 2
+        y = screen.y() + (screen.height() - self.height()) // 2
         self.move(x, y)
 
     def _apply_icon(self):
@@ -418,13 +433,12 @@ class HubProfesional(QMainWindow):
         if os.path.exists(ico):
             self.setWindowIcon(QIcon(ico))
 
-    def _apply_style(self):
-        c = colors(self._modo)
+    def _apply_initial_style(self):
         QApplication.instance().setPalette(app_palette(self._modo))
-        self.setStyleSheet(
-            stylesheet_base(self._modo) +
-            f"QMainWindow {{ background-color: {c['bg_primary']}; }}"
-        )
+        QApplication.instance().setStyleSheet(stylesheet_base(self._modo))
+
+    def _apply_style(self):
+        QApplication.instance().setPalette(app_palette(self._modo))
 
     # ── Build ─────────────────────────────────────────────────────────────────
 
@@ -529,7 +543,6 @@ class HubProfesional(QMainWindow):
     def _select_patient(self, pid: str, nombre: str):
         self._paciente_id = pid
         self._paciente_nombre = nombre
-        self._sidebar._lbl_pac_sel.setText(f"📋  {nombre[:18]}")
 
         # Cargar vista de detalle
         from hub.pacientes_qt import DetallePacienteView
@@ -539,42 +552,28 @@ class HubProfesional(QMainWindow):
         )
         detalle.back_requested.connect(self._back_to_dashboard)
 
-        # Añadir al stack y navegar
         self._stack.addWidget(detalle)
         self._stack.setCurrentWidget(detalle)
         self._current_view = "detalle"
 
-        # Actualizar header con botón back
-        old_header = self._header
-        self._header = NMHeader(
-            old_header.parent(),
-            modo=self._modo, show_back=True,
-            module_title=nombre[:24], module_icon="📋",
+        self._header.set_back_action(self._back_to_dashboard)
+        self._lbl_status.setText(f"📋  {nombre[:24]}")
+        self._lbl_status.setStyleSheet(
+            f"color: {C('text_primary', self._modo)}; background: transparent;"
         )
-        self._header.theme_toggle.connect(self._toggle_theme)
-        self._header.set_back_callback(self._back_to_dashboard)
-        layout = old_header.parent().layout()
-        layout.replaceWidget(old_header, self._header)
-        old_header.deleteLater()
 
     def _back_to_dashboard(self):
         self._current_view = "dashboard"
         self._stack.setCurrentWidget(self._view_dashboard)
         self._sidebar.set_active("dashboard")
 
-        # Restaurar header
-        old_header = self._header
-        self._header = NMHeader(old_header.parent(), modo=self._modo)
-        self._header.theme_toggle.connect(self._toggle_theme)
+        self._header.set_back_action(None)
+
         c = colors(self._modo)
-        self._lbl_status = QLabel("●")
-        self._lbl_status.setFont(qfont("size_caption"))
+        self._lbl_status.setText("● Conectado")
         self._lbl_status.setStyleSheet(
             f"color: {c['success']}; background: transparent;"
         )
-        layout = old_header.parent().layout()
-        layout.replaceWidget(old_header, self._header)
-        old_header.deleteLater()
 
     # ── Conexión (lógica preservada exacta) ───────────────────────────────────
 
@@ -606,7 +605,7 @@ class HubProfesional(QMainWindow):
             except Exception:
                 pats = []
             # Volver al hilo principal
-            QTimer.singleShot(0, lambda: self._on_pacientes_loaded(pats))
+            QTimer.singleShot(0, lambda p=pats: self._on_pacientes_loaded(p) if not sip.isdeleted(self) else None)
 
         threading.Thread(target=_fetch, daemon=True).start()
 
@@ -634,8 +633,8 @@ class HubProfesional(QMainWindow):
 
     def _toggle_theme(self):
         self._modo = "light_hybrid" if "dark" in self._modo else "dark_hybrid"
-        ThemeManager.instance().switch_mode(self._modo)
         self._apply_style()
+        ThemeManager.instance().switch_mode(self._modo)
         QTimer.singleShot(50, lambda: aplicar_captionbar_qt(self, self._modo))
 
     def closeEvent(self, event):

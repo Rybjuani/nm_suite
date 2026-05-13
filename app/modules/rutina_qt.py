@@ -8,6 +8,9 @@ LÓGICA PRESERVADA EXACTA:
 
 import os
 import sys
+import logging
+
+_log = logging.getLogger(__name__)
 
 from PyQt6.QtCore import (
     Qt, QTimer,
@@ -79,7 +82,7 @@ class ModuloRutina(NMModule):
         root = QVBoxLayout(self._content)
         root.setContentsMargins(PAD_CONTAINER, PAD_CONTAINER,
                                 PAD_CONTAINER, PAD_CONTAINER)
-        root.setSpacing(0)
+        root.setSpacing(8)
 
         # Badge summary
         self._badge_lbl = QLabel("Sin tareas configuradas")
@@ -284,7 +287,7 @@ class ModuloRutina(NMModule):
 
             conn.close()
         except Exception:
-            pass
+            _log.exception("Operation failed")
 
         self._update_badge()
 
@@ -342,7 +345,7 @@ class ModuloRutina(NMModule):
             conn.commit()
             conn.close()
         except Exception:
-            pass
+            _log.exception("Operation failed")
 
         self._task_done[tarea_id] = checked
         # Update checkbox style for line-through effect
@@ -355,7 +358,7 @@ class ModuloRutina(NMModule):
             import winsound
             winsound.Beep(1200, 80)
         except Exception:
-            pass
+            _log.exception("Operation failed")
 
     def _update_badge(self):
         total = len(self._task_done)
@@ -393,7 +396,7 @@ class ModuloRutina(NMModule):
                     self._section_count_lbl[key].setText(f"{done}/{total}")
             conn.close()
         except Exception:
-            pass
+            _log.exception("Operation failed")
 
     # ── Add task inline form ──────────────────────────────────────────────────
 
@@ -434,21 +437,7 @@ class ModuloRutina(NMModule):
         """)
         form_layout.addWidget(entry)
 
-        btn_save = QPushButton("✓")
-        btn_save.setFont(qfont("size_body", bold=True))
-        btn_save.setFixedSize(32, 32)
-        btn_save.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_save.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {c['accent']};
-                color: {c['text_on_accent']};
-                border-radius: 6px;
-                border: none;
-            }}
-            QPushButton:hover {{
-                background-color: {c['accent_hover'] if 'accent_hover' in c else c['accent']};
-            }}
-        """)
+        btn_save = NMButton("✓", modo=self._modo, width=32, height=32)
         btn_save.clicked.connect(
             lambda: self._add_task(seccion, entry.text(), form)
         )
@@ -481,7 +470,10 @@ class ModuloRutina(NMModule):
             conn.commit()
             conn.close()
         except Exception:
-            pass
+            _log.exception("Operation failed")
+        layout = form_widget.parentWidget().layout() if form_widget.parentWidget() else None
+        if layout is not None:
+            layout.removeWidget(form_widget)
         form_widget.deleteLater()
         self._load_tasks()
 
@@ -509,7 +501,7 @@ class ModuloRutina(NMModule):
         frame_layout.addWidget(title_lbl)
 
         self._nota_txt = QTextEdit()
-        self._nota_txt.setFixedHeight(80)
+        self._nota_txt.setMinimumHeight(60)
         self._nota_txt.setStyleSheet(stylesheet_textedit(self._modo))
         self._nota_txt.focusOutEvent = self._nota_focus_out
         frame_layout.addWidget(self._nota_txt)
@@ -525,25 +517,9 @@ class ModuloRutina(NMModule):
             if row and row[0]:
                 self._nota_txt.setPlainText(row[0])
         except Exception:
-            pass
+            _log.exception("Operation failed")
 
-        btn_save = QPushButton("Guardar nota")
-        btn_save.setFont(qfont("size_small"))
-        btn_save.setFixedHeight(30)
-        btn_save.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_save.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {c['bg_elevated']};
-                color: {c['text_primary']};
-                border-radius: 6px;
-                border: none;
-                padding: 0 14px;
-            }}
-            QPushButton:hover {{
-                background-color: {c['accent']};
-                color: {c['text_on_accent']};
-            }}
-        """)
+        btn_save = NMButtonOutline("Guardar nota", modo=self._modo)
         btn_save.clicked.connect(self._guardar_nota)
         save_row = QHBoxLayout()
         save_row.addStretch()
@@ -570,7 +546,7 @@ class ModuloRutina(NMModule):
             conn.commit()
             conn.close()
         except Exception:
-            pass
+            _log.exception("Operation failed")
 
     # ── Hooks ─────────────────────────────────────────────────────────────────
 
@@ -592,5 +568,5 @@ class ModuloRutina(NMModule):
             if total > 0:
                 return f"{done}/{total} ✔"
         except Exception:
-            pass
+            _log.exception("Operation failed")
         return ""

@@ -4,10 +4,15 @@ import os
 import subprocess
 import tempfile
 
-from shared.theme import COLORS, TYPOGRAPHY, LAYOUT
+try:
+    from shared.theme import COLORS, TYPOGRAPHY, LAYOUT
+except ImportError:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from theme import COLORS, TYPOGRAPHY, LAYOUT
 
 # ── Colores para instaladores (desde theme hybrid) ──────────────────────────
 _C = COLORS["dark_hybrid"]
+_T = TYPOGRAPHY
 
 BG_PRIMARY = _C["bg_primary"]
 BG_SECONDARY = _C["bg_secondary"]
@@ -17,12 +22,13 @@ ACCENT_HOVER = _C["accent_hover"]
 TEXT_PRIMARY = _C["text_primary"]
 TEXT_SEC = _C["text_secondary"]
 TEXT_TERT = _C["text_tertiary"]
+TEXT_ON_ACCENT = _C["text_on_accent"]
 BORDER = _C["border"]
 SUCCESS = _C["success"]
 WARNING_C = _C["warning"]
 ERROR_C = _C["error"]
 
-FONT_FAMILY = TYPOGRAPHY["font_family"]
+FONT_FAMILY = _T.get("font_family", "Segoe UI")
 RADIUS_BUTTON = LAYOUT["radius_button"]
 RADIUS_CARD = LAYOUT["radius_card"]
 
@@ -30,6 +36,8 @@ RADIUS_CARD = LAYOUT["radius_card"]
 _GRAD = COLORS["dark_hybrid"]
 VIOLET       = _GRAD["violet"]
 VIOLET_HOVER = _GRAD["violet_hover"]
+TEAL         = _GRAD.get("teal", ACCENT)
+TEAL_HOVER   = _GRAD.get("teal_hover", TEAL)
 SUCCESS_BG   = "#091E10"   # fondo info verde oscuro
 
 
@@ -61,9 +69,9 @@ QLineEdit::placeholder {{ color: {_GRAD["text_tertiary"]}; }}
 QPushButton {{
     background: qlineargradient(
         x1:0, y1:0, x2:1, y2:0,
-        stop:0 {ACCENT}, stop:1 {VIOLET}
+        stop:0 {ACCENT}, stop:0.45 {TEAL}, stop:1 {VIOLET}
     );
-    color: {BG_PRIMARY};
+    color: {TEXT_ON_ACCENT};
     border: none;
     border-radius: {RADIUS_BUTTON}px;
     padding: 8px 20px;
@@ -73,7 +81,7 @@ QPushButton {{
 QPushButton:hover {{
     background: qlineargradient(
         x1:0, y1:0, x2:1, y2:0,
-        stop:0 {ACCENT_HOVER}, stop:1 {VIOLET_HOVER}
+        stop:0 {ACCENT_HOVER}, stop:0.45 {TEAL_HOVER}, stop:1 {VIOLET_HOVER}
     );
 }}
 QPushButton:disabled {{
@@ -126,7 +134,7 @@ QProgressBar {{
 QProgressBar::chunk {{
     background: qlineargradient(
         x1:0, y1:0, x2:1, y2:0,
-        stop:0 {ACCENT}, stop:1 {VIOLET}
+        stop:0 {ACCENT}, stop:0.45 {TEAL}, stop:1 {VIOLET}
     );
     border-radius: 4px;
 }}
@@ -178,10 +186,14 @@ QFrame#InputCard {{
 
 
 def recurso(nombre: str) -> str:
-    base = sys._MEIPASS if getattr(sys, "frozen", False) else os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))
-    )
-    return os.path.join(base, nombre)
+    if getattr(sys, "frozen", False):
+        base = sys._MEIPASS
+        return os.path.join(base, nombre)
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    candidate = os.path.join(repo, "assets", nombre)
+    if os.path.exists(candidate):
+        return candidate
+    return os.path.join(repo, nombre)
 
 
 def crear_acceso_directo(origen: str, destino_lnk: str, icono: str):
@@ -219,9 +231,7 @@ def crear_acceso_directo(origen: str, destino_lnk: str, icono: str):
 def aplicar_captionbar_installer(window):
     try:
         import ctypes
-        hwnd = ctypes.windll.user32.GetParent(window.winfo_id())
-        if hwnd == 0:
-            hwnd = window.winfo_id()
+        hwnd = int(window.winId())
         v = ctypes.c_int(1)
         ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 20, ctypes.byref(v), 4)
         if sys.getwindowsversion().build >= 22000:

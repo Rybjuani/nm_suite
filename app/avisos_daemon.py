@@ -174,7 +174,7 @@ def _registrar_log(rec_id: int, hora: str, mensaje: str):
         import datetime as dt
         conn = obtener_conexion()
         conn.execute(
-            "INSERT OR IGNORE INTO recordatorios_log (recordatorio_id, fecha, hora, mensaje) "
+            "INSERT OR IGNORE INTO recordatorios_log (rec_id, fecha, hora, mensaje) "
             "VALUES (?, ?, ?, ?)",
             (rec_id, dt.date.today().isoformat(), hora, mensaje),
         )
