@@ -1,0 +1,83 @@
+{
+  "timestamp": "2026-05-13T01:50:06.774932",
+  "app": "hub_profesional|hub_profesional",
+  "passed": 16,
+  "failed": 0,
+  "steps": [
+    {
+      "name": "Hub default",
+      "status": "passed"
+    },
+    {
+      "name": "Navigate pacientes",
+      "status": "passed"
+    },
+    {
+      "name": "Capture pacientes",
+      "status": "passed"
+    },
+    {
+      "name": "Navigate dashboard",
+      "status": "passed"
+    },
+    {
+      "name": "Capture dashboard",
+      "status": "passed"
+    },
+    {
+      "name": "Navigate config",
+      "status": "passed"
+    },
+    {
+      "name": "Capture config",
+      "status": "passed"
+    },
+    {
+      "name": "Theme toggle light",
+      "status": "passed"
+    },
+    {
+      "name": "Capture light",
+      "status": "passed"
+    },
+    {
+      "name": "Theme toggle dark",
+      "status": "passed"
+    },
+    {
+      "name": "Resize 1024x720",
+      "status": "passed"
+    },
+    {
+      "name": "Capture 1024x720",
+      "status": "passed"
+    },
+    {
+      "name": "Resize 1366x768",
+      "status": "passed"
+    },
+    {
+      "name": "Capture 1366x768",
+      "status": "passed"
+    },
+    {
+      "name": "Resize 1920x1080",
+      "status": "passed"
+    },
+    {
+      "name": "Capture 1920x1080",
+      "status": "passed"
+    }
+  ],
+  "crashes": [],
+  "screenshots": [
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h01_default.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h02_pacientes.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h03_dashboard.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h04_config.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h05_light.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h_resize_1024x720.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h_resize_1366x768.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h_resize_1920x1080.png"
+  ]
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "class": "NMToggle",
+    "objectName": "",
+    "text": "",
+    "geometry": {
+      "x": 823,
+      "y": 15,
+      "w": 48,
+      "h": 26
+    },
+    "depth": 3
+  },
+  {
+    "class": "NMToggle",
+    "objectName": "",
+    "text": "",
+    "geometry": {
+      "x": 823,
+      "y": 15,
+      "w": 48,
+      "h": 26
+    },
+    "depth": 2
+  },
+  {
+    "class": "NMToggle",
+    "objectName": "",
+    "text": "",
+    "geometry": {
+      "x": 823,
+      "y": 15,
+      "w": 48,
+      "h": 26
+    },
+    "depth": 2
+  },
+  {
+    "class": "NMToggle",
+    "objectName": "",
+    "text": "",
+    "geometry": {
+      "x": 823,
+      "y": 15,
+      "w": 48,
+      "h": 26
+    },
+    "depth": 1
+  }
+]

@@ -1,0 +1,36 @@
+{
+  "timestamp": "2026-05-13T01:50:08.921131",
+  "total_issues": 0,
+  "resolutions": [
+    {
+      "resolution": "800x600",
+      "total_issues": 0,
+      "clipping": 0,
+      "truncated": 0,
+      "overlaps": 0,
+      "missing_scrollbar": 0,
+      "offscreen": 0,
+      "issues": []
+    },
+    {
+      "resolution": "1366x768",
+      "total_issues": 0,
+      "clipping": 0,
+      "truncated": 0,
+      "overlaps": 0,
+      "missing_scrollbar": 0,
+      "offscreen": 0,
+      "issues": []
+    },
+    {
+      "resolution": "1920x1080",
+      "total_issues": 0,
+      "clipping": 0,
+      "truncated": 0,
+      "overlaps": 0,
+      "missing_scrollbar": 0,
+      "offscreen": 0,
+      "issues": []
+    }
+  ]
+}
