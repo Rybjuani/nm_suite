@@ -47,13 +47,17 @@ def ruta_bundled(exe: str) -> str:
     base = sys._MEIPASS if getattr(sys, "frozen", False) else os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "dist"
     )
-    # onedir: HubProfesional\HubProfesional.exe
-    folder = os.path.join(base, "pro", exe.replace(".exe", ""))
+    # onedir: exe_folder\exe_name.exe
+    folder = os.path.join(base, exe.replace(".exe", ""))
     onedir_path = os.path.join(folder, exe)
     if os.path.exists(onedir_path):
         return onedir_path
-    # onefile: pro\HubProfesional.exe
-    return os.path.join(base, "pro", exe)
+    # onefile: exe_folder\exe_name.exe (misma ruta que onedir con BUILD actual)
+    # o: exe_name.exe (si se bundleó directo)
+    direct = os.path.join(base, exe)
+    if os.path.exists(direct):
+        return direct
+    return onedir_path  # fallback
 
 
 # ── Worker ────────────────────────────────────────────────────────────────────
@@ -80,7 +84,8 @@ class _ProWorker(QThread):
             src = ruta_bundled("HubProfesional.exe")
             if os.path.exists(src):
                 src_dir = os.path.dirname(src)
-                if os.path.isdir(src_dir):
+                # onedir: la carpeta contiene el exe + dependencias
+                if os.path.basename(src_dir) == "HubProfesional":
                     shutil.copytree(src_dir, install_dir, dirs_exist_ok=True)
                 else:
                     shutil.copy2(src, install_dir / HUB_EXE)
@@ -95,7 +100,7 @@ class _ProWorker(QThread):
             uninst_dest = uninst_dest_dir / UNINST_EXE
             if os.path.exists(src_un):
                 src_un_dir = os.path.dirname(src_un)
-                if os.path.isdir(src_un_dir):
+                if os.path.basename(src_un_dir) == UNINST_EXE.replace(".exe", ""):
                     shutil.copytree(src_un_dir, uninst_dest_dir, dirs_exist_ok=True)
                 else:
                     uninst_dest_dir.mkdir(parents=True, exist_ok=True)

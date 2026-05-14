@@ -111,11 +111,10 @@ class _InstalWorker(QThread):
                 self.log_signal.emit(f"  No encontrado: {APP_EXE}", ERROR_C)
             else:
                 src_dir = os.path.dirname(src)
-                if os.path.isdir(src_dir) and src_dir != os.path.dirname(os.path.dirname(src)):
-                    # onedir: copia toda la carpeta
+                # onedir: la carpeta tiene el mismo nombre que el exe (sin .exe)
+                if os.path.basename(src_dir) == APP_EXE.replace(".exe", ""):
                     shutil.copytree(src_dir, install_dir, dirs_exist_ok=True)
                 else:
-                    # onefile: copia solo el .exe
                     shutil.copy2(src, install_dir / APP_EXE)
                 self.log_signal.emit(f"  {APP_NOMBRE}", SUCCESS)
             paso += 1
@@ -139,7 +138,7 @@ class _InstalWorker(QThread):
             uninst_src = ruta_app_bundled(uninst_exe)
             try:
                 uninst_src_dir = os.path.dirname(uninst_src)
-                if os.path.isdir(uninst_src_dir) and uninst_src_dir != os.path.dirname(os.path.dirname(uninst_src)):
+                if os.path.basename(uninst_src_dir) == uninst_exe.replace(".exe", ""):
                     uninst_dest_dir = install_dir / "Desinstalar NeuroMood"
                     shutil.copytree(uninst_src_dir, uninst_dest_dir, dirs_exist_ok=True)
                     uninst_dest = uninst_dest_dir / uninst_exe
