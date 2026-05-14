@@ -1776,6 +1776,138 @@ class NMModule(ThemeAwareWidgetMixin, QWidget):
         self._on_theme(modo)
 
 
+# ── NMStatusChip ──────────────────────────────────────────────────────────────
+
+class NMStatusChip(QLabel):
+    """Pill pequeña con color semántico y texto. Usa tokens del tema."""
+
+    def __init__(self, text: str = "", color_key: str = "success",
+                 modo: str = "dark_hybrid", parent=None):
+        super().__init__(text, parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._color_key = color_key
+        self.setFont(qfont("size_caption"))
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setMinimumHeight(22)
+        self._apply_style()
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def _apply_style(self):
+        c = colors(self._modo)
+        color = C(self._color_key, self._modo)
+        self.setStyleSheet(f"""
+            NMStatusChip {{
+                color: {color};
+                background-color: transparent;
+                border: 1px solid {color};
+                border-radius: {RADIUS_PILL // 2}px;
+                padding: 2px 10px;
+            }}
+        """)
+
+    def set_color(self, color_key: str):
+        self._color_key = color_key
+        self._apply_style()
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self._apply_style()
+
+
+# ── NMSectionCard ─────────────────────────────────────────────────────────────
+
+class NMSectionCard(QFrame):
+    """Card con título decorativo. content_widget() devuelve el área para widgets."""
+
+    def __init__(self, title: str = "", icon: str = "",
+                 modo: str = "dark_hybrid", parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._title = title
+        self._icon = icon
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        self._build()
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def _build(self):
+        c = colors(self._modo)
+        self.setStyleSheet(f"""
+            NMSectionCard {{
+                background-color: {c['bg_surface']};
+                border-radius: {RADIUS_CARD}px;
+                border: 1px solid {c.get('border_card', c['border'])};
+            }}
+        """)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
+        layout.setSpacing(8)
+
+        header = QHBoxLayout()
+        if self._icon:
+            icon_lbl = QLabel(self._icon)
+            icon_lbl.setStyleSheet("background: transparent;")
+            header.addWidget(icon_lbl)
+        title_lbl = QLabel(self._title)
+        title_lbl.setFont(qfont("size_body", bold=True))
+        title_lbl.setStyleSheet(label_style(self._modo, "text_primary"))
+        header.addWidget(title_lbl)
+        header.addStretch()
+        layout.addLayout(header)
+
+        self._content = QWidget()
+        self._content.setStyleSheet("background: transparent;")
+        self._content_layout = QVBoxLayout(self._content)
+        self._content_layout.setContentsMargins(0, 0, 0, 0)
+        self._content_layout.setSpacing(4)
+        layout.addWidget(self._content)
+
+    def content_layout(self) -> QVBoxLayout:
+        return self._content_layout
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        c = colors(self._modo)
+        self.setStyleSheet(f"""
+            NMSectionCard {{
+                background-color: {c['bg_surface']};
+                border-radius: {RADIUS_CARD}px;
+                border: 1px solid {c.get('border_card', c['border'])};
+            }}
+        """)
+
+
+# ── NMFormField ────────────────────────────────────────────────────────────────
+
+class NMFormField(QWidget):
+    """Label + input en fila horizontal, con espaciado consistente."""
+
+    def __init__(self, label: str = "", widget: QWidget = None,
+                 modo: str = "dark_hybrid", parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+
+        self._label = QLabel(label)
+        self._label.setFont(qfont("size_body"))
+        self._label.setStyleSheet(label_style(self._modo, "text_secondary"))
+        self._label.setMinimumWidth(55)
+        layout.addWidget(self._label)
+
+        if widget:
+            layout.addWidget(widget, stretch=1)
+        layout.addStretch()
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def label(self) -> QLabel:
+        return self._label
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self._label.setStyleSheet(label_style(self._modo, "text_secondary"))
+
+
 def h_spacer() -> QWidget:
     """Spacer horizontal expandible."""
     w = QWidget()
