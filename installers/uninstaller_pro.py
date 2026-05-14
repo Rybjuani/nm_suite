@@ -130,6 +130,10 @@ def vaciar_carpeta(carpeta: str):
     subprocess.run(f'del /f /s /q "{carpeta}\\*"', shell=True, capture_output=True, timeout=30)
     subprocess.run(f'for /d %x in ("{carpeta}\\*") do @rd /s /q "%x"',
                    shell=True, capture_output=True, timeout=30)
+    try:
+        Path(carpeta).rmdir()
+    except OSError:
+        pass
 
 
 def lanzar_bat_limpieza(install_dir: str):
@@ -196,6 +200,9 @@ class _ProUninstWorker(QThread):
             time.sleep(0.5)
             self.progress_signal.emit(0.80, "Eliminando archivos...")
             vaciar_carpeta(self._install_dir)
+            self.progress_signal.emit(0.85, "Eliminando datos de configuracion...")
+            appdata_pro = str(Path(os.environ.get("APPDATA", "")) / "NeuroMoodPro")
+            vaciar_carpeta(appdata_pro)
             self.progress_signal.emit(0.90, "Finalizando...")
             lanzar_bat_limpieza(self._install_dir)
             self.progress_signal.emit(1.0, "¡Desinstalacion completada!")
