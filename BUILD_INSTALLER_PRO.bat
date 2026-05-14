@@ -4,81 +4,76 @@ set "ROOT=%~dp0"
 if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
 
 echo ============================================================
-echo  NeuroMood Suite - Compilar Instalador Hub Profesional
+echo  NeuroMood - Compilar Instalador Hub
 echo ============================================================
 echo.
 
 cd /d "%ROOT%"
 
-if not exist "%ROOT%\dist\pro\HubProfesional\HubProfesional.exe" (
-    echo  FALTA: dist\pro\HubProfesional\HubProfesional.exe
-    echo  Ejecuta BUILD_ALL.bat primero para compilar el Hub.
+set "DIST=%ROOT%\dist"
+set "ASSETS=%ROOT%\assets"
+set "BUILD=%ROOT%\build"
+
+if not exist "%DIST%\HubProfesional\HubProfesional.exe" (
+    echo  FALTA: dist\HubProfesional\HubProfesional.exe
+    echo  Ejecuta BUILD_ALL.bat primero.
     pause
     exit /b 1
 )
 
-set "ASSETS=%ROOT%\assets"
-set "INSTALLERS=%ROOT%\installers"
-set "DIST=%ROOT%\dist"
-set "DIST_PRO=%ROOT%\dist\pro"
-set "BUILD=%ROOT%\build"
-
-:: Clean previous
-if exist "%DIST%\Instalar NeuroMood Hub Profesional"          rmdir /s /q "%DIST%\Instalar NeuroMood Hub Profesional"          2>nul
-if exist "%DIST_PRO%\Desinstalar NeuroMood Pro"                rmdir /s /q "%DIST_PRO%\Desinstalar NeuroMood Pro"                2>nul
+:: Clean
+echo  Limpiando builds anteriores...
+if exist "%DIST%\Desinstalar NeuroMood Pro"                rmdir /s /q "%DIST%\Desinstalar NeuroMood Pro"                2>nul
+if exist "%DIST%\Instalar NeuroMood Hub Profesional"       rmdir /s /q "%DIST%\Instalar NeuroMood Hub Profesional"       2>nul
 del "%ROOT%\Desinstalar NeuroMood Pro.spec"             2>nul
 del "%ROOT%\Instalar NeuroMood Hub Profesional.spec"    2>nul
 
-set BASE_FLAGS=--noconfirm --onedir --windowed^
+set BASE=--noconfirm --onedir --windowed^
  --workpath "%BUILD%"^
  --paths "%ROOT%"^
- --collect-all shared^
+ --hidden-import shared^
  --hidden-import PIL^
  --hidden-import win32com^
  --hidden-import win32com.client^
  --hidden-import pywintypes
 
 echo  [1/2] Compilando desinstalador Hub...
-pyinstaller %BASE_FLAGS%^
+pyinstaller %BASE%^
  --add-data "%ASSETS%\NM_icon.ico;."^
  --add-data "%ASSETS%\LOGO.png;."^
  --icon "%ASSETS%\NM_icon.ico"^
  --name "Desinstalar NeuroMood Pro"^
- --distpath "%DIST_PRO%"^
- "%INSTALLERS%\uninstaller_pro.py"
+ --distpath "%DIST%"^
+ "%ROOT%\installers\uninstaller_pro.py"
 if %ERRORLEVEL% NEQ 0 goto :error
-echo  OK: dist\pro\Desinstalar NeuroMood Pro\
+echo  OK: dist\Desinstalar NeuroMood Pro\
 echo.
 
 echo  [2/2] Compilando instalador Hub...
-pyinstaller %BASE_FLAGS%^
+pyinstaller %BASE%^
  --add-data "%ASSETS%\installer_icon.ico;."^
  --add-data "%ASSETS%\NM_icon.ico;."^
  --add-data "%ASSETS%\no_symbol.ico;."^
  --add-data "%ASSETS%\LOGO.png;."^
  --add-data "%ROOT%\.env;."^
- --add-data "%DIST_PRO%\HubProfesional;HubProfesional"^
- --add-data "%DIST_PRO%\Desinstalar NeuroMood Pro;Desinstalar NeuroMood Pro"^
+ --add-data "%DIST%\HubProfesional;HubProfesional"^
+ --add-data "%DIST%\Desinstalar NeuroMood Pro;Desinstalar NeuroMood Pro"^
  --icon "%ASSETS%\installer_icon.ico"^
  --name "Instalar NeuroMood Hub Profesional"^
  --distpath "%DIST%"^
- "%INSTALLERS%\installer_pro.py"
+ "%ROOT%\installers\installer_pro.py"
 if %ERRORLEVEL% NEQ 0 goto :error
 echo  OK: dist\Instalar NeuroMood Hub Profesional\
 echo.
 
 echo ============================================================
-echo  LISTO - Arranque instantaneo
-echo.
-echo  Instalador Pro: dist\Instalar NeuroMood Hub Profesional\Instalar NeuroMood Hub Profesional.exe
-echo.
-echo  Para distribuir: comprime la carpeta en un .zip y compartilo.
+echo  LISTO
+echo  dist\Instalar NeuroMood Hub Profesional\Instalar NeuroMood Hub Profesional.exe
 echo ============================================================
 pause
 goto :end
 
 :error
-echo.
 echo ============================================================
 echo  ERROR - La compilacion fallo.
 echo ============================================================
