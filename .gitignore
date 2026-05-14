@@ -1,6 +1,7 @@
 # Compilación PyInstaller
 build/
 dist/
+*.spec
 
 # Caché de Python
 __pycache__/
