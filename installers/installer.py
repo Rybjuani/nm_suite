@@ -277,7 +277,7 @@ class InstaladorNeuroMood(QMainWindow):
         screen = QApplication.primaryScreen().availableGeometry()
         self.move((screen.width() - 740) // 2, (screen.height() - 540) // 2)
 
-        QTimer.singleShot(150, lambda: aplicar_captionbar_installer(self))
+        aplicar_captionbar_installer(self)
 
         self._pagina = 0
         self._install_dir: str = ""
@@ -393,6 +393,7 @@ class InstaladorNeuroMood(QMainWindow):
         self.btn_ant.setObjectName("outline")
         self.btn_ant.setFixedSize(120, 36)
         self.btn_ant.clicked.connect(self._anterior)
+        self.btn_ant.setVisible(False)
         nl.addWidget(self.btn_ant)
         nl.addStretch()
         self.btn_sig = QPushButton("Siguiente →")
@@ -627,8 +628,7 @@ class InstaladorNeuroMood(QMainWindow):
         self._ent_path.setText(DEFAULT_INSTALL)
         pr.addWidget(self._ent_path, stretch=1)
         btn_browse = QPushButton("Examinar")
-        btn_browse.setObjectName("outline")
-        btn_browse.setFixedSize(100, 36)
+        btn_browse.setFixedSize(110, 36)
         btn_browse.clicked.connect(self._browse)
         pr.addWidget(btn_browse)
         lay.addWidget(path_row)

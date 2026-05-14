@@ -219,7 +219,7 @@ class DesinstaladorPro(QMainWindow):
             pass
         screen = QApplication.primaryScreen().availableGeometry()
         self.move((screen.width() - 480) // 2, (screen.height() - 300) // 2)
-        QTimer.singleShot(150, lambda: aplicar_captionbar_installer(self))
+        aplicar_captionbar_installer(self)
 
         self._install_dir = detectar_install_dir()
         self._worker: _ProUninstWorker | None = None

@@ -181,7 +181,7 @@ class InstaladorPro(QMainWindow):
             pass
         screen = QApplication.primaryScreen().availableGeometry()
         self.move((screen.width() - 680) // 2, (screen.height() - 480) // 2)
-        QTimer.singleShot(150, lambda: aplicar_captionbar_installer(self))
+        aplicar_captionbar_installer(self)
 
         self._pagina = 0
         self._install_dir = ""
@@ -282,6 +282,7 @@ class InstaladorPro(QMainWindow):
         self.btn_ant.setObjectName("outline")
         self.btn_ant.setFixedSize(110, 34)
         self.btn_ant.clicked.connect(self._anterior)
+        self.btn_ant.setVisible(False)
         nl.addWidget(self.btn_ant)
         nl.addStretch()
         self.btn_sig = QPushButton("Siguiente →")
@@ -345,8 +346,7 @@ class InstaladorPro(QMainWindow):
         pr.setContentsMargins(0, 0, 0, 0); pr.setSpacing(8)
         self._ent_path = QLineEdit(DEFAULT_INSTALL)
         pr.addWidget(self._ent_path, stretch=1)
-        btn_b = QPushButton("Examinar"); btn_b.setObjectName("outline")
-        btn_b.setFixedSize(90, 36); btn_b.clicked.connect(self._browse)
+        btn_b = QPushButton("Examinar"); btn_b.setFixedSize(110, 36); btn_b.clicked.connect(self._browse)
         pr.addWidget(btn_b)
         lay.addWidget(path_row)
         lay.addSpacing(20)
