@@ -423,11 +423,11 @@ class ModuloAvisos(NMModule):
 
     def _on_theme(self, modo: str) -> None:
         super()._on_theme(modo)
-        c = colors(self._modo)
         if hasattr(self, "_scroll"):
             self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         if hasattr(self, "_reminder_progress"):
             self._reminder_progress._apply_theme(self._modo)
+        self._load_reminders()
         self.update()
 
     # ── Load reminders ─────────────────────────────────────────────────────
