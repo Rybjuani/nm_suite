@@ -36,8 +36,8 @@ except ImportError:
     )
 
 DEFAULT_INSTALL = os.path.join(os.path.expanduser("~"), "NeuroMood Pro")
-HUB_EXE    = "NeuroMood Hub Profesional.exe"
-UNINST_EXE = "Desinstalar NeuroMood Pro.exe"
+HUB_EXE    = "HubProfesional.exe"
+UNINST_EXE = "Desinstalador NeuroMood Hub Pro.exe"
 
 _SS = stylesheet_installer()   # design system premium unificado
 
@@ -110,15 +110,13 @@ class _ProWorker(QThread):
                 self.log_signal.emit("  Desinstalador no encontrado", WARNING_C)
                 uninst_dest = install_dir  # fallback
 
-            # Icono (oculto)
+            # Icono
             self.progress_signal.emit(0.7, "Copiando recursos...")
             icon_dest = ""
             try:
-                import ctypes as _ct
                 icon_path = install_dir / "NM_icon.ico"
                 shutil.copy2(recurso("NM_icon.ico"), icon_path)
                 icon_dest = str(icon_path)
-                _ct.windll.kernel32.SetFileAttributesW(str(icon_path), 0x2)
             except Exception:
                 pass
 
@@ -160,7 +158,7 @@ class _ProWorker(QThread):
             exe = install_dir / HUB_EXE
             key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMoodPro"
             with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as k:
-                winreg.SetValueEx(k, "DisplayName",     0, winreg.REG_SZ,    "NeuroMood Hub Profesional")
+                winreg.SetValueEx(k, "DisplayName",     0, winreg.REG_SZ,    "NeuroMood Hub Pro")
                 winreg.SetValueEx(k, "UninstallString", 0, winreg.REG_SZ,    f'"{uninst_dest}"')
                 winreg.SetValueEx(k, "DisplayIcon",     0, winreg.REG_SZ,    f'"{exe}",0')
                 winreg.SetValueEx(k, "Publisher",       0, winreg.REG_SZ,    "NeuroMood")
@@ -177,7 +175,7 @@ class InstaladorPro(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Instalador — NeuroMood Hub Profesional")
+        self.setWindowTitle("Instalador — NeuroMood Hub Pro")
         self.setFixedSize(680, 480)
         self.setStyleSheet(_SS)
         try:

@@ -121,25 +121,23 @@ class _InstalWorker(QThread):
             self.progress_signal.emit(paso / total, "NeuroMood copiado.")
             time.sleep(0.05)
 
-            # Icono (oculto)
+            # Icono
             icon_dest = ""
             try:
-                import ctypes as _ct
                 icon_path = install_dir / "NM_icon.ico"
                 shutil.copy2(recurso("NM_icon.ico"), icon_path)
                 icon_dest = str(icon_path)
-                _ct.windll.kernel32.SetFileAttributesW(str(icon_path), 0x2)
             except Exception:
                 pass
 
             # Desinstalador (copia carpeta completa si es onedir)
             self.progress_signal.emit(paso / total, "Copiando desinstalador...")
-            uninst_exe = "Desinstalar NeuroMood.exe"
+            uninst_exe = "Desinstalador NeuroMood.exe"
             uninst_src = ruta_app_bundled(uninst_exe)
             try:
                 uninst_src_dir = os.path.dirname(uninst_src)
                 if os.path.basename(uninst_src_dir) == uninst_exe.replace(".exe", ""):
-                    uninst_dest_dir = install_dir / "Desinstalar NeuroMood"
+                    uninst_dest_dir = install_dir / "Desinstalador NeuroMood"
                     shutil.copytree(uninst_src_dir, uninst_dest_dir, dirs_exist_ok=True)
                     uninst_dest = uninst_dest_dir / uninst_exe
                 else:
@@ -263,7 +261,7 @@ class InstaladorNeuroMood(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Instalador — NeuroMood")
+        self.setWindowTitle("Instalador — NeuroMood Suite")
         self.setFixedSize(740, 540)
         self.setStyleSheet(_SS)
 

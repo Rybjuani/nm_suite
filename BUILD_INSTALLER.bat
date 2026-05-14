@@ -23,10 +23,10 @@ if not exist "%DIST%\NeuroMood\NeuroMood.exe" (
 
 :: Clean
 echo  Limpiando builds anteriores...
-if exist "%DIST%\Desinstalar NeuroMood"       rmdir /s /q "%DIST%\Desinstalar NeuroMood"       2>nul
-if exist "%DIST%\Instalar NeuroMood"          rmdir /s /q "%DIST%\Instalar NeuroMood"          2>nul
-del "%ROOT%\Desinstalar NeuroMood.spec" 2>nul
-del "%ROOT%\Instalar NeuroMood.spec"    2>nul
+if exist "%DIST%\Desinstalador NeuroMood"       rmdir /s /q "%DIST%\Desinstalador NeuroMood"       2>nul
+if exist "%DIST%\Instalador NeuroMood Suite"     rmdir /s /q "%DIST%\Instalador NeuroMood Suite"     2>nul
+del "%ROOT%\Desinstalador NeuroMood.spec" 2>nul
+del "%ROOT%\Instalador NeuroMood Suite.spec"    2>nul
 
 set BASE=--noconfirm --onedir --windowed^
  --workpath "%BUILD%"^
@@ -42,11 +42,11 @@ pyinstaller %BASE%^
  --add-data "%ASSETS%\no_symbol.ico;."^
  --add-data "%ASSETS%\LOGO.png;."^
  --icon "%ASSETS%\no_symbol.ico"^
- --name "Desinstalar NeuroMood"^
+ --name "Desinstalador NeuroMood"^
  --distpath "%DIST%"^
  "%ROOT%\installers\uninstaller.py"
 if %ERRORLEVEL% NEQ 0 goto :error
-echo  OK: dist\Desinstalar NeuroMood\
+echo  OK: dist\Desinstalador NeuroMood\
 echo.
 
 echo  [2/2] Compilando instalador...
@@ -57,18 +57,18 @@ pyinstaller %BASE%^
  --add-data "%ASSETS%\LOGO.png;."^
  --add-data "%ROOT%\.env;."^
  --add-data "%DIST%\NeuroMood;NeuroMood"^
- --add-data "%DIST%\Desinstalar NeuroMood;Desinstalar NeuroMood"^
+ --add-data "%DIST%\Desinstalador NeuroMood;Desinstalador NeuroMood"^
  --icon "%ASSETS%\installer_icon.ico"^
- --name "Instalar NeuroMood"^
+ --name "Instalador NeuroMood Suite"^
  --distpath "%DIST%"^
  "%ROOT%\installers\installer.py"
 if %ERRORLEVEL% NEQ 0 goto :error
-echo  OK: dist\Instalar NeuroMood\
+echo  OK: dist\Instalador NeuroMood Suite\
 echo.
 
 echo ============================================================
 echo  LISTO
-echo  dist\Instalar NeuroMood\Instalar NeuroMood.exe
+echo  dist\Instalador NeuroMood Suite\Instalador NeuroMood Suite.exe
 echo ============================================================
 pause
 goto :end

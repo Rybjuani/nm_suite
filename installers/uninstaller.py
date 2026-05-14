@@ -229,7 +229,7 @@ class DesinstaladorNeuroMood(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Desinstalar — NeuroMood")
+        self.setWindowTitle("Desinstalador — NeuroMood Suite")
         self.setFixedSize(480, 340)
         self.setStyleSheet(_SS)
         try:

@@ -4,7 +4,7 @@ set "ROOT=%~dp0"
 if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
 
 echo ============================================================
-echo  NeuroMood - Compilar Instalador Hub
+echo  NeuroMood - Compilar Instalador Hub Pro
 echo ============================================================
 echo.
 
@@ -23,10 +23,10 @@ if not exist "%DIST%\HubProfesional\HubProfesional.exe" (
 
 :: Clean
 echo  Limpiando builds anteriores...
-if exist "%DIST%\Desinstalar NeuroMood Pro"                rmdir /s /q "%DIST%\Desinstalar NeuroMood Pro"                2>nul
-if exist "%DIST%\Instalar NeuroMood Hub Profesional"       rmdir /s /q "%DIST%\Instalar NeuroMood Hub Profesional"       2>nul
-del "%ROOT%\Desinstalar NeuroMood Pro.spec"             2>nul
-del "%ROOT%\Instalar NeuroMood Hub Profesional.spec"    2>nul
+if exist "%DIST%\Desinstalador NeuroMood Hub Pro"            rmdir /s /q "%DIST%\Desinstalador NeuroMood Hub Pro"            2>nul
+if exist "%DIST%\Instalador NeuroMood Hub Pro"               rmdir /s /q "%DIST%\Instalador NeuroMood Hub Pro"               2>nul
+del "%ROOT%\Desinstalador NeuroMood Hub Pro.spec"         2>nul
+del "%ROOT%\Instalador NeuroMood Hub Pro.spec"            2>nul
 
 set BASE=--noconfirm --onedir --windowed^
  --workpath "%BUILD%"^
@@ -37,19 +37,19 @@ set BASE=--noconfirm --onedir --windowed^
  --hidden-import win32com.client^
  --hidden-import pywintypes
 
-echo  [1/2] Compilando desinstalador Hub...
+echo  [1/2] Compilando desinstalador Hub Pro...
 pyinstaller %BASE%^
  --add-data "%ASSETS%\NM_icon.ico;."^
  --add-data "%ASSETS%\LOGO.png;."^
  --icon "%ASSETS%\NM_icon.ico"^
- --name "Desinstalar NeuroMood Pro"^
+ --name "Desinstalador NeuroMood Hub Pro"^
  --distpath "%DIST%"^
  "%ROOT%\installers\uninstaller_pro.py"
 if %ERRORLEVEL% NEQ 0 goto :error
-echo  OK: dist\Desinstalar NeuroMood Pro\
+echo  OK: dist\Desinstalador NeuroMood Hub Pro\
 echo.
 
-echo  [2/2] Compilando instalador Hub...
+echo  [2/2] Compilando instalador Hub Pro...
 pyinstaller %BASE%^
  --add-data "%ASSETS%\installer_icon.ico;."^
  --add-data "%ASSETS%\NM_icon.ico;."^
@@ -57,18 +57,18 @@ pyinstaller %BASE%^
  --add-data "%ASSETS%\LOGO.png;."^
  --add-data "%ROOT%\.env;."^
  --add-data "%DIST%\HubProfesional;HubProfesional"^
- --add-data "%DIST%\Desinstalar NeuroMood Pro;Desinstalar NeuroMood Pro"^
+ --add-data "%DIST%\Desinstalador NeuroMood Hub Pro;Desinstalador NeuroMood Hub Pro"^
  --icon "%ASSETS%\installer_icon.ico"^
- --name "Instalar NeuroMood Hub Profesional"^
+ --name "Instalador NeuroMood Hub Pro"^
  --distpath "%DIST%"^
  "%ROOT%\installers\installer_pro.py"
 if %ERRORLEVEL% NEQ 0 goto :error
-echo  OK: dist\Instalar NeuroMood Hub Profesional\
+echo  OK: dist\Instalador NeuroMood Hub Pro\
 echo.
 
 echo ============================================================
 echo  LISTO
-echo  dist\Instalar NeuroMood Hub Profesional\Instalar NeuroMood Hub Profesional.exe
+echo  dist\Instalador NeuroMood Hub Pro\Instalador NeuroMood Hub Pro.exe
 echo ============================================================
 pause
 goto :end

@@ -217,7 +217,7 @@ class DesinstaladorPro(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Desinstalar — NeuroMood Hub Profesional")
+        self.setWindowTitle("Desinstalador — NeuroMood Hub Pro")
         self.setFixedSize(480, 300)
         self.setStyleSheet(_SS)
         try:
@@ -281,7 +281,7 @@ class DesinstaladorPro(QMainWindow):
     def _show_confirm(self):
         self._clear_stack()
 
-        title = QLabel("Desinstalar Hub Profesional")
+        title = QLabel("Desinstalar NeuroMood Hub Pro")
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
         self._stack_layout.addWidget(title)
         self._stack_layout.addSpacing(8)
