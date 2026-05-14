@@ -156,7 +156,7 @@ class ModuleCard(QWidget):
         layout.setContentsMargins(PAD_CARD, 14, PAD_CARD, 14)
         layout.setSpacing(8)
 
-        # Fila top: icono + badge
+        # Fila top: icono + badge + ring
         top = QHBoxLayout()
         top.setSpacing(6)
         icon_lbl = QLabel(self._config["icon"])
@@ -170,6 +170,8 @@ class ModuleCard(QWidget):
         self._badge.setStyleSheet("background: transparent;")
         self._badge.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         top.addWidget(self._badge)
+        self._ring = _MiniRing(self, self._accent)
+        top.addWidget(self._ring)
         layout.addLayout(top)
 
         # Título
@@ -177,6 +179,7 @@ class ModuleCard(QWidget):
         title.setFont(qfont("size_h3", bold=True))
         title.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
         title.setWordWrap(True)
+        title.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         title.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         layout.addWidget(title)
         self._title_lbl = title
@@ -186,13 +189,10 @@ class ModuleCard(QWidget):
         desc.setFont(qfont("size_caption"))
         desc.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
         desc.setWordWrap(True)
+        desc.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         desc.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         layout.addWidget(desc)
         self._desc_lbl = desc
-
-        # Mini-ring (absoluto)
-        self._ring = _MiniRing(self, self._accent)
-        self._ring.move(self.width() - 38, self.height() - 38)
 
         self._refresh_status()
 
@@ -268,34 +268,17 @@ class ModuleCard(QWidget):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        self._ring.move(self.width() - 38, self.height() - 38)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            self._scale_anim(0.97)
+            self.update()
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            self._scale_anim(1.0)
             if self.rect().contains(event.pos()):
                 self._on_click(self._config["id"])
         super().mouseReleaseEvent(event)
-
-    def _scale_anim(self, target: float):
-        from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, QAbstractAnimation
-        if not hasattr(self, "_orig_geom") or target >= 1.0:
-            self._orig_geom = self.geometry()
-        if target < 1.0:
-            shrink = 2
-            end = self._orig_geom.adjusted(shrink, shrink, -shrink, -shrink)
-        else:
-            end = self._orig_geom
-        anim = QPropertyAnimation(self, b"geometry", self)
-        anim.setDuration(100)
-        anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-        anim.setEndValue(end)
-        anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
     def animate_enter(self, delay_ms: int = 0):
         QTimer.singleShot(delay_ms, self._start_anim)

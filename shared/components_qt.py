@@ -143,28 +143,14 @@ class NMCard(QFrame):
 
     def mousePressEvent(self, event: QMouseEvent):
         if self._clickable and event.button() == Qt.MouseButton.LeftButton:
-            self._scale_anim(0.97)
+            self.update()
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         if self._clickable and event.button() == Qt.MouseButton.LeftButton:
-            self._scale_anim(1.0)
             if self.rect().contains(event.pos()):
                 self.clicked.emit()
         super().mouseReleaseEvent(event)
-
-    def _scale_anim(self, target: float):
-        if target < 1.0:
-            self._orig_geom = self.geometry()
-            shrink = 3
-            end_geom = self._orig_geom.adjusted(shrink, shrink, -shrink, -shrink)
-        else:
-            end_geom = getattr(self, "_orig_geom", self.geometry())
-        anim = QPropertyAnimation(self, b"geometry", self)
-        anim.setDuration(100)
-        anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-        anim.setEndValue(end_geom)
-        anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
     # ── paintEvent: barra izquierda de color ──────────────────────────────────
 
