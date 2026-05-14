@@ -22,7 +22,7 @@ from PyQt6.QtGui import (
     QColor, QPainter, QPen, QBrush, QFont,
     QLinearGradient, QRadialGradient, QPainterPath,
     QFontMetrics, QPixmap, QPaintEvent, QMouseEvent,
-    QResizeEvent, QEnterEvent,
+    QResizeEvent, QEnterEvent, QIcon,
 )
 from PyQt6.QtWidgets import (
     QWidget, QFrame, QPushButton, QLineEdit, QLabel,
@@ -36,6 +36,8 @@ try:
         qcolor, qfont, linear_gradient, rich_gradient,
         linear_gradient_vertical, radial_glow, noise_overlay, gradient_colors,
         C, colors, norm_modo, interpolate_color, label_style, SessionColor,
+        nm_icon, nm_font, sp, fx, focus_ring_stylesheet, ThemeAwareWidgetMixin,
+        ANIM, EASE_OUT,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_INPUT, RADIUS_PILL,
         PAD_CONTAINER, PAD_CARD, GAP_CARDS, GAP_ELEMENTS, HEADER_H,
         stylesheet_lineedit, aplicar_captionbar_qt,
@@ -50,6 +52,8 @@ except ImportError:
         qcolor, qfont, linear_gradient, rich_gradient,
         linear_gradient_vertical, radial_glow, noise_overlay, gradient_colors,
         C, colors, norm_modo, interpolate_color, label_style, SessionColor,
+        nm_icon, nm_font, sp, fx, focus_ring_stylesheet, ThemeAwareWidgetMixin,
+        ANIM, EASE_OUT,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_INPUT, RADIUS_PILL,
         PAD_CONTAINER, PAD_CARD, GAP_CARDS, GAP_ELEMENTS, HEADER_H,
         stylesheet_lineedit, aplicar_captionbar_qt,
@@ -94,7 +98,7 @@ class ThemeManager(QObject):
         self._modo = new_modo
         for widget in QApplication.topLevelWidgets():
             widget.update()
-        QTimer.singleShot(100, lambda m=new_modo: self.theme_changed.emit(m))
+        self.theme_changed.emit(new_modo)
 
 
 def _tm() -> ThemeManager:
@@ -104,6 +108,53 @@ def _tm() -> ThemeManager:
 
 # ── NMCard ────────────────────────────────────────────────────────────────────
 
+class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
+    """Widget de estado vacío con icono, título y subtítulo."""
+
+    def __init__(self, icon_key: str, title: str, subtitle: str, parent=None):
+        super().__init__(parent)
+        self._icon_key = icon_key
+        self._modo = norm_modo(_tm().modo)
+
+        self.setStyleSheet("background: transparent;")
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(sp("xl"), sp("xl"), sp("xl"), sp("xl"))
+        layout.setSpacing(sp("sm"))
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self._icon_lbl = QLabel()
+        self._icon_lbl.setFixedSize(56, 56)
+        self._icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._icon_lbl.setStyleSheet("background: transparent;")
+        layout.addWidget(self._icon_lbl, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        self._title_lbl = QLabel(title)
+        self._title_lbl.setFont(nm_font("h2"))
+        self._title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._title_lbl.setWordWrap(True)
+        layout.addWidget(self._title_lbl)
+
+        self._subtitle_lbl = QLabel(subtitle)
+        self._subtitle_lbl.setFont(nm_font("body"))
+        self._subtitle_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._subtitle_lbl.setWordWrap(True)
+        layout.addWidget(self._subtitle_lbl)
+
+        self._apply_theme(self._modo)
+        self._connect_theme()
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        c = colors(self._modo)
+        icon_color = QColor(c["accent"])
+        icon_color.setAlphaF(0.4)
+        self._icon_lbl.setPixmap(nm_icon(self._icon_key, icon_color, size=48).pixmap(48, 48))
+        self._title_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+        self._subtitle_lbl.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
+
+
 class NMCard(QFrame):
     """
     Card con sombra real, hover animado, borde izquierdo de color accent
@@ -112,18 +163,29 @@ class NMCard(QFrame):
     clicked = pyqtSignal()
 
     def __init__(self, parent=None, accent_color: str = None,
-                 clickable: bool = True, modo: str = None):
+                 clickable: bool = True, modo: str = None,
+                 disabled: bool = False, disabled_reason: str = ""):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._accent = accent_color or C("accent", self._modo)
+        self._base_accent = self._accent
         self._clickable = clickable
         self._hover = False
+        self._disabled = False
+        self._disabled_effect: QGraphicsOpacityEffect | None = None
+        self._disabled_reason = ""
+        self._success_anim: QSequentialAnimationGroup | None = None
         self._session = SessionColor.instance()
+        self._press_geom = None
+        self._scale_anim: QPropertyAnimation | None = None
 
         self.setObjectName("NMCard")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
         self.setCursor(Qt.CursorShape.PointingHandCursor if clickable
                        else Qt.CursorShape.ArrowCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setStyleSheet(focus_ring_stylesheet(self._modo))
+        self.set_disabled(disabled, disabled_reason)
 
         _tm().theme_changed.connect(self._apply_theme)
 
@@ -142,15 +204,40 @@ class NMCard(QFrame):
     # ── click scale ───────────────────────────────────────────────────────────
 
     def mousePressEvent(self, event: QMouseEvent):
-        if self._clickable and event.button() == Qt.MouseButton.LeftButton:
+        if self._clickable and not self._disabled and event.button() == Qt.MouseButton.LeftButton:
+            self._animate_press_scale(0.97)
             self.update()
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
-        if self._clickable and event.button() == Qt.MouseButton.LeftButton:
+        if self._clickable and not self._disabled and event.button() == Qt.MouseButton.LeftButton:
+            self._animate_press_scale(1.0)
             if self.rect().contains(event.pos()):
                 self.clicked.emit()
         super().mouseReleaseEvent(event)
+
+    def _animate_press_scale(self, scale: float):
+        if self._press_geom is None or scale < 1.0:
+            self._press_geom = self.geometry()
+        base = self._press_geom
+        if not base or base.isNull():
+            return
+        if scale >= 1.0:
+            target = base
+        else:
+            dw = int(base.width() * (1.0 - scale) / 2)
+            dh = int(base.height() * (1.0 - scale) / 2)
+            target = base.adjusted(dw, dh, -dw, -dh)
+        if self._scale_anim:
+            self._scale_anim.stop()
+        self._scale_anim = QPropertyAnimation(self, b"geometry", self)
+        self._scale_anim.setDuration(ANIM["fast"])
+        self._scale_anim.setStartValue(self.geometry())
+        self._scale_anim.setEndValue(target)
+        self._scale_anim.setEasingCurve(EASE_OUT)
+        self._scale_anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
+        if scale >= 1.0:
+            self._press_geom = None
 
     # ── paintEvent: barra izquierda de color ──────────────────────────────────
 
@@ -186,16 +273,17 @@ class NMCard(QFrame):
         p.drawRoundedRect(QRectF(1, 1, self.width() - 2, self.height() - 2), r, r)
 
         # Hover glow dinámico (session color)
-        if self._hover and self.isEnabled():
+        if self._hover and not self._disabled and self.isEnabled():
             glow_c = self._session.glow_qcolor(self._modo)
-            glow_r = r + 4
+            glow_r = r + int(fx("card_glow_radius", self._modo))
+            glow_opacity = float(fx("card_glow_opacity", self._modo))
             for layer in range(3):
-                alpha = int(glow_c.alpha() * (0.3 - layer * 0.1))
+                alpha = int(glow_c.alpha() * max(0.0, glow_opacity - layer * 0.08))
                 if alpha <= 0:
                     continue
                 gc = QColor(glow_c)
                 gc.setAlpha(alpha)
-                glow_pen = QPen(gc, 2 + layer * 3)
+                glow_pen = QPen(gc, max(1, int(fx("card_glow_radius", self._modo) / 3)) + layer * 2)
                 p.setPen(glow_pen)
                 p.setBrush(Qt.BrushStyle.NoBrush)
                 p.drawRoundedRect(
@@ -208,11 +296,11 @@ class NMCard(QFrame):
         noise_overlay(
             p,
             QRectF(bar_w, 0, self.width() - bar_w, self.height()),
-            opacity=0.025,
+            opacity=float(fx("noise_opacity", self._modo)),
             modo=self._modo,
         )
 
-        if not self.isEnabled():
+        if self._disabled or not self.isEnabled():
             p.setOpacity(0.4)
             pen = QPen(QColor(255, 255, 255, 15), 1)
             p.setPen(pen)
@@ -227,11 +315,73 @@ class NMCard(QFrame):
         self._modo = norm_modo(modo)
         if not self._accent or self._accent == C("accent", "dark_hybrid"):
             self._accent = C("accent", self._modo)
+            self._base_accent = self._accent
+        self.setStyleSheet(focus_ring_stylesheet(self._modo))
         self.update()
 
     def set_accent(self, hex_color: str):
         self._accent = hex_color
+        self._base_accent = hex_color
         self.update()
+
+    def set_disabled(self, state: bool, reason: str = ""):
+        self._disabled = state
+        self._disabled_reason = reason
+        self.setToolTip(reason if state else "")
+        if state:
+            if self._disabled_effect is None:
+                self._disabled_effect = QGraphicsOpacityEffect(self)
+                self.setGraphicsEffect(self._disabled_effect)
+            self._disabled_effect.setOpacity(0.45)
+            self.setCursor(Qt.CursorShape.ForbiddenCursor)
+        else:
+            if self._disabled_effect is not None:
+                self.setGraphicsEffect(None)
+                self._disabled_effect.deleteLater()
+                self._disabled_effect = None
+            self.setCursor(Qt.CursorShape.PointingHandCursor if self._clickable
+                           else Qt.CursorShape.ArrowCursor)
+        self.update()
+
+    def play_success(self):
+        """Pulso de escala + flush de color al completar una accion."""
+        if self._disabled:
+            return
+        base = self.geometry()
+        if base.isNull():
+            return
+        target = base.adjusted(
+            -int(base.width() * 0.02),
+            -int(base.height() * 0.02),
+            int(base.width() * 0.02),
+            int(base.height() * 0.02),
+        )
+        self._accent = C("success", self._modo)
+        self.update()
+        if self._success_anim:
+            self._success_anim.stop()
+        grow = QPropertyAnimation(self, b"geometry", self)
+        grow.setDuration(ANIM["fast"])
+        grow.setStartValue(base)
+        grow.setEndValue(target)
+        grow.setEasingCurve(QEasingCurve.Type.OutElastic)
+
+        shrink = QPropertyAnimation(self, b"geometry", self)
+        shrink.setDuration(ANIM["fast"])
+        shrink.setStartValue(target)
+        shrink.setEndValue(base)
+        shrink.setEasingCurve(QEasingCurve.Type.OutElastic)
+
+        self._success_anim = QSequentialAnimationGroup(self)
+        self._success_anim.addAnimation(grow)
+        self._success_anim.addAnimation(shrink)
+
+        def _restore():
+            self._accent = self._base_accent
+            self.update()
+
+        self._success_anim.finished.connect(_restore)
+        self._success_anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
 
 # ── NMButton ──────────────────────────────────────────────────────────────────
@@ -250,6 +400,7 @@ class NMButton(QPushButton):
         self._pressed = False
         self._opacity = 1.0
         self._ripples = []
+        self._success_anim: QSequentialAnimationGroup | None = None
         self._ripple_timer = QTimer(self)
         self._ripple_timer.setInterval(16)
         self._ripple_timer.timeout.connect(self._tick_ripples)
@@ -259,17 +410,20 @@ class NMButton(QPushButton):
             self.setMinimumWidth(width)
         self.setFont(qfont("size_body", bold=True))
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setFlat(True)
         # Sin stylesheet en el botón — todo en paintEvent
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+        self.setStyleSheet(focus_ring_stylesheet(self._modo))
 
         _tm().theme_changed.connect(self._apply_theme)
 
     def _tick_ripples(self):
         alive = []
+        alpha_step = max(1, int(80 * self._ripple_timer.interval() / ANIM["fast"]))
         for rip in self._ripples:
             rip["r"] += 8
-            rip["a"] = max(0, rip["a"] - 12)
+            rip["a"] = max(0, rip["a"] - alpha_step)
             if rip["a"] > 0:
                 alive.append(rip)
         self._ripples = alive
@@ -305,6 +459,15 @@ class NMButton(QPushButton):
             p.setOpacity(0.4)
 
         p.fillPath(path, QBrush(grad))
+
+        if self._hover and not self._pressed and self.isEnabled():
+            glow = QColor(C("accent", self._modo))
+            glow.setAlpha(int(255 * float(fx("card_glow_opacity", self._modo))))
+            glow_width = max(1, int(fx("button_glow_radius", self._modo)))
+            p.setPen(QPen(glow, glow_width))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            inset = glow_width / 2
+            p.drawRoundedRect(rect.adjusted(inset, inset, -inset, -inset), r, r)
 
         # Texto
         c = colors(self._modo)
@@ -346,7 +509,30 @@ class NMButton(QPushButton):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
+        self.setStyleSheet(focus_ring_stylesheet(self._modo))
         self.update()
+
+    def play_success(self):
+        base = self.geometry()
+        if base.isNull():
+            return
+        target = base.adjusted(-2, -2, 2, 2)
+        if self._success_anim:
+            self._success_anim.stop()
+        self._success_anim = QSequentialAnimationGroup(self)
+        grow = QPropertyAnimation(self, b"geometry", self)
+        grow.setDuration(ANIM["fast"])
+        grow.setStartValue(base)
+        grow.setEndValue(target)
+        grow.setEasingCurve(QEasingCurve.Type.OutElastic)
+        shrink = QPropertyAnimation(self, b"geometry", self)
+        shrink.setDuration(ANIM["fast"])
+        shrink.setStartValue(target)
+        shrink.setEndValue(base)
+        shrink.setEasingCurve(QEasingCurve.Type.OutElastic)
+        self._success_anim.addAnimation(grow)
+        self._success_anim.addAnimation(shrink)
+        self._success_anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
 
 # ── NMButtonOutline ───────────────────────────────────────────────────────────
@@ -359,12 +545,15 @@ class NMButtonOutline(QPushButton):
         self._modo = norm_modo(modo or _tm().modo)
         self._hover = False
         self._active = False   # para pills toggleables (días de semana, etc.)
+        self._success_anim: QSequentialAnimationGroup | None = None
 
         self.setFont(qfont("size_small", bold=False))
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setFlat(True)
         self.setMinimumHeight(34)
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+        self.setStyleSheet(focus_ring_stylesheet(self._modo))
 
         _tm().theme_changed.connect(self._apply_theme)
 
@@ -434,7 +623,30 @@ class NMButtonOutline(QPushButton):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
+        self.setStyleSheet(focus_ring_stylesheet(self._modo))
         self.update()
+
+    def play_success(self):
+        base = self.geometry()
+        if base.isNull():
+            return
+        target = base.adjusted(-2, -2, 2, 2)
+        if self._success_anim:
+            self._success_anim.stop()
+        self._success_anim = QSequentialAnimationGroup(self)
+        grow = QPropertyAnimation(self, b"geometry", self)
+        grow.setDuration(ANIM["fast"])
+        grow.setStartValue(base)
+        grow.setEndValue(target)
+        grow.setEasingCurve(QEasingCurve.Type.OutElastic)
+        shrink = QPropertyAnimation(self, b"geometry", self)
+        shrink.setDuration(ANIM["fast"])
+        shrink.setStartValue(target)
+        shrink.setEndValue(base)
+        shrink.setEasingCurve(QEasingCurve.Type.OutElastic)
+        self._success_anim.addAnimation(grow)
+        self._success_anim.addAnimation(shrink)
+        self._success_anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
 
 # ── NMInput ───────────────────────────────────────────────────────────────────
@@ -450,6 +662,7 @@ class NMInput(QLineEdit):
         self.setPlaceholderText(placeholder)
         self.setFont(qfont("size_body"))
         self.setMinimumHeight(LAYOUT["min_touch_target"])
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self._apply_base_style()
 
         _tm().theme_changed.connect(self._apply_theme)
@@ -471,6 +684,7 @@ class NMInput(QLineEdit):
             QLineEdit:focus {{
                 border: 2px solid {c['border_focus']};
             }}
+            {focus_ring_stylesheet(self._modo)}
         """)
 
     def _apply_theme(self, modo: str):
@@ -756,11 +970,12 @@ class _SidebarItem(QWidget):
     """Ítem individual del sidebar."""
     clicked = pyqtSignal(str)
 
-    def __init__(self, item_id: str, icon: str, label: str,
+    def __init__(self, item_id: str, icon: str | QIcon, label: str,
                  parent=None, modo: str = "dark_hybrid"):
         super().__init__(parent)
         self._id = item_id
         self._icon = icon
+        self._icon_pixmap = icon.pixmap(20, 20) if isinstance(icon, QIcon) else None
         self._label = label
         self._modo = norm_modo(modo)
         self._active = False
@@ -770,6 +985,7 @@ class _SidebarItem(QWidget):
 
         self.setFixedHeight(40)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
 
         self._bar_anim = QPropertyAnimation(self, b"bar_val", self)
@@ -849,6 +1065,12 @@ class _SidebarItem(QWidget):
             path.addRoundedRect(QRectF(4, 2, w - 8, h - 4), r, r)
             p.fillPath(path, QBrush(bg))
 
+        if self.hasFocus():
+            focus_pen = QPen(QColor(C("accent", self._modo)), 2)
+            p.setPen(focus_pen)
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawRoundedRect(QRectF(5, 3, w - 10, h - 6), r, r)
+
         # Barra izquierda animada (3px)
         if self._bar_anim_val > 0:
             bar_h = int((h - 8) * self._bar_anim_val)
@@ -862,11 +1084,16 @@ class _SidebarItem(QWidget):
                             else c["text_secondary"])
         p.setPen(QPen(text_color))
 
-        font_icon = qfont("size_body")
-        font_icon.setFamily("Segoe UI Emoji")
-        p.setFont(font_icon)
         icon_rect = QRect(14, 0, 28, h)
-        p.drawText(icon_rect, Qt.AlignmentFlag.AlignCenter, self._icon)
+        if self._icon_pixmap is not None:
+            x = icon_rect.x() + (icon_rect.width() - self._icon_pixmap.width()) // 2
+            y = icon_rect.y() + (icon_rect.height() - self._icon_pixmap.height()) // 2
+            p.drawPixmap(x, y, self._icon_pixmap)
+        else:
+            font_icon = qfont("size_body")
+            font_icon.setFamily("Segoe UI Emoji")
+            p.setFont(font_icon)
+            p.drawText(icon_rect, Qt.AlignmentFlag.AlignCenter, self._icon)
 
         font_label = qfont("size_small", bold=self._active)
         p.setFont(font_label)
@@ -978,7 +1205,7 @@ class NMSidebar(QWidget):
         vl.addWidget(logo_lbl)
         self._layout.insertWidget(0, w)
 
-    def add_item(self, item_id: str, icon: str, label: str):
+    def add_item(self, item_id: str, icon: str | QIcon, label: str):
         item = _SidebarItem(item_id, icon, label, self, self._modo)
         item.clicked.connect(self._on_item_clicked)
         self._items[item_id] = item
@@ -1058,7 +1285,7 @@ class NMSidebar(QWidget):
                 pass
         for i in range(self._layout.count()):
             w = self._layout.itemAt(i).widget()
-            if w and w.fixedHeight() == 1:
+            if w and w.minimumHeight() == 1 and w.maximumHeight() == 1:
                 w.setStyleSheet(f"background: {c.get('border_card', c['border'])};")
 
 
@@ -1166,7 +1393,9 @@ class NMHeader(QWidget):
         if hasattr(self, "_module_title_lbl"):
             self._module_title_lbl.setStyleSheet(label_style(modo, 'text_primary'))
         self._toggle._apply_theme(modo)
+        was_blocked = self._toggle.blockSignals(True)
         self._toggle.setChecked("light" in modo)
+        self._toggle.blockSignals(was_blocked)
 
     def _ensure_back_button(self):
         if hasattr(self, "_btn_back"):
@@ -1445,7 +1674,7 @@ class NMSkeleton(QWidget):
         self.update()
 
 
-class NMModule(QWidget):
+class NMModule(ThemeAwareWidgetMixin, QWidget):
     """
     Clase base para módulos de la plataforma paciente en PyQt6.
     Preserva exactamente el mismo contrato que la versión CTk:
@@ -1494,7 +1723,7 @@ class NMModule(QWidget):
         self._content_wrapper.addWidget(self._content)
         self._root_layout.addLayout(self._content_wrapper)
 
-        _tm().theme_changed.connect(self._on_theme)
+        self._connect_theme()
         self.build_ui()
 
     def _apply_content_bg(self):
@@ -1539,6 +1768,9 @@ class NMModule(QWidget):
     def _on_theme(self, modo: str):
         self._modo = norm_modo(modo)
         self._apply_content_bg()
+
+    def _apply_theme(self, modo: str):
+        self._on_theme(modo)
 
 
 def h_spacer() -> QWidget:

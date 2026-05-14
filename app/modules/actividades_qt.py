@@ -23,10 +23,11 @@ from PyQt6.QtWidgets import (
 try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMToast,
-        ThemeManager, h_spacer,
+        ThemeManager, h_spacer, NMEmptyState,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
+        sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS, RADIUS_CARD,
         stylesheet_scrollarea,
     )
@@ -39,10 +40,11 @@ except ImportError:
         sys.path.insert(0, _dir)
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMToast,
-        ThemeManager, h_spacer,
+        ThemeManager, h_spacer, NMEmptyState,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
+        sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS, RADIUS_CARD,
         stylesheet_scrollarea,
     )
@@ -79,7 +81,7 @@ class ModuloActividades(NMModule):
         root = QVBoxLayout(self._content)
         root.setContentsMargins(PAD_CONTAINER, PAD_CONTAINER,
                                 PAD_CONTAINER, PAD_CONTAINER)
-        root.setSpacing(8)
+        root.setSpacing(sp("sm"))
 
         # ── Scroll area ───────────────────────────────────────────────────────
         self._scroll = QScrollArea()
@@ -90,7 +92,7 @@ class ModuloActividades(NMModule):
         self._scroll_content = QWidget()
         self._scroll_content.setStyleSheet("background: transparent;")
         self._scroll_layout = QVBoxLayout(self._scroll_content)
-        self._scroll_layout.setContentsMargins(0, 0, 8, 0)
+        self._scroll_layout.setContentsMargins(0, 0, sp("sm"), 0)
         self._scroll_layout.setSpacing(GAP_CARDS)
         self._scroll_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
@@ -133,7 +135,7 @@ class ModuloActividades(NMModule):
             }}
         """)
         mood_layout = QHBoxLayout(mood_frame)
-        mood_layout.setContentsMargins(16, 10, 16, 10)
+        mood_layout.setContentsMargins(sp("md"), sp("sm") + sp("xs") // 2, sp("md"), sp("sm") + sp("xs") // 2)
         mood_lbl = QLabel(f"Tu último ánimo registrado: {animo}/10")
         mood_lbl.setFont(qfont("size_body"))
         mood_lbl.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
@@ -144,10 +146,12 @@ class ModuloActividades(NMModule):
         actividades = self._get_activities(animo)
 
         if not actividades:
-            empty_lbl = QLabel("No hay actividades disponibles.")
-            empty_lbl.setFont(qfont("size_body"))
-            empty_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
-            self._scroll_layout.addWidget(empty_lbl)
+            self._scroll_layout.addWidget(NMEmptyState(
+                "fa5s.running",
+                "Sin sugerencias",
+                "Completá un registro de ánimo primero.",
+                self._scroll_content,
+            ))
             return
 
         title_lbl = QLabel("Sugerencias para vos")
@@ -159,41 +163,12 @@ class ModuloActividades(NMModule):
             self._build_activity_card(act)
 
     def _show_no_mood(self):
-        c = colors(self._modo)
-
-        title_lbl = QLabel("Sin registro de ánimo hoy")
-        title_lbl.setFont(qfont("size_h3", bold=True))
-        title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
-        self._scroll_layout.addWidget(title_lbl)
-
-        # NMToast informativo en lugar de mostrar_mensaje
-        top = self.window()
-        NMToast.show(
-            top,
-            "Registrá tu ánimo para recibir sugerencias personalizadas.",
-            variant="info",
-            duration_ms=3000,
-        )
-
-        sub_lbl = QLabel(
-            "Registrá tu ánimo en el módulo correspondiente\n"
-            "para recibir sugerencias personalizadas."
-        )
-        sub_lbl.setFont(qfont("size_body"))
-        sub_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        sub_lbl.setWordWrap(True)
-        sub_lbl.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
-        self._scroll_layout.addWidget(sub_lbl)
-
-        hint_lbl = QLabel("Mientras tanto, algunas ideas generales:")
-        hint_lbl.setFont(qfont("size_body"))
-        hint_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
-        self._scroll_layout.addWidget(hint_lbl)
-
-        generics = random.sample(_FALLBACK_ACTIVIDADES, min(3, len(_FALLBACK_ACTIVIDADES)))
-        for act in generics:
-            self._build_activity_card(act)
+        self._scroll_layout.addWidget(NMEmptyState(
+            "fa5s.running",
+            "Sin sugerencias",
+            "Completá un registro de ánimo primero.",
+            self._scroll_content,
+        ))
 
     def _build_activity_card(self, act: dict):
         c = colors(self._modo)
@@ -208,15 +183,20 @@ class ModuloActividades(NMModule):
             modo=self._modo,
         )
         card_layout = QHBoxLayout(card)
-        card_layout.setContentsMargins(16, 10, 12, 10)
-        card_layout.setSpacing(12)
+        card_layout.setContentsMargins(
+            sp("md"),
+            sp("sm") + sp("xs") // 2,
+            sp("sm") + sp("xs"),
+            sp("sm") + sp("xs") // 2,
+        )
+        card_layout.setSpacing(sp("sm") + sp("xs"))
 
         # Inner content
         inner = QWidget()
         inner.setStyleSheet("background: transparent;")
         inner_layout = QVBoxLayout(inner)
         inner_layout.setContentsMargins(0, 0, 0, 0)
-        inner_layout.setSpacing(3)
+        inner_layout.setSpacing(sp("xs"))
 
         # Category label
         cat_lbl = QLabel(cat)
@@ -241,7 +221,7 @@ class ModuloActividades(NMModule):
 
         # Result buttons row
         btn_row = QHBoxLayout()
-        btn_row.setSpacing(6)
+        btn_row.setSpacing(sp("sm") - sp("xs") // 2)
         btn_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         nombre = act.get("nombre", "Actividad")
@@ -302,6 +282,8 @@ class ModuloActividades(NMModule):
             "no_pude":   c["error"],
         }
         card_widget.set_accent(color_map.get(resultado, c["accent"]))
+        if hasattr(card_widget, "play_success"):
+            card_widget.play_success()
 
         # Deshabilitar botones tras selección
         for btn in getattr(self, "_result_btns", []):

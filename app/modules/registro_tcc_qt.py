@@ -24,10 +24,11 @@ from PyQt6.QtWidgets import (
 try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMToast, ThemeManager,
-        h_spacer,
+        h_spacer, NMEmptyState,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
+        sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL,
         stylesheet_textedit, stylesheet_slider, stylesheet_lineedit,
@@ -40,10 +41,11 @@ except ImportError:
         sys.path.insert(0, _dir)
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMToast, ThemeManager,
-        h_spacer,
+        h_spacer, NMEmptyState,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
+        sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL,
         stylesheet_textedit, stylesheet_slider, stylesheet_lineedit,
@@ -83,7 +85,12 @@ class _StepPill(QFrame):
         self._state = "pending"  # "pending" | "active" | "done"
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(12, 6, 12, 6)
+        layout.setContentsMargins(
+            sp("sm") + sp("xs"),
+            sp("sm") - sp("xs") // 2,
+            sp("sm") + sp("xs"),
+            sp("sm") - sp("xs") // 2,
+        )
 
         self._lbl = QLabel(f"{index + 1}  {name}")
         self._lbl.setFont(qfont("size_small"))
@@ -142,11 +149,19 @@ class ModuloRegistroTCC(NMModule):
         root = QVBoxLayout(self._content)
         root.setContentsMargins(PAD_CONTAINER, PAD_CONTAINER,
                                 PAD_CONTAINER, PAD_CONTAINER)
-        root.setSpacing(12)
+        root.setSpacing(sp("sm") + sp("xs"))
 
         # ── Pills row ─────────────────────────────────────────────────────────
+        if not self._has_registros_hoy():
+            root.addWidget(NMEmptyState(
+                "fa5s.brain",
+                "Sin registros aún",
+                "Anotá un pensamiento cuando estés listo.",
+                self._content,
+            ))
+
         pills_row = QHBoxLayout()
-        pills_row.setSpacing(6)
+        pills_row.setSpacing(sp("sm") - sp("xs") // 2)
         pills_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self._pills: list[_StepPill] = []
         for i, name in enumerate(_STEP_NAMES):
@@ -172,7 +187,7 @@ class ModuloRegistroTCC(NMModule):
 
         # ── Navigation buttons ────────────────────────────────────────────────
         nav_layout = QHBoxLayout()
-        nav_layout.setSpacing(8)
+        nav_layout.setSpacing(sp("sm"))
 
         self._btn_prev = NMButtonOutline("← Anterior", parent=self._content, modo=self._modo)
         self._btn_prev.setFixedHeight(38)
@@ -211,7 +226,7 @@ class ModuloRegistroTCC(NMModule):
         page.setStyleSheet("background: transparent;")
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
+        layout.setSpacing(sp("sm"))
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         return page, layout
 
@@ -319,7 +334,7 @@ class ModuloRegistroTCC(NMModule):
         self._distortion_frame.setStyleSheet("background: transparent;")
         self._distortion_layout = QHBoxLayout(self._distortion_frame)
         self._distortion_layout.setContentsMargins(0, 0, 0, 0)
-        self._distortion_layout.setSpacing(4)
+        self._distortion_layout.setSpacing(sp("xs"))
         self._distortion_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self._distortion_frame)
         layout.addStretch()
@@ -380,7 +395,7 @@ class ModuloRegistroTCC(NMModule):
                         color: {c['warning']};
                         background-color: {c['bg_elevated']};
                         border-radius: 12px;
-                        padding: 4px 8px;
+                        padding: {sp('xs')}px {sp('sm')}px;
                     }}
                 """)
                 self._distortion_layout.addWidget(badge)
@@ -510,6 +525,8 @@ class ModuloRegistroTCC(NMModule):
             return
 
         # Show success state in the step page
+        if hasattr(self._btn_next, "play_success"):
+            self._btn_next.play_success()
         self._show_success_page()
         QTimer.singleShot(3000, lambda: self._reset() if not sip.isdeleted(self) else None)
 
@@ -521,7 +538,7 @@ class ModuloRegistroTCC(NMModule):
         success.setStyleSheet("background: transparent;")
         layout = QVBoxLayout(success)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.setSpacing(8)
+        layout.setSpacing(sp("sm"))
 
         check_lbl = QLabel("✓")
         check_lbl.setFont(qfont(48, bold=True))
@@ -568,6 +585,19 @@ class ModuloRegistroTCC(NMModule):
         self._show_step()
 
     # ── Hooks ─────────────────────────────────────────────────────────────────
+
+    def _has_registros_hoy(self) -> bool:
+        try:
+            conn = obtener_conexion()
+            row = conn.execute(
+                "SELECT COUNT(*) as n FROM pensamientos WHERE fecha = ?",
+                (fecha_hoy(),),
+            ).fetchone()
+            conn.close()
+            return bool(row and row[0] > 0)
+        except Exception:
+            _log.exception("Operation failed")
+            return False
 
     def on_enter(self):
         """Resetea el wizard al volver al módulo."""

@@ -28,14 +28,16 @@ if _base not in sys.path:
     sys.path.insert(0, _base)
 
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout,
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QStackedWidget,
+    QGraphicsOpacityEffect,
 )
-from PyQt6.QtCore import QTimer, QSize
+from PyQt6.QtCore import QTimer, QSize, QPropertyAnimation, QEasingCurve, QAbstractAnimation
 from PyQt6.QtGui import QIcon
 
 from shared.theme_qt import (
     C, colors, norm_modo, app_palette, stylesheet_base,
     obtener_ruta_recurso, aplicar_captionbar_qt,
+    ANIM, EASE_IN, EASE_OUT, ThemeAwareWidgetMixin,
 )
 from shared.components_qt import (
     ThemeManager, NMHeader, NMFadeWidget, NMToast,
@@ -68,7 +70,7 @@ _NAV_ITEMS = [
 ]
 
 
-class NeuroMoodApp(QMainWindow):
+class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
 
     def __init__(self):
         super().__init__()
@@ -103,6 +105,7 @@ class NeuroMoodApp(QMainWindow):
 
         # ── Sync background ────────────────────────────────────────────────────
         QTimer.singleShot(600, self._sync_background)
+        self._connect_theme()
 
     # ── Construcción de UI ────────────────────────────────────────────────────
 
@@ -126,15 +129,60 @@ class NeuroMoodApp(QMainWindow):
         from app.home_qt import HomeView
         self._home = HomeView(
             modo=self._modo,
-            on_module_open=self._navigate_to,
+            on_module_open=self._open_module,
             get_status_fn=self._get_module_status,
         )
         self._stack.addWidget(self._home)
-        self._stack.setCurrentWidget(self._home)
+        self._navigate_to(self._home)
 
     # ── Navegación ────────────────────────────────────────────────────────────
 
-    def _navigate_to(self, module_id: str):
+    def _navigate_to(self, widget: QWidget):
+        """Fade out -> swap -> fade in en 200ms total."""
+        if isinstance(widget, str):
+            self._open_module(widget)
+            return
+        current = self._stack.currentWidget()
+        if widget is current:
+            return
+        if current is None:
+            QStackedWidget.setCurrentWidget(self._stack, widget)
+            widget.setWindowOpacity(1.0)
+            return
+
+        current_eff = QGraphicsOpacityEffect(current)
+        current.setGraphicsEffect(current_eff)
+
+        fade_out = QPropertyAnimation(current_eff, b"opacity", self)
+        fade_out.setDuration(ANIM["fast"] - 50)
+        fade_out.setStartValue(1.0)
+        fade_out.setEndValue(0.0)
+        fade_out.setEasingCurve(EASE_IN)
+
+        def _swap():
+            current.setGraphicsEffect(None)
+            QStackedWidget.setCurrentWidget(self._stack, widget)
+            target_eff = QGraphicsOpacityEffect(widget)
+            target_eff.setOpacity(0.0)
+            widget.setGraphicsEffect(target_eff)
+            fade_in = QPropertyAnimation(target_eff, b"opacity", self)
+            fade_in.setDuration(ANIM["fast"] - 50)
+            fade_in.setStartValue(0.0)
+            fade_in.setEndValue(1.0)
+            fade_in.setEasingCurve(EASE_OUT)
+
+            def _finish_in():
+                widget.setGraphicsEffect(None)
+
+            fade_in.finished.connect(_finish_in)
+            self._nav_fade_in = fade_in
+            fade_in.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
+
+        fade_out.finished.connect(_swap)
+        self._nav_fade_out = fade_out
+        fade_out.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
+
+    def _open_module(self, module_id: str):
         if module_id not in _MODULE_MAP:
             return
 
@@ -145,7 +193,7 @@ class NeuroMoodApp(QMainWindow):
                 if hasattr(self._current_module, "on_leave"):
                     self._current_module.on_leave()
             self._current_module = mod
-            self._stack.setCurrentWidget(mod)
+            self._navigate_to(mod)
             if hasattr(mod, "on_enter"):
                 mod.on_enter()
             self._header.set_back_action(self._go_home)
@@ -168,7 +216,7 @@ class NeuroMoodApp(QMainWindow):
         self._stack.addWidget(instance)
 
         self._current_module = instance
-        self._stack.setCurrentWidget(instance)
+        self._navigate_to(instance)
         if hasattr(instance, "on_enter"):
             instance.on_enter()
         self._header.set_back_action(self._go_home)
@@ -179,7 +227,7 @@ class NeuroMoodApp(QMainWindow):
                 self._current_module.on_leave()
             self._current_module = None
 
-        self._stack.setCurrentWidget(self._home)
+        self._navigate_to(self._home)
         self._home.refresh_statuses()
         self._header.set_back_action(None)
 
@@ -189,17 +237,25 @@ class NeuroMoodApp(QMainWindow):
     # ── Tema ──────────────────────────────────────────────────────────────────
 
     def _toggle_theme(self):
-        if "dark" in self._modo:
-            self._modo = "light_hybrid"
-        else:
-            self._modo = "dark_hybrid"
-        self._apply_global_style()
-        self._tm.switch_mode(self._modo)
-        QTimer.singleShot(50, lambda: aplicar_captionbar_qt(self, self._modo))
+        new_modo = "light_hybrid" if "dark" in self._modo else "dark_hybrid"
+        self._apply_global_style(new_modo)
+        self._tm.switch_mode(new_modo)
+        self._modo = new_modo
+        QTimer.singleShot(50, lambda m=new_modo: aplicar_captionbar_qt(self, m))
 
-    def _apply_global_style(self):
-        QApplication.instance().setPalette(app_palette(self._modo))
-        QApplication.instance().setStyleSheet(stylesheet_base(self._modo))
+    def _apply_global_style(self, modo: str | None = None):
+        modo = modo or self._modo
+        QApplication.instance().setPalette(app_palette(modo))
+        QApplication.instance().setStyleSheet(stylesheet_base(modo))
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self._apply_global_style(self._modo)
+        if hasattr(self, "_header"):
+            self._header._apply_theme(self._modo)
+        if hasattr(self, "_home"):
+            self._home._apply_theme(self._modo)
+            self._home.refresh_statuses()
 
     def _apply_initial_style(self):
         QApplication.instance().setPalette(app_palette(self._modo))
@@ -230,6 +286,12 @@ class NeuroMoodApp(QMainWindow):
 
     def _on_close(self, event=None):
         """Minimiza a bandeja si hay avisos activos o timer corriendo, si no cierra."""
+        if os.environ.get("NM_TEST_FORCE_CLOSE") == "1":
+            avisos_daemon.detener()
+            if event:
+                event.accept()
+            QApplication.instance().quit()
+            return
         try:
             from shared.db import obtener_conexion
             conn = obtener_conexion()

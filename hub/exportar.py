@@ -3,6 +3,12 @@ import os
 import threading
 from datetime import datetime
 
+try:
+    from shared.theme_qt import obtener_ruta_recurso
+except ImportError:
+    def obtener_ruta_recurso(nombre: str) -> str:
+        return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", nombre)
+
 
 def _generar(nombre: str, pid: str, datos: dict) -> str:
     try:
@@ -27,7 +33,7 @@ def _generar(nombre: str, pid: str, datos: dict) -> str:
                             leftMargin=2*cm, rightMargin=2*cm,
                             topMargin=2*cm, bottomMargin=2*cm)
     styles = getSampleStyleSheet()
-    AC = __import__("shared.theme", fromlist=["COLORS"]).COLORS["dark_hybrid"]["accent"]
+    AC = "#6366f1"
     titulo_st = ParagraphStyle("titulo", parent=styles["Title"],
                                fontSize=18, textColor=rl_colors.HexColor(AC))
     h2_st = ParagraphStyle("h2", parent=styles["Heading2"],
@@ -111,7 +117,27 @@ def _generar(nombre: str, pid: str, datos: dict) -> str:
                         (r.get("mensaje") or "")[:80],
                         "Cerrado" if r.get("cerrado") else "Pendiente"])
 
-    doc.build(story)
+    logo_path = obtener_ruta_recurso("LOGO.png")
+
+    def _header(canvas, doc_obj):
+        canvas.saveState()
+        if os.path.exists(logo_path):
+            canvas.drawImage(
+                logo_path,
+                doc_obj.leftMargin,
+                A4[1] - 1.35 * cm,
+                width=2.6 * cm,
+                height=0.7 * cm,
+                preserveAspectRatio=True,
+                mask="auto",
+            )
+        canvas.setStrokeColor(rl_colors.HexColor(AC))
+        canvas.setLineWidth(0.6)
+        canvas.line(doc_obj.leftMargin, A4[1] - 1.55 * cm,
+                    A4[0] - doc_obj.rightMargin, A4[1] - 1.55 * cm)
+        canvas.restoreState()
+
+    doc.build(story, onFirstPage=_header, onLaterPages=_header)
     return filepath
 
 

@@ -28,9 +28,10 @@ try:
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         linear_gradient, linear_gradient_vertical, get_gradient, gradient_colors,
-        noise_overlay,
+        noise_overlay, fx,
         RADIUS_CARD, PAD_CARD, PAD_CONTAINER, GAP_CARDS,
-        stylesheet_scrollarea, SessionColor,
+        stylesheet_scrollarea, SessionColor, ThemeAwareWidgetMixin,
+        MODULE_ICONS, nm_icon,
     )
     from shared.components_qt import ThemeManager
 except ImportError:
@@ -40,9 +41,10 @@ except ImportError:
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         linear_gradient, linear_gradient_vertical, get_gradient, gradient_colors,
-        noise_overlay,
+        noise_overlay, fx,
         RADIUS_CARD, PAD_CARD, PAD_CONTAINER, GAP_CARDS,
-        stylesheet_scrollarea, SessionColor,
+        stylesheet_scrollarea, SessionColor, ThemeAwareWidgetMixin,
+        MODULE_ICONS, nm_icon,
     )
     from shared.components_qt import ThemeManager
 
@@ -111,7 +113,7 @@ class _MiniRing(QWidget):
 
 # ── Card del módulo ───────────────────────────────────────────────────────────
 
-class ModuleCard(QWidget):
+class ModuleCard(ThemeAwareWidgetMixin, QWidget):
     """
     Card con barra izquierda de color gradiente, mini-ring, badge de status,
     sombra real, hover lift, animación de entrada stagger (fade + slide Y).
@@ -128,6 +130,8 @@ class ModuleCard(QWidget):
         self._accent = _dot_color(idx, modo)
         self._session = SessionColor.instance()
         self._hover = False
+        self._disabled = False
+        self._disabled_reason = ""
 
         self.setMinimumHeight(110)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
@@ -138,7 +142,7 @@ class ModuleCard(QWidget):
         self.setGraphicsEffect(self._eff)
 
         self._build_ui()
-        ThemeManager.instance().theme_changed.connect(self._apply_theme)
+        self._connect_theme()
 
     def enterEvent(self, event):
         self._hover = True
@@ -159,11 +163,13 @@ class ModuleCard(QWidget):
         # Fila top: icono + badge + ring
         top = QHBoxLayout()
         top.setSpacing(6)
-        icon_lbl = QLabel(self._config["icon"])
-        icon_lbl.setFont(qfont("size_emoji_sm"))
-        icon_lbl.setStyleSheet("background: transparent; color: white;")
+        icon_lbl = QLabel()
+        icon_lbl.setFixedSize(32, 32)
+        icon_lbl.setPixmap(self._icon_pixmap())
+        icon_lbl.setStyleSheet("background: transparent;")
         icon_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         top.addWidget(icon_lbl)
+        self._icon_lbl = icon_lbl
         top.addStretch()
         self._badge = QLabel("")
         self._badge.setFont(qfont("size_caption"))
@@ -259,16 +265,17 @@ class ModuleCard(QWidget):
         p.fillPath(bar, QBrush(bar_grad))
 
         # Hover glow dinámico (session color)
-        if self._hover:
+        if self._hover and not self._disabled:
             glow_c = self._session.glow_qcolor(self._modo)
-            glow_r = r + 4
+            glow_r = r + int(fx("card_glow_radius", self._modo))
+            glow_opacity = float(fx("card_glow_opacity", self._modo))
             for layer in range(3):
-                alpha = int(glow_c.alpha() * (0.3 - layer * 0.1))
+                alpha = int(glow_c.alpha() * max(0.0, glow_opacity - layer * 0.08))
                 if alpha <= 0:
                     continue
                 gc = QColor(glow_c)
                 gc.setAlpha(alpha)
-                glow_pen = QPen(gc, 2 + layer * 3)
+                glow_pen = QPen(gc, max(1, int(fx("card_glow_radius", self._modo) / 3)) + layer * 2)
                 p.setPen(glow_pen)
                 p.setBrush(Qt.BrushStyle.NoBrush)
                 p.drawRoundedRect(
@@ -281,21 +288,23 @@ class ModuleCard(QWidget):
         noise_overlay(
             p,
             QRectF(5, 0, w - 5, h),
-            opacity=0.025,
+            opacity=float(fx("noise_opacity", self._modo)),
             modo=self._modo,
         )
+        if self._disabled:
+            p.fillPath(path, QBrush(QColor(255, 255, 255, 80 if "light" in self._modo else 20)))
         p.end()
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
+        if not self._disabled and event.button() == Qt.MouseButton.LeftButton:
             self.update()
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
+        if not self._disabled and event.button() == Qt.MouseButton.LeftButton:
             if self.rect().contains(event.pos()):
                 self._on_click(self._config["id"])
         super().mouseReleaseEvent(event)
@@ -334,6 +343,7 @@ class ModuleCard(QWidget):
         c = colors(self._modo)
         self._title_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
         self._desc_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+        self._icon_lbl.setPixmap(self._icon_pixmap())
         self._ring._color = self._accent
         self._ring.update()
         if self._eff is None or self._eff.opacity() >= 1.0:
@@ -344,14 +354,25 @@ class ModuleCard(QWidget):
         self._refresh_status()
         self.update()
 
+    def _icon_pixmap(self):
+        icon_key = "registro_tcc" if self._config["id"] == "registro" else self._config["id"]
+        return nm_icon(icon_key, C("accent", self._modo), size=32).pixmap(32, 32)
+
     def refresh(self):
         self._refresh_status()
+        self.update()
+
+    def set_disabled(self, state: bool, reason: str = ""):
+        self._disabled = state
+        self._disabled_reason = reason
+        self.setToolTip(reason if state else "")
+        self.setCursor(Qt.CursorShape.ForbiddenCursor if state else Qt.CursorShape.PointingHandCursor)
         self.update()
 
 
 # ── HomeView ──────────────────────────────────────────────────────────────────
 
-class HomeView(QWidget):
+class HomeView(ThemeAwareWidgetMixin, QWidget):
     """Grid de 7 ModuleCard con animación de entrada escalonada (stagger 60ms)."""
 
     def __init__(self, modo: str = "dark_hybrid",
@@ -363,7 +384,7 @@ class HomeView(QWidget):
         self._get_status = get_status_fn or (lambda mid: "")
         self._cards: dict[str, ModuleCard] = {}
         self._setup()
-        ThemeManager.instance().theme_changed.connect(self._apply_theme)
+        self._connect_theme()
 
     def _setup(self):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
@@ -406,6 +427,8 @@ class HomeView(QWidget):
                 get_status_fn=self._get_status,
             )
             grid.addWidget(card, row, col)
+            if not self._is_module_available(cfg["id"]):
+                card.set_disabled(True, "Tu terapeuta habilitará este módulo")
             self._cards[cfg["id"]] = card
 
         # Card 7 centrada sola en fila 2
@@ -416,6 +439,8 @@ class HomeView(QWidget):
             get_status_fn=self._get_status,
         )
         card7.setMaximumWidth(380)
+        if not self._is_module_available(cfg7["id"]):
+            card7.set_disabled(True, "Tu terapeuta habilitará este módulo")
         grid.addWidget(card7, 2, 1, Qt.AlignmentFlag.AlignHCenter)
         self._cards[cfg7["id"]] = card7
 
@@ -429,7 +454,27 @@ class HomeView(QWidget):
 
     def refresh_statuses(self):
         for card in self._cards.values():
+            card.set_disabled(
+                not self._is_module_available(card._config["id"]),
+                "Tu terapeuta habilitará este módulo",
+            )
             card.refresh()
+
+    def _is_module_available(self, module_id: str) -> bool:
+        permission_keys = {
+            "rutina": "perm_checklist_manual",
+            "actividades": "perm_checklist_activacion",
+            "timer": "perm_temporizador_manual",
+            "avisos": "perm_recordatorios_manual",
+        }
+        key = permission_keys.get(module_id)
+        if not key:
+            return True
+        try:
+            from shared.db import leer_config
+            return leer_config(key, "1") != "0"
+        except Exception:
+            return True
 
     def set_modo(self, modo: str):
         self._apply_theme(modo)

@@ -43,12 +43,12 @@ from PyQt6.QtWidgets import (
 
 try:
     from shared.components_qt import (
-        NMModule, NMButton, NMButtonOutline, ThemeManager,
+        NMModule, NMButton, NMButtonOutline, ThemeManager, NMEmptyState,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         radial_glow, radial_glow_double, conical_arc_gradient, get_gradient, gradient_colors,
-        RADIUS_CARD, RADIUS_PILL, PAD_CONTAINER, GAP_ELEMENTS,
+        RADIUS_CARD, RADIUS_PILL, PAD_CONTAINER, GAP_ELEMENTS, ThemeAwareWidgetMixin,
     )
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy, hora_actual
@@ -56,11 +56,11 @@ except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
-    from shared.components_qt import NMModule, NMButton, NMButtonOutline, ThemeManager
+    from shared.components_qt import NMModule, NMButton, NMButtonOutline, ThemeManager, NMEmptyState
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         radial_glow, radial_glow_double, conical_arc_gradient, get_gradient, gradient_colors,
-        RADIUS_CARD, RADIUS_PILL, PAD_CONTAINER, GAP_ELEMENTS,
+        RADIUS_CARD, RADIUS_PILL, PAD_CONTAINER, GAP_ELEMENTS, ThemeAwareWidgetMixin,
     )
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy, hora_actual
@@ -99,7 +99,7 @@ def _rich_color_at(modo: str, t: float) -> str:
 
 # ── CircleWidget — el corazón visual ─────────────────────────────────────────
 
-class _BreathCircle(QWidget):
+class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
     """
     Círculo de respiración con animaciones Qt nativas.
 
@@ -142,7 +142,7 @@ class _BreathCircle(QWidget):
         self._render_timer.start(16)
 
         self.setStyleSheet("background: transparent;")
-        ThemeManager.instance().theme_changed.connect(self._apply_theme)
+        self._connect_theme()
 
     # ── pyqtProperties animables ──────────────────────────────────────────────
 
@@ -365,7 +365,7 @@ class _BreathCircle(QWidget):
 
 # ── StepCard ──────────────────────────────────────────────────────────────────
 
-class _StepCard(QFrame):
+class _StepCard(ThemeAwareWidgetMixin, QFrame):
     def __init__(self, label: str, secs: str, parent=None, modo: str = "dark_hybrid"):
         super().__init__(parent)
         self._modo = norm_modo(modo)
@@ -391,7 +391,7 @@ class _StepCard(QFrame):
         vl.addWidget(self._secs_lbl)
 
         self._update_style()
-        ThemeManager.instance().theme_changed.connect(self._apply_theme)
+        self._connect_theme()
 
     def set_active(self, active: bool, accent: str = None):
         self._active = active
@@ -456,6 +456,14 @@ class ModuloRespiracion(NMModule):
         c = colors(self._modo)
 
         # ── Pills de preset ────────────────────────────────────────────────────
+        self._empty_state = NMEmptyState(
+            "fa5s.wind",
+            "Momento de respirar",
+            "Iniciá una sesión guiada.",
+            self._content,
+        )
+        layout.addWidget(self._empty_state)
+
         pills_row = QHBoxLayout()
         pills_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
         pills_row.setSpacing(8)
@@ -543,6 +551,8 @@ class ModuloRespiracion(NMModule):
             return
         if self._running:
             return
+        if hasattr(self, "_empty_state"):
+            self._empty_state.hide()
         self._running = True
         self._paused = False
         self._elapsed_ms = 0
@@ -573,6 +583,8 @@ class ModuloRespiracion(NMModule):
         self._paused = False
         self._btn_start.setText("Iniciar")
         self._btn_pause.setText("Pausa")
+        if hasattr(self, "_empty_state"):
+            self._empty_state.show()
         self._circle.reset_idle()
         self._session_lbl.setText("")
         for sc in self._step_cards:
@@ -684,6 +696,8 @@ class ModuloRespiracion(NMModule):
             )
             conn.commit()
             conn.close()
+            if hasattr(self._btn_start, "play_success"):
+                self._btn_start.play_success()
         except Exception:
             _log.exception("Operation failed")
 

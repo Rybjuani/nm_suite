@@ -23,10 +23,11 @@ from PyQt6.QtWidgets import (
 try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMInput, NMToggle,
-        NMToast, NMProgressBar, NMSkeleton, ThemeManager, h_spacer,
+        NMToast, NMProgressBar, NMSkeleton, ThemeManager, h_spacer, NMEmptyState,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
+        sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL,
         stylesheet_textedit, stylesheet_scrollarea, stylesheet_lineedit,
@@ -38,10 +39,11 @@ except ImportError:
         sys.path.insert(0, _dir)
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMInput, NMToggle,
-        NMToast, NMProgressBar, NMSkeleton, ThemeManager, h_spacer,
+        NMToast, NMProgressBar, NMSkeleton, ThemeManager, h_spacer, NMEmptyState,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
+        sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL,
         stylesheet_textedit, stylesheet_scrollarea, stylesheet_lineedit,
@@ -227,8 +229,8 @@ class _NuevoAvisoPanel(QWidget):
         """)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 16, 20, 16)
-        layout.setSpacing(12)
+        layout.setContentsMargins(sp("md") + sp("xs"), sp("md"), sp("md") + sp("xs"), sp("md"))
+        layout.setSpacing(sp("sm") + sp("xs"))
 
         # Title
         title_lbl = QLabel("Nuevo aviso")
@@ -276,7 +278,7 @@ class _NuevoAvisoPanel(QWidget):
 
         # Buttons
         btn_row = QHBoxLayout()
-        btn_row.setSpacing(8)
+        btn_row.setSpacing(sp("sm"))
 
         btn_cancel = NMButtonOutline("Cancelar", parent=self, modo=self._modo)
         btn_cancel.setFixedHeight(36)
@@ -289,6 +291,7 @@ class _NuevoAvisoPanel(QWidget):
         btn_save = NMButton("Guardar", parent=self, modo=self._modo, width=90, height=36)
         btn_save.clicked.connect(self._on_save)
         btn_row.addWidget(btn_save)
+        self._btn_save = btn_save
 
         layout.addLayout(btn_row)
 
@@ -342,8 +345,8 @@ class ModuloAvisos(NMModule):
 
         # ── Root layout ───────────────────────────────────────────────────────
         root = QVBoxLayout(self._content)
-        root.setContentsMargins(PAD_CONTAINER, 12, PAD_CONTAINER, 12)
-        root.setSpacing(8)
+        root.setContentsMargins(PAD_CONTAINER, sp("sm") + sp("xs"), PAD_CONTAINER, sp("sm") + sp("xs"))
+        root.setSpacing(sp("sm"))
 
         # ── Top bar ───────────────────────────────────────────────────────────
         top_bar = QWidget()
@@ -375,7 +378,7 @@ class ModuloAvisos(NMModule):
             }}
         """)
         banner_layout = QHBoxLayout(banner)
-        banner_layout.setContentsMargins(12, 8, 12, 8)
+        banner_layout.setContentsMargins(sp("sm") + sp("xs"), sp("sm"), sp("sm") + sp("xs"), sp("sm"))
 
         banner_lbl = QLabel(
             "🔔  Los avisos funcionan aunque cierres la app — "
@@ -408,7 +411,7 @@ class ModuloAvisos(NMModule):
         self._list_content = QWidget()
         self._list_content.setStyleSheet("background: transparent;")
         self._list_layout = QVBoxLayout(self._list_content)
-        self._list_layout.setContentsMargins(0, 0, 8, 0)
+        self._list_layout.setContentsMargins(0, 0, sp("sm"), 0)
         self._list_layout.setSpacing(GAP_ELEMENTS)
         self._list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
@@ -449,18 +452,13 @@ class ModuloAvisos(NMModule):
         except Exception:
             rows = []
 
-        c = colors(self._modo)
         if not rows:
-            empty_lbl = QLabel("No hay avisos configurados")
-            empty_lbl.setFont(qfont("size_body"))
-            empty_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            empty_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
-            self._list_layout.addWidget(empty_lbl)
-            # Skeleton loaders
-            for _ in range(2):
-                self._list_layout.addWidget(
-                    NMSkeleton(width=280, height=48, radius=8, modo=self._modo)
-                )
+            self._list_layout.addWidget(NMEmptyState(
+                "fa5s.bell",
+                "Sin avisos configurados",
+                "Agregá un recordatorio cuando quieras.",
+                self._list_content,
+            ))
             return
 
         for row in rows:
@@ -484,12 +482,17 @@ class ModuloAvisos(NMModule):
 
         card = NMCard(parent=self._list_content, clickable=False, modo=self._modo)
         card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(14, 12, 14, 12)
-        card_layout.setSpacing(6)
+        card_layout.setContentsMargins(
+            sp("md") - sp("xs") // 2,
+            sp("sm") + sp("xs"),
+            sp("md") - sp("xs") // 2,
+            sp("sm") + sp("xs"),
+        )
+        card_layout.setSpacing(sp("sm") - sp("xs") // 2)
 
         # Top row: hora bold + delete + toggle
         top_row = QHBoxLayout()
-        top_row.setSpacing(6)
+        top_row.setSpacing(sp("sm") - sp("xs") // 2)
 
         hora_lbl = QLabel(hora)
         hora_lbl.setFont(qfont("size_h3", bold=True))
@@ -523,7 +526,7 @@ class ModuloAvisos(NMModule):
         dias_str = dias if dias else "1,2,3,4,5,6,7"
         dias_activos = set(dias_str.split(","))
         days_row = QHBoxLayout()
-        days_row.setSpacing(3)
+        days_row.setSpacing(sp("xs"))
         days_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         for i, lbl in enumerate(DIAS_LABELS, start=1):
@@ -566,9 +569,16 @@ class ModuloAvisos(NMModule):
 
     def _show_form(self):
         panel = _NuevoAvisoPanel(self._content, self._modo)
-        panel.saved.connect(lambda data: (self._save_reminder(data), self._list_layout.removeWidget(panel), panel.deleteLater()))
+        panel.saved.connect(lambda data: self._handle_new_reminder_saved(panel, data))
         panel.cancelled.connect(lambda: (self._list_layout.removeWidget(panel), panel.deleteLater()))
         self._list_layout.insertWidget(0, panel)
+
+    def _handle_new_reminder_saved(self, panel: QWidget, data: dict):
+        self._save_reminder(data)
+        if hasattr(panel, "_btn_save") and hasattr(panel._btn_save, "play_success"):
+            panel._btn_save.play_success()
+        self._list_layout.removeWidget(panel)
+        panel.deleteLater()
 
     # ── _save_reminder (lógica preservada exacta, adaptada para dict) ─────────
 
@@ -606,8 +616,13 @@ class ModuloAvisos(NMModule):
             }}
         """)
         inner_layout = QVBoxLayout(frame)
-        inner_layout.setContentsMargins(14, 12, 14, 12)
-        inner_layout.setSpacing(10)
+        inner_layout.setContentsMargins(
+            sp("md") - sp("xs") // 2,
+            sp("sm") + sp("xs"),
+            sp("md") - sp("xs") // 2,
+            sp("sm") + sp("xs"),
+        )
+        inner_layout.setSpacing(sp("sm") + sp("xs") // 2)
 
         # Title
         title_lbl = QLabel("Opciones")
@@ -619,7 +634,7 @@ class ModuloAvisos(NMModule):
         sil_ini, sil_fin = self._leer_silencio()
 
         sil_row = QHBoxLayout()
-        sil_row.setSpacing(8)
+        sil_row.setSpacing(sp("sm"))
 
         sil_lbl = QLabel("🔕  Silencio:")
         sil_lbl.setFont(qfont("size_body"))
@@ -650,13 +665,14 @@ class ModuloAvisos(NMModule):
         btn_apply.setMinimumWidth(68)
         btn_apply.clicked.connect(self._guardar_silencio)
         sil_row.addWidget(btn_apply)
+        self._btn_apply_silencio = btn_apply
         sil_row.addStretch()
 
         inner_layout.addLayout(sil_row)
 
         # ── Iniciar con Windows ────────────────────────────────────────────
         win_row = QHBoxLayout()
-        win_row.setSpacing(8)
+        win_row.setSpacing(sp("sm"))
 
         win_lbl = QLabel("🪟  Iniciar con Windows")
         win_lbl.setFont(qfont("size_body"))
@@ -712,6 +728,8 @@ class ModuloAvisos(NMModule):
                     conn.execute("DELETE FROM config WHERE clave=?", (clave,))
             conn.commit()
             conn.close()
+            if hasattr(self, "_btn_apply_silencio") and hasattr(self._btn_apply_silencio, "play_success"):
+                self._btn_apply_silencio.play_success()
         except Exception:
             _log.exception("Failed to save config %s", clave)
 

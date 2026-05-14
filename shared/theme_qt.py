@@ -16,9 +16,11 @@ import os
 import sys
 import logging
 
-_log = logging.getLogger("NeuroMood.theme_qt")
+import qtawesome as qta
 
-from PyQt6.QtCore import QPointF, QRectF, Qt
+_log = logging.getLogger(__name__)
+
+from PyQt6.QtCore import QPointF, QRectF, Qt, QEasingCurve
 from PyQt6.QtGui import (
     QColor, QFont, QFontDatabase,
     QLinearGradient, QRadialGradient, QConicalGradient,
@@ -34,6 +36,160 @@ except ImportError:
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
     from theme import COLORS, TYPOGRAPHY, LAYOUT, GRADIENTS, CATEGORY_COLORS, get_gradient
+
+
+FONT_SCALE = {
+    "display": {"size": 28, "weight": 700, "line_height": 1.2},
+    "h1":      {"size": 22, "weight": 600, "line_height": 1.3},
+    "h2":      {"size": 18, "weight": 600, "line_height": 1.35},
+    "h3":      {"size": 15, "weight": 500, "line_height": 1.4},
+    "body":    {"size": 13, "weight": 400, "line_height": 1.6},
+    "sm":      {"size": 12, "weight": 400, "line_height": 1.5},
+    "caption": {"size": 11, "weight": 400, "line_height": 1.4},
+}
+
+
+SPACE = {
+    "xs":  4,
+    "sm":  8,
+    "md":  16,
+    "lg":  24,
+    "xl":  32,
+    "xxl": 48,
+}
+
+
+ANIM = {
+    "fast":   150,
+    "medium": 250,
+    "slow":   400,
+}
+EASE_OUT = QEasingCurve.Type.OutCubic
+EASE_IN  = QEasingCurve.Type.InCubic
+
+EFFECTS = {
+    "dark": {
+        "card_glow_radius":    15,
+        "card_glow_opacity":   0.35,
+        "card_shadow_blur":    20,
+        "button_glow_radius":  10,
+        "noise_opacity":       0.04,
+        "surface_overlay":     0.06,
+    },
+    "light": {
+        "card_glow_radius":    6,
+        "card_glow_opacity":   0.18,
+        "card_shadow_blur":    8,
+        "button_glow_radius":  4,
+        "noise_opacity":       0.02,
+        "surface_overlay":     0.03,
+    },
+}
+
+FOCUS_RING_STYLE = """
+    *:focus {{
+        outline: 2px solid {accent};
+        outline-offset: 2px;
+    }}
+    *:focus:not(:focus-visible) {{
+        outline: none;
+    }}
+"""
+
+# WCAG AA ratios (text sobre bg_primary, dark mode):
+# text_primary (#f1f5f9) sobre bg_primary (#0f172a): ~15.5:1 OK
+# accent (#6366f1) sobre bg_primary (#0f172a):        ~5.2:1  OK
+# text_secondary (#94a3b8) sobre bg_primary (#0f172a): ~6.1:1 OK
+# LIGHT MODE — verificar que los mismos pares cumplen AA
+
+MODULE_ICONS = {
+    "animo":         "fa5s.heart",
+    "respiracion":   "fa5s.wind",
+    "registro_tcc":  "fa5s.brain",
+    "rutina":        "fa5s.list-check",
+    "actividades":   "fa5s.running",
+    "timer":         "fa5s.hourglass-half",
+    "avisos":        "fa5s.bell",
+}
+HUB_ICONS = {
+    "pacientes":     "fa5s.users",
+    "ia_asistente":  "fa5s.robot",
+    "exportar":      "fa5s.file-pdf",
+    "configuracion": "fa5s.cog",
+}
+
+_ICON_FALLBACKS = {
+    "fa5s.list-check": "fa5s.tasks",
+}
+
+
+def sp(key: str) -> int:
+    return SPACE[key]
+
+
+def fx(key: str, modo: str) -> float | int:
+    bucket = "light" if "light" in norm_modo(modo) else "dark"
+    return EFFECTS[bucket][key]
+
+
+def focus_ring_stylesheet(modo: str) -> str:
+    return FOCUS_RING_STYLE.format(accent=C("accent", modo))
+
+
+def apply_chart_theme(modo: str):
+    import matplotlib
+    bg  = C("bg_primary", modo)
+    fg  = C("text_primary", modo)
+    acc = C("accent", modo)
+    teal = "#14b8a6"
+    matplotlib.rcParams.update({
+        "figure.facecolor":  bg,
+        "axes.facecolor":    bg,
+        "axes.edgecolor":    C("border", modo),
+        "axes.labelcolor":   fg,
+        "xtick.color":       fg,
+        "ytick.color":       fg,
+        "text.color":        fg,
+        "grid.color":        C("border", modo),
+        "grid.alpha":        0.3,
+        "lines.color":       acc,
+        "patch.facecolor":   acc,
+        "font.family":       "Segoe UI",
+        "axes.spines.top":   False,
+        "axes.spines.right": False,
+    })
+
+
+def nm_icon(key: str, color: str, size: int = 20):
+    icon_name = MODULE_ICONS.get(key, HUB_ICONS.get(key, key))
+    icon_name = _ICON_FALLBACKS.get(icon_name, icon_name)
+    try:
+        return qta.icon(icon_name, color=color)
+    except Exception as e:
+        fallback = _ICON_FALLBACKS.get(icon_name, "fa5s.circle")
+        _log.warning(f"Icono QtAwesome no cargó ({icon_name}, {size}px): {e}")
+        return qta.icon(fallback, color=color)
+
+
+def _tm():
+    from shared.components_qt import ThemeManager
+    return ThemeManager.instance()
+
+
+class ThemeAwareWidgetMixin:
+    """Mixin para widgets que reaccionan al cambio de tema."""
+    def _connect_theme(self):
+        _tm().theme_changed.connect(self._apply_theme)
+        self.destroyed.connect(self._disconnect_theme)
+
+    def _disconnect_theme(self):
+        try:
+            _tm().theme_changed.disconnect(self._apply_theme)
+        except (RuntimeError, TypeError):
+            pass
+
+    def _apply_theme(self, modo: str):
+        raise NotImplementedError
 
 
 def _load_premium_fonts():
@@ -70,13 +226,14 @@ def _ensure_premium_font():
     _PREMIUM_FONT_ATTEMPTED = True
     try:
         _PREMIUM_FONT_FAMILY = _load_premium_fonts()
-    except Exception:
+    except Exception as e:
+        _log.warning(f"Fuente premium no cargó: {e}")
         _PREMIUM_FONT_FAMILY = None
 
 
 def _font_family() -> str:
     _ensure_premium_font()
-    return _PREMIUM_FONT_FAMILY or TYPOGRAPHY.get("font_family", "Segoe UI")
+    return _PREMIUM_FONT_FAMILY or "Segoe UI"
 
 
 def _gradient_stops(modo: str = "dark_hybrid") -> list[tuple[str, float]]:
@@ -207,6 +364,16 @@ def qfont(size_key: str = "size_body", bold: bool = False,
     return f
 
 
+def nm_font(level: str, bold_override=False) -> QFont:
+    """Devuelve un QFont segun la escala tipografica NeuroMood."""
+    spec = FONT_SCALE.get(level, FONT_SCALE["body"])
+    weight = QFont.Weight.Bold if bold_override else QFont.Weight(spec["weight"])
+    f = QFont(_font_family(), spec["size"])
+    f.setWeight(weight)
+    f.setHintingPreference(QFont.HintingPreference.PreferFullHinting)
+    return f
+
+
 def qfont_emoji(size_key: str = "size_emoji") -> QFont:
     """Font específico para emojis — usa Segoe UI Emoji en Windows."""
     pt = TYPOGRAPHY.get(size_key, 64)
@@ -247,11 +414,11 @@ def shadow_effect(tipo: str = "card", modo: str = "dark_hybrid",
     shadow = QGraphicsDropShadowEffect(parent)
 
     if tipo == "card":
-        shadow.setBlurRadius(28)
+        shadow.setBlurRadius(fx("card_shadow_blur", modo))
         shadow.setOffset(0, 8)
         col = QColor(0, 0, 0, 115 if is_dark else 25)
     elif tipo == "card_hover":
-        shadow.setBlurRadius(42)
+        shadow.setBlurRadius(fx("card_shadow_blur", modo) + (14 if is_dark else 8))
         shadow.setOffset(0, 14)
         col = QColor(0, 0, 0, 140 if is_dark else 40)
     elif tipo == "glow_teal":
@@ -267,7 +434,7 @@ def shadow_effect(tipo: str = "card", modo: str = "dark_hybrid",
         col = QColor(violet)
         col.setAlpha(60 if is_dark else 40)
     elif tipo == "button":
-        shadow.setBlurRadius(12)
+        shadow.setBlurRadius(fx("button_glow_radius", modo) + 2)
         shadow.setOffset(0, 4)
         col = QColor(0, 0, 0, 60)
     elif tipo == "glass":

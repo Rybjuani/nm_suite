@@ -21,28 +21,25 @@ if not exist "%DIST%\NeuroMood Hub Pro\NeuroMood Hub Pro.exe" (
     exit /b 1
 )
 
-:: Clean ALL old + current builds
-echo  Limpiando builds anteriores...
-for %%F in (
-    "Instalar NeuroMood Hub Profesional" "Instalador NeuroMood Hub Pro"
-    "Desinstalar NeuroMood Pro" "Desinstalador NeuroMood Hub Pro"
-) do (
-    if exist "%DIST%\%%~F"     rmdir /s /q "%DIST%\%%~F"     2>nul
-    if exist "%BUILD%\%%~F"    rmdir /s /q "%BUILD%\%%~F"    2>nul
-    del "%ROOT%\%%~F.spec"     2>nul
-)
+:: Clean
+rd /s /q "%DIST%\Instalador NeuroMood Hub Pro"          2>nul
+rd /s /q "%DIST%\Instalar NeuroMood Hub Profesional"     2>nul
+rd /s /q "%DIST%\Desinstalador NeuroMood Hub Pro"        2>nul
+rd /s /q "%DIST%\Desinstalar NeuroMood Pro"              2>nul
+rd /s /q "%BUILD%\Instalador NeuroMood Hub Pro"          2>nul
+rd /s /q "%BUILD%\Desinstalador NeuroMood Hub Pro"       2>nul
+del "%ROOT%\Instalador NeuroMood Hub Pro.spec"          2>nul
+del "%ROOT%\Desinstalador NeuroMood Hub Pro.spec"       2>nul
 
-set BASE=--noconfirm --onedir --windowed --clean --optimize 2^
+echo  [1/2] Compilando desinstalador Hub Pro...
+pyinstaller --noconfirm --onedir --windowed --clean^
  --workpath "%BUILD%"^
  --paths "%ROOT%"^
  --log-level WARN^
  --hidden-import win32com^
  --hidden-import win32com.client^
  --hidden-import pywintypes^
- --hidden-import PIL
-
-echo  [1/2] Compilando desinstalador Hub Pro...
-pyinstaller %BASE%^
+ --hidden-import PIL^
  --add-data "%ASSETS%\NM_icon.ico;."^
  --add-data "%ASSETS%\LOGO.png;."^
  --icon "%ASSETS%\NM_icon.ico"^
@@ -54,7 +51,14 @@ echo  OK: dist\Desinstalador NeuroMood Hub Pro\
 echo.
 
 echo  [2/2] Compilando instalador Hub Pro...
-pyinstaller %BASE%^
+pyinstaller --noconfirm --onedir --windowed --clean^
+ --workpath "%BUILD%"^
+ --paths "%ROOT%"^
+ --log-level WARN^
+ --hidden-import win32com^
+ --hidden-import win32com.client^
+ --hidden-import pywintypes^
+ --hidden-import PIL^
  --add-data "%ASSETS%\installer_icon.ico;."^
  --add-data "%ASSETS%\NM_icon.ico;."^
  --add-data "%ASSETS%\no_symbol.ico;."^
@@ -69,10 +73,6 @@ pyinstaller %BASE%^
 if %ERRORLEVEL% NEQ 0 goto :error
 echo  OK: dist\Instalador NeuroMood Hub Pro\
 echo.
-
-:: Clean .spec files
-del "%ROOT%\Desinstalador NeuroMood Hub Pro.spec"    2>nul
-del "%ROOT%\Instalador NeuroMood Hub Pro.spec"       2>nul
 
 echo ============================================================
 echo  LISTO

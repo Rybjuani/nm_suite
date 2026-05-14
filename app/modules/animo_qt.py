@@ -34,7 +34,7 @@ from PyQt6.QtWidgets import (
 )
 
 try:
-    from shared.components_qt import NMModule, NMButton, NMToast, NMSkeleton, ThemeManager
+    from shared.components_qt import NMModule, NMButton, NMToast, NMSkeleton, ThemeManager, NMEmptyState
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         get_gradient, stylesheet_slider, stylesheet_textedit, stylesheet_scrollarea,
@@ -46,7 +46,7 @@ except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
-    from shared.components_qt import NMModule, NMButton, NMToast, NMSkeleton, ThemeManager
+    from shared.components_qt import NMModule, NMButton, NMToast, NMSkeleton, ThemeManager, NMEmptyState
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         get_gradient, stylesheet_slider, stylesheet_textedit, stylesheet_scrollarea,
@@ -274,7 +274,7 @@ class ModuloAnimo(NMModule):
         layout.addWidget(hist_lbl)
 
         self._hist_scroll = QScrollArea()
-        self._hist_scroll.setMinimumHeight(56)
+        self._hist_scroll.setMinimumHeight(168)
         self._hist_scroll.setWidgetResizable(True)
         self._hist_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._hist_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
@@ -352,6 +352,8 @@ class ModuloAnimo(NMModule):
             except Exception:
                 pass
             self._cargar_historial()
+            if hasattr(self._btn_reg, "play_success"):
+                self._btn_reg.play_success()
             # Buscar ventana principal para mostrar toast
             top = self.window()
             NMToast.show(top, f"Ánimo {self.puntaje}/10 registrado ✔",
@@ -386,15 +388,15 @@ class ModuloAnimo(NMModule):
             rows = []
 
         if not rows:
-            empty = QLabel("Sin registros hoy")
-            empty.setFont(qfont("size_caption"))
-            c = colors(self._modo)
-            empty.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+            self._hist_row.addStretch()
+            empty = NMEmptyState(
+                "fa5s.heart",
+                "Registrá tu estado de ánimo",
+                "Hacé tu primer registro de hoy.",
+                self._hist_container,
+            )
             self._hist_row.addWidget(empty)
-            # Skeleton loaders como placeholder
-            for _ in range(3):
-                sk = NMSkeleton(width=140, height=20, radius=4, modo=self._modo)
-                self._hist_row.addWidget(sk)
+            self._hist_row.addStretch()
             return
 
         for row in rows:

@@ -32,7 +32,7 @@ from PyQt6.QtWidgets import (
     QGraphicsDropShadowEffect,
 )
 from PyQt6.QtCore import Qt, QTimer, QSize, QPointF
-from PyQt6.QtGui import QColor, QIcon, QPainter, QPen, QBrush
+from PyQt6.QtGui import QColor, QIcon, QPainter, QPen, QBrush, QRadialGradient
 from PyQt6 import sip
 
 from shared.theme_qt import (
@@ -40,6 +40,7 @@ from shared.theme_qt import (
     get_gradient, gradient_colors, app_palette, stylesheet_base, stylesheet_scrollarea,
     obtener_ruta_recurso, aplicar_captionbar_qt,
     RADIUS_CARD, RADIUS_BUTTON, PAD_CONTAINER, PAD_CARD, GAP_CARDS,
+    ThemeAwareWidgetMixin, HUB_ICONS, nm_icon,
 )
 from shared.components_qt import (
     ThemeManager, NMSidebar, NMHeader, NMFadeWidget,
@@ -51,10 +52,40 @@ _sb_create = None
 from shared.config import supabase_url, supabase_key
 
 _NAV_ITEMS = [
-    ("dashboard", "📊", "Dashboard"),
-    ("pacientes",  "👥", "Pacientes"),
-    ("config",     "⚙️",  "Config"),
+    ("dashboard", "fa5s.chart-bar", "Dashboard"),
+    ("pacientes", "pacientes", "Pacientes"),
+    ("config", "configuracion", "Config"),
 ]
+
+
+def _disconnect_theme_tree(widget: QWidget):
+    """Evita callbacks de theme_changed hacia widgets pendientes de deleteLater()."""
+    tm = ThemeManager.instance()
+    for obj in [widget, *widget.findChildren(QWidget)]:
+        for slot_name in ("_apply_theme", "apply_theme", "_on_theme"):
+            slot = getattr(obj, slot_name, None)
+            if slot is None:
+                continue
+            try:
+                tm.theme_changed.disconnect(slot)
+            except (RuntimeError, TypeError):
+                pass
+
+
+def _apply_theme_tree(widget: QWidget, modo: str):
+    """Aplica tema solo a widgets vivos, sin usar el signal global."""
+    for obj in [widget, *widget.findChildren(QWidget)]:
+        if sip.isdeleted(obj):
+            continue
+        for slot_name in ("_apply_theme", "apply_theme", "_on_theme"):
+            slot = getattr(obj, slot_name, None)
+            if slot is None:
+                continue
+            try:
+                slot(modo)
+            except Exception:
+                pass
+            break
 
 
 def _get_sb():
@@ -119,7 +150,7 @@ class _AnimoIndicator(QWidget):
 
 # ── DashboardView ─────────────────────────────────────────────────────────────
 
-class DashboardView(QWidget):
+class DashboardView(ThemeAwareWidgetMixin, QWidget):
     def __init__(self, modo: str, pacientes: list, sb,
                  on_select_patient, parent=None):
         super().__init__(parent)
@@ -128,7 +159,7 @@ class DashboardView(QWidget):
         self._sb = sb
         self._on_select = on_select_patient
         self._setup()
-        ThemeManager.instance().theme_changed.connect(self._apply_theme)
+        self._connect_theme()
 
     def paintEvent(self, event):
         """Aura radial dinámica de fondo."""
@@ -403,7 +434,7 @@ class ConfigView(QWidget):
 
 # ── HubProfesional ────────────────────────────────────────────────────────────
 
-class HubProfesional(QMainWindow):
+class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
 
     def __init__(self):
         super().__init__()
@@ -426,6 +457,7 @@ class HubProfesional(QMainWindow):
 
         QTimer.singleShot(120, lambda: aplicar_captionbar_qt(self, self._modo))
         QTimer.singleShot(350, self._init_connection)
+        self._connect_theme()
 
     # ── Ventana ───────────────────────────────────────────────────────────────
 
@@ -468,8 +500,8 @@ class HubProfesional(QMainWindow):
         self._sidebar = NMSidebar(central, modo=self._modo)
         self._sidebar.add_logo()
         self._sidebar.add_header("NeuroMood Hub Pro")
-        for iid, icon, label in _NAV_ITEMS:
-            self._sidebar.add_item(iid, icon, label)
+        for iid, icon_key, label in _NAV_ITEMS:
+            self._sidebar.add_item(iid, nm_icon(icon_key, C("accent", self._modo), size=18), label)
         self._sidebar.add_spacer()
         self._sidebar.add_separator()
         self._sidebar.add_label("Sin paciente")
@@ -514,6 +546,7 @@ class HubProfesional(QMainWindow):
         while self._stack.count():
             w = self._stack.widget(0)
             self._stack.removeWidget(w)
+            _disconnect_theme_tree(w)
             w.deleteLater()
 
         self._view_dashboard = DashboardView(
@@ -656,9 +689,22 @@ class HubProfesional(QMainWindow):
 
     def _toggle_theme(self):
         self._modo = "light_hybrid" if "dark" in self._modo else "dark_hybrid"
-        self._apply_style()
-        ThemeManager.instance().switch_mode(self._modo)
+        ThemeManager.instance()._modo = self._modo
+        self._apply_theme(self._modo)
         QTimer.singleShot(50, lambda: aplicar_captionbar_qt(self, self._modo))
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self._apply_style()
+        if hasattr(self, "_sidebar"):
+            self._sidebar._apply_theme(self._modo)
+        if hasattr(self, "_header"):
+            self._header._apply_theme(self._modo)
+        if hasattr(self, "_lbl_status"):
+            c = colors(self._modo)
+            self._lbl_status.setStyleSheet(
+                f"color: {c['text_tertiary']}; background: transparent;"
+            )
 
     def closeEvent(self, event):
         event.accept()

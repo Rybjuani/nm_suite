@@ -27,10 +27,11 @@ from PyQt6.QtWidgets import (
 try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMProgressBar, NMToast,
-        ThemeManager, h_spacer,
+        ThemeManager, h_spacer, NMEmptyState,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
+        sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
         stylesheet_textedit, stylesheet_scrollarea,
     )
@@ -42,10 +43,11 @@ except ImportError:
         sys.path.insert(0, _dir)
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMProgressBar, NMToast,
-        ThemeManager, h_spacer,
+        ThemeManager, h_spacer, NMEmptyState,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
+        sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
         stylesheet_textedit, stylesheet_scrollarea,
     )
@@ -73,6 +75,7 @@ class ModuloRutina(NMModule):
         self._section_bodies:    dict[str, QWidget] = {}
         self._section_progs:     dict[str, NMProgressBar] = {}
         self._section_count_lbl: dict[str, QLabel] = {}
+        self._section_frames:    dict[str, QFrame] = {}
         self._task_checks:       dict[int, QCheckBox] = {}  # tarea_id → QCheckBox
         self._task_done:         dict[int, bool] = {}       # tarea_id → bool
 
@@ -82,7 +85,7 @@ class ModuloRutina(NMModule):
         root = QVBoxLayout(self._content)
         root.setContentsMargins(PAD_CONTAINER, PAD_CONTAINER,
                                 PAD_CONTAINER, PAD_CONTAINER)
-        root.setSpacing(8)
+        root.setSpacing(sp("sm"))
 
         # Badge summary
         self._badge_lbl = QLabel("Sin tareas configuradas")
@@ -102,7 +105,7 @@ class ModuloRutina(NMModule):
         self._scroll_content = QWidget()
         self._scroll_content.setStyleSheet("background: transparent;")
         self._scroll_layout = QVBoxLayout(self._scroll_content)
-        self._scroll_layout.setContentsMargins(0, 0, 8, 0)
+        self._scroll_layout.setContentsMargins(0, 0, sp("sm"), 0)
         self._scroll_layout.setSpacing(GAP_CARDS)
         self._scroll_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
@@ -110,6 +113,15 @@ class ModuloRutina(NMModule):
         root.addWidget(self._scroll)
 
         # ── Build section frames ──────────────────────────────────────────────
+        self._empty_state = NMEmptyState(
+            "fa5s.list-check",
+            "Sin rutina asignada",
+            "Tu terapeuta te enviará actividades pronto.",
+            self._scroll_content,
+        )
+        self._empty_state.hide()
+        self._scroll_layout.addWidget(self._empty_state)
+
         for key, label, icon in SECCIONES:
             self._build_section(key, label, icon)
 
@@ -142,6 +154,7 @@ class ModuloRutina(NMModule):
         # Card frame
         frame = QFrame()
         frame.setObjectName("SectionCard")
+        self._section_frames[key] = frame
         frame.setStyleSheet(f"""
             QFrame#SectionCard {{
                 background-color: {c['bg_surface']};
@@ -150,15 +163,15 @@ class ModuloRutina(NMModule):
             }}
         """)
         frame_layout = QVBoxLayout(frame)
-        frame_layout.setContentsMargins(12, 8, 12, 12)
-        frame_layout.setSpacing(4)
+        frame_layout.setContentsMargins(sp("sm") + sp("xs"), sp("sm"), sp("sm") + sp("xs"), sp("sm") + sp("xs"))
+        frame_layout.setSpacing(sp("xs"))
 
         # Header row
         header = QWidget()
         header.setStyleSheet("background: transparent;")
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(0, 0, 0, 0)
-        header_layout.setSpacing(8)
+        header_layout.setSpacing(sp("sm"))
 
         # Clickable title button
         title_btn = QPushButton(f"{icon}  {label}")
@@ -171,7 +184,7 @@ class ModuloRutina(NMModule):
                 background: transparent;
                 text-align: left;
                 border: none;
-                padding: 4px 0;
+                padding: {sp('xs')}px 0;
             }}
             QPushButton:hover {{
                 color: {c['accent']};
@@ -220,8 +233,8 @@ class ModuloRutina(NMModule):
         body = QWidget()
         body.setStyleSheet("background: transparent;")
         body_layout = QVBoxLayout(body)
-        body_layout.setContentsMargins(0, 4, 0, 0)
-        body_layout.setSpacing(2)
+        body_layout.setContentsMargins(0, sp("xs"), 0, 0)
+        body_layout.setSpacing(sp("xs") // 2)
         body_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         frame_layout.addWidget(body)
         self._section_bodies[key] = body
@@ -305,6 +318,11 @@ class ModuloRutina(NMModule):
             _log.exception("Operation failed")
 
         self._update_badge()
+        has_tasks = bool(self._task_checks)
+        if hasattr(self, "_empty_state"):
+            self._empty_state.setVisible(not has_tasks)
+        for frame in getattr(self, "_section_frames", {}).values():
+            frame.setVisible(has_tasks)
 
     def _checkbox_stylesheet(self, done: bool) -> str:
         c = colors(self._modo)
@@ -431,8 +449,8 @@ class ModuloRutina(NMModule):
             }}
         """)
         form_layout = QHBoxLayout(form)
-        form_layout.setContentsMargins(8, 6, 8, 6)
-        form_layout.setSpacing(6)
+        form_layout.setContentsMargins(sp("sm"), sp("sm") - sp("xs") // 2, sp("sm"), sp("sm") - sp("xs") // 2)
+        form_layout.setSpacing(sp("sm") - sp("xs") // 2)
 
         entry = QLineEdit()
         entry.setPlaceholderText("Nueva tarea...")
@@ -444,7 +462,7 @@ class ModuloRutina(NMModule):
                 color: {c['text_primary']};
                 border: 1px solid {c['border_accent'] if 'border_accent' in c else c['accent']};
                 border-radius: 6px;
-                padding: 0 10px;
+                padding: 0 {sp('sm') + sp('xs') // 2}px;
                 font-size: 13pt;
             }}
             QLineEdit:focus {{
@@ -455,7 +473,7 @@ class ModuloRutina(NMModule):
 
         btn_save = NMButton("✓", modo=self._modo, width=32, height=32)
         btn_save.clicked.connect(
-            lambda: self._add_task(seccion, entry.text(), form)
+            lambda: self._add_task(seccion, entry.text(), form, btn_save)
         )
         form_layout.addWidget(btn_save)
 
@@ -468,7 +486,7 @@ class ModuloRutina(NMModule):
 
     # ── _add_task (lógica preservada exacta) ─────────────────────────────────
 
-    def _add_task(self, seccion: str, descripcion: str, form_widget: QWidget):
+    def _add_task(self, seccion: str, descripcion: str, form_widget: QWidget, save_button: QWidget | None = None):
         descripcion = descripcion.strip()
         if not descripcion:
             return
@@ -485,6 +503,8 @@ class ModuloRutina(NMModule):
             )
             conn.commit()
             conn.close()
+            if save_button is not None and hasattr(save_button, "play_success"):
+                save_button.play_success()
         except Exception:
             _log.exception("Operation failed")
         layout = form_widget.parentWidget().layout() if form_widget.parentWidget() else None
@@ -508,8 +528,13 @@ class ModuloRutina(NMModule):
             }}
         """)
         frame_layout = QVBoxLayout(frame)
-        frame_layout.setContentsMargins(14, 12, 14, 12)
-        frame_layout.setSpacing(6)
+        frame_layout.setContentsMargins(
+            sp("md") - sp("xs") // 2,
+            sp("sm") + sp("xs"),
+            sp("md") - sp("xs") // 2,
+            sp("sm") + sp("xs"),
+        )
+        frame_layout.setSpacing(sp("sm") - sp("xs") // 2)
 
         title_lbl = QLabel("📓  Nota del día")
         title_lbl.setFont(qfont("size_body", bold=True))
@@ -538,6 +563,7 @@ class ModuloRutina(NMModule):
 
         btn_save = NMButtonOutline("Guardar nota", modo=self._modo)
         btn_save.clicked.connect(self._guardar_nota)
+        self._btn_save_nota = btn_save
         save_row = QHBoxLayout()
         save_row.addStretch()
         save_row.addWidget(btn_save)
@@ -571,6 +597,9 @@ class ModuloRutina(NMModule):
         NMToast.show(self.window(), "Nota guardada ✓", variant="success", duration_ms=2000)
 
     # ── Hooks ─────────────────────────────────────────────────────────────────
+
+        if hasattr(self, "_btn_save_nota") and hasattr(self._btn_save_nota, "play_success"):
+            self._btn_save_nota.play_success()
 
     def on_enter(self):
         self._load_tasks()

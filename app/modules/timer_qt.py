@@ -36,11 +36,12 @@ from PyQt6.QtWidgets import (
 )
 
 try:
-    from shared.components_qt import NMModule, NMButton, NMButtonOutline, NMInput, NMToast, ThemeManager
+    from shared.components_qt import NMModule, NMButton, NMButtonOutline, NMInput, NMToast, ThemeManager, NMEmptyState
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         get_gradient, gradient_colors, stylesheet_lineedit,
         PAD_CONTAINER, GAP_ELEMENTS, RADIUS_BUTTON, RADIUS_PILL,
+        ThemeAwareWidgetMixin,
     )
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy, hora_actual
@@ -48,11 +49,12 @@ except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
-    from shared.components_qt import NMModule, NMButton, NMButtonOutline, NMInput, NMToast, ThemeManager
+    from shared.components_qt import NMModule, NMButton, NMButtonOutline, NMInput, NMToast, ThemeManager, NMEmptyState
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         get_gradient, gradient_colors, stylesheet_lineedit,
         PAD_CONTAINER, GAP_ELEMENTS, RADIUS_BUTTON, RADIUS_PILL,
+        ThemeAwareWidgetMixin,
     )
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy, hora_actual
@@ -80,7 +82,7 @@ def _rich_color_at(modo: str, t: float) -> str:
 
 # ── TimerCanvas ───────────────────────────────────────────────────────────────
 
-class _TimerCanvas(QWidget):
+class _TimerCanvas(ThemeAwareWidgetMixin, QWidget):
     """
     Canvas del timer. Propiedades animables:
       arc_alpha:     float 0–1  (parpadeo en últimos 10s)
@@ -108,7 +110,7 @@ class _TimerCanvas(QWidget):
         # Animación de pulso (radio ±4px a 0.8Hz = 1250ms)
         self._pulse_anim: QPropertyAnimation | None = None
 
-        ThemeManager.instance().theme_changed.connect(self._apply_theme)
+        self._connect_theme()
 
     # ── pyqtProperties ───────────────────────────────────────────────────────
 
@@ -283,6 +285,14 @@ class ModuloTimer(NMModule):
         c = colors(self._modo)
 
         # ── Actividad ──────────────────────────────────────────────────────────
+        self._empty_state = NMEmptyState(
+            "fa5s.hourglass-half",
+            "Timer listo",
+            "Configurá el tiempo y empezá.",
+            self._content,
+        )
+        layout.addWidget(self._empty_state)
+
         self._ent_actividad = NMInput("Nombre de la actividad (opcional)", modo=self._modo)
         layout.addWidget(self._ent_actividad)
 
@@ -405,6 +415,8 @@ class ModuloTimer(NMModule):
             return
         if self._running:
             return
+        if hasattr(self, "_empty_state"):
+            self._empty_state.hide()
         self._running = True
         self._paused = False
         self._remaining_sec = self._total_sec
@@ -439,6 +451,8 @@ class ModuloTimer(NMModule):
         self._remaining_sec = self._total_sec
         self._btn_start.setText("Iniciar")
         self._btn_pause.setText("Pausa")
+        if hasattr(self, "_empty_state"):
+            self._empty_state.show()
         self._canvas.reset()
         self._update_canvas()
 
@@ -513,6 +527,8 @@ class ModuloTimer(NMModule):
             )
             conn.commit()
             conn.close()
+            if hasattr(self._btn_start, "play_success"):
+                self._btn_start.play_success()
         except Exception:
             _log.exception("Operation failed")
 

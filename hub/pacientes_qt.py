@@ -30,6 +30,7 @@ try:
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
+        apply_chart_theme,
         get_gradient, gradient_colors, stylesheet_lineedit, stylesheet_textedit,
         stylesheet_tabwidget, stylesheet_combobox, stylesheet_scrollarea,
         RADIUS_CARD, RADIUS_BUTTON, PAD_CONTAINER, PAD_CARD,
@@ -46,6 +47,7 @@ except ImportError:
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
+        apply_chart_theme,
         get_gradient, gradient_colors, stylesheet_lineedit, stylesheet_textedit,
         stylesheet_tabwidget, stylesheet_combobox, stylesheet_scrollarea,
         RADIUS_CARD, RADIUS_BUTTON, PAD_CONTAINER, PAD_CARD,
@@ -108,9 +110,9 @@ def _build_animo_graph(parent: QWidget, registros: list, modo: str) -> QWidget:
         return lbl
 
     modo = norm_modo(modo)
+    apply_chart_theme(modo)
     c = colors(modo)
-    grad = gradient_colors(modo)
-    is_dark = "dark" in modo
+    grad = ["#6366f1", "#14b8a6"]
 
     # Datos
     puntajes = []
@@ -130,13 +132,11 @@ def _build_animo_graph(parent: QWidget, registros: list, modo: str) -> QWidget:
         return lbl
 
     # Configurar pyqtgraph con tema
-    pg.setConfigOptions(
-        background=c["bg_surface"],
-        foreground=c["text_secondary"],
-    )
+    pg.setConfigOption("background", C("bg_primary", modo))
+    pg.setConfigOption("foreground", C("text_primary", modo))
 
     plot = pg.PlotWidget()
-    plot.setBackground(c["bg_surface"])
+    plot.setBackground(C("bg_primary", modo))
     plot.setMinimumHeight(220)
 
     # Eje Y
@@ -180,24 +180,24 @@ def _build_animo_graph(parent: QWidget, registros: list, modo: str) -> QWidget:
     plot.addItem(fill)
 
     # Línea principal
-    pen = pg.mkPen(color=grad[0], width=2)
+    pen = pg.mkPen(color="#6366f1", width=2)
     plot.plot(x_smooth, y_smooth, pen=pen)
 
     # Puntos interactivos
     scatter = pg.ScatterPlotItem(
         x=x, y=puntajes,
         size=8, pen=pg.mkPen(None),
-        brush=pg.mkBrush(grad[0]),
+        brush=pg.mkBrush("#14b8a6"),
     )
     plot.addItem(scatter)
 
     # Línea de promedio
     if puntajes:
         prom = sum(puntajes) / len(puntajes)
-        prom_pen = pg.mkPen(color=grad[-1], width=1, style=Qt.PenStyle.DashLine)
+        prom_pen = pg.mkPen(color="#14b8a6", width=1, style=Qt.PenStyle.DashLine)
         plot.addLine(y=prom, pen=prom_pen,
                      label=f"prom {prom:.1f}",
-                     labelOpts={"color": grad[-1], "size": "8pt"})
+                     labelOpts={"color": "#14b8a6", "size": "8pt"})
 
     return plot
 
@@ -965,6 +965,7 @@ class DetallePacienteView(QWidget):
         self._nombre = paciente_nombre
         self._datos_ref = _DatosRef()
         self._setup()
+        ThemeManager.instance().theme_changed.connect(self._apply_theme)
 
     def _setup(self):
         c = colors(self._modo)
@@ -1007,3 +1008,10 @@ class DetallePacienteView(QWidget):
         self._tabs.addTab(self._tab_ia,    "IA")
 
         layout.addWidget(self._tabs)
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        apply_chart_theme(self._modo)
+        c = colors(self._modo)
+        self.setStyleSheet(f"background: {c['bg_primary']};")
+        self._tabs.setStyleSheet(stylesheet_tabwidget(self._modo))
