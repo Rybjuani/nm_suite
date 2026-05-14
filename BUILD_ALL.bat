@@ -82,7 +82,7 @@ pyinstaller --noconfirm %MODE% --windowed --clean^
  --distpath "%DIST%"^
  --workpath "%BUILD%"^
  --paths "%ROOT%"^
- --log-level WARN^
+ --log-level ERROR^
  --hidden-import pystray^
  --hidden-import pystray._win32^
  --hidden-import winotify^
@@ -107,7 +107,7 @@ pyinstaller --noconfirm %MODE% --windowed --clean^
  --distpath "%DIST%"^
  --workpath "%BUILD%"^
  --paths "%ROOT%"^
- --log-level WARN^
+ --log-level ERROR^
  --hidden-import supabase^
  --hidden-import pystray^
  --hidden-import pystray._win32^

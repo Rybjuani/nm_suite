@@ -40,7 +40,7 @@ echo  [1/2] Compilando desinstalador Hub Pro...
 pyinstaller --noconfirm --onedir --windowed --clean^
  --workpath "%BUILD%"^
  --paths "%ROOT%"^
- --log-level WARN^
+ --log-level ERROR^
  --hidden-import win32com^
  --hidden-import win32com.client^
  --hidden-import pywintypes^
@@ -59,7 +59,7 @@ echo  [2/2] Compilando instalador Hub Pro...
 pyinstaller --noconfirm --onedir --windowed --clean^
  --workpath "%BUILD%"^
  --paths "%ROOT%"^
- --log-level WARN^
+ --log-level ERROR^
  --hidden-import win32com^
  --hidden-import win32com.client^
  --hidden-import pywintypes^
