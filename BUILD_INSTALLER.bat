@@ -41,6 +41,8 @@ pyinstaller --noconfirm --onedir --windowed --clean^
  --workpath "%BUILD%"^
  --paths "%ROOT%"^
  --log-level ERROR^
+ --add-data "%ROOT%\shared;shared"^
+ --hidden-import shared^
  --hidden-import win32com^
  --hidden-import win32com.client^
  --hidden-import pywintypes^
@@ -60,6 +62,8 @@ pyinstaller --noconfirm --onedir --windowed --clean^
  --workpath "%BUILD%"^
  --paths "%ROOT%"^
  --log-level ERROR^
+ --add-data "%ROOT%\shared;shared"^
+ --hidden-import shared^
  --hidden-import win32com^
  --hidden-import win32com.client^
  --hidden-import pywintypes^
