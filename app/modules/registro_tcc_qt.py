@@ -191,6 +191,19 @@ class ModuloRegistroTCC(NMModule):
 
         self._show_step()
 
+    def _on_theme(self, modo: str) -> None:
+        super()._on_theme(modo)
+        if hasattr(self, "_txt_situacion"):
+            self._txt_situacion.setStyleSheet(stylesheet_textedit(self._modo))
+        if hasattr(self, "_txt_pensamiento"):
+            self._txt_pensamiento.setStyleSheet(stylesheet_textedit(self._modo))
+        if hasattr(self, "_txt_respuesta"):
+            self._txt_respuesta.setStyleSheet(stylesheet_textedit(self._modo))
+        for child in self.findChildren(QFrame):
+            if hasattr(child, "apply_theme"):
+                child.apply_theme(self._modo)
+        self.update()
+
     # ── Page builders ─────────────────────────────────────────────────────────
 
     def _make_page(self) -> tuple[QWidget, QVBoxLayout]:

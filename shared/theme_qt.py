@@ -532,8 +532,11 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
 
 
 def stylesheet_scrollarea(modo: str = "dark_hybrid") -> str:
-    """Stylesheet para QScrollArea sin borde visible."""
+    """Stylesheet premium para QScrollArea con scrollbars gradiente teal-violet."""
     c = colors(norm_modo(modo))
+    accent = C("accent", modo)
+    teal = C("teal", modo)
+    violet = C("violet", modo)
     return f"""
     QScrollArea {{
         background-color: transparent;
@@ -541,6 +544,50 @@ def stylesheet_scrollarea(modo: str = "dark_hybrid") -> str:
     }}
     QScrollArea > QWidget > QWidget {{
         background-color: transparent;
+    }}
+    QScrollBar:vertical {{
+        background: transparent;
+        width: 8px;
+        margin: 4px 2px 4px 2px;
+    }}
+    QScrollBar::handle:vertical {{
+        background: qlineargradient(
+            x1:0, y1:0, x2:0, y2:1,
+            stop:0 {accent}, stop:1 {violet}
+        );
+        border-radius: 4px;
+        min-height: 32px;
+    }}
+    QScrollBar::handle:vertical:hover {{
+        background: qlineargradient(
+            x1:0, y1:0, x2:0, y2:1,
+            stop:0 {teal}, stop:1 {accent}
+        );
+    }}
+    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+        height: 0px;
+    }}
+    QScrollBar:horizontal {{
+        background: transparent;
+        height: 8px;
+        margin: 2px 4px 2px 4px;
+    }}
+    QScrollBar::handle:horizontal {{
+        background: qlineargradient(
+            x1:0, y1:0, x2:1, y2:0,
+            stop:0 {accent}, stop:1 {violet}
+        );
+        border-radius: 4px;
+        min-width: 32px;
+    }}
+    QScrollBar::handle:horizontal:hover {{
+        background: qlineargradient(
+            x1:0, y1:0, x2:1, y2:0,
+            stop:0 {teal}, stop:1 {accent}
+        );
+    }}
+    QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+        width: 0px;
     }}
     """
 

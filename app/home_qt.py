@@ -217,7 +217,7 @@ class ModuleCard(QWidget):
 
         # Mini-ring (absoluto)
         self._ring = _MiniRing(self, self._accent)
-        self._ring.move(self.width() - 40, 8)
+        self._ring.move(self.width() - 38, self.height() - 38)
 
         self._refresh_status()
 
@@ -273,15 +273,14 @@ class ModuleCard(QWidget):
         p.drawPath(path)
 
         # Barra izquierda con gradiente vertical teal -> violet
-        bar = QPainterPath()
-        bar.addRoundedRect(QRectF(0, r, 5, h - 2 * r), 0, 0)
-        bar.addRoundedRect(QRectF(0, 0, 5, r), r, r)
-        bar.addRoundedRect(QRectF(0, h - r, 5, r), r, r)
+        bar_w = 5
         bar_grad = linear_gradient_vertical(
-            QRectF(0, 0, 5, h),
+            QRectF(0, 0, bar_w, h),
             QColor(C("teal", self._modo)),
             QColor(C("violet", self._modo)),
         )
+        bar = QPainterPath()
+        bar.addRoundedRect(QRectF(0, 0, bar_w, h), r // 2, r // 2)
         p.fillPath(bar, QBrush(bar_grad))
 
         noise_overlay(
@@ -294,7 +293,7 @@ class ModuleCard(QWidget):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        self._ring.move(self.width() - 38, 8)
+        self._ring.move(self.width() - 38, self.height() - 38)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -392,24 +391,18 @@ class HomeView(QWidget):
     def _setup(self):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
 
-        scroll = QScrollArea(self)
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)
-        outer.addWidget(scroll)
 
         container = QWidget()
         container.setStyleSheet("background: transparent;")
-        scroll.setWidget(container)
 
         # Layout del container: título + grid
         container_layout = QVBoxLayout(container)
         container_layout.setContentsMargins(PAD_CONTAINER, 20, PAD_CONTAINER, 20)
         container_layout.setSpacing(10)
+        outer.addWidget(container)
 
         title_lbl = QLabel("Herramientas")
         title_lbl.setFont(qfont("size_h2", bold=True))

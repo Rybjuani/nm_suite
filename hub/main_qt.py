@@ -382,8 +382,7 @@ class ConfigView(QWidget):
             fl.addWidget(btn)
             return card
 
-        layout.addWidget(_card("Tema visual", "Cambiar tema", on_toggle_theme))
-        layout.addWidget(_card("Conexión Supabase", "Reconectar", on_reconnect))
+        layout.addWidget(_card("Base de datos", "Reconectar", on_reconnect))
         layout.addStretch()
 
 
@@ -451,7 +450,8 @@ class HubProfesional(QMainWindow):
 
         # Sidebar
         self._sidebar = NMSidebar(central, modo=self._modo)
-        self._sidebar.add_header("Hub Profesional", "NeuroMood")
+        self._sidebar.add_logo()
+        self._sidebar.add_header("Hub Profesional")
         for iid, icon, label in _NAV_ITEMS:
             self._sidebar.add_item(iid, icon, label)
         self._sidebar.add_spacer()

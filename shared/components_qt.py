@@ -917,6 +917,7 @@ class NMSidebar(QWidget):
         self._items: dict[str, _SidebarItem] = {}
         self._active_id: str = ""
         self._theme_labels: list[tuple[QLabel, str]] = []
+        self._logo_shadow: QGraphicsDropShadowEffect | None = None
 
         self.setFixedWidth(200)
         self._layout = QVBoxLayout(self)
@@ -960,6 +961,45 @@ class NMSidebar(QWidget):
 
         self._layout.addWidget(w)
         self._add_separator()
+
+    def add_logo(self, logo_path: str = ""):
+        """Inserta LOGO.png con sombra premium al tope del sidebar."""
+        from PyQt6.QtGui import QPixmap
+
+        w = QWidget()
+        w.setObjectName("SidebarLogo")
+        vl = QVBoxLayout(w)
+        vl.setContentsMargins(16, 12, 16, 4)
+
+        logo_lbl = QLabel()
+        try:
+            path = logo_path or obtener_ruta_recurso("LOGO.png")
+            if os.path.exists(path):
+                pm = QPixmap(path).scaled(
+                    168, 36,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+                logo_lbl.setPixmap(pm)
+            else:
+                raise FileNotFoundError
+        except Exception:
+            logo_lbl.setText("NeuroMood")
+            logo_lbl.setStyleSheet(label_style(self._modo, "accent"))
+            logo_lbl.setFont(qfont("size_h3", bold=True))
+        logo_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        shadow = QGraphicsDropShadowEffect(logo_lbl)
+        shadow.setBlurRadius(14)
+        shadow.setOffset(0, 0)
+        col = QColor(C("accent", self._modo))
+        col.setAlpha(45)
+        shadow.setColor(col)
+        logo_lbl.setGraphicsEffect(shadow)
+        self._logo_shadow = shadow
+
+        vl.addWidget(logo_lbl)
+        self._layout.insertWidget(0, w)
 
     def add_item(self, item_id: str, icon: str, label: str):
         item = _SidebarItem(item_id, icon, label, self, self._modo)
@@ -1014,6 +1054,11 @@ class NMSidebar(QWidget):
                 lbl.setStyleSheet(label_style(self._modo, color_key))
                 alive.append((lbl, color_key))
         self._theme_labels = alive
+        # Actualizar sombra del logo
+        if self._logo_shadow is not None:
+            col = QColor(C("accent", self._modo))
+            col.setAlpha(45)
+            self._logo_shadow.setColor(col)
         for i in range(self._layout.count()):
             w = self._layout.itemAt(i).widget()
             if w and w.fixedHeight() == 1:
@@ -1171,13 +1216,24 @@ class NMHeader(QWidget):
 
 
 class _LogoLabel(QWidget):
-    """Renderiza 'Neuro' en text_primary + 'Mood' con M en violet."""
+    """Logo NeuroMood desde assets/LOGO.png con glow animado + sombra premium."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._modo = "dark_hybrid"
         self._glow_alpha_value = 0
         self.setFixedHeight(32)
+        self._pixmap = None
+        self._load_logo()
+
+        self._shadow = QGraphicsDropShadowEffect(self)
+        self._shadow.setBlurRadius(14)
+        self._shadow.setOffset(0, 0)
+        col = QColor(C("accent", self._modo))
+        col.setAlpha(50)
+        self._shadow.setColor(col)
+        self.setGraphicsEffect(self._shadow)
+
         self._breath_anim = QPropertyAnimation(self, b"glow_alpha", self)
         self._breath_anim.setDuration(3000)
         self._breath_anim.setStartValue(0)
@@ -1185,6 +1241,14 @@ class _LogoLabel(QWidget):
         self._breath_anim.setEasingCurve(QEasingCurve.Type.SineCurve)
         self._breath_anim.setLoopCount(-1)
         self._breath_anim.start()
+
+    def _load_logo(self):
+        try:
+            logo_path = obtener_ruta_recurso("LOGO.png")
+            if os.path.exists(logo_path):
+                self._pixmap = QPixmap(logo_path)
+        except Exception:
+            self._pixmap = None
 
     def _get_glow_alpha(self) -> int:
         return self._glow_alpha_value
@@ -1197,6 +1261,9 @@ class _LogoLabel(QWidget):
 
     def set_modo(self, modo: str):
         self._modo = norm_modo(modo)
+        col = QColor(C("accent", self._modo))
+        col.setAlpha(50)
+        self._shadow.setColor(col)
         self.update()
 
     def sizeHint(self) -> QSize:
@@ -1205,11 +1272,28 @@ class _LogoLabel(QWidget):
     def paintEvent(self, event: QPaintEvent):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        c = colors(self._modo)
+        p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
 
-        font_bold = qfont("size_body", bold=True)
-        p.setFont(font_bold)
-        fm = QFontMetrics(font_bold)
+        if self._pixmap and not self._pixmap.isNull():
+            pm = self._pixmap.scaled(
+                140, 28,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            x = (self.width() - pm.width()) // 2
+            y = (self.height() - pm.height()) // 2
+            p.drawPixmap(x, y, pm)
+        else:
+            c = colors(self._modo)
+            font_bold = qfont("size_body", bold=True)
+            p.setFont(font_bold)
+            fm = QFontMetrics(font_bold)
+            p.setPen(QColor(c["text_primary"]))
+            p.drawText(0, fm.ascent() + 4, "Neuro")
+            w1 = fm.horizontalAdvance("Neuro")
+            p.setPen(QColor(C("accent", self._modo)))
+            p.drawText(w1, fm.ascent() + 4, "Mood")
+
         if self._glow_alpha_value > 0:
             glow = radial_glow(
                 QPointF(self.width() / 2, self.height() / 2),
@@ -1224,15 +1308,6 @@ class _LogoLabel(QWidget):
                 self.width() * 0.45,
                 self.height() * 0.7,
             )
-
-        # "Neuro" en text_primary
-        p.setPen(QColor(c["text_primary"]))
-        p.drawText(0, fm.ascent() + 4, "Neuro")
-        w1 = fm.horizontalAdvance("Neuro")
-
-        # "Mood" en accent
-        p.setPen(QColor(C("accent", self._modo)))
-        p.drawText(w1, fm.ascent() + 4, "Mood")
         p.end()
 
 

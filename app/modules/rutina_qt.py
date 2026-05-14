@@ -119,6 +119,16 @@ class ModuloRutina(NMModule):
         # ── Load tasks ────────────────────────────────────────────────────────
         self._load_tasks()
 
+    def _on_theme(self, modo: str) -> None:
+        super()._on_theme(modo)
+        if hasattr(self, "_scroll"):
+            self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        if hasattr(self, "_nota_txt"):
+            self._nota_txt.setStyleSheet(stylesheet_textedit(self._modo))
+        for prog in getattr(self, "_section_progs", {}).values():
+            prog._apply_theme(self._modo)
+        self.update()
+
     # ── Section building ─────────────────────────────────────────────────────
 
     def _build_section(self, key: str, label: str, icon: str):

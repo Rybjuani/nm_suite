@@ -175,7 +175,7 @@ def _build_animo_graph(parent: QWidget, registros: list, modo: str) -> QWidget:
     fill = pg.FillBetweenItem(
         pg.PlotDataItem(x_smooth, y_smooth),
         pg.PlotDataItem(x_smooth, [0] * len(x_smooth)),
-        brush=pg.mkBrush(fill_grad),
+        brush=pg.mkBrush(QBrush(fill_grad)),
     )
     plot.addItem(fill)
 

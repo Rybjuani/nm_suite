@@ -99,6 +99,12 @@ class ModuloActividades(NMModule):
 
         self._load_suggestions()
 
+    def _on_theme(self, modo: str) -> None:
+        super()._on_theme(modo)
+        if hasattr(self, "_scroll"):
+            self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        self.update()
+
     # ── Load suggestions ──────────────────────────────────────────────────────
 
     def _load_suggestions(self):

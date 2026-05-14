@@ -392,7 +392,7 @@ class InstaladorPro(QMainWindow):
             else:
                 circle.setStyleSheet(f"background: {BORDER}; color: {TEXT_TERT}; border-radius: 12px; font-weight: bold; font-size: 11px;")
                 lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px; background: transparent;")
-        self.btn_ant.setEnabled(n == 1)
+        self.btn_ant.setVisible(n > 0)
         self.btn_sig.setText("Finalizar" if n == 2 else "Siguiente →")
         self.btn_sig.setEnabled(True)
 
@@ -436,6 +436,12 @@ class InstaladorPro(QMainWindow):
         QTimer.singleShot(800, lambda: self._ir_a(2))
 
     def _on_error(self, tipo: str):
+        if tipo == "permission":
+            msg = "Sin permisos en la carpeta seleccionada.\nElige otra carpeta o ejecuta como administrador."
+        else:
+            msg = "Ocurrio un error durante la instalacion.\nRevisa el log arriba para mas detalles."
+        self._progress_lbl.setStyleSheet(f"color: {ERROR_C}; font-size: 12px; font-weight: bold;")
+        self._progress_lbl.setText(msg)
         self.btn_sig.setEnabled(True); self.btn_sig.setText("Siguiente →")
         self.btn_ant.setEnabled(True)
 

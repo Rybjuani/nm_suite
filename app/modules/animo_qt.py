@@ -293,6 +293,15 @@ class ModuloAnimo(NMModule):
         self._cargar_historial()
         self._celebration = MoodCelebration(self._content, self._modo)
 
+    def _on_theme(self, modo: str) -> None:
+        super()._on_theme(modo)
+        if hasattr(self, "_txt_nota"):
+            self._txt_nota.setStyleSheet(stylesheet_textedit(self._modo))
+        if hasattr(self, "_hist_scroll"):
+            self._hist_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        self._cargar_historial()
+        self.update()
+
     # ── Slider ────────────────────────────────────────────────────────────────
 
     def _on_slider(self, value: int):
@@ -349,7 +358,7 @@ class ModuloAnimo(NMModule):
                          variant="success")
             if self.puntaje >= 7 and hasattr(self, "_celebration"):
                 origin = self._btn_reg.mapTo(
-                    self._content,
+                    self,
                     self._btn_reg.rect().center(),
                 )
                 self._celebration.launch(origin.x(), origin.y())
@@ -402,7 +411,7 @@ class ModuloAnimo(NMModule):
                     color: {chip_color};
                     background: transparent;
                     border: 1px solid {chip_color};
-                    border-radius: {RADIUS_PILL // 2}px;
+                    border-radius: {RADIUS_PILL}px;
                     padding: 4px 10px;
                 }}
             """)

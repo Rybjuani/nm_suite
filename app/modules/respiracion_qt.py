@@ -47,7 +47,7 @@ try:
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        radial_glow, conical_arc_gradient, get_gradient, gradient_colors,
+        radial_glow, radial_glow_double, conical_arc_gradient, get_gradient, gradient_colors,
         RADIUS_CARD, RADIUS_PILL, PAD_CONTAINER, GAP_ELEMENTS,
     )
     from shared.db import obtener_conexion
@@ -59,7 +59,7 @@ except ImportError:
     from shared.components_qt import NMModule, NMButton, NMButtonOutline, ThemeManager
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        radial_glow, conical_arc_gradient, get_gradient, gradient_colors,
+        radial_glow, radial_glow_double, conical_arc_gradient, get_gradient, gradient_colors,
         RADIUS_CARD, RADIUS_PILL, PAD_CONTAINER, GAP_ELEMENTS,
     )
     from shared.db import obtener_conexion
@@ -522,6 +522,12 @@ class ModuloRespiracion(NMModule):
         ctrl_row.addWidget(self._btn_stop)
 
         layout.addLayout(ctrl_row)
+
+    def _on_theme(self, modo: str) -> None:
+        super()._on_theme(modo)
+        if hasattr(self, "_breath"):
+            self._breath._apply_theme(self._modo)
+        self.update()
 
     # ── Lógica de preset (preservada) ─────────────────────────────────────────
 

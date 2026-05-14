@@ -460,6 +460,7 @@ class InstaladorNeuroMood(QMainWindow):
                     f"QPushButton:hover {{background: {ACCENT_HOVER}; color: {TEXT_ON_ACCENT};}}"
                 )
 
+        self._apply_seg = _apply_seg
         self._btn_primera.clicked.connect(lambda: (_apply_seg(self._btn_primera), self._cambiar_modo(False)))
         self._btn_ya.clicked.connect(lambda: (_apply_seg(self._btn_ya), self._cambiar_modo(True)))
 
@@ -561,8 +562,8 @@ class InstaladorNeuroMood(QMainWindow):
 
     def _cambiar_modo(self, es_login: bool):
         self._es_login = es_login
-        self._btn_primera.setChecked(not es_login)
-        self._btn_ya.setChecked(es_login)
+        active = self._btn_ya if es_login else self._btn_primera
+        self._apply_seg(active)
         if es_login:
             self._lbl_reg_titulo.setText("Iniciar sesión")
             self._lbl_reg_sub.setText("Recuperá tu progreso con tus credenciales")
@@ -606,7 +607,7 @@ class InstaladorNeuroMood(QMainWindow):
         pr.addWidget(self._ent_path, stretch=1)
         btn_browse = QPushButton("Examinar")
         btn_browse.setObjectName("outline")
-        btn_browse.setFixedSize(90, 36)
+        btn_browse.setFixedSize(100, 36)
         btn_browse.clicked.connect(self._browse)
         pr.addWidget(btn_browse)
         lay.addWidget(path_row)
@@ -749,7 +750,7 @@ class InstaladorNeuroMood(QMainWindow):
                 )
                 lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px; background: transparent;")
 
-        self.btn_ant.setEnabled(n == 1)
+        self.btn_ant.setVisible(n > 0 and n < 3)
         if n == 3:
             self.btn_sig.setText("Finalizar")
             self.btn_sig.setEnabled(True)
@@ -763,6 +764,8 @@ class InstaladorNeuroMood(QMainWindow):
     def _anterior(self):
         if self._pagina == 1:
             self._ir_a(0)
+        elif self._pagina == 2:
+            self._ir_a(1)
 
     def _siguiente(self):
         if self._pagina == 0:

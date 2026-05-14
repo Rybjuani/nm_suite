@@ -295,7 +295,6 @@ class DesinstaladorPro(QMainWindow):
         btn_row.addWidget(btn_cancel)
         btn_row.addStretch()
         btn_uninst = QPushButton("Desinstalar")
-        btn_uninst.setObjectName("danger")
         btn_uninst.setFixedSize(130, 34)
         btn_uninst.clicked.connect(self._iniciar)
         btn_row.addWidget(btn_uninst)
