@@ -15,8 +15,8 @@ echo  NeuroMood V3 - Modo Testing
 echo ============================================================
 echo.
 for /d /r "%ROOT%" %%d in (__pycache__) do @if exist "%%d" rd /s /q "%%d" 2>nul
-echo  1. App Paciente      (app\main_qt.py)
-echo  2. NeuroMood Hub Pro (hub\main_qt.py)
+echo  1. NeuroMood Suite        (app\main_qt.py)
+echo  2. NeuroMood Hub Pro      (hub\main_qt.py)
 echo  0. Salir
 set /p APP="> "
 if "%APP%"=="1" (python "%ROOT%\app\main_qt.py" & goto :test)
@@ -58,51 +58,38 @@ set "ASSETS=%ROOT%\assets"
 set "ICON=%ASSETS%\NM_icon.ico"
 set "LOGO=%ASSETS%\LOGO.png"
 
-:: Clean
-echo  Limpiando builds anteriores...
+:: Clean previous + cache
+echo  Limpiando...
 if exist "%DIST%\NeuroMood Suite"      rmdir /s /q "%DIST%\NeuroMood Suite"      2>nul
-if exist "%DIST%\NeuroMood Hub Pro"  rmdir /s /q "%DIST%\NeuroMood Hub Pro"  2>nul
-if exist "%ROOT%\NeuroMood Suite.spec"       del /q "%ROOT%\NeuroMood Suite.spec"       2>nul
-if exist "%ROOT%\NeuroMood Hub Pro.spec"  del /q "%ROOT%\NeuroMood Hub Pro.spec"  2>nul
+if exist "%DIST%\NeuroMood Hub Pro"    rmdir /s /q "%DIST%\NeuroMood Hub Pro"    2>nul
+if exist "%BUILD%\NeuroMood Suite"     rmdir /s /q "%BUILD%\NeuroMood Suite"     2>nul
+if exist "%BUILD%\NeuroMood Hub Pro"   rmdir /s /q "%BUILD%\NeuroMood Hub Pro"   2>nul
+del "%ROOT%\NeuroMood Suite.spec"      2>nul
+del "%ROOT%\NeuroMood Hub Pro.spec"    2>nul
 if not exist "%DIST%"  mkdir "%DIST%"
 if not exist "%BUILD%" mkdir "%BUILD%"
 
-set BASE=--noconfirm %MODE% --windowed^
+set BASE=--noconfirm %MODE% --windowed --clean^
  --icon "%ICON%"^
  --add-data "%LOGO%;."^
  --add-data "%ICON%;."^
  --add-data "%ROOT%\shared;shared"^
  --workpath "%BUILD%"^
- --paths "%ROOT%"
-
-set SHARED_HI=^
- --hidden-import shared^
- --hidden-import supabase^
- --hidden-import sqlite3^
- --hidden-import PIL^
- --hidden-import pystray^
- --hidden-import pystray._win32^
- --hidden-import winotify
+ --paths "%ROOT%"^
+ --log-level WARN
 
 :: ============================================================
-::  [1/2] App Paciente
+::  [1/2] NeuroMood Suite
 :: ============================================================
 echo  [1/2] Compilando NeuroMood Suite...
 pyinstaller %BASE%^
  --add-data "%ROOT%\app;app"^
  --distpath "%DIST%"^
- --hidden-import PyQt6^
- %SHARED_HI%^
- --hidden-import app.home_qt^
- --hidden-import app.modules.animo_qt^
- --hidden-import app.modules.respiracion_qt^
- --hidden-import app.modules.registro_tcc_qt^
- --hidden-import app.modules.rutina_qt^
- --hidden-import app.modules.actividades_qt^
- --hidden-import app.modules.timer_qt^
- --hidden-import app.modules.avisos_qt^
- --hidden-import app.motor_activacion^
- --hidden-import app.avisos_daemon^
+ --hidden-import pystray^
+ --hidden-import pystray._win32^
+ --hidden-import winotify^
+ --hidden-import PIL^
+ --hidden-import sqlite3^
  --name "NeuroMood Suite"^
  "%ROOT%\app\main_qt.py"
 if %ERRORLEVEL% NEQ 0 goto :error
@@ -116,12 +103,16 @@ echo  [2/2] Compilando NeuroMood Hub Pro...
 pyinstaller %BASE%^
  --add-data "%ROOT%\hub;hub"^
  --distpath "%DIST%"^
- --hidden-import PyQt6^
- --hidden-import pyqtgraph^
- %SHARED_HI%^
+ --hidden-import supabase^
+ --hidden-import pystray^
+ --hidden-import pystray._win32^
+ --hidden-import winotify^
+ --hidden-import PIL^
+ --hidden-import sqlite3^
  --hidden-import groq^
  --hidden-import google.generativeai^
  --hidden-import openai^
+ --hidden-import pyqtgraph^
  --hidden-import reportlab^
  --hidden-import reportlab.lib^
  --hidden-import reportlab.lib.pagesizes^

@@ -22,20 +22,22 @@ if not exist "%DIST%\NeuroMood Hub Pro\NeuroMood Hub Pro.exe" (
 )
 
 :: Clean
-echo  Limpiando builds anteriores...
+echo  Limpiando...
 if exist "%DIST%\Desinstalador NeuroMood Hub Pro"            rmdir /s /q "%DIST%\Desinstalador NeuroMood Hub Pro"            2>nul
 if exist "%DIST%\Instalador NeuroMood Hub Pro"               rmdir /s /q "%DIST%\Instalador NeuroMood Hub Pro"               2>nul
+if exist "%BUILD%\Desinstalador NeuroMood Hub Pro"           rmdir /s /q "%BUILD%\Desinstalador NeuroMood Hub Pro"           2>nul
+if exist "%BUILD%\Instalador NeuroMood Hub Pro"              rmdir /s /q "%BUILD%\Instalador NeuroMood Hub Pro"              2>nul
 del "%ROOT%\Desinstalador NeuroMood Hub Pro.spec"         2>nul
 del "%ROOT%\Instalador NeuroMood Hub Pro.spec"            2>nul
 
-set BASE=--noconfirm --onedir --windowed^
+set BASE=--noconfirm --onedir --windowed --clean^
  --workpath "%BUILD%"^
  --paths "%ROOT%"^
- --hidden-import shared^
- --hidden-import PIL^
+ --log-level WARN^
  --hidden-import win32com^
  --hidden-import win32com.client^
- --hidden-import pywintypes
+ --hidden-import pywintypes^
+ --hidden-import PIL
 
 echo  [1/2] Compilando desinstalador Hub Pro...
 pyinstaller %BASE%^

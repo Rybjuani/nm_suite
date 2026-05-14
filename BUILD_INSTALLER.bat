@@ -22,20 +22,22 @@ if not exist "%DIST%\NeuroMood Suite\NeuroMood Suite.exe" (
 )
 
 :: Clean
-echo  Limpiando builds anteriores...
+echo  Limpiando...
 if exist "%DIST%\Desinstalador NeuroMood"       rmdir /s /q "%DIST%\Desinstalador NeuroMood"       2>nul
 if exist "%DIST%\Instalador NeuroMood Suite"     rmdir /s /q "%DIST%\Instalador NeuroMood Suite"     2>nul
+if exist "%BUILD%\Desinstalador NeuroMood"       rmdir /s /q "%BUILD%\Desinstalador NeuroMood"       2>nul
+if exist "%BUILD%\Instalador NeuroMood Suite"    rmdir /s /q "%BUILD%\Instalador NeuroMood Suite"    2>nul
 del "%ROOT%\Desinstalador NeuroMood.spec" 2>nul
 del "%ROOT%\Instalador NeuroMood Suite.spec"    2>nul
 
-set BASE=--noconfirm --onedir --windowed^
+set BASE=--noconfirm --onedir --windowed --clean^
  --workpath "%BUILD%"^
  --paths "%ROOT%"^
- --hidden-import shared^
- --hidden-import PIL^
+ --log-level WARN^
  --hidden-import win32com^
  --hidden-import win32com.client^
- --hidden-import pywintypes
+ --hidden-import pywintypes^
+ --hidden-import PIL
 
 echo  [1/2] Compilando desinstalador...
 pyinstaller %BASE%^
