@@ -647,6 +647,10 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
     """
     modo = norm_modo(modo)
     c = colors(modo)
+    sc_handle = C("teal", modo)
+    sc_handle_end = C("accent", modo)
+    sc_hover = C("accent", modo)
+    sc_hover_end = C("violet", modo)
     return f"""
     QWidget {{
         background-color: {c['bg_primary']};
@@ -663,18 +667,18 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
     QScrollBar::handle:vertical {{
         background: qlineargradient(
             x1:0, y1:0, x2:0, y2:1,
-            stop:0 #00F2FF, stop:1 #4A00E0
+            stop:0 {sc_handle}, stop:1 {sc_handle_end}
         );
-        border: 1px solid #00F2FF;
+        border: 1px solid {sc_handle};
         border-radius: 3px;
         min-height: 30px;
     }}
     QScrollBar::handle:vertical:hover {{
         background: qlineargradient(
             x1:0, y1:0, x2:0, y2:1,
-            stop:0 #E0FFFF, stop:1 #7B2FF7
+            stop:0 {sc_hover}, stop:1 {sc_hover_end}
         );
-        border: 1px solid #E0FFFF;
+        border: 1px solid {sc_hover};
     }}
     QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
         height: 0;
@@ -688,18 +692,18 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
     QScrollBar::handle:horizontal {{
         background: qlineargradient(
             x1:0, y1:0, x2:1, y2:0,
-            stop:0 #00F2FF, stop:1 #4A00E0
+            stop:0 {sc_handle}, stop:1 {sc_handle_end}
         );
-        border: 1px solid #00F2FF;
+        border: 1px solid {sc_handle};
         border-radius: 3px;
         min-width: 30px;
     }}
     QScrollBar::handle:horizontal:hover {{
         background: qlineargradient(
             x1:0, y1:0, x2:1, y2:0,
-            stop:0 #E0FFFF, stop:1 #7B2FF7
+            stop:0 {sc_hover}, stop:1 {sc_hover_end}
         );
-        border: 1px solid #E0FFFF;
+        border: 1px solid {sc_hover};
     }}
     QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
         width: 0;
@@ -716,65 +720,69 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
 
 
 def stylesheet_scrollarea(modo: str = "dark_hybrid") -> str:
-    """Stylesheet Premium Glass Scrollbar — NeuroMood Edition."""
-    return """
-    QScrollArea {
+    """Stylesheet scrollbars con tokens del tema."""
+    sc_handle = C("teal", modo)
+    sc_handle_end = C("accent", modo)
+    sc_hover = C("accent", modo)
+    sc_hover_end = C("violet", modo)
+    return f"""
+    QScrollArea {{
         background-color: transparent;
         border: none;
-    }
-    QScrollArea > QWidget > QWidget {
+    }}
+    QScrollArea > QWidget > QWidget {{
         background-color: transparent;
-    }
-    QScrollBar:vertical {
+    }}
+    QScrollBar:vertical {{
         background: rgba(255, 255, 255, 0.05);
         width: 6px;
         margin: 0;
         border-radius: 3px;
-    }
-    QScrollBar::handle:vertical {
+    }}
+    QScrollBar::handle:vertical {{
         background: qlineargradient(
             x1:0, y1:0, x2:0, y2:1,
-            stop:0 #00F2FF, stop:1 #4A00E0
+            stop:0 {sc_handle}, stop:1 {sc_handle_end}
         );
-        border: 1px solid #00F2FF;
+        border: 1px solid {sc_handle};
         border-radius: 3px;
         min-height: 30px;
-    }
-    QScrollBar::handle:vertical:hover {
+    }}
+    QScrollBar::handle:vertical:hover {{
         background: qlineargradient(
             x1:0, y1:0, x2:0, y2:1,
-            stop:0 #E0FFFF, stop:1 #7B2FF7
+            stop:0 {sc_hover}, stop:1 {sc_hover_end}
         );
-        border: 1px solid #E0FFFF;
-    }
-    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+        border: 1px solid {sc_hover};
+    }}
+    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
         height: 0px;
-    }
-    QScrollBar:horizontal {
+    }}
+    QScrollBar:horizontal {{
         background: rgba(255, 255, 255, 0.05);
         height: 6px;
         margin: 0;
         border-radius: 3px;
-    }
-    QScrollBar::handle:horizontal {
+    }}
+    QScrollBar::handle:horizontal {{
         background: qlineargradient(
             x1:0, y1:0, x2:1, y2:0,
-            stop:0 #00F2FF, stop:1 #4A00E0
+            stop:0 {sc_handle}, stop:1 {sc_handle_end}
         );
-        border: 1px solid #00F2FF;
+        border: 1px solid {sc_handle};
         border-radius: 3px;
         min-width: 30px;
-    }
-    QScrollBar::handle:horizontal:hover {
+    }}
+    QScrollBar::handle:horizontal:hover {{
         background: qlineargradient(
             x1:0, y1:0, x2:1, y2:0,
-            stop:0 #E0FFFF, stop:1 #7B2FF7
+            stop:0 {sc_hover}, stop:1 {sc_hover_end}
         );
-        border: 1px solid #E0FFFF;
-    }
-    QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+        border: 1px solid {sc_hover};
+    }}
+    QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
         width: 0px;
-    }
+    }}
     """
 
 

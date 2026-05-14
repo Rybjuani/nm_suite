@@ -538,13 +538,16 @@ class NMButton(QPushButton):
 # ── NMButtonOutline ───────────────────────────────────────────────────────────
 
 class NMButtonOutline(QPushButton):
-    """Botón con borde 2px accent, fondo transparente. Hover: fill 15% accent."""
+    """Botón con borde 2px accent, fondo transparente. Hover: fill 15% accent.
+    Si toggleable=True, alterna estado activo/inactivo en cada click."""
 
-    def __init__(self, text: str = "", parent=None, modo: str = None):
+    def __init__(self, text: str = "", parent=None, modo: str = None,
+                 toggleable: bool = False):
         super().__init__(text, parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._hover = False
-        self._active = False   # para pills toggleables (días de semana, etc.)
+        self._active = False
+        self._toggleable = toggleable
         self._success_anim: QSequentialAnimationGroup | None = None
 
         self.setFont(qfont("size_small", bold=False))
@@ -616,7 +619,7 @@ class NMButtonOutline(QPushButton):
         super().leaveEvent(event)
 
     def mousePressEvent(self, event: QMouseEvent):
-        if event.button() == Qt.MouseButton.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton and self._toggleable:
             self._active = not self._active
             self.update()
         super().mousePressEvent(event)
