@@ -4,41 +4,31 @@ set "ROOT=%~dp0"
 if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
 
 echo ============================================================
-echo  NeuroMood - Compilar Instalador Suite
+echo  Compilar Instalador NeuroMood Suite
 echo ============================================================
-echo.
 
 cd /d "%ROOT%"
 
-:: Kill any running instances that would lock dist/ folder
-taskkill /f /im "NeuroMood Suite.exe"      2>nul
-taskkill /f /im "Desinstalador NeuroMood.exe"  2>nul
-timeout /t 1 /nobreak >nul
-
-set "DIST=%ROOT%\dist"
-set "ASSETS=%ROOT%\assets"
-set "BUILD=%ROOT%\build"
-
-if not exist "%DIST%\NeuroMood Suite\NeuroMood Suite.exe" (
+if not exist "%ROOT%\dist\NeuroMood Suite\NeuroMood Suite.exe" (
     echo  FALTA: dist\NeuroMood Suite\NeuroMood Suite.exe
     echo  Ejecuta BUILD_ALL.bat primero.
-    pause
     exit /b 1
 )
 
 :: Clean
-rd /s /q "%DIST%\Instalador NeuroMood Suite"     2>nul
-rd /s /q "%DIST%\Instalar NeuroMood"              2>nul
-rd /s /q "%DIST%\Desinstalador NeuroMood"         2>nul
-rd /s /q "%DIST%\Desinstalar NeuroMood"            2>nul
-rd /s /q "%BUILD%\Instalador NeuroMood Suite"     2>nul
-rd /s /q "%BUILD%\Desinstalador NeuroMood"        2>nul
-del "%ROOT%\Instalador NeuroMood Suite.spec"      2>nul
-del "%ROOT%\Desinstalador NeuroMood.spec"         2>nul
+rd /s /q "%ROOT%\dist\Instalador NeuroMood Suite"         2>nul
+rd /s /q "%ROOT%\dist\Desinstalador NeuroMood"            2>nul
+rd /s /q "%ROOT%\dist\Instalar NeuroMood"                 2>nul
+rd /s /q "%ROOT%\dist\Desinstalar NeuroMood"              2>nul
+rd /s /q "%ROOT%\build\Instalador NeuroMood Suite"         2>nul
+rd /s /q "%ROOT%\build\Desinstalador NeuroMood"           2>nul
+del "%ROOT%\Instalador NeuroMood Suite.spec"              2>nul
+del "%ROOT%\Desinstalador NeuroMood.spec"                 2>nul
 
-echo  [1/2] Compilando desinstalador...
-pyinstaller --noconfirm --onedir --windowed --clean^
- --workpath "%BUILD%"^
+:: [1/2] Desinstalador
+echo  [1/2] Desinstalador...
+pyinstaller --noconfirm --onedir --windowed --clean --optimize 2^
+ --workpath "%ROOT%\build"^
  --paths "%ROOT%"^
  --log-level ERROR^
  --add-data "%ROOT%\shared;shared"^
@@ -47,19 +37,19 @@ pyinstaller --noconfirm --onedir --windowed --clean^
  --hidden-import win32com.client^
  --hidden-import pywintypes^
  --hidden-import PIL^
- --add-data "%ASSETS%\no_symbol.ico;."^
- --add-data "%ASSETS%\LOGO.png;."^
- --icon "%ASSETS%\no_symbol.ico"^
+ --add-data "%ROOT%\assets\no_symbol.ico;."^
+ --add-data "%ROOT%\assets\LOGO.png;."^
+ --icon "%ROOT%\assets\no_symbol.ico"^
  --name "Desinstalador NeuroMood"^
- --distpath "%DIST%"^
- "%ROOT%\installers\uninstaller.py"
+ --distpath "%ROOT%\dist"^
+ "%ROOT%\installers\uninstaller.py" >nul 2>&1
 if %ERRORLEVEL% NEQ 0 goto :error
-echo  OK: dist\Desinstalador NeuroMood\
-echo.
+echo     OK
 
-echo  [2/2] Compilando instalador...
-pyinstaller --noconfirm --onedir --windowed --clean^
- --workpath "%BUILD%"^
+:: [2/2] Instalador
+echo  [2/2] Instalador...
+pyinstaller --noconfirm --onedir --windowed --clean --optimize 2^
+ --workpath "%ROOT%\build"^
  --paths "%ROOT%"^
  --log-level ERROR^
  --add-data "%ROOT%\shared;shared"^
@@ -68,32 +58,28 @@ pyinstaller --noconfirm --onedir --windowed --clean^
  --hidden-import win32com.client^
  --hidden-import pywintypes^
  --hidden-import PIL^
- --add-data "%ASSETS%\installer_icon.ico;."^
- --add-data "%ASSETS%\NM_icon.ico;."^
- --add-data "%ASSETS%\no_symbol.ico;."^
- --add-data "%ASSETS%\LOGO.png;."^
+ --add-data "%ROOT%\assets\installer_icon.ico;."^
+ --add-data "%ROOT%\assets\NM_icon.ico;."^
+ --add-data "%ROOT%\assets\no_symbol.ico;."^
+ --add-data "%ROOT%\assets\LOGO.png;."^
  --add-data "%ROOT%\.env;."^
- --add-data "%DIST%\NeuroMood Suite;NeuroMood Suite"^
- --add-data "%DIST%\Desinstalador NeuroMood;Desinstalador NeuroMood"^
- --icon "%ASSETS%\installer_icon.ico"^
+ --add-data "%ROOT%\dist\NeuroMood Suite;NeuroMood Suite"^
+ --add-data "%ROOT%\dist\Desinstalador NeuroMood;Desinstalador NeuroMood"^
+ --icon "%ROOT%\assets\installer_icon.ico"^
  --name "Instalador NeuroMood Suite"^
- --distpath "%DIST%"^
- "%ROOT%\installers\installer.py"
+ --distpath "%ROOT%\dist"^
+ "%ROOT%\installers\installer.py" >nul 2>&1
 if %ERRORLEVEL% NEQ 0 goto :error
-echo  OK: dist\Instalador NeuroMood Suite\
-echo.
+echo     OK
 
 echo ============================================================
 echo  LISTO
 echo  dist\Instalador NeuroMood Suite\Instalador NeuroMood Suite.exe
 echo ============================================================
-pause
-goto :end
+exit /b 0
 
 :error
 echo ============================================================
 echo  ERROR - La compilacion fallo.
 echo ============================================================
-pause
-
-:end
+exit /b 1
