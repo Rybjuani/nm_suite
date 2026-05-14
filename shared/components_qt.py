@@ -918,6 +918,7 @@ class NMSidebar(QWidget):
         self._active_id: str = ""
         self._theme_labels: list[tuple[QLabel, str]] = []
         self._logo_shadow: QGraphicsDropShadowEffect | None = None
+        self._logo_lbl: QLabel | None = None
 
         self.setFixedWidth(200)
         self._layout = QVBoxLayout(self)
@@ -997,6 +998,7 @@ class NMSidebar(QWidget):
         shadow.setColor(col)
         logo_lbl.setGraphicsEffect(shadow)
         self._logo_shadow = shadow
+        self._logo_lbl = logo_lbl
 
         vl.addWidget(logo_lbl)
         self._layout.insertWidget(0, w)
@@ -1059,6 +1061,26 @@ class NMSidebar(QWidget):
             col = QColor(C("accent", self._modo))
             col.setAlpha(45)
             self._logo_shadow.setColor(col)
+        # Recolorear logo en light mode
+        if self._logo_lbl is not None:
+            try:
+                path = obtener_ruta_recurso("LOGO.png")
+                if os.path.exists(path):
+                    pm = QPixmap(path)
+                    if "light" in self._modo:
+                        from PIL import Image as PILImage
+                        img = PILImage.open(path).convert("RGBA")
+                        img = recolorear_logo_light(img)
+                        data = img.tobytes("raw", "RGBA")
+                        qimg = QImage(data, img.width, img.height, QImage.Format.Format_RGBA8888)
+                        pm = QPixmap.fromImage(qimg)
+                    self._logo_lbl.setPixmap(pm.scaled(
+                        168, 36,
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation,
+                    ))
+            except Exception:
+                pass
         for i in range(self._layout.count()):
             w = self._layout.itemAt(i).widget()
             if w and w.fixedHeight() == 1:

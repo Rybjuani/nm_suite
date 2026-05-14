@@ -61,7 +61,8 @@ def _get_sb():
     global _sb_create
     if _sb_create is None:
         try:
-            from supabase import create_client as _sb_create
+            from supabase import create_client
+            _sb_create = create_client
         except ImportError:
             return None, "modulo supabase no instalado"
     url, key = supabase_url(), supabase_key()
@@ -91,8 +92,7 @@ class _AnimoIndicator(QWidget):
         self.setFixedSize(14, 14)
         self._update_color()
         self.setStyleSheet("background: transparent;")
-        if parent is not None:
-            ThemeManager.instance().theme_changed.connect(self.apply_theme)
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
 
     def _update_color(self):
         modo = norm_modo(self._modo)
