@@ -35,7 +35,7 @@ try:
     from shared.theme_qt import (
         qcolor, qfont, shadow_effect, linear_gradient, rich_gradient,
         linear_gradient_vertical, radial_glow, noise_overlay, gradient_colors,
-        C, colors, norm_modo, interpolate_color, label_style,
+        C, colors, norm_modo, interpolate_color, label_style, SessionColor,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_INPUT, RADIUS_PILL,
         PAD_CONTAINER, PAD_CARD, GAP_CARDS, GAP_ELEMENTS, HEADER_H,
         stylesheet_lineedit, aplicar_captionbar_qt,
@@ -49,7 +49,7 @@ except ImportError:
     from theme_qt import (
         qcolor, qfont, shadow_effect, linear_gradient, rich_gradient,
         linear_gradient_vertical, radial_glow, noise_overlay, gradient_colors,
-        C, colors, norm_modo, interpolate_color, label_style,
+        C, colors, norm_modo, interpolate_color, label_style, SessionColor,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_INPUT, RADIUS_PILL,
         PAD_CONTAINER, PAD_CARD, GAP_CARDS, GAP_ELEMENTS, HEADER_H,
         stylesheet_lineedit, aplicar_captionbar_qt,
@@ -118,6 +118,7 @@ class NMCard(QFrame):
         self._accent = accent_color or C("accent", self._modo)
         self._clickable = clickable
         self._hover = False
+        self._session = SessionColor.instance()
 
         self.setObjectName("NMCard")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
@@ -135,11 +136,9 @@ class NMCard(QFrame):
 
     def enterEvent(self, event: QEnterEvent):
         self._hover = True
-        self._anim_shadow(blur=42, offset=14)
+        self._anim_shadow(blur=38, offset=12)
         if self._shadow:
-            col = QColor(self._accent)
-            col.setAlpha(35)
-            self._shadow.setColor(col)
+            self._shadow.setColor(self._session.glow_qcolor(self._modo))
         super().enterEvent(event)
 
     def leaveEvent(self, event):
@@ -1489,6 +1488,7 @@ class NMModule(QWidget):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._show_header = show_header
+        self._session = SessionColor.instance()
 
         # Layout vertical: header + contenido
         self._root_layout = QVBoxLayout(self)
@@ -1523,6 +1523,21 @@ class NMModule(QWidget):
 
     def _apply_content_bg(self):
         self._content.update()
+
+    def paintEvent(self, event):
+        """Aura radial dinámica de fondo."""
+        super().paintEvent(event)
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w, h = self.width(), self.height()
+        # Gradiente radial desde centro-izquierda hacia los bordes
+        grad = QRadialGradient(w * 0.2, h * 0.5, w * 0.85)
+        grad.setColorAt(0, self._session.aura_qcolor(self._modo))
+        grad.setColorAt(1, QColor(0, 0, 0, 0))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(grad))
+        p.drawRect(self.rect())
+        p.end()
 
     @property
     def modo(self) -> str:

@@ -36,7 +36,7 @@ from PyQt6.QtGui import QColor, QIcon, QPainter, QPen, QBrush
 from PyQt6 import sip
 
 from shared.theme_qt import (
-    C, colors, norm_modo, qcolor, qfont, interpolate_color,
+    C, colors, norm_modo, qcolor, qfont, interpolate_color, SessionColor,
     get_gradient, gradient_colors, app_palette, stylesheet_base, stylesheet_scrollarea,
     obtener_ruta_recurso, aplicar_captionbar_qt,
     RADIUS_CARD, RADIUS_BUTTON, PAD_CONTAINER, PAD_CARD, GAP_CARDS,
@@ -129,6 +129,21 @@ class DashboardView(QWidget):
         self._on_select = on_select_patient
         self._setup()
         ThemeManager.instance().theme_changed.connect(self._apply_theme)
+
+    def paintEvent(self, event):
+        """Aura radial dinámica de fondo."""
+        super().paintEvent(event)
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w, h = self.width(), self.height()
+        sc = SessionColor.instance()
+        grad = QRadialGradient(w * 0.2, h * 0.5, w * 0.85)
+        grad.setColorAt(0, sc.aura_qcolor(self._modo))
+        grad.setColorAt(1, QColor(0, 0, 0, 0))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(grad))
+        p.drawRect(self.rect())
+        p.end()
 
     def _setup(self):
         c = colors(self._modo)

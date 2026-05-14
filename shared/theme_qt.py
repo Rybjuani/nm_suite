@@ -957,3 +957,58 @@ def label_style(modo: str, key: str = "text_primary") -> str:
     Equivale a: f'color: {C(key, modo)}; background: transparent;'
     """
     return f"color: {C(key, modo)}; background: transparent;"
+
+
+# ── SessionColor — vibe aleatorio de sesión (aura + glow) ─────────────────────
+
+import random as _random
+
+_SESSION_COLORS = {
+    "dark":  {"cyan": "#00f2fe",   "violet": "#7367f0"},
+    "light": {"cyan": "#89f7fe",   "violet": "#e0c3fc"},
+}
+
+
+class SessionColor:
+    """Color de sesión aleatorio (cyan o violeta) para aura, glow y acentos."""
+
+    _inst = None
+
+    @classmethod
+    def instance(cls) -> "SessionColor":
+        if cls._inst is None:
+            cls._inst = cls()
+        return cls._inst
+
+    def __init__(self):
+        self._variant = _random.choice(["cyan", "violet"])
+
+    @property
+    def variant(self) -> str:
+        return self._variant
+
+    def hex_for(self, modo: str) -> str:
+        """Hex del color de sesión para el modo dado."""
+        m = "dark" if "dark" in modo else "light"
+        return _SESSION_COLORS[m][self._variant]
+
+    def qcolor(self, modo: str, alpha: int = 255) -> "QColor":
+        """QColor del color de sesión con opacidad."""
+        c = QColor(self.hex_for(modo))
+        if alpha != 255:
+            c.setAlpha(alpha)
+        return c
+
+    def glow_qcolor(self, modo: str) -> "QColor":
+        """Color de glow para sombras (alpha 180 en dark, 120 en light)."""
+        alpha = 180 if "dark" in modo else 120
+        return self.qcolor(modo, alpha)
+
+    def aura_qcolor(self, modo: str) -> "QColor":
+        """Color de aura para fondo radial (alpha 20 en dark, 30 en light)."""
+        alpha = 20 if "dark" in modo else 30
+        return self.qcolor(modo, alpha)
+
+    def accent_hex(self, modo: str) -> str:
+        """Color de acento derivado de la sesión (para bordes, iconos)."""
+        return self.hex_for(modo)

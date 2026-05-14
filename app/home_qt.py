@@ -30,7 +30,7 @@ try:
         linear_gradient, linear_gradient_vertical, get_gradient, gradient_colors,
         shadow_effect, noise_overlay,
         RADIUS_CARD, PAD_CARD, PAD_CONTAINER, GAP_CARDS,
-        stylesheet_scrollarea,
+        stylesheet_scrollarea, SessionColor,
     )
     from shared.components_qt import ThemeManager
 except ImportError:
@@ -42,7 +42,7 @@ except ImportError:
         linear_gradient, linear_gradient_vertical, get_gradient, gradient_colors,
         shadow_effect, noise_overlay,
         RADIUS_CARD, PAD_CARD, PAD_CONTAINER, GAP_CARDS,
-        stylesheet_scrollarea,
+        stylesheet_scrollarea, SessionColor,
     )
     from shared.components_qt import ThemeManager
 
@@ -126,6 +126,7 @@ class ModuleCard(QWidget):
         self._on_click = on_click
         self._get_status = get_status_fn
         self._accent = _dot_color(idx, modo)
+        self._session = SessionColor.instance()
         self._hover = False
 
         self.setMinimumHeight(110)
@@ -148,9 +149,7 @@ class ModuleCard(QWidget):
         self._hover = True
         self._anim_shadow(blur=38, offset=12)
         if self._shadow:
-            col = QColor(self._accent)
-            col.setAlpha(30)
-            self._shadow.setColor(col)
+            self._shadow.setColor(self._session.glow_qcolor(self._modo))
         super().enterEvent(event)
 
     def leaveEvent(self, event):
@@ -276,8 +275,8 @@ class ModuleCard(QWidget):
         bar_w = 5
         bar_grad = linear_gradient_vertical(
             QRectF(0, 0, bar_w, h),
-            QColor(C("teal", self._modo)),
-            QColor(C("violet", self._modo)),
+            self._session.qcolor(self._modo, 180),
+            self._session.qcolor(self._modo, 40),
         )
         bar = QPainterPath()
         bar.addRoundedRect(QRectF(0, 0, bar_w, h), r // 2, r // 2)
