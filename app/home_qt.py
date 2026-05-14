@@ -374,7 +374,7 @@ class HomeView(QWidget):
 
         # Layout del container: título + grid
         container_layout = QVBoxLayout(container)
-        container_layout.setContentsMargins(PAD_CONTAINER, 20, PAD_CONTAINER, 20)
+        container_layout.setContentsMargins(0, 20, 0, 20)
         container_layout.setSpacing(10)
         outer.addWidget(container)
 

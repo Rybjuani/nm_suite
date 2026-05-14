@@ -960,10 +960,10 @@ class NMSidebar(QWidget):
         logo_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         shadow = QGraphicsDropShadowEffect(logo_lbl)
-        shadow.setBlurRadius(14)
+        shadow.setBlurRadius(28)
         shadow.setOffset(0, 0)
         col = QColor(C("accent", self._modo))
-        col.setAlpha(45)
+        col.setAlpha(30)
         shadow.setColor(col)
         logo_lbl.setGraphicsEffect(shadow)
         self._logo_shadow = shadow
@@ -1028,7 +1028,7 @@ class NMSidebar(QWidget):
         # Actualizar sombra del logo
         if self._logo_shadow is not None:
             col = QColor(C("accent", self._modo))
-            col.setAlpha(45)
+            col.setAlpha(30)
             self._logo_shadow.setColor(col)
         # Recolorear logo en light mode
         if self._logo_lbl is not None:
@@ -1218,10 +1218,10 @@ class _LogoLabel(QWidget):
         self._load_logo()
 
         self._shadow = QGraphicsDropShadowEffect(self)
-        self._shadow.setBlurRadius(14)
+        self._shadow.setBlurRadius(28)
         self._shadow.setOffset(0, 0)
         col = QColor(C("accent", self._modo))
-        col.setAlpha(50)
+        col.setAlpha(30)
         self._shadow.setColor(col)
         self.setGraphicsEffect(self._shadow)
 
@@ -1272,7 +1272,7 @@ class _LogoLabel(QWidget):
     def set_modo(self, modo: str):
         self._modo = norm_modo(modo)
         col = QColor(C("accent", self._modo))
-        col.setAlpha(50)
+        col.setAlpha(30)
         self._shadow.setColor(col)
         self.update()
 
