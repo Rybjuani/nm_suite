@@ -21,14 +21,16 @@ if not exist "%DIST%\NeuroMood Hub Pro\NeuroMood Hub Pro.exe" (
     exit /b 1
 )
 
-:: Clean
-echo  Limpiando...
-if exist "%DIST%\Desinstalador NeuroMood Hub Pro"            rmdir /s /q "%DIST%\Desinstalador NeuroMood Hub Pro"            2>nul
-if exist "%DIST%\Instalador NeuroMood Hub Pro"               rmdir /s /q "%DIST%\Instalador NeuroMood Hub Pro"               2>nul
-if exist "%BUILD%\Desinstalador NeuroMood Hub Pro"           rmdir /s /q "%BUILD%\Desinstalador NeuroMood Hub Pro"           2>nul
-if exist "%BUILD%\Instalador NeuroMood Hub Pro"              rmdir /s /q "%BUILD%\Instalador NeuroMood Hub Pro"              2>nul
-del "%ROOT%\Desinstalador NeuroMood Hub Pro.spec"         2>nul
-del "%ROOT%\Instalador NeuroMood Hub Pro.spec"            2>nul
+:: Clean ALL old + current builds
+echo  Limpiando builds anteriores...
+for %%F in (
+    "Instalar NeuroMood Hub Profesional" "Instalador NeuroMood Hub Pro"
+    "Desinstalar NeuroMood Pro" "Desinstalador NeuroMood Hub Pro"
+) do (
+    if exist "%DIST%\%%~F"     rmdir /s /q "%DIST%\%%~F"     2>nul
+    if exist "%BUILD%\%%~F"    rmdir /s /q "%BUILD%\%%~F"    2>nul
+    del "%ROOT%\%%~F.spec"     2>nul
+)
 
 set BASE=--noconfirm --onedir --windowed --clean^
  --workpath "%BUILD%"^
@@ -67,6 +69,10 @@ pyinstaller %BASE%^
 if %ERRORLEVEL% NEQ 0 goto :error
 echo  OK: dist\Instalador NeuroMood Hub Pro\
 echo.
+
+:: Clean .spec files
+del "%ROOT%\Desinstalador NeuroMood Hub Pro.spec"    2>nul
+del "%ROOT%\Instalador NeuroMood Hub Pro.spec"       2>nul
 
 echo ============================================================
 echo  LISTO

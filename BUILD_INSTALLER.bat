@@ -21,14 +21,16 @@ if not exist "%DIST%\NeuroMood Suite\NeuroMood Suite.exe" (
     exit /b 1
 )
 
-:: Clean
-echo  Limpiando...
-if exist "%DIST%\Desinstalador NeuroMood"       rmdir /s /q "%DIST%\Desinstalador NeuroMood"       2>nul
-if exist "%DIST%\Instalador NeuroMood Suite"     rmdir /s /q "%DIST%\Instalador NeuroMood Suite"     2>nul
-if exist "%BUILD%\Desinstalador NeuroMood"       rmdir /s /q "%BUILD%\Desinstalador NeuroMood"       2>nul
-if exist "%BUILD%\Instalador NeuroMood Suite"    rmdir /s /q "%BUILD%\Instalador NeuroMood Suite"    2>nul
-del "%ROOT%\Desinstalador NeuroMood.spec" 2>nul
-del "%ROOT%\Instalador NeuroMood Suite.spec"    2>nul
+:: Clean ALL old + current builds
+echo  Limpiando builds anteriores...
+for %%F in (
+    "Instalar NeuroMood" "Instalador NeuroMood Suite"
+    "Desinstalar NeuroMood" "Desinstalador NeuroMood"
+) do (
+    if exist "%DIST%\%%~F"     rmdir /s /q "%DIST%\%%~F"     2>nul
+    if exist "%BUILD%\%%~F"    rmdir /s /q "%BUILD%\%%~F"    2>nul
+    del "%ROOT%\%%~F.spec"     2>nul
+)
 
 set BASE=--noconfirm --onedir --windowed --clean^
  --workpath "%BUILD%"^
@@ -67,6 +69,10 @@ pyinstaller %BASE%^
 if %ERRORLEVEL% NEQ 0 goto :error
 echo  OK: dist\Instalador NeuroMood Suite\
 echo.
+
+:: Clean .spec files
+del "%ROOT%\Desinstalador NeuroMood.spec"        2>nul
+del "%ROOT%\Instalador NeuroMood Suite.spec"     2>nul
 
 echo ============================================================
 echo  LISTO
