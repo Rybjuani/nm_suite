@@ -127,6 +127,10 @@ class ModuloRutina(NMModule):
             self._nota_txt.setStyleSheet(stylesheet_textedit(self._modo))
         for prog in getattr(self, "_section_progs", {}).values():
             prog._apply_theme(self._modo)
+        # Re-aplicar estilos a todos los checkboxes
+        for tid, cb in getattr(self, "_task_checks", {}).items():
+            done = self._task_done.get(tid, False)
+            cb.setStyleSheet(self._checkbox_stylesheet(done))
         self.update()
 
     # ── Section building ─────────────────────────────────────────────────────
@@ -278,6 +282,7 @@ class ModuloRutina(NMModule):
                     cb = QCheckBox(tarea["descripcion"])
                     cb.setFont(qfont("size_body"))
                     cb.setChecked(done)
+                    cb.setEnabled(not done)
                     cb.setStyleSheet(self._checkbox_stylesheet(done))
                     cb.stateChanged.connect(
                         lambda state, t=tid, checkbox=cb: self._on_check(t, checkbox)
@@ -343,6 +348,7 @@ class ModuloRutina(NMModule):
                     "(tarea_id, fecha) VALUES (?, ?)",
                     (tarea_id, hoy),
                 )
+                checkbox.setEnabled(False)  # deshabilitar hasta el día siguiente
                 self._play_beep()
                 top = self.window()
                 NMToast.show(top, "Tarea completada ✔", variant="success", duration_ms=1500)
@@ -526,6 +532,7 @@ class ModuloRutina(NMModule):
             conn.close()
             if row and row[0]:
                 self._nota_txt.setPlainText(row[0])
+                self._nota_txt.setReadOnly(True)
         except Exception:
             _log.exception("Operation failed")
 
@@ -557,6 +564,11 @@ class ModuloRutina(NMModule):
             conn.close()
         except Exception:
             _log.exception("Operation failed")
+
+        # Feedback + deshabilitar hasta el día siguiente
+        self._nota_txt.setReadOnly(True)
+        self._nota_txt.setStyleSheet(stylesheet_textedit(self._modo))
+        NMToast.show(self.window(), "Nota guardada ✓", variant="success", duration_ms=2000)
 
     # ── Hooks ─────────────────────────────────────────────────────────────────
 
