@@ -258,6 +258,26 @@ class ModuleCard(QWidget):
         bar.addRoundedRect(QRectF(0, 0, bar_w, h), r // 2, r // 2)
         p.fillPath(bar, QBrush(bar_grad))
 
+        # Hover glow dinámico (session color)
+        if self._hover:
+            glow_c = self._session.glow_qcolor(self._modo)
+            glow_r = r + 4
+            for layer in range(3):
+                alpha = int(glow_c.alpha() * (0.3 - layer * 0.1))
+                if alpha <= 0:
+                    continue
+                gc = QColor(glow_c)
+                gc.setAlpha(alpha)
+                glow_pen = QPen(gc, 2 + layer * 3)
+                p.setPen(glow_pen)
+                p.setBrush(Qt.BrushStyle.NoBrush)
+                p.drawRoundedRect(
+                    QRectF(1 - layer, 1 - layer,
+                           self.width() - 2 + layer * 2,
+                           self.height() - 2 + layer * 2),
+                    glow_r, glow_r,
+                )
+
         noise_overlay(
             p,
             QRectF(5, 0, w - 5, h),
