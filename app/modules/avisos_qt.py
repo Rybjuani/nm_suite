@@ -315,6 +315,18 @@ class _NuevoAvisoPanel(QWidget):
         if not dias:
             dias = "1,2,3,4,5,6,7"
 
+        # Validar que la hora no haya expirado si hoy es un día seleccionado
+        import datetime as _dt
+        now = _dt.datetime.now()
+        dia_hoy = str(now.weekday() + 1)
+        if dia_hoy in dias.split(","):
+            hh, mm = int(hora[:2]), int(hora[3:])
+            if hh < now.hour or (hh == now.hour and mm <= now.minute):
+                NMToast.show(self.window(),
+                    "La hora ya pasó. Elegí al menos 1 minuto en adelante para hoy.",
+                    variant="warning", duration_ms=3000)
+                return
+
         data = {"hora": hora, "mensaje": mensaje, "dias": dias}
         self.saved.emit(data)
 

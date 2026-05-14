@@ -229,7 +229,7 @@ class NeuroMoodApp(QMainWindow):
         self._on_close(event)
 
     def _on_close(self, event=None):
-        """Minimiza a bandeja si hay avisos activos, si no cierra."""
+        """Minimiza a bandeja si hay avisos activos o timer corriendo, si no cierra."""
         try:
             from shared.db import obtener_conexion
             conn = obtener_conexion()
@@ -240,10 +240,15 @@ class NeuroMoodApp(QMainWindow):
         except Exception:
             n = 0
 
-        if n > 0 and avisos_daemon._PYSTRAY_OK:
+        # Verificar si el timer está corriendo en el módulo actual
+        timer_active = False
+        if self._current_module and hasattr(self._current_module, '_running'):
+            timer_active = getattr(self._current_module, '_running', False)
+
+        if (n > 0 or timer_active) and avisos_daemon._PYSTRAY_OK:
             if event:
                 event.ignore()
-            self.hide()   # Minimizar a bandeja, no cerrar
+            self.hide()
         else:
             avisos_daemon.detener()
             if event:

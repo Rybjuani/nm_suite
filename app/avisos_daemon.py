@@ -32,7 +32,35 @@ try:
 except ImportError:
     _WINOTIFY_OK = False
 
-from shared.db import obtener_conexion
+_LAST_REACTIVATION = None  # fecha de última reactivación
+
+
+def _reactivar_medianoche():
+    """Reactiva recordatorios desactivados si cambió el día."""
+    global _LAST_REACTIVATION
+    hoy = datetime.date.today().isoformat()
+    if _LAST_REACTIVATION == hoy:
+        return
+    _LAST_REACTIVATION = hoy
+    dia_hoy = str(datetime.datetime.now().weekday() + 1)
+    try:
+        conn = obtener_conexion()
+        rows = conn.execute(
+            "SELECT id, dias FROM recordatorios WHERE activo = 0"
+        ).fetchall()
+        for row in rows:
+            rid = row["id"] if hasattr(row, "keys") else row[0]
+            dias_str = row["dias"] if hasattr(row, "keys") else row[1]
+            dias_activos = set((dias_str or "1,2,3,4,5,6,7").split(","))
+            if dia_hoy in dias_activos:
+                conn.execute(
+                    "UPDATE recordatorios SET activo = 1 WHERE id = ?",
+                    (rid,)
+                )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
 
 # Intervalo de revisión en segundos
 _INTERVALO = 30
@@ -43,6 +71,7 @@ _lock = threading.Lock()
 
 # Referencia al ícono de bandeja (para poder detenerlo desde fuera)
 _tray_icon = None
+_on_app_open = None  # Callback para restaurar la ventana principal
 
 
 # ── Notificación ─────────────────────────────────────────────────────────────
@@ -135,6 +164,9 @@ def _revisar():
         stale = {c for c in _disparados if not c.startswith(hoy)}
         _disparados.difference_update(stale)
 
+    # Reactivar recordatorios a medianoche (nuevo día)
+    _reactivar_medianoche()
+
     try:
         conn = obtener_conexion()
         rows = conn.execute(
@@ -164,8 +196,27 @@ def _revisar():
                 continue
             _disparados.add(clave)
 
+        # Restaurar app si está minimizada a bandeja
+        if _on_app_open:
+            try:
+                _on_app_open()
+            except Exception:
+                pass
+
         _notificar(mensaje, hora)
         _registrar_log(rec_id, hora, mensaje)
+
+        # Deshabilitar recordatorio tras disparo — se reactiva a medianoche
+        try:
+            conn2 = obtener_conexion()
+            conn2.execute(
+                "UPDATE recordatorios SET activo = 0 WHERE id = ?",
+                (rec_id,)
+            )
+            conn2.commit()
+            conn2.close()
+        except Exception:
+            pass
 
 
 def _registrar_log(rec_id: int, hora: str, mensaje: str):
@@ -303,8 +354,9 @@ _stop_event: threading.Event = None
 
 def iniciar(on_abrir_app=None) -> threading.Event:
     """Inicia el daemon de avisos. Devuelve el stop_event para detenerlo."""
-    global _stop_event
+    global _stop_event, _on_app_open
     _stop_event = threading.Event()
+    _on_app_open = on_abrir_app
 
     # Hilo revisor
     hilo = threading.Thread(
