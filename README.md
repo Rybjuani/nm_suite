@@ -1,6 +1,6 @@
 # NeuroMood V3
 
-Plataforma clínica de bienestar mental para Windows. Dos ejecutables: **NeuroMood Suite.exe** para el paciente y **NeuroMood Hub Pro.exe** para el terapeuta.
+Plataforma clínica de bienestar mental para Windows. Dos ejecutables: **NeuroMood Suite.exe** para el paciente con 7 módulos y **NeuroMood Hub Pro.exe** para el terapeuta con sincronización Supabase e IA.
 
 ---
 
@@ -8,10 +8,10 @@ Plataforma clínica de bienestar mental para Windows. Dos ejecutables: **NeuroMo
 
 | Componente | Requisito |
 |---|---|
-| Sistema operativo | Windows 10 / 11 (64-bit) |
-| Python (solo desarrollo) | 3.12 |
-| Conexión a internet | Opcional — solo para sincronización Supabase |
-| Espacio en disco | ~150 MB (instalación completa) |
+| SO | Windows 10 / 11 (64-bit) |
+| Python (solo dev) | 3.12 |
+| Internet | Opcional — solo para sync Supabase |
+| Disco | ~150 MB instalado |
 
 ---
 
@@ -19,15 +19,15 @@ Plataforma clínica de bienestar mental para Windows. Dos ejecutables: **NeuroMo
 
 ### Paciente
 1. Ejecutar **`Instalador NeuroMood Suite.exe`**
-2. Ingresar nombre y contraseña (mínimo 6 caracteres)
-3. Anotar el **código de instalación** generado — necesario para reinstalar
-4. Elegir carpeta de instalación (por defecto: `%USERPROFILE%\NeuroMood`)
+2. Ingresar nombre y contraseña (mín 6 caracteres)
+3. Anotar el **código de instalación** generado
+4. Elegir carpeta (por defecto: `%USERPROFILE%\NeuroMood`)
 
-Para desinstalar: **`Desinstalador NeuroMood.exe`** dentro de la carpeta instalada, o desde *Panel de Control → Agregar o quitar programas*.
+Desinstalar: **`Desinstalador NeuroMood.exe`** en la carpeta instalada, o Panel de Control.
 
 ### Profesional (Hub)
 1. Ejecutar **`Instalador NeuroMood Hub Pro.exe`**
-2. Configurar credenciales Supabase en `.env` (ver sección Configuración)
+2. Configurar `.env` con credenciales Supabase
 3. Ejecutar `NeuroMood Hub Pro.exe`
 
 ---
@@ -40,7 +40,7 @@ pip install -r requirements.txt
 # App paciente
 python app/main_qt.py
 
-# NeuroMood Hub Pro
+# Hub Profesional
 python hub/main_qt.py
 
 # Modo test interactivo sin compilar
@@ -51,7 +51,7 @@ BUILD_ALL.bat test
 
 ## Configuración
 
-Crear `.env` en la raíz del proyecto (nunca se commitea):
+Crear `.env` en la raíz (nunca se commitea):
 
 ```
 SUPABASE_URL=https://tu-proyecto.supabase.co
@@ -59,80 +59,70 @@ SUPABASE_KEY=tu-clave-anon-publica
 GROQ_KEY=tu-clave-groq
 ```
 
-`GROQ_KEY` solo es necesaria para el Hub (IA asistente).
+`GROQ_KEY` solo para el Hub (IA asistente). Gemini, OpenAI y Ollama Cloud opcionales.
 
 ---
 
 ## Compilación
 
 ```bat
-:: Paso 1 — compilar los 2 EXEs principales
-BUILD_ALL.bat
-
-:: Paso 2 — empaquetar instalador paciente
-BUILD_INSTALLER.bat
-
-:: Paso 3 — empaquetar instalador Hub
-BUILD_INSTALLER_PRO.bat
+BUILD_ALL.bat              → NeuroMood Suite + NeuroMood Hub Pro (onedir, arranque <1s)
+BUILD_ALL.bat release      → onefile para distribución (más lento al abrir)
+BUILD_INSTALLER.bat        → Instalador NeuroMood Suite
+BUILD_INSTALLER_PRO.bat    → Instalador NeuroMood Hub Pro
 ```
 
 Salidas:
-- `dist\NeuroMood Suite.exe`
-- `dist\NeuroMood Hub Pro.exe`
-- `dist\Instalador NeuroMood Suite.exe` ← distribuir al paciente
-- `dist\Instalador NeuroMood Hub Pro.exe` ← distribuir al profesional
+- `dist\NeuroMood Suite\NeuroMood Suite.exe`
+- `dist\NeuroMood Hub Pro\NeuroMood Hub Pro.exe`
+- `dist\Instalador NeuroMood Suite\Instalador NeuroMood Suite.exe`
+- `dist\Instalador NeuroMood Hub Pro\Instalador NeuroMood Hub Pro.exe`
 
 ---
 
 ## Estructura del proyecto
 
 ```
-Neuromood V3/
-├── app/                        ← plataforma paciente
+NeuroMood V3/
+├── app/                        ← paciente
 │   ├── main_qt.py              ← entry point
-│   ├── home_qt.py              ← home con 7 cards
-│   ├── motor_activacion.py     ← motor activación conductual
+│   ├── home_qt.py              ← home con 7 ModuleCards
+│   ├── motor_activacion.py     ← motor de activación conductual
 │   ├── avisos_daemon.py        ← daemon de recordatorios
 │   └── modules/
-│       ├── animo_qt.py
-│       ├── respiracion_qt.py
-│       ├── registro_tcc_qt.py
-│       ├── rutina_qt.py
-│       ├── actividades_qt.py
-│       ├── timer_qt.py
-│       └── avisos_qt.py
-├── hub/                        ← hub profesional
+│       ├── animo_qt.py         ← registro de ánimo con slider + emoji
+│       ├── respiracion_qt.py   ← respiración guiada 4-7-8 con arco
+│       ├── registro_tcc_qt.py  ← diario de pensamientos TCC
+│       ├── rutina_qt.py        ← checklist diario
+│       ├── actividades_qt.py   ← sugerencias según ánimo
+│       ├── timer_qt.py         ← temporizador con canvas circular
+│       └── avisos_qt.py        ← recordatorios con daemon
+├── hub/                        ← Hub Profesional
 │   ├── main_qt.py              ← entry point
-│   ├── pacientes_qt.py         ← gestión de pacientes
-│   ├── ia_asistente.py         ← IA Groq (solo Hub)
+│   ├── pacientes_qt.py         ← gestión de pacientes + gráficos
+│   ├── ia_asistente.py         ← IA multi-proveedor (Groq/Gemini/OpenAI)
 │   └── exportar.py             ← PDF / reportes
 ├── shared/                     ← código compartido
-│   ├── theme.py / theme_qt.py  ← colores, tipografía (source of truth)
-│   ├── components_qt.py        ← componentes UI reutilizables
+│   ├── theme.py / theme_qt.py  ← design system (source of truth)
+│   ├── components_qt.py        ← NMButton, NMCard, NMInput, etc.
 │   ├── db.py                   ← SQLite local
 │   ├── sync.py                 ← Supabase (lazy loading)
 │   ├── identidad.py            ← generar_patient_id()
-│   ├── installer_common.py     ← compartido entre instaladores
+│   ├── installer_common.py     ← paleta + helpers para instaladores
 │   ├── config.py               ← lectura de .env
 │   └── utils.py
-├── installers/                 ← instaladores y desinstaladores
-│   ├── installer.py
-│   ├── installer_pro.py
-│   ├── uninstaller.py
-│   └── uninstaller_pro.py
-├── assets/                     ← iconos y logos
-│   ├── LOGO.png
-│   ├── NM_icon.ico
-│   ├── installer_icon.ico
-│   └── no_symbol.ico
-├── db/
-│   └── supabase_schema.sql     ← esquema de tablas Supabase
-├── _dev/                       ← herramientas de desarrollo (no distribuir)
+├── installers/                 ← instaladores / desinstaladores
+│   ├── installer.py            ← Instalador NeuroMood Suite
+│   ├── installer_pro.py        ← Instalador NeuroMood Hub Pro
+│   ├── uninstaller.py          ← Desinstalador NeuroMood
+│   └── uninstaller_pro.py      ← Desinstalador NeuroMood Hub Pro
+├── assets/                     ← iconos y logo
+├── db/supabase_schema.sql      ← esquema Supabase
 ├── BUILD_ALL.bat
 ├── BUILD_INSTALLER.bat
 ├── BUILD_INSTALLER_PRO.bat
 ├── requirements.txt
-└── .env                        ← credenciales (no commitear)
+└── .env
 ```
 
 ---
@@ -141,32 +131,47 @@ Neuromood V3/
 
 | Tecnología | Uso |
 |---|---|
-| Python 3.12 | Lenguaje principal |
-| PyQt6 ≥6.6.0 | UI completa |
-| pyqtgraph ≥0.13.0 | Gráficos en Hub |
-| SQLite | Base de datos local (`%APPDATA%\NeuroMood\nm_data.db`) |
-| Supabase | Sincronización cloud paciente↔Hub |
-| Groq llama3-70b | IA asistente del Hub |
-| pystray + winotify | Bandeja del sistema y notificaciones Windows |
-| matplotlib + reportlab | Gráficos y PDFs en Hub |
+| Python 3.12 | Lenguaje |
+| PyQt6 ≥6.6 | UI completa |
+| pyqtgraph ≥0.13 | Gráficos en Hub |
+| SQLite | DB local (`%APPDATA%\NeuroMood\nm_data.db`) |
+| Supabase | Sync cloud paciente↔Hub |
+| Groq / Gemini / OpenAI | IA asistente Hub |
+| pystray + winotify | Bandeja y notificaciones Windows |
+| reportlab | PDFs en Hub |
 | PyInstaller | Compilación a .exe |
 
 ---
 
-## Tablas Supabase (ver `db/supabase_schema.sql`)
+## Design System
 
-`patients`, `mood_records`, `breathing_sessions`, `thought_records`,
-`checklist_completions`, `timer_sessions`, `reminder_logs`,
-`assigned_tasks`, `assigned_reminders`, `activity_bank`, `patient_activities`
+### SessionColor (aura dinámica)
+Color aleatorio cyan o violeta al iniciar sesión. Aura radial en fondo de módulos, glow en hover de cards, barra izquierda con gradiente.
+
+### Scrollbars Premium Glass
+Handle gradiente `#00F2FF→#4A00E0`, track translúcido, 6px ancho, cápsula 3px, sin flechas.
+
+### Componentes
+`NMButton`, `NMCard`, `NMInput`, `NMProgressBar`, `NMToggle`, `NMToast`, `NMSkeleton`, `NMFadeWidget`, `NMHeader`, `NMSidebar`
+
+### Logo
+`assets/LOGO.png` con sombra blur 28px, glow radial animado, recolor automático en light mode.
+
+---
+
+## Tablas Supabase
+
+`patients`, `mood_records`, `breathing_sessions`, `thought_records`, `checklist_completions`, `timer_sessions`, `reminder_logs`, `assigned_tasks`, `assigned_reminders`, `activity_bank`, `patient_activities`
 
 ---
 
 ## Decisiones arquitectónicas (no revertir)
 
-- **1 EXE paciente** — la carpeta `apps/` fue eliminada, no recrear.
-- **IA solo en Hub** — `ia_asistente.py` es exclusivo de `hub/`. El paciente no tiene IA.
-- **Historial y gráficos solo en Hub** — ningún módulo del paciente muestra historial ni estadísticas.
-- **Rutina ≠ Actividades** — son módulos distintos: Rutina = prescripción del terapeuta (estática); Actividades = sugerencias adaptativas por ánimo (dinámicas).
-- **`shared/theme.py`** es el source of truth de colores, tipografía y layout.
-- **`shared/identidad.py`** tiene la función canónica `generar_patient_id()` — no duplicar.
-- **`shared/sync.py`** usa lazy loading — credenciales se leen en `_get_client()`, no al importar.
+- **1 EXE paciente** — no recrear `apps/`
+- **IA solo en Hub** — `ia_asistente.py` exclusivo de `hub/`
+- **Historial solo en Hub** — módulos paciente no muestran stats
+- **Rutina ≠ Actividades** — checklist estático vs sugerencias dinámicas
+- **`shared/theme.py`** source of truth de colores y tipografía
+- **`shared/identidad.py`** función canónica `generar_patient_id()`
+- **Supabase lazy** — `hub/main_qt.py` importa bajo demanda (arranque 65ms)
+- **`--onedir`** por defecto en builds (arranque <1s, sin extracción a temp)

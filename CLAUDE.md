@@ -4,7 +4,7 @@
 
 Plataforma clínica de bienestar mental para Windows. Arquitectura unificada post-refactorización (Mayo 2026):
 - **`NeuroMood Suite.exe`** — app del paciente con 7 módulos en una sola ventana
-- **`NeuroMood Hub Pro.exe`** — panel del terapeuta con sincronización Supabase e IA (Groq)
+- **`NeuroMood Hub Pro.exe`** — panel del terapeuta con sincronización Supabase e IA
 
 ## Arquitectura clave
 
@@ -24,7 +24,7 @@ db/                 → supabase_schema.sql
 - **Historial/gráficos solo en Hub** — ningún módulo del paciente muestra historial ni stats.
 - **Rutina ≠ Actividades** — son módulos distintos con responsabilidades distintas.
 - **`shared/theme.py` es el source of truth** de colores, tipografía, layout y CATEGORY_COLORS.
-- **`shared/identidad.py`** tiene la función canónica `generar_patient_id(nombre, pwd, install_code)` — no duplicar en installer.py.
+- **`shared/identidad.py`** tiene la función canónica `generar_patient_id(nombre, pwd, install_code)`.
 
 ## Stack técnico
 
@@ -33,20 +33,42 @@ db/                 → supabase_schema.sql
 - Supabase para sync (credenciales en `.env`, nunca en código)
 - IA multi-proveedor para Hub (Groq, Gemini, OpenCode, Ollama Cloud) — ver `hub/ia_asistente.py`
 - pystray + winotify para avisos en bandeja/notificaciones del SO
-- matplotlib + pyqtgraph + reportlab para gráficos y PDF en el Hub
-- google-generativeai + openai para proveedores IA alternativos
-- PyInstaller para compilar a .exe
+- pyqtgraph + reportlab para gráficos y PDF en el Hub
+- PyInstaller para compilar a .exe (--onedir por defecto, arranque <1s)
 
 ## Design System (Mayo 2026)
 
 - Paleta premium: indigo `#6366f1` (accent), teal `#14b8a6`, violet `#a855f7`
 - GRADIENTS 3-stop: indigo→teal→violet con posiciones (0.0, 0.45, 1.0)
-- Componentes premium: NMButton (ripple + gradiente), NMCard (glow + noise + scale),
+- Componentes premium: NMButton (ripple + gradiente), NMCard (glow + noise + hover aura),
   NMProgressBar (shimmer), NMSkeleton (shimmer loading), NMInput (focus animation)
 - Navegación sin sidebar en paciente (HomeView cards); sidebar solo en Hub
 - NMHeader con `set_back_action(callback)` para botón volver
-- Light mode funcional: toggle vía palette (sin setStyleSheet en path de toggle)
+- Light mode funcional: toggle vía palette + stylesheet_base re-aplicado en ambos modos
 - Glassmorphism: `bg_glass` en overlays y panels inline (`_NuevoAvisoPanel`)
+
+### SessionColor — Aura dinámica
+
+- Singleton `SessionColor` en `shared/theme_qt.py` — elige aleatoriamente cyan `#00F2FF` o violet `#7367F0` al iniciar la sesión
+- **Aura radial**: `NMModule.paintEvent` y `DashboardView.paintEvent` dibujan un gradiente radial desde centro-izquierda (`w*0.2, h*0.5`, radio `w*0.85`) con alpha 20-30
+- **Hover glow**: `NMCard` y `ModuleCard` renderizan 3 capas concéntricas de `drawRoundedRect` con alpha decreciente en hover
+- **Barra izquierda**: gradiente vertical con session color en ambas cards
+- **Paleta**: dark `cyan=#00F2FE, violet=#7367F0` / light `cyan=#89F7FE, violet=#E0C3FC`
+
+### Scrollbars Premium Glass
+
+- Handle: gradiente `#00F2FF → #4A00E0`, borde `1px solid #00F2FF`, `border-radius: 3px`
+- Track: `rgba(255,255,255,0.05)`, 6px ancho/alto fijo
+- Hover: gradiente `#E0FFFF → #7B2FF7`, borde `1px solid #E0FFFF`
+- Sin flechas (0px)
+- Aplicado en `stylesheet_base()`, `stylesheet_scrollarea()`, y `stylesheet_installer()`
+
+### Logo
+
+- `_LogoLabel` (header paciente) y `add_logo()` (sidebar Hub) cargan `assets/LOGO.png`
+- Sombra `QGraphicsDropShadowEffect` con blur 28px + alpha 30
+- Recoloreo automático en light mode vía `recolorear_logo_light()`
+- Glow radial animado (breathing) de 3s
 
 ## QA & Testing
 
@@ -66,33 +88,21 @@ python ui_crawler.py              → Introspección widget tree → JSON
 - `hub/pacientes_qt.py` usa `assigned_tasks` y `assigned_reminders` (nombres de tablas en Supabase)
 - `recurso(nombre)` en `shared/installer_common.py` busca primero en `assets/` (dev) o `sys._MEIPASS` (frozen)
 
-## Archivos eliminados (no recrear)
-
-- `apps/` — carpeta completa con 33 archivos legados
-- `shared/theme_hybrid.py`, `shared/components_hybrid.py` — fusionados en theme.py/components.py
-- `_preview_*.py` en raíz — movidos a `_dev/`
-- `apps/pensamientos/ia.py` — IA eliminada del paciente
-- `installer.spec`, `installer_pro.spec`, `uninstaller.spec`, `uninstaller_pro.spec` — reemplazados por flags inline en los .bat
-- `AGENTS.md`, `PLAN.md`, `PLAN.txt`, `README_new.md` — contenido consolidado en README.md
-
-## Tablas Supabase (esquema en db/supabase_schema.sql)
-
-`patients`, `mood_records`, `breathing_sessions`, `thought_records`,
-`checklist_completions`, `timer_sessions`, `reminder_logs`,
-`assigned_tasks`, `assigned_reminders`, `activity_bank`, `patient_activities`
-
 ## Build
 
 ```bat
-BUILD_ALL.bat           → NeuroMood Suite.exe (dist/) + NeuroMood Hub Pro.exe (dist/)
-BUILD_INSTALLER.bat     → Instalador NeuroMood Suite.exe
-BUILD_INSTALLER_PRO.bat → Instalador NeuroMood Hub Pro.exe
-BUILD_ALL.bat test      → correr sin compilar (dev)
+BUILD_ALL.bat              → NeuroMood Suite.exe + NeuroMood Hub Pro.exe (onedir, arranque <1s)
+BUILD_ALL.bat release      → onefile para distribucion (mas lento al abrir)
+BUILD_ALL.bat test         → correr sin compilar (dev)
+BUILD_INSTALLER.bat        → Instalador NeuroMood Suite
+BUILD_INSTALLER_PRO.bat    → Instalador NeuroMood Hub Pro
 ```
+
+Flags de compilación: `--onedir` (default), `--clean`, `--optimize 2`, `--log-level WARN`, `--noconfirm`.
 
 ## Estabilización (Mayo 2026) — Zero-Bug Mandate
 
-Se ejecutó una auditoría de 20 antipatrones y corrección quirúrgica en 6 fases:
+Se ejecutó una auditoría de 20 antipatrones y corrección quirúrgica.
 
 ### Reglas de seguridad vigentes (NO vulnerar)
 - **`sip.isdeleted(self)`** obligatorio en todo `QTimer.singleShot` con lambda que capture `self`
@@ -107,15 +117,38 @@ Se ejecutó una auditoría de 20 antipatrones y corrección quirúrgica en 6 fas
 ### Helpers disponibles
 - `label_style(modo, key)` en `shared/theme_qt.py` — shortcut para `f"color: {C(key, modo)}; background: transparent;"`
 - `_log = logging.getLogger(__name__)` en todos los módulos de app/
-- `NMToast.show(parent, msg, variant)` para errores visibles al usuario
+- `NMToast.show(parent, msg, variant)` para feedback visual al usuario
 
-### Archivos touchados en estabilización
-- `shared/components_qt.py` — eliminados 3 helpers muertos (`v_spacer`, `separator`, `styled_label`), `h_spacer` conservado como stub, NMSidebar con `_theme_labels` + `sip.isdeleted` guard
-- `shared/theme_qt.py` — añadido `label_style()`, `logging` en captionbar DWM, estructura try/except restaurada
-- `app/modules/*.py` (7 archivos) — `import logging`, 80+ `except:pass` → `_log.exception()`, `setFixedHeight` → `setMinimumHeight` en QTextEdit, `sip.isdeleted` guards en QTimer.singleShot
-- `app/home_qt.py` — `C("success", modo)` reemplaza magic hex, `stylesheet_scrollarea()`, `_eff.deleteLater()` cleanup
-- `app/main_qt.py` — `logging` en sync y get_module_status
-- `hub/main_qt.py` — `_AnimoIndicator` theme-aware, `sip.isdeleted` guard en thread callback, imports muertos removidos
-- `hub/pacientes_qt.py` — 11 `sip.isdeleted` guards, `QObject` import, `r.get("id")` defensivo
-- `hub/ia_asistente.py` — `is_available()`/`status_msg()` con `with _lock:`, guard en respuestas IA malformadas
-- `installers/installer.py`, `installer_pro.py` — `processEvents(ExcludeUserInputEvents)`
+### Módulos — fixes clave
+
+| Módulo | Fixes |
+|---|---|
+| **Ánimo** | `_on_theme` con recarga de historial, light mode funcional |
+| **Respiración** | `_on_theme` propaga tema al círculo, eliminado "●" inicial y "Calm/60 BPM", crash `_breath→_circle` corregido |
+| **Registro TCC** | `_on_theme` con recarga de stylesheets, 3 textareas expandibles |
+| **Rutina** | `_on_theme` actualiza checkboxes, nota diaria con toast + readonly hasta día siguiente, tareas deshabilitadas al completar con beep |
+| **Actividades** | `NMToast` al marcar actividad, botones exclusivos (no múltiple selección), `_on_theme` |
+| **Temporizador** | Input de nombre de actividad, toast al finalizar con nombre, auto-restore de ventana minimizada |
+| **Avisos** | Validación de hora expirada, daemon deshabilita recordatorios tras disparo + reactiva a medianoche, light mode con `_load_reminders` |
+
+### Hub — fixes clave
+
+- Supabase lazy-import (arranque 65ms vs 1200ms)
+- Verificación de conexión real con query antes de mostrar "Conectado"
+- Toast feedback en Reconectar y Actualizar
+- `_AnimoIndicator` theme-aware sin condición de parent
+- Sidebar logo con recolor automático light/dark
+- Barra de tema duplicada eliminada de Config
+
+### Installers — fixes clave
+
+- Nombres: "Instalador NeuroMood Suite" + "Instalador NeuroMood Hub Pro" + "Desinstalador NeuroMood" + "Desinstalador NeuroMood Hub Pro"
+- Íconos de acceso directo corregidos (sin atributo oculto)
+- `_on_done` con navegación manual para leer logs
+- Copytree solo cuando el nombre de carpeta coincide con el .exe (onedir/onefile seguro)
+- `os._exit(0)` reemplazado por cierre limpio con toast
+- `vaciar_carpeta` ahora borra directorio raíz + limpia AppData/NeuroMoodPro
+- Titulo siempre dark mode (sin flash)
+- `btn_ant` oculto en página 0
+- Conservar registros: card premium con toggle switch gradiente
+- Limpieza de residuos: `dist/`, `build/`, `.spec` eliminados en cada build
