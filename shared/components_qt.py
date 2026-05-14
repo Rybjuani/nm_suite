@@ -209,8 +209,8 @@ class NMCard(QFrame):
         bar_rect = QRectF(0, 0, bar_w, self.height())
         bar_grad = linear_gradient_vertical(
             bar_rect,
+            self._session.qcolor(self._modo, 180),
             QColor(self._accent),
-            QColor(C("violet", self._modo)),
         )
 
         path = QPainterPath()
