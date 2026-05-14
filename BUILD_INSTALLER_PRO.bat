@@ -32,7 +32,7 @@ for %%F in (
     del "%ROOT%\%%~F.spec"     2>nul
 )
 
-set BASE=--noconfirm --onedir --windowed --clean^
+set BASE=--noconfirm --onedir --windowed --clean --optimize 2^
  --workpath "%BUILD%"^
  --paths "%ROOT%"^
  --log-level WARN^

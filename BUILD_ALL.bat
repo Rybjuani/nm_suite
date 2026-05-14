@@ -71,7 +71,7 @@ for %%F in (
 if not exist "%DIST%"  mkdir "%DIST%"
 if not exist "%BUILD%" mkdir "%BUILD%"
 
-set BASE=--noconfirm %MODE% --windowed --clean^
+set BASE=--noconfirm %MODE% --windowed --clean --optimize 2^
  --icon "%ICON%"^
  --add-data "%LOGO%;."^
  --add-data "%ICON%;."^
