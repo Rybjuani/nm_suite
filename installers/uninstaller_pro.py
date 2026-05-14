@@ -329,7 +329,11 @@ class DesinstaladorPro(QMainWindow):
         self._status_lbl.setText(t)
 
     def _on_done(self):
-        QTimer.singleShot(1000, lambda: os._exit(0))
+        self._status_lbl.setStyleSheet(f"color: {SUCCESS}; font-size: 16px; font-weight: bold;")
+        self._status_lbl.setText("Desinstalacion completada. Cerrando...")
+        QApplication.instance().processEvents()
+        QTimer.singleShot(1500, self.close)
+        QTimer.singleShot(2000, QApplication.instance().quit)
 
     def _on_error(self, msg: str):
         self._status_lbl.setText(f"Error: {msg}")

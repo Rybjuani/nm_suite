@@ -421,6 +421,9 @@ class InstaladorPro(QMainWindow):
         if self._pagina == 0:
             self._ir_a(1)
         elif self._pagina == 1:
+            if self._install_dir:
+                self._ir_a(2)
+                return
             self.btn_sig.setEnabled(False); self.btn_sig.setText("Instalando...")
             self.btn_ant.setEnabled(False)
             self._worker = _ProWorker(self._ent_path.text().strip(), self)
@@ -450,7 +453,9 @@ class InstaladorPro(QMainWindow):
 
     def _on_done(self, install_dir: str, icon_dest: str):
         self._install_dir = install_dir; self._icon_dest = icon_dest
-        QTimer.singleShot(800, lambda: self._ir_a(2))
+        self.btn_sig.setEnabled(True)
+        self.btn_sig.setText("Ver resultado →")
+        self.btn_ant.setVisible(False)
 
     def _on_error(self, tipo: str):
         if tipo == "permission":
