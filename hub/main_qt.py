@@ -582,14 +582,7 @@ class HubProfesional(QMainWindow):
         self._current_view = "dashboard"
         self._stack.setCurrentWidget(self._view_dashboard)
         self._sidebar.set_active("dashboard")
-
         self._header.set_back_action(None)
-
-        c = colors(self._modo)
-        self._lbl_status.setText("● Conectado")
-        self._lbl_status.setStyleSheet(
-            f"color: {c['success']}; background: transparent;"
-        )
 
     # ── Conexión (lógica preservada exacta) ───────────────────────────────────
 
@@ -597,16 +590,23 @@ class HubProfesional(QMainWindow):
         self._sb, motivo = _get_sb()
         c = colors(self._modo)
         if self._sb:
-            self._lbl_status.setText("● Conectado")
-            self._lbl_status.setStyleSheet(
-                f"color: {c['success']}; background: transparent;"
-            )
-            self._cargar_pacientes()
-        else:
-            self._lbl_status.setText(f"● Sin conexión: {motivo}")
-            self._lbl_status.setStyleSheet(
-                f"color: {c['error']}; background: transparent;"
-            )
+            # Verificar conexión real
+            try:
+                res = self._sb.table("patients").select("patient_id", count="exact").execute()
+                if hasattr(res, 'data'):
+                    self._lbl_status.setText("● Conectado")
+                    self._lbl_status.setStyleSheet(
+                        f"color: {c['success']}; background: transparent;"
+                    )
+                    self._cargar_pacientes()
+                    return
+            except Exception:
+                pass
+            self._sb = None
+        self._lbl_status.setText(f"● Sin conexión: {motivo or 'verificación fallida'}")
+        self._lbl_status.setStyleSheet(
+            f"color: {c['error']}; background: transparent;"
+        )
 
     def _cargar_pacientes(self):
         if not self._sb:
@@ -633,17 +633,24 @@ class HubProfesional(QMainWindow):
         self._sb, motivo = _get_sb()
         c = colors(self._modo)
         if self._sb:
-            self._lbl_status.setText("● Conectado")
-            self._lbl_status.setStyleSheet(
-                f"color: {c['success']}; background: transparent;"
-            )
-            self._cargar_pacientes()
-        else:
-            self._lbl_status.setText(f"● Error: {motivo}")
-            self._lbl_status.setStyleSheet(
-                f"color: {c['error']}; background: transparent;"
-            )
-            NMToast.show(self, f"Sin conexión: {motivo}", variant="error")
+            try:
+                res = self._sb.table("patients").select("patient_id", count="exact").execute()
+                if hasattr(res, 'data'):
+                    self._lbl_status.setText("● Conectado")
+                    self._lbl_status.setStyleSheet(
+                        f"color: {c['success']}; background: transparent;"
+                    )
+                    self._cargar_pacientes()
+                    NMToast.show(self, "Conexión restablecida", variant="success", duration_ms=2000)
+                    return
+            except Exception:
+                pass
+            self._sb = None
+        self._lbl_status.setText(f"● Error: {motivo or 'verificación fallida'}")
+        self._lbl_status.setStyleSheet(
+            f"color: {c['error']}; background: transparent;"
+        )
+        NMToast.show(self, f"No se pudo conectar: {motivo or 'verificación fallida'}", variant="error")
 
     # ── Tema ──────────────────────────────────────────────────────────────────
 
