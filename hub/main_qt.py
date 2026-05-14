@@ -46,11 +46,7 @@ from shared.components_qt import (
     NMButton, NMButtonOutline, NMCard, NMToast, NMSkeleton,
 )
 
-try:
-    from supabase import create_client as _sb_create
-    _SUPABASE_OK = True
-except ImportError:
-    _SUPABASE_OK = False
+_sb_create = None
 
 from shared.config import supabase_url, supabase_key
 
@@ -62,8 +58,12 @@ _NAV_ITEMS = [
 
 
 def _get_sb():
-    if not _SUPABASE_OK:
-        return None, "módulo supabase no instalado"
+    global _sb_create
+    if _sb_create is None:
+        try:
+            from supabase import create_client as _sb_create
+        except ImportError:
+            return None, "modulo supabase no instalado"
     url, key = supabase_url(), supabase_key()
     if not url or not key:
         return None, "credenciales no configuradas (.env)"
