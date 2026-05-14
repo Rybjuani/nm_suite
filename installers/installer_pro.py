@@ -43,9 +43,16 @@ _SS = stylesheet_installer()   # design system premium unificado
 
 
 def ruta_bundled(exe: str) -> str:
+    """Devuelve ruta a un .exe bundleado. Soporta --onedir y --onefile."""
     base = sys._MEIPASS if getattr(sys, "frozen", False) else os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "dist"
     )
+    # onedir: HubProfesional\HubProfesional.exe
+    folder = os.path.join(base, "pro", exe.replace(".exe", ""))
+    onedir_path = os.path.join(folder, exe)
+    if os.path.exists(onedir_path):
+        return onedir_path
+    # onefile: pro\HubProfesional.exe
     return os.path.join(base, "pro", exe)
 
 
@@ -68,21 +75,31 @@ class _ProWorker(QThread):
             install_dir.mkdir(parents=True, exist_ok=True)
             self.log_signal.emit(f"  Carpeta: {install_dir}", TEXT_SEC)
 
-            # Hub exe
+            # Hub exe (copia carpeta completa si es onedir)
             self.progress_signal.emit(0.3, "Instalando Hub Profesional...")
             src = ruta_bundled("HubProfesional.exe")
             if os.path.exists(src):
-                shutil.copy2(src, install_dir / HUB_EXE)
+                src_dir = os.path.dirname(src)
+                if os.path.isdir(src_dir):
+                    shutil.copytree(src_dir, install_dir, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(src, install_dir / HUB_EXE)
                 self.log_signal.emit("  Hub Profesional", SUCCESS)
             else:
                 self.log_signal.emit("  HubProfesional.exe no encontrado", WARNING_C)
 
-            # Desinstalador
+            # Desinstalador (copia carpeta completa si es onedir)
             self.progress_signal.emit(0.5, "Instalando desinstalador...")
             src_un = ruta_bundled(UNINST_EXE)
-            uninst_dest = install_dir / UNINST_EXE
+            uninst_dest_dir = install_dir / UNINST_EXE.replace(".exe", "")
+            uninst_dest = uninst_dest_dir / UNINST_EXE
             if os.path.exists(src_un):
-                shutil.copy2(src_un, uninst_dest)
+                src_un_dir = os.path.dirname(src_un)
+                if os.path.isdir(src_un_dir):
+                    shutil.copytree(src_un_dir, uninst_dest_dir, dirs_exist_ok=True)
+                else:
+                    uninst_dest_dir.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src_un, uninst_dest)
                 self.log_signal.emit("  Desinstalador", SUCCESS)
             else:
                 self.log_signal.emit("  Desinstalador no encontrado", WARNING_C)

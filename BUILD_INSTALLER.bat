@@ -5,14 +5,13 @@ if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
 
 echo ============================================================
 echo  NeuroMood - Compilar Instalador Paciente
-echo  neuromood.com.ar
 echo ============================================================
 echo.
 
 cd /d "%ROOT%"
 
-if not exist "%ROOT%\dist\NeuroMood.exe" (
-    echo  FALTA: dist\NeuroMood.exe
+if not exist "%ROOT%\dist\NeuroMood\NeuroMood.exe" (
+    echo  FALTA: dist\NeuroMood\NeuroMood.exe
     echo  Ejecuta BUILD_ALL.bat primero para compilar la app.
     pause
     exit /b 1
@@ -23,18 +22,22 @@ set "INSTALLERS=%ROOT%\installers"
 set "DIST=%ROOT%\dist"
 set "BUILD=%ROOT%\build"
 
-set BASE_FLAGS=--noconfirm --onefile --windowed^
+:: Clean previous
+if exist "%DIST%\Instalar NeuroMood"          rmdir /s /q "%DIST%\Instalar NeuroMood"          2>nul
+if exist "%DIST%\Desinstalar NeuroMood"       rmdir /s /q "%DIST%\Desinstalar NeuroMood"       2>nul
+del "%ROOT%\Desinstalar NeuroMood.spec" 2>nul
+del "%ROOT%\Instalar NeuroMood.spec"    2>nul
+
+set BASE_FLAGS=--noconfirm --onedir --windowed^
  --workpath "%BUILD%"^
  --paths "%ROOT%"^
  --collect-all shared^
  --hidden-import PIL^
- --hidden-import PIL._tkinter_finder^
  --hidden-import win32com^
  --hidden-import win32com.client^
- --hidden-import win32com.shell^
  --hidden-import pywintypes
 
-echo  [1/3] Compilando desinstalador paciente...
+echo  [1/2] Compilando desinstalador...
 pyinstaller %BASE_FLAGS%^
  --add-data "%ASSETS%\no_symbol.ico;."^
  --add-data "%ASSETS%\LOGO.png;."^
@@ -43,43 +46,34 @@ pyinstaller %BASE_FLAGS%^
  --distpath "%DIST%"^
  "%INSTALLERS%\uninstaller.py"
 if %ERRORLEVEL% NEQ 0 goto :error
-echo  Desinstalador listo: dist\Desinstalar NeuroMood.exe
+echo  OK: dist\Desinstalar NeuroMood\
 echo.
 
-echo  [2/3] Compilando instalador paciente...
+echo  [2/2] Compilando instalador...
 pyinstaller %BASE_FLAGS%^
  --add-data "%ASSETS%\installer_icon.ico;."^
  --add-data "%ASSETS%\NM_icon.ico;."^
  --add-data "%ASSETS%\no_symbol.ico;."^
  --add-data "%ASSETS%\LOGO.png;."^
  --add-data "%ROOT%\.env;."^
- --add-data "%DIST%\NeuroMood.exe;."^
- --add-data "%DIST%\Desinstalar NeuroMood.exe;."^
+ --add-data "%DIST%\NeuroMood;NeuroMood"^
+ --add-data "%DIST%\Desinstalar NeuroMood;Desinstalar NeuroMood"^
  --icon "%ASSETS%\installer_icon.ico"^
  --name "Instalar NeuroMood"^
  --distpath "%DIST%"^
  "%INSTALLERS%\installer.py"
 if %ERRORLEVEL% NEQ 0 goto :error
-echo  Instalador listo.
+echo  OK: dist\Instalar NeuroMood\
 echo.
 
-echo  [3/3] Limpiando temporales...
-if exist "%BUILD%\Desinstalar NeuroMood" rmdir /s /q "%BUILD%\Desinstalar NeuroMood"
-if exist "%BUILD%\Instalar NeuroMood"    rmdir /s /q "%BUILD%\Instalar NeuroMood"
-del /q "%ROOT%\Desinstalar NeuroMood.spec" 2>nul
-del /q "%ROOT%\Instalar NeuroMood.spec"    2>nul
-
-echo.
 echo ============================================================
-echo  LISTO
+echo  LISTO - Arranque instantaneo
 echo.
-echo  Instalador:    dist\Instalar NeuroMood.exe
-echo  Desinstalador: dist\Desinstalar NeuroMood.exe
+echo  Instalador:    dist\Instalar NeuroMood\Instalar NeuroMood.exe
 echo.
-echo  Distribuye solo: dist\Instalar NeuroMood.exe
-echo  (el desinstalador va incluido dentro del instalador)
+echo  Para distribuir: comprime la carpeta dist\Instalar NeuroMood\
+echo  en un .zip y compartilo. El usuario extrae y ejecuta el .exe.
 echo ============================================================
-echo.
 pause
 goto :end
 
@@ -88,7 +82,6 @@ echo.
 echo ============================================================
 echo  ERROR - La compilacion fallo.
 echo ============================================================
-echo.
 pause
 
 :end

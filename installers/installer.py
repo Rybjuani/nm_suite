@@ -62,9 +62,16 @@ except ImportError:
 
 
 def ruta_app_bundled(exe: str) -> str:
+    """Devuelve ruta a un .exe bundleado. Soporta --onedir y --onefile."""
     base = sys._MEIPASS if getattr(sys, "frozen", False) else os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "dist"
     )
+    # onedir: NeuroMood\NeuroMood.exe
+    folder = os.path.join(base, exe.replace(".exe", ""))
+    onedir_path = os.path.join(folder, exe)
+    if os.path.exists(onedir_path):
+        return onedir_path
+    # onefile: NeuroMood.exe
     return os.path.join(base, exe)
 
 
@@ -97,13 +104,19 @@ class _InstalWorker(QThread):
             self.progress_signal.emit(paso / total, "Carpeta lista.")
             self.log_signal.emit(f"  Carpeta: {install_dir}", TEXT_SEC)
 
-            # NeuroMood.exe
+            # NeuroMood (copia carpeta completa si es onedir)
             self.progress_signal.emit(paso / total, "Copiando NeuroMood...")
             src = ruta_app_bundled(APP_EXE)
             if not os.path.exists(src):
                 self.log_signal.emit(f"  No encontrado: {APP_EXE}", ERROR_C)
             else:
-                shutil.copy2(src, install_dir / APP_EXE)
+                src_dir = os.path.dirname(src)
+                if os.path.isdir(src_dir) and src_dir != os.path.dirname(os.path.dirname(src)):
+                    # onedir: copia toda la carpeta
+                    shutil.copytree(src_dir, install_dir, dirs_exist_ok=True)
+                else:
+                    # onefile: copia solo el .exe
+                    shutil.copy2(src, install_dir / APP_EXE)
                 self.log_signal.emit(f"  {APP_NOMBRE}", SUCCESS)
             paso += 1
             self.progress_signal.emit(paso / total, "NeuroMood copiado.")
@@ -120,11 +133,19 @@ class _InstalWorker(QThread):
             except Exception:
                 pass
 
-            # Desinstalador
+            # Desinstalador (copia carpeta completa si es onedir)
             self.progress_signal.emit(paso / total, "Copiando desinstalador...")
-            uninst_dest = install_dir / "Desinstalar NeuroMood.exe"
+            uninst_exe = "Desinstalar NeuroMood.exe"
+            uninst_src = ruta_app_bundled(uninst_exe)
             try:
-                shutil.copy2(ruta_app_bundled("Desinstalar NeuroMood.exe"), uninst_dest)
+                uninst_src_dir = os.path.dirname(uninst_src)
+                if os.path.isdir(uninst_src_dir) and uninst_src_dir != os.path.dirname(os.path.dirname(uninst_src)):
+                    uninst_dest_dir = install_dir / "Desinstalar NeuroMood"
+                    shutil.copytree(uninst_src_dir, uninst_dest_dir, dirs_exist_ok=True)
+                    uninst_dest = uninst_dest_dir / uninst_exe
+                else:
+                    uninst_dest = install_dir / uninst_exe
+                    shutil.copy2(uninst_src, uninst_dest)
                 self.log_signal.emit("  Desinstalador copiado", SUCCESS)
             except Exception as e:
                 self.log_signal.emit(f"  Desinstalador no disponible: {e}", WARNING_C)
