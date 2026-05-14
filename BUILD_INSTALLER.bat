@@ -10,6 +10,11 @@ echo.
 
 cd /d "%ROOT%"
 
+:: Kill any running instances that would lock dist/ folder
+taskkill /f /im "NeuroMood Suite.exe"      2>nul
+taskkill /f /im "Desinstalador NeuroMood.exe"  2>nul
+timeout /t 1 /nobreak >nul
+
 set "DIST=%ROOT%\dist"
 set "ASSETS=%ROOT%\assets"
 set "BUILD=%ROOT%\build"
