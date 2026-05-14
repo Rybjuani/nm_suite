@@ -36,7 +36,7 @@ from PyQt6.QtWidgets import (
 )
 
 try:
-    from shared.components_qt import NMModule, NMButton, NMButtonOutline, NMToast, ThemeManager
+    from shared.components_qt import NMModule, NMButton, NMButtonOutline, NMInput, NMToast, ThemeManager
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         get_gradient, gradient_colors, stylesheet_lineedit,
@@ -48,7 +48,7 @@ except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
-    from shared.components_qt import NMModule, NMButton, NMButtonOutline, NMToast, ThemeManager
+    from shared.components_qt import NMModule, NMButton, NMButtonOutline, NMInput, NMToast, ThemeManager
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         get_gradient, gradient_colors, stylesheet_lineedit,
@@ -282,6 +282,10 @@ class ModuloTimer(NMModule):
 
         c = colors(self._modo)
 
+        # ── Actividad ──────────────────────────────────────────────────────────
+        self._ent_actividad = NMInput("Nombre de la actividad (opcional)", modo=self._modo)
+        layout.addWidget(self._ent_actividad)
+
         # ── Chips de preset ───────────────────────────────────────────────────
         chips_row = QHBoxLayout()
         chips_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -475,6 +479,17 @@ class ModuloTimer(NMModule):
             QTimer.singleShot(500, lambda: winsound.Beep(1000, 400))
         except Exception:
             _log.exception("Operation failed")
+
+        # Auto-restaurar ventana y mostrar toast
+        nombre = self._ent_actividad.text().strip() or "Sin nombre"
+        top = self.window()
+        if top and top.isMinimized():
+            top.showNormal()
+        if top:
+            top.raise_()
+            top.activateWindow()
+        NMToast.show(top, f"Tiempo para \"{nombre}\" finalizado ✓", variant="success", duration_ms=4000)
+
         # Reset después de 4 segundos
         QTimer.singleShot(4000, lambda: self._reset_after_finish() if not sip.isdeleted(self) else None)
 

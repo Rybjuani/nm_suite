@@ -250,6 +250,7 @@ class ModuloActividades(NMModule):
             ("Intentada", "intentada", c["warning"]),
             ("No pude",   "no_pude",   c["error"]),
         ]
+        self._result_btns: list[NMButtonOutline] = []
         for label, resultado, _hover_color in results:
             btn = NMButtonOutline(label, modo=self._modo)
             btn.setFixedHeight(30)
@@ -259,6 +260,7 @@ class ModuloActividades(NMModule):
                     self._register_result(n, r, cd)
             )
             btn_row.addWidget(btn)
+            self._result_btns.append(btn)
 
         inner_layout.addLayout(btn_row)
         card_layout.addWidget(inner)
@@ -300,6 +302,20 @@ class ModuloActividades(NMModule):
             "no_pude":   c["error"],
         }
         card_widget.set_accent(color_map.get(resultado, c["accent"]))
+
+        # Deshabilitar botones tras selección
+        for btn in getattr(self, "_result_btns", []):
+            btn.setEnabled(False)
+        self._result_btns = []
+
+        # Toast de confirmación
+        labels = {"hecha": "Hecha ✓", "intentada": "Intentada", "no_pude": "No se pudo"}
+        NMToast.show(
+            self.window(),
+            f"Actividad \"{nombre}\": {labels.get(resultado, resultado)}",
+            variant="success" if resultado == "hecha" else "info",
+            duration_ms=2000,
+        )
 
     # ── Data access (lógica preservada exacta) ────────────────────────────────
 
