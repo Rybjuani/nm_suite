@@ -29,8 +29,8 @@ except ImportError:
         FONT_FAMILY, recurso, aplicar_captionbar_installer, stylesheet_installer,
     )
 
-NM_PROCESOS  = ["NeuroMood.exe"]
-APPS_NOMBRES = ["NeuroMood"]
+NM_PROCESOS  = ["NeuroMood Suite.exe"]
+APPS_NOMBRES = ["NeuroMood Suite"]
 
 _SS = stylesheet_installer()   # design system premium unificado
 
@@ -294,7 +294,7 @@ class DesinstaladorNeuroMood(QMainWindow):
     def _show_confirm(self):
         self._clear_stack()
 
-        title = QLabel("Desinstalar NeuroMood")
+        title = QLabel("Desinstalar NeuroMood Suite")
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
         self._stack_layout.addWidget(title)
         self._stack_layout.addSpacing(8)

@@ -14,8 +14,8 @@ set "DIST=%ROOT%\dist"
 set "ASSETS=%ROOT%\assets"
 set "BUILD=%ROOT%\build"
 
-if not exist "%DIST%\NeuroMood\NeuroMood.exe" (
-    echo  FALTA: dist\NeuroMood\NeuroMood.exe
+if not exist "%DIST%\NeuroMood Suite\NeuroMood Suite.exe" (
+    echo  FALTA: dist\NeuroMood Suite\NeuroMood Suite.exe
     echo  Ejecuta BUILD_ALL.bat primero.
     pause
     exit /b 1
@@ -56,7 +56,7 @@ pyinstaller %BASE%^
  --add-data "%ASSETS%\no_symbol.ico;."^
  --add-data "%ASSETS%\LOGO.png;."^
  --add-data "%ROOT%\.env;."^
- --add-data "%DIST%\NeuroMood;NeuroMood"^
+ --add-data "%DIST%\NeuroMood Suite;NeuroMood Suite"^
  --add-data "%DIST%\Desinstalador NeuroMood;Desinstalador NeuroMood"^
  --icon "%ASSETS%\installer_icon.ico"^
  --name "Instalador NeuroMood Suite"^

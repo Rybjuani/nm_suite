@@ -41,8 +41,8 @@ except ImportError:
     )
 
 DEFAULT_INSTALL = os.path.join(os.path.expanduser("~"), "NeuroMood")
-APP_EXE    = "NeuroMood.exe"
-APP_NOMBRE = "NeuroMood"
+APP_EXE    = "NeuroMood Suite.exe"
+APP_NOMBRE = "NeuroMood Suite"
 
 # ── Paleta del instalador aplicada globalmente ────────────────────────────────
 _SS = stylesheet_installer()   # design system premium unificado

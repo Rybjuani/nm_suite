@@ -416,7 +416,7 @@ class HubProfesional(QMainWindow):
 
         ThemeManager.instance().switch_mode(self._modo)
 
-        self.setWindowTitle("NeuroMood · Hub Profesional")
+        self.setWindowTitle("NeuroMood Hub Pro")
         self.setMinimumSize(QSize(900, 560))
         self.resize(QSize(1100, 680))
         self._center()
@@ -467,7 +467,7 @@ class HubProfesional(QMainWindow):
         # Sidebar
         self._sidebar = NMSidebar(central, modo=self._modo)
         self._sidebar.add_logo()
-        self._sidebar.add_header("Hub Profesional")
+        self._sidebar.add_header("NeuroMood Hub Pro")
         for iid, icon, label in _NAV_ITEMS:
             self._sidebar.add_item(iid, icon, label)
         self._sidebar.add_spacer()

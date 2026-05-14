@@ -53,7 +53,7 @@ def detectar_install_dir() -> str:
 
 
 def matar_procesos_pro(install_dir: str):
-    for proc_name in ["NeuroMood Hub Profesional.exe", "HubProfesional.exe"]:
+    for proc_name in ["NeuroMood Hub Pro.exe"]:
         try:
             subprocess.run(["taskkill", "/F", "/IM", proc_name],
                            capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW, timeout=10)

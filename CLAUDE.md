@@ -3,8 +3,8 @@
 ## Qué es esto
 
 Plataforma clínica de bienestar mental para Windows. Arquitectura unificada post-refactorización (Mayo 2026):
-- **`NeuroMood.exe`** — app del paciente con 7 módulos en una sola ventana
-- **`HubProfesional.exe`** — panel del terapeuta con sincronización Supabase e IA (Groq)
+- **`NeuroMood Suite.exe`** — app del paciente con 7 módulos en una sola ventana
+- **`NeuroMood Hub Pro.exe`** — panel del terapeuta con sincronización Supabase e IA (Groq)
 
 ## Arquitectura clave
 
@@ -84,9 +84,9 @@ python ui_crawler.py              → Introspección widget tree → JSON
 ## Build
 
 ```bat
-BUILD_ALL.bat           → NeuroMood.exe (dist/) + HubProfesional.exe (dist/pro/)
-BUILD_INSTALLER.bat     → Instalar NeuroMood.exe
-BUILD_INSTALLER_PRO.bat → Instalar NeuroMood Hub Profesional.exe
+BUILD_ALL.bat           → NeuroMood Suite.exe (dist/) + NeuroMood Hub Pro.exe (dist/)
+BUILD_INSTALLER.bat     → Instalador NeuroMood Suite.exe
+BUILD_INSTALLER_PRO.bat → Instalador NeuroMood Hub Pro.exe
 BUILD_ALL.bat test      → correr sin compilar (dev)
 ```
 

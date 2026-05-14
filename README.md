@@ -1,6 +1,6 @@
 # NeuroMood V3
 
-Plataforma clínica de bienestar mental para Windows. Dos ejecutables: **NeuroMood.exe** para el paciente y **HubProfesional.exe** para el terapeuta.
+Plataforma clínica de bienestar mental para Windows. Dos ejecutables: **NeuroMood Suite.exe** para el paciente y **NeuroMood Hub Pro.exe** para el terapeuta.
 
 ---
 
@@ -18,17 +18,17 @@ Plataforma clínica de bienestar mental para Windows. Dos ejecutables: **NeuroMo
 ## Instalación (usuario final)
 
 ### Paciente
-1. Ejecutar **`Instalar NeuroMood.exe`**
+1. Ejecutar **`Instalador NeuroMood Suite.exe`**
 2. Ingresar nombre y contraseña (mínimo 6 caracteres)
 3. Anotar el **código de instalación** generado — necesario para reinstalar
 4. Elegir carpeta de instalación (por defecto: `%USERPROFILE%\NeuroMood`)
 
-Para desinstalar: **`Desinstalar NeuroMood.exe`** dentro de la carpeta instalada, o desde *Panel de Control → Agregar o quitar programas*.
+Para desinstalar: **`Desinstalador NeuroMood.exe`** dentro de la carpeta instalada, o desde *Panel de Control → Agregar o quitar programas*.
 
 ### Profesional (Hub)
-1. Ejecutar **`Instalar NeuroMood Hub Profesional.exe`**
+1. Ejecutar **`Instalador NeuroMood Hub Pro.exe`**
 2. Configurar credenciales Supabase en `.env` (ver sección Configuración)
-3. Ejecutar `HubProfesional.exe`
+3. Ejecutar `NeuroMood Hub Pro.exe`
 
 ---
 
@@ -40,7 +40,7 @@ pip install -r requirements.txt
 # App paciente
 python app/main_qt.py
 
-# Hub Profesional
+# NeuroMood Hub Pro
 python hub/main_qt.py
 
 # Modo test interactivo sin compilar
@@ -77,10 +77,10 @@ BUILD_INSTALLER_PRO.bat
 ```
 
 Salidas:
-- `dist\NeuroMood.exe`
-- `dist\pro\HubProfesional.exe`
-- `dist\Instalar NeuroMood.exe` ← distribuir al paciente
-- `dist\Instalar NeuroMood Hub Profesional.exe` ← distribuir al profesional
+- `dist\NeuroMood Suite.exe`
+- `dist\NeuroMood Hub Pro.exe`
+- `dist\Instalador NeuroMood Suite.exe` ← distribuir al paciente
+- `dist\Instalador NeuroMood Hub Pro.exe` ← distribuir al profesional
 
 ---
 

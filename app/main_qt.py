@@ -85,7 +85,7 @@ class NeuroMoodApp(QMainWindow):
         self._tm.switch_mode(self._modo)   # establece modo inicial
 
         # ── Ventana ────────────────────────────────────────────────────────────
-        self.setWindowTitle(f"NeuroMood — Hola, {self._nombre}")
+        self.setWindowTitle(f"NeuroMood Suite — Hola, {self._nombre}")
         self.setMinimumSize(QSize(720, 520))
         self.resize(QSize(860, 640))
         self._center_window()
@@ -323,8 +323,8 @@ class NeuroMoodApp(QMainWindow):
 
 def main():
     app = QApplication.instance() or QApplication(sys.argv)
-    app.setApplicationName("NeuroMood")
-    app.setOrganizationName("NeuroMood")
+    app.setApplicationName("NeuroMood Suite")
+    app.setOrganizationName("NeuroMood Suite")
     # AA_UseHighDpiPixmaps fue eliminado en PyQt6 6.x — DPI se maneja automáticamente
 
     window = NeuroMoodApp()

@@ -36,7 +36,7 @@ except ImportError:
     )
 
 DEFAULT_INSTALL = os.path.join(os.path.expanduser("~"), "NeuroMood Pro")
-HUB_EXE    = "HubProfesional.exe"
+HUB_EXE    = "NeuroMood Hub Pro.exe"
 UNINST_EXE = "Desinstalador NeuroMood Hub Pro.exe"
 
 _SS = stylesheet_installer()   # design system premium unificado

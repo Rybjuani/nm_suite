@@ -14,8 +14,8 @@ set "DIST=%ROOT%\dist"
 set "ASSETS=%ROOT%\assets"
 set "BUILD=%ROOT%\build"
 
-if not exist "%DIST%\HubProfesional\HubProfesional.exe" (
-    echo  FALTA: dist\HubProfesional\HubProfesional.exe
+if not exist "%DIST%\NeuroMood Hub Pro\NeuroMood Hub Pro.exe" (
+    echo  FALTA: dist\NeuroMood Hub Pro\NeuroMood Hub Pro.exe
     echo  Ejecuta BUILD_ALL.bat primero.
     pause
     exit /b 1
@@ -56,7 +56,7 @@ pyinstaller %BASE%^
  --add-data "%ASSETS%\no_symbol.ico;."^
  --add-data "%ASSETS%\LOGO.png;."^
  --add-data "%ROOT%\.env;."^
- --add-data "%DIST%\HubProfesional;HubProfesional"^
+ --add-data "%DIST%\NeuroMood Hub Pro;NeuroMood Hub Pro"^
  --add-data "%DIST%\Desinstalador NeuroMood Hub Pro;Desinstalador NeuroMood Hub Pro"^
  --icon "%ASSETS%\installer_icon.ico"^
  --name "Instalador NeuroMood Hub Pro"^
