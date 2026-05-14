@@ -127,7 +127,7 @@ class _BreathCircle(QWidget):
         self._text_opacity = 1.0
         self._phase_progress = 0.0
         self._session_progress = 0.0
-        self._center_text = "●"
+        self._center_text = ""
         self._phase_text = ""
         self._phase_color = C("accent", self._modo)
 
@@ -256,7 +256,7 @@ class _BreathCircle(QWidget):
         self._text_opacity = 1.0
         self._phase_progress = 0.0
         self._session_progress = 0.0
-        self._center_text = "●"
+        self._center_text = ""
         self._phase_text = ""
         self.update()
 
@@ -473,15 +473,6 @@ class ModuloRespiracion(NMModule):
         self._circle = _BreathCircle(self._content, self._modo)
         layout.addWidget(self._circle, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-        # ── BPM ──────────────────────────────────────────────────────────────────
-        bpm_lbl = QLabel("Calm ♥  /  60 BPM")
-        bpm_lbl.setFont(qfont("size_caption"))
-        bpm_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        bpm_lbl.setStyleSheet(
-            f"color: {C('teal', self._modo)}; background: transparent;"
-        )
-        layout.addWidget(bpm_lbl)
-
         # ── Cronómetro ─────────────────────────────────────────────────────────
         self._session_lbl = QLabel("")
         self._session_lbl.setFont(qfont("size_small"))
@@ -525,7 +516,7 @@ class ModuloRespiracion(NMModule):
 
     def _on_theme(self, modo: str) -> None:
         super()._on_theme(modo)
-        if hasattr(self, "_breath"):
+        if hasattr(self, "_circle"):
             self._circle._apply_theme(self._modo)
         self.update()
 
