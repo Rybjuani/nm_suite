@@ -488,34 +488,47 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
         font-size: {TYPOGRAPHY['size_body']}pt;
     }}
     QScrollBar:vertical {{
-        background: {c['bg_primary']};
-        width: 8px;
-        margin: 0;
-        border-radius: 4px;
+        background: transparent;
+        width: 6px;
+        margin: 4px 2px 4px 2px;
     }}
     QScrollBar::handle:vertical {{
-        background: {c['bg_elevated']};
-        border-radius: 4px;
-        min-height: 32px;
+        background: rgba(255, 255, 255, 0.10);
+        border-radius: 20px;
+        min-height: 40px;
     }}
     QScrollBar::handle:vertical:hover {{
-        background: {c['accent']};
+        background: qlineargradient(
+            x1:0, y1:0, x2:0, y2:1,
+            stop:0 rgba(0, 242, 255, 0.45),
+            stop:0.5 rgba(99, 102, 241, 0.35),
+            stop:1 rgba(0, 242, 255, 0.45)
+        );
+        border: 1px solid rgba(0, 242, 255, 0.25);
+        width: 10px;
     }}
     QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
         height: 0;
     }}
     QScrollBar:horizontal {{
-        background: {c['bg_primary']};
-        height: 8px;
-        border-radius: 4px;
+        background: transparent;
+        height: 6px;
+        margin: 2px 4px 2px 4px;
     }}
     QScrollBar::handle:horizontal {{
-        background: {c['bg_elevated']};
-        border-radius: 4px;
-        min-width: 32px;
+        background: rgba(255, 255, 255, 0.10);
+        border-radius: 20px;
+        min-width: 40px;
     }}
     QScrollBar::handle:horizontal:hover {{
-        background: {c['accent']};
+        background: qlineargradient(
+            x1:0, y1:0, x2:1, y2:0,
+            stop:0 rgba(0, 242, 255, 0.45),
+            stop:0.5 rgba(99, 102, 241, 0.35),
+            stop:1 rgba(0, 242, 255, 0.45)
+        );
+        border: 1px solid rgba(0, 242, 255, 0.25);
+        height: 10px;
     }}
     QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
         width: 0;
@@ -532,63 +545,59 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
 
 
 def stylesheet_scrollarea(modo: str = "dark_hybrid") -> str:
-    """Stylesheet premium para QScrollArea con scrollbars gradiente teal-violet."""
-    c = colors(norm_modo(modo))
-    accent = C("accent", modo)
-    teal = C("teal", modo)
-    violet = C("violet", modo)
-    return f"""
-    QScrollArea {{
+    """Stylesheet glassmorphism premium — scrollbars flotantes ultra-delgadas."""
+    return """
+    QScrollArea {
         background-color: transparent;
         border: none;
-    }}
-    QScrollArea > QWidget > QWidget {{
+    }
+    QScrollArea > QWidget > QWidget {
         background-color: transparent;
-    }}
-    QScrollBar:vertical {{
+    }
+    QScrollBar:vertical {
         background: transparent;
-        width: 8px;
+        width: 6px;
         margin: 4px 2px 4px 2px;
-    }}
-    QScrollBar::handle:vertical {{
+    }
+    QScrollBar::handle:vertical {
+        background: rgba(255, 255, 255, 0.10);
+        border-radius: 20px;
+        min-height: 40px;
+    }
+    QScrollBar::handle:vertical:hover {
         background: qlineargradient(
             x1:0, y1:0, x2:0, y2:1,
-            stop:0 {accent}, stop:1 {violet}
+            stop:0 rgba(0, 242, 255, 0.45),
+            stop:0.5 rgba(99, 102, 241, 0.35),
+            stop:1 rgba(0, 242, 255, 0.45)
         );
-        border-radius: 4px;
-        min-height: 32px;
-    }}
-    QScrollBar::handle:vertical:hover {{
-        background: qlineargradient(
-            x1:0, y1:0, x2:0, y2:1,
-            stop:0 {teal}, stop:1 {accent}
-        );
-    }}
-    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+        border: 1px solid rgba(0, 242, 255, 0.25);
+    }
+    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
         height: 0px;
-    }}
-    QScrollBar:horizontal {{
+    }
+    QScrollBar:horizontal {
         background: transparent;
-        height: 8px;
+        height: 6px;
         margin: 2px 4px 2px 4px;
-    }}
-    QScrollBar::handle:horizontal {{
+    }
+    QScrollBar::handle:horizontal {
+        background: rgba(255, 255, 255, 0.10);
+        border-radius: 20px;
+        min-width: 40px;
+    }
+    QScrollBar::handle:horizontal:hover {
         background: qlineargradient(
             x1:0, y1:0, x2:1, y2:0,
-            stop:0 {accent}, stop:1 {violet}
+            stop:0 rgba(0, 242, 255, 0.45),
+            stop:0.5 rgba(99, 102, 241, 0.35),
+            stop:1 rgba(0, 242, 255, 0.45)
         );
-        border-radius: 4px;
-        min-width: 32px;
-    }}
-    QScrollBar::handle:horizontal:hover {{
-        background: qlineargradient(
-            x1:0, y1:0, x2:1, y2:0,
-            stop:0 {teal}, stop:1 {accent}
-        );
-    }}
-    QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+        border: 1px solid rgba(0, 242, 255, 0.25);
+    }
+    QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
         width: 0px;
-    }}
+    }
     """
 
 

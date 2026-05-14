@@ -139,16 +139,42 @@ QProgressBar::chunk {{
     border-radius: 4px;
 }}
 
-/* ── Scroll ─────────────────────────────────────────────────── */
+/* ── Scroll glassmorphism ─────────────────────────────────── */
 QScrollArea {{ background: transparent; border: none; }}
 QScrollBar:vertical {{
-    background: {BG_PRIMARY}; width: 8px; border-radius: 4px;
+    background: transparent; width: 6px; margin: 4px 2px;
 }}
 QScrollBar::handle:vertical {{
-    background: {BORDER}; border-radius: 4px; min-height: 24px;
+    background: rgba(255, 255, 255, 0.10);
+    border-radius: 20px; min-height: 40px;
 }}
-QScrollBar::handle:vertical:hover {{ background: {ACCENT}; }}
+QScrollBar::handle:vertical:hover {{
+    background: qlineargradient(
+        x1:0, y1:0, x2:0, y2:1,
+        stop:0 rgba(0, 242, 255, 0.45),
+        stop:0.5 rgba(99, 102, 241, 0.35),
+        stop:1 rgba(0, 242, 255, 0.45)
+    );
+    border: 1px solid rgba(0, 242, 255, 0.25);
+}}
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
+QScrollBar:horizontal {{
+    background: transparent; height: 6px; margin: 2px 4px;
+}}
+QScrollBar::handle:horizontal {{
+    background: rgba(255, 255, 255, 0.10);
+    border-radius: 20px; min-width: 40px;
+}}
+QScrollBar::handle:horizontal:hover {{
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 rgba(0, 242, 255, 0.45),
+        stop:0.5 rgba(99, 102, 241, 0.35),
+        stop:1 rgba(0, 242, 255, 0.45)
+    );
+    border: 1px solid rgba(0, 242, 255, 0.25);
+}}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0; }}
 
 /* ── Sidebar ────────────────────────────────────────────────── */
 QWidget#Sidebar {{
