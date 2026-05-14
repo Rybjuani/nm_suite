@@ -33,7 +33,7 @@ from PyQt6.QtWidgets import (
 
 try:
     from shared.theme_qt import (
-        qcolor, qfont, shadow_effect, linear_gradient, rich_gradient,
+        qcolor, qfont, linear_gradient, rich_gradient,
         linear_gradient_vertical, radial_glow, noise_overlay, gradient_colors,
         C, colors, norm_modo, interpolate_color, label_style, SessionColor,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_INPUT, RADIUS_PILL,
@@ -47,7 +47,7 @@ except ImportError:
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
     from theme_qt import (
-        qcolor, qfont, shadow_effect, linear_gradient, rich_gradient,
+        qcolor, qfont, linear_gradient, rich_gradient,
         linear_gradient_vertical, radial_glow, noise_overlay, gradient_colors,
         C, colors, norm_modo, interpolate_color, label_style, SessionColor,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_INPUT, RADIUS_PILL,
@@ -122,47 +122,22 @@ class NMCard(QFrame):
 
         self.setObjectName("NMCard")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
-        self._setup_shadow()
         self.setCursor(Qt.CursorShape.PointingHandCursor if clickable
                        else Qt.CursorShape.ArrowCursor)
 
         _tm().theme_changed.connect(self._apply_theme)
 
-    def _setup_shadow(self):
-        self._shadow = shadow_effect("card", self._modo, self)
-        self.setGraphicsEffect(self._shadow)
-
     # ── hover ─────────────────────────────────────────────────────────────────
 
     def enterEvent(self, event: QEnterEvent):
         self._hover = True
-        self._anim_shadow(blur=38, offset=12)
-        if self._shadow:
-            self._shadow.setColor(self._session.glow_qcolor(self._modo))
+        self.update()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
         self._hover = False
-        self._anim_shadow(blur=28, offset=8)
-        if self._shadow:
-            self._shadow.setColor(QColor(0, 0, 0, 115))
+        self.update()
         super().leaveEvent(event)
-
-    def _anim_shadow(self, blur: float, offset: float):
-        if not self._shadow:
-            return
-        # blur
-        a1 = QPropertyAnimation(self._shadow, b"blurRadius", self)
-        a1.setDuration(200)
-        a1.setEasingCurve(QEasingCurve.Type.OutCubic)
-        a1.setEndValue(blur)
-        a1.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
-        # offset Y
-        a2 = QPropertyAnimation(self._shadow, b"yOffset", self)
-        a2.setDuration(200)
-        a2.setEasingCurve(QEasingCurve.Type.OutCubic)
-        a2.setEndValue(offset)
-        a2.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
     # ── click scale ───────────────────────────────────────────────────────────
 
@@ -246,11 +221,6 @@ class NMCard(QFrame):
         self._modo = norm_modo(modo)
         if not self._accent or self._accent == C("accent", "dark_hybrid"):
             self._accent = C("accent", self._modo)
-        old = self._shadow
-        if old is not None:
-            old.deleteLater()
-        self._shadow = shadow_effect("card", self._modo, self)
-        self.setGraphicsEffect(self._shadow)
         self.update()
 
     def set_accent(self, hex_color: str):

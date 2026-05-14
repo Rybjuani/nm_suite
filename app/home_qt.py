@@ -28,7 +28,7 @@ try:
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         linear_gradient, linear_gradient_vertical, get_gradient, gradient_colors,
-        shadow_effect, noise_overlay,
+        noise_overlay,
         RADIUS_CARD, PAD_CARD, PAD_CONTAINER, GAP_CARDS,
         stylesheet_scrollarea, SessionColor,
     )
@@ -40,7 +40,7 @@ except ImportError:
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         linear_gradient, linear_gradient_vertical, get_gradient, gradient_colors,
-        shadow_effect, noise_overlay,
+        noise_overlay,
         RADIUS_CARD, PAD_CARD, PAD_CONTAINER, GAP_CARDS,
         stylesheet_scrollarea, SessionColor,
     )
@@ -133,8 +133,6 @@ class ModuleCard(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
-        self._setup_shadow()
-
         self._eff = QGraphicsOpacityEffect(self)
         self._eff.setOpacity(0.0)
         self.setGraphicsEffect(self._eff)
@@ -142,37 +140,15 @@ class ModuleCard(QWidget):
         self._build_ui()
         ThemeManager.instance().theme_changed.connect(self._apply_theme)
 
-    def _setup_shadow(self):
-        self._shadow = shadow_effect("card", self._modo)
-
     def enterEvent(self, event):
         self._hover = True
-        self._anim_shadow(blur=38, offset=12)
-        if self._shadow:
-            self._shadow.setColor(self._session.glow_qcolor(self._modo))
+        self.update()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
         self._hover = False
-        self._anim_shadow(blur=24, offset=6)
-        if self._shadow:
-            self._shadow.setColor(QColor(0, 0, 0, 90))
+        self.update()
         super().leaveEvent(event)
-
-    def _anim_shadow(self, blur: float, offset: float):
-        from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, QAbstractAnimation
-        if not self._shadow:
-            return
-        a1 = QPropertyAnimation(self._shadow, b"blurRadius", self)
-        a1.setDuration(200)
-        a1.setEasingCurve(QEasingCurve.Type.OutCubic)
-        a1.setEndValue(blur)
-        a1.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
-        a2 = QPropertyAnimation(self._shadow, b"yOffset", self)
-        a2.setDuration(200)
-        a2.setEasingCurve(QEasingCurve.Type.OutCubic)
-        a2.setEndValue(offset)
-        a2.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
     def _build_ui(self):
         c = colors(self._modo)
@@ -335,7 +311,7 @@ class ModuleCard(QWidget):
             if self._eff is not None:
                 self._eff.deleteLater()
                 self._eff = None
-            self.setGraphicsEffect(self._shadow)
+            self.setGraphicsEffect(None)
 
         anim_fade.finished.connect(_on_fade_done)
         anim_fade.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
@@ -357,12 +333,11 @@ class ModuleCard(QWidget):
         self._desc_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
         self._ring._color = self._accent
         self._ring.update()
-        self._setup_shadow()
         if self._eff is None or self._eff.opacity() >= 1.0:
             if self._eff is not None:
                 self._eff.deleteLater()
                 self._eff = None
-            self.setGraphicsEffect(self._shadow)
+            self.setGraphicsEffect(None)
         self._refresh_status()
         self.update()
 
