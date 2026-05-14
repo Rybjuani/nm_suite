@@ -129,7 +129,7 @@ class ModuleCard(QWidget):
         self._hover = False
 
         self.setMinimumHeight(110)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         self._setup_shadow()
@@ -416,6 +416,8 @@ class HomeView(QWidget):
         grid.setHorizontalSpacing(GAP_CARDS)
         for col in range(3):
             grid.setColumnStretch(col, 1)
+        for row in range(3):
+            grid.setRowStretch(row, 1)
 
         # Cards 0–5 en grid 3 columnas
         for idx in range(6):

@@ -438,6 +438,7 @@ class HubProfesional(QMainWindow):
 
     def _apply_style(self):
         QApplication.instance().setPalette(app_palette(self._modo))
+        QApplication.instance().setStyleSheet(stylesheet_base(self._modo))
 
     # ── Build ─────────────────────────────────────────────────────────────────
 

@@ -526,7 +526,7 @@ class ModuloRespiracion(NMModule):
     def _on_theme(self, modo: str) -> None:
         super()._on_theme(modo)
         if hasattr(self, "_breath"):
-            self._breath._apply_theme(self._modo)
+            self._circle._apply_theme(self._modo)
         self.update()
 
     # ── Lógica de preset (preservada) ─────────────────────────────────────────

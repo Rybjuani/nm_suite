@@ -199,6 +199,7 @@ class NeuroMoodApp(QMainWindow):
 
     def _apply_global_style(self):
         QApplication.instance().setPalette(app_palette(self._modo))
+        QApplication.instance().setStyleSheet(stylesheet_base(self._modo))
 
     def _apply_initial_style(self):
         QApplication.instance().setPalette(app_palette(self._modo))

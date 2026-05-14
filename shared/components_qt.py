@@ -1247,8 +1247,27 @@ class _LogoLabel(QWidget):
             logo_path = obtener_ruta_recurso("LOGO.png")
             if os.path.exists(logo_path):
                 self._pixmap = QPixmap(logo_path)
+                self._pixmap_light = None
         except Exception:
             self._pixmap = None
+            self._pixmap_light = None
+
+    def _get_pixmap(self):
+        if self._pixmap is None:
+            return None
+        if "light" in self._modo:
+            if self._pixmap_light is None:
+                try:
+                    from PIL import Image as PILImage
+                    img = PILImage.open(obtener_ruta_recurso("LOGO.png")).convert("RGBA")
+                    img = recolorear_logo_light(img)
+                    data = img.tobytes("raw", "RGBA")
+                    qimg = QImage(data, img.width, img.height, QImage.Format.Format_RGBA8888)
+                    self._pixmap_light = QPixmap.fromImage(qimg)
+                except Exception:
+                    return self._pixmap
+            return self._pixmap_light
+        return self._pixmap
 
     def _get_glow_alpha(self) -> int:
         return self._glow_alpha_value
@@ -1275,7 +1294,9 @@ class _LogoLabel(QWidget):
         p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
 
         if self._pixmap and not self._pixmap.isNull():
-            pm = self._pixmap.scaled(
+            pm = self._get_pixmap()
+            if pm and not pm.isNull():
+                pm = pm.scaled(
                 140, 28,
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation,
@@ -1472,10 +1493,7 @@ class NMModule(QWidget):
         # Wrapper centrado para pantallas anchas (>1100px el contenido se centra)
         self._content_wrapper = QHBoxLayout()
         self._content_wrapper.setContentsMargins(0, 0, 0, 0)
-        self._content_wrapper.addStretch()
         self._content_wrapper.addWidget(self._content)
-        self._content_wrapper.addStretch()
-        self._content.setMaximumWidth(900)
         self._root_layout.addLayout(self._content_wrapper)
 
         _tm().theme_changed.connect(self._on_theme)
