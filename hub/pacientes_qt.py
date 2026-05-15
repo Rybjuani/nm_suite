@@ -706,7 +706,7 @@ class _TabBanco(QWidget):
                     border-radius: {RADIUS_PILL}px;
                 }}
                 QPushButton:hover {{
-                    color: white;
+                    color: {c['text_on_accent']};
                     background: {c['error']};
                 }}
             """)

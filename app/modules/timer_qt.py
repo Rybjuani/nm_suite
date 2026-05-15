@@ -36,7 +36,10 @@ from PyQt6.QtWidgets import (
 )
 
 try:
-    from shared.components_qt import NMModule, NMButton, NMButtonOutline, NMInput, NMToast, ThemeManager, NMEmptyState
+    from shared.components_qt import (
+        NMModule, NMButton, NMButtonOutline, NMInput, NMToast, ThemeManager,
+        NMEmptyState, NMPresetChip, NMFocusArc, NMSessionHistory,
+    )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         get_gradient, gradient_colors, stylesheet_lineedit,
@@ -49,7 +52,10 @@ except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
-    from shared.components_qt import NMModule, NMButton, NMButtonOutline, NMInput, NMToast, ThemeManager, NMEmptyState
+    from shared.components_qt import (
+        NMModule, NMButton, NMButtonOutline, NMInput, NMToast, ThemeManager,
+        NMEmptyState, NMPresetChip, NMFocusArc, NMSessionHistory,
+    )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         get_gradient, gradient_colors, stylesheet_lineedit,
@@ -62,8 +68,8 @@ except ImportError:
 PRESETS = [
     ("5 min",  5 * 60),
     ("10 min", 10 * 60),
-    ("15 min", 15 * 60),
-    ("20 min", 20 * 60),
+    ("25 min", 25 * 60),
+    ("45 min", 45 * 60),
 ]
 
 _CANVAS = 280
@@ -301,8 +307,8 @@ class ModuloTimer(NMModule):
         # Estado de negocio (preservado exacto)
         self._running = False
         self._paused = False
-        self._total_sec = 300
-        self._remaining_sec = 300
+        self._total_sec = 25 * 60
+        self._remaining_sec = 25 * 60
         self._timer_id: QTimer | None = None
         self._custom_mode = False
         self._last_10s_blink = False
@@ -331,9 +337,9 @@ class ModuloTimer(NMModule):
         chips_row = QHBoxLayout()
         chips_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
         chips_row.setSpacing(6)
-        self._chip_btns: list[tuple[NMButtonOutline, int]] = []
+        self._chip_btns: list[tuple[NMPresetChip, int]] = []
         for label, secs in PRESETS:
-            btn = NMButtonOutline(label, modo=self._modo)
+            btn = NMPresetChip(label, modo=self._modo)
             btn.setFixedSize(76, 32)
             btn.clicked.connect(lambda _, s=secs: self._select_preset(s))
             chips_row.addWidget(btn)
@@ -345,7 +351,7 @@ class ModuloTimer(NMModule):
         self._btn_custom.clicked.connect(self._show_custom_input)
         chips_row.addWidget(self._btn_custom)
         layout.addLayout(chips_row)
-        self._highlight_preset(300)
+        self._highlight_preset(25 * 60)
 
         # Input custom (oculto por defecto)
         self._custom_widget = QWidget()
@@ -365,8 +371,8 @@ class ModuloTimer(NMModule):
         layout.addWidget(self._custom_widget, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         # ── Canvas ────────────────────────────────────────────────────────────
-        self._canvas = _TimerCanvas(self._content, self._modo)
-        self._canvas.update_data(1.0, "05:00")
+        self._canvas = NMFocusArc(size=160, modo=self._modo)
+        self._canvas.update_data(0.0, "25:00")
         layout.addWidget(self._canvas, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         # ── Controles ─────────────────────────────────────────────────────────
@@ -401,21 +407,8 @@ class ModuloTimer(NMModule):
         layout.addWidget(self._lbl_active_name)
 
         # ── Quick history footer (last 3 sessions today) ──────────────────────
-        hist_row = QHBoxLayout()
-        hist_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        hist_row.setSpacing(sp("xs"))
-
-        self._hist_label = QLabel("Hoy:")
-        self._hist_label.setFont(qfont("size_caption"))
-        self._hist_label.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
-        self._hist_label.hide()
-        hist_row.addWidget(self._hist_label)
-
-        self._hist_chips_row = QHBoxLayout()
-        self._hist_chips_row.setSpacing(sp("xs"))
-        hist_row.addLayout(self._hist_chips_row)
-        hist_row.addStretch()
-        layout.addLayout(hist_row)
+        self._session_history = NMSessionHistory(modo=self._modo)
+        layout.addWidget(self._session_history)
 
         self._load_quick_history()
 
@@ -608,12 +601,7 @@ class ModuloTimer(NMModule):
 
     def _load_quick_history(self):
         """Populate the quick history footer with last 3 sessions today."""
-        while self._hist_chips_row.count():
-            item = self._hist_chips_row.takeAt(0)
-            w = item.widget()
-            if w:
-                self._hist_chips_row.removeWidget(w)
-                w.deleteLater()
+        sessions = []
         try:
             conn = obtener_conexion()
             rows = conn.execute(
@@ -626,12 +614,10 @@ class ModuloTimer(NMModule):
                 dr = row["duracion_real"] if isinstance(row, dict) or hasattr(row, "keys") else row[1]
                 mins = dr // 60
                 secs = dr % 60
-                chip = NMButtonOutline(f"{mins:02d}:{secs:02d}", modo=self._modo)
-                chip.setFixedHeight(24)
-                chip.setEnabled(False)
-                self._hist_chips_row.addWidget(chip)
-            visible = self._hist_chips_row.count() > 0
-            self._hist_label.setVisible(visible)
+                name = row["nombre"] if isinstance(row, dict) or hasattr(row, "keys") else row[0]
+                sessions.append(f"{name} · {mins:02d}:{secs:02d}")
+            if hasattr(self, "_session_history"):
+                self._session_history.set_sessions(sessions)
         except Exception:
             _log.exception("Operation failed")
 

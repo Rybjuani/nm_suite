@@ -1,6 +1,6 @@
 """
 _test_home_auto.py — Test visual automático del HomeView real con ModuleCards.
-Verifica: sombra, hover glow, scale click, márgenes PAD_CONTAINER, barra 5px.
+Verifica: sombra, hover glow, scale click, márgenes PAD_CONTAINER, barra 3px.
 Auto-captura y cierra solo.
 Ejecutar: python _test_home_auto.py
 """

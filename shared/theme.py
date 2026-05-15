@@ -10,14 +10,14 @@ COLORS = {
     # DARK HYBRID (Principal - Recomendado para sesiones largas)
     # ============================================================
     "dark_hybrid": {
-        # Backgrounds — profundo como en refs (tXtGS, jTJrs, u8YFC)
-        "bg_primary":       "#080910",
-        "bg_secondary":     "#111420",
-        "bg_surface":       "#181c30",
-        "bg_elevated":      "#1f243b",
-        "bg_overlay":       "#282d48",
-        "bg_glass":         "#181c30bb",
-        "bg_input":         "#1a1e33",
+        # Backgrounds — alineados con mockup V3 (--bg:#0f172a, --surface:#1e293b)
+        "bg_primary":       "#0f172a",
+        "bg_secondary":     "#12192a",
+        "bg_surface":       "#1e293b",
+        "bg_elevated":      "#334155",
+        "bg_overlay":       "#3d4f68",
+        "bg_glass":         "#1e293bbb",
+        "bg_input":         "#1e293b",
 
         # Acentos — indigo + teal + violet
         "accent":           "#6366f1",
@@ -30,26 +30,26 @@ COLORS = {
         "teal_hover":       "#0d9488",
         "cyan":             "#22d3ee",
 
-        # Texto — alto contraste como en refs
-        "text_primary":     "#f0f6ff",
-        "text_secondary":   "#8892a4",
-        "text_tertiary":    "#4e5668",
+        # Texto — --tp:#f1f5f9, --ts:#94a3b8, --tm:#64748b
+        "text_primary":     "#f1f5f9",
+        "text_secondary":   "#94a3b8",
+        "text_tertiary":    "#64748b",
         "text_on_accent":   "#ffffff",
 
-        # Bordes — sutiles pero presentes
-        "border":           "#1e2238",
-        "border_accent":    "#2d2f7a",
+        # Bordes — equivalentes opacos del mockup rgba(255,255,255,.09/.15)
+        "border":           "#334155",
+        "border_accent":    "#3d4f68",
         "border_focus":     "#6366f1",
-        "border_card":      "#1a1d30",
+        "border_card":      "#334155",
 
         # Estados semánticos
-        "success":          "#10b981",
+        "success":          "#22c55e",
         "warning":          "#f59e0b",
         "error":            "#ef4444",
         "info":             "#3b82f6",
 
         # Progress
-        "progress_track":   "#181b2e",
+        "progress_track":   "#1e293b",
         "progress_fill":    "#6366f1",
 
         # ── Tokens nuevos (Design System v3 — Mayo 2026) ──────────────────────
@@ -82,14 +82,14 @@ COLORS = {
     # LIGHT HYBRID (Premium - Diurno / Preferencia usuario)
     # ============================================================
     "light_hybrid": {
-        # Backgrounds — como en refs (wKY26, LdbzV, ZVpLC)
-        "bg_primary":       "#f4f7fb",   # era #f8fafc — ligeramente más cálido
-        "bg_secondary":     "#edf2f8",
+        # Backgrounds — alineados con mockup V3 (--bg:#f8fafc, --surface:#fff)
+        "bg_primary":       "#f8fafc",
+        "bg_secondary":     "#f1f5f9",
         "bg_surface":       "#ffffff",
-        "bg_elevated":      "#e8eef7",
-        "bg_overlay":       "#dbe5f2",
+        "bg_elevated":      "#f1f5f9",
+        "bg_overlay":       "#e2e8f0",
         "bg_glass":         "#ffffffcc",
-        "bg_input":         "#ffffff",
+        "bg_input":         "#f8fafc",
 
         # Acentos — indigo oscuro para modo claro
         "accent":           "#4f46e5",
@@ -102,20 +102,20 @@ COLORS = {
         "teal_hover":       "#0f766e",
         "cyan":             "#06b6d4",
 
-        # Texto
+        # Texto — --tp:#0f172a, --ts:#475569, --tm:#94a3b8
         "text_primary":     "#0f172a",
-        "text_secondary":   "#334155",
-        "text_tertiary":    "#64748b",
+        "text_secondary":   "#475569",
+        "text_tertiary":    "#94a3b8",
         "text_on_accent":   "#ffffff",
 
-        # Bordes
-        "border":           "#dde3ed",
-        "border_accent":    "#a5d4e0",
+        # Bordes — rgba(0,0,0,.08) sobre #f8fafc ≈ #e4e9ef
+        "border":           "#e2e8f0",
+        "border_accent":    "#cbd5e1",
         "border_focus":     "#4f46e5",
-        "border_card":      "#e4eaf4",
+        "border_card":      "#e2e8f0",
 
         # Estados
-        "success":          "#059669",
+        "success":          "#16a34a",
         "warning":          "#d97706",
         "error":            "#dc2626",
         "info":             "#2563eb",
@@ -155,13 +155,13 @@ COLORS = {
 # TOKENS ADICIONALES (compartidos)
 # ============================================================
 TYPOGRAPHY = {
-    "font_family":      "Segoe UI",
+    "font_family":      "DM Sans",
     "font_fallback":    "Arial",
-    "font_mono":        "Consolas",   # timers, contadores, terminal del installer
-    "size_h1":          32,
-    "size_h2":          22,
-    "size_h3":          18,
-    "size_body":        14,
+    "font_mono":        "JetBrains Mono",   # timers, contadores, terminal del installer
+    "size_h1":          22,
+    "size_h2":          18,
+    "size_h3":          15,
+    "size_body":        13,
     "size_small":       12,
     "size_caption":     11,
     "size_emoji":       64,   # emoji grande en módulos (ánimo, home icon grande)
@@ -173,18 +173,18 @@ TYPOGRAPHY = {
 }
 
 LAYOUT = {
-    "padding_container":    24,
-    "padding_card":         20,
-    "padding_button_x":     24,
-    "padding_button_y":     10,
-    "gap_cards":            16,
+    "padding_container":    18,
+    "padding_card":         14,
+    "padding_button_x":     20,
+    "padding_button_y":     8,
+    "gap_cards":            10,
     "gap_elements":         12,
-    "radius_button":        10,   # era 8 — botones más redondeados como en refs
-    "radius_card":          16,   # era 12 — cards más redondeadas como en refs
+    "radius_button":        10,
+    "radius_card":          12,
     "radius_modal":         20,
-    "radius_input":         10,   # era 8
+    "radius_input":         10,
     "radius_badge":         20,
-    "radius_pill":          24,   # para pills/chips de presets
+    "radius_pill":          20,   # para pills/chips de presets
     "radius_small":         6,    # row items, badges pequeños, separadores
     "checkbox_size":        18,   # indicador de QCheckBox
     "border_width":         1,

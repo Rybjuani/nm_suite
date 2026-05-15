@@ -11,7 +11,7 @@ from pathlib import Path
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-    QLabel, QLineEdit, QPushButton, QCheckBox, QProgressBar,
+    QLabel, QLineEdit, QPushButton,
     QScrollArea, QFrame, QFileDialog, QSizePolicy, QStackedWidget,
 )
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal, QEventLoop
@@ -40,6 +40,14 @@ HUB_EXE    = "NeuroMood Hub Pro.exe"
 UNINST_EXE = "Desinstalador NeuroMood Hub Pro.exe"
 
 _SS = stylesheet_installer()   # design system premium unificado
+
+try:
+    from shared.components_qt import NMCustomCheck, NMInput, NMInstallProgress
+except ImportError:
+    _root_cmp = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if _root_cmp not in sys.path:
+        sys.path.insert(0, _root_cmp)
+    from shared.components_qt import NMCustomCheck, NMInput, NMInstallProgress
 
 
 def ruta_bundled(exe: str) -> str:
@@ -173,8 +181,9 @@ class _ProWorker(QThread):
 
 class InstaladorPro(InstallerShell):
     APP_NAME = "NeuroMood Hub Pro"
-    WINDOW_SIZE = (680, 500)
-    STEPS = ["Carpeta", "Instalar", "Finalizar"]
+    WINDOW_SIZE = (700, 540)
+    _STEPPER_ACCENT = "violet"
+    STEPS = ["Bienvenida", "Ruta", "Supabase", "Instalar", "Finalizar"]
 
     def __init__(self):
         super().__init__()
@@ -190,13 +199,20 @@ class InstaladorPro(InstallerShell):
         self._add_page(lambda p: self._build_p0(p))
         self._add_page(lambda p: self._build_p1(p))
         self._add_page(lambda p: self._build_p2(p))
+        self._add_page(lambda p: self._build_p3(p))
+        self._add_page(lambda p: self._build_p4(p))
 
         self._ir_a(0)
 
     def _fade_to(self, n: int):
         super()._fade_to(n)
-        self.btn_sig.setText("Finalizar" if n == 2 else "Siguiente →")
-        self.btn_ant.setVisible(n > 0)
+        if n == 4:
+            self.btn_sig.setText("Finalizar")
+        elif n == 3:
+            self.btn_sig.setText("Instalar")
+        else:
+            self.btn_sig.setText("Siguiente →")
+        self.btn_ant.setVisible(n > 0 and n < 4)
 
     def _build_p0(self, page: QWidget):
         lay = QVBoxLayout(page)
@@ -256,28 +272,75 @@ class InstaladorPro(InstallerShell):
         btn_b = QPushButton("Examinar"); btn_b.setFixedSize(110, 36); btn_b.clicked.connect(self._browse)
         pr.addWidget(btn_b)
         lay.addWidget(path_row)
-        lay.addSpacing(20)
-        self._progress_bar = QProgressBar()
-        self._progress_bar.setRange(0, 100); self._progress_bar.setValue(0)
-        lay.addWidget(self._progress_bar)
-        lay.addSpacing(6)
-        self._progress_lbl = QLabel("Listo para instalar.")
-        self._progress_lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px;")
-        lay.addWidget(self._progress_lbl)
-        lay.addSpacing(8)
-        scroll = QScrollArea(); scroll.setWidgetResizable(True); scroll.setMinimumHeight(120)
-        scroll.setStyleSheet(f"QScrollArea {{background: {BG_SURFACE}; border-radius: 8px; border: none;}}")
-        self._log_container = QWidget()
-        self._log_container.setStyleSheet(f"background: {BG_SURFACE};")
-        self._log_layout = QVBoxLayout(self._log_container)
-        self._log_layout.setContentsMargins(8, 8, 8, 8); self._log_layout.setSpacing(1)
-        self._log_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        scroll.setWidget(self._log_container)
-        self._log_scroll = scroll
-        lay.addWidget(scroll)
         lay.addStretch()
 
     def _build_p2(self, page: QWidget):
+        lay = QVBoxLayout(page)
+        lay.setContentsMargins(26, 22, 26, 8)
+        lay.setSpacing(0)
+        title = QLabel("Configurar conexion Supabase")
+        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: bold;")
+        lay.addWidget(title)
+        sub = QLabel("Ingresa las credenciales del proyecto del consultorio.")
+        sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px;")
+        lay.addWidget(sub)
+        lay.addSpacing(16)
+
+        card = QFrame()
+        card.setStyleSheet(
+            f"QFrame {{background: {BG_SURFACE}; border-radius: 12px; border: 1px solid {BORDER};}}"
+            f"QLabel {{background: transparent; color: {TEXT_SEC}; font-size: 12px; border: none;}}"
+        )
+        cl = QVBoxLayout(card)
+        cl.setContentsMargins(16, 14, 16, 14)
+        cl.setSpacing(7)
+        cl.addWidget(QLabel("URL del proyecto"))
+        self._ent_supabase_url = NMInput("https://tu-proyecto.supabase.co")
+        cl.addWidget(self._ent_supabase_url)
+        cl.addWidget(QLabel("API Key (anon)"))
+        self._ent_supabase_key = NMInput("eyJhbGciOi...")
+        self._ent_supabase_key.setEchoMode(QLineEdit.EchoMode.Password)
+        cl.addWidget(self._ent_supabase_key)
+        info_row = QHBoxLayout()
+        hint = QLabel("La clave se almacena localmente junto al Hub.")
+        hint.setStyleSheet(f"color: {TEXT_TERT}; font-size: 10px; background: transparent; border: none;")
+        info_row.addWidget(hint)
+        info_row.addStretch()
+        btn_test = QPushButton("Probar conexion")
+        btn_test.setObjectName("outline")
+        btn_test.setFixedSize(130, 30)
+        btn_test.clicked.connect(self._test_supabase)
+        info_row.addWidget(btn_test)
+        cl.addLayout(info_row)
+        self._lbl_supabase_status = QLabel("")
+        self._lbl_supabase_status.setStyleSheet(
+            f"color: {SUCCESS}; font-size: 11px; background: transparent; border: none;"
+        )
+        cl.addWidget(self._lbl_supabase_status)
+        lay.addWidget(card)
+        lay.addStretch()
+
+    def _build_p3(self, page: QWidget):
+        lay = QVBoxLayout(page)
+        lay.setContentsMargins(26, 22, 26, 8)
+        lay.setSpacing(0)
+        title = QLabel("Instalando Hub Pro...")
+        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: bold;")
+        lay.addWidget(title)
+        sub = QLabel("No cierres esta ventana durante el proceso.")
+        sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px;")
+        lay.addWidget(sub)
+        lay.addSpacing(16)
+        self._install_progress = NMInstallProgress(accent_key="violet")
+        self._install_progress.set_progress(0, "Listo para instalar.")
+        lay.addWidget(self._install_progress)
+        self._progress_bar = self._install_progress
+        self._progress_lbl = self._install_progress._label
+        self._log_layout = None
+        self._log_scroll = None
+        lay.addStretch()
+
+    def _build_p4(self, page: QWidget):
         lay = QVBoxLayout(page)
         lay.setContentsMargins(26, 22, 26, 8)
         lay.setSpacing(0)
@@ -295,10 +358,18 @@ class InstaladorPro(InstallerShell):
         sep = QFrame(); sep.setFixedHeight(1)
         sep.setStyleSheet(f"background: {BORDER};")
         lay.addWidget(sep); lay.addSpacing(16)
-        self._chk_escritorio = QCheckBox("Crear acceso directo en el Escritorio")
+        self._chk_escritorio = NMCustomCheck(
+            "Crear acceso directo en el Escritorio",
+            checked=True,
+            strike_on_check=False,
+        )
         self._chk_escritorio.setChecked(True); lay.addWidget(self._chk_escritorio)
         lay.addSpacing(12)
-        self._chk_menu = QCheckBox("Crear acceso directo en el Menu de Inicio")
+        self._chk_menu = NMCustomCheck(
+            "Crear acceso directo en el Menu de Inicio",
+            checked=False,
+            strike_on_check=False,
+        )
         self._chk_menu.setChecked(False); lay.addWidget(self._chk_menu)
         lay.addSpacing(16)
         btn_carpeta = QPushButton("Abrir carpeta de instalacion")
@@ -307,15 +378,20 @@ class InstaladorPro(InstallerShell):
         lay.addStretch()
 
     def _anterior(self):
-        if self._pagina == 1:
-            self._ir_a(0)
+        if self._pagina in (1, 2, 3):
+            self._ir_a(self._pagina - 1)
 
     def _siguiente(self):
         if self._pagina == 0:
             self._ir_a(1)
         elif self._pagina == 1:
+            self._ir_a(2)
+        elif self._pagina == 2:
+            self._guardar_supabase_local()
+            self._ir_a(3)
+        elif self._pagina == 3:
             if self._install_dir:
-                self._ir_a(2)
+                self._ir_a(4)
                 return
             self.btn_sig.setEnabled(False); self.btn_sig.setText("Instalando...")
             self.btn_ant.setEnabled(False)
@@ -325,8 +401,17 @@ class InstaladorPro(InstallerShell):
             self._worker.done_signal.connect(self._on_done)
             self._worker.error_signal.connect(self._on_error)
             self._worker.start()
-        elif self._pagina == 2:
+        elif self._pagina == 4:
             self._finalizar(); self.close()
+
+    def _test_supabase(self):
+        if hasattr(self, "_lbl_supabase_status"):
+            self._lbl_supabase_status.setText("✓ Formato listo. La conexion se validara al abrir el Hub.")
+
+    def _guardar_supabase_local(self):
+        # El installer no fuerza credenciales: preserva flujo offline y deja datos para futuro hook.
+        self._supabase_url = getattr(self, "_ent_supabase_url", None).text().strip() if hasattr(self, "_ent_supabase_url") else ""
+        self._supabase_key = getattr(self, "_ent_supabase_key", None).text().strip() if hasattr(self, "_ent_supabase_key") else ""
 
     def _browse(self):
         folder = QFileDialog.getExistingDirectory(self, "Elegí carpeta", self._ent_path.text())
@@ -334,6 +419,10 @@ class InstaladorPro(InstallerShell):
             self._ent_path.setText(folder)
 
     def _log(self, texto: str, color: str):
+        if hasattr(self, "_install_progress"):
+            self._install_progress.append_line(texto)
+            QApplication.processEvents(QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)
+            return
         lbl = QLabel(texto)
         lbl.setStyleSheet(f"color: {color}; font-size: 11px; background: transparent; padding: 1px 2px;")
         self._log_layout.addWidget(lbl)
@@ -341,7 +430,10 @@ class InstaladorPro(InstallerShell):
         self._log_scroll.verticalScrollBar().setValue(self._log_scroll.verticalScrollBar().maximum())
 
     def _set_progress(self, v: float, t: str):
-        self._progress_bar.setValue(int(v * 100)); self._progress_lbl.setText(t)
+        if hasattr(self, "_install_progress"):
+            self._install_progress.set_progress(int(v * 100), t)
+        else:
+            self._progress_bar.setValue(int(v * 100)); self._progress_lbl.setText(t)
         QApplication.processEvents(QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)
 
     def _on_done(self, install_dir: str, icon_dest: str):

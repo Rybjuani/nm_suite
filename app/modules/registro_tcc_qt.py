@@ -111,7 +111,7 @@ class _StepPill(QFrame):
             text_color = c["text_on_accent"]
         elif self._state == "done":
             bg = c["success"]
-            text_color = "#ffffff"
+            text_color = c["text_on_accent"]
         else:
             bg = c.get("border_card", c["border"])
             text_color = c["text_tertiary"]

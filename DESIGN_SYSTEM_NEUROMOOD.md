@@ -2,7 +2,7 @@
 *Versión 2.0 — Mayo–Junio 2026*
 
 > Source of truth visual para Suite, Hub, instaladores y desinstaladores.
-> Toda pantalla nueva debe derivarse de este documento.
+> La referencia visual única para esta versión es `C:\Users\nosom\Downloads\neuromood_v3_all_screens.html`.
 
 ---
 
@@ -12,13 +12,13 @@
 
 | Token | Hex | Uso |
 |---|---|---|
-| `bg_primary` | `#080910` | Fondo de ventana |
-| `bg_secondary` | `#111420` | Fondo de sección / caption bar |
-| `bg_surface` | `#181c30` | Superficie de cards |
-| `bg_elevated` | `#1f243b` | Cards elevadas, hover de lista |
-| `bg_overlay` | `#282d48` | Overlays, paneles flotantes |
-| `bg_glass` | `#181c30bb` | Glassmorphism (panels inline) |
-| `bg_input` | `#1a1e33` | Inputs, textareas |
+| `bg_primary` | `#0f172a` | Fondo de ventana / mockup `--bg` |
+| `bg_secondary` | `#12192a` | Sidebar Hub / caption bar |
+| `bg_surface` | `#1e293b` | Superficie de cards / mockup `--surface` |
+| `bg_elevated` | `#334155` | Cards elevadas, hover de lista / mockup `--elevated` |
+| `bg_overlay` | `#3d4f68` | Hover de chips y botones / mockup `--hover` |
+| `bg_glass` | `#1e293bbb` | Glass inline |
+| `bg_input` | `#1e293b` | Inputs, textareas |
 | `accent` | `#6366f1` | Indigo — acción principal, foco, barra izquierda |
 | `accent_hover` | `#4f52d4` | Estado hover del accent |
 | `accent_glow` | `#1e1f5e` | Fondo sutil bajo accent |
@@ -27,15 +27,15 @@
 | `violet` | `#a855f7` | Acento secundario, scrollbar fin |
 | `violet_hover` | `#9333ea` | Hover de violet |
 | `cyan` | `#22d3ee` | Info, badges de estado activo |
-| `text_primary` | `#f0f6ff` | Texto principal |
-| `text_secondary` | `#8892a4` | Texto secundario, placeholders |
-| `text_tertiary` | `#4e5668` | Texto desactivado, captions |
+| `text_primary` | `#f1f5f9` | Texto principal / mockup `--tp` |
+| `text_secondary` | `#94a3b8` | Texto secundario, placeholders / mockup `--ts` |
+| `text_tertiary` | `#64748b` | Texto desactivado, captions / mockup `--tm` |
 | `text_on_accent` | `#ffffff` | Texto sobre fondo accent |
-| `border` | `#1e2238` | Bordes sutiles |
-| `border_accent` | `#2d2f7a` | Bordes con acento suave |
+| `border` | `#334155` | Bordes sutiles opacos equivalentes a `rgba(255,255,255,.09)` |
+| `border_accent` | `#3d4f68` | Bordes con acento suave |
 | `border_focus` | `#6366f1` | Borde de foco en inputs |
-| `border_card` | `#1a1d30` | Borde de cards |
-| `success` | `#10b981` | Completado, guardado |
+| `border_card` | `#334155` | Borde de cards |
+| `success` | `#22c55e` | Completado, guardado |
 | `warning` | `#f59e0b` | Advertencia |
 | `error` | `#ef4444` | Error, validación fallida |
 | `info` | `#3b82f6` | Información neutra |
@@ -46,16 +46,18 @@
 
 | Token | Hex | Uso |
 |---|---|---|
-| `bg_primary` | `#f4f7fb` | Fondo de ventana |
+| `bg_primary` | `#f8fafc` | Fondo de ventana / mockup `--bg` |
 | `bg_surface` | `#ffffff` | Cards |
-| `bg_elevated` | `#e8eef7` | Cards elevadas |
+| `bg_elevated` | `#f1f5f9` | Cards elevadas / mockup `--elevated` |
 | `accent` | `#4f46e5` | Indigo oscuro |
 | `teal` | `#0d9488` | Confirmación |
 | `violet` | `#7c3aed` | Acento secundario |
 | `text_primary` | `#0f172a` | Texto principal |
-| `text_secondary` | `#334155` | Texto secundario |
+| `text_secondary` | `#475569` | Texto secundario / mockup `--ts` |
+| `text_tertiary` | `#94a3b8` | Texto terciario / mockup `--tm` |
+| `border` | `#e2e8f0` | Bordes sutiles |
 | `border_focus` | `#4f46e5` | Borde de foco |
-| `success` | `#059669` | |
+| `success` | `#16a34a` | |
 | `warning` | `#d97706` | |
 | `error` | `#dc2626` | |
 
@@ -81,8 +83,9 @@ grad = conical_arc_gradient(center, 90, modo)  # para arcos
 ## 3. TIPOGRAFÍA
 
 ### Familia
-- **Primaria:** Inter Variable / Satoshi (si están en `assets/fonts/`)
-- **Fallback:** Segoe UI → Arial
+- **Primaria:** DM Sans (como el mockup HTML)
+- **Fallback:** Segoe UI -> Arial
+- **Mono:** JetBrains Mono para timers, contadores y terminales
 
 ### Escala (usar `nm_font()` o `qfont()`)
 
@@ -138,9 +141,9 @@ Siempre usar constantes, nunca pixeles hardcodeados:
 | Constante | Valor | Aplicar en |
 |---|---|---|
 | `RADIUS_BUTTON` | 10px | Botones primarios y outline |
-| `RADIUS_CARD` | 16px | Cards, paneles, frames de sección |
+| `RADIUS_CARD` | 12px | Cards, paneles, frames de sección |
 | `RADIUS_INPUT` | 10px | Inputs, textareas, combobox |
-| `RADIUS_PILL` | 24px | Chips de preset, badges, pills |
+| `RADIUS_PILL` | 20px | Chips de preset, badges, pills |
 | `RADIUS_BADGE` | 20px | Badges de estado |
 | `RADIUS_MODAL` | 20px | Modales, paneles flotantes |
 

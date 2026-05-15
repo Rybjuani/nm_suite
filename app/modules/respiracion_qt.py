@@ -710,8 +710,10 @@ class ModuloRespiracion(NMModule):
             self._timer_id = None
         self._save_session()
         self._circle.reset_idle()
-        for sc in self._step_cards:
-            sc.set_active(False)
+        if hasattr(self, "_phase_chip"):
+            self._phase_chip.set_phase(None)
+        if hasattr(self, "_cycle_ring"):
+            self._cycle_ring.set_cycles(self._ciclos)
         self._session_lbl.setText(f"✓ Sesión completa · {self._ciclos} ciclos")
         self._btn_start.setText("Iniciar")
         try:

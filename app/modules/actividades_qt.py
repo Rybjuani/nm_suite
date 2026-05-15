@@ -24,6 +24,7 @@ try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMToast, NMSegmentedChoice,
         ThemeManager, h_spacer, NMEmptyState, NMMoodContextHeader, NMCategoryFilter,
+        NMActivityCard,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
@@ -41,6 +42,7 @@ except ImportError:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMToast, NMSegmentedChoice,
         ThemeManager, h_spacer, NMEmptyState, NMMoodContextHeader, NMCategoryFilter,
+        NMActivityCard,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
@@ -204,75 +206,29 @@ class ModuloActividades(NMModule):
         ))
 
     def _build_activity_card(self, act: dict):
-        c = colors(self._modo)
         cat = act.get("categoria", "Autocuidado")
-        cat_color = CATEGORY_COLORS.get(cat, c["accent"])
-
-        # Use NMCard with accent_color for the left bar
-        card = NMCard(
-            parent=self._scroll_content,
-            accent_color=cat_color,
-            clickable=False,
-            modo=self._modo,
-        )
-        card_layout = QHBoxLayout(card)
-        card_layout.setContentsMargins(
-            sp("md"),
-            sp("sm") + sp("xs") // 2,
-            sp("sm") + sp("xs"),
-            sp("sm") + sp("xs") // 2,
-        )
-        card_layout.setSpacing(sp("sm") + sp("xs"))
-
-        # Inner content
-        inner = QWidget()
-        inner.setStyleSheet("background: transparent;")
-        inner_layout = QVBoxLayout(inner)
-        inner_layout.setContentsMargins(0, 0, 0, 0)
-        inner_layout.setSpacing(sp("xs"))
-
-        # Category label
-        cat_lbl = QLabel(cat)
-        cat_lbl.setFont(qfont("size_caption"))
-        cat_lbl.setStyleSheet(f"color: {cat_color}; background: transparent;")
-        inner_layout.addWidget(cat_lbl)
-
-        # Title
-        name_lbl = QLabel(act.get("nombre", ""))
-        name_lbl.setFont(qfont("size_body", bold=True))
-        name_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
-        inner_layout.addWidget(name_lbl)
-
-        # Description
-        desc = act.get("descripcion", "")
-        if desc:
-            desc_lbl = QLabel(desc)
-            desc_lbl.setFont(qfont("size_small"))
-            desc_lbl.setWordWrap(True)
-            desc_lbl.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
-            inner_layout.addWidget(desc_lbl)
-
-        # Result buttons row — control segmentado exclusivo
         nombre = act.get("nombre", "Actividad")
-        seg = NMSegmentedChoice([
-            ("Hecha", "hecha"),
-            ("Intentada", "intentada"),
-            ("No pude", "no_pude"),
-        ], modo=self._modo)
-        seg.choice_made.connect(
-            lambda v, n=nombre, cd=card, s=seg: self._register_result(n, v, cd, s)
+        card = NMActivityCard(
+            nombre,
+            act.get("descripcion", ""),
+            category=cat,
+            modo=self._modo,
+            parent=self._scroll_content,
         )
-        inner_layout.addWidget(seg)
-
-        card_layout.addWidget(inner)
+        card.completed.connect(
+            lambda n=nombre, cd=card: self._register_result(n, "hecha", cd, None)
+        )
+        card.skipped.connect(
+            lambda n=nombre, cd=card: self._register_result(n, "no_pude", cd, None)
+        )
 
         target = getattr(self, "_cards_layout", self._scroll_layout)
         target.addWidget(card)
 
     # ── _register_result (lógica preservada exacta) ───────────────────────────
 
-    def _register_result(self, nombre: str, resultado: str, card_widget: NMCard,
-                         seg: NMSegmentedChoice):
+    def _register_result(self, nombre: str, resultado: str, card_widget,
+                         seg: NMSegmentedChoice | None):
         c = colors(self._modo)
         animo = self._get_last_mood()
         if animo is None:
@@ -304,13 +260,17 @@ class ModuloActividades(NMModule):
             "intentada": c["warning"],
             "no_pude":   c["error"],
         }
-        card_widget.set_accent(color_map.get(resultado, c["accent"]))
+        if hasattr(card_widget, "set_accent"):
+            card_widget.set_accent(color_map.get(resultado, c["accent"]))
         if hasattr(card_widget, "play_success"):
             card_widget.play_success()
 
         # Deshabilitar botones tras selección
-        for btn in seg._btns.values():
-            btn.setEnabled(False)
+        if seg is not None:
+            for btn in seg._btns.values():
+                btn.setEnabled(False)
+        elif hasattr(card_widget, "set_completed") and resultado == "hecha":
+            card_widget.set_completed(True)
 
         # Toast de confirmación
         labels = {"hecha": "Hecha ✓", "intentada": "Intentada", "no_pude": "No se pudo"}

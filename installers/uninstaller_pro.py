@@ -8,7 +8,7 @@ from pathlib import Path
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-    QLabel, QPushButton, QProgressBar, QFrame,
+    QLabel, QPushButton, QFrame,
 )
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
 from PyQt6.QtGui import QIcon, QPixmap
@@ -33,6 +33,14 @@ except ImportError:
 REG_KEY = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMoodPro"
 
 _SS = stylesheet_installer()   # design system premium unificado
+
+try:
+    from shared.components_qt import NMInstallProgress
+except ImportError:
+    _root_cmp = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if _root_cmp not in sys.path:
+        sys.path.insert(0, _root_cmp)
+    from shared.components_qt import NMInstallProgress
 
 # ── Lógica de negocio (preservada exacta) ─────────────────────────────────────
 
@@ -266,18 +274,25 @@ class DesinstaladorPro(InstallerShell):
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
         layout.addWidget(title)
         layout.addSpacing(12)
-        self._pbar = QProgressBar()
-        self._pbar.setRange(0, 100); self._pbar.setValue(0)
-        layout.addWidget(self._pbar)
-        layout.addSpacing(6)
-        self._status_lbl = QLabel("Preparando...")
-        self._status_lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px;")
-        layout.addWidget(self._status_lbl)
+        self._install_progress = NMInstallProgress(accent_key="violet")
+        self._install_progress.set_progress(0, "Preparando...")
+        self._install_progress.set_lines([
+            "○ Preparando desinstalación Hub Pro",
+            "○ Cerrando procesos",
+            "○ Eliminando archivos",
+        ])
+        layout.addWidget(self._install_progress)
+        self._pbar = self._install_progress
+        self._status_lbl = self._install_progress._label
         layout.addStretch()
 
     def _set_progress(self, v: float, t: str):
-        self._pbar.setValue(int(v * 100))
-        self._status_lbl.setText(t)
+        if hasattr(self, "_install_progress"):
+            self._install_progress.set_progress(int(v * 100), t)
+            self._install_progress.append_line(f"↻ {t}")
+        else:
+            self._pbar.setValue(int(v * 100))
+            self._status_lbl.setText(t)
 
     def _on_done(self):
         self._status_lbl.setStyleSheet(f"color: {SUCCESS}; font-size: 16px; font-weight: bold;")

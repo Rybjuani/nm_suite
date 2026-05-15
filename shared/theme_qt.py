@@ -48,6 +48,8 @@ FONT_SCALE = {
     "caption": {"size": 11, "weight": 400, "line_height": 1.4},
 }
 
+_DEFAULT_FONT_FAMILY = TYPOGRAPHY.get("font_family", "DM Sans")
+
 
 SPACE = {
     "xs":  4,
@@ -154,7 +156,7 @@ def apply_chart_theme(modo: str):
         "grid.alpha":        0.3,
         "lines.color":       acc,
         "patch.facecolor":   acc,
-        "font.family":       "Segoe UI",
+        "font.family":       _DEFAULT_FONT_FAMILY,
         "axes.spines.top":   False,
         "axes.spines.right": False,
     })
@@ -233,7 +235,7 @@ def _ensure_premium_font():
 
 def _font_family() -> str:
     _ensure_premium_font()
-    return _PREMIUM_FONT_FAMILY or "Segoe UI"
+    return _PREMIUM_FONT_FAMILY or _DEFAULT_FONT_FAMILY
 
 
 def _gradient_stops(modo: str = "dark_hybrid") -> list[tuple[str, float]]:
@@ -359,7 +361,7 @@ def qfont(size_key: str = "size_body", bold: bool = False,
     f = QFont(fam, pt)
     f.setWeight(QFont.Weight.Bold if bold else QFont.Weight.Normal)
     if size_key in ("size_h1", "size_h2"):
-        f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, -0.5)
+        f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 0)
     f.setHintingPreference(QFont.HintingPreference.PreferFullHinting)
     return f
 
@@ -806,7 +808,7 @@ def stylesheet_slider(modo: str = "dark_hybrid") -> str:
         margin: 0 8px;
     }}
     QSlider::handle:horizontal {{
-        background: white;
+        background: {c['text_on_accent']};
         border: 2px solid {c['bg_elevated']};
         width: 20px;
         height: 20px;
@@ -1114,7 +1116,7 @@ def recolorear_logo_light(img):
     nueva = []
     for r, g, b, a in data:
         if r > 200 and g > 200 and b > 200 and a > 0:
-            nueva.append((13, 17, 23, a))   # bg_primary dark
+            nueva.append((15, 23, 42, a))   # bg_primary dark #0f172a
         else:
             nueva.append((r, g, b, a))
     img.putdata(nueva)

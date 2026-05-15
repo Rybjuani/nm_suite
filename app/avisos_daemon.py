@@ -22,6 +22,8 @@ else:
 if _base not in sys.path:
     sys.path.insert(0, _base)
 
+from shared.db import obtener_conexion
+
 try:
     import pystray
     from PIL import Image as PILImage

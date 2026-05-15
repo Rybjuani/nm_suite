@@ -1,0 +1,24 @@
+NeuroMood Suite — Para el paciente
+¿Qué es? Una aplicación que te acompaña en tu bienestar emocional día a día. La usás en tu computadora, tus datos quedan solo en tu equipo, y podés usarla sin internet.
+
+7 herramientas en un solo lugar:
+
+¿Cómo te sentís hoy? — Movés una barra del 1 al 10 para registrar tu estado de ánimo. Podés agregar una nota si querés explicar qué te pasó. La app te muestra cómo fue tu día con los registros que fuiste haciendo. Si estás de buen ánimo, aparecen destellos de colores como pequeña celebración.
+Respirá conmigo — Un ejercicio de respiración guiada que te ayuda a relajarte. Un círculo se expande cuando tenés que inhalar y se contrae cuando tenés que exhalar, marcándote el ritmo. Elegís si querés hacer 3, 5 o 10 minutos. Ideal para momentos de ansiedad o para empezar el día con calma.
+¿Qué estás pensando? — Un espacio para escribir esos pensamientos que te dan vueltas y te generan malestar. Te guía paso a paso: primero describís lo que pasó, después ponés nombre a lo que sentiste, luego escribís el pensamiento automático que tuviste, y por último buscás una forma más equilibrada de verlo. La app te ayuda señalando si detecta patrones de pensamiento que suelen aparecer en momentos difíciles.
+Tu rutina del día — Una lista de tareas que podés organizar por la mañana, la tarde y la noche. Cuando completás una tarea, suena un sonido de logro y queda marcada como hecha hasta el día siguiente. También tenés un espacio para escribir una nota sobre cómo fue tu día, que se guarda automáticamente.
+¿Qué podés hacer hoy? — Según cómo te sentiste en tu último registro de ánimo, la app te sugiere actividades que podrían ayudarte. Cada sugerencia incluye una breve descripción. Cuando hacés una actividad, podés marcarla como "Hecha", "Intentada" o "No pude", y la app te lo reconoce.
+Temporizador — Un cronómetro para que te concentres en una actividad sin distraerte. Elegís cuánto tiempo querés dedicarle (5, 10, 30 minutos o lo que necesites), le ponés un nombre a lo que vas a hacer, y cuando se acaba el tiempo te avisa con un sonido y un mensaje.
+No te olvides — Creá recordatorios para lo que necesités: tomar medicación, hacer una pausa, llamar a alguien. Funcionan aunque cierres la app (se queda en segundo plano). Elegís el horario, el mensaje y los días de la semana. Si ya pasó la hora de hoy, la app te avisa que elijas un horario más tarde.
+NeuroMood Hub Pro — Para el profesional
+¿Qué es? Un panel de trabajo para terapeutas y profesionales de la salud mental. Te permite ver la evolución de tus pacientes, asignarles tareas y usar inteligencia artificial para analizar datos y generar sugerencias.
+
+¿Cómo funciona? Te conectás con tus credenciales de Supabase. Los datos de tus pacientes se sincronizan automáticamente desde la app que ellos usan en su computadora (NeuroMood Suite). Ves sus registros sin necesidad de que te envíen nada.
+
+Lo que podés hacer:
+
+Ver a todos tus pacientes en una pantalla principal. Cada uno aparece con su nombre y un punto de color que te muestra de un vistazo cómo fue su último registro de ánimo (rojo = bajo, amarillo = medio, verde = alto). Con un clic entrás al detalle.
+Explorar los datos de cada paciente: Todos sus registros de ánimo, sesiones de respiración, pensamientos del diario TCC, rutinas completadas, uso del temporizador y recordatorios que recibió. Podés ver gráficos de evolución y exportar todo a PDF para tus registros clínicos.
+Asignar tareas y recordatorios directamente al paciente. Lo que vos creás en el Hub aparece en la app del paciente automáticamente. Por ejemplo, podés armarle una rutina personalizada o pedirle que registre algo específico.
+Biblioteca de actividades: Tenés un banco de actividades sugeridas que podés gestionar. La IA te ayuda a completar descripciones o generar nuevas ideas según el perfil del paciente.
+Asistente de IA: La app analiza los datos del paciente y te genera un resumen de su evolución, sugerencias de acciones para las próximas sesiones, y hasta puede redactar una tarea personalizada según lo que observa. Usás el modelo de IA que prefieras configurar.

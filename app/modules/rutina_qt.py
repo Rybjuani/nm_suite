@@ -19,7 +19,7 @@ from PyQt6.QtGui import (
     QColor, QFont,
 )
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QCheckBox,
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QScrollArea, QFrame, QTextEdit, QLineEdit, QSizePolicy,
     QPushButton,
 )
@@ -28,12 +28,13 @@ try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMProgressBar, NMToast,
         ThemeManager, h_spacer, NMEmptyState, NMRoutineSection, NMDayNote,
+        NMCustomCheck,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor, nm_icon,
         sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
-        RADIUS_INPUT, RADIUS_SMALL, CHECKBOX_SIZE,
+        RADIUS_INPUT, RADIUS_SMALL,
         stylesheet_textedit, stylesheet_scrollarea,
     )
     from shared.db import obtener_conexion
@@ -45,12 +46,13 @@ except ImportError:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMProgressBar, NMToast,
         ThemeManager, h_spacer, NMEmptyState, NMRoutineSection, NMDayNote,
+        NMCustomCheck,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor, nm_icon,
         sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
-        RADIUS_INPUT, RADIUS_SMALL, CHECKBOX_SIZE,
+        RADIUS_INPUT, RADIUS_SMALL,
         stylesheet_textedit, stylesheet_scrollarea,
     )
     from shared.db import obtener_conexion
@@ -85,7 +87,7 @@ class ModuloRutina(NMModule):
         self._section_progs:     dict[str, NMProgressBar] = {}
         self._section_count_lbl: dict[str, QLabel] = {}
         self._section_frames:    dict[str, QFrame] = {}
-        self._task_checks:       dict[int, QCheckBox] = {}  # tarea_id → QCheckBox
+        self._task_checks:       dict[int, NMCustomCheck] = {}  # tarea_id → row
         self._task_done:         dict[int, bool] = {}       # tarea_id → bool
 
         c = colors(self._modo)
@@ -151,7 +153,7 @@ class ModuloRutina(NMModule):
         # Re-aplicar estilos a todos los checkboxes
         for tid, cb in getattr(self, "_task_checks", {}).items():
             done = self._task_done.get(tid, False)
-            cb.setStyleSheet(self._checkbox_stylesheet(done))
+            cb.set_checked(done)
         self.update()
 
     # ── Section building ─────────────────────────────────────────────────────
@@ -249,12 +251,9 @@ class ModuloRutina(NMModule):
                     done = tid in completadas
                     self._task_done[tid] = done
 
-                    cb = QCheckBox(tarea["descripcion"])
-                    cb.setFont(qfont("size_body"))
-                    cb.setChecked(done)
+                    cb = NMCustomCheck(tarea["descripcion"], checked=done, modo=self._modo)
                     cb.setEnabled(not done)
-                    cb.setStyleSheet(self._checkbox_stylesheet(done))
-                    cb.stateChanged.connect(
+                    cb.toggled.connect(
                         lambda state, t=tid, checkbox=cb: self._on_check(t, checkbox)
                     )
                     layout.addWidget(cb)
@@ -281,38 +280,9 @@ class ModuloRutina(NMModule):
         for frame in getattr(self, "_section_frames", {}).values():
             frame.setVisible(has_tasks)
 
-    def _checkbox_stylesheet(self, done: bool) -> str:
-        c = colors(self._modo)
-        text_color = c["text_tertiary"] if done else c["text_primary"]
-        # line-through when done
-        decoration = "line-through" if done else "none"
-        return f"""
-            QCheckBox {{
-                color: {text_color};
-                background: transparent;
-                spacing: 8px;
-                text-decoration: {decoration};
-            }}
-            QCheckBox::indicator {{
-                width: {CHECKBOX_SIZE}px;
-                height: {CHECKBOX_SIZE}px;
-                border-radius: {RADIUS_SMALL}px;
-                border: 2px solid {c['border']};
-                background: transparent;
-            }}
-            QCheckBox::indicator:checked {{
-                background-color: {c['accent']};
-                border-color: {c['accent']};
-                image: none;
-            }}
-            QCheckBox::indicator:hover {{
-                border-color: {c['accent']};
-            }}
-        """
-
     # ── on_check (lógica preservada exacta) ─────────────────────────────────
 
-    def _on_check(self, tarea_id: int, checkbox: QCheckBox):
+    def _on_check(self, tarea_id: int, checkbox: NMCustomCheck):
         checked = checkbox.isChecked()
         hoy = fecha_hoy()
         try:
@@ -340,7 +310,7 @@ class ModuloRutina(NMModule):
 
         self._task_done[tarea_id] = checked
         # Update checkbox style for line-through effect
-        checkbox.setStyleSheet(self._checkbox_stylesheet(checked))
+        checkbox.set_checked(checked)
         self._update_badge()
         self._update_section_progress()
 

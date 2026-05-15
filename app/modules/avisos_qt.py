@@ -168,12 +168,14 @@ class _DeleteButton(QPushButton):
 
     def _apply_style(self):
         c = colors(self._modo)
+        r = RADIUS_PILL
+        ton = C("text_on_accent", self._modo)
         if self._hovered:
             self.setStyleSheet(f"""
                 QPushButton {{
                     background-color: {c['error']};
-                    color: white;
-                    border-radius: 14px;
+                    color: {ton};
+                    border-radius: {r}px;
                     border: none;
                     font-size: {TYPOGRAPHY['size_caption']}pt;
                 }}
@@ -183,13 +185,13 @@ class _DeleteButton(QPushButton):
                 QPushButton {{
                     background-color: transparent;
                     color: {c['text_tertiary']};
-                    border-radius: 14px;
+                    border-radius: {r}px;
                     border: none;
                     font-size: {TYPOGRAPHY['size_caption']}pt;
                 }}
                 QPushButton:hover {{
                     background-color: {c['error']};
-                    color: white;
+                    color: {ton};
                 }}
             """)
 
@@ -436,7 +438,7 @@ class ModuloAvisos(NMModule):
                                   modo=self._modo, width=50, height=50)
         self._fab_btn.clicked.connect(self._show_form)
         self._fab_btn.setStyleSheet(
-            self._fab_btn.styleSheet() + f" border-radius: 25px;"
+            self._fab_btn.styleSheet() + " border-radius: 25px;"
         )
         fab_row.addWidget(self._fab_btn)
         root.addLayout(fab_row)

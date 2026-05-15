@@ -253,6 +253,28 @@ def smoke_test_hub(quick: bool = False) -> dict:
             _log(f"CRASH: {name} - {e}", "ERROR")
             return False
 
+    def _open_ia_detalle():
+        """Instancia DetallePacienteView con datos mock para cubrir la vista IA."""
+        try:
+            from hub.pacientes_qt import DetallePacienteView
+            detalle = DetallePacienteView(
+                modo=hub._modo, sb=None,
+                paciente_id="smoke_test_id",
+                paciente_nombre="Paciente Test",
+            )
+            hub._stack.addWidget(detalle)
+            hub._stack.setCurrentWidget(detalle)
+            QApplication.processEvents()
+            # Cambiar a tab IA (último tab del detalle)
+            tabs = detalle.findChildren(QTabWidget)
+            if tabs:
+                tabs[0].setCurrentIndex(tabs[0].count() - 1)
+                QApplication.processEvents()
+            return True
+        except Exception as e:
+            _log(f"IA detalle mock: {e}", "WARN")
+            return False
+
     steps = [
         ("Hub default", lambda: _capture(hub, "h01_default")),
         ("Navigate pacientes", lambda: hub._on_nav("pacientes")),
@@ -261,8 +283,11 @@ def smoke_test_hub(quick: bool = False) -> dict:
         ("Capture dashboard", lambda: _capture(hub, "h03_dashboard")),
         ("Navigate config", lambda: hub._on_nav("config")),
         ("Capture config", lambda: _capture(hub, "h04_config")),
+        ("Open IA detalle (mock)", _open_ia_detalle),
+        ("Capture IA detalle", lambda: _capture(hub, "h05_ia_detalle")),
+        ("Navigate dashboard (restore)", lambda: hub._on_nav("dashboard")),
         ("Theme toggle light", lambda: _toggle_theme(hub)),
-        ("Capture light", lambda: _capture(hub, "h05_light")),
+        ("Capture light", lambda: _capture(hub, "h06_light")),
         ("Theme toggle dark", lambda: _toggle_theme(hub)),
     ]
 

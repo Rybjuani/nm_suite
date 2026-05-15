@@ -87,7 +87,7 @@ class ThemeManager(QObject):
 
     @classmethod
     def instance(cls) -> "ThemeManager":
-        if cls._inst is None:
+        if cls._inst is None or sip.isdeleted(cls._inst):
             cls._inst = cls()
         return cls._inst
 
@@ -934,12 +934,12 @@ class NMToast(QWidget):
         lbl = QLabel(self._message)
         lbl.setFont(qfont("size_body"))
         lbl.setWordWrap(True)
-        lbl.setStyleSheet(f"color: white; background: transparent;")
+        lbl.setStyleSheet(f"color: {C('text_on_accent', 'dark_hybrid')}; background: transparent;")
         layout.addWidget(lbl)
 
         self.setStyleSheet(f"""
             NMToast {{
-                background-color: rgba(30, 39, 64, 230);
+                background-color: rgba(30, 41, 59, 230);
                 border-radius: 12px;
                 border: 1px solid {self._color};
             }}
@@ -1174,7 +1174,7 @@ class NMSidebar(QWidget):
     def paintEvent(self, event):
         p = QPainter(self)
         c = colors(self._modo)
-        p.fillRect(self.rect(), QColor(c["bg_secondary"]))
+        p.fillRect(self.rect(), QColor(c["sidebar_bg"]))
         p.end()
         super().paintEvent(event)
 
@@ -1359,17 +1359,12 @@ class NMHeader(QWidget):
         c = colors(self._modo)
 
         if self._show_back:
-            # Módulo: botón back + icono + título
-            self._btn_back = QPushButton("←")
-            self._btn_back.setFont(qfont("size_h2"))
-            self._btn_back.setFixedSize(40, 36)
-            self._btn_back.setFlat(True)
+            # Módulo: botón back estilo pill (mockup: .back-btn)
+            self._btn_back = QPushButton("← Volver")
+            self._btn_back.setFont(qfont("size_caption", bold=True))
+            self._btn_back.setFixedHeight(32)
             self._btn_back.setCursor(Qt.CursorShape.PointingHandCursor)
-            self._btn_back.setStyleSheet(
-                f"color: {C('text_primary', self._modo)};"
-                f"background: transparent;"
-                f"border-radius: {RADIUS_BUTTON}px;"
-            )
+            self._apply_back_btn_style()
             layout.addWidget(self._btn_back)
 
             icon_lbl = QLabel()
@@ -1438,11 +1433,39 @@ class NMHeader(QWidget):
     def paintEvent(self, event):
         p = QPainter(self)
         c = colors(self._modo)
-        p.fillRect(self.rect(), QColor(c["bg_secondary"]))
+        p.fillRect(self.rect(), QColor(c["bg_surface"]))
         p.setPen(QPen(QColor(c.get("border_card", c["border"])), 1))
         p.drawLine(0, self.height() - 1, self.width(), self.height() - 1)
         p.end()
         super().paintEvent(event)
+
+    def _apply_back_btn_style(self):
+        """Aplica estilo pill del botón Volver según mockup."""
+        if not hasattr(self, "_btn_back"):
+            return
+        c = colors(self._modo)
+        is_dark = "dark" in self._modo
+        if is_dark:
+            bg = "rgba(255,255,255,0.04)"
+            border = "rgba(255,255,255,0.08)"
+        else:
+            bg = c["bg_elevated"]
+            border = c["border"]
+        self._btn_back.setStyleSheet(
+            f"QPushButton {{ "
+            f"color: {C('text_tertiary', self._modo)}; "
+            f"background-color: {bg}; "
+            f"border: 1px solid {border}; "
+            f"border-radius: 8px; "
+            f"padding: 4px 10px; "
+            f"font-size: 11pt; "
+            f"font-weight: 600; "
+            f"}} "
+            f"QPushButton:hover {{ "
+            f"background-color: {c['bg_elevated']}; "
+            f"color: {C('text_secondary', self._modo)}; "
+            f"}}"
+        )
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
@@ -1452,11 +1475,7 @@ class NMHeader(QWidget):
         if hasattr(self, "_user_lbl"):
             self._user_lbl.setStyleSheet(label_style(modo, 'text_tertiary'))
         if hasattr(self, "_btn_back"):
-            self._btn_back.setStyleSheet(
-                f"color: {C('text_primary', modo)};"
-                f"background: transparent;"
-                f"border-radius: {RADIUS_BUTTON}px;"
-            )
+            self._apply_back_btn_style()
         if hasattr(self, "_module_title_lbl"):
             self._module_title_lbl.setStyleSheet(label_style(modo, 'text_primary'))
         self._apply_module_icon()
@@ -1471,21 +1490,16 @@ class NMHeader(QWidget):
     def _ensure_back_button(self):
         if hasattr(self, "_btn_back"):
             return self._btn_back
-        btn = QPushButton("←", self)
-        btn.setFont(qfont("size_h2"))
-        btn.setFixedSize(40, 36)
-        btn.setFlat(True)
+        btn = QPushButton("← Volver", self)
+        btn.setFont(qfont("size_caption", bold=True))
+        btn.setFixedHeight(32)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn.setStyleSheet(
-            f"color: {C('text_primary', self._modo)};"
-            f"background: transparent;"
-            f"border-radius: {RADIUS_BUTTON}px;"
-        )
         layout = self.layout()
         if layout:
             layout.insertWidget(0, btn)
         self._btn_back = btn
         self._back_btn = btn
+        self._apply_back_btn_style()
         return btn
 
     def set_back_action(self, callback=None):
@@ -1990,6 +2004,12 @@ def responsive_columns(available_width: int, min_card_width: int = 280,
     return cols
 
 
+def _rgba(hex_color: str, alpha: float) -> str:
+    c = QColor(hex_color)
+    a = max(0, min(255, int(alpha * 255)))
+    return f"rgba({c.red()}, {c.green()}, {c.blue()}, {a})"
+
+
 # ── NMSegmentedChoice ─────────────────────────────────────────────────────────
 
 class NMSegmentedChoice(QWidget):
@@ -2034,6 +2054,327 @@ class NMSegmentedChoice(QWidget):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# NMCustomCheck / NMActivityCard / Timer helpers
+
+class NMCustomCheck(QWidget):
+    """Checklist row matching the HTML `.check-item` / `.cbox` pattern."""
+    toggled = pyqtSignal(bool)
+
+    def __init__(self, text: str, checked: bool = False,
+                 modo: str = None, parent=None, strike_on_check: bool = True):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._checked = checked
+        self._strike_on_check = strike_on_check
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(0, 6, 0, 6)
+        lay.setSpacing(10)
+        self._box = QLabel()
+        self._box.setFixedSize(18, 18)
+        self._box.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._box.setFont(qfont("size_caption", bold=True))
+        lay.addWidget(self._box)
+        self._label = QLabel(text)
+        self._label.setFont(qfont("size_small"))
+        self._label.setWordWrap(True)
+        lay.addWidget(self._label, stretch=1)
+        self._apply_theme(self._modo)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def set_checked(self, checked: bool):
+        self._checked = checked
+        self._apply_theme(self._modo)
+
+    def is_checked(self) -> bool:
+        return self._checked
+
+    def isChecked(self) -> bool:
+        return self._checked
+
+    def setChecked(self, checked: bool):
+        self.set_checked(checked)
+
+    def setText(self, text: str):
+        self._label.setText(text)
+
+    def text(self) -> str:
+        return self._label.text()
+
+    def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton and self.isEnabled():
+            self._checked = not self._checked
+            self._apply_theme(self._modo)
+            self.toggled.emit(self._checked)
+        super().mousePressEvent(event)
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        c = colors(self._modo)
+        border = C("teal", self._modo) if self._checked else c.get("border_card", c["border"])
+        bg = C("teal", self._modo) if self._checked else "transparent"
+        self._box.setText("\u2713" if self._checked else "")
+        self._box.setStyleSheet(
+            f"QLabel {{ background: {bg}; color: {C('text_on_accent', self._modo)}; "
+            f"border: 2px solid {border}; border-radius: 5px; }}"
+        )
+        decoration = "line-through" if self._checked and self._strike_on_check else "none"
+        self._label.setStyleSheet(
+            f"color: {C('text_secondary', self._modo)}; background: transparent; "
+            f"text-decoration: {decoration};"
+        )
+
+
+class NMActivityCard(QFrame):
+    """Card de actividad con barra izquierda y acciones exclusivas."""
+    completed = pyqtSignal()
+    skipped = pyqtSignal()
+
+    def __init__(self, title: str, description: str, category: str = "Autocuidado",
+                 completed: bool = False, modo: str = None, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._category = category
+        self._completed = completed
+        self._accent = CATEGORY_COLORS.get(category, C("accent", self._modo))
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(16, 12, 12, 12)
+        lay.setSpacing(5)
+        self._name_lbl = QLabel(title)
+        self._name_lbl.setFont(qfont("size_small", bold=True))
+        lay.addWidget(self._name_lbl)
+        self._desc_lbl = QLabel(description)
+        self._desc_lbl.setFont(qfont("size_caption"))
+        self._desc_lbl.setWordWrap(True)
+        lay.addWidget(self._desc_lbl)
+        row = QHBoxLayout()
+        row.setContentsMargins(0, 3, 0, 0)
+        row.setSpacing(6)
+        self._yes_btn = QPushButton()
+        self._yes_btn.setFixedHeight(24)
+        self._yes_btn.clicked.connect(self._complete)
+        row.addWidget(self._yes_btn)
+        self._no_btn = QPushButton("\u00d7 No es para mi")
+        self._no_btn.setFixedHeight(24)
+        self._no_btn.clicked.connect(self.skipped.emit)
+        row.addWidget(self._no_btn)
+        row.addStretch()
+        lay.addLayout(row)
+        self._apply_theme(self._modo)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def _complete(self):
+        self.set_completed(True)
+        self.completed.emit()
+
+    def set_completed(self, completed: bool):
+        self._completed = completed
+        self._apply_theme(self._modo)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        c = colors(self._modo)
+        rect = QRectF(0.5, 0.5, self.width() - 1, self.height() - 1)
+        path = QPainterPath()
+        path.addRoundedRect(rect, RADIUS_CARD, RADIUS_CARD)
+        p.fillPath(path, QColor(c["bg_surface"]))
+        p.setPen(QPen(QColor(c.get("border_card", c["border"])), 1))
+        p.drawPath(path)
+        bar = QPainterPath()
+        bar.addRoundedRect(QRectF(0, 0, 3, self.height()), 3, 3)
+        p.fillPath(bar, QColor(self._accent))
+        if self._completed:
+            p.fillPath(path, QColor(0, 0, 0, 80 if "dark" in self._modo else 20))
+        p.end()
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        c = colors(self._modo)
+        self._name_lbl.setStyleSheet(label_style(self._modo, "text_primary"))
+        self._desc_lbl.setStyleSheet(label_style(self._modo, "text_tertiary"))
+        self._yes_btn.setText("\u2713 Completado" if self._completed else "\u2713 Hice esto")
+        self._yes_btn.setStyleSheet(
+            f"QPushButton {{ background: {_rgba(self._accent, 0.14)}; color: {self._accent}; "
+            f"border: none; border-radius: 8px; padding: 4px 12px; "
+            f"font-size: {TYPOGRAPHY['size_caption']}pt; font-weight: bold; }}"
+        )
+        self._no_btn.setVisible(not self._completed)
+        self._no_btn.setStyleSheet(
+            f"QPushButton {{ background: {c['bg_elevated']}; color: {c['text_tertiary']}; "
+            f"border: none; border-radius: 8px; padding: 4px 12px; "
+            f"font-size: {TYPOGRAPHY['size_caption']}pt; font-weight: bold; }}"
+        )
+        self.update()
+
+
+class NMPresetChip(QPushButton):
+    """Chip de preset del timer."""
+    def __init__(self, text: str, active: bool = False,
+                 modo: str = None, parent=None):
+        super().__init__(text, parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._active = active
+        self.setFixedHeight(34)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFont(qfont("size_small"))
+        self._apply_theme(self._modo)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def set_active(self, active: bool):
+        self._active = active
+        self._apply_theme(self._modo)
+
+    def is_active(self) -> bool:
+        return self._active
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        c = colors(self._modo)
+        if self._active:
+            bg = _rgba(C("teal", self._modo), 0.12)
+            border = _rgba(C("teal", self._modo), 0.30)
+            col = C("teal", self._modo)
+        else:
+            bg = "transparent"
+            border = c.get("border_card", c["border"])
+            col = c["text_tertiary"]
+        self.setStyleSheet(
+            f"QPushButton {{ background: {bg}; color: {col}; border: 1px solid {border}; "
+            f"border-radius: {RADIUS_PILL}px; padding: 6px 16px; }}"
+            f"QPushButton:hover {{ background: {c['bg_elevated']}; color: {c['text_secondary']}; }}"
+        )
+
+
+class NMFocusArc(QWidget):
+    """Arco circular de foco con aura y texto central."""
+    def __init__(self, size: int = 160, modo: str = None, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._pct = 0.0
+        self._time_text = "25:00"
+        self._state_text = "listo"
+        self.setFixedSize(size, size)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def set_data(self, pct: float, time_text: str, state_text: str = "listo"):
+        self._pct = max(0.0, min(1.0, pct))
+        self._time_text = time_text
+        self._state_text = state_text
+        self.update()
+
+    def update_data(self, progress: float, time_text: str):
+        self.set_data(progress, time_text, self._state_text)
+
+    def start_pulse(self):
+        self._state_text = "en curso"
+        self.update()
+
+    def stop_pulse(self):
+        self._state_text = "pausado"
+        self.update()
+
+    def start_blink(self):
+        self.update()
+
+    def stop_blink(self):
+        self.update()
+
+    def show_finish(self):
+        self.set_data(1.0, "00:00", "terminado")
+
+    def reset(self):
+        self.set_data(0.0, self._time_text, "listo")
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w = self.width()
+        cx = cy = w / 2
+        aura = QRadialGradient(QPointF(cx, cy), w * 0.42)
+        ac = QColor(C("accent", self._modo))
+        ac.setAlphaF(0.18 if "dark" in self._modo else 0.12)
+        aura.setColorAt(0.0, ac)
+        aura.setColorAt(1.0, QColor(0, 0, 0, 0))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(aura)
+        p.drawEllipse(QPointF(cx, cy), w * 0.38, w * 0.38)
+        r = w * 0.4125
+        pen_w = max(7, int(w * 0.056))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.setPen(QPen(QColor(C("progress_track", self._modo)), pen_w, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+        p.drawEllipse(QPointF(cx, cy), r, r)
+        if self._pct > 0:
+            rect = QRectF(cx - r, cy - r, r * 2, r * 2)
+            pen = QPen(QColor(C("accent", self._modo)), pen_w, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+            p.setPen(pen)
+            p.drawArc(rect, 90 * 16, int(-360 * self._pct * 16))
+        p.setPen(QColor(C("text_primary", self._modo)))
+        p.setFont(qfont_mono(SIZE_TIME_TIMER + 6, bold=False))
+        p.drawText(QRectF(0, cy - 20, w, 28), Qt.AlignmentFlag.AlignCenter, self._time_text)
+        p.setPen(QColor(C("text_tertiary", self._modo)))
+        p.setFont(qfont("size_caption"))
+        p.drawText(QRectF(0, cy + 9, w, 18), Qt.AlignmentFlag.AlignCenter, self._state_text)
+        p.end()
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self.update()
+
+
+class NMSessionHistory(QWidget):
+    """Footer de chips de sesiones de hoy."""
+    def __init__(self, title: str = "Sesiones de hoy", modo: str = None, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(0, 10, 0, 0)
+        lay.setSpacing(7)
+        self._label = QLabel(title)
+        self._label.setFont(qfont("size_caption"))
+        lay.addWidget(self._label)
+        self._row = QHBoxLayout()
+        self._row.setSpacing(6)
+        self._row.addStretch()
+        lay.addLayout(self._row)
+        self._apply_theme(self._modo)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def set_sessions(self, sessions: list[str]):
+        while self._row.count() > 1:
+            item = self._row.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
+        for text in sessions:
+            chip = QLabel(text)
+            chip.setFont(qfont("size_caption"))
+            chip.setContentsMargins(11, 4, 11, 4)
+            chip.setStyleSheet(self._chip_style())
+            self._row.insertWidget(self._row.count() - 1, chip)
+
+    def _chip_style(self) -> str:
+        c = colors(self._modo)
+        return (
+            f"QLabel {{ background: {c['bg_elevated']}; color: {c['text_tertiary']}; "
+            f"border: 1px solid {c.get('border_card', c['border'])}; "
+            f"border-radius: 12px; padding: 4px 11px; }}"
+        )
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self.setStyleSheet(f"border-top: 1px solid {C('border', self._modo)};")
+        self._label.setStyleSheet(label_style(self._modo, "text_tertiary"))
+        for chip in self.findChildren(QLabel):
+            if chip is not self._label:
+                chip.setStyleSheet(self._chip_style())
+
+
 # COMPONENTES V3 — Design System Mayo 2026
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -2478,7 +2819,7 @@ class NMPhaseChip(QWidget):
         for key, chip in self._chips.items():
             active = (key == self._active)
             bg     = C("teal", self._modo) if active else C("bg_elevated", self._modo)
-            col    = "#ffffff"              if active else C("text_secondary", self._modo)
+            col    = C("text_on_accent", self._modo) if active else C("text_secondary", self._modo)
             border = C("teal", self._modo) if active else C("border", self._modo)
             chip.setStyleSheet(f"""
                 QLabel {{
@@ -2648,7 +2989,7 @@ class NMTCCStepper(QWidget):
                 p.setBrush(QBrush(QColor(C("success", self._modo))))
                 p.setPen(Qt.PenStyle.NoPen)
                 p.drawEllipse(QPointF(cx, cy), circle_r, circle_r)
-                p.setPen(QPen(QColor("#ffffff"), 2))
+                p.setPen(QPen(QColor(C("text_on_accent", self._modo)), 2))
                 p.setFont(qfont("size_small", bold=True))
                 p.drawText(circ_rect, Qt.AlignmentFlag.AlignCenter, "✓")
             elif i == self._current:
@@ -2769,7 +3110,7 @@ class NMHeatBar(QWidget):
         t   = self._value / 100.0
         hx  = margin + t * gw
         hc  = self._color_at(t)
-        p.setPen(QPen(QColor("#ffffff"), 2))
+        p.setPen(QPen(QColor(C("text_on_accent", self._modo)), 2))
         p.setBrush(QBrush(hc))
         p.drawEllipse(QPointF(hx, gy + gh / 2), 10, 10)
 
@@ -2802,6 +3143,7 @@ class NMRoutineSection(QWidget):
         self._modo         = norm_modo(modo or _tm().modo)
         self._section_type = section_type
         self._collapsed    = False
+        self.setObjectName("NMRoutineSection")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
 
         self._main_lay = QVBoxLayout(self)
@@ -2858,14 +3200,18 @@ class NMRoutineSection(QWidget):
         c = colors(self._modo)
         tint_key, _ = self._TINTS.get(self._section_type, ("routine_morning_tint", ""))
         tint_hex = C(tint_key, self._modo)
+        self.setStyleSheet(
+            f"QWidget#NMRoutineSection {{ background: {c['bg_surface']}; "
+            f"border: 1px solid {c.get('border_card', c['border'])}; "
+            f"border-radius: {RADIUS_CARD}px; }}"
+        )
         self._header.setStyleSheet(
-            f"QWidget {{ background: qlineargradient(x1:0,y1:0,x2:1,y2:0,"
-            f"stop:0 {tint_hex}14, stop:1 {c['bg_surface']});"
-            f"border-radius: {RADIUS_SMALL}px; }}"
+            f"QWidget {{ background: {_rgba(tint_hex, 0.08 if 'light' in self._modo else 0.06)}; "
+            f"border: none; border-radius: {RADIUS_CARD}px; }}"
         )
         self._title_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
         self._toggle_lbl.setStyleSheet(label_style(self._modo, "text_tertiary"))
-        self._content.setStyleSheet("background: transparent;")
+        self._content.setStyleSheet(f"background: {_rgba('#000000', 0.01 if 'light' in self._modo else 0.02)};")
 
 
 # ── NMDayNote ─────────────────────────────────────────────────────────────────
@@ -2936,10 +3282,12 @@ class NMDayNote(QWidget):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         c = colors(self._modo)
+        border = _rgba(C("accent", self._modo), 0.20 if "light" in self._modo else 0.25)
+        bg = _rgba(C("accent", self._modo), 0.04 if "light" in self._modo else 0.06)
         self.setStyleSheet(
-            f"background: {c['bg_surface']}; "
+            f"background: {bg}; "
             f"border-radius: {RADIUS_CARD}px; "
-            f"border: 1px solid {c.get('border_card', c['border'])};"
+            f"border: 1px solid {border};"
         )
         self._locked_lbl.setStyleSheet(label_style(self._modo, "text_tertiary"))
         self._textarea.setStyleSheet(
@@ -3003,11 +3351,12 @@ class NMMoodContextHeader(QWidget):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        c = colors(self._modo)
+        bg = _rgba(C("teal", self._modo), 0.06 if "light" in self._modo else 0.07)
+        border = _rgba(C("teal", self._modo), 0.12 if "light" in self._modo else 0.15)
         self.setStyleSheet(
-            f"background: {c['bg_surface']}; "
-            f"border-radius: {RADIUS_SMALL}px; "
-            f"border: 1px solid {c.get('border_card', c['border'])};"
+            f"background: {bg}; "
+            f"border-radius: {RADIUS_CARD}px; "
+            f"border: 1px solid {border};"
         )
         self._text_lbl.setStyleSheet(label_style(self._modo, "text_secondary"))
 
@@ -3081,22 +3430,22 @@ class NMCategoryFilter(QWidget):
         for cat, btn in self._btns.items():
             is_sel     = (self._selected == cat) or (cat == "" and self._selected is None)
             cat_color  = CATEGORY_COLORS.get(cat, C("accent", self._modo)) if cat else C("accent", self._modo)
-            bg     = cat_color                       if is_sel else C("bg_elevated", self._modo)
-            border = cat_color                       if is_sel else C("border", self._modo)
-            col    = "#ffffff"                       if is_sel else C("text_secondary", self._modo)
+            bg     = _rgba(cat_color, 0.20 if is_sel else 0.14)
+            border = _rgba(cat_color, 0.25)
+            col    = cat_color if cat else C("text_secondary", self._modo)
             btn.setStyleSheet(f"""
                 QPushButton {{
                     background: {bg};
                     color: {col};
-                    border: 1.5px solid {border};
+                    border: 1px solid {border};
                     border-radius: {RADIUS_PILL}px;
-                    padding: 2px 14px;
-                    font-size: {TYPOGRAPHY['size_small']}pt;
-                    font-weight: {'bold' if is_sel else 'normal'};
+                    padding: 3px 12px;
+                    font-size: {TYPOGRAPHY['size_caption']}pt;
+                    font-weight: bold;
                 }}
                 QPushButton:hover {{
                     border-color: {cat_color};
-                    color: {cat_color if not is_sel else '#ffffff'};
+                    background: {_rgba(cat_color, 0.20)};
                 }}
             """)
 
@@ -3174,9 +3523,9 @@ class NMAvisoCard(QFrame):
 
     def _status_pill_colors(self) -> tuple[str, str]:
         if self._status == self.STATUS_ACTIVE:
-            return C("teal",   self._modo), "#ffffff"
+            return C("teal",   self._modo), C("text_on_accent", self._modo)
         if self._status == self.STATUS_FIRED:
-            return C("violet", self._modo), "#ffffff"
+            return C("violet", self._modo), C("text_on_accent", self._modo)
         return C("bg_elevated", self._modo), C("text_tertiary", self._modo)
 
     def _apply_theme(self, modo: str):
@@ -3200,6 +3549,247 @@ class NMAvisoCard(QFrame):
 
 
 # ── NMFeaturedCard ────────────────────────────────────────────────────────────
+
+class NMPatientRow(QFrame):
+    """Fila de paciente del Hub con avatar e indicador de adherencia."""
+    clicked = pyqtSignal()
+
+    def __init__(self, name: str, subtitle: str = "", initials: str = "",
+                 pct: float = 0.0, selected: bool = False,
+                 modo: str = None, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._selected = selected
+        self.setObjectName("NMPatientRow")
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(12, 10, 12, 10)
+        lay.setSpacing(10)
+        self._avatar = QLabel(initials or "".join(part[:1] for part in name.split()[:2]).upper())
+        self._avatar.setFixedSize(32, 32)
+        self._avatar.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._avatar.setFont(qfont("size_small", bold=True))
+        lay.addWidget(self._avatar)
+        text_col = QVBoxLayout()
+        text_col.setSpacing(1)
+        self._name = QLabel(name)
+        self._name.setFont(qfont("size_small", bold=True))
+        self._subtitle = QLabel(subtitle)
+        self._subtitle.setFont(qfont("size_caption"))
+        text_col.addWidget(self._name)
+        text_col.addWidget(self._subtitle)
+        lay.addLayout(text_col, stretch=1)
+        self._ring = NMModuleRing(size=28, pct=pct, modo=self._modo)
+        lay.addWidget(self._ring)
+        self._apply_theme(self._modo)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def set_selected(self, selected: bool):
+        self._selected = selected
+        self._apply_theme(self._modo)
+
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.pos()):
+            self.clicked.emit()
+        super().mouseReleaseEvent(event)
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        c = colors(self._modo)
+        if self._selected:
+            bg = _rgba(C("teal", self._modo), 0.05)
+            border = _rgba(C("teal", self._modo), 0.30)
+        else:
+            bg = c["bg_surface"] if "light" in self._modo else _rgba("#ffffff", 0.03)
+            border = c.get("border_card", c["border"])
+        self.setStyleSheet(
+            f"QFrame#NMPatientRow {{ background: {bg}; border: 1px solid {border}; "
+            f"border-radius: 10px; }}"
+        )
+        self._avatar.setStyleSheet(
+            f"QLabel {{ background: qlineargradient(x1:0,y1:0,x2:1,y2:1, "
+            f"stop:0 {C('accent', self._modo)}, stop:1 {C('teal', self._modo)}); "
+            f"color: white; border-radius: 16px; }}"
+        )
+        self._name.setStyleSheet(label_style(self._modo, "text_primary"))
+        self._subtitle.setStyleSheet(label_style(self._modo, "text_tertiary"))
+
+
+class NMSettingsSection(QFrame):
+    """Seccion de configuracion con header y filas compactas."""
+    def __init__(self, title: str, modo: str = None, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self.setObjectName("NMSettingsSection")
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(0)
+        self._header = QLabel(title)
+        self._header.setFont(qfont("size_caption", bold=True))
+        self._header.setContentsMargins(14, 10, 14, 10)
+        lay.addWidget(self._header)
+        self._rows = QVBoxLayout()
+        self._rows.setContentsMargins(0, 0, 0, 0)
+        self._rows.setSpacing(0)
+        lay.addLayout(self._rows)
+        self._apply_theme(self._modo)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def add_row(self, label: str, value):
+        row = QWidget()
+        row.setObjectName("NMSettingsRow")
+        lay = QHBoxLayout(row)
+        lay.setContentsMargins(14, 9, 14, 9)
+        left = QLabel(label)
+        left.setFont(qfont("size_small"))
+        lay.addWidget(left)
+        lay.addStretch()
+        if isinstance(value, QWidget):
+            lay.addWidget(value)
+        else:
+            right = QLabel(str(value))
+            right.setFont(qfont_mono(9) if "http" in str(value) or "..." in str(value) else qfont("size_caption"))
+            lay.addWidget(right)
+        self._rows.addWidget(row)
+        self._apply_theme(self._modo)
+        return row
+
+    def add_log(self, html: str):
+        log = QLabel(html)
+        log.setTextFormat(Qt.TextFormat.RichText)
+        log.setFont(qfont_mono(9))
+        log.setWordWrap(True)
+        log.setContentsMargins(14, 8, 14, 8)
+        self._rows.addWidget(log)
+        self._apply_theme(self._modo)
+        return log
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        c = colors(self._modo)
+        self.setStyleSheet(
+            f"QFrame#NMSettingsSection {{ background: {c['bg_surface']}; "
+            f"border: 1px solid {c.get('border_card', c['border'])}; border-radius: {RADIUS_CARD}px; }}"
+            f"QWidget#NMSettingsRow {{ background: transparent; border-top: 1px solid {c['bg_elevated']}; }}"
+        )
+        self._header.setStyleSheet(
+            f"color: {c['text_secondary']}; background: transparent; "
+            f"border-bottom: 1px solid {c['bg_elevated']};"
+        )
+        for lbl in self.findChildren(QLabel):
+            if lbl is not self._header:
+                lbl.setStyleSheet(label_style(self._modo, "text_secondary"))
+
+
+class NMInstallProgress(QWidget):
+    """Progress bar + terminal del instalador/desinstalador."""
+    def __init__(self, accent_key: str = "teal", modo: str = "dark_hybrid", parent=None):
+        super().__init__(parent)
+        self._modo = "dark_hybrid"
+        self._accent_key = accent_key
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(10)
+        self._bar = NMProgressBar(height=4, modo=self._modo)
+        lay.addWidget(self._bar)
+        self._label = QLabel("0%")
+        self._label.setFont(qfont_mono(11))
+        lay.addWidget(self._label)
+        self._terminal = QTextEdit()
+        self._terminal.setReadOnly(True)
+        self._terminal.setFixedHeight(128)
+        lay.addWidget(self._terminal)
+        self._apply_theme(self._modo)
+
+    def set_progress(self, pct: int, status: str = ""):
+        pct = max(0, min(100, pct))
+        self._bar.animate_to(pct / 100)
+        self._label.setText(f"{pct}%{(' · ' + status) if status else ''}")
+
+    def set_lines(self, lines: list[str]):
+        self._terminal.setPlainText("\n".join(lines))
+
+    def append_line(self, line: str):
+        self._terminal.append(line)
+
+    def _apply_theme(self, modo: str = "dark_hybrid"):
+        c = colors("dark_hybrid")
+        self._label.setStyleSheet(label_style("dark_hybrid", "text_tertiary"))
+        self._terminal.setStyleSheet(
+            f"QTextEdit {{ background: {c['installer_terminal_bg']}; color: {c['text_tertiary']}; "
+            f"border: 1px solid {c['border']}; border-radius: 8px; padding: 10px; "
+            f"font-family: '{FONT_MONO}'; font-size: {TYPOGRAPHY['size_caption']}pt; }}"
+        )
+
+
+class NMHubSidebar(QWidget):
+    """Sidebar del Hub con nav vertical y pill activo."""
+    nav_clicked = pyqtSignal(str)
+
+    def __init__(self, items: list[tuple[str, str, str]], active: str = "",
+                 modo: str = None, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._active = active or (items[0][0] if items else "")
+        self._buttons: dict[str, QPushButton] = {}
+        self.setFixedWidth(168)
+        lay = QVBoxLayout(self)
+        self._layout = lay
+        lay.setContentsMargins(8, 12, 8, 8)
+        lay.setSpacing(3)
+        self._logo = QLabel("NeuroMood Hub")
+        self._logo.setFont(qfont("size_small", bold=True))
+        self._logo.setContentsMargins(10, 6, 10, 10)
+        lay.addWidget(self._logo)
+        for key, icon, label in items:
+            btn = QPushButton(f"{icon}  {label}")
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setFixedHeight(32)
+            btn.clicked.connect(lambda checked=False, k=key: self._select(k))
+            lay.addWidget(btn)
+            self._buttons[key] = btn
+        lay.addStretch()
+        self._footer = QLabel()
+        self._footer.setFont(qfont("size_caption"))
+        self._footer.setContentsMargins(10, 10, 10, 4)
+        lay.addWidget(self._footer)
+        self._apply_theme(self._modo)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def set_footer(self, text: str):
+        self._footer.setText(text)
+
+    def set_active(self, key: str):
+        self._active = key
+        self._apply_theme(self._modo)
+
+    def _select(self, key: str):
+        self.set_active(key)
+        self.nav_clicked.emit(key)
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        c = colors(self._modo)
+        self.setStyleSheet(
+            f"background: {C('sidebar_bg', self._modo)}; "
+            f"border-right: 1px solid {c.get('border_card', c['border'])};"
+        )
+        self._logo.setStyleSheet(f"color: {C('teal', self._modo)}; background: transparent;")
+        self._footer.setStyleSheet(
+            f"color: {c['text_tertiary']}; background: transparent; "
+            f"border-top: 1px solid {c.get('border_card', c['border'])};"
+        )
+        for key, btn in self._buttons.items():
+            active = key == self._active
+            btn.setStyleSheet(
+                f"QPushButton {{ text-align: left; background: "
+                f"{_rgba(C('teal', self._modo), 0.08) if active else 'transparent'}; "
+                f"color: {c['text_primary'] if active else c['text_tertiary']}; "
+                f"border: none; border-left: {3 if active else 0}px solid {C('teal', self._modo)}; "
+                f"border-radius: 8px; padding: 7px 10px; font-size: {TYPOGRAPHY['size_small']}pt; }}"
+                f"QPushButton:hover {{ background: {_rgba('#ffffff', 0.05)}; color: {c['text_secondary']}; }}"
+            )
+
 
 class NMFeaturedCard(QFrame):
     """Card principal del Hub Dashboard con blob gradient de fondo.
@@ -3478,6 +4068,126 @@ class NMTypingDots(QWidget):
 
 # ── NMSyncOrb ─────────────────────────────────────────────────────────────────
 
+class NMProviderChip(QWidget):
+    """Chip compacto para proveedor/modelo IA activo."""
+    def __init__(self, text: str = "IA verificando", state: str = "syncing",
+                 modo: str = None, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._state = state
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(8, 4, 8, 4)
+        lay.setSpacing(6)
+        self._dot = NMSyncOrb(state=state, size=7, modo=self._modo, parent=self)
+        lay.addWidget(self._dot)
+        self._label = QLabel(text)
+        self._label.setFont(qfont("size_caption"))
+        lay.addWidget(self._label)
+        self._apply_theme(self._modo)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def set_status(self, text: str, state: str = "ok"):
+        self._state = state
+        self._dot.set_state(state)
+        self._label.setText(text)
+        self._apply_theme(self._modo)
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        c = colors(self._modo)
+        border = C("teal", self._modo) if self._state == "ok" else c.get("border_card", c["border"])
+        bg = _rgba(C("teal", self._modo), 0.10 if self._state == "ok" else 0.04)
+        self.setStyleSheet(
+            f"QWidget {{ background: {bg}; border: 1px solid {_rgba(border, 0.35)}; "
+            f"border-radius: {RADIUS_PILL}px; }}"
+        )
+        self._label.setStyleSheet(label_style(self._modo, "text_secondary"))
+
+
+class NMQuickAction(QPushButton):
+    """Boton de sugerencia rapida del panel IA."""
+    def __init__(self, text: str, modo: str = None, parent=None):
+        super().__init__(text, parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setMinimumHeight(30)
+        self.setFont(qfont("size_caption"))
+        self._apply_theme(self._modo)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        c = colors(self._modo)
+        self.setStyleSheet(
+            f"QPushButton {{ background: transparent; color: {c['text_secondary']}; "
+            f"border: 1px solid {c.get('border_card', c['border'])}; "
+            f"border-radius: {RADIUS_BUTTON}px; padding: 6px 10px; text-align: left; }}"
+            f"QPushButton:hover {{ color: {C('teal', self._modo)}; "
+            f"border-color: {_rgba(C('teal', self._modo), 0.35)}; "
+            f"background: {_rgba(C('teal', self._modo), 0.06)}; }}"
+        )
+
+
+class NMPatientContext(QFrame):
+    """Panel lateral de contexto de paciente para IA."""
+    def __init__(self, paciente: str = "Sin paciente", modo: str = None, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._rows: dict[str, QLabel] = {}
+        self.setMinimumWidth(190)
+        self.setMaximumWidth(230)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(14, 14, 14, 14)
+        lay.setSpacing(10)
+        self._title = QLabel("Contexto")
+        self._title.setFont(qfont("size_body", bold=True))
+        lay.addWidget(self._title)
+        for key, label, value in [
+            ("paciente", "Paciente", paciente),
+            ("semanas", "Semanas", "12"),
+            ("animo", "Animo 7d", "7.2/10"),
+            ("distorsiones", "Distorsiones", "3"),
+            ("racha", "Racha", "5d"),
+        ]:
+            row = QWidget()
+            row_l = QVBoxLayout(row)
+            row_l.setContentsMargins(0, 0, 0, 0)
+            row_l.setSpacing(1)
+            l = QLabel(label)
+            l.setFont(qfont("size_caption"))
+            v = QLabel(value)
+            v.setFont(qfont("size_small", bold=True))
+            row_l.addWidget(l)
+            row_l.addWidget(v)
+            lay.addWidget(row)
+            self._rows[key] = v
+        lay.addStretch()
+        self._apply_theme(self._modo)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def set_patient(self, paciente: str):
+        if "paciente" in self._rows:
+            self._rows["paciente"].setText(paciente or "Sin paciente")
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        c = colors(self._modo)
+        self.setStyleSheet(
+            f"QFrame {{ background: {c['bg_secondary']}; "
+            f"border-left: 1px solid {c.get('border_card', c['border'])}; }}"
+        )
+        self._title.setStyleSheet(label_style(self._modo, "text_primary"))
+        for key, lbl in self._rows.items():
+            color_key = "teal" if key == "animo" else ("violet" if key == "distorsiones" else "text_primary")
+            lbl.setStyleSheet(label_style(self._modo, color_key))
+        for label in self.findChildren(QLabel):
+            if label is self._title or label in self._rows.values():
+                continue
+            label.setStyleSheet(label_style(self._modo, "text_tertiary"))
+
+
 class NMSyncOrb(QWidget):
     """Orb circular de estado de sincronización con animación de pulso.
 
@@ -3592,14 +4302,14 @@ class NMInstallStepper(QWidget):
                 p.setBrush(QBrush(QColor(accent)))
                 p.setPen(Qt.PenStyle.NoPen)
                 p.drawEllipse(QPointF(cx, cy), circle_r, circle_r)
-                p.setPen(QPen(QColor("#ffffff"), 2))
+                p.setPen(QPen(QColor(C("text_on_accent", self._modo)), 2))
                 p.setFont(qfont("size_caption", bold=True))
                 p.drawText(circ_rect, Qt.AlignmentFlag.AlignCenter, "✓")
             elif i == self._current:
                 p.setBrush(QBrush(QColor(accent)))
                 p.setPen(QPen(QColor(C("bg_primary", self._modo)), 2))
                 p.drawEllipse(QPointF(cx, cy), circle_r, circle_r)
-                p.setPen(QColor("#ffffff"))
+                p.setPen(QColor(C("text_on_accent", self._modo)))
                 p.setFont(qfont("size_caption", bold=True))
                 p.drawText(circ_rect, Qt.AlignmentFlag.AlignCenter, str(i + 1))
             else:
@@ -3699,12 +4409,12 @@ class NMDataPreserveCard(QWidget):
             self._toggle_btn.setStyleSheet(
                 f"QPushButton {{ background: qlineargradient(x1:0,y1:0,x2:1,y2:0,"
                 f"stop:0 {C('teal', self._modo)}, stop:1 {C('accent', self._modo)}); "
-                f"border-radius: 14px; border: none; }}"
+                f"border-radius: {RADIUS_PILL}px; border: none; }}"
             )
             self._state_lbl.setStyleSheet(f"color: {C('teal', self._modo)}; background: transparent;")
         else:
             self._toggle_btn.setStyleSheet(
                 f"QPushButton {{ background: {c['bg_elevated']}; "
-                f"border-radius: 14px; border: 1px solid {c['border']}; }}"
+                f"border-radius: {RADIUS_PILL}px; border: 1px solid {c['border']}; }}"
             )
             self._state_lbl.setStyleSheet(label_style(self._modo, "text_tertiary"))

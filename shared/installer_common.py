@@ -102,7 +102,7 @@ QPushButton#outline:hover {{
 /* ── Botón danger (desinstalar) ─────────────────────────────── */
 QPushButton#danger {{
     background: {ERROR_C};
-    color: white;
+    color: {TEXT_ON_ACCENT};
     border: none;
 }}
 QPushButton#danger:hover {{ background: #c83040; }}
@@ -444,13 +444,13 @@ class InstallerShell(QMainWindow):
         for i, (circle, lbl) in enumerate(self._step_widgets):
             if i == n:
                 circle.setStyleSheet(
-                    f"background: {ACCENT}; color: white; border-radius: 11px;"
+                    f"background: {ACCENT}; color: {TEXT_ON_ACCENT}; border-radius: 11px;"
                     f"font-weight: bold; font-size: 10px;"
                 )
                 lbl.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 11px; font-weight: bold; background: transparent;")
             elif i < n:
                 circle.setStyleSheet(
-                    f"background: {SUCCESS}; color: white; border-radius: 11px;"
+                    f"background: {SUCCESS}; color: {TEXT_ON_ACCENT}; border-radius: 11px;"
                     f"font-weight: bold; font-size: 10px;"
                 )
                 lbl.setStyleSheet(f"color: {TEXT_SEC}; font-size: 11px; background: transparent;")

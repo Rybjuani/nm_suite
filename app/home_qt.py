@@ -83,14 +83,14 @@ def _dot_color(idx: int, modo: str) -> str:
 # ── Mini-ring de progreso ─────────────────────────────────────────────────────
 
 class _MiniRing(QWidget):
-    """Arco de 32×32px que muestra progreso 0.0–1.0."""
+    """Arco de 28×28px que muestra progreso 0.0–1.0 (mockup: svg 28x28 r=10)."""
 
     def __init__(self, parent=None, color: str = "#6366f1", modo: str = "dark_hybrid"):
         super().__init__(parent)
         self._progress = 0.0
         self._color = color
         self._modo = norm_modo(modo)
-        self.setFixedSize(32, 32)
+        self.setFixedSize(28, 28)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.setStyleSheet("background: transparent;")
 
@@ -101,11 +101,11 @@ class _MiniRing(QWidget):
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        r = 12
-        cx, cy = 16, 16
+        r = 10
+        cx, cy = 14, 14
         rect = QRectF(cx - r, cy - r, r * 2, r * 2)
         track = QColor(C("progress_track", self._modo))
-        track.setAlpha(150 if "dark" in self._modo else 210)
+        track.setAlpha(130 if "dark" in self._modo else 190)
         pen_track = QPen(track, 3, Qt.PenStyle.SolidLine,
                          Qt.PenCapStyle.RoundCap)
         p.setPen(pen_track)
@@ -166,14 +166,14 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
     def _build_ui(self):
         c = colors(self._modo)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(PAD_CARD, 14, PAD_CARD, 14)
+        layout.setContentsMargins(PAD_CARD + 3, 14, PAD_CARD, 14)
         layout.setSpacing(8)
 
         # Fila top: icono + badge + ring
         top = QHBoxLayout()
         top.setSpacing(6)
         icon_lbl = QLabel()
-        icon_lbl.setFixedSize(32, 32)
+        icon_lbl.setFixedSize(24, 24)
         icon_lbl.setPixmap(self._icon_pixmap())
         icon_lbl.setStyleSheet("background: transparent;")
         icon_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
@@ -181,8 +181,9 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._icon_lbl = icon_lbl
         top.addStretch()
         self._badge = QLabel("")
-        self._badge.setFont(qfont("size_caption"))
+        self._badge.setFont(qfont("size_caption", bold=True))
         self._badge.setStyleSheet("background: transparent;")
+        self._badge.setContentsMargins(6, 2, 6, 2)
         self._badge.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         top.addWidget(self._badge)
         self._ring = _MiniRing(self, self._accent, self._modo)
@@ -211,27 +212,43 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
 
         self._refresh_status()
 
+    def _pill_style(self, color_hex: str, alpha_bg: float = 0.14) -> str:
+        """Genera stylesheet de pill badge con fondo semitransparente."""
+        c = QColor(color_hex)
+        bg_r, bg_g, bg_b = c.red(), c.green(), c.blue()
+        a = int(alpha_bg * 255)
+        return (
+            f"color: {color_hex}; "
+            f"background-color: rgba({bg_r},{bg_g},{bg_b},{a}); "
+            f"border-radius: 10px; "
+            f"padding: 2px 7px; "
+            f"font-size: 10pt;"
+        )
+
     def _refresh_status(self):
         status = self._get_status(self._config["id"])
-        c = colors(self._modo)
         if self._disabled:
-            self._badge.setText("Bloqueado")
-            self._badge.setFont(qfont("size_caption", bold=True))
+            self._badge.setText("No disponible")
             self._badge.setStyleSheet(
-                f"color: {C('warning', self._modo)}; background: transparent;"
+                self._pill_style(C("warning", self._modo))
             )
             self._ring.set_progress(0)
             return
         if status:
-            color = C("accent", self._modo) if self._config["id"] == "avisos" else C("success", self._modo)
+            mid = self._config["id"]
+            if mid == "avisos":
+                color = C("warning", self._modo)
+            elif "✓" in status or "Listo" in status or "Completo" in status:
+                color = C("success", self._modo)
+            elif "/" in status:
+                color = C("teal", self._modo)
+            else:
+                color = C("accent", self._modo)
             self._badge.setText(status)
-            self._badge.setFont(qfont("size_caption", bold=True))
-            self._badge.setStyleSheet(
-                f"color: {color}; background: transparent;"
-                f"font-weight: bold;"
-            )
+            self._badge.setStyleSheet(self._pill_style(color))
         else:
             self._badge.setText("")
+            self._badge.setStyleSheet("background: transparent;")
         self._update_ring(status)
 
     def _update_ring(self, status: str = None):
@@ -271,8 +288,8 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         p.setPen(QPen(QColor(c.get("border_card", c["border"])), 1))
         p.drawPath(path)
 
-        # Barra izquierda con gradiente del theme.
-        bar_w = 5
+        # Barra izquierda 3px con gradiente (mockup: .mod-accent width:3px)
+        bar_w = 3
         bar_grad = rich_gradient(QRectF(0, 0, bar_w, h), self._modo, angle=90)
         bar = QPainterPath()
         bar.addRoundedRect(QRectF(0, 0, bar_w, h), r // 2, r // 2)
@@ -301,7 +318,7 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
 
         noise_overlay(
             p,
-            QRectF(5, 0, w - 5, h),
+            QRectF(3, 0, w - 3, h),
             opacity=float(fx("noise_opacity", self._modo)),
             modo=self._modo,
         )
@@ -371,7 +388,7 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
 
     def _icon_pixmap(self):
         icon_key = "registro_tcc" if self._config["id"] == "registro" else self._config["id"]
-        return nm_icon(icon_key, C("accent", self._modo), size=32).pixmap(32, 32)
+        return nm_icon(icon_key, C("accent", self._modo), size=24).pixmap(24, 24)
 
     def refresh(self):
         self._refresh_status()

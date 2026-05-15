@@ -29,7 +29,7 @@ if _base not in sys.path:
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QLabel, QScrollArea, QGridLayout, QFrame, QSizePolicy,
-    QGraphicsDropShadowEffect,
+    QGraphicsDropShadowEffect, QStackedWidget,
 )
 from PyQt6.QtCore import Qt, QTimer, QSize, QPointF
 from PyQt6.QtGui import QColor, QIcon, QPainter, QPen, QBrush, QRadialGradient
@@ -44,8 +44,10 @@ from shared.theme_qt import (
 )
 from shared.components_qt import (
     ThemeManager, NMSidebar, NMHeader, NMFadeWidget,
-    NMButton, NMButtonOutline, NMCard, NMToast, NMSkeleton, responsive_columns,
+    NMButton, NMButtonOutline, NMCard, NMInput, NMToast, NMSkeleton, responsive_columns,
     NMSyncOrb, NMProgressLine, NMFeaturedCard, NMModuleRing,
+    NMHubSidebar, NMPatientRow, NMSettingsSection,
+    NMChatBubble, NMTypingDots, NMProviderChip, NMQuickAction, NMPatientContext,
 )
 
 _sb_create = None
@@ -56,6 +58,19 @@ _NAV_ITEMS = [
     ("dashboard", "fa5s.chart-bar", "Dashboard"),
     ("pacientes", "pacientes", "Pacientes"),
     ("config", "configuracion", "Config"),
+]
+
+_HUB_NAV_ITEMS = [
+    ("dashboard", "📊", "Dashboard"),
+    ("pacientes", "👥", "Pacientes"),
+    ("config", "⚙", "Config"),
+]
+
+_HUB_NAV_ITEMS = [
+    ("pacientes", "👥", "Pacientes"),
+    ("dashboard", "📊", "Dashboard"),
+    ("ia", "🧠", "IA Asistente"),
+    ("config", "⚙", "Config"),
 ]
 
 
@@ -309,7 +324,7 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
             row = i // cols
             col = i % cols
             self._dash_grid.addWidget(card, row, col)
-            return
+        return
 
         # Grid de cards 3 columnas
         grid = QGridLayout()
@@ -447,28 +462,15 @@ class PacientesView(QWidget):
             nombre = p.get("patient_name") or "—"
             pid = p.get("patient_id", "")
 
-            row = NMCard(clickable=False, modo=self._modo)
-            row.setMinimumHeight(46)
-            rl = QHBoxLayout(row)
-            rl.setContentsMargins(12, 0, 12, 0)
-
-            nl = QLabel(nombre)
-            nl.setFont(qfont("size_body"))
-            nl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
-            rl.addWidget(nl)
-
-            idl = QLabel(pid[:16])
-            idl.setFont(qfont("size_caption"))
-            idl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
-            rl.addWidget(idl)
-            rl.addStretch()
-
-            btn = NMButton("Ver detalle", modo=self._modo, width=100, height=28)
-            btn.clicked.connect(
-                lambda checked=False, _pid=pid, _n=nombre:
-                    self._on_select(_pid, _n)
+            row = NMPatientRow(
+                nombre,
+                f"ID: {pid[:16]}",
+                pct=0.75,
+                modo=self._modo,
             )
-            rl.addWidget(btn)
+            row.clicked.connect(
+                lambda _pid=pid, _n=nombre: self._on_select(_pid, _n)
+            )
             lst.addWidget(row)
 
 
@@ -500,33 +502,171 @@ class ConfigView(QWidget):
         title.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
         layout.addWidget(title)
 
-        # ── Database card with NMSyncOrb ──────────────────────────────────────
-        db_card = NMCard(clickable=False, modo=self._modo)
-        db_card.setMinimumHeight(52)
-        db_fl = QHBoxLayout(db_card)
-        db_fl.setContentsMargins(PAD_CARD, 10, PAD_CARD, 10)
-        db_fl.setSpacing(8)
-
-        self._sync_orb_cfg = NMSyncOrb(state="syncing", size=12,
-                                        modo=self._modo, parent=db_card)
-        db_fl.addWidget(self._sync_orb_cfg,
-                        alignment=Qt.AlignmentFlag.AlignVCenter)
-
-        db_lbl = QLabel("Base de datos")
-        db_lbl.setFont(qfont("size_body", bold=True))
-        db_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
-        db_fl.addWidget(db_lbl, stretch=1)
-
-        btn_rec = NMButtonOutline("Reconectar", modo=self._modo)
-        btn_rec.setFixedSize(130, 32)
+        conn_sec = NMSettingsSection("🔌 Conexión", modo=self._modo)
+        self._sync_orb_cfg = NMSyncOrb(state="syncing", size=14,
+                                        modo=self._modo, parent=conn_sec)
+        conn_sec.add_row("Estado", self._sync_orb_cfg)
+        conn_sec.add_row("URL Supabase", supabase_url() or "No configurada")
+        conn_sec.add_row("API Key", "••••••••" if supabase_key() else "No configurada")
+        btn_rec = NMButtonOutline("Sincronizar", modo=self._modo)
+        btn_rec.setFixedSize(110, 30)
         btn_rec.clicked.connect(on_reconnect)
-        db_fl.addWidget(btn_rec)
+        conn_sec.add_row("Auto-sync", btn_rec)
+        layout.addWidget(conn_sec)
 
-        layout.addWidget(db_card)
+        app_sec = NMSettingsSection("🎨 Apariencia", modo=self._modo)
+        btn_theme = NMButtonOutline("Cambiar tema", modo=self._modo)
+        btn_theme.setFixedSize(130, 30)
+        btn_theme.clicked.connect(on_toggle_theme)
+        app_sec.add_row("Tema", btn_theme)
+        app_sec.add_row("Proveedor IA", "Groq · llama3-70b")
+        layout.addWidget(app_sec)
+
+        log_sec = NMSettingsSection("📋 Log de sincronización", modo=self._modo)
+        log_sec.add_log(
+            "<span style='color:#4ade80'>✓</span> Listo para sincronizar<br>"
+            "<span style='color:#14b8a6'>↻</span> Esperando conexión"
+        )
+        layout.addWidget(log_sec)
         layout.addStretch()
 
 
 # ── HubProfesional ────────────────────────────────────────────────────────────
+
+class IAAssistantView(ThemeAwareWidgetMixin, QWidget):
+    """Vista global IA Asistente del Hub, alineada al mockup S11."""
+    def __init__(self, modo: str, paciente_nombre: str = "", parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo)
+        self._paciente_nombre = paciente_nombre or "Sin paciente"
+        self._setup()
+        self._connect_theme()
+
+    def _setup(self):
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        outer = QHBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        chat = QWidget()
+        chat.setStyleSheet("background: transparent;")
+        chat_l = QVBoxLayout(chat)
+        chat_l.setContentsMargins(PAD_CONTAINER, PAD_CONTAINER, PAD_CONTAINER, PAD_CONTAINER)
+        chat_l.setSpacing(10)
+        outer.addWidget(chat, stretch=1)
+
+        header = QHBoxLayout()
+        self._title = QLabel("IA Asistente")
+        self._title.setFont(qfont("size_h2", bold=True))
+        header.addWidget(self._title)
+        header.addStretch()
+        self._provider = NMProviderChip("IA verificando", "syncing", self._modo)
+        header.addWidget(self._provider)
+        chat_l.addLayout(header)
+
+        self._messages_scroll = QScrollArea()
+        self._messages_scroll.setWidgetResizable(True)
+        self._messages_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._messages_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        self._messages_w = QWidget()
+        self._messages_w.setStyleSheet("background: transparent;")
+        self._messages_l = QVBoxLayout(self._messages_w)
+        self._messages_l.setContentsMargins(0, 0, 8, 0)
+        self._messages_l.setSpacing(4)
+        self._messages_scroll.setWidget(self._messages_w)
+        chat_l.addWidget(self._messages_scroll, stretch=1)
+
+        self._add_bubble(
+            "Hola. Puedo ayudarte a resumir evolucion, revisar patrones y proponer acciones para el paciente seleccionado.",
+            "left",
+        )
+        self._add_bubble("Analiza el animo reciente y sugeri proximos pasos.", "right")
+        self._add_bubble(
+            "El panel queda listo para trabajar con los datos cargados desde Registros. Las respuestas mantienen criterio clinico y no reemplazan supervision profesional.",
+            "left",
+        )
+        self._typing = NMTypingDots(self._modo)
+        self._typing.hide()
+        self._messages_l.addWidget(self._typing, alignment=Qt.AlignmentFlag.AlignLeft)
+        self._messages_l.addStretch()
+
+        quick = QHBoxLayout()
+        quick.setSpacing(8)
+        for text in [
+            "Analizar animo reciente",
+            "Proponer actividades",
+            "Revisar distorsiones",
+        ]:
+            btn = NMQuickAction(text, self._modo)
+            btn.clicked.connect(lambda checked=False, t=text: self._quick(t))
+            quick.addWidget(btn)
+        chat_l.addLayout(quick)
+
+        input_row = QHBoxLayout()
+        input_row.setSpacing(8)
+        self._input = NMInput("Escribe tu consulta...", modo=self._modo)
+        input_row.addWidget(self._input, stretch=1)
+        self._send = NMButton("Enviar", modo=self._modo, width=90, height=36)
+        self._send.clicked.connect(self._send_message)
+        input_row.addWidget(self._send)
+        chat_l.addLayout(input_row)
+
+        self._context = NMPatientContext(self._paciente_nombre, self._modo)
+        outer.addWidget(self._context)
+        self._update_provider()
+        self._apply_theme(self._modo)
+
+    def _add_bubble(self, text: str, side: str):
+        bubble = NMChatBubble(text, side=side, modo=self._modo)
+        self._messages_l.addWidget(bubble)
+        return bubble
+
+    def _quick(self, text: str):
+        self._input.setText(text)
+        self._send_message()
+
+    def _send_message(self):
+        text = self._input.text().strip()
+        if not text:
+            return
+        self._input.clear()
+        self._add_bubble(text, "right")
+        self._typing.show()
+        self._typing.start()
+        QTimer.singleShot(180, self._mock_response)
+
+    def _mock_response(self):
+        if sip.isdeleted(self):
+            return
+        self._typing.stop()
+        self._typing.hide()
+        self._add_bubble(
+            "Para responder con datos reales, carga primero los registros del paciente. Con contexto disponible, puedo resumir tendencia, adherencia y sugerencias concretas.",
+            "left",
+        )
+
+    def set_patient(self, nombre: str):
+        self._paciente_nombre = nombre or "Sin paciente"
+        if hasattr(self, "_context"):
+            self._context.set_patient(self._paciente_nombre)
+
+    def _update_provider(self):
+        try:
+            import hub.ia_asistente as ia
+            msg = ia.status_msg()
+        except Exception:
+            msg = "IA no disponible"
+        state = "ok" if "disponible" in msg else ("syncing" if "verificando" in msg else "error")
+        self._provider.set_status(msg.replace("IA disponible via ", ""), state)
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        c = colors(self._modo)
+        self.setStyleSheet(f"background: {c['bg_primary']};")
+        self._title.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+        if hasattr(self, "_messages_scroll"):
+            self._messages_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+
 
 class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
 
@@ -537,7 +677,7 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         self._pacientes: list = []
         self._paciente_id: str | None = None
         self._paciente_nombre: str = ""
-        self._current_view = "dashboard"
+        self._current_view = "pacientes"
 
         ThemeManager.instance().switch_mode(self._modo)
 
@@ -600,14 +740,9 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         main_layout.setSpacing(0)
 
         # Sidebar
-        self._sidebar = NMSidebar(central, modo=self._modo)
-        self._sidebar.add_logo()
-        self._sidebar.add_header("NeuroMood Hub Pro")
-        for iid, icon_key, label in _NAV_ITEMS:
-            self._sidebar.add_item(iid, nm_icon(icon_key, C("accent", self._modo), size=18), label)
-        self._sidebar.add_spacer()
-        self._sidebar.add_separator()
-        self._sidebar.add_label("Sin paciente")
+        self._sidebar = NMHubSidebar(_HUB_NAV_ITEMS, active=self._current_view,
+                                     modo=self._modo, parent=central)
+        self._sidebar.set_footer("Sin paciente")
 
         # ── Sidebar footer: NMSyncOrb + collapse toggle ───────────────────────
         footer = QWidget()
@@ -635,7 +770,7 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         self._sidebar._layout.addWidget(footer)
         self._sidebar_collapsed = False
 
-        self._sidebar.nav_changed.connect(self._on_nav)
+        self._sidebar.nav_clicked.connect(self._on_nav)
         main_layout.addWidget(self._sidebar)
 
         # Área derecha
@@ -699,14 +834,20 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
             on_toggle_theme=self._toggle_theme,
             on_reconnect=self._reconnect,
         )
+        self._view_ia = IAAssistantView(
+            self._modo,
+            paciente_nombre=self._paciente_nombre or "Sin paciente",
+        )
 
         self._stack.addWidget(self._view_dashboard)
         self._stack.addWidget(self._view_pacientes)
+        self._stack.addWidget(self._view_ia)
         self._stack.addWidget(self._view_config)
 
         views = {
             "dashboard": self._view_dashboard,
             "pacientes":  self._view_pacientes,
+            "ia":         self._view_ia,
             "config":     self._view_config,
         }
         target = views.get(self._current_view, self._view_dashboard)
@@ -720,14 +861,20 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         views = {
             "dashboard": self._view_dashboard,
             "pacientes":  self._view_pacientes,
+            "ia":         self._view_ia,
             "config":     self._view_config,
         }
         if item_id in views:
-            self._stack.setCurrentWidget(views[item_id])
+            QStackedWidget.setCurrentWidget(self._stack, views[item_id])
+            if hasattr(self._stack, "_animating"):
+                self._stack._animating = False
+            self._sidebar.set_active(item_id)
 
     def _select_patient(self, pid: str, nombre: str):
         self._paciente_id = pid
         self._paciente_nombre = nombre
+        if hasattr(self, "_view_ia"):
+            self._view_ia.set_patient(nombre)
 
         # Cargar vista de detalle
         from hub.pacientes_qt import DetallePacienteView

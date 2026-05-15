@@ -15,7 +15,7 @@ from pathlib import Path
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-    QLabel, QLineEdit, QPushButton, QCheckBox, QProgressBar,
+    QLabel, QLineEdit, QPushButton, QProgressBar,
     QScrollArea, QFrame, QFileDialog, QMessageBox, QButtonGroup,
     QSizePolicy, QStackedWidget, QGraphicsOpacityEffect,
 )
@@ -27,7 +27,7 @@ try:
     from shared.installer_common import (
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, TEXT_ON_ACCENT, BORDER, SUCCESS, WARNING_C, ERROR_C,
-        FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
+        SUCCESS_BG, FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
         stylesheet_installer, InstallerShell,
     )
 except ImportError:
@@ -37,7 +37,7 @@ except ImportError:
     from shared.installer_common import (
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, TEXT_ON_ACCENT, BORDER, SUCCESS, WARNING_C, ERROR_C,
-        FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
+        SUCCESS_BG, FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
         stylesheet_installer, InstallerShell,
     )
 
@@ -49,14 +49,14 @@ APP_NOMBRE = "NeuroMood Suite"
 _SS = stylesheet_installer()   # design system premium unificado
 
 try:
-    from shared.components_qt import NMInput, NMProgressBar
+    from shared.components_qt import NMInput, NMProgressBar, NMInstallProgress, NMCustomCheck
     _COMPONENTS_OK = True
 except ImportError:
     _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if _root not in sys.path:
         sys.path.insert(0, _root)
     try:
-        from shared.components_qt import NMInput, NMProgressBar
+        from shared.components_qt import NMInput, NMProgressBar, NMInstallProgress, NMCustomCheck
         _COMPONENTS_OK = True
     except ImportError:
         _COMPONENTS_OK = False
@@ -456,7 +456,7 @@ class InstaladorNeuroMood(InstallerShell):
         info_card = QFrame()
         info_card.setObjectName("InfoCard")
         info_card.setStyleSheet(
-            f"QFrame#InfoCard {{background: #091E10; border-radius: 8px; border: 1px solid {SUCCESS};}}"
+            f"QFrame#InfoCard {{background: {SUCCESS_BG}; border-radius: 8px; border: 1px solid {SUCCESS};}}"
         )
         icl = QVBoxLayout(info_card)
         icl.setContentsMargins(12, 7, 12, 7)
@@ -533,35 +533,21 @@ class InstaladorNeuroMood(InstallerShell):
         lay.addSpacing(12)
 
         if _COMPONENTS_OK:
-            self._progress_bar = NMProgressBar(height=8)
+            self._install_progress = NMInstallProgress(accent_key="teal")
+            self._install_progress.set_progress(0, "Presiona 'Instalar' para continuar.")
+            lay.addWidget(self._install_progress)
+            self._progress_bar = self._install_progress
+            self._progress_lbl = self._install_progress._label
+            self._log_layout = None
+            self._log_scroll = None
         else:
             self._progress_bar = QProgressBar()
             self._progress_bar.setRange(0, 100)
             self._progress_bar.setValue(0)
-        lay.addWidget(self._progress_bar)
-        lay.addSpacing(6)
-
-        self._progress_lbl = QLabel("Presiona 'Instalar' para continuar.")
-        self._progress_lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px;")
-        lay.addWidget(self._progress_lbl)
-        lay.addSpacing(8)
-
-        # Log
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setMinimumHeight(150)
-        scroll.setStyleSheet(
-            f"QScrollArea {{ background: {BG_SURFACE}; border-radius: 8px; border: none; }}"
-        )
-        self._log_container = QWidget()
-        self._log_container.setStyleSheet(f"background: {BG_SURFACE};")
-        self._log_layout = QVBoxLayout(self._log_container)
-        self._log_layout.setContentsMargins(8, 8, 8, 8)
-        self._log_layout.setSpacing(1)
-        self._log_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        scroll.setWidget(self._log_container)
-        self._log_scroll = scroll
-        lay.addWidget(scroll)
+            lay.addWidget(self._progress_bar)
+            self._progress_lbl = QLabel("Presiona 'Instalar' para continuar.")
+            self._progress_lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px;")
+            lay.addWidget(self._progress_lbl)
         lay.addStretch()
 
     # ── Página 3: Finalizar ───────────────────────────────────────────────────
@@ -595,12 +581,20 @@ class InstaladorNeuroMood(InstallerShell):
         lay.addWidget(sep)
         lay.addSpacing(12)
 
-        self._chk_escritorio = QCheckBox("Crear acceso directo en el Escritorio")
+        self._chk_escritorio = NMCustomCheck(
+            "Crear acceso directo en el Escritorio",
+            checked=True,
+            strike_on_check=False,
+        )
         self._chk_escritorio.setChecked(True)
         lay.addWidget(self._chk_escritorio)
         lay.addSpacing(10)
 
-        self._chk_menu = QCheckBox("Crear acceso directo en el Menu de Inicio")
+        self._chk_menu = NMCustomCheck(
+            "Crear acceso directo en el Menu de Inicio",
+            checked=False,
+            strike_on_check=False,
+        )
         self._chk_menu.setChecked(False)
         lay.addWidget(self._chk_menu)
         lay.addSpacing(12)
@@ -688,6 +682,10 @@ class InstaladorNeuroMood(InstallerShell):
     # ── Instalación ───────────────────────────────────────────────────────────
 
     def _log(self, texto: str, color: str = TEXT_SEC):
+        if hasattr(self, "_install_progress"):
+            self._install_progress.append_line(texto)
+            QApplication.processEvents(QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)
+            return
         lbl = QLabel(texto)
         lbl.setStyleSheet(
             f"color: {color}; font-size: 11px; background: transparent; padding: 1px 2px;"
@@ -698,7 +696,9 @@ class InstaladorNeuroMood(InstallerShell):
         sb.setValue(sb.maximum())
 
     def _set_progress(self, v: float, t: str):
-        if _COMPONENTS_OK:
+        if hasattr(self, "_install_progress"):
+            self._install_progress.set_progress(int(v * 100), t)
+        elif _COMPONENTS_OK:
             self._progress_bar.animate_to(v, duration=200)
         else:
             self._progress_bar.setValue(int(v * 100))
