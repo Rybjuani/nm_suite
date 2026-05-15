@@ -568,8 +568,15 @@ class ModuloAvisos(NMModule):
     # ── Show form (inline panel) ────────────────────────────────────────────────
 
     def _show_form(self):
+        # Solo permitir un panel a la vez
+        for i in range(self._list_layout.count()):
+            item = self._list_layout.itemAt(i)
+            if item and isinstance(item.widget(), _NuevoAvisoPanel):
+                item.widget().deleteLater()
+                self._list_layout.removeWidget(item.widget())
+                break
         panel = _NuevoAvisoPanel(self._content, self._modo)
-        panel.saved.connect(lambda data: self._handle_new_reminder_saved(panel, data))
+        panel.saved.connect(lambda data: (self._save_reminder(data), self._list_layout.removeWidget(panel), panel.deleteLater()))
         panel.cancelled.connect(lambda: (self._list_layout.removeWidget(panel), panel.deleteLater()))
         self._list_layout.insertWidget(0, panel)
 

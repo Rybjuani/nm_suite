@@ -22,7 +22,7 @@ from PyQt6.QtWidgets import (
 
 try:
     from shared.components_qt import (
-        NMModule, NMButton, NMButtonOutline, NMCard, NMToast,
+        NMModule, NMButton, NMButtonOutline, NMCard, NMToast, NMSegmentedChoice,
         ThemeManager, h_spacer, NMEmptyState,
     )
     from shared.theme_qt import (
@@ -219,37 +219,26 @@ class ModuloActividades(NMModule):
             desc_lbl.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
             inner_layout.addWidget(desc_lbl)
 
-        # Result buttons row
-        btn_row = QHBoxLayout()
-        btn_row.setSpacing(sp("sm") - sp("xs") // 2)
-        btn_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-
+        # Result buttons row — control segmentado exclusivo
         nombre = act.get("nombre", "Actividad")
-        results = [
-            ("Hecha",     "hecha",     c["success"]),
-            ("Intentada", "intentada", c["warning"]),
-            ("No pude",   "no_pude",   c["error"]),
-        ]
-        self._result_btns: list[NMButtonOutline] = []
-        for label, resultado, _hover_color in results:
-            btn = NMButtonOutline(label, modo=self._modo)
-            btn.setFixedHeight(30)
-            btn.setMinimumWidth(76)
-            btn.clicked.connect(
-                lambda checked=False, n=nombre, r=resultado, cd=card:
-                    self._register_result(n, r, cd)
-            )
-            btn_row.addWidget(btn)
-            self._result_btns.append(btn)
+        seg = NMSegmentedChoice([
+            ("Hecha", "hecha"),
+            ("Intentada", "intentada"),
+            ("No pude", "no_pude"),
+        ], modo=self._modo)
+        seg.choice_made.connect(
+            lambda v, n=nombre, cd=card, s=seg: self._register_result(n, v, cd, s)
+        )
+        inner_layout.addWidget(seg)
 
-        inner_layout.addLayout(btn_row)
         card_layout.addWidget(inner)
 
         self._scroll_layout.addWidget(card)
 
     # ── _register_result (lógica preservada exacta) ───────────────────────────
 
-    def _register_result(self, nombre: str, resultado: str, card_widget: NMCard):
+    def _register_result(self, nombre: str, resultado: str, card_widget: NMCard,
+                         seg: NMSegmentedChoice):
         c = colors(self._modo)
         animo = self._get_last_mood()
         if animo is None:
@@ -286,9 +275,8 @@ class ModuloActividades(NMModule):
             card_widget.play_success()
 
         # Deshabilitar botones tras selección
-        for btn in getattr(self, "_result_btns", []):
+        for btn in seg._btns.values():
             btn.setEnabled(False)
-        self._result_btns = []
 
         # Toast de confirmación
         labels = {"hecha": "Hecha ✓", "intentada": "Intentada", "no_pude": "No se pudo"}

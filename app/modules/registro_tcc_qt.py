@@ -202,6 +202,15 @@ class ModuloRegistroTCC(NMModule):
         self._btn_next.clicked.connect(self._next_step)
         nav_layout.addWidget(self._btn_next)
 
+        # Error label (compartido entre pasos)
+        self._error_lbl = QLabel("")
+        self._error_lbl.setFont(qfont("size_small"))
+        self._error_lbl.setStyleSheet(
+            f"color: {C('warning', self._modo)}; background: transparent; font-weight: bold;"
+        )
+        self._error_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        root.addWidget(self._error_lbl)
+
         root.addLayout(nav_layout)
 
         self._show_step()
@@ -214,6 +223,10 @@ class ModuloRegistroTCC(NMModule):
             self._txt_pensamiento.setStyleSheet(stylesheet_textedit(self._modo))
         if hasattr(self, "_txt_respuesta"):
             self._txt_respuesta.setStyleSheet(stylesheet_textedit(self._modo))
+        if hasattr(self, "_error_lbl"):
+            self._error_lbl.setStyleSheet(
+                f"color: {C('warning', self._modo)}; background: transparent; font-weight: bold;"
+            )
         for child in self.findChildren(QFrame):
             if hasattr(child, "apply_theme"):
                 child.apply_theme(self._modo)
@@ -477,12 +490,10 @@ class ModuloRegistroTCC(NMModule):
         if self._step in campo_requerido:
             campo, hint = campo_requerido[self._step]
             if not self._data.get(campo, "").strip():
-                orig = self._btn_next.text()
-                self._btn_next.setText(hint)
-                QTimer.singleShot(2200, lambda: (self._btn_next.setText(
-                    "Guardar ✓" if self._step == 3 else "Siguiente →"
-                ) if not sip.isdeleted(self._btn_next) else None))
+                # Mostrar error en label dedicado, no en el texto del botón
+                self._error_lbl.setText(hint)
                 return
+            self._error_lbl.setText("")
 
         if self._step == 3:
             self._guardar()

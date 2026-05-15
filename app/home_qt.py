@@ -372,8 +372,8 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
 
 # ── HomeView ──────────────────────────────────────────────────────────────────
 
-class HomeView(ThemeAwareWidgetMixin, QWidget):
-    """Grid de 7 ModuleCard con animación de entrada escalonada (stagger 60ms)."""
+class HomeView(QWidget):
+    """Grid de 7 ModuleCard con grid responsive (1/2/3 columnas)."""
 
     def __init__(self, modo: str = "dark_hybrid",
                  on_module_open=None, get_status_fn=None,
@@ -384,67 +384,52 @@ class HomeView(ThemeAwareWidgetMixin, QWidget):
         self._get_status = get_status_fn or (lambda mid: "")
         self._cards: dict[str, ModuleCard] = {}
         self._setup()
-        self._connect_theme()
+        ThemeManager.instance().theme_changed.connect(self._apply_theme)
 
     def _setup(self):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        self._grid_cols = 0
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)
 
+        # Scroll area para overflow vertical
+        self._scroll = QScrollArea(self)
+        self._scroll.setWidgetResizable(True)
+        self._scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        outer.addWidget(self._scroll)
+
         container = QWidget()
         container.setStyleSheet("background: transparent;")
+        self._scroll.setWidget(container)
 
-        # Layout del container: título + grid
         container_layout = QVBoxLayout(container)
         container_layout.setContentsMargins(0, 20, 0, 20)
         container_layout.setSpacing(10)
-        outer.addWidget(container)
 
         title_lbl = QLabel("Herramientas")
         title_lbl.setFont(qfont("size_h2", bold=True))
         title_lbl.setStyleSheet(f"color: {C('text_primary', self._modo)}; background: transparent;")
         container_layout.addWidget(title_lbl)
 
-        grid = QGridLayout()
-        grid.setContentsMargins(0, 0, 0, 0)
-        container_layout.addLayout(grid)
-        grid.setVerticalSpacing(int(GAP_CARDS * 1.4))
-        grid.setHorizontalSpacing(GAP_CARDS)
-        for col in range(3):
-            grid.setColumnStretch(col, 1)
-        for row in range(3):
-            grid.setRowStretch(row, 1)
+        self._grid = QGridLayout()
+        self._grid.setContentsMargins(0, 0, 0, 0)
+        self._grid.setVerticalSpacing(int(GAP_CARDS * 1.4))
+        self._grid.setHorizontalSpacing(GAP_CARDS)
+        container_layout.addLayout(self._grid)
 
-        # Cards 0–5 en grid 3 columnas
-        for idx in range(6):
-            cfg = MODULES_CONFIG[idx]
-            row, col = idx // 3, idx % 3
+        # Crear todas las cards
+        for idx, cfg in enumerate(MODULES_CONFIG):
             card = ModuleCard(
                 cfg, idx, self._modo,
                 on_click=self._open_cb,
                 get_status_fn=self._get_status,
             )
-            grid.addWidget(card, row, col)
-            if not self._is_module_available(cfg["id"]):
-                card.set_disabled(True, "Tu terapeuta habilitará este módulo")
             self._cards[cfg["id"]] = card
 
-        # Card 7 centrada sola en fila 2
-        cfg7 = MODULES_CONFIG[6]
-        card7 = ModuleCard(
-            cfg7, 6, self._modo,
-            on_click=self._open_cb,
-            get_status_fn=self._get_status,
-        )
-        card7.setMaximumWidth(380)
-        if not self._is_module_available(cfg7["id"]):
-            card7.set_disabled(True, "Tu terapeuta habilitará este módulo")
-        grid.addWidget(card7, 2, 1, Qt.AlignmentFlag.AlignHCenter)
-        self._cards[cfg7["id"]] = card7
-
-        grid.setRowStretch(3, 1)
+        self._rebuild_grid()
 
         # Animar entrada con stagger
         for idx, cfg in enumerate(MODULES_CONFIG):
@@ -452,12 +437,36 @@ class HomeView(ThemeAwareWidgetMixin, QWidget):
             if card:
                 card.animate_enter(delay_ms=idx * 60)
 
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        new_cols = responsive_columns(self.width())
+        if new_cols != self._grid_cols:
+            self._grid_cols = new_cols
+            self._rebuild_grid()
+
+    def _rebuild_grid(self):
+        cols = max(1, self._grid_cols or responsive_columns(self.width()))
+        # Limpiar grid manteniendo los widgets
+        for i in reversed(range(self._grid.count())):
+            item = self._grid.takeAt(i)
+            if item.widget():
+                item.widget().setParent(None)
+
+        # Reconfigurar columnas
+        for c in range(cols):
+            self._grid.setColumnStretch(c, 1)
+
+        # Reubicar cards en el nuevo grid
+        for idx, cfg in enumerate(MODULES_CONFIG):
+            card = self._cards.get(cfg["id"])
+            if card:
+                row = idx // cols
+                col = idx % cols
+                self._grid.addWidget(card, row, col)
+        self._grid.setRowStretch(0, 1)
+
     def refresh_statuses(self):
         for card in self._cards.values():
-            card.set_disabled(
-                not self._is_module_available(card._config["id"]),
-                "Tu terapeuta habilitará este módulo",
-            )
             card.refresh()
 
     def _is_module_available(self, module_id: str) -> bool:
