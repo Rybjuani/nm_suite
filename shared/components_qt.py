@@ -986,7 +986,7 @@ class _SidebarItem(QWidget):
         self._hover_alpha = 0.0
         self._bar_anim_val = 0.0   # 0.0→1.0 para la barra izquierda
 
-        self.setFixedHeight(40)
+        self.setFixedHeight(44)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
@@ -1125,7 +1125,7 @@ class NMSidebar(QWidget):
         self._logo_shadow: QGraphicsDropShadowEffect | None = None
         self._logo_lbl: QLabel | None = None
 
-        self.setFixedWidth(200)
+        self.setFixedWidth(220)
         self._layout = QVBoxLayout(self)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self._layout.setSpacing(0)

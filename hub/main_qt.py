@@ -179,6 +179,7 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
     def _setup(self):
         c = colors(self._modo)
         self.setStyleSheet(f"background: {c['bg_primary']};")
+        self._grid_cols = 0
 
         scroll = QScrollArea(self)
         scroll.setWidgetResizable(True)
@@ -210,22 +211,99 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
         if not self._pacientes:
             empty = QLabel(
                 "Sin pacientes registrados.\n"
-                "Usá la sección Pacientes para vincular."
+                "Usa la seccion Pacientes para vincular."
             )
             empty.setFont(qfont("size_body"))
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
             layout.addWidget(empty)
-            # Skeleton loaders mientras carga
-            sk_grid = QGridLayout()
-            sk_grid.setSpacing(GAP_CARDS)
-            for col in range(3):
-                sk_grid.setColumnStretch(col, 1)
-            for i in range(3):
-                sk = NMSkeleton(width=200, height=120, radius=RADIUS_CARD, modo=self._modo)
-                sk_grid.addWidget(sk, i // 3, i % 3)
-            layout.addLayout(sk_grid)
             layout.addStretch()
+            return
+
+        # Grid responsive
+        self._dash_grid = QGridLayout()
+        self._dash_grid.setSpacing(GAP_CARDS)
+        layout.addLayout(self._dash_grid)
+        self._dash_cards: list[tuple[NMCard, dict]] = []
+
+        grad = gradient_colors(self._modo)
+
+        for i, p in enumerate(self._pacientes):
+            nombre = p.get("patient_name") or p.get("patient_id", "—")
+            pid = p.get("patient_id", "")
+            t = (i % 3) / 2
+            card_accent = interpolate_color(grad[0], grad[-1], t)
+
+            card = NMCard(accent_color=card_accent, clickable=True, modo=self._modo)
+            card.setMinimumHeight(120)
+            card.clicked.connect(
+                lambda checked=False, _pid=pid, _n=nombre:
+                    self._on_select(_pid, _n)
+            )
+
+            inner = QVBoxLayout()
+            inner.setContentsMargins(PAD_CARD, 10, PAD_CARD, 10)
+            inner.setSpacing(4)
+
+            top_row = QHBoxLayout()
+            name_lbl = QLabel(nombre)
+            name_lbl.setFont(qfont("size_body", bold=True))
+            name_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+            name_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            top_row.addWidget(name_lbl)
+            top_row.addStretch()
+
+            puntaje = p.get("last_mood") if "last_mood" in p else None
+            ind = _AnimoIndicator(puntaje, self._modo)
+            ind.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            top_row.addWidget(ind)
+            inner.addLayout(top_row)
+
+            id_lbl = QLabel(f"ID: {pid[:14]}…" if len(pid) > 14 else pid)
+            id_lbl.setFont(qfont("size_caption"))
+            id_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+            id_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            inner.addWidget(id_lbl)
+            inner.addStretch()
+
+            btn = NMButton("Ver detalle", modo=self._modo, width=100, height=30)
+            btn.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            inner.addWidget(btn, alignment=Qt.AlignmentFlag.AlignLeft)
+
+            card_inner = QWidget(card)
+            card_inner.setStyleSheet("background: transparent;")
+            card_inner.setLayout(inner)
+            card_inner.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(0, 0, 0, 0)
+            card_layout.addWidget(card_inner)
+
+            self._dash_cards.append((card, p))
+
+        self._rebuild_dash_grid()
+        layout.addStretch()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        new_cols = responsive_columns(self.width(), min_card_width=250)
+        if new_cols != self._grid_cols and hasattr(self, '_dash_cards'):
+            self._grid_cols = new_cols
+            self._rebuild_dash_grid()
+
+    def _rebuild_dash_grid(self):
+        if not hasattr(self, '_dash_cards') or not self._dash_cards:
+            return
+        cols = max(1, self._grid_cols or responsive_columns(self.width(), min_card_width=250))
+        for i in reversed(range(self._dash_grid.count())):
+            item = self._dash_grid.takeAt(i)
+            if item.widget():
+                item.widget().setParent(None)
+        for c in range(cols):
+            self._dash_grid.setColumnStretch(c, 1)
+        for i, (card, _) in enumerate(self._dash_cards):
+            row = i // cols
+            col = i % cols
+            self._dash_grid.addWidget(card, row, col)
             return
 
         # Grid de cards 3 columnas

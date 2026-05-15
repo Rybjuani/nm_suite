@@ -287,6 +287,7 @@ class _TabRegistros(QWidget):
                 except Exception:
                     datos[clave] = []
             self._datos_ref.cache = datos
+            self._datos_cache = datos
             self._cargando = False
             self._datos_ref.changed.emit(datos)
             QTimer.singleShot(0, lambda d=datos: self._mostrar_registros(d) if not sip.isdeleted(self) else None)
