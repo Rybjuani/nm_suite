@@ -244,6 +244,203 @@ def crear_acceso_directo(origen: str, destino_lnk: str, icono: str):
             pass
 
 
+# ── InstallerShell — Clase base común para los 4 instaladores ────────────────
+
+try:
+    from PyQt6.QtWidgets import (
+        QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
+        QLabel, QPushButton, QStackedWidget,
+    )
+    from PyQt6.QtCore import Qt, QTimer
+    from PyQt6.QtGui import QIcon, QPixmap
+    _QT_OK = True
+except ImportError:
+    _QT_OK = False
+
+
+class InstallerShell(QMainWindow):
+    """Ventana base común para installer y uninstaller. Provee header con logo,
+    indicador de pasos, contenido apilado (QStackedWidget), y nav footer."""
+
+    # Override en subclases
+    APP_NAME: str = "NeuroMood"
+    WINDOW_SIZE: tuple = (680, 480)
+    STEPS: list[str] = []
+
+    def __init__(self):
+        super().__init__()
+        self._pagina = 0
+        self._pages: list[QWidget] = []
+        self._step_widgets: list[tuple[QLabel, QLabel]] = []
+
+        self.setWindowTitle(f"Instalador — {self.APP_NAME}")
+        w, h = self.WINDOW_SIZE
+        self.setFixedSize(w, h)
+        self.setStyleSheet(stylesheet_installer())
+        try:
+            self.setWindowIcon(QIcon(recurso("installer_icon.ico")))
+        except Exception:
+            pass
+
+        screen = QApplication.primaryScreen().availableGeometry()
+        self.move((screen.width() - w) // 2, (screen.height() - h) // 2)
+        aplicar_captionbar_installer(self)
+
+    def _build_shell(self):
+        """Construye el layout común: header + steps + stack + footer."""
+        central = QWidget()
+        self.setCentralWidget(central)
+        root = QVBoxLayout(central)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+
+        # Header
+        header = QWidget()
+        header.setFixedHeight(50)
+        header.setStyleSheet(f"background: {BG_SECONDARY};")
+        hl = QHBoxLayout(header)
+        hl.setContentsMargins(16, 0, 16, 0)
+        logo_lbl = QLabel()
+        try:
+            from PIL import Image as PILImage
+            from PyQt6.QtGui import QImage
+            img = PILImage.open(recurso("LOGO.png")).convert("RGBA")
+            img.thumbnail((110, 30), PILImage.LANCZOS)
+            qimg = QImage(img.tobytes("raw", "RGBA"), img.width, img.height, QImage.Format.Format_RGBA8888)
+            logo_lbl.setPixmap(QPixmap.fromImage(qimg))
+        except Exception:
+            logo_lbl.setText(self.APP_NAME)
+            logo_lbl.setStyleSheet(f"color: {ACCENT}; font-size: 14px; font-weight: bold; background: transparent;")
+        hl.addWidget(logo_lbl)
+        hl.addStretch()
+        if self.STEPS:
+            steps_w = QWidget()
+            steps_w.setStyleSheet("background: transparent;")
+            sl = QHBoxLayout(steps_w)
+            sl.setSpacing(4)
+            for i, name in enumerate(self.STEPS):
+                circle = QLabel(f" {i + 1} ")
+                circle.setFixedSize(22, 22)
+                circle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                circle.setStyleSheet(
+                    f"background: {BORDER}; color: {TEXT_TERT}; border-radius: 11px;"
+                    f"font-weight: bold; font-size: 10px;"
+                )
+                lbl = QLabel(name)
+                lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px; background: transparent;")
+                sl.addWidget(circle)
+                sl.addWidget(lbl)
+                if i < len(self.STEPS) - 1:
+                    sep = QLabel("→")
+                    sep.setStyleSheet(f"color: {TEXT_TERT}; font-size: 10px; background: transparent;")
+                    sl.addWidget(sep)
+                self._step_widgets.append((circle, lbl))
+            hl.addWidget(steps_w)
+        root.addWidget(header)
+
+        # Separator
+        sep = QWidget()
+        sep.setFixedHeight(1)
+        sep.setStyleSheet(f"background: {BORDER};")
+        root.addWidget(sep)
+
+        # Content stack
+        self._stack = QStackedWidget()
+        root.addWidget(self._stack, stretch=1)
+
+        # Nav footer
+        nav = QWidget()
+        nav.setFixedHeight(52)
+        nav.setStyleSheet(f"background: {BG_SECONDARY};")
+        nl = QHBoxLayout(nav)
+        nl.setContentsMargins(16, 0, 16, 0)
+
+        self.btn_ant = QPushButton("← Anterior")
+        self.btn_ant.setObjectName("outline")
+        self.btn_ant.setFixedSize(120, 36)
+        self.btn_ant.setVisible(False)
+        nl.addWidget(self.btn_ant)
+        nl.addStretch()
+
+        self.btn_sig = QPushButton("Siguiente →")
+        self.btn_sig.setFixedSize(140, 36)
+        nl.addWidget(self.btn_sig)
+        root.addWidget(nav)
+
+    def _add_page(self, builder_fn):
+        """Crea una página y la agrega al stack."""
+        page = QWidget()
+        page.setStyleSheet(f"background: {BG_PRIMARY};")
+        lay = QVBoxLayout(page)
+        lay.setContentsMargins(24, 16, 24, 8)
+        lay.setSpacing(8)
+        builder_fn(page, lay)
+        self._stack.addWidget(page)
+        self._pages.append(page)
+
+    def _ir_a(self, n: int):
+        if n == self._pagina:
+            return
+        self._pagina = n
+        self._fade_to(n)
+
+    def _fade_to(self, n: int):
+        current = self._stack.currentWidget()
+        if current is None:
+            self._stack.setCurrentIndex(n)
+            return
+        target = self._stack.widget(n)
+        if target is None:
+            return
+        snap = current.grab()
+        overlay = QLabel(self._stack)
+        overlay.setPixmap(snap)
+        overlay.setGeometry(0, 0, self._stack.width(), self._stack.height())
+        overlay.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        overlay.show()
+        overlay.raise_()
+        try:
+            from PyQt6.QtWidgets import QGraphicsOpacityEffect
+            from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, QAbstractAnimation
+            eff = QGraphicsOpacityEffect(overlay)
+            overlay.setGraphicsEffect(eff)
+            anim = QPropertyAnimation(eff, b"opacity", overlay)
+            anim.setDuration(150)
+            anim.setStartValue(1.0)
+            anim.setEndValue(0.0)
+            anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+            self._stack.setCurrentIndex(n)
+            anim.finished.connect(overlay.deleteLater)
+            anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
+        except Exception:
+            self._stack.setCurrentIndex(n)
+            overlay.deleteLater()
+
+        # Update step indicators
+        for i, (circle, lbl) in enumerate(self._step_widgets):
+            if i == n:
+                circle.setStyleSheet(
+                    f"background: {ACCENT}; color: white; border-radius: 11px;"
+                    f"font-weight: bold; font-size: 10px;"
+                )
+                lbl.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 11px; font-weight: bold; background: transparent;")
+            elif i < n:
+                circle.setStyleSheet(
+                    f"background: {SUCCESS}; color: white; border-radius: 11px;"
+                    f"font-weight: bold; font-size: 10px;"
+                )
+                lbl.setStyleSheet(f"color: {TEXT_SEC}; font-size: 11px; background: transparent;")
+            else:
+                circle.setStyleSheet(
+                    f"background: {BORDER}; color: {TEXT_TERT}; border-radius: 11px;"
+                    f"font-weight: bold; font-size: 10px;"
+                )
+                lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px; background: transparent;")
+
+        self.btn_ant.setVisible(n > 0)
+        self.btn_sig.setEnabled(True)
+
+
 def aplicar_captionbar_installer(window):
     try:
         import ctypes

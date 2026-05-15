@@ -176,7 +176,7 @@ class InstaladorPro(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Instalador — NeuroMood Hub Pro")
-        self.setFixedSize(680, 480)
+        self.setFixedSize(680, 500)
         self.setStyleSheet(_SS)
         try:
             self.setWindowIcon(QIcon(recurso("installer_icon.ico")))

@@ -300,7 +300,7 @@ class DesinstaladorNeuroMood(QMainWindow):
         self._stack_layout.addSpacing(8)
 
         desc = QLabel(
-            f"Se eliminarán los archivos de instalación de NeuroMood\n"
+            f"Se eliminaran los archivos de instalacion de NeuroMood Suite\n"
             f"de tu computadora.\n\nCarpeta: {self._install_dir}"
         )
         desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px;")

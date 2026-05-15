@@ -218,7 +218,7 @@ class DesinstaladorPro(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Desinstalador — NeuroMood Hub Pro")
-        self.setFixedSize(480, 300)
+        self.setFixedSize(480, 340)
         self.setStyleSheet(_SS)
         try:
             self.setWindowIcon(QIcon(recurso("no_symbol.ico")))
