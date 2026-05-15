@@ -326,16 +326,6 @@ class DesinstaladorNeuroMood(InstallerShell):
         self.btn_sig.setText("Desinstalando...")
 
         self._add_page(lambda page, lay: self._build_progress(page, lay))
-        self._pbar = QProgressBar()
-        self._pbar.setRange(0, 100); self._pbar.setValue(0)
-        self._stack.currentWidget().layout().addWidget(self._pbar)
-        self._stack.currentWidget().layout().addSpacing(6)
-
-        self._status_lbl = QLabel("Preparando...")
-        self._status_lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px;")
-        self._stack.currentWidget().layout().addWidget(self._status_lbl)
-        self._stack.currentWidget().layout().addStretch()
-
         self._ir_a(self._pagina + 1)
 
         self._worker = _UninstWorker(self._install_dir, conservar, self)
@@ -349,6 +339,16 @@ class DesinstaladorNeuroMood(InstallerShell):
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
         layout.addWidget(title)
         layout.addSpacing(12)
+
+        self._pbar = QProgressBar()
+        self._pbar.setRange(0, 100); self._pbar.setValue(0)
+        layout.addWidget(self._pbar)
+        layout.addSpacing(6)
+
+        self._status_lbl = QLabel("Preparando...")
+        self._status_lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px;")
+        layout.addWidget(self._status_lbl)
+        layout.addStretch()
 
     def _set_progress(self, v: float, t: str):
         self._pbar.setValue(int(v * 100))
