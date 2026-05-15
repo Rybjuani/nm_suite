@@ -44,7 +44,7 @@ from shared.theme_qt import (
 )
 from shared.components_qt import (
     ThemeManager, NMSidebar, NMHeader, NMFadeWidget,
-    NMButton, NMButtonOutline, NMCard, NMToast, NMSkeleton,
+    NMButton, NMButtonOutline, NMCard, NMToast, NMSkeleton, responsive_columns,
 )
 
 _sb_create = None

@@ -33,7 +33,7 @@ try:
         stylesheet_scrollarea, SessionColor, ThemeAwareWidgetMixin,
         MODULE_ICONS, nm_icon,
     )
-    from shared.components_qt import ThemeManager
+    from shared.components_qt import ThemeManager, responsive_columns
 except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if _dir not in sys.path:
@@ -46,7 +46,7 @@ except ImportError:
         stylesheet_scrollarea, SessionColor, ThemeAwareWidgetMixin,
         MODULE_ICONS, nm_icon,
     )
-    from shared.components_qt import ThemeManager
+    from shared.components_qt import ThemeManager, responsive_columns
 
 # ── Configuración de módulos ──────────────────────────────────────────────────
 
