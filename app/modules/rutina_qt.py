@@ -174,22 +174,8 @@ class ModuloRutina(NMModule):
         header_layout.setSpacing(sp("sm"))
 
         # Clickable title button
-        title_btn = QPushButton(f"{icon}  {label}")
+        title_btn = NMButtonOutline(f"{icon}  {label}", modo=self._modo, toggleable=True)
         title_btn.setFont(qfont("size_h3", bold=True))
-        title_btn.setFlat(True)
-        title_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        title_btn.setStyleSheet(f"""
-            QPushButton {{
-                color: {c['text_primary']};
-                background: transparent;
-                text-align: left;
-                border: none;
-                padding: {sp('xs')}px 0;
-            }}
-            QPushButton:hover {{
-                color: {c['accent']};
-            }}
-        """)
         title_btn.clicked.connect(lambda checked=False, k=key: self._toggle_section(k))
         header_layout.addWidget(title_btn)
 
@@ -203,22 +189,7 @@ class ModuloRutina(NMModule):
         header_layout.addStretch()
 
         # Add button
-        add_btn = QPushButton("+")
-        add_btn.setFont(qfont("size_body", bold=True))
-        add_btn.setFixedSize(30, 30)
-        add_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        add_btn.setStyleSheet(f"""
-            QPushButton {{
-                color: {c['text_primary']};
-                background-color: {c['bg_elevated']};
-                border-radius: 15px;
-                border: none;
-            }}
-            QPushButton:hover {{
-                background-color: {c['accent']};
-                color: {c['text_on_accent']};
-            }}
-        """)
+        add_btn = NMButton("+", modo=self._modo, width=30, height=30)
         add_btn.clicked.connect(lambda checked=False, k=key: self._show_add_form(k))
         header_layout.addWidget(add_btn)
 
