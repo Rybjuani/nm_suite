@@ -22,7 +22,7 @@ try:
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
         FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
-        stylesheet_installer,
+        stylesheet_installer, InstallerShell,
     )
 except ImportError:
     _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -32,7 +32,7 @@ except ImportError:
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
         FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
-        stylesheet_installer,
+        stylesheet_installer, InstallerShell,
     )
 
 DEFAULT_INSTALL = os.path.join(os.path.expanduser("~"), "NeuroMood Pro")
@@ -171,128 +171,32 @@ class _ProWorker(QThread):
 
 # ── InstaladorPro ─────────────────────────────────────────────────────────────
 
-class InstaladorPro(QMainWindow):
+class InstaladorPro(InstallerShell):
+    APP_NAME = "NeuroMood Hub Pro"
+    WINDOW_SIZE = (680, 500)
+    STEPS = ["Carpeta", "Instalar", "Finalizar"]
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Instalador — NeuroMood Hub Pro")
-        self.setFixedSize(680, 500)
-        self.setStyleSheet(_SS)
-        try:
-            self.setWindowIcon(QIcon(recurso("installer_icon.ico")))
-        except Exception:
-            pass
-        screen = QApplication.primaryScreen().availableGeometry()
-        self.move((screen.width() - 680) // 2, (screen.height() - 480) // 2)
-        aplicar_captionbar_installer(self)
-
         self._pagina = 0
         self._install_dir = ""
         self._icon_dest = ""
         self._worker: _ProWorker | None = None
 
-        self._build_ui()
+        self._build_shell()
+        self.btn_sig.clicked.connect(self._siguiente)
+        self.btn_ant.clicked.connect(self._anterior)
+
+        self._add_page(lambda p, l: self._build_p0(p, l))
+        self._add_page(lambda p, l: self._build_p1(p, l))
+        self._add_page(lambda p, l: self._build_p2(p, l))
+
         self._ir_a(0)
 
-    def _build_ui(self):
-        central = QWidget()
-        self.setCentralWidget(central)
-        root = QHBoxLayout(central)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(0)
-
-        # Sidebar
-        sidebar = QWidget()
-        sidebar.setFixedWidth(190)
-        sidebar.setStyleSheet(f"background: {BG_SECONDARY};")
-        sl = QVBoxLayout(sidebar)
-        sl.setContentsMargins(0, 0, 0, 0)
-
-        logo_lbl = QLabel()
-        try:
-            from PIL import Image as PILImage
-            img = PILImage.open(recurso("LOGO.png")).convert("RGBA")
-            img.thumbnail((158, 64), PILImage.LANCZOS)
-            from PyQt6.QtGui import QImage
-            qimg = QImage(img.tobytes("raw", "RGBA"), img.width, img.height,
-                          QImage.Format.Format_RGBA8888)
-            logo_lbl.setPixmap(QPixmap.fromImage(qimg))
-        except Exception:
-            logo_lbl.setText("NeuroMood")
-            logo_lbl.setStyleSheet(f"color: {ACCENT}; font-size: 15px; font-weight: bold; background: transparent;")
-        logo_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        logo_lbl.setContentsMargins(0, 18, 0, 10)
-        sl.addWidget(logo_lbl)
-
-        sep = QFrame()
-        sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background: {BORDER};")
-        sl.addWidget(sep)
-
-        self._pasos_widgets: list[tuple[QLabel, QLabel]] = []
-        sl.addSpacing(14)
-        for i, nombre in enumerate(["Bienvenida", "Instalacion", "Finalizar"]):
-            row = QWidget()
-            row.setStyleSheet("background: transparent;")
-            rl = QHBoxLayout(row)
-            rl.setContentsMargins(14, 3, 14, 3)
-            circle = QLabel(str(i + 1))
-            circle.setFixedSize(24, 24)
-            circle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            circle.setStyleSheet(
-                f"background: {BORDER}; color: {TEXT_TERT}; border-radius: 12px;"
-                f"font-weight: bold; font-size: 11px;"
-            )
-            lbl = QLabel(nombre)
-            lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px; background: transparent;")
-            rl.addWidget(circle)
-            rl.addWidget(lbl, stretch=1)
-            sl.addWidget(row)
-            self._pasos_widgets.append((circle, lbl))
-
-        sl.addStretch()
-        web = QLabel("neuromood.com.ar")
-        web.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        web.setStyleSheet(f"color: {TEXT_TERT}; font-size: 10px; background: transparent;")
-        web.setContentsMargins(0, 0, 0, 14)
-        sl.addWidget(web)
-        root.addWidget(sidebar)
-
-        # Contenido
-        right = QWidget()
-        right.setStyleSheet(f"background: {BG_PRIMARY};")
-        rl = QVBoxLayout(right)
-        rl.setContentsMargins(0, 0, 0, 0)
-        rl.setSpacing(0)
-        root.addWidget(right)
-
-        self._stack = QStackedWidget()
-        self._stack.setStyleSheet(f"background: {BG_PRIMARY};")
-        rl.addWidget(self._stack, stretch=1)
-
-        for builder in [self._build_p0, self._build_p1, self._build_p2]:
-            page = QWidget()
-            page.setStyleSheet(f"background: {BG_PRIMARY};")
-            builder(page)
-            self._stack.addWidget(page)
-
-        nav = QWidget()
-        nav.setFixedHeight(54)
-        nav.setStyleSheet(f"background: {BG_SECONDARY};")
-        nl = QHBoxLayout(nav)
-        nl.setContentsMargins(14, 0, 14, 0)
-        self.btn_ant = QPushButton("← Anterior")
-        self.btn_ant.setObjectName("outline")
-        self.btn_ant.setFixedSize(110, 34)
-        self.btn_ant.clicked.connect(self._anterior)
-        self.btn_ant.setVisible(False)
-        nl.addWidget(self.btn_ant)
-        nl.addStretch()
-        self.btn_sig = QPushButton("Siguiente →")
-        self.btn_sig.setFixedSize(130, 34)
-        self.btn_sig.clicked.connect(self._siguiente)
-        nl.addWidget(self.btn_sig)
-        rl.addWidget(nav)
+    def _fade_to(self, n: int):
+        super()._fade_to(n)
+        self.btn_sig.setText("Finalizar" if n == 2 else "Siguiente →")
+        self.btn_ant.setVisible(n > 0)
 
     def _build_p0(self, page: QWidget):
         lay = QVBoxLayout(page)
@@ -398,23 +302,6 @@ class InstaladorPro(QMainWindow):
         btn_carpeta.setObjectName("outline"); btn_carpeta.setFixedSize(220, 36)
         btn_carpeta.clicked.connect(self._abrir_carpeta); lay.addWidget(btn_carpeta)
         lay.addStretch()
-
-    def _ir_a(self, n: int):
-        self._pagina = n
-        self._stack.setCurrentIndex(n)
-        for i, (circle, lbl) in enumerate(self._pasos_widgets):
-            if i == n:
-                circle.setStyleSheet(f"background: {ACCENT}; color: white; border-radius: 12px; font-weight: bold; font-size: 11px;")
-                lbl.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 12px; font-weight: bold; background: transparent;")
-            elif i < n:
-                circle.setStyleSheet(f"background: {SUCCESS}; color: white; border-radius: 12px; font-weight: bold; font-size: 11px;")
-                lbl.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px; background: transparent;")
-            else:
-                circle.setStyleSheet(f"background: {BORDER}; color: {TEXT_TERT}; border-radius: 12px; font-weight: bold; font-size: 11px;")
-                lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px; background: transparent;")
-        self.btn_ant.setVisible(n > 0)
-        self.btn_sig.setText("Finalizar" if n == 2 else "Siguiente →")
-        self.btn_sig.setEnabled(True)
 
     def _anterior(self):
         if self._pagina == 1:

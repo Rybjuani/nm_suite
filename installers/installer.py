@@ -27,7 +27,7 @@ try:
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, TEXT_ON_ACCENT, BORDER, SUCCESS, WARNING_C, ERROR_C,
         FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
-        stylesheet_installer,
+        stylesheet_installer, InstallerShell,
     )
 except ImportError:
     _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -37,7 +37,7 @@ except ImportError:
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, TEXT_ON_ACCENT, BORDER, SUCCESS, WARNING_C, ERROR_C,
         FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
-        stylesheet_installer,
+        stylesheet_installer, InstallerShell,
     )
 
 DEFAULT_INSTALL = os.path.join(os.path.expanduser("~"), "NeuroMood")
@@ -257,25 +257,13 @@ class _InstalWorker(QThread):
 
 # ── InstaladorNeuroMood ───────────────────────────────────────────────────────
 
-class InstaladorNeuroMood(QMainWindow):
+class InstaladorNeuroMood(InstallerShell):
+    APP_NAME = "NeuroMood Suite"
+    WINDOW_SIZE = (740, 540)
+    STEPS = ["Bienvenida", "Cuenta", "Instalar", "Finalizar"]
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Instalador — NeuroMood Suite")
-        self.setFixedSize(740, 540)
-        self.setStyleSheet(_SS)
-
-        try:
-            self.setWindowIcon(QIcon(recurso("installer_icon.ico")))
-        except Exception:
-            pass
-
-        # Centrar
-        screen = QApplication.primaryScreen().availableGeometry()
-        self.move((screen.width() - 740) // 2, (screen.height() - 540) // 2)
-
-        aplicar_captionbar_installer(self)
-
         self._pagina = 0
         self._install_dir: str = ""
         self._icon_dest: str = ""
@@ -283,133 +271,37 @@ class InstaladorNeuroMood(QMainWindow):
         self._codigo_instalacion = ""
         self._worker: _InstalWorker | None = None
 
-        self._build_ui()
+        self._build_shell()
+        self.btn_sig.clicked.connect(self._siguiente)
+        self.btn_ant.clicked.connect(self._anterior)
+
+        # Pages
+        self._add_page(lambda p, l: self._build_p0(p, l))
+        self._add_page(lambda p, l: self._build_p1(p, l))
+        self._add_page(lambda p, l: self._build_p2(p, l))
+        self._add_page(lambda p, l: self._build_p3(p, l))
+
         self._ir_a(0)
 
-    # ── Construcción ──────────────────────────────────────────────────────────
+    # ── Override fade_to para textos de botón específicos ─────────────────────
 
-    def _build_ui(self):
-        central = QWidget()
-        self.setCentralWidget(central)
-        root = QHBoxLayout(central)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(0)
-
-        # ── Sidebar ───────────────────────────────────────────────────────────
-        sidebar = QWidget()
-        sidebar.setFixedWidth(200)
-        sidebar.setStyleSheet(f"background: {BG_SECONDARY};")
-        sl = QVBoxLayout(sidebar)
-        sl.setContentsMargins(0, 0, 0, 0)
-        sl.setSpacing(0)
-
-        # Logo
-        logo_lbl = QLabel()
-        try:
-            from PIL import Image as PILImage
-            img = PILImage.open(recurso("LOGO.png")).convert("RGBA")
-            img.thumbnail((160, 68), PILImage.LANCZOS)
-            data = img.tobytes("raw", "RGBA")
-            from PyQt6.QtGui import QImage
-            qimg = QImage(data, img.width, img.height, QImage.Format.Format_RGBA8888)
-            logo_lbl.setPixmap(QPixmap.fromImage(qimg))
-        except Exception:
-            logo_lbl.setText("NeuroMood")
-            logo_lbl.setStyleSheet(
-                f"color: {ACCENT}; font-size: 16px; font-weight: bold;"
-                f"background: transparent; padding: 8px;"
-            )
-        logo_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        logo_lbl.setContentsMargins(0, 20, 0, 12)
-        sl.addWidget(logo_lbl)
-
-        sep = QFrame()
-        sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background: {BORDER};")
-        sl.addWidget(sep)
-
-        self._pasos_widgets: list[tuple[QLabel, QLabel]] = []
-        pasos = ["Bienvenida", "Registro", "Instalacion", "Finalizar"]
-        sl.addSpacing(14)
-        for i, nombre in enumerate(pasos):
-            row = QWidget()
-            row.setStyleSheet("background: transparent;")
-            rl = QHBoxLayout(row)
-            rl.setContentsMargins(14, 3, 14, 3)
-            circle = QLabel(str(i + 1))
-            circle.setFixedSize(26, 26)
-            circle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            circle.setStyleSheet(
-                f"background: {BORDER}; color: {TEXT_TERT};"
-                f"border-radius: 13px; font-weight: bold; font-size: 11px;"
-            )
-            lbl = QLabel(nombre)
-            lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px; background: transparent;")
-            rl.addWidget(circle)
-            rl.addWidget(lbl, stretch=1)
-            sl.addWidget(row)
-            self._pasos_widgets.append((circle, lbl))
-
-        sl.addStretch()
-        web = QLabel("neuromood.com.ar")
-        web.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        web.setStyleSheet(f"color: {TEXT_TERT}; font-size: 10px; background: transparent;")
-        web.setContentsMargins(0, 0, 0, 14)
-        sl.addWidget(web)
-        root.addWidget(sidebar)
-
-        # ── Contenido ─────────────────────────────────────────────────────────
-        right = QWidget()
-        right.setStyleSheet(f"background: {BG_PRIMARY};")
-        rl = QVBoxLayout(right)
-        rl.setContentsMargins(0, 0, 0, 0)
-        rl.setSpacing(0)
-        root.addWidget(right)
-
-        # Stack de páginas
-        self._stack = QStackedWidget()
-        self._stack.setStyleSheet(f"background: {BG_PRIMARY};")
-        rl.addWidget(self._stack, stretch=1)
-
-        # Páginas
-        self._pages: list[QWidget] = []
-        for builder in [self._build_p0, self._build_p1, self._build_p2, self._build_p3]:
-            page = QWidget()
-            page.setStyleSheet(f"background: {BG_PRIMARY};")
-            builder(page)
-            self._stack.addWidget(page)
-            self._pages.append(page)
-
-        # Nav bar
-        nav = QWidget()
-        nav.setFixedHeight(58)
-        nav.setStyleSheet(f"background: {BG_SECONDARY};")
-        nl = QHBoxLayout(nav)
-        nl.setContentsMargins(16, 0, 16, 0)
-        self.btn_ant = QPushButton("← Anterior")
-        self.btn_ant.setObjectName("outline")
-        self.btn_ant.setFixedSize(120, 36)
-        self.btn_ant.clicked.connect(self._anterior)
-        self.btn_ant.setVisible(False)
-        nl.addWidget(self.btn_ant)
-        nl.addStretch()
-        self.btn_sig = QPushButton("Siguiente →")
-        self.btn_sig.setFixedSize(140, 36)
-        self.btn_sig.clicked.connect(self._siguiente)
-        nl.addWidget(self.btn_sig)
-        rl.addWidget(nav)
-
-    def _page_layout(self, page: QWidget) -> QVBoxLayout:
-        """Retorna un layout con márgenes estándar para una página."""
-        lay = QVBoxLayout(page)
-        lay.setContentsMargins(28, 24, 28, 8)
-        lay.setSpacing(0)
-        return lay
+    def _fade_to(self, n: int):
+        super()._fade_to(n)
+        if n == 3:
+            self.btn_sig.setText("Finalizar")
+        elif n == 2:
+            self.btn_sig.setText("Instalar")
+        else:
+            self.btn_sig.setText("Siguiente →")
+        self.btn_sig.setEnabled(True)
+        self.btn_ant.setVisible(n > 0 and n < 3)
 
     # ── Página 0: Bienvenida ──────────────────────────────────────────────────
 
     def _build_p0(self, page: QWidget):
-        lay = self._page_layout(page)
+        lay = QVBoxLayout(page)
+        lay.setContentsMargins(28, 24, 28, 8)
+        lay.setSpacing(0)
         sub = QLabel("Bienvenido a")
         sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 14px;")
         lay.addWidget(sub)
@@ -448,7 +340,9 @@ class InstaladorNeuroMood(QMainWindow):
     # ── Página 1: Registro ────────────────────────────────────────────────────
 
     def _build_p1(self, page: QWidget):
-        lay = self._page_layout(page)
+        lay = QVBoxLayout(page)
+        lay.setContentsMargins(28, 24, 28, 8)
+        lay.setSpacing(0)
 
         self._lbl_reg_titulo = QLabel("Crear cuenta nueva")
         self._lbl_reg_titulo.setStyleSheet(
@@ -606,7 +500,9 @@ class InstaladorNeuroMood(QMainWindow):
     # ── Página 2: Instalación ─────────────────────────────────────────────────
 
     def _build_p2(self, page: QWidget):
-        lay = self._page_layout(page)
+        lay = QVBoxLayout(page)
+        lay.setContentsMargins(28, 24, 28, 8)
+        lay.setSpacing(0)
         title = QLabel("Instalando...")
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: bold;")
         lay.addWidget(title)
@@ -666,7 +562,9 @@ class InstaladorNeuroMood(QMainWindow):
     # ── Página 3: Finalizar ───────────────────────────────────────────────────
 
     def _build_p3(self, page: QWidget):
-        lay = self._page_layout(page)
+        lay = QVBoxLayout(page)
+        lay.setContentsMargins(28, 24, 28, 8)
+        lay.setSpacing(0)
         ok = QLabel("¡Instalacion completada!")
         ok.setStyleSheet(f"color: {SUCCESS}; font-size: 20px; font-weight: bold;")
         lay.addWidget(ok)
@@ -710,74 +608,6 @@ class InstaladorNeuroMood(QMainWindow):
         lay.addStretch()
 
     # ── Navegación ────────────────────────────────────────────────────────────
-
-    def _ir_a(self, n: int):
-        if n == self._pagina:
-            return
-        self._pagina = n
-        self._fade_to(n)
-
-    def _fade_to(self, n: int):
-        """Cross-fade de 150ms entre paginas del QStackedWidget."""
-        current = self._stack.currentWidget()
-        if current is None:
-            self._stack.setCurrentIndex(n)
-            return
-        target = self._stack.widget(n)
-        if target is None:
-            return
-        # Capturar snapshot de la pagina actual
-        snap = current.grab()
-        overlay = QLabel(self._stack)
-        overlay.setPixmap(snap)
-        overlay.setGeometry(0, 0, self._stack.width(), self._stack.height())
-        overlay.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-        overlay.show()
-        overlay.raise_()
-        eff = QGraphicsOpacityEffect(overlay)
-        overlay.setGraphicsEffect(eff)
-        anim = QPropertyAnimation(eff, b"opacity", self)
-        anim.setDuration(150)
-        anim.setStartValue(1.0)
-        anim.setEndValue(0.0)
-        anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-        self._stack.setCurrentIndex(n)
-        anim.finished.connect(overlay.deleteLater)
-        anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
-
-        for i, (circle, lbl) in enumerate(self._pasos_widgets):
-            if i == n:
-                circle.setStyleSheet(
-                    f"background: {ACCENT}; color: white; border-radius: 13px;"
-                    f"font-weight: bold; font-size: 11px;"
-                )
-                lbl.setStyleSheet(
-                    f"color: {TEXT_PRIMARY}; font-size: 12px; font-weight: bold;"
-                    f"background: transparent;"
-                )
-            elif i < n:
-                circle.setStyleSheet(
-                    f"background: {SUCCESS}; color: white; border-radius: 13px;"
-                    f"font-weight: bold; font-size: 11px;"
-                )
-                lbl.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px; background: transparent;")
-            else:
-                circle.setStyleSheet(
-                    f"background: {BORDER}; color: {TEXT_TERT}; border-radius: 13px;"
-                    f"font-weight: bold; font-size: 11px;"
-                )
-                lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px; background: transparent;")
-
-        self.btn_ant.setVisible(n > 0 and n < 3)
-        if n == 3:
-            self.btn_sig.setText("Finalizar")
-            self.btn_sig.setEnabled(True)
-        elif n == 2:
-            self.btn_sig.setText("Instalar")
-            self.btn_sig.setEnabled(True)
-        else:
-            self.btn_sig.setText("Siguiente →")
-            self.btn_sig.setEnabled(True)
 
     def _anterior(self):
         if self._pagina == 1:
