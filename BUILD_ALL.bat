@@ -118,6 +118,7 @@ pyinstaller --noconfirm %MODE% --windowed --clean --optimize 2^
  --hidden-import reportlab.platypus^
  --hidden-import numpy^
  --hidden-import matplotlib^
+ --hidden-import scipy^
  --name "NeuroMood Hub Pro"^
  "%ROOT%\hub\main_qt.py"
 if %ERRORLEVEL% NEQ 0 goto :error

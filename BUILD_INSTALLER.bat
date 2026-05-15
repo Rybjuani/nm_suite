@@ -42,6 +42,10 @@ pyinstaller --noconfirm --onedir --windowed --clean --optimize 2^
  --log-level WARN^
  --add-data "%ROOT%\shared;shared"^
  --hidden-import shared^
+ --hidden-import shared.theme^
+ --hidden-import shared.theme_qt^
+ --hidden-import shared.components_qt^
+ --hidden-import shared.installer_common^
  --hidden-import win32com^
  --hidden-import win32com.client^
  --hidden-import pywintypes^
@@ -64,6 +68,10 @@ pyinstaller --noconfirm --onedir --windowed --clean --optimize 2^
  --log-level WARN^
  --add-data "%ROOT%\shared;shared"^
  --hidden-import shared^
+ --hidden-import shared.theme^
+ --hidden-import shared.theme_qt^
+ --hidden-import shared.components_qt^
+ --hidden-import shared.installer_common^
  --hidden-import win32com^
  --hidden-import win32com.client^
  --hidden-import pywintypes^
