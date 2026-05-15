@@ -270,21 +270,23 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         p.save()
 
         c = colors(self._modo)
+        scale = min(self.width(), self.height()) / _CANVAS
         cx = cy = self.width() / 2
 
-        # ── 1. Glow radial (usando radial_glow_double premium) ─────────────────
-        glow_r = self._circle_radius + 32
+        # ── 1. Glow radial ──────────────────────────────────────────────────
+        glow_r = (self._circle_radius + 32) * scale
         glow_center = QPointF(cx, cy)
         glow_grad = radial_glow_double(glow_center, glow_r, self._phase_color)
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QBrush(glow_grad))
         p.drawEllipse(glow_center, glow_r, glow_r)
 
-        # ── 2. Track ring exterior (arco total de sesión) ─────────────────────
+        # ── 2. Track ring ───────────────────────────────────────────────────
+        track_r = _R_TRACK * scale
         track_pen = QPen(QColor(c["progress_track"]), 2)
         p.setPen(track_pen)
         p.setBrush(Qt.BrushStyle.NoBrush)
-        p.drawEllipse(QPointF(cx, cy), _R_TRACK, _R_TRACK)
+        p.drawEllipse(QPointF(cx, cy), track_r, track_r)
 
         # Arco de sesión (progreso total, delgado, gris suave)
         if self._session_progress > 0:
@@ -292,15 +294,14 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
             session_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             p.setPen(session_pen)
             rect_track = QRectF(
-                cx - _R_TRACK, cy - _R_TRACK,
-                _R_TRACK * 2, _R_TRACK * 2
+                cx - track_r, cy - track_r,
+                track_r * 2, track_r * 2
             )
             span_deg = int(-self._session_progress * 360 * 16)
             p.drawArc(rect_track, 90 * 16, span_deg)
 
         # ── 3. Círculo relleno que respira ────────────────────────────────────
-        r = self._circle_radius
-        # Gradiente radial: centro ligeramente más brillante
+        r = self._circle_radius * scale
         fill_grad = QRadialGradient(QPointF(cx, cy), r)
         base_c = QColor(self._phase_color)
         base_c.setAlpha(40)
@@ -319,9 +320,9 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawEllipse(QPointF(cx, cy), r, r)
 
-        # ── 4. Arco de fase con QConicalGradient ──────────────────────────────
+        # ── 4. Arco de fase ──────────────────────────────────────────────────
         if self._phase_progress > 0:
-            arc_r = r - 8
+            arc_r = r - 8 * scale
             rect_arc = QRectF(cx - arc_r, cy - arc_r, arc_r * 2, arc_r * 2)
 
             # Arco de progreso de la fase
@@ -353,7 +354,7 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
             font_small = qfont("size_caption")
             p.setFont(font_small)
             p.setPen(QPen(QColor(self._phase_color)))
-            text_rect_bot = QRectF(0, cy + 12, _CANVAS, 28)
+            text_rect_bot = QRectF(0, cy + 12, self.width(), 28)
             p.drawText(text_rect_bot, Qt.AlignmentFlag.AlignCenter, self._phase_text)
 
         p.restore()

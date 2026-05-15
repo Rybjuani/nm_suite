@@ -198,17 +198,19 @@ class _TimerCanvas(ThemeAwareWidgetMixin, QWidget):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         c = colors(self._modo)
         cx = cy = self.width() / 2
-        r = _R_BASE + self._pulse_offset
+        sc = min(self.width(), self.height()) / _CANVAS
+        r = (_R_BASE + self._pulse_offset) * sc
+        arc_w = _ARC_W * sc
 
         # Track ring
-        track_pen = QPen(QColor(c["progress_track"]), _ARC_W)
+        track_pen = QPen(QColor(c["progress_track"]), arc_w)
         p.setPen(track_pen)
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawEllipse(QPointF(cx, cy), r, r)
 
         if self._finished:
             # Arco success completo
-            arc_pen = QPen(QColor(C("success", self._modo)), _ARC_W)
+            arc_pen = QPen(QColor(C("success", self._modo)), arc_w)
             arc_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             p.setPen(arc_pen)
             rect = QRectF(cx - r, cy - r, r * 2, r * 2)
@@ -232,7 +234,7 @@ class _TimerCanvas(ThemeAwareWidgetMixin, QWidget):
             p.setOpacity(self._arc_alpha)
             extent = max(self._progress * 360, 2)
             rect = QRectF(cx - r, cy - r, r * 2, r * 2)
-            arc_pen = QPen(QColor(gradient_colors(self._modo)[0]), _ARC_W)
+            arc_pen = QPen(QColor(gradient_colors(self._modo)[0]), arc_w)
             arc_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             p.setPen(arc_pen)
             segs = 36
@@ -240,7 +242,7 @@ class _TimerCanvas(ThemeAwareWidgetMixin, QWidget):
             for i in range(segs):
                 t = i / max(segs - 1, 1)
                 col = _rich_color_at(self._modo, t)
-                pen = QPen(QColor(col), _ARC_W)
+                pen = QPen(QColor(col), arc_w)
                 pen.setCapStyle(Qt.PenCapStyle.RoundCap)
                 p.setPen(pen)
                 angle = 90 - i * seg_ext
