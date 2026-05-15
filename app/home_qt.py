@@ -51,19 +51,19 @@ except ImportError:
 # ── Configuración de módulos ──────────────────────────────────────────────────
 
 MODULES_CONFIG = [
-    {"id": "animo",       "icon": "🎭", "title": "Ánimo",
+    {"id": "animo",       "icon": "animo",       "title": "Ánimo",
      "desc": "Registrá tu estado emocional · 1 min"},
-    {"id": "respiracion", "icon": "🌬️", "title": "Respirar",
+    {"id": "respiracion", "icon": "respiracion", "title": "Respirar",
      "desc": "Respiración guiada 4-7-8 · 3/5/10 min"},
-    {"id": "registro",    "icon": "📝", "title": "Registro TCC",
+    {"id": "registro",    "icon": "registro_tcc","title": "Registro TCC",
      "desc": "Pensamientos automáticos · 4 pasos"},
-    {"id": "rutina",      "icon": "✅", "title": "Rutina",
+    {"id": "rutina",      "icon": "rutina",      "title": "Rutina",
      "desc": "Tareas del día · Mañana/Tarde/Noche"},
-    {"id": "actividades", "icon": "⚡", "title": "Actividades",
+    {"id": "actividades", "icon": "actividades", "title": "Actividades",
      "desc": "Sugerencias según tu ánimo actual"},
-    {"id": "timer",       "icon": "⏱️", "title": "Timer",
+    {"id": "timer",       "icon": "timer",       "title": "Timer",
      "desc": "Temporizador de actividades"},
-    {"id": "avisos",      "icon": "🔔", "title": "Avisos",
+    {"id": "avisos",      "icon": "avisos",      "title": "Avisos",
      "desc": "Recordatorios · funcionan en background"},
 ]
 
