@@ -453,6 +453,10 @@ class ModuloAvisos(NMModule):
             rows = []
 
         if not rows:
+            if hasattr(self, "_reminder_progress"):
+                self._reminder_progress.animate_to(0)
+            if hasattr(self, "_reminder_count_lbl"):
+                self._reminder_count_lbl.setText("")
             self._list_layout.addWidget(NMEmptyState(
                 "fa5s.bell",
                 "Sin avisos configurados",
