@@ -129,7 +129,7 @@ Se ejecutó una auditoría de 20 antipatrones y corrección quirúrgica.
 | **Rutina** | `_on_theme` actualiza checkboxes, nota diaria con toast + readonly hasta día siguiente, tareas deshabilitadas al completar con beep |
 | **Actividades** | `NMToast` al marcar actividad, botones exclusivos (no múltiple selección), `_on_theme` |
 | **Temporizador** | Input de nombre de actividad, toast al finalizar con nombre, auto-restore de ventana minimizada |
-| **Avisos** | Validación de hora expirada, daemon deshabilita recordatorios tras disparo + reactiva a medianoche, light mode con `_load_reminders` |
+| **Avisos** | Validación de hora expirada, daemon deshabilita recordatorios tras disparo + reactiva a medianoche, light mode con `_load_reminders`, reset progress/counter al vaciar |
 
 ### Hub — fixes clave
 
@@ -139,10 +139,14 @@ Se ejecutó una auditoría de 20 antipatrones y corrección quirúrgica.
 - `_AnimoIndicator` theme-aware sin condición de parent
 - Sidebar logo con recolor automático light/dark
 - Barra de tema duplicada eliminada de Config
+- Dashboard responsive grid con `_rebuild_dash_grid()`
+- Empty state sin skeletons
+- `_datos_cache` sincronizado con `_datos_ref.cache` para PDF export
 
 ### Installers — fixes clave
 
 - Nombres: "Instalador NeuroMood Suite" + "Instalador NeuroMood Hub Pro" + "Desinstalador NeuroMood" + "Desinstalador NeuroMood Hub Pro"
+- Los 4 heredan de `InstallerShell` (clase base común)
 - Íconos de acceso directo corregidos (sin atributo oculto)
 - `_on_done` con navegación manual para leer logs
 - Copytree solo cuando el nombre de carpeta coincide con el .exe (onedir/onefile seguro)
@@ -152,3 +156,31 @@ Se ejecutó una auditoría de 20 antipatrones y corrección quirúrgica.
 - `btn_ant` oculto en página 0
 - Conservar registros: card premium con toggle switch gradiente
 - Limpieza de residuos: `dist/`, `build/`, `.spec` eliminados en cada build
+
+### Nuevos componentes (Junio 2026)
+
+| Componente | Archivo | Uso |
+|---|---|---|
+| `NMStatusChip` | `shared/components_qt.py` | Pill de estado con color semántico |
+| `NMSectionCard` | `shared/components_qt.py` | Card con título + `content_layout()` |
+| `NMFormField` | `shared/components_qt.py` | Label + input en fila horizontal |
+| `NMSegmentedChoice` | `shared/components_qt.py` | Grupo de botones con selección exclusiva |
+| `responsive_columns()` | `shared/components_qt.py` | Helper de columnas responsive |
+| `InstallerShell` | `shared/installer_common.py` | Clase base para los 4 instaladores |
+
+### Reglas de componentes
+
+- **NMButtonOutline**: `toggleable=False` por defecto. Solo alterna estado si `toggleable=True`.
+- **Scrollbars**: Tokenizadas con `C("teal")`/`C("accent")`/`C("violet")`. Sin colores neón hardcodeados.
+- **Círculos**: `_BreathingCircle` y `_TimerCanvas` usan `setMinimumSize` + `Expanding` + escala dinámica en `paintEvent`.
+- **Aura**: `SessionColor` (cyan/violet aleatorio) + `NMModule.paintEvent` / `DashboardView.paintEvent` con gradiente radial.
+
+### QA — Tests automáticos
+
+```bat
+python smoke_test_runner.py --app patient    → 31/31 PASS
+python smoke_test_runner.py --app hub         → 16/16 PASS
+python _test_visual_auto.py                   → 15/15 PASS
+python _test_home_auto.py                     → 6/6 PASS
+python _test_responsive_final.py              → 17/17 PASS
+```
