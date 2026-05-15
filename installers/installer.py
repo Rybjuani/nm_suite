@@ -197,7 +197,7 @@ class _InstalWorker(QThread):
             pass
 
     def _registrar_identidad(self, install_dir: Path):
-        from shared.identidad import generar_patient_id
+        from shared.identidad import generar_patient_id, guardar_password
         pid = generar_patient_id(self._nombre, self._pwd, self._codigo)
 
         db_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "NeuroMood")
@@ -210,13 +210,12 @@ class _InstalWorker(QThread):
             for clave, valor in [
                 ("patient_name", self._nombre),
                 ("patient_id",   pid),
-                ("patient_pwd",  self._pwd),
-                ("install_code", self._codigo),
             ]:
                 conn.execute("INSERT OR REPLACE INTO config (clave, valor) VALUES (?, ?)",
                              (clave, valor))
             conn.commit()
             conn.close()
+            guardar_password(self._pwd)
             self.log_signal.emit("  Identidad guardada", SUCCESS)
         except Exception as e:
             self.log_signal.emit(f"  Advertencia: identidad ({e})", WARNING_C)

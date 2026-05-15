@@ -9,7 +9,7 @@ except ImportError:
     _SUPABASE_OK = False
 
 from shared.db import obtener_conexion, guardar_config, leer_config
-from shared.identidad import obtener_patient_id, obtener_nombre_paciente
+from shared.identidad import obtener_patient_id, obtener_nombre_paciente, obtener_password_hash
 from shared.config import supabase_url, supabase_key
 
 _DAYS_BETWEEN_SYNC = 7
@@ -296,7 +296,7 @@ def sync_completo(patient_id: str = None, nombre: str = None) -> bool:
     if not pid:
         return False
     try:
-        pwd = leer_config("patient_pwd", "")
+        pwd = obtener_password_hash()
         install_code = leer_config("install_code", "")
         _upsert_paciente(sb, pid, nombre, pwd, install_code)
 
@@ -424,7 +424,7 @@ def sync_inmediato():
         return
     desde = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
     try:
-        pwd = leer_config("patient_pwd", "")
+        pwd = obtener_password_hash()
         install_code = leer_config("install_code", "")
         _upsert_paciente(sb, pid, nombre, pwd, install_code)
         _exportar_animo(sb, pid, desde)
