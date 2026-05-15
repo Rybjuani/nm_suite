@@ -10,6 +10,9 @@ import time
 import datetime
 import os
 import sys
+import logging
+
+_log = logging.getLogger(__name__)
 
 # Importación robusta para frozen / dev
 if getattr(sys, "frozen", False):
@@ -60,7 +63,7 @@ def _reactivar_medianoche():
         conn.commit()
         conn.close()
     except Exception:
-        pass
+        _log.exception("reactivar_medianoche: fallo al actualizar BD")
 
 # Intervalo de revisión en segundos
 _INTERVALO = 30
@@ -91,7 +94,7 @@ def _notificar(mensaje: str, hora: str):
             toast.show()
             return
         except Exception:
-            pass
+            _log.debug("winotify falló, probando plyer")
 
     # Intento 2: plyer (cross-platform)
     try:
@@ -104,14 +107,14 @@ def _notificar(mensaje: str, hora: str):
         )
         return
     except Exception:
-        pass
+        _log.debug("plyer falló, probando winsound")
 
     # Fallback: winsound beep
     try:
         import winsound
         winsound.Beep(880, 400)
     except Exception:
-        pass
+        _log.debug("winsound falló — sin audio de notificación")
 
 
 # ── Comprobación periódica ────────────────────────────────────────────────────
@@ -201,7 +204,7 @@ def _revisar():
             try:
                 _on_app_open()
             except Exception:
-                pass
+                _log.exception("on_app_open callback falló")
 
         _notificar(mensaje, hora)
         _registrar_log(rec_id, hora, mensaje)
@@ -216,7 +219,7 @@ def _revisar():
             conn2.commit()
             conn2.close()
         except Exception:
-            pass
+            _log.exception("deshabilitar recordatorio %s falló", rec_id)
 
 
 def _registrar_log(rec_id: int, hora: str, mensaje: str):
@@ -232,7 +235,7 @@ def _registrar_log(rec_id: int, hora: str, mensaje: str):
         conn.commit()
         conn.close()
     except Exception:
-        pass
+        _log.exception("registrar_log rec_id=%s falló", rec_id)
 
 
 def _loop_revisar(stop_event: threading.Event):
@@ -251,7 +254,7 @@ def _crear_icono_imagen() -> "PILImage.Image":
         try:
             return PILImage.open(icon_path).resize((64, 64))
         except Exception:
-            pass
+            _log.debug("icono NM_icon.ico no pudo cargarse, generando alternativo")
     # Ícono generado (círculo teal sobre fondo oscuro)
     img = PILImage.new("RGBA", (64, 64), (5, 9, 17, 255))
     from PIL import ImageDraw
@@ -306,7 +309,7 @@ def detener_bandeja():
         try:
             _tray_icon.stop()
         except Exception:
-            pass
+            _log.debug("tray stop falló")
         _tray_icon = None
 
 
@@ -344,7 +347,7 @@ def _set_autostart(activar: bool):
                 pass
         winreg.CloseKey(key)
     except Exception:
-        pass
+        _log.exception("set_autostart falló")
 
 
 # ── API pública ───────────────────────────────────────────────────────────────

@@ -30,7 +30,7 @@ try:
         ThemeManager, h_spacer, NMEmptyState,
     )
     from shared.theme_qt import (
-        C, colors, norm_modo, qfont, qcolor,
+        C, colors, norm_modo, qfont, qcolor, nm_icon,
         sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
         stylesheet_textedit, stylesheet_scrollarea,
@@ -46,7 +46,7 @@ except ImportError:
         ThemeManager, h_spacer, NMEmptyState,
     )
     from shared.theme_qt import (
-        C, colors, norm_modo, qfont, qcolor,
+        C, colors, norm_modo, qfont, qcolor, nm_icon,
         sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
         stylesheet_textedit, stylesheet_scrollarea,
@@ -58,9 +58,9 @@ except ImportError:
 # ── Secciones (preservadas exactas) ──────────────────────────────────────────
 
 SECCIONES = [
-    ("manana", "Mañana", "🌅"),
-    ("tarde",  "Tarde",  "☀️"),
-    ("noche",  "Noche",  "🌙"),
+    ("manana", "Mañana", "fa5s.sun"),
+    ("tarde",  "Tarde",  "fa5s.cloud-sun"),
+    ("noche",  "Noche",  "fa5s.moon"),
 ]
 
 
@@ -68,7 +68,7 @@ SECCIONES = [
 
 class ModuloRutina(NMModule):
     MODULE_TITLE = "Rutina"
-    MODULE_ICON  = "✅"
+    MODULE_ICON  = "rutina"
 
     def build_ui(self):
         self._section_collapsed: dict[str, bool] = {}
@@ -173,8 +173,14 @@ class ModuloRutina(NMModule):
         header_layout.setContentsMargins(0, 0, 0, 0)
         header_layout.setSpacing(sp("sm"))
 
+        icon_lbl = QLabel()
+        icon_lbl.setFixedSize(22, 22)
+        icon_lbl.setPixmap(nm_icon(icon, C("accent", self._modo), size=20).pixmap(20, 20))
+        icon_lbl.setStyleSheet("background: transparent;")
+        header_layout.addWidget(icon_lbl)
+
         # Clickable title button
-        title_btn = NMButtonOutline(f"{icon}  {label}", modo=self._modo, toggleable=True)
+        title_btn = NMButtonOutline(label, modo=self._modo, toggleable=True)
         title_btn.setFont(qfont("size_h3", bold=True))
         title_btn.clicked.connect(lambda checked=False, k=key: self._toggle_section(k))
         header_layout.addWidget(title_btn)
@@ -230,8 +236,10 @@ class ModuloRutina(NMModule):
             layout = body.layout()
             while layout.count():
                 item = layout.takeAt(0)
-                if item.widget():
-                    item.widget().deleteLater()
+                w = item.widget()
+                if w:
+                    layout.removeWidget(w)
+                    w.deleteLater()
 
         try:
             conn = obtener_conexion()
@@ -340,7 +348,7 @@ class ModuloRutina(NMModule):
                 checkbox.setEnabled(False)  # deshabilitar hasta el día siguiente
                 self._play_beep()
                 top = self.window()
-                NMToast.show(top, "Tarea completada ✔", variant="success", duration_ms=1500)
+                NMToast.display(top, "Tarea completada ✔", variant="success", duration_ms=1500)
             else:
                 conn.execute(
                     "DELETE FROM checklist_completadas "
@@ -507,7 +515,7 @@ class ModuloRutina(NMModule):
         )
         frame_layout.setSpacing(sp("sm") - sp("xs") // 2)
 
-        title_lbl = QLabel("📓  Nota del día")
+        title_lbl = QLabel("Nota del día")
         title_lbl.setFont(qfont("size_body", bold=True))
         title_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
         frame_layout.addWidget(title_lbl)
@@ -565,7 +573,7 @@ class ModuloRutina(NMModule):
         # Feedback + deshabilitar hasta el día siguiente
         self._nota_txt.setReadOnly(True)
         self._nota_txt.setStyleSheet(stylesheet_textedit(self._modo))
-        NMToast.show(self.window(), "Nota guardada ✓", variant="success", duration_ms=2000)
+        NMToast.display(self.window(), "Nota guardada ✓", variant="success", duration_ms=2000)
 
     # ── Hooks ─────────────────────────────────────────────────────────────────
 
@@ -588,7 +596,7 @@ class ModuloRutina(NMModule):
             ).fetchone()[0]
             conn.close()
             if total > 0:
-                return f"{done}/{total} ✔"
+                return f"{done}/{total}"
         except Exception:
             _log.exception("Operation failed")
         return ""

@@ -21,6 +21,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal, QPropertyAnimation, QEasingCurve, QAbstractAnimation, QEventLoop
 from PyQt6.QtGui import QIcon, QPixmap, QFont, QColor, QPalette
+from PyQt6 import sip
 
 try:
     from shared.installer_common import (
@@ -197,8 +198,9 @@ class _InstalWorker(QThread):
             pass
 
     def _registrar_identidad(self, install_dir: Path):
-        from shared.identidad import generar_patient_id, guardar_password
+        from shared.identidad import generar_patient_id, guardar_password, obtener_password_hash
         pid = generar_patient_id(self._nombre, self._pwd, self._codigo)
+        pwd_hash = ""
 
         db_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "NeuroMood")
         os.makedirs(db_dir, exist_ok=True)
@@ -210,12 +212,14 @@ class _InstalWorker(QThread):
             for clave, valor in [
                 ("patient_name", self._nombre),
                 ("patient_id",   pid),
+                ("install_code",  self._codigo),
             ]:
                 conn.execute("INSERT OR REPLACE INTO config (clave, valor) VALUES (?, ?)",
                              (clave, valor))
             conn.commit()
             conn.close()
             guardar_password(self._pwd, self._codigo)
+            pwd_hash = obtener_password_hash(self._codigo)
             self.log_signal.emit("  Identidad guardada", SUCCESS)
         except Exception as e:
             self.log_signal.emit(f"  Advertencia: identidad ({e})", WARNING_C)
@@ -244,10 +248,12 @@ class _InstalWorker(QThread):
             from supabase import create_client
             url, key = supabase_url(), supabase_key()
             if url and key:
+                if not pwd_hash:
+                    pwd_hash = obtener_password_hash(self._codigo)
                 sb = create_client(url, key)
                 sb.table("patients").upsert({
                     "patient_id": pid, "patient_name": self._nombre,
-                    "pwd": self._pwd, "install_code": self._codigo,
+                    "pwd": pwd_hash, "install_code": self._codigo,
                 }).execute()
                 self.log_signal.emit("  Paciente registrado en la nube", SUCCESS)
         except Exception as e:
@@ -330,7 +336,7 @@ class InstaladorNeuroMood(InstallerShell):
         )
         cl = QHBoxLayout(card)
         cl.setContentsMargins(14, 8, 14, 8)
-        info = QLabel("ℹ  Compatible con Windows 10 y Windows 11.")
+        info = QLabel("Compatible con Windows 10 y Windows 11.")
         info.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px; background: transparent; border: none;")
         cl.addWidget(info)
         lay.addWidget(card)
@@ -455,7 +461,7 @@ class InstaladorNeuroMood(InstallerShell):
         icl = QVBoxLayout(info_card)
         icl.setContentsMargins(12, 7, 12, 7)
         self._lbl_info_reg = QLabel(
-            "ℹ  Tu contraseña es tu clave de acceso única.\n"
+            "Tu contraseña es tu clave de acceso única.\n"
             "   El profesional puede recuperarla desde el Hub si la olvidás."
         )
         self._lbl_info_reg.setStyleSheet(
@@ -482,7 +488,7 @@ class InstaladorNeuroMood(InstallerShell):
             self._frame_confirm.hide()
             self._frame_codigo.show()
             self._lbl_info_reg.setText(
-                "ℹ  Usá el mismo nombre y contraseña exactos de tu cuenta.\n"
+                "Usá el mismo nombre y contraseña exactos de tu cuenta.\n"
                 "   Tus datos en la nube se sincronizarán al abrir la app."
             )
         else:
@@ -491,7 +497,7 @@ class InstaladorNeuroMood(InstallerShell):
             self._frame_confirm.show()
             self._frame_codigo.hide()
             self._lbl_info_reg.setText(
-                "ℹ  Tu contraseña es tu clave de acceso única.\n"
+                "Tu contraseña es tu clave de acceso única.\n"
                 "   El profesional puede recuperarla desde el Hub si la olvidás."
             )
         self._lbl_error.setText("")
@@ -564,14 +570,14 @@ class InstaladorNeuroMood(InstallerShell):
         lay = QVBoxLayout(page)
         lay.setContentsMargins(28, 24, 28, 8)
         lay.setSpacing(0)
-        ok = QLabel("¡Instalacion completada!")
+        ok = QLabel("Archivos instalados")
         ok.setStyleSheet(f"color: {SUCCESS}; font-size: 20px; font-weight: bold;")
         lay.addWidget(ok)
         lay.addSpacing(6)
 
         desc = QLabel(
-            "NeuroMood se instalo correctamente.\n"
-            "Abri la app e ingresa con tu nombre de usuario para comenzar."
+            "NeuroMood ya esta instalado.\n"
+            "Los accesos directos seleccionados se crearan al presionar Finalizar."
         )
         desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 13px;")
         lay.addWidget(desc)
@@ -713,7 +719,10 @@ class InstaladorNeuroMood(InstallerShell):
     def _on_install_done(self, install_dir: str, icon_dest: str):
         self._install_dir = install_dir
         self._icon_dest = icon_dest
-        QTimer.singleShot(900, lambda: self._ir_a(3))
+        QTimer.singleShot(
+            900,
+            lambda: self._ir_a(3) if not sip.isdeleted(self) else None,
+        )
 
     def _on_install_error(self, tipo: str):
         if tipo == "permission":

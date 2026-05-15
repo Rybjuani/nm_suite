@@ -228,7 +228,7 @@ class InstaladorPro(InstallerShell):
             f"QFrame {{background: {BG_SURFACE}; border-radius: 10px; border: 1px solid {BORDER};}}"
         )
         cl = QHBoxLayout(card); cl.setContentsMargins(14, 8, 14, 8)
-        info = QLabel("ℹ  Requiere conexion a internet para funciones remotas.")
+        info = QLabel("Requiere conexion a internet para funciones remotas.")
         info.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px; background: transparent; border: none;")
         cl.addWidget(info)
         lay.addWidget(card)
@@ -281,11 +281,14 @@ class InstaladorPro(InstallerShell):
         lay = QVBoxLayout(page)
         lay.setContentsMargins(26, 22, 26, 8)
         lay.setSpacing(0)
-        ok = QLabel("¡Instalacion completada!")
+        ok = QLabel("Archivos instalados")
         ok.setStyleSheet(f"color: {SUCCESS}; font-size: 20px; font-weight: bold;")
         lay.addWidget(ok)
         lay.addSpacing(8)
-        desc = QLabel("El Hub Profesional NeuroMood esta listo.")
+        desc = QLabel(
+            "El Hub Profesional NeuroMood ya esta instalado.\n"
+            "Los accesos directos seleccionados se crearan al presionar Finalizar."
+        )
         desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 13px;")
         lay.addWidget(desc)
         lay.addSpacing(18)

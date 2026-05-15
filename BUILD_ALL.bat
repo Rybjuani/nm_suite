@@ -43,16 +43,23 @@ echo  NeuroMood V3 - Build [%LABEL%]
 echo ============================================================
 
 cd /d "%ROOT%"
+set "BUILD_LOG=%ROOT%\build.log"
+echo NeuroMood V3 build log > "%BUILD_LOG%"
 
-:: Clean silently
-rd /s /q "%ROOT%\dist\NeuroMood Suite"     2>nul
-rd /s /q "%ROOT%\dist\NeuroMood Hub Pro"   2>nul
-rd /s /q "%ROOT%\dist\NeuroMood"           2>nul
-rd /s /q "%ROOT%\dist\HubProfesional"      2>nul
-rd /s /q "%ROOT%\build\NeuroMood Suite"     2>nul
-rd /s /q "%ROOT%\build\NeuroMood Hub Pro"   2>nul
-del "%ROOT%\NeuroMood Suite.spec"          2>nul
-del "%ROOT%\NeuroMood Hub Pro.spec"        2>nul
+if not exist "%ROOT%\assets\LOGO.png"       goto :missing_assets
+if not exist "%ROOT%\assets\NM_icon.ico"    goto :missing_assets
+if not exist "%ROOT%\app\main_qt.py"        goto :missing_assets
+if not exist "%ROOT%\hub\main_qt.py"        goto :missing_assets
+
+:: Clean
+rd /s /q "%ROOT%\dist\NeuroMood Suite"       2>>"%BUILD_LOG%"
+rd /s /q "%ROOT%\dist\NeuroMood Hub Pro"     2>>"%BUILD_LOG%"
+rd /s /q "%ROOT%\dist\NeuroMood"             2>>"%BUILD_LOG%"
+rd /s /q "%ROOT%\dist\HubProfesional"        2>>"%BUILD_LOG%"
+rd /s /q "%ROOT%\build\NeuroMood Suite"      2>>"%BUILD_LOG%"
+rd /s /q "%ROOT%\build\NeuroMood Hub Pro"    2>>"%BUILD_LOG%"
+del "%ROOT%\NeuroMood Suite.spec"            2>>"%BUILD_LOG%"
+del "%ROOT%\NeuroMood Hub Pro.spec"          2>>"%BUILD_LOG%"
 if not exist "%ROOT%\dist"  mkdir "%ROOT%\dist"
 if not exist "%ROOT%\build" mkdir "%ROOT%\build"
 
@@ -68,6 +75,8 @@ pyinstaller --noconfirm %MODE% --windowed --clean --optimize 2^
  --workpath "%ROOT%\build"^
  --paths "%ROOT%"^
  --log-level WARN^
+ --hidden-import qtawesome^
+ --hidden-import matplotlib^
  --hidden-import pystray^
  --hidden-import pystray._win32^
  --hidden-import winotify^
@@ -90,6 +99,7 @@ pyinstaller --noconfirm %MODE% --windowed --clean --optimize 2^
  --workpath "%ROOT%\build"^
  --paths "%ROOT%"^
  --log-level WARN^
+ --hidden-import qtawesome^
  --hidden-import supabase^
  --hidden-import pystray^
  --hidden-import pystray._win32^
@@ -123,6 +133,14 @@ exit /b 0
 :error
 echo ============================================================
 echo  ERROR - La compilacion fallo.
+echo  Revisa build.log para detalles de limpieza/preflight.
+echo ============================================================
+exit /b 1
+
+:missing_assets
+echo ============================================================
+echo  ERROR - Faltan assets o entrypoints requeridos para compilar.
+echo  Revisa rutas en assets\, app\ y hub\.
 echo ============================================================
 exit /b 1
 

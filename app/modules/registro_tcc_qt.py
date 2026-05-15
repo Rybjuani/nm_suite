@@ -134,7 +134,7 @@ class _StepPill(QFrame):
 
 class ModuloRegistroTCC(NMModule):
     MODULE_TITLE = "Registro TCC"
-    MODULE_ICON  = "📝"
+    MODULE_ICON  = "registro_tcc"
 
     def build_ui(self):
         self._step = 0
@@ -395,8 +395,10 @@ class ModuloRegistroTCC(NMModule):
         # Clear old chips
         while self._distortion_layout.count():
             item = self._distortion_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            w = item.widget()
+            if w:
+                self._distortion_layout.removeWidget(w)
+                w.deleteLater()
 
         c = colors(self._modo)
         if found:
@@ -532,7 +534,7 @@ class ModuloRegistroTCC(NMModule):
             conn.commit()
             conn.close()
         except Exception:
-            NMToast.show(self.window(), "Error al guardar el registro", variant="error")
+            NMToast.display(self.window(), "Error al guardar el registro", variant="error")
             return
 
         # Show success state in the step page
@@ -624,7 +626,7 @@ class ModuloRegistroTCC(NMModule):
             conn.close()
             if row and row[0] > 0:
                 n = row[0]
-                return f"{n} registro{'s' if n > 1 else ''} ✔"
+                return f"{n} registro{'s' if n > 1 else ''}"
         except Exception:
             _log.exception("Operation failed")
         return ""

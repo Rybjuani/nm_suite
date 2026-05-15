@@ -130,6 +130,8 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         self._session_progress = 0.0
         self._center_text = ""
         self._phase_text = ""
+        self.update()
+        self._phase_text = ""
         self._phase_color = C("accent", self._modo)
 
         # Animaciones de entrada (se crean una vez, se reinician en cada fase)
@@ -140,7 +142,6 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         # Timer de 60fps para redibujado
         self._render_timer = QTimer(self)
         self._render_timer.timeout.connect(self.update)
-        self._render_timer.start(16)
 
         self.setStyleSheet("background: transparent;")
         self._connect_theme()
@@ -194,7 +195,7 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
           Mantén (expanding=None):  radio fijo, solo glow pulsante
           Exhala (expanding=False): radius MAX→MIN, glow 120→40
         """
-        self._render_timer.start(16)
+        self._start_rendering()
         dur = phase_dur_s * 1000
 
         # Animar radio
@@ -251,15 +252,30 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
             self._anim_radius.stop()
         if self._anim_glow:
             self._anim_glow.stop()
-        self._render_timer.stop()
+        self._stop_rendering()
         self._circle_radius = float(_R_MIN)
         self._glow_alpha = 40
         self._text_opacity = 1.0
         self._phase_progress = 0.0
         self._session_progress = 0.0
         self._center_text = ""
-        self._phase_text = ""
-        self.update()
+
+    def _start_rendering(self):
+        if self.isVisible() and not self._render_timer.isActive():
+            self._render_timer.start(16)
+
+    def _stop_rendering(self):
+        if self._render_timer.isActive():
+            self._render_timer.stop()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if self._phase_text or self._center_text:
+            self._start_rendering()
+
+    def hideEvent(self, event):
+        self._stop_rendering()
+        super().hideEvent(event)
 
     # ── paintEvent ────────────────────────────────────────────────────────────
 
@@ -433,7 +449,7 @@ class _StepCard(ThemeAwareWidgetMixin, QFrame):
 
 class ModuloRespiracion(NMModule):
     MODULE_TITLE = "Respiración"
-    MODULE_ICON = "🌬️"
+    MODULE_ICON = "respiracion"
 
     def build_ui(self):
         # ── Estado de negocio (preservado exacto) ─────────────────────────────
@@ -548,7 +564,7 @@ class ModuloRespiracion(NMModule):
         if self._running and self._paused:
             self._paused = False
             self._btn_start.setText("Reanudar")
-            self._circle._render_timer.start(16)
+            self._circle._start_rendering()
             self._tick()
             return
         if self._running:
@@ -716,7 +732,7 @@ class ModuloRespiracion(NMModule):
             conn.close()
             if row and row[0] > 0:
                 n = row[0]
-                return f"{n} sesión{'es' if n > 1 else ''} ✔"
+                return f"{n} sesión{'es' if n > 1 else ''}"
         except Exception:
             _log.exception("Operation failed")
         return ""

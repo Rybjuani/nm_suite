@@ -34,7 +34,7 @@ from PyQt6.QtWidgets import (
 )
 
 try:
-    from shared.components_qt import NMModule, NMButton, NMToast, NMSkeleton, ThemeManager, NMEmptyState
+    from shared.components_qt import NMModule, NMButton, NMToast, ThemeManager
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         get_gradient, stylesheet_slider, stylesheet_textedit, stylesheet_scrollarea,
@@ -46,7 +46,7 @@ except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
-    from shared.components_qt import NMModule, NMButton, NMToast, NMSkeleton, ThemeManager, NMEmptyState
+    from shared.components_qt import NMModule, NMButton, NMToast, ThemeManager
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         get_gradient, stylesheet_slider, stylesheet_textedit, stylesheet_scrollarea,
@@ -126,6 +126,12 @@ class MoodCelebration(QWidget):
             self._timer.stop()
             self.hide()
 
+    def stop(self):
+        self._timer.stop()
+        self._particles = []
+        self.hide()
+        self.update()
+
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -192,7 +198,7 @@ class _EmojiLabel(QLabel):
 
 class ModuloAnimo(NMModule):
     MODULE_TITLE = "Ánimo"
-    MODULE_ICON = "🎭"
+    MODULE_ICON = "animo"
 
     def build_ui(self):
         self.puntaje = 5
@@ -251,7 +257,7 @@ class ModuloAnimo(NMModule):
 
         # ── Nota ──────────────────────────────────────────────────────────────
         nota_lbl = QLabel("Nota (opcional)")
-        nota_lbl.setFont(qfont("size_small"))
+        nota_lbl.setFont(qfont("size_body", bold=True))
         nota_lbl.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
         layout.addWidget(nota_lbl)
 
@@ -269,8 +275,8 @@ class ModuloAnimo(NMModule):
 
         # ── Historial del día ─────────────────────────────────────────────────
         hist_lbl = QLabel("Registros de hoy")
-        hist_lbl.setFont(qfont("size_small"))
-        hist_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+        hist_lbl.setFont(qfont("size_body", bold=True))
+        hist_lbl.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
         layout.addWidget(hist_lbl)
 
         self._hist_scroll = QScrollArea()
@@ -356,7 +362,7 @@ class ModuloAnimo(NMModule):
                 self._btn_reg.play_success()
             # Buscar ventana principal para mostrar toast
             top = self.window()
-            NMToast.show(top, f"Ánimo {self.puntaje}/10 registrado ✔",
+            NMToast.display(top, f"Ánimo {self.puntaje}/10 registrado ✔",
                          variant="success")
             if self.puntaje >= 7 and hasattr(self, "_celebration"):
                 origin = self._btn_reg.mapTo(
@@ -373,8 +379,10 @@ class ModuloAnimo(NMModule):
         # Limpiar chips anteriores
         while self._hist_row.count():
             item = self._hist_row.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            w = item.widget()
+            if w:
+                self._hist_row.removeWidget(w)
+                w.deleteLater()
 
         try:
             conn = obtener_conexion()
@@ -389,12 +397,11 @@ class ModuloAnimo(NMModule):
 
         if not rows:
             self._hist_row.addStretch()
-            empty = NMEmptyState(
-                "fa5s.heart",
-                "Registrá tu estado de ánimo",
-                "Hacé tu primer registro de hoy.",
-                self._hist_container,
-            )
+            empty = QLabel("Todavia no hay registros de hoy.")
+            empty.setFont(qfont("size_body"))
+            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            empty.setMinimumWidth(260)
+            empty.setStyleSheet(f"color: {C('text_tertiary', self._modo)}; background: transparent;")
             self._hist_row.addWidget(empty)
             self._hist_row.addStretch()
             return
@@ -403,6 +410,8 @@ class ModuloAnimo(NMModule):
             hora = row["hora"] if hasattr(row, "keys") else row[0]
             puntaje = row["puntaje"] if hasattr(row, "keys") else row[1]
             chip_color = COLORES_PUNTAJE.get(puntaje, C("accent", self._modo))
+            fill = QColor(chip_color)
+            fill.setAlpha(26 if "dark" in self._modo else 20)
             emoji = EMOJIS.get(puntaje, "🙂")
             hora_short = str(hora)[:5]
 
@@ -411,7 +420,7 @@ class ModuloAnimo(NMModule):
             chip.setStyleSheet(f"""
                 QLabel {{
                     color: {chip_color};
-                    background: transparent;
+                    background: rgba({fill.red()}, {fill.green()}, {fill.blue()}, {fill.alpha()});
                     border: 1px solid {chip_color};
                     border-radius: {RADIUS_PILL}px;
                     padding: 4px 10px;
@@ -424,6 +433,10 @@ class ModuloAnimo(NMModule):
     def on_enter(self):
         self._cargar_historial()
 
+    def on_leave(self):
+        if hasattr(self, "_celebration"):
+            self._celebration.stop()
+
     def get_card_status(self) -> str:
         try:
             conn = obtener_conexion()
@@ -435,7 +448,7 @@ class ModuloAnimo(NMModule):
             conn.close()
             if row:
                 p = row[0] if isinstance(row, tuple) else row["puntaje"]
-                return f"{p}/10 ✔"
+                return f"{p}/10"
         except Exception:
             _log.exception("Operation failed")
         return ""

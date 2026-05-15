@@ -30,7 +30,7 @@ db/                 → supabase_schema.sql
 
 - `guardar_password(pwd, install_code)` → PBKDF2-SHA256 (100k iteraciones, salt = install_code).
 - `obtener_password_hash(install_code)` → hash almacenado con auto-migración de texto plano.
-- `.env` NUNCA con credenciales reales en builds públicos. Ver `docs/SECURITY_NOTES.md`.
+- `.env` NO se bundlea en instaladores públicos; credenciales reales solo por `%APPDATA%` o variables de entorno. Ver `docs/SECURITY_NOTES.md`.
 
 ## Stack técnico
 
@@ -214,5 +214,6 @@ BUILD_INSTALLER.bat        → empaqueta instalador Suite
 BUILD_INSTALLER_PRO.bat    → empaqueta instalador Hub
 ```
 
-**IMPORTANTE**: El `.env` bundled en el instalador paciente NO debe contener credenciales reales.
+**IMPORTANTE**: Los instaladores públicos no deben bundlear `.env`.
+Verificar que no exista `.env` dentro de `dist\Instalador NeuroMood Suite\_internal\` ni `dist\Instalador NeuroMood Hub Pro\_internal\`.
 Ver `docs/SECURITY_NOTES.md`.

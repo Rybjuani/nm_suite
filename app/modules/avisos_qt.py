@@ -325,7 +325,7 @@ class _NuevoAvisoPanel(QWidget):
         if dia_hoy in dias.split(","):
             hh, mm = int(hora[:2]), int(hora[3:])
             if hh < now.hour or (hh == now.hour and mm <= now.minute):
-                NMToast.show(self.window(),
+                NMToast.display(self.window(),
                     "La hora ya pasó. Elegí al menos 1 minuto en adelante para hoy.",
                     variant="warning", duration_ms=3000)
                 return
@@ -338,7 +338,7 @@ class _NuevoAvisoPanel(QWidget):
 
 class ModuloAvisos(NMModule):
     MODULE_TITLE = "Avisos"
-    MODULE_ICON  = "🔔"
+    MODULE_ICON  = "avisos"
 
     def build_ui(self):
         c = colors(self._modo)
@@ -381,7 +381,7 @@ class ModuloAvisos(NMModule):
         banner_layout.setContentsMargins(sp("sm") + sp("xs"), sp("sm"), sp("sm") + sp("xs"), sp("sm"))
 
         banner_lbl = QLabel(
-            "🔔  Los avisos funcionan aunque cierres la app — "
+            "Los avisos funcionan aunque cierres la app; "
             "se minimiza a la bandeja del sistema."
         )
         banner_lbl.setFont(qfont("size_small"))
@@ -439,8 +439,10 @@ class ModuloAvisos(NMModule):
         # Clear list
         while self._list_layout.count():
             item = self._list_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            w = item.widget()
+            if w:
+                self._list_layout.removeWidget(w)
+                w.deleteLater()
 
         try:
             conn = obtener_conexion()
@@ -575,9 +577,10 @@ class ModuloAvisos(NMModule):
         # Solo permitir un panel a la vez
         for i in range(self._list_layout.count()):
             item = self._list_layout.itemAt(i)
-            if item and isinstance(item.widget(), _NuevoAvisoPanel):
-                item.widget().deleteLater()
-                self._list_layout.removeWidget(item.widget())
+            w = item.widget() if item else None
+            if isinstance(w, _NuevoAvisoPanel):
+                self._list_layout.removeWidget(w)
+                w.deleteLater()
                 break
         panel = _NuevoAvisoPanel(self._content, self._modo)
         panel.saved.connect(lambda data: (self._save_reminder(data), self._list_layout.removeWidget(panel), panel.deleteLater()))
@@ -647,7 +650,7 @@ class ModuloAvisos(NMModule):
         sil_row = QHBoxLayout()
         sil_row.setSpacing(sp("sm"))
 
-        sil_lbl = QLabel("🔕  Silencio:")
+        sil_lbl = QLabel("Silencio:")
         sil_lbl.setFont(qfont("size_body"))
         sil_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
         sil_row.addWidget(sil_lbl)
@@ -685,7 +688,7 @@ class ModuloAvisos(NMModule):
         win_row = QHBoxLayout()
         win_row.setSpacing(sp("sm"))
 
-        win_lbl = QLabel("🪟  Iniciar con Windows")
+        win_lbl = QLabel("Iniciar con Windows")
         win_lbl.setFont(qfont("size_body"))
         win_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
         win_row.addWidget(win_lbl)

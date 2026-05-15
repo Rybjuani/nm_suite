@@ -106,7 +106,6 @@ class _TimerCanvas(ThemeAwareWidgetMixin, QWidget):
         # Timer de 60fps
         self._fps_timer = QTimer(self)
         self._fps_timer.timeout.connect(self.update)
-        self._fps_timer.start(16)
 
         # Animación de pulso (radio ±4px a 0.8Hz = 1250ms)
         self._pulse_anim: QPropertyAnimation | None = None
@@ -135,8 +134,18 @@ class _TimerCanvas(ThemeAwareWidgetMixin, QWidget):
     def update_data(self, progress: float, time_text: str):
         self._progress = progress
         self._time_text = time_text
+        self.update()
+
+    def _start_rendering(self):
+        if self.isVisible() and not self._fps_timer.isActive():
+            self._fps_timer.start(16)
+
+    def _stop_rendering(self):
+        if self._fps_timer.isActive():
+            self._fps_timer.stop()
 
     def start_pulse(self):
+        self._start_rendering()
         if self._pulse_anim:
             self._pulse_anim.stop()
         self._pulse_anim = QPropertyAnimation(self, b"pulse_offset", self)
@@ -153,9 +162,12 @@ class _TimerCanvas(ThemeAwareWidgetMixin, QWidget):
             self._pulse_anim.stop()
             self._pulse_anim = None
         self._pulse_offset = 0.0
+        if not getattr(self, "_blink_anim", None):
+            self._stop_rendering()
 
     def start_blink(self):
         """Parpadeo de los últimos 10s."""
+        self._start_rendering()
         a = QPropertyAnimation(self, b"arc_alpha", self)
         a.setDuration(500)
         a.setStartValue(1.0)
@@ -168,18 +180,24 @@ class _TimerCanvas(ThemeAwareWidgetMixin, QWidget):
     def stop_blink(self):
         if hasattr(self, "_blink_anim"):
             self._blink_anim.stop()
+            self._blink_anim = None
         self._arc_alpha = 1.0
+        if not self._pulse_anim:
+            self._stop_rendering()
 
     def show_finish(self):
         """Arco success + texto bounce."""
         self._finished = True
+        self._start_rendering()
         self.stop_pulse()
         self.stop_blink()
+        self._start_rendering()
         a = QPropertyAnimation(self, b"finish_scale", self)
         a.setDuration(500)
         a.setStartValue(0.0)
         a.setEndValue(1.0)
         a.setEasingCurve(QEasingCurve.Type.OutBack)
+        a.finished.connect(self._stop_rendering)
         a.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
     def reset(self):
@@ -190,6 +208,16 @@ class _TimerCanvas(ThemeAwareWidgetMixin, QWidget):
         self._arc_alpha = 1.0
         self._progress = 0.0
         self._time_text = "00:00"
+        self._stop_rendering()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if self._pulse_anim or getattr(self, "_blink_anim", None) or self._finished:
+            self._start_rendering()
+
+    def hideEvent(self, event):
+        self._stop_rendering()
+        super().hideEvent(event)
 
     # ── paintEvent ────────────────────────────────────────────────────────────
 
@@ -267,7 +295,7 @@ class _TimerCanvas(ThemeAwareWidgetMixin, QWidget):
 
 class ModuloTimer(NMModule):
     MODULE_TITLE = "Temporizador"
-    MODULE_ICON = "⏱️"
+    MODULE_ICON = "timer"
 
     def build_ui(self):
         # Estado de negocio (preservado exacto)
@@ -505,7 +533,7 @@ class ModuloTimer(NMModule):
         if top:
             top.raise_()
             top.activateWindow()
-        NMToast.show(top, f"Tiempo para \"{nombre}\" finalizado ✓", variant="success", duration_ms=4000)
+        NMToast.display(top, f"Tiempo para \"{nombre}\" finalizado ✓", variant="success", duration_ms=4000)
 
         # Reset después de 4 segundos
         QTimer.singleShot(4000, lambda: self._reset_after_finish() if not sip.isdeleted(self) else None)
@@ -537,7 +565,10 @@ class ModuloTimer(NMModule):
 
     def on_leave(self):
         if self._running:
+            elapsed = self._total_sec - self._remaining_sec
             self._stop()
+            msg = "Sesión guardada" if elapsed >= 30 else "Timer detenido — menos de 30 s, no se guardó"
+            NMToast.display(self.window(), msg, variant="warning")
 
     def get_card_status(self) -> str:
         try:
@@ -549,7 +580,7 @@ class ModuloTimer(NMModule):
             conn.close()
             if row and row[0] > 0:
                 n = row[0]
-                return f"{n} sesión{'es' if n > 1 else ''} ✔"
+                return f"{n} sesión{'es' if n > 1 else ''}"
         except Exception:
             _log.exception("Operation failed")
         return ""

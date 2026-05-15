@@ -72,7 +72,7 @@ _FALLBACK_ACTIVIDADES = [
 
 class ModuloActividades(NMModule):
     MODULE_TITLE = "Actividades"
-    MODULE_ICON  = "🎯"
+    MODULE_ICON  = "actividades"
 
     def build_ui(self):
         c = colors(self._modo)
@@ -113,8 +113,10 @@ class ModuloActividades(NMModule):
         # Clear scroll content
         while self._scroll_layout.count():
             item = self._scroll_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            w = item.widget()
+            if w:
+                self._scroll_layout.removeWidget(w)
+                w.deleteLater()
 
         # Get last mood
         animo = self._get_last_mood()
@@ -244,7 +246,7 @@ class ModuloActividades(NMModule):
         if animo is None:
             # Bloqueo sin ánimo — NMToast info en lugar de mostrar_mensaje
             top = self.window()
-            NMToast.show(
+            NMToast.display(
                 top,
                 "Registrá tu ánimo primero para asociar esta actividad a tu estado actual.",
                 variant="info",
@@ -280,7 +282,7 @@ class ModuloActividades(NMModule):
 
         # Toast de confirmación
         labels = {"hecha": "Hecha ✓", "intentada": "Intentada", "no_pude": "No se pudo"}
-        NMToast.show(
+        NMToast.display(
             self.window(),
             f"Actividad \"{nombre}\": {labels.get(resultado, resultado)}",
             variant="success" if resultado == "hecha" else "info",
@@ -347,7 +349,7 @@ class ModuloActividades(NMModule):
             conn.close()
             if row and row[0] > 0:
                 n = row[0]
-                return f"{n} actividad{'es' if n > 1 else ''} ✔"
+                return f"{n} actividad{'es' if n > 1 else ''}"
         except Exception:
             _log.exception("Operation failed")
         return ""

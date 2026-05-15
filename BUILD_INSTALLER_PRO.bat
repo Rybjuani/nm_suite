@@ -8,6 +8,15 @@ echo  Compilar Instalador NeuroMood Hub Pro
 echo ============================================================
 
 cd /d "%ROOT%"
+set "BUILD_LOG=%ROOT%\build.log"
+echo NeuroMood Hub Pro installer build log > "%BUILD_LOG%"
+
+if not exist "%ROOT%\assets\installer_icon.ico"     goto :missing_assets
+if not exist "%ROOT%\assets\NM_icon.ico"            goto :missing_assets
+if not exist "%ROOT%\assets\no_symbol.ico"          goto :missing_assets
+if not exist "%ROOT%\assets\LOGO.png"               goto :missing_assets
+if not exist "%ROOT%\installers\installer_pro.py"   goto :missing_assets
+if not exist "%ROOT%\installers\uninstaller_pro.py" goto :missing_assets
 
 if not exist "%ROOT%\dist\NeuroMood Hub Pro\NeuroMood Hub Pro.exe" (
     echo  FALTA: dist\NeuroMood Hub Pro\NeuroMood Hub Pro.exe
@@ -16,14 +25,14 @@ if not exist "%ROOT%\dist\NeuroMood Hub Pro\NeuroMood Hub Pro.exe" (
 )
 
 :: Clean
-rd /s /q "%ROOT%\dist\Instalador NeuroMood Hub Pro"              2>nul
-rd /s /q "%ROOT%\dist\Desinstalador NeuroMood Hub Pro"           2>nul
-rd /s /q "%ROOT%\dist\Instalar NeuroMood Hub Profesional"        2>nul
-rd /s /q "%ROOT%\dist\Desinstalar NeuroMood Pro"                 2>nul
-rd /s /q "%ROOT%\build\Instalador NeuroMood Hub Pro"             2>nul
-rd /s /q "%ROOT%\build\Desinstalador NeuroMood Hub Pro"          2>nul
-del "%ROOT%\Instalador NeuroMood Hub Pro.spec"                  2>nul
-del "%ROOT%\Desinstalador NeuroMood Hub Pro.spec"               2>nul
+rd /s /q "%ROOT%\dist\Instalador NeuroMood Hub Pro"              2>>"%BUILD_LOG%"
+rd /s /q "%ROOT%\dist\Desinstalador NeuroMood Hub Pro"           2>>"%BUILD_LOG%"
+rd /s /q "%ROOT%\dist\Instalar NeuroMood Hub Profesional"        2>>"%BUILD_LOG%"
+rd /s /q "%ROOT%\dist\Desinstalar NeuroMood Pro"                 2>>"%BUILD_LOG%"
+rd /s /q "%ROOT%\build\Instalador NeuroMood Hub Pro"             2>>"%BUILD_LOG%"
+rd /s /q "%ROOT%\build\Desinstalador NeuroMood Hub Pro"          2>>"%BUILD_LOG%"
+del "%ROOT%\Instalador NeuroMood Hub Pro.spec"                  2>>"%BUILD_LOG%"
+del "%ROOT%\Desinstalador NeuroMood Hub Pro.spec"               2>>"%BUILD_LOG%"
 
 :: [1/2] Desinstalador Hub
 echo  [1/2] Desinstalador Hub...
@@ -37,6 +46,7 @@ pyinstaller --noconfirm --onedir --windowed --clean --optimize 2^
  --hidden-import win32com.client^
  --hidden-import pywintypes^
  --hidden-import PIL^
+ --hidden-import qtawesome^
  --add-data "%ROOT%\assets\NM_icon.ico;."^
  --add-data "%ROOT%\assets\LOGO.png;."^
  --icon "%ROOT%\assets\NM_icon.ico"^
@@ -58,11 +68,11 @@ pyinstaller --noconfirm --onedir --windowed --clean --optimize 2^
  --hidden-import win32com.client^
  --hidden-import pywintypes^
  --hidden-import PIL^
+ --hidden-import qtawesome^
  --add-data "%ROOT%\assets\installer_icon.ico;."^
  --add-data "%ROOT%\assets\NM_icon.ico;."^
  --add-data "%ROOT%\assets\no_symbol.ico;."^
  --add-data "%ROOT%\assets\LOGO.png;."^
- --add-data "%ROOT%\.env;."^
  --add-data "%ROOT%\dist\NeuroMood Hub Pro;NeuroMood Hub Pro"^
  --add-data "%ROOT%\dist\Desinstalador NeuroMood Hub Pro;Desinstalador NeuroMood Hub Pro"^
  --icon "%ROOT%\assets\installer_icon.ico"^
@@ -81,5 +91,12 @@ exit /b 0
 :error
 echo ============================================================
 echo  ERROR - La compilacion fallo.
+echo  Revisa build.log para detalles de limpieza/preflight.
+echo ============================================================
+exit /b 1
+
+:missing_assets
+echo ============================================================
+echo  ERROR - Faltan assets o scripts requeridos para compilar.
 echo ============================================================
 exit /b 1

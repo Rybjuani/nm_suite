@@ -29,10 +29,11 @@ if _base not in sys.path:
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QStackedWidget,
-    QGraphicsOpacityEffect,
+    QGraphicsOpacityEffect, QMessageBox,
 )
 from PyQt6.QtCore import QTimer, QSize, QPropertyAnimation, QEasingCurve, QAbstractAnimation
 from PyQt6.QtGui import QIcon
+from PyQt6 import sip
 
 from shared.theme_qt import (
     C, colors, norm_modo, app_palette, stylesheet_base,
@@ -59,17 +60,6 @@ _MODULE_MAP = {
 }
 
 # Metadata de módulos para títulos e íconos.
-_NAV_ITEMS = [
-    ("animo",       "🎭", "Ánimo"),
-    ("respiracion", "🌬️", "Respirar"),
-    ("registro",    "📝", "Registro TCC"),
-    ("rutina",      "✅", "Rutina"),
-    ("actividades", "⚡", "Actividades"),
-    ("timer",       "⏱️", "Timer"),
-    ("avisos",      "🔔", "Avisos"),
-]
-
-
 class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
 
     def __init__(self):
@@ -98,7 +88,11 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         self._build_ui()
 
         # ── Caption bar DWM ────────────────────────────────────────────────────
-        QTimer.singleShot(120, lambda: aplicar_captionbar_qt(self, self._modo))
+        QTimer.singleShot(
+            120,
+            lambda: aplicar_captionbar_qt(self, self._modo)
+            if not sip.isdeleted(self) else None,
+        )
 
         # ── Daemon de avisos ───────────────────────────────────────────────────
         self._avisos_stop = avisos_daemon.iniciar(on_abrir_app=self._restaurar_ventana)
@@ -131,6 +125,7 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
             modo=self._modo,
             on_module_open=self._open_module,
             get_status_fn=self._get_module_status,
+            username=self._nombre,
         )
         self._stack.addWidget(self._home)
         self._navigate_to(self._home)
@@ -147,7 +142,6 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
             return
         if current is None:
             QStackedWidget.setCurrentWidget(self._stack, widget)
-            widget.setWindowOpacity(1.0)
             return
 
         current_eff = QGraphicsOpacityEffect(current)
@@ -204,7 +198,7 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
             module = importlib.import_module(mod_path)
             cls = getattr(module, cls_name)
         except (ImportError, AttributeError) as e:
-            NMToast.show(self,
+            NMToast.display(self,
                          f"Módulo '{module_id}' no disponible aún.\n{e}",
                          variant="error")
             return
@@ -241,7 +235,11 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         self._apply_global_style(new_modo)
         self._tm.switch_mode(new_modo)
         self._modo = new_modo
-        QTimer.singleShot(50, lambda m=new_modo: aplicar_captionbar_qt(self, m))
+        QTimer.singleShot(
+            50,
+            lambda m=new_modo: aplicar_captionbar_qt(self, m)
+            if not sip.isdeleted(self) else None,
+        )
 
     def _apply_global_style(self, modo: str | None = None):
         modo = modo or self._modo
@@ -312,6 +310,19 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
                 event.ignore()
             self.hide()
         else:
+            if timer_active and not avisos_daemon._PYSTRAY_OK:
+                resp = QMessageBox.question(
+                    self,
+                    "Timer activo",
+                    "Hay un timer en curso y la bandeja del sistema no esta disponible.\n"
+                    "Si cerras NeuroMood, el timer se detendra. Queres cerrar igual?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No,
+                )
+                if resp != QMessageBox.StandardButton.Yes:
+                    if event:
+                        event.ignore()
+                    return
             avisos_daemon.detener()
             if event:
                 event.accept()
@@ -345,17 +356,17 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
                     "SELECT puntaje FROM termometro "
                     "WHERE fecha=? ORDER BY hora DESC LIMIT 1", (hoy,)
                 ).fetchone()
-                result = f"{row[0]}/10 ✔" if row else ""
+                result = f"{row[0]}/10" if row else ""
             elif module_id == "respiracion":
                 n = conn.execute(
                     "SELECT COUNT(*) FROM respiracion WHERE fecha=?", (hoy,)
                 ).fetchone()[0]
-                result = f"{n} sesión{'es' if n > 1 else ''} ✔" if n else ""
+                result = f"{n} sesión{'es' if n > 1 else ''}" if n else ""
             elif module_id == "registro":
                 n = conn.execute(
                     "SELECT COUNT(*) FROM pensamientos WHERE fecha=?", (hoy,)
                 ).fetchone()[0]
-                result = f"{n} registro{'s' if n > 1 else ''} ✔" if n else ""
+                result = f"{n} registro{'s' if n > 1 else ''}" if n else ""
             elif module_id == "rutina":
                 total = conn.execute(
                     "SELECT COUNT(*) FROM checklist_tareas"
@@ -363,17 +374,17 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
                 done = conn.execute(
                     "SELECT COUNT(*) FROM checklist_completadas WHERE fecha=?", (hoy,)
                 ).fetchone()[0]
-                result = f"{done}/{total} ✔" if total else ""
+                result = f"{done}/{total}" if total else ""
             elif module_id == "actividades":
                 n = conn.execute(
                     "SELECT COUNT(*) FROM activacion WHERE fecha=?", (hoy,)
                 ).fetchone()[0]
-                result = f"{n} actividad{'es' if n > 1 else ''} ✔" if n else ""
+                result = f"{n} actividad{'es' if n > 1 else ''}" if n else ""
             elif module_id == "timer":
                 n = conn.execute(
                     "SELECT COUNT(*) FROM actividades_temporizador WHERE fecha=?", (hoy,)
                 ).fetchone()[0]
-                result = f"{n} sesión{'es' if n > 1 else ''} ✔" if n else ""
+                result = f"{n} sesión{'es' if n > 1 else ''}" if n else ""
             elif module_id == "avisos":
                 n = conn.execute(
                     "SELECT COUNT(*) FROM recordatorios WHERE activo=1"

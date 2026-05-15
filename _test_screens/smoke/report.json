@@ -1,11 +1,23 @@
 {
-  "timestamp": "2026-05-15T00:10:17.478393",
+  "timestamp": "2026-05-15T02:08:51.485842",
   "app": "patient",
-  "passed": 16,
+  "passed": 31,
   "failed": 0,
   "steps": [
     {
       "name": "Home capture",
+      "status": "passed"
+    },
+    {
+      "name": "Theme toggle light",
+      "status": "passed"
+    },
+    {
+      "name": "Light home capture",
+      "status": "passed"
+    },
+    {
+      "name": "Theme toggle dark",
       "status": "passed"
     },
     {
@@ -45,6 +57,54 @@
       "status": "passed"
     },
     {
+      "name": "Navigate to rutina",
+      "status": "passed"
+    },
+    {
+      "name": "Capture rutina",
+      "status": "passed"
+    },
+    {
+      "name": "Go home",
+      "status": "passed"
+    },
+    {
+      "name": "Navigate to actividades",
+      "status": "passed"
+    },
+    {
+      "name": "Capture actividades",
+      "status": "passed"
+    },
+    {
+      "name": "Go home",
+      "status": "passed"
+    },
+    {
+      "name": "Navigate to timer",
+      "status": "passed"
+    },
+    {
+      "name": "Capture timer",
+      "status": "passed"
+    },
+    {
+      "name": "Go home",
+      "status": "passed"
+    },
+    {
+      "name": "Navigate to avisos",
+      "status": "passed"
+    },
+    {
+      "name": "Capture avisos",
+      "status": "passed"
+    },
+    {
+      "name": "Go home",
+      "status": "passed"
+    },
+    {
       "name": "Resize 800x600",
       "status": "passed"
     },
@@ -72,9 +132,14 @@
   "crashes": [],
   "screenshots": [
     "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s01_home.png",
-    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_mod_registro.png",
-    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_mod_registro.png",
-    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_mod_registro.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s02_light_home.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_mod_avisos.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_mod_avisos.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_mod_avisos.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_mod_avisos.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_mod_avisos.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_mod_avisos.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_mod_avisos.png",
     "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_resize_800x600.png",
     "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_resize_1280x720.png",
     "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_resize_1366x768.png"

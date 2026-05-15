@@ -533,8 +533,17 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         self._apply_initial_style()
         self._build_ui()
 
-        QTimer.singleShot(120, lambda: aplicar_captionbar_qt(self, self._modo))
+        QTimer.singleShot(
+            120,
+            lambda: aplicar_captionbar_qt(self, self._modo)
+            if not sip.isdeleted(self) else None,
+        )
         QTimer.singleShot(350, self._init_connection)
+        self._ia_status_timer = QTimer(self)
+        self._ia_status_timer.setInterval(30000)
+        self._ia_status_timer.timeout.connect(self._update_ia_status)
+        self._ia_status_timer.start()
+        self._update_ia_status()
         self._connect_theme()
 
     # ── Ventana ───────────────────────────────────────────────────────────────
@@ -611,6 +620,12 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         if header_layout:
             header_layout.insertWidget(1, self._lbl_status)
 
+        self._lbl_ia_status = QLabel("IA: verificando")
+        self._lbl_ia_status.setFont(qfont("size_caption"))
+        header_layout = self._header.layout()
+        if header_layout:
+            header_layout.insertWidget(2, self._lbl_ia_status)
+
         # Stack
         self._stack = NMFadeWidget(right)
         rl.addWidget(self._stack)
@@ -684,7 +699,7 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         self._current_view = "detalle"
 
         self._header.set_back_action(self._back_to_dashboard)
-        self._lbl_status.setText(f"📋  {nombre[:24]}")
+        self._lbl_status.setText(nombre[:24])
         self._lbl_status.setStyleSheet(
             f"color: {C('text_primary', self._modo)}; background: transparent;"
         )
@@ -740,6 +755,23 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         self._pacientes = pats
         self._refresh_all_views()
 
+    def _update_ia_status(self):
+        if not hasattr(self, "_lbl_ia_status") or sip.isdeleted(self._lbl_ia_status):
+            return
+        try:
+            import hub.ia_asistente as ia
+            msg = ia.status_msg()
+        except Exception:
+            msg = "IA no disponible"
+        c = colors(self._modo)
+        ok = "disponible via" in msg
+        pending = "verificando" in msg
+        color = c["success"] if ok else (c["warning"] if pending else c["text_tertiary"])
+        self._lbl_ia_status.setText(msg)
+        self._lbl_ia_status.setStyleSheet(
+            f"color: {color}; background: transparent;"
+        )
+
     def _reconnect(self):
         self._sb, motivo = _get_sb()
         c = colors(self._modo)
@@ -752,7 +784,7 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
                         f"color: {c['success']}; background: transparent;"
                     )
                     self._cargar_pacientes()
-                    NMToast.show(self, "Conexión restablecida", variant="success", duration_ms=2000)
+                    NMToast.display(self, "Conexión restablecida", variant="success", duration_ms=2000)
                     return
             except Exception:
                 pass
@@ -761,7 +793,7 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         self._lbl_status.setStyleSheet(
             f"color: {c['error']}; background: transparent;"
         )
-        NMToast.show(self, f"No se pudo conectar: {motivo or 'verificación fallida'}", variant="error")
+        NMToast.display(self, f"No se pudo conectar: {motivo or 'verificación fallida'}", variant="error")
 
     # ── Tema ──────────────────────────────────────────────────────────────────
 
@@ -769,7 +801,11 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         self._modo = "light_hybrid" if "dark" in self._modo else "dark_hybrid"
         ThemeManager.instance()._modo = self._modo
         self._apply_theme(self._modo)
-        QTimer.singleShot(50, lambda: aplicar_captionbar_qt(self, self._modo))
+        QTimer.singleShot(
+            50,
+            lambda: aplicar_captionbar_qt(self, self._modo)
+            if not sip.isdeleted(self) else None,
+        )
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
@@ -783,6 +819,8 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
             self._lbl_status.setStyleSheet(
                 f"color: {c['text_tertiary']}; background: transparent;"
             )
+        if hasattr(self, "_lbl_ia_status"):
+            self._update_ia_status()
 
     def closeEvent(self, event):
         event.accept()

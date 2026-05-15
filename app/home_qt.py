@@ -11,6 +11,7 @@ Características:
 
 import os
 import sys
+from datetime import datetime
 
 from PyQt6.QtCore import (
     Qt, QTimer, QPropertyAnimation, QEasingCurve, QRectF, QPointF,
@@ -27,7 +28,7 @@ from PyQt6.QtWidgets import (
 try:
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        linear_gradient, linear_gradient_vertical, get_gradient, gradient_colors,
+        linear_gradient, linear_gradient_vertical, rich_gradient, get_gradient, gradient_colors,
         noise_overlay, fx,
         RADIUS_CARD, PAD_CARD, PAD_CONTAINER, GAP_CARDS,
         stylesheet_scrollarea, SessionColor, ThemeAwareWidgetMixin,
@@ -40,7 +41,7 @@ except ImportError:
         sys.path.insert(0, _dir)
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        linear_gradient, linear_gradient_vertical, get_gradient, gradient_colors,
+        linear_gradient, linear_gradient_vertical, rich_gradient, get_gradient, gradient_colors,
         noise_overlay, fx,
         RADIUS_CARD, PAD_CARD, PAD_CONTAINER, GAP_CARDS,
         stylesheet_scrollarea, SessionColor, ThemeAwareWidgetMixin,
@@ -80,10 +81,11 @@ def _dot_color(idx: int, modo: str) -> str:
 class _MiniRing(QWidget):
     """Arco de 32×32px que muestra progreso 0.0–1.0."""
 
-    def __init__(self, parent=None, color: str = "#6366f1"):
+    def __init__(self, parent=None, color: str = "#6366f1", modo: str = "dark_hybrid"):
         super().__init__(parent)
         self._progress = 0.0
         self._color = color
+        self._modo = norm_modo(modo)
         self.setFixedSize(32, 32)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.setStyleSheet("background: transparent;")
@@ -93,17 +95,20 @@ class _MiniRing(QWidget):
         self.update()
 
     def paintEvent(self, event):
-        if self._progress <= 0:
-            return
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         r = 12
         cx, cy = 16, 16
         rect = QRectF(cx - r, cy - r, r * 2, r * 2)
-        pen_track = QPen(QColor(80, 80, 80, 80), 3, Qt.PenStyle.SolidLine,
+        track = QColor(C("progress_track", self._modo))
+        track.setAlpha(150 if "dark" in self._modo else 210)
+        pen_track = QPen(track, 3, Qt.PenStyle.SolidLine,
                          Qt.PenCapStyle.RoundCap)
         p.setPen(pen_track)
         p.drawEllipse(rect)
+        if self._progress <= 0:
+            p.end()
+            return
         pen_fill = QPen(QColor(self._color), 3, Qt.PenStyle.SolidLine,
                         Qt.PenCapStyle.RoundCap)
         p.setPen(pen_fill)
@@ -176,7 +181,7 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._badge.setStyleSheet("background: transparent;")
         self._badge.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         top.addWidget(self._badge)
-        self._ring = _MiniRing(self, self._accent)
+        self._ring = _MiniRing(self, self._accent, self._modo)
         top.addWidget(self._ring)
         layout.addLayout(top)
 
@@ -205,14 +210,21 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
     def _refresh_status(self):
         status = self._get_status(self._config["id"])
         c = colors(self._modo)
+        if self._disabled:
+            self._badge.setText("Bloqueado")
+            self._badge.setFont(qfont("size_caption", bold=True))
+            self._badge.setStyleSheet(
+                f"color: {C('warning', self._modo)}; background: transparent;"
+            )
+            self._ring.set_progress(0)
+            return
         if status:
-            color = C("success", self._modo)
-            if "activo" in status:
-                color = C("accent", self._modo)
+            color = C("accent", self._modo) if self._config["id"] == "avisos" else C("success", self._modo)
             self._badge.setText(status)
+            self._badge.setFont(qfont("size_caption", bold=True))
             self._badge.setStyleSheet(
                 f"color: {color}; background: transparent;"
-                f"font-size: 9pt; font-weight: bold;"
+                f"font-weight: bold;"
             )
         else:
             self._badge.setText("")
@@ -224,18 +236,20 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         if not status:
             self._ring.set_progress(0)
             return
-        if "/" in status and "✔" in status:
+        clean = status.replace("✓", "").replace("✔", "").replace("âœ”", "").strip()
+        if "/" in clean:
             try:
-                parts = status.split("/")
+                parts = clean.split("/")
                 done = int(parts[0].strip())
-                total = int(parts[1].replace("✔", "").strip())
+                total = int(parts[1].strip().split()[0])
                 self._ring.set_progress(done / total if total > 0 else 0)
             except Exception:
-                self._ring.set_progress(1.0 if "✔" in status else 0)
-        elif "✔" in status:
+                self._ring.set_progress(0)
+        elif self._config["id"] != "avisos":
             self._ring.set_progress(1.0)
         else:
             self._ring.set_progress(0)
+        return
 
     def paintEvent(self, event):
         p = QPainter(self)
@@ -253,13 +267,9 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         p.setPen(QPen(QColor(c.get("border_card", c["border"])), 1))
         p.drawPath(path)
 
-        # Barra izquierda con gradiente vertical teal -> violet
+        # Barra izquierda con gradiente del theme.
         bar_w = 5
-        bar_grad = linear_gradient_vertical(
-            QRectF(0, 0, bar_w, h),
-            self._session.qcolor(self._modo, 180),
-            self._session.qcolor(self._modo, 40),
-        )
+        bar_grad = rich_gradient(QRectF(0, 0, bar_w, h), self._modo, angle=90)
         bar = QPainterPath()
         bar.addRoundedRect(QRectF(0, 0, bar_w, h), r // 2, r // 2)
         p.fillPath(bar, QBrush(bar_grad))
@@ -345,6 +355,7 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._desc_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
         self._icon_lbl.setPixmap(self._icon_pixmap())
         self._ring._color = self._accent
+        self._ring._modo = self._modo
         self._ring.update()
         if self._eff is None or self._eff.opacity() >= 1.0:
             if self._eff is not None:
@@ -367,6 +378,7 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._disabled_reason = reason
         self.setToolTip(reason if state else "")
         self.setCursor(Qt.CursorShape.ForbiddenCursor if state else Qt.CursorShape.PointingHandCursor)
+        self._refresh_status()
         self.update()
 
 
@@ -376,12 +388,13 @@ class HomeView(QWidget):
     """Grid de 7 ModuleCard con grid responsive (1/2/3 columnas)."""
 
     def __init__(self, modo: str = "dark_hybrid",
-                 on_module_open=None, get_status_fn=None,
+                 on_module_open=None, get_status_fn=None, username: str = "",
                  parent=None):
         super().__init__(parent)
         self._modo = norm_modo(modo)
         self._open_cb = on_module_open or (lambda mid: None)
         self._get_status = get_status_fn or (lambda mid: "")
+        self._username = username
         self._cards: dict[str, ModuleCard] = {}
         self._setup()
         ThemeManager.instance().theme_changed.connect(self._apply_theme)
@@ -393,6 +406,23 @@ class HomeView(QWidget):
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)
+
+        header = QWidget()
+        header.setStyleSheet("background: transparent;")
+        header_layout = QVBoxLayout(header)
+        header_layout.setContentsMargins(PAD_CONTAINER, 18, PAD_CONTAINER + 10, 12)
+        header_layout.setSpacing(2)
+
+        self._title_lbl = QLabel("Herramientas")
+        self._title_lbl.setFont(qfont("size_h2", bold=True))
+        self._title_lbl.setStyleSheet(f"color: {C('text_primary', self._modo)}; background: transparent;")
+        header_layout.addWidget(self._title_lbl)
+
+        self._greeting_lbl = QLabel(self._greeting_text())
+        self._greeting_lbl.setFont(qfont("size_body"))
+        self._greeting_lbl.setStyleSheet(f"color: {C('text_secondary', self._modo)}; background: transparent;")
+        header_layout.addWidget(self._greeting_lbl)
+        outer.addWidget(header)
 
         # Scroll area para overflow vertical
         self._scroll = QScrollArea(self)
@@ -406,13 +436,8 @@ class HomeView(QWidget):
         self._scroll.setWidget(container)
 
         container_layout = QVBoxLayout(container)
-        container_layout.setContentsMargins(0, 20, 0, 20)
+        container_layout.setContentsMargins(PAD_CONTAINER, 8, PAD_CONTAINER + 14, 24)
         container_layout.setSpacing(10)
-
-        title_lbl = QLabel("Herramientas")
-        title_lbl.setFont(qfont("size_h2", bold=True))
-        title_lbl.setStyleSheet(f"color: {C('text_primary', self._modo)}; background: transparent;")
-        container_layout.addWidget(title_lbl)
 
         self._grid = QGridLayout()
         self._grid.setContentsMargins(0, 0, 0, 0)
@@ -428,6 +453,7 @@ class HomeView(QWidget):
                 get_status_fn=self._get_status,
             )
             self._cards[cfg["id"]] = card
+        self._sync_availability()
 
         self._rebuild_grid()
 
@@ -443,6 +469,17 @@ class HomeView(QWidget):
         if new_cols != self._grid_cols:
             self._grid_cols = new_cols
             self._rebuild_grid()
+
+    def _greeting_text(self) -> str:
+        hour = datetime.now().hour
+        if hour < 12:
+            prefix = "Buenos dias"
+        elif hour < 20:
+            prefix = "Buenas tardes"
+        else:
+            prefix = "Buenas noches"
+        name = (self._username or "Paciente").strip() or "Paciente"
+        return f"{prefix}, {name}"
 
     def _rebuild_grid(self):
         cols = max(1, self._grid_cols or responsive_columns(self.width()))
@@ -462,12 +499,29 @@ class HomeView(QWidget):
             if card:
                 row = idx // cols
                 col = idx % cols
+                if cols == 3 and idx == len(MODULES_CONFIG) - 1 and len(MODULES_CONFIG) % cols == 1:
+                    col = 1
                 self._grid.addWidget(card, row, col)
         self._grid.setRowStretch(0, 1)
 
     def refresh_statuses(self):
+        self._sync_availability()
         for card in self._cards.values():
             card.refresh()
+
+    def _disabled_reason(self, module_id: str) -> str:
+        reasons = {
+            "rutina": "Tu profesional desactivo la rutina manual.",
+            "actividades": "Tu profesional desactivo las actividades manuales.",
+            "timer": "Tu profesional desactivo el temporizador manual.",
+            "avisos": "Tu profesional desactivo los recordatorios manuales.",
+        }
+        return reasons.get(module_id, "Modulo no disponible.")
+
+    def _sync_availability(self):
+        for module_id, card in self._cards.items():
+            available = self._is_module_available(module_id)
+            card.set_disabled(not available, self._disabled_reason(module_id) if not available else "")
 
     def _is_module_available(self, module_id: str) -> bool:
         permission_keys = {
@@ -490,6 +544,12 @@ class HomeView(QWidget):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
+        self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        self._title_lbl.setStyleSheet(f"color: {C('text_primary', self._modo)}; background: transparent;")
+        self._greeting_lbl.setText(self._greeting_text())
+        self._greeting_lbl.setStyleSheet(f"color: {C('text_secondary', self._modo)}; background: transparent;")
+        for card in self._cards.values():
+            card._apply_theme(self._modo)
         self.update()
 
     def paintEvent(self, event):

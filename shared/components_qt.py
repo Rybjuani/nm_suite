@@ -712,14 +712,23 @@ class NMProgressBar(QWidget):
         self._shimmer_timer = QTimer(self)
         self._shimmer_timer.setInterval(16)
         self._shimmer_timer.timeout.connect(self._tick_shimmer)
-        self._shimmer_timer.start()
         self.setFixedHeight(height)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         _tm().theme_changed.connect(self._apply_theme)
 
     def _tick_shimmer(self):
+        if self._value <= 0 or not self.isVisible():
+            self._sync_shimmer_timer()
+            return
         self._shimmer_pos = (self._shimmer_pos + 0.015) % 1.2
         self.update()
+
+    def _sync_shimmer_timer(self):
+        should_run = self._value > 0 and self.isVisible()
+        if should_run and not self._shimmer_timer.isActive():
+            self._shimmer_timer.start()
+        elif not should_run and self._shimmer_timer.isActive():
+            self._shimmer_timer.stop()
 
     # value como pyqtProperty para QPropertyAnimation
     def _get_value(self) -> float:
@@ -727,6 +736,9 @@ class NMProgressBar(QWidget):
 
     def _set_value(self, v: float):
         self._value = max(0.0, min(1.0, v))
+        if self._value <= 0:
+            self._shimmer_pos = 0.0
+        self._sync_shimmer_timer()
         self.update()
 
     value = pyqtProperty(float, _get_value, _set_value)
@@ -780,6 +792,14 @@ class NMProgressBar(QWidget):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         self.update()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._sync_shimmer_timer()
+
+    def hideEvent(self, event):
+        self._sync_shimmer_timer()
+        super().hideEvent(event)
 
 
 # ── NMToggle ──────────────────────────────────────────────────────────────────
@@ -936,7 +956,10 @@ class NMToast(QWidget):
         anim_in.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
         # Auto-dismiss
-        QTimer.singleShot(self._duration, self._dismiss)
+        QTimer.singleShot(
+            self._duration,
+            lambda: self._dismiss() if not sip.isdeleted(self) else None,
+        )
 
     def _dismiss(self):
         anim_out = QPropertyAnimation(self._opacity_effect, b"opacity", self)
@@ -950,21 +973,25 @@ class NMToast(QWidget):
     def _reposition(self):
         pw = self._parent_win
         margin = 20
-        x = pw.x() + pw.width() - self.width() - margin
-        y = pw.y() + pw.height() - self.height() - margin - 60
+        anchor = pw
+        central_getter = getattr(pw, "centralWidget", None)
+        if callable(central_getter):
+            central = central_getter()
+            if central is not None:
+                anchor = central
+        top_left = anchor.mapToGlobal(anchor.rect().topLeft())
+        x = top_left.x() + anchor.width() - self.width() - margin
+        y = top_left.y() + anchor.height() - self.height() - margin
         self.move(x, y)
 
     @classmethod
-    def show(cls, parent_window: QWidget, message: str,
-             variant: str = "info", duration_ms: int = 2500):
+    def display(cls, parent_window: QWidget, message: str,
+                variant: str = "info", duration_ms: int = 2500):
         """Factory: crea y muestra un toast de una línea."""
         toast = cls(parent_window, message, variant, duration_ms)
         toast.show_toast()
         return toast
 
-    # Evitar que el método show() herede de QWidget (ya está en el classmethod)
-    def _show_widget(self):
-        super().show()
 
 
 # ── NMSidebar ─────────────────────────────────────────────────────────────────
@@ -1337,9 +1364,12 @@ class NMHeader(QWidget):
             )
             layout.addWidget(self._btn_back)
 
-            icon_lbl = QLabel(self._module_icon)
-            icon_lbl.setFont(qfont("size_body"))
+            icon_lbl = QLabel()
+            icon_lbl.setFixedSize(24, 24)
+            icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            icon_lbl.setStyleSheet("background: transparent;")
             self._module_icon_lbl = icon_lbl
+            self._apply_module_icon()
             layout.addWidget(icon_lbl)
 
             title_lbl = QLabel(self._module_title)
@@ -1362,11 +1392,37 @@ class NMHeader(QWidget):
 
         layout.addStretch()
 
+        self._theme_lbl = QLabel(self._theme_label_text())
+        self._theme_lbl.setFont(qfont("size_caption"))
+        self._theme_lbl.setStyleSheet(label_style(self._modo, "text_secondary"))
+        layout.addWidget(self._theme_lbl)
+
         # Toggle dark/light
         self._toggle = NMToggle(self, self._modo)
         self._toggle.setChecked("light" in self._modo)
         self._toggle.toggled.connect(lambda _: self.theme_toggle.emit())
         layout.addWidget(self._toggle)
+
+    def _theme_label_text(self) -> str:
+        return "Claro" if "light" in self._modo else "Oscuro"
+
+    def _apply_module_icon(self):
+        if not hasattr(self, "_module_icon_lbl"):
+            return
+        icon_key = self._module_icon or ""
+        if not icon_key:
+            self._module_icon_lbl.clear()
+            return
+        try:
+            pm = nm_icon(icon_key, C("accent", self._modo), size=22).pixmap(22, 22)
+            if not pm.isNull():
+                self._module_icon_lbl.setPixmap(pm)
+                self._module_icon_lbl.setText("")
+                return
+        except Exception:
+            pass
+        self._module_icon_lbl.setText(icon_key)
+        self._module_icon_lbl.setFont(qfont("size_body"))
 
     def _apply_bg(self):
         self.update()
@@ -1395,6 +1451,10 @@ class NMHeader(QWidget):
             )
         if hasattr(self, "_module_title_lbl"):
             self._module_title_lbl.setStyleSheet(label_style(modo, 'text_primary'))
+        self._apply_module_icon()
+        if hasattr(self, "_theme_lbl"):
+            self._theme_lbl.setText(self._theme_label_text())
+            self._theme_lbl.setStyleSheet(label_style(modo, "text_secondary"))
         self._toggle._apply_theme(modo)
         was_blocked = self._toggle.blockSignals(True)
         self._toggle.setChecked("light" in modo)

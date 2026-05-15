@@ -112,7 +112,8 @@ def _build_animo_graph(parent: QWidget, registros: list, modo: str) -> QWidget:
     modo = norm_modo(modo)
     apply_chart_theme(modo)
     c = colors(modo)
-    grad = ["#6366f1", "#14b8a6"]
+    accent = C("accent", modo)
+    teal = C("teal", modo)
 
     # Datos
     puntajes = []
@@ -166,8 +167,8 @@ def _build_animo_graph(parent: QWidget, registros: list, modo: str) -> QWidget:
         y_smooth = np.array(puntajes)
 
     # Área bajo la curva con gradiente teal → violet
-    teal_c = QColor(grad[0])
-    violet_c = QColor(grad[-1])
+    teal_c = QColor(accent)
+    violet_c = QColor(teal)
     fill_grad = QLinearGradient(0, 0, 0, 1)
     fill_grad.setCoordinateMode(QLinearGradient.CoordinateMode.ObjectBoundingMode)
     fill_grad.setColorAt(0.0, QColor(teal_c.red(), teal_c.green(), teal_c.blue(), 80))
@@ -180,24 +181,24 @@ def _build_animo_graph(parent: QWidget, registros: list, modo: str) -> QWidget:
     plot.addItem(fill)
 
     # Línea principal
-    pen = pg.mkPen(color="#6366f1", width=2)
+    pen = pg.mkPen(color=accent, width=2)
     plot.plot(x_smooth, y_smooth, pen=pen)
 
     # Puntos interactivos
     scatter = pg.ScatterPlotItem(
         x=x, y=puntajes,
         size=8, pen=pg.mkPen(None),
-        brush=pg.mkBrush("#14b8a6"),
+        brush=pg.mkBrush(teal),
     )
     plot.addItem(scatter)
 
     # Línea de promedio
     if puntajes:
         prom = sum(puntajes) / len(puntajes)
-        prom_pen = pg.mkPen(color="#14b8a6", width=1, style=Qt.PenStyle.DashLine)
+        prom_pen = pg.mkPen(color=teal, width=1, style=Qt.PenStyle.DashLine)
         plot.addLine(y=prom, pen=prom_pen,
                      label=f"prom {prom:.1f}",
-                     labelOpts={"color": "#14b8a6", "size": "8pt"})
+                     labelOpts={"color": teal, "size": "8pt"})
 
     return plot
 
@@ -228,7 +229,7 @@ class _TabRegistros(QWidget):
         btn_load.clicked.connect(self._cargar_datos)
         top.addWidget(btn_load)
         top.addStretch()
-        self._btn_pdf = NMButton("⬇ Exportar PDF", modo=self._modo, width=130, height=30)
+        self._btn_pdf = NMButton("Exportar PDF", modo=self._modo, width=130, height=30)
         self._btn_pdf.clicked.connect(self._exportar_pdf)
         top.addWidget(self._btn_pdf)
         layout.addLayout(top)
@@ -261,8 +262,10 @@ class _TabRegistros(QWidget):
         c = colors(self._modo)
         while self._list_layout.count():
             item = self._list_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            w = item.widget()
+            if w:
+                self._list_layout.removeWidget(w)
+                w.deleteLater()
         # NMSkeleton loaders mientras carga
         for _ in range(5):
             sk = NMSkeleton(width=240, height=16, radius=4, modo=self._modo)
@@ -297,8 +300,10 @@ class _TabRegistros(QWidget):
     def _mostrar_registros(self, datos: dict):
         while self._list_layout.count():
             item = self._list_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            w = item.widget()
+            if w:
+                self._list_layout.removeWidget(w)
+                w.deleteLater()
 
         c = colors(self._modo)
 
@@ -371,7 +376,7 @@ class _TabRegistros(QWidget):
 
     def _exportar_pdf(self):
         if not self._datos_cache:
-            NMToast.show(self.window(), "Cargá los datos primero.", variant="info")
+            NMToast.display(self.window(), "Cargá los datos primero.", variant="info")
             return
         self._btn_pdf.setText("Generando…")
         self._btn_pdf.setEnabled(False)
@@ -385,14 +390,14 @@ class _TabRegistros(QWidget):
         )
 
     def _pdf_ok(self, ruta: str):
-        self._btn_pdf.setText("⬇ Exportar PDF")
+        self._btn_pdf.setText("Exportar PDF")
         self._btn_pdf.setEnabled(True)
-        NMToast.show(self.window(), f"PDF guardado en Downloads.", variant="success")
+        NMToast.display(self.window(), f"PDF guardado en Downloads.", variant="success")
 
     def _pdf_error(self, msg: str):
-        self._btn_pdf.setText("⬇ Exportar PDF")
+        self._btn_pdf.setText("Exportar PDF")
         self._btn_pdf.setEnabled(True)
-        NMToast.show(self.window(), f"Error PDF: {msg[:60]}", variant="error")
+        NMToast.display(self.window(), f"Error PDF: {msg[:60]}", variant="error")
 
 
 # ── Tab: Asignar ──────────────────────────────────────────────────────────────
@@ -480,10 +485,10 @@ class _TabAsignar(QWidget):
                 "seccion":     seccion,
             }).execute()
             self._entry_tarea.clear()
-            NMToast.show(self.window(),
+            NMToast.display(self.window(),
                          f"Tarea '{tarea[:30]}' asignada.", variant="success")
         except Exception as e:
-            NMToast.show(self.window(), str(e)[:80], variant="error")
+            NMToast.display(self.window(), str(e)[:80], variant="error")
 
     def _asignar_recordatorio(self):
         if not self._sb:
@@ -502,9 +507,9 @@ class _TabAsignar(QWidget):
             }).execute()
             self._entry_rec_msg.clear()
             self._entry_rec_hora.clear()
-            NMToast.show(self.window(), "Recordatorio enviado.", variant="success")
+            NMToast.display(self.window(), "Recordatorio enviado.", variant="success")
         except Exception as e:
-            NMToast.show(self.window(), str(e)[:80], variant="error")
+            NMToast.display(self.window(), str(e)[:80], variant="error")
 
 
 # ── Tab: Banco ────────────────────────────────────────────────────────────────
@@ -610,15 +615,17 @@ class _TabBanco(QWidget):
             self._ent_nombre.clear()
             self._ent_desc.clear()
             self._cargar_banco()
-            NMToast.show(self.window(), f"'{nombre}' añadida al banco.", variant="success")
+            NMToast.display(self.window(), f"'{nombre}' añadida al banco.", variant="success")
         except Exception as e:
-            NMToast.show(self.window(), str(e)[:80], variant="error")
+            NMToast.display(self.window(), str(e)[:80], variant="error")
 
     def _cargar_banco(self):
         while self._list_layout.count():
             item = self._list_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            w = item.widget()
+            if w:
+                self._list_layout.removeWidget(w)
+                w.deleteLater()
         if not self._sb:
             return
         try:
@@ -700,7 +707,7 @@ class _TabBanco(QWidget):
             self._sb.table("activity_bank").delete().eq("id", rid).execute()
             self._cargar_banco()
         except Exception as e:
-            NMToast.show(self.window(), str(e)[:80], variant="error")
+            NMToast.display(self.window(), str(e)[:80], variant="error")
 
     def _ia_completar(self):
         nombre = self._ent_nombre.text().strip()
@@ -720,7 +727,7 @@ class _TabBanco(QWidget):
     def _ia_err(self, msg: str):
         self._ent_desc.clear()
         import hub.ia_asistente as ia
-        NMToast.show(self.window(), ia.status_msg(), variant="error")
+        NMToast.display(self.window(), ia.status_msg(), variant="error")
 
 
 # ── Tab: IA ───────────────────────────────────────────────────────────────────
@@ -841,7 +848,7 @@ class _TabIA(QWidget):
         if not datos or not any(
             datos.get(k) for k in ("animo", "resp", "pens", "checklist")
         ):
-            NMToast.show(self.window(),
+            NMToast.display(self.window(),
                          "Cargá los datos del paciente primero (Tab Registros).",
                          variant="info")
             return
@@ -870,7 +877,7 @@ class _TabIA(QWidget):
     def _generar_sugerencias(self):
         datos = self._datos_ref.cache
         if not datos:
-            NMToast.show(self.window(),
+            NMToast.display(self.window(),
                          "Cargá los datos del paciente primero.",
                          variant="info")
             return
@@ -891,8 +898,10 @@ class _TabIA(QWidget):
         c = colors(self._modo)
         while self._sug_layout.count():
             item = self._sug_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            w = item.widget()
+            if w:
+                self._sug_layout.removeWidget(w)
+                w.deleteLater()
         for linea in txt.splitlines():
             linea = linea.strip()
             if not linea:
@@ -922,7 +931,7 @@ class _TabIA(QWidget):
     def _sugerencias_err(self, msg: str):
         self._btn_sugerencias.setText("Generar sugerencias")
         self._btn_sugerencias.setEnabled(True)
-        NMToast.show(self.window(), msg, variant="error")
+        NMToast.display(self.window(), msg, variant="error")
 
     def _generar_tarea(self):
         ctx = self._ent_ctx.text().strip()
@@ -981,7 +990,7 @@ class DetallePacienteView(QWidget):
         top.setStyleSheet("background: transparent;")
         tl = QHBoxLayout(top)
         tl.setContentsMargins(PAD_CONTAINER, 12, PAD_CONTAINER, 8)
-        t = QLabel(f"📋  {self._nombre}")
+        t = QLabel(self._nombre)
         t.setFont(qfont("size_h3", bold=True))
         t.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
         tl.addWidget(t)

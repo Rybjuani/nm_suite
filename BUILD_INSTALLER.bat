@@ -8,6 +8,15 @@ echo  Compilar Instalador NeuroMood Suite
 echo ============================================================
 
 cd /d "%ROOT%"
+set "BUILD_LOG=%ROOT%\build.log"
+echo NeuroMood Suite installer build log > "%BUILD_LOG%"
+
+if not exist "%ROOT%\assets\installer_icon.ico" goto :missing_assets
+if not exist "%ROOT%\assets\NM_icon.ico"        goto :missing_assets
+if not exist "%ROOT%\assets\no_symbol.ico"      goto :missing_assets
+if not exist "%ROOT%\assets\LOGO.png"           goto :missing_assets
+if not exist "%ROOT%\installers\installer.py"   goto :missing_assets
+if not exist "%ROOT%\installers\uninstaller.py" goto :missing_assets
 
 if not exist "%ROOT%\dist\NeuroMood Suite\NeuroMood Suite.exe" (
     echo  FALTA: dist\NeuroMood Suite\NeuroMood Suite.exe
@@ -16,14 +25,14 @@ if not exist "%ROOT%\dist\NeuroMood Suite\NeuroMood Suite.exe" (
 )
 
 :: Clean
-rd /s /q "%ROOT%\dist\Instalador NeuroMood Suite"         2>nul
-rd /s /q "%ROOT%\dist\Desinstalador NeuroMood"            2>nul
-rd /s /q "%ROOT%\dist\Instalar NeuroMood"                 2>nul
-rd /s /q "%ROOT%\dist\Desinstalar NeuroMood"              2>nul
-rd /s /q "%ROOT%\build\Instalador NeuroMood Suite"         2>nul
-rd /s /q "%ROOT%\build\Desinstalador NeuroMood"           2>nul
-del "%ROOT%\Instalador NeuroMood Suite.spec"              2>nul
-del "%ROOT%\Desinstalador NeuroMood.spec"                 2>nul
+rd /s /q "%ROOT%\dist\Instalador NeuroMood Suite"         2>>"%BUILD_LOG%"
+rd /s /q "%ROOT%\dist\Desinstalador NeuroMood"            2>>"%BUILD_LOG%"
+rd /s /q "%ROOT%\dist\Instalar NeuroMood"                 2>>"%BUILD_LOG%"
+rd /s /q "%ROOT%\dist\Desinstalar NeuroMood"              2>>"%BUILD_LOG%"
+rd /s /q "%ROOT%\build\Instalador NeuroMood Suite"        2>>"%BUILD_LOG%"
+rd /s /q "%ROOT%\build\Desinstalador NeuroMood"           2>>"%BUILD_LOG%"
+del "%ROOT%\Instalador NeuroMood Suite.spec"              2>>"%BUILD_LOG%"
+del "%ROOT%\Desinstalador NeuroMood.spec"                 2>>"%BUILD_LOG%"
 
 :: [1/2] Desinstalador
 echo  [1/2] Desinstalador...
@@ -37,6 +46,7 @@ pyinstaller --noconfirm --onedir --windowed --clean --optimize 2^
  --hidden-import win32com.client^
  --hidden-import pywintypes^
  --hidden-import PIL^
+ --hidden-import qtawesome^
  --add-data "%ROOT%\assets\no_symbol.ico;."^
  --add-data "%ROOT%\assets\LOGO.png;."^
  --icon "%ROOT%\assets\no_symbol.ico"^
@@ -58,11 +68,11 @@ pyinstaller --noconfirm --onedir --windowed --clean --optimize 2^
  --hidden-import win32com.client^
  --hidden-import pywintypes^
  --hidden-import PIL^
+ --hidden-import qtawesome^
  --add-data "%ROOT%\assets\installer_icon.ico;."^
  --add-data "%ROOT%\assets\NM_icon.ico;."^
  --add-data "%ROOT%\assets\no_symbol.ico;."^
  --add-data "%ROOT%\assets\LOGO.png;."^
- --add-data "%ROOT%\.env;."^
  --add-data "%ROOT%\dist\NeuroMood Suite;NeuroMood Suite"^
  --add-data "%ROOT%\dist\Desinstalador NeuroMood;Desinstalador NeuroMood"^
  --icon "%ROOT%\assets\installer_icon.ico"^
@@ -81,5 +91,12 @@ exit /b 0
 :error
 echo ============================================================
 echo  ERROR - La compilacion fallo.
+echo  Revisa build.log para detalles de limpieza/preflight.
+echo ============================================================
+exit /b 1
+
+:missing_assets
+echo ============================================================
+echo  ERROR - Faltan assets o scripts requeridos para compilar.
 echo ============================================================
 exit /b 1
