@@ -405,31 +405,45 @@ Antes de dar por terminada cualquier pantalla nueva:
 
 ---
 
-## 17. INCONSISTENCIAS DETECTADAS (pendientes de fix)
+## 17. ESTADO DE AUDITORÍA — MAYO 2026
 
-### Prioridad ALTA — rompe coherencia visual
-| Archivo | Problema |
-|---|---|
-| `hub/exportar.py:36` | Color `AC = "#6366f1"` hardcodeado — usar `C('accent', modo)` |
-| `hub/exportar.py:43` | `#555555` hardcodeado — usar `C('text_tertiary', modo)` |
-| `app/modules/avisos_qt.py:172,182` | `border-radius: 14px` — usar `RADIUS_PILL` |
-| `app/modules/avisos_qt.py:376` | `border-radius: 8px` — usar `RADIUS_CARD` |
+> Auditoría automatizada ejecutada tras commit `49db9a7`. **0 inconsistencias pendientes.**
 
-### Prioridad MEDIA — mejora mantenibilidad
-| Archivo | Problema |
-|---|---|
-| `app/modules/avisos_qt.py:130,141,174,184` | `font-size: 10pt` / `11pt` hardcodeados |
-| `app/modules/rutina_qt.py:321` | `border-radius: 4px` en checkbox |
-| `app/modules/rutina_qt.py:426` | `border-radius: 8px` en form frame |
-| `app/modules/rutina_qt.py:445` | `font-size: 13pt` hardcodeado |
-| `hub/pacientes_qt.py:80` | `border-radius: 6px` en row items |
-| `hub/pacientes_qt.py:692` | `border-radius: 12px` en botón delete |
+### Tokens aplicados (fases A–E)
 
-### Prioridad BAJA — patrón mejorable
-| Archivo | Problema |
+| Archivo | Fix aplicado |
 |---|---|
-| `app/modules/animo_qt.py:423-424` | RGBA desde QColor manual — crear helper `qcolor_to_rgba_css()` |
-| Múltiples archivos | `setContentsMargins(8, 4, 8, 4)` sin usar `sp()` |
+| `shared/theme.py` | `RADIUS_SMALL=6`, `CHECKBOX_SIZE=18` agregados a `LAYOUT` |
+| `shared/theme_qt.py` | `RADIUS_SMALL`, `CHECKBOX_SIZE`, `qcolor_to_rgba_css()` exportados |
+| `shared/components_qt.py` | Re-exporta los nuevos tokens |
+| `app/modules/avisos_qt.py` | `font-size` → `TYPOGRAPHY['size_caption']`; banner → `RADIUS_INPUT` |
+| `app/modules/rutina_qt.py` | Checkbox → `CHECKBOX_SIZE`/`RADIUS_SMALL`; form → `RADIUS_INPUT`; input → `RADIUS_SMALL`; eliminado `font-size` redundante |
+| `app/modules/animo_qt.py` | rgba manual → `qcolor_to_rgba_css(fill)` |
+| `app/modules/registro_tcc_qt.py` | Badge distorsión → `RADIUS_BADGE` |
+| `hub/exportar.py` | `AC="#6366f1"` → `_PDF_ACCENT` desde `COLORS`; `#555555` → `_PDF_CAPTION` |
+| `hub/pacientes_qt.py` | `row_item` → `RADIUS_SMALL`; `btn_del` → `RADIUS_PILL` |
+| `installers/*` | Sin cambios — ya usaban tokens de `installer_common.py` |
+
+### Checklist de auditoría automática
+
+| Check | Resultado |
+|---|---|
+| Hex literals hardcodeados en app/ hub/ | ✅ 0 |
+| `border-radius` px literales sin token | ✅ 0 |
+| `font-size` pt/px literales sin token | ✅ 0 |
+| `QFont()` directo sin `qfont()`/`nm_font()` | ✅ 0 |
+| `setContentsMargins` con literales directos | ✅ 0 |
+| `setSpacing` con literales directos | ✅ 0 |
+| `QScrollArea` sin `stylesheet_scrollarea()` | ✅ 0 |
+| `QComboBox` sin `stylesheet_combobox()` | ✅ 0 |
+| `QTimeEdit` sin `stylesheet_timeedit()` | ✅ 0 |
+| `NMModule` sin `_apply_theme()` | ✅ 0 |
+| `NMModule` sin conexión a `ThemeManager` | ✅ 0 |
+| `except: pass` silenciosos en widgets | ✅ 0 |
+| smoke patient | ✅ 31/31 |
+| smoke hub | ✅ 16/16 |
+| resize 5 resoluciones | ✅ 0 issues |
+| `python -m compileall .` | ✅ sin errores |
 
 ---
 
