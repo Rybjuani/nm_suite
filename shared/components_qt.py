@@ -1913,3 +1913,53 @@ def h_spacer() -> QWidget:
     w = QWidget()
     w.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
     return w
+
+
+def responsive_columns(available_width: int, min_card_width: int = 280,
+                       max_columns: int = 3) -> int:
+    """Devuelve el número óptimo de columnas según ancho disponible."""
+    cols = max(1, min(max_columns, available_width // min_card_width))
+    return cols
+
+
+# ── NMSegmentedChoice ─────────────────────────────────────────────────────────
+
+class NMSegmentedChoice(QWidget):
+    """Grupo de NMButtonOutline con selección exclusiva. Emite choice_made(str)."""
+    choice_made = pyqtSignal(str)
+
+    def __init__(self, choices: list[tuple[str, str]], modo: str = "dark_hybrid",
+                 parent=None):
+        """
+        choices: lista de (label, value). Ej: [("Hecha", "hecha"), ("No pude", "no_pude")]
+        """
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._btns: dict[str, NMButtonOutline] = {}
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
+        for label, value in choices:
+            btn = NMButtonOutline(label, modo=self._modo, toggleable=True)
+            btn.setFixedHeight(30)
+            btn.setMinimumWidth(72)
+            btn.clicked.connect(lambda checked=False, v=value, b=btn: self._select(v, b))
+            layout.addWidget(btn)
+            self._btns[value] = btn
+        layout.addStretch()
+
+    def _select(self, value: str, active_btn: NMButtonOutline):
+        for v, btn in self._btns.items():
+            btn.set_active(btn is active_btn)
+        self.choice_made.emit(value)
+
+    def selected(self) -> str:
+        for v, btn in self._btns.items():
+            if btn.is_active():
+                return v
+        return ""
+
+    def reset(self):
+        for btn in self._btns.values():
+            btn.set_active(False)
