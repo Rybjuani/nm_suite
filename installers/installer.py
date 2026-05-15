@@ -276,10 +276,10 @@ class InstaladorNeuroMood(InstallerShell):
         self.btn_ant.clicked.connect(self._anterior)
 
         # Pages
-        self._add_page(lambda p, l: self._build_p0(p, l))
-        self._add_page(lambda p, l: self._build_p1(p, l))
-        self._add_page(lambda p, l: self._build_p2(p, l))
-        self._add_page(lambda p, l: self._build_p3(p, l))
+        self._add_page(lambda p: self._build_p0(p))
+        self._add_page(lambda p: self._build_p1(p))
+        self._add_page(lambda p: self._build_p2(p))
+        self._add_page(lambda p: self._build_p3(p))
 
         self._ir_a(0)
 

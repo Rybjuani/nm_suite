@@ -87,7 +87,7 @@ def eliminar_accesos_pro():
     escritorio = Path(os.path.expanduser("~")) / "Desktop"
     start_menu = (Path(os.environ.get("APPDATA", "")) /
                   "Microsoft" / "Windows" / "Start Menu" / "Programs" / "NeuroMood")
-    for nombre in ["NeuroMood Hub Profesional"]:
+    for nombre in ["NeuroMood Hub Pro", "NeuroMood Hub Profesional"]:
         try:
             (escritorio / f"{nombre}.lnk").unlink(missing_ok=True)
         except Exception:
@@ -101,7 +101,12 @@ def eliminar_accesos_pro():
                 target = shell.CreateShortcut(str(lnk)).TargetPath
             except Exception:
                 pass
-            if "Hub Profesional" in target or "HubProfesional" in target:
+            target_l = target.lower()
+            if (
+                "neuromood hub pro" in target_l
+                or "hub profesional" in target_l
+                or "hubprofesional" in target_l
+            ):
                 lnk.unlink(missing_ok=True)
     except Exception:
         pass
@@ -238,11 +243,6 @@ class DesinstaladorPro(InstallerShell):
         desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px;")
         layout.addWidget(desc)
         layout.addStretch()
-
-    def _show_confirm(self):
-        self._add_page(lambda page, lay: self._build_confirm(page, lay))
-        self.btn_sig.setText("Desinstalar")
-        self.btn_sig.clicked.connect(self._iniciar)
 
     def _show_confirm(self):
         self._add_page(lambda page, lay: self._build_confirm(page, lay))

@@ -315,6 +315,11 @@ class DesinstaladorNeuroMood(InstallerShell):
         btn_row.addWidget(btn_uninst)
         layout.addLayout(btn_row)
 
+    def _show_confirm(self):
+        self._add_page(lambda page, lay: self._build_confirm(page, lay))
+        self.btn_sig.setText("Desinstalar")
+        self.btn_sig.clicked.connect(self._iniciar)
+
     def _iniciar(self):
         conservar = self._chk_conservar.isChecked()
         self.btn_sig.setEnabled(False)

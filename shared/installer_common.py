@@ -249,7 +249,7 @@ def crear_acceso_directo(origen: str, destino_lnk: str, icono: str):
 try:
     from PyQt6.QtWidgets import (
         QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-        QLabel, QPushButton, QStackedWidget,
+        QApplication, QLabel, QPushButton, QStackedWidget,
     )
     from PyQt6.QtCore import Qt, QTimer
     from PyQt6.QtGui import QIcon, QPixmap
@@ -371,10 +371,21 @@ class InstallerShell(QMainWindow):
         """Crea una página y la agrega al stack."""
         page = QWidget()
         page.setStyleSheet(f"background: {BG_PRIMARY};")
-        lay = QVBoxLayout(page)
-        lay.setContentsMargins(24, 16, 24, 8)
-        lay.setSpacing(8)
-        builder_fn(page, lay)
+        try:
+            import inspect
+            params = [
+                p for p in inspect.signature(builder_fn).parameters.values()
+                if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
+            ]
+        except Exception:
+            params = [None, None]
+        if len(params) <= 1:
+            builder_fn(page)
+        else:
+            lay = QVBoxLayout(page)
+            lay.setContentsMargins(24, 16, 24, 8)
+            lay.setSpacing(8)
+            builder_fn(page, lay)
         self._stack.addWidget(page)
         self._pages.append(page)
 

@@ -81,17 +81,17 @@ class _ProWorker(QThread):
 
             # Hub exe (copia carpeta completa si es onedir)
             self.progress_signal.emit(0.3, "Instalando Hub Profesional...")
-            src = ruta_bundled("HubProfesional.exe")
+            src = ruta_bundled(HUB_EXE)
             if os.path.exists(src):
                 src_dir = os.path.dirname(src)
                 # onedir: la carpeta contiene el exe + dependencias
-                if os.path.basename(src_dir) == "HubProfesional":
+                if os.path.basename(src_dir) == HUB_EXE.replace(".exe", ""):
                     shutil.copytree(src_dir, install_dir, dirs_exist_ok=True)
                 else:
                     shutil.copy2(src, install_dir / HUB_EXE)
                 self.log_signal.emit("  Hub Profesional", SUCCESS)
             else:
-                self.log_signal.emit("  HubProfesional.exe no encontrado", WARNING_C)
+                self.log_signal.emit(f"  {HUB_EXE} no encontrado", WARNING_C)
 
             # Desinstalador (copia carpeta completa si es onedir)
             self.progress_signal.emit(0.5, "Instalando desinstalador...")
@@ -187,9 +187,9 @@ class InstaladorPro(InstallerShell):
         self.btn_sig.clicked.connect(self._siguiente)
         self.btn_ant.clicked.connect(self._anterior)
 
-        self._add_page(lambda p, l: self._build_p0(p, l))
-        self._add_page(lambda p, l: self._build_p1(p, l))
-        self._add_page(lambda p, l: self._build_p2(p, l))
+        self._add_page(lambda p: self._build_p0(p))
+        self._add_page(lambda p: self._build_p1(p))
+        self._add_page(lambda p: self._build_p2(p))
 
         self._ir_a(0)
 

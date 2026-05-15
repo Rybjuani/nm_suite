@@ -1,55 +1,63 @@
 {
-  "timestamp": "2026-05-14T22:33:31.361580",
-  "app": "hub_profesional|hub_profesional",
+  "timestamp": "2026-05-14T23:10:38.214277",
+  "app": "patient",
   "passed": 16,
   "failed": 0,
   "steps": [
     {
-      "name": "Hub default",
+      "name": "Home capture",
       "status": "passed"
     },
     {
-      "name": "Navigate pacientes",
+      "name": "Navigate to animo",
       "status": "passed"
     },
     {
-      "name": "Capture pacientes",
+      "name": "Capture animo",
       "status": "passed"
     },
     {
-      "name": "Navigate dashboard",
+      "name": "Go home",
       "status": "passed"
     },
     {
-      "name": "Capture dashboard",
+      "name": "Navigate to respiracion",
       "status": "passed"
     },
     {
-      "name": "Navigate config",
+      "name": "Capture respiracion",
       "status": "passed"
     },
     {
-      "name": "Capture config",
+      "name": "Go home",
       "status": "passed"
     },
     {
-      "name": "Theme toggle light",
+      "name": "Navigate to registro",
       "status": "passed"
     },
     {
-      "name": "Capture light",
+      "name": "Capture registro",
       "status": "passed"
     },
     {
-      "name": "Theme toggle dark",
+      "name": "Go home",
       "status": "passed"
     },
     {
-      "name": "Resize 1024x720",
+      "name": "Resize 800x600",
       "status": "passed"
     },
     {
-      "name": "Capture 1024x720",
+      "name": "Capture 800x600",
+      "status": "passed"
+    },
+    {
+      "name": "Resize 1280x720",
+      "status": "passed"
+    },
+    {
+      "name": "Capture 1280x720",
       "status": "passed"
     },
     {
@@ -59,25 +67,16 @@
     {
       "name": "Capture 1366x768",
       "status": "passed"
-    },
-    {
-      "name": "Resize 1920x1080",
-      "status": "passed"
-    },
-    {
-      "name": "Capture 1920x1080",
-      "status": "passed"
     }
   ],
   "crashes": [],
   "screenshots": [
-    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h01_default.png",
-    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h02_pacientes.png",
-    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h03_dashboard.png",
-    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h04_config.png",
-    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h05_light.png",
-    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h_resize_1024x720.png",
-    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h_resize_1366x768.png",
-    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\h_resize_1920x1080.png"
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s01_home.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_mod_registro.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_mod_registro.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_mod_registro.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_resize_800x600.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_resize_1280x720.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_test_screens\\smoke\\s_resize_1366x768.png"
   ]
 }
