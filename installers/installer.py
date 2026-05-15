@@ -718,7 +718,12 @@ class InstaladorNeuroMood(InstallerShell):
 
     def _on_install_error(self, tipo: str):
         if tipo == "permission":
-            self._ir_a(2)
+            self._progress_lbl.setStyleSheet(f"color: {ERROR_C}; font-size: 12px; font-weight: bold;")
+            self._progress_lbl.setText("Sin permisos. Elegi otra carpeta.")
+        else:
+            self._progress_lbl.setStyleSheet(f"color: {ERROR_C}; font-size: 12px; font-weight: bold;")
+            self._progress_lbl.setText("Error inesperado. Revisa el log arriba.")
+        self._ir_a(2)
         self.btn_sig.setEnabled(True)
         self.btn_sig.setText("Instalar")
 
