@@ -30,7 +30,7 @@ echo  [1/2] Desinstalador...
 pyinstaller --noconfirm --onedir --windowed --clean --optimize 2^
  --workpath "%ROOT%\build"^
  --paths "%ROOT%"^
- --log-level ERROR^
+ --log-level WARN^
  --add-data "%ROOT%\shared;shared"^
  --hidden-import shared^
  --hidden-import win32com^
@@ -51,7 +51,7 @@ echo  [2/2] Instalador...
 pyinstaller --noconfirm --onedir --windowed --clean --optimize 2^
  --workpath "%ROOT%\build"^
  --paths "%ROOT%"^
- --log-level ERROR^
+ --log-level WARN^
  --add-data "%ROOT%\shared;shared"^
  --hidden-import shared^
  --hidden-import win32com^

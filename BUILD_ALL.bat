@@ -67,7 +67,7 @@ pyinstaller --noconfirm %MODE% --windowed --clean --optimize 2^
  --distpath "%ROOT%\dist"^
  --workpath "%ROOT%\build"^
  --paths "%ROOT%"^
- --log-level ERROR^
+ --log-level WARN^
  --hidden-import pystray^
  --hidden-import pystray._win32^
  --hidden-import winotify^
@@ -89,7 +89,7 @@ pyinstaller --noconfirm %MODE% --windowed --clean --optimize 2^
  --distpath "%ROOT%\dist"^
  --workpath "%ROOT%\build"^
  --paths "%ROOT%"^
- --log-level ERROR^
+ --log-level WARN^
  --hidden-import supabase^
  --hidden-import pystray^
  --hidden-import pystray._win32^
@@ -107,6 +107,7 @@ pyinstaller --noconfirm %MODE% --windowed --clean --optimize 2^
  --hidden-import reportlab.lib.units^
  --hidden-import reportlab.platypus^
  --hidden-import numpy^
+ --hidden-import matplotlib^
  --name "NeuroMood Hub Pro"^
  "%ROOT%\hub\main_qt.py"
 if %ERRORLEVEL% NEQ 0 goto :error
