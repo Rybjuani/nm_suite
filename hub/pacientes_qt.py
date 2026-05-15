@@ -27,12 +27,14 @@ try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMInput,
         NMProgressBar, NMToggle, NMToast, NMSkeleton, ThemeManager, h_spacer,
+        NMProgressLine, NMFeaturedCard, NMModuleRing, NMTypingDots,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         apply_chart_theme,
         get_gradient, gradient_colors, stylesheet_lineedit, stylesheet_textedit,
         stylesheet_tabwidget, stylesheet_combobox, stylesheet_scrollarea,
+        sp,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_SMALL, RADIUS_PILL, PAD_CONTAINER, PAD_CARD,
         GAP_CARDS, GAP_ELEMENTS, CATEGORY_COLORS,
     )
@@ -44,12 +46,14 @@ except ImportError:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMInput,
         NMProgressBar, NMToggle, NMToast, NMSkeleton, ThemeManager, h_spacer,
+        NMProgressLine, NMFeaturedCard, NMModuleRing, NMTypingDots,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         apply_chart_theme,
         get_gradient, gradient_colors, stylesheet_lineedit, stylesheet_textedit,
         stylesheet_tabwidget, stylesheet_combobox, stylesheet_scrollarea,
+        sp,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_SMALL, RADIUS_PILL, PAD_CONTAINER, PAD_CARD,
         GAP_CARDS, GAP_ELEMENTS,
     )
@@ -339,12 +343,22 @@ class _TabRegistros(QWidget):
         avl.addWidget(at)
         if puntajes:
             prom = round(sum(puntajes) / len(puntajes), 1)
+
+            # Stats row: label + NMModuleRing (adherencia últimos 7 días)
+            stats_row = QHBoxLayout()
             pl = QLabel(
                 f"Promedio: {prom}/10  |  {len(animo)} registros"
             )
             pl.setFont(qfont("size_body"))
             pl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
-            avl.addWidget(pl)
+            stats_row.addWidget(pl, stretch=1)
+
+            distinct_days = len({r.get("fecha", "")[:10] for r in animo if r.get("fecha")})
+            adherence_pct = min(1.0, distinct_days / 7)
+            ring = NMModuleRing(size=48, pct=adherence_pct,
+                                modo=self._modo, parent=animo_frame)
+            stats_row.addWidget(ring, alignment=Qt.AlignmentFlag.AlignRight)
+            avl.addLayout(stats_row)
 
             # Gráfico pyqtgraph
             graph = _build_animo_graph(animo_frame, animo, self._modo)
@@ -780,6 +794,12 @@ class _TabIA(QWidget):
         row_res.addWidget(btn_copy_res)
         row_res.addStretch()
         vl_res.addLayout(row_res)
+
+        # NMTypingDots: visible during IA generation
+        self._typing_dots = NMTypingDots(modo=self._modo, parent=card_res)
+        self._typing_dots.hide()
+        vl_res.addWidget(self._typing_dots, alignment=Qt.AlignmentFlag.AlignLeft)
+
         layout.addWidget(card_res)
 
         # ── Sugerencias ───────────────────────────────────────────────────────
@@ -854,7 +874,10 @@ class _TabIA(QWidget):
             return
         self._btn_resumen.setText("Generando…")
         self._btn_resumen.setEnabled(False)
-        self._txt_resumen.setPlainText("Consultando IA…")
+        self._txt_resumen.setPlainText("")
+        if hasattr(self, "_typing_dots"):
+            self._typing_dots.show()
+            self._typing_dots.start()
         from hub.ia_asistente import resumir_evolucion
         resumir_evolucion(
             datos, self._nombre,
@@ -867,11 +890,17 @@ class _TabIA(QWidget):
     def _resumen_ok(self, txt: str):
         self._btn_resumen.setText("Generar resumen")
         self._btn_resumen.setEnabled(True)
+        if hasattr(self, "_typing_dots"):
+            self._typing_dots.stop()
+            self._typing_dots.hide()
         self._txt_resumen.setPlainText(txt)
 
     def _resumen_err(self, msg: str):
         self._btn_resumen.setText("Generar resumen")
         self._btn_resumen.setEnabled(True)
+        if hasattr(self, "_typing_dots"):
+            self._typing_dots.stop()
+            self._typing_dots.hide()
         self._txt_resumen.setPlainText(msg)
 
     def _generar_sugerencias(self):
@@ -883,6 +912,9 @@ class _TabIA(QWidget):
             return
         self._btn_sugerencias.setText("Generando…")
         self._btn_sugerencias.setEnabled(False)
+        if hasattr(self, "_typing_dots"):
+            self._typing_dots.show()
+            self._typing_dots.start()
         from hub.ia_asistente import sugerir_acciones
         sugerir_acciones(
             datos, self._nombre,
@@ -895,6 +927,9 @@ class _TabIA(QWidget):
     def _sugerencias_ok(self, txt: str):
         self._btn_sugerencias.setText("Generar sugerencias")
         self._btn_sugerencias.setEnabled(True)
+        if hasattr(self, "_typing_dots"):
+            self._typing_dots.stop()
+            self._typing_dots.hide()
         c = colors(self._modo)
         while self._sug_layout.count():
             item = self._sug_layout.takeAt(0)
@@ -931,6 +966,9 @@ class _TabIA(QWidget):
     def _sugerencias_err(self, msg: str):
         self._btn_sugerencias.setText("Generar sugerencias")
         self._btn_sugerencias.setEnabled(True)
+        if hasattr(self, "_typing_dots"):
+            self._typing_dots.stop()
+            self._typing_dots.hide()
         NMToast.display(self.window(), msg, variant="error")
 
     def _generar_tarea(self):
@@ -985,6 +1023,11 @@ class DetallePacienteView(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
+        # ── NMProgressLine: 2px gradient line at top ──────────────────────────
+        self._progress_line = NMProgressLine(total=1, current=1,
+                                             modo=self._modo, parent=self)
+        layout.addWidget(self._progress_line)
+
         # Título
         top = QWidget()
         top.setStyleSheet("background: transparent;")
@@ -995,6 +1038,19 @@ class DetallePacienteView(QWidget):
         t.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
         tl.addWidget(t)
         layout.addWidget(top)
+
+        # ── NMFeaturedCard: mood summary above tabs ───────────────────────────
+        self._featured_card = NMFeaturedCard(modo=self._modo, parent=self)
+        # Wrap in padded container
+        fc_wrapper = QWidget()
+        fc_wrapper.setStyleSheet("background: transparent;")
+        fc_layout = QHBoxLayout(fc_wrapper)
+        fc_layout.setContentsMargins(PAD_CONTAINER, 0, PAD_CONTAINER, sp("sm"))
+        fc_layout.addWidget(self._featured_card)
+        layout.addWidget(fc_wrapper)
+
+        # Wire data signal to update featured card when records load
+        self._datos_ref.changed.connect(self._update_featured)
 
         # QTabWidget con stylesheet pills
         self._tabs = QTabWidget()
@@ -1018,6 +1074,22 @@ class DetallePacienteView(QWidget):
         self._tabs.addTab(self._tab_ia,    "IA")
 
         layout.addWidget(self._tabs)
+
+    def _update_featured(self, datos: dict):
+        """Update NMFeaturedCard when patient data loads."""
+        if not hasattr(self, "_featured_card") or sip.isdeleted(self._featured_card):
+            return
+        animo = datos.get("animo", [])
+        puntajes = [r.get("puntaje") for r in animo if r.get("puntaje") is not None]
+        if puntajes:
+            prom = sum(puntajes) / len(puntajes)
+            if prom < 4:
+                emoji = "😞"
+            elif prom < 7:
+                emoji = "😐"
+            else:
+                emoji = "😊"
+            self._featured_card.set_score(round(prom, 1), emoji)
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)

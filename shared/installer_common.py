@@ -344,6 +344,19 @@ class InstallerShell(QMainWindow):
         sep.setStyleSheet(f"background: {BORDER};")
         root.addWidget(sep)
 
+        # ── NMInstallStepper (V3 premium) ─────────────────────────────────────
+        self._nm_stepper = None
+        if self.STEPS:
+            try:
+                from shared.components_qt import NMInstallStepper
+                accent_key = getattr(self, "_STEPPER_ACCENT", "teal")
+                self._nm_stepper = NMInstallStepper(
+                    self.STEPS, current=0, accent_key=accent_key
+                )
+                root.addWidget(self._nm_stepper)
+            except Exception:
+                pass
+
         # Content stack
         self._stack = QStackedWidget()
         root.addWidget(self._stack, stretch=1)
@@ -450,6 +463,13 @@ class InstallerShell(QMainWindow):
 
         self.btn_ant.setVisible(n > 0)
         self.btn_sig.setEnabled(True)
+
+        # Advance NMInstallStepper if available
+        if self._nm_stepper is not None:
+            try:
+                self._nm_stepper.set_step(n)
+            except Exception:
+                pass
 
 
 def aplicar_captionbar_installer(window):

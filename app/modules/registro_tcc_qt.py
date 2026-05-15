@@ -16,7 +16,7 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6 import sip
 from PyQt6.QtGui import QColor, QPainter, QPen, QBrush, QPainterPath
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSlider,
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QTextEdit, QLineEdit, QFrame, QScrollArea, QSizePolicy,
     QStackedWidget, QPushButton,
 )
@@ -24,14 +24,14 @@ from PyQt6.QtWidgets import (
 try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMToast, ThemeManager,
-        h_spacer, NMEmptyState,
+        h_spacer, NMEmptyState, NMTCCStepper, NMHeatBar,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
         sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL, RADIUS_BADGE,
-        stylesheet_textedit, stylesheet_slider, stylesheet_lineedit,
+        stylesheet_textedit, stylesheet_lineedit,
     )
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy, hora_actual
@@ -41,14 +41,14 @@ except ImportError:
         sys.path.insert(0, _dir)
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMToast, ThemeManager,
-        h_spacer, NMEmptyState,
+        h_spacer, NMEmptyState, NMTCCStepper, NMHeatBar,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
         sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL, RADIUS_BADGE,
-        stylesheet_textedit, stylesheet_slider, stylesheet_lineedit,
+        stylesheet_textedit, stylesheet_lineedit,
     )
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy, hora_actual
@@ -160,16 +160,8 @@ class ModuloRegistroTCC(NMModule):
                 self._content,
             ))
 
-        pills_row = QHBoxLayout()
-        pills_row.setSpacing(sp("sm") - sp("xs") // 2)
-        pills_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self._pills: list[_StepPill] = []
-        for i, name in enumerate(_STEP_NAMES):
-            pill = _StepPill(i, name, self._content, self._modo)
-            pills_row.addWidget(pill)
-            self._pills.append(pill)
-        pills_row.addStretch()
-        root.addLayout(pills_row)
+        self._stepper = NMTCCStepper(_STEP_NAMES, modo=self._modo, parent=self._content)
+        root.addWidget(self._stepper)
 
         # ── Step container (QStackedWidget) ───────────────────────────────────
         self._stack = QStackedWidget()
@@ -301,21 +293,11 @@ class ModuloRegistroTCC(NMModule):
         layout.addWidget(lbl_int)
         self._lbl_intensidad_header = lbl_int
 
-        self._slider_intensidad = QSlider(Qt.Orientation.Horizontal)
-        self._slider_intensidad.setRange(0, 10)
-        self._slider_intensidad.setValue(self._data["intensidad"])
-        self._slider_intensidad.setFixedHeight(28)
-        self._slider_intensidad.setStyleSheet(stylesheet_slider(self._modo))
-        self._slider_intensidad.valueChanged.connect(self._on_intensidad)
-        layout.addWidget(self._slider_intensidad)
-
-        self._lbl_intensidad = QLabel(f"{self._data['intensidad']}/10")
-        self._lbl_intensidad.setFont(qfont("size_h3", bold=True))
-        self._lbl_intensidad.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._lbl_intensidad.setStyleSheet(
-            f"color: {c['accent']}; background: transparent;"
+        self._heat_bar = NMHeatBar(
+            value=int(self._data["intensidad"] * 10), modo=self._modo, parent=page
         )
-        layout.addWidget(self._lbl_intensidad)
+        self._heat_bar.value_changed.connect(self._on_intensidad_heat)
+        layout.addWidget(self._heat_bar)
         layout.addStretch()
 
         self._stack.addWidget(page)
@@ -424,10 +406,13 @@ class ModuloRegistroTCC(NMModule):
 
     # ── Intensity slider ──────────────────────────────────────────────────────
 
+    def _on_intensidad_heat(self, value: int):
+        """Maps NMHeatBar value 0-100 → 0-10 for TCC record."""
+        self._on_intensidad(round(value / 10))
+
     def _on_intensidad(self, value: int):
         self._data["intensidad"] = value
         try:
-            self._lbl_intensidad.setText(f"{value}/10")
             self._lbl_intensidad_header.setText(f"Intensidad: {value}/10")
         except Exception:
             _log.exception("Operation failed")
@@ -435,13 +420,8 @@ class ModuloRegistroTCC(NMModule):
     # ── Step progress indicator ───────────────────────────────────────────────
 
     def _update_progress(self):
-        for i, pill in enumerate(self._pills):
-            if i == self._step:
-                pill.set_state("active")
-            elif i < self._step:
-                pill.set_state("done")
-            else:
-                pill.set_state("pending")
+        if hasattr(self, "_stepper"):
+            self._stepper.set_step(self._step)
 
     def _show_step(self):
         self._update_progress()
@@ -589,7 +569,7 @@ class ModuloRegistroTCC(NMModule):
             self._entry_emocion.clear()
             self._txt_pensamiento.clear()
             self._txt_respuesta.clear()
-            self._slider_intensidad.setValue(5)
+            self._heat_bar.set_value(50)  # 50/100 maps to 5/10
         except Exception:
             _log.exception("Operation failed")
 

@@ -27,7 +27,7 @@ from PyQt6.QtWidgets import (
 try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMProgressBar, NMToast,
-        ThemeManager, h_spacer, NMEmptyState,
+        ThemeManager, h_spacer, NMEmptyState, NMRoutineSection, NMDayNote,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor, nm_icon,
@@ -44,7 +44,7 @@ except ImportError:
         sys.path.insert(0, _dir)
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMProgressBar, NMToast,
-        ThemeManager, h_spacer, NMEmptyState,
+        ThemeManager, h_spacer, NMEmptyState, NMRoutineSection, NMDayNote,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor, nm_icon,
@@ -64,6 +64,13 @@ SECCIONES = [
     ("tarde",  "Tarde",  "fa5s.cloud-sun"),
     ("noche",  "Noche",  "fa5s.moon"),
 ]
+
+# Maps SECCIONES key → NMRoutineSection section_type
+_SECTION_TYPE = {
+    "manana": "morning",
+    "tarde":  "afternoon",
+    "noche":  "night",
+}
 
 
 # ── ModuloRutina ──────────────────────────────────────────────────────────────
@@ -151,80 +158,49 @@ class ModuloRutina(NMModule):
 
     def _build_section(self, key: str, label: str, icon: str):
         c = colors(self._modo)
-        self._section_collapsed[key] = False
+        section_type = _SECTION_TYPE.get(key, "morning")
 
-        # Card frame
-        frame = QFrame()
-        frame.setObjectName("SectionCard")
-        self._section_frames[key] = frame
-        frame.setStyleSheet(f"""
-            QFrame#SectionCard {{
-                background-color: {c['bg_surface']};
-                border-radius: {RADIUS_CARD}px;
-                border: 1px solid {c.get('border_card', c['border'])};
-            }}
-        """)
-        frame_layout = QVBoxLayout(frame)
-        frame_layout.setContentsMargins(sp("sm") + sp("xs"), sp("sm"), sp("sm") + sp("xs"), sp("sm") + sp("xs"))
-        frame_layout.setSpacing(sp("xs"))
+        # Premium collapsible section with tinted gradient header
+        sec = NMRoutineSection(section_type, label, modo=self._modo,
+                               parent=self._scroll_content)
+        self._section_frames[key] = sec  # stored for visibility toggle in _load_tasks
 
-        # Header row
-        header = QWidget()
-        header.setStyleSheet("background: transparent;")
-        header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(0, 0, 0, 0)
-        header_layout.setSpacing(sp("sm"))
+        cl = sec.content_layout()
 
-        icon_lbl = QLabel()
-        icon_lbl.setFixedSize(22, 22)
-        icon_lbl.setPixmap(nm_icon(icon, C("accent", self._modo), size=20).pixmap(20, 20))
-        icon_lbl.setStyleSheet("background: transparent;")
-        header_layout.addWidget(icon_lbl)
+        # Count + add-task row inside content area
+        controls_row = QHBoxLayout()
+        controls_row.setContentsMargins(0, 0, 0, 0)
+        controls_row.setSpacing(sp("sm"))
 
-        # Clickable title button
-        title_btn = NMButtonOutline(label, modo=self._modo, toggleable=True)
-        title_btn.setFont(qfont("size_h3", bold=True))
-        title_btn.clicked.connect(lambda checked=False, k=key: self._toggle_section(k))
-        header_layout.addWidget(title_btn)
-
-        # Count label
         count_lbl = QLabel("")
         count_lbl.setFont(qfont("size_small"))
         count_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
-        header_layout.addWidget(count_lbl)
         self._section_count_lbl[key] = count_lbl
+        controls_row.addWidget(count_lbl)
 
-        header_layout.addStretch()
+        controls_row.addStretch()
 
-        # Add button
         add_btn = NMButton("+", modo=self._modo, width=30, height=30)
         add_btn.clicked.connect(lambda checked=False, k=key: self._show_add_form(k))
-        header_layout.addWidget(add_btn)
+        controls_row.addWidget(add_btn)
+        cl.addLayout(controls_row)
 
-        frame_layout.addWidget(header)
-
-        # Progress bar (4px)
+        # Thin progress bar
         prog = NMProgressBar(height=4, modo=self._modo)
-        frame_layout.addWidget(prog)
+        cl.addWidget(prog)
         self._section_progs[key] = prog
 
-        # Body (task list)
+        # Task body — plain widget that _load_tasks populates
         body = QWidget()
         body.setStyleSheet("background: transparent;")
         body_layout = QVBoxLayout(body)
-        body_layout.setContentsMargins(0, sp("xs"), 0, 0)
+        body_layout.setContentsMargins(0, sp("xs") // 2, 0, 0)
         body_layout.setSpacing(sp("xs") // 2)
         body_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        frame_layout.addWidget(body)
+        cl.addWidget(body)
         self._section_bodies[key] = body
 
-        self._scroll_layout.addWidget(frame)
-
-    def _toggle_section(self, key: str):
-        body = self._section_bodies[key]
-        collapsed = self._section_collapsed[key]
-        body.setVisible(collapsed)
-        self._section_collapsed[key] = not collapsed
+        self._scroll_layout.addWidget(sec)
 
     # ── Load tasks from DB (lógica preservada exacta) ────────────────────────
 
@@ -496,38 +472,8 @@ class ModuloRutina(NMModule):
     # ── Nota del día ─────────────────────────────────────────────────────────
 
     def _build_nota_dia(self):
-        c = colors(self._modo)
-
-        frame = QFrame()
-        frame.setObjectName("NotaCard")
-        frame.setStyleSheet(f"""
-            QFrame#NotaCard {{
-                background-color: {c['bg_surface']};
-                border-radius: {RADIUS_CARD}px;
-                border: 1px solid {c.get('border_card', c['border'])};
-            }}
-        """)
-        frame_layout = QVBoxLayout(frame)
-        frame_layout.setContentsMargins(
-            sp("md") - sp("xs") // 2,
-            sp("sm") + sp("xs"),
-            sp("md") - sp("xs") // 2,
-            sp("sm") + sp("xs"),
-        )
-        frame_layout.setSpacing(sp("sm") - sp("xs") // 2)
-
-        title_lbl = QLabel("Nota del día")
-        title_lbl.setFont(qfont("size_body", bold=True))
-        title_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
-        frame_layout.addWidget(title_lbl)
-
-        self._nota_txt = QTextEdit()
-        self._nota_txt.setMinimumHeight(60)
-        self._nota_txt.setStyleSheet(stylesheet_textedit(self._modo))
-        self._nota_txt.focusOutEvent = self._nota_focus_out
-        frame_layout.addWidget(self._nota_txt)
-
-        # Load saved note
+        # Check if note already saved today → locked state
+        existing_note: str | None = None
         try:
             conn = obtener_conexion()
             row = conn.execute(
@@ -536,29 +482,27 @@ class ModuloRutina(NMModule):
             ).fetchone()
             conn.close()
             if row and row[0]:
-                self._nota_txt.setPlainText(row[0])
-                self._nota_txt.setReadOnly(True)
+                existing_note = row[0]
         except Exception:
             _log.exception("Operation failed")
 
-        btn_save = NMButtonOutline("Guardar nota", modo=self._modo)
-        btn_save.clicked.connect(self._guardar_nota)
-        self._btn_save_nota = btn_save
-        save_row = QHBoxLayout()
-        save_row.addStretch()
-        save_row.addWidget(btn_save)
-        frame_layout.addLayout(save_row)
+        locked = existing_note is not None
+        lock_reason = "Nota guardada para hoy ✓" if locked else ""
 
-        self._scroll_layout.addWidget(frame)
+        self._day_note = NMDayNote(
+            locked=locked, lock_reason=lock_reason,
+            modo=self._modo, parent=self._scroll_content,
+        )
+        if existing_note:
+            self._day_note.set_note(existing_note)
+        self._day_note.note_changed.connect(self._guardar_nota_text)
+        self._scroll_layout.addWidget(self._day_note)
 
-    def _nota_focus_out(self, event):
-        self._guardar_nota()
-        QTextEdit.focusOutEvent(self._nota_txt, event)
-
-    # ── _guardar_nota (lógica preservada exacta) ─────────────────────────────
-
-    def _guardar_nota(self):
-        nota = self._nota_txt.toPlainText().strip()
+    def _guardar_nota_text(self, text: str):
+        """Called by NMDayNote.note_changed — saves note and locks the card."""
+        nota = text.strip()
+        if not nota:
+            return
         try:
             conn = obtener_conexion()
             conn.execute(
@@ -570,16 +514,12 @@ class ModuloRutina(NMModule):
             conn.close()
         except Exception:
             _log.exception("Operation failed")
-
-        # Feedback + deshabilitar hasta el día siguiente
-        self._nota_txt.setReadOnly(True)
-        self._nota_txt.setStyleSheet(stylesheet_textedit(self._modo))
+            return
+        if hasattr(self, "_day_note"):
+            self._day_note.set_locked(True, "Nota guardada para hoy ✓")
         NMToast.display(self.window(), "Nota guardada ✓", variant="success", duration_ms=2000)
 
     # ── Hooks ─────────────────────────────────────────────────────────────────
-
-        if hasattr(self, "_btn_save_nota") and hasattr(self._btn_save_nota, "play_success"):
-            self._btn_save_nota.play_success()
 
     def on_enter(self):
         self._load_tasks()

@@ -29,12 +29,14 @@ try:
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         linear_gradient, linear_gradient_vertical, rich_gradient, get_gradient, gradient_colors,
-        noise_overlay, fx,
+        noise_overlay, fx, aura_opacity,
         RADIUS_CARD, PAD_CARD, PAD_CONTAINER, GAP_CARDS,
         stylesheet_scrollarea, SessionColor, ThemeAwareWidgetMixin,
         MODULE_ICONS, nm_icon,
     )
-    from shared.components_qt import ThemeManager, responsive_columns
+    from shared.components_qt import (
+        ThemeManager, responsive_columns, NMStreakBadge, NMWelcomeBar,
+    )
 except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if _dir not in sys.path:
@@ -42,12 +44,14 @@ except ImportError:
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         linear_gradient, linear_gradient_vertical, rich_gradient, get_gradient, gradient_colors,
-        noise_overlay, fx,
+        noise_overlay, fx, aura_opacity,
         RADIUS_CARD, PAD_CARD, PAD_CONTAINER, GAP_CARDS,
         stylesheet_scrollarea, SessionColor, ThemeAwareWidgetMixin,
         MODULE_ICONS, nm_icon,
     )
-    from shared.components_qt import ThemeManager, responsive_columns
+    from shared.components_qt import (
+        ThemeManager, responsive_columns, NMStreakBadge, NMWelcomeBar,
+    )
 
 # ── Configuración de módulos ──────────────────────────────────────────────────
 
@@ -401,7 +405,8 @@ class HomeView(QWidget):
 
     def _setup(self):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
-        self._grid_cols = 0
+        self._grid_cols  = 0
+        self._session    = SessionColor.instance()
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -410,18 +415,25 @@ class HomeView(QWidget):
         header = QWidget()
         header.setStyleSheet("background: transparent;")
         header_layout = QVBoxLayout(header)
-        header_layout.setContentsMargins(PAD_CONTAINER, 18, PAD_CONTAINER + 10, 12)
-        header_layout.setSpacing(2)
+        header_layout.setContentsMargins(PAD_CONTAINER, 18, PAD_CONTAINER + 10, 10)
+        header_layout.setSpacing(4)
 
+        # Fila: título + streak badge
+        title_row = QHBoxLayout()
+        title_row.setSpacing(8)
         self._title_lbl = QLabel("Herramientas")
         self._title_lbl.setFont(qfont("size_h2", bold=True))
         self._title_lbl.setStyleSheet(f"color: {C('text_primary', self._modo)}; background: transparent;")
-        header_layout.addWidget(self._title_lbl)
+        title_row.addWidget(self._title_lbl)
+        self._streak_badge = NMStreakBadge(self._load_streak(), self._modo)
+        title_row.addWidget(self._streak_badge)
+        title_row.addStretch()
+        header_layout.addLayout(title_row)
 
-        self._greeting_lbl = QLabel(self._greeting_text())
-        self._greeting_lbl.setFont(qfont("size_body"))
-        self._greeting_lbl.setStyleSheet(f"color: {C('text_secondary', self._modo)}; background: transparent;")
-        header_layout.addWidget(self._greeting_lbl)
+        # Welcome bar (saludo + fecha)
+        self._welcome_bar = NMWelcomeBar(self._modo)
+        header_layout.addWidget(self._welcome_bar)
+
         outer.addWidget(header)
 
         # Scroll area para overflow vertical
@@ -469,6 +481,31 @@ class HomeView(QWidget):
         if new_cols != self._grid_cols:
             self._grid_cols = new_cols
             self._rebuild_grid()
+
+    def _load_streak(self) -> int:
+        """Calcula los días consecutivos con al menos un registro de ánimo."""
+        try:
+            from shared.db import obtener_conexion
+            import datetime as dt
+            con = obtener_conexion()
+            cur = con.execute(
+                "SELECT DISTINCT date(fecha) AS d FROM registros_animo "
+                "ORDER BY d DESC LIMIT 30"
+            )
+            rows = [r["d"] for r in cur.fetchall()]
+            if not rows:
+                return 0
+            today = dt.date.today()
+            streak = 0
+            for i, d_str in enumerate(rows):
+                expected = today - dt.timedelta(days=i)
+                if str(expected) == d_str:
+                    streak += 1
+                else:
+                    break
+            return streak
+        except Exception:
+            return 0
 
     def _greeting_text(self) -> str:
         hour = datetime.now().hour
@@ -546,14 +583,24 @@ class HomeView(QWidget):
         self._modo = norm_modo(modo)
         self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         self._title_lbl.setStyleSheet(f"color: {C('text_primary', self._modo)}; background: transparent;")
-        self._greeting_lbl.setText(self._greeting_text())
-        self._greeting_lbl.setStyleSheet(f"color: {C('text_secondary', self._modo)}; background: transparent;")
+        self._welcome_bar._apply_theme(self._modo)
+        self._streak_badge._apply_theme(self._modo)
         for card in self._cards.values():
             card._apply_theme(self._modo)
         self.update()
 
     def paintEvent(self, event):
+        from PyQt6.QtGui import QRadialGradient
         p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         c = colors(self._modo)
         p.fillRect(self.rect(), QColor(c["bg_primary"]))
+        # SessionColor aura radial (centro-izquierda)
+        w, h  = self.width(), self.height()
+        alpha = int(aura_opacity(self._modo) * 255)
+        aura_c = self._session.qcolor(self._modo, alpha)
+        aura = QRadialGradient(QPointF(w * 0.18, h * 0.50), w * 0.85)
+        aura.setColorAt(0.0, aura_c)
+        aura.setColorAt(1.0, QColor(0, 0, 0, 0))
+        p.fillRect(self.rect(), aura)
         p.end()

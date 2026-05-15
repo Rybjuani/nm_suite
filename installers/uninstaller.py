@@ -35,6 +35,19 @@ APPS_NOMBRES = ["NeuroMood Suite"]
 
 _SS = stylesheet_installer()   # design system premium unificado
 
+try:
+    from shared.components_qt import NMDataPreserveCard
+    _HAS_PRESERVE_CARD = True
+except ImportError:
+    try:
+        _root2 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if _root2 not in sys.path:
+            sys.path.insert(0, _root2)
+        from shared.components_qt import NMDataPreserveCard
+        _HAS_PRESERVE_CARD = True
+    except ImportError:
+        _HAS_PRESERVE_CARD = False
+
 # ── Lógica de negocio (preservada exacta) ─────────────────────────────────────
 
 def detectar_install_dir() -> str:
@@ -252,54 +265,57 @@ class DesinstaladorNeuroMood(InstallerShell):
         layout.addSpacing(12)
 
         # ── Card "Conservar registros" ──────────────────────────────────────
-        conservar_card = QFrame()
-        conservar_card.setObjectName("ConservarCard")
-        conservar_card.setStyleSheet(f"""
-            QFrame#ConservarCard {{
-                background: {BG_SURFACE};
-                border: 1px solid {BORDER};
-                border-radius: 12px;
-            }}
-        """)
-        cv = QHBoxLayout(conservar_card)
-        cv.setContentsMargins(16, 14, 16, 14)
-        cv.setSpacing(14)
-
-        icon_lbl = QLabel("\U0001F4BE")
-        icon_lbl.setStyleSheet(f"font-size: 22px; background: transparent;")
-        cv.addWidget(icon_lbl)
-
-        text_col = QVBoxLayout()
-        tit = QLabel("Conservar mis datos")
-        tit.setStyleSheet(
-            f"color: {TEXT_PRIMARY}; font-size: 13px; font-weight: bold; background: transparent;"
-        )
-        text_col.addWidget(tit)
-        sub = QLabel("Registros, historial y configuracion")
-        sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px; background: transparent;")
-        text_col.addWidget(sub)
-        cv.addLayout(text_col, stretch=1)
-
-        self._chk_conservar = QCheckBox()
-        self._chk_conservar.setChecked(True)
-        self._chk_conservar.setStyleSheet(f"""
-            QCheckBox {{ spacing: 0px; }}
-            QCheckBox::indicator {{
-                width: 44px; height: 24px;
-                border-radius: 12px;
-                border: none;
-                background: {BORDER};
-            }}
-            QCheckBox::indicator:checked {{
-                background: qlineargradient(
-                    x1:0, y1:0, x2:1, y2:0,
-                    stop:0 {ACCENT}, stop:0.45 {TEAL}, stop:1 {VIOLET}
-                );
-            }}
-        """)
-        cv.addWidget(self._chk_conservar, alignment=Qt.AlignmentFlag.AlignRight)
-
-        layout.addWidget(conservar_card)
+        if _HAS_PRESERVE_CARD:
+            self._preserve_card = NMDataPreserveCard(
+                "Conservar mis datos",
+                "Registros, historial y configuración de la app",
+                checked=True,
+            )
+            layout.addWidget(self._preserve_card)
+        else:
+            # Fallback: manual card with QCheckBox
+            conservar_card = QFrame()
+            conservar_card.setObjectName("ConservarCard")
+            conservar_card.setStyleSheet(f"""
+                QFrame#ConservarCard {{
+                    background: {BG_SURFACE};
+                    border: 1px solid {BORDER};
+                    border-radius: 12px;
+                }}
+            """)
+            cv = QHBoxLayout(conservar_card)
+            cv.setContentsMargins(16, 14, 16, 14)
+            cv.setSpacing(14)
+            icon_lbl = QLabel("\U0001F4BE")
+            icon_lbl.setStyleSheet("font-size: 22px; background: transparent;")
+            cv.addWidget(icon_lbl)
+            text_col = QVBoxLayout()
+            tit = QLabel("Conservar mis datos")
+            tit.setStyleSheet(
+                f"color: {TEXT_PRIMARY}; font-size: 13px; font-weight: bold; background: transparent;"
+            )
+            text_col.addWidget(tit)
+            sub = QLabel("Registros, historial y configuracion")
+            sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px; background: transparent;")
+            text_col.addWidget(sub)
+            cv.addLayout(text_col, stretch=1)
+            self._chk_conservar = QCheckBox()
+            self._chk_conservar.setChecked(True)
+            self._chk_conservar.setStyleSheet(f"""
+                QCheckBox {{ spacing: 0px; }}
+                QCheckBox::indicator {{
+                    width: 44px; height: 24px; border-radius: 12px;
+                    border: none; background: {BORDER};
+                }}
+                QCheckBox::indicator:checked {{
+                    background: qlineargradient(
+                        x1:0, y1:0, x2:1, y2:0,
+                        stop:0 {ACCENT}, stop:0.45 {TEAL}, stop:1 {VIOLET}
+                    );
+                }}
+            """)
+            cv.addWidget(self._chk_conservar, alignment=Qt.AlignmentFlag.AlignRight)
+            layout.addWidget(conservar_card)
         layout.addStretch()
 
         btn_row = QHBoxLayout()
@@ -321,7 +337,10 @@ class DesinstaladorNeuroMood(InstallerShell):
         self.btn_sig.clicked.connect(self._iniciar)
 
     def _iniciar(self):
-        conservar = self._chk_conservar.isChecked()
+        if hasattr(self, "_preserve_card"):
+            conservar = self._preserve_card.is_checked()
+        else:
+            conservar = self._chk_conservar.isChecked()
         self.btn_sig.setEnabled(False)
         self.btn_sig.setText("Desinstalando...")
 

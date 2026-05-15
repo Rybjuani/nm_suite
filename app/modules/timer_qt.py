@@ -41,7 +41,7 @@ try:
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         get_gradient, gradient_colors, stylesheet_lineedit,
         PAD_CONTAINER, GAP_ELEMENTS, RADIUS_BUTTON, RADIUS_PILL,
-        ThemeAwareWidgetMixin,
+        ThemeAwareWidgetMixin, sp,
     )
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy, hora_actual
@@ -54,7 +54,7 @@ except ImportError:
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         get_gradient, gradient_colors, stylesheet_lineedit,
         PAD_CONTAINER, GAP_ELEMENTS, RADIUS_BUTTON, RADIUS_PILL,
-        ThemeAwareWidgetMixin,
+        ThemeAwareWidgetMixin, sp,
     )
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy, hora_actual
@@ -390,6 +390,35 @@ class ModuloTimer(NMModule):
 
         layout.addLayout(ctrl_row)
 
+        # ── Activity name label (shown during session) ────────────────────────
+        self._lbl_active_name = QLabel("")
+        self._lbl_active_name.setFont(qfont("size_caption"))
+        self._lbl_active_name.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._lbl_active_name.setStyleSheet(
+            f"color: {c['text_secondary']}; background: transparent;"
+        )
+        self._lbl_active_name.hide()
+        layout.addWidget(self._lbl_active_name)
+
+        # ── Quick history footer (last 3 sessions today) ──────────────────────
+        hist_row = QHBoxLayout()
+        hist_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hist_row.setSpacing(sp("xs"))
+
+        self._hist_label = QLabel("Hoy:")
+        self._hist_label.setFont(qfont("size_caption"))
+        self._hist_label.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+        self._hist_label.hide()
+        hist_row.addWidget(self._hist_label)
+
+        self._hist_chips_row = QHBoxLayout()
+        self._hist_chips_row.setSpacing(sp("xs"))
+        hist_row.addLayout(self._hist_chips_row)
+        hist_row.addStretch()
+        layout.addLayout(hist_row)
+
+        self._load_quick_history()
+
     # ── Presets ───────────────────────────────────────────────────────────────
 
     def _select_preset(self, secs: int):
@@ -455,6 +484,14 @@ class ModuloTimer(NMModule):
         self._btn_start.setText("Reanudar")
         self._canvas.reset()
         self._canvas.start_pulse()
+        # Show activity name below canvas during session
+        nombre = self._ent_actividad.text().strip()
+        if hasattr(self, "_lbl_active_name"):
+            if nombre:
+                self._lbl_active_name.setText(nombre)
+                self._lbl_active_name.show()
+            else:
+                self._lbl_active_name.hide()
         self._tick()
 
     def _pause(self):
@@ -484,8 +521,11 @@ class ModuloTimer(NMModule):
         self._btn_pause.setText("Pausa")
         if hasattr(self, "_empty_state"):
             self._empty_state.show()
+        if hasattr(self, "_lbl_active_name"):
+            self._lbl_active_name.hide()
         self._canvas.reset()
         self._update_canvas()
+        self._load_quick_history()
 
     # ── Tick (16ms = 60fps, pero lógica de segundos preservada) ──────────────
 
@@ -542,6 +582,9 @@ class ModuloTimer(NMModule):
         self._canvas.reset()
         self._remaining_sec = self._total_sec
         self._update_canvas()
+        if hasattr(self, "_lbl_active_name"):
+            self._lbl_active_name.hide()
+        self._load_quick_history()
 
     # ── DB (preservado exacto) ────────────────────────────────────────────────
 
@@ -560,6 +603,35 @@ class ModuloTimer(NMModule):
             conn.close()
             if hasattr(self._btn_start, "play_success"):
                 self._btn_start.play_success()
+        except Exception:
+            _log.exception("Operation failed")
+
+    def _load_quick_history(self):
+        """Populate the quick history footer with last 3 sessions today."""
+        while self._hist_chips_row.count():
+            item = self._hist_chips_row.takeAt(0)
+            w = item.widget()
+            if w:
+                self._hist_chips_row.removeWidget(w)
+                w.deleteLater()
+        try:
+            conn = obtener_conexion()
+            rows = conn.execute(
+                "SELECT nombre, duracion_real FROM actividades_temporizador "
+                "WHERE fecha = ? ORDER BY rowid DESC LIMIT 3",
+                (fecha_hoy(),)
+            ).fetchall()
+            conn.close()
+            for row in rows:
+                dr = row["duracion_real"] if isinstance(row, dict) or hasattr(row, "keys") else row[1]
+                mins = dr // 60
+                secs = dr % 60
+                chip = NMButtonOutline(f"{mins:02d}:{secs:02d}", modo=self._modo)
+                chip.setFixedHeight(24)
+                chip.setEnabled(False)
+                self._hist_chips_row.addWidget(chip)
+            visible = self._hist_chips_row.count() > 0
+            self._hist_label.setVisible(visible)
         except Exception:
             _log.exception("Operation failed")
 

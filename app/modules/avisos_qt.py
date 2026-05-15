@@ -24,6 +24,7 @@ try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMInput, NMToggle,
         NMToast, NMProgressBar, NMSkeleton, ThemeManager, h_spacer, NMEmptyState,
+        NMProgressLine, NMAvisoCard,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
@@ -41,6 +42,7 @@ except ImportError:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMInput, NMToggle,
         NMToast, NMProgressBar, NMSkeleton, ThemeManager, h_spacer, NMEmptyState,
+        NMProgressLine, NMAvisoCard,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
@@ -347,8 +349,23 @@ class ModuloAvisos(NMModule):
 
         # ── Root layout ───────────────────────────────────────────────────────
         root = QVBoxLayout(self._content)
-        root.setContentsMargins(PAD_CONTAINER, sp("sm") + sp("xs"), PAD_CONTAINER, sp("sm") + sp("xs"))
-        root.setSpacing(sp("sm"))
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+
+        # ── NMProgressLine — ultra-thin 2px top border ────────────────────────
+        self._progress_line = NMProgressLine(total=1, current=0,
+                                             modo=self._modo, parent=self._content)
+        root.addWidget(self._progress_line)
+
+        # ── Inner content (padded) ────────────────────────────────────────────
+        inner = QWidget()
+        inner.setStyleSheet("background: transparent;")
+        inner_layout = QVBoxLayout(inner)
+        inner_layout.setContentsMargins(PAD_CONTAINER, sp("sm") + sp("xs"),
+                                        PAD_CONTAINER, sp("sm") + sp("xs"))
+        inner_layout.setSpacing(sp("sm"))
+        root.addWidget(inner, stretch=1)
+        root = inner_layout  # redirect further additions to padded inner
 
         # ── Top bar ───────────────────────────────────────────────────────────
         top_bar = QWidget()
@@ -361,12 +378,15 @@ class ModuloAvisos(NMModule):
         lbl_tus.setFont(qfont("size_body"))
         lbl_tus.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
         top_layout.addWidget(lbl_tus)
+
+        self._reminder_count_lbl = QLabel("")
+        self._reminder_count_lbl.setFont(qfont("size_caption"))
+        self._reminder_count_lbl.setStyleSheet(
+            f"color: {c['text_tertiary']}; background: transparent;"
+        )
+        top_layout.addWidget(self._reminder_count_lbl)
         top_layout.addStretch()
 
-        btn_nuevo = NMButton("+ Nuevo aviso", parent=top_bar,
-                             modo=self._modo, width=120, height=34)
-        btn_nuevo.clicked.connect(self._show_form)
-        top_layout.addWidget(btn_nuevo)
         root.addWidget(top_bar)
 
         # ── Banner informativo (accent border, QLabel) ────────────────────────
@@ -392,18 +412,6 @@ class ModuloAvisos(NMModule):
         banner_layout.addWidget(banner_lbl)
         root.addWidget(banner)
 
-        # ── Progress bar ────────────────────────────────────────────────────────
-        prog_row = QHBoxLayout()
-        self._reminder_progress = NMProgressBar(height=6, modo=self._modo)
-        self._reminder_count_lbl = QLabel("")
-        self._reminder_count_lbl.setFont(qfont("size_caption"))
-        self._reminder_count_lbl.setStyleSheet(
-            f"color: {c['text_tertiary']}; background: transparent;"
-        )
-        prog_row.addWidget(self._reminder_progress, stretch=1)
-        prog_row.addWidget(self._reminder_count_lbl)
-        root.addLayout(prog_row)
-
         # ── Scroll area for reminder list ─────────────────────────────────────
         self._scroll = QScrollArea()
         self._scroll.setWidgetResizable(True)
@@ -420,6 +428,19 @@ class ModuloAvisos(NMModule):
         self._scroll.setWidget(self._list_content)
         root.addWidget(self._scroll, stretch=1)
 
+        # ── FAB "+" floating action button ───────────────────────────────────
+        fab_row = QHBoxLayout()
+        fab_row.setContentsMargins(0, sp("sm"), 0, 0)
+        fab_row.addStretch()
+        self._fab_btn = NMButton("+", parent=self._content,
+                                  modo=self._modo, width=50, height=50)
+        self._fab_btn.clicked.connect(self._show_form)
+        self._fab_btn.setStyleSheet(
+            self._fab_btn.styleSheet() + f" border-radius: 25px;"
+        )
+        fab_row.addWidget(self._fab_btn)
+        root.addLayout(fab_row)
+
         # ── Opciones del sistema ──────────────────────────────────────────────
         self._build_opciones(root)
 
@@ -430,8 +451,7 @@ class ModuloAvisos(NMModule):
         super()._on_theme(modo)
         if hasattr(self, "_scroll"):
             self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-        if hasattr(self, "_reminder_progress"):
-            self._reminder_progress._apply_theme(self._modo)
+        # NMProgressLine auto-handles theme via ThemeManager
         self._load_reminders()
         self.update()
 
@@ -457,14 +477,14 @@ class ModuloAvisos(NMModule):
             rows = []
 
         if not rows:
-            if hasattr(self, "_reminder_progress"):
-                self._reminder_progress.animate_to(0)
+            if hasattr(self, "_progress_line"):
+                self._progress_line.set_progress(0, 1)
             if hasattr(self, "_reminder_count_lbl"):
                 self._reminder_count_lbl.setText("")
             self._list_layout.addWidget(NMEmptyState(
                 "fa5s.bell",
                 "Sin avisos configurados",
-                "Agregá un recordatorio cuando quieras.",
+                "Usá el botón + para agregar recordatorios.",
                 self._list_content,
             ))
             return
@@ -472,13 +492,15 @@ class ModuloAvisos(NMModule):
         for row in rows:
             self._build_reminder_card(row)
 
-        # Update progress bar
+        # Update progress line
         total = len(rows)
         active = sum(1 for r in rows if (r["activo"] if hasattr(r, "keys") else r[4]))
-        self._reminder_progress.animate_to(active / total if total > 0 else 0)
-        self._reminder_count_lbl.setText(
-            f"{active}/{total} activos" if total > 0 else ""
-        )
+        if hasattr(self, "_progress_line"):
+            self._progress_line.set_progress(active, total)
+        if hasattr(self, "_reminder_count_lbl"):
+            self._reminder_count_lbl.setText(
+                f"  {active}/{total} activos" if total > 0 else ""
+            )
 
     def _build_reminder_card(self, row):
         c = colors(self._modo)
@@ -487,64 +509,51 @@ class ModuloAvisos(NMModule):
         msg    = row["mensaje"] if hasattr(row, "keys") else row[2]
         dias   = row["dias"] if hasattr(row, "keys") else row[3]
         activo = bool(row["activo"] if hasattr(row, "keys") else row[4])
+        status = NMAvisoCard.STATUS_ACTIVE if activo else NMAvisoCard.STATUS_EXPIRED
 
-        card = NMCard(parent=self._list_content, clickable=False, modo=self._modo)
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(
-            sp("md") - sp("xs") // 2,
-            sp("sm") + sp("xs"),
-            sp("md") - sp("xs") // 2,
-            sp("sm") + sp("xs"),
-        )
-        card_layout.setSpacing(sp("sm") - sp("xs") // 2)
+        # Wrapper frame for the full card (including actions + days)
+        wrapper = QFrame()
+        wrapper.setStyleSheet("QFrame { background: transparent; }")
+        wrapper_lay = QVBoxLayout(wrapper)
+        wrapper_lay.setContentsMargins(0, 0, 0, 0)
+        wrapper_lay.setSpacing(2)
 
-        # Top row: hora bold + delete + toggle
-        top_row = QHBoxLayout()
-        top_row.setSpacing(sp("sm") - sp("xs") // 2)
+        # Action row: delete + toggle aligned right (above the card)
+        action_row = QHBoxLayout()
+        action_row.setSpacing(sp("xs"))
+        action_row.addStretch()
 
-        hora_lbl = QLabel(hora)
-        hora_lbl.setFont(qfont("size_h3", bold=True))
-        text_col = c["text_primary"] if activo else c["text_tertiary"]
-        hora_lbl.setStyleSheet(f"color: {text_col}; background: transparent;")
-        top_row.addWidget(hora_lbl)
-        top_row.addStretch()
+        del_btn = _DeleteButton(self._modo, wrapper)
+        del_btn.clicked.connect(lambda checked=False, rid=rec_id, wr=wrapper:
+                                self._delete_reminder(rid, wr))
+        action_row.addWidget(del_btn)
 
-        # Delete button
-        del_btn = _DeleteButton(self._modo, card)
-        del_btn.clicked.connect(lambda checked=False, rid=rec_id, cd=card:
-                                self._delete_reminder(rid, cd))
-        top_row.addWidget(del_btn)
-
-        # Active toggle
-        toggle = NMToggle(card, self._modo)
+        toggle = NMToggle(wrapper, self._modo)
         toggle.setChecked(activo)
         toggle.toggled.connect(lambda checked, rid=rec_id: self._toggle_active(rid, checked))
-        top_row.addWidget(toggle)
+        action_row.addWidget(toggle)
+        wrapper_lay.addLayout(action_row)
 
-        card_layout.addLayout(top_row)
-
-        # Message
-        msg_lbl = QLabel(msg)
-        msg_lbl.setFont(qfont("size_body"))
-        msg_lbl.setWordWrap(True)
-        msg_lbl.setStyleSheet(f"color: {text_col}; background: transparent;")
-        card_layout.addWidget(msg_lbl)
+        # NMAvisoCard — premium display with monospaced time + status pill
+        aviso_card = NMAvisoCard(hora, msg, status=status,
+                                  modo=self._modo, parent=wrapper)
+        wrapper_lay.addWidget(aviso_card)
 
         # Days pills row
         dias_str = dias if dias else "1,2,3,4,5,6,7"
         dias_activos = set(dias_str.split(","))
         days_row = QHBoxLayout()
+        days_row.setContentsMargins(sp("md"), sp("xs") // 2, sp("md"), sp("xs") // 2)
         days_row.setSpacing(sp("xs"))
         days_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-
         for i, lbl in enumerate(DIAS_LABELS, start=1):
             is_active = str(i) in dias_activos
-            pill = _DayPill(lbl, is_active, self._modo, card)
+            pill = _DayPill(lbl, is_active, self._modo, wrapper)
             days_row.addWidget(pill)
         days_row.addStretch()
+        wrapper_lay.addLayout(days_row)
 
-        card_layout.addLayout(days_row)
-        self._list_layout.addWidget(card)
+        self._list_layout.addWidget(wrapper)
 
     # ── _toggle_active (lógica preservada exacta) ─────────────────────────────
 

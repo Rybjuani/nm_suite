@@ -44,6 +44,7 @@ from PyQt6.QtWidgets import (
 try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, ThemeManager, NMEmptyState,
+        NMPhaseChip, NMCycleRing, NMCalmBadge,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
@@ -56,7 +57,10 @@ except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
-    from shared.components_qt import NMModule, NMButton, NMButtonOutline, ThemeManager, NMEmptyState
+    from shared.components_qt import (
+        NMModule, NMButton, NMButtonOutline, ThemeManager, NMEmptyState,
+        NMPhaseChip, NMCycleRing, NMCalmBadge,
+    )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color,
         radial_glow, radial_glow_double, conical_arc_gradient, get_gradient, gradient_colors,
@@ -495,29 +499,37 @@ class ModuloRespiracion(NMModule):
         layout.addLayout(pills_row)
         self._highlight_preset(5)
 
-        # ── Círculo animado ────────────────────────────────────────────────────
-        self._circle = _BreathCircle(self._content, self._modo)
-        layout.addWidget(self._circle, alignment=Qt.AlignmentFlag.AlignHCenter)
+        # ── Layout de 3 columnas: izquierda | círculo | derecha ───────────────
+        three_col = QHBoxLayout()
+        three_col.setSpacing(16)
+        three_col.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
-        # ── Cronómetro ─────────────────────────────────────────────────────────
-        self._session_lbl = QLabel("")
-        self._session_lbl.setFont(qfont("size_small"))
+        # Columna izquierda: cycle ring + sesión
+        left_col = QVBoxLayout()
+        left_col.setSpacing(6)
+        left_col.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._cycle_ring = NMCycleRing(size=60, modo=self._modo)
+        left_col.addWidget(self._cycle_ring, alignment=Qt.AlignmentFlag.AlignCenter)
+        self._session_lbl = QLabel("Sesión")
+        self._session_lbl.setFont(qfont("size_caption"))
         self._session_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._session_lbl.setStyleSheet(
-            f"color: {c['text_tertiary']}; background: transparent;"
-        )
-        layout.addWidget(self._session_lbl)
+        self._session_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+        left_col.addWidget(self._session_lbl)
+        three_col.addLayout(left_col)
 
-        # ── Step cards ─────────────────────────────────────────────────────────
-        steps_row = QHBoxLayout()
-        steps_row.setSpacing(8)
-        step_data = [("Inhala ↑ durante", "4 segundos"), ("Mantén durante", "7 segundos"), ("Exhala ↓ durante", "8 segundos")]
-        self._step_cards: list[_StepCard] = []
-        for label, secs in step_data:
-            sc = _StepCard(label, secs, self._content, self._modo)
-            steps_row.addWidget(sc)
-            self._step_cards.append(sc)
-        layout.addLayout(steps_row)
+        # Columna central: círculo animado
+        self._circle = _BreathCircle(self._content, self._modo)
+        three_col.addWidget(self._circle, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # Columna derecha: calm badge
+        self._calm_badge = NMCalmBadge(bpm=60, modo=self._modo)
+        three_col.addWidget(self._calm_badge, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        layout.addLayout(three_col)
+
+        # ── Phase chips (Inhala / Mantén / Exhala) ─────────────────────────────
+        self._phase_chip = NMPhaseChip(self._modo)
+        layout.addWidget(self._phase_chip, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         # ── Controles ──────────────────────────────────────────────────────────
         ctrl_row = QHBoxLayout()
@@ -544,6 +556,12 @@ class ModuloRespiracion(NMModule):
         super()._on_theme(modo)
         if hasattr(self, "_circle"):
             self._circle._apply_theme(self._modo)
+        if hasattr(self, "_phase_chip"):
+            self._phase_chip._apply_theme(self._modo)
+        if hasattr(self, "_cycle_ring"):
+            self._cycle_ring._apply_theme(self._modo)
+        if hasattr(self, "_calm_badge"):
+            self._calm_badge._apply_theme(self._modo)
         self.update()
 
     # ── Lógica de preset (preservada) ─────────────────────────────────────────
@@ -604,9 +622,11 @@ class ModuloRespiracion(NMModule):
         if hasattr(self, "_empty_state"):
             self._empty_state.show()
         self._circle.reset_idle()
-        self._session_lbl.setText("")
-        for sc in self._step_cards:
-            sc.set_active(False)
+        self._session_lbl.setText("Sesión")
+        if hasattr(self, "_phase_chip"):
+            self._phase_chip.set_phase(None)
+        if hasattr(self, "_cycle_ring"):
+            self._cycle_ring.set_cycles(0)
 
     # ── Tick loop (lógica preservada, 100ms) ──────────────────────────────────
 
@@ -642,19 +662,19 @@ class ModuloRespiracion(NMModule):
             phase_idx=self._phase_idx,
         )
 
-        # Resaltar step card activa
-        t = self._phase_idx / max(len(FASES) - 1, 1)
-        phase_color = _rich_color_at(self._modo, t)
-        for i, sc in enumerate(self._step_cards):
-            sc.set_active(i == self._phase_idx, phase_color)
+        # Phase chip — iluminar la fase activa
+        _PHASE_KEYS = ["inhala", "manten", "exhala"]
+        if hasattr(self, "_phase_chip"):
+            self._phase_chip.set_phase(_PHASE_KEYS[self._phase_idx])
 
-        # Cronómetro
+        # Cycle ring — actualizar conteo de ciclos
+        if hasattr(self, "_cycle_ring"):
+            self._cycle_ring.set_cycles(self._ciclos)
+
+        # Cronómetro en label de sesión
         self._session_ms += interval
         s_total = self._session_ms // 1000
-        self._session_lbl.setText(
-            f"Sesión  {s_total // 60:02d}:{s_total % 60:02d}"
-            f"   ·   Ciclos: {self._ciclos}"
-        )
+        self._session_lbl.setText(f"{s_total // 60:02d}:{s_total % 60:02d}")
 
         # Avanzar tiempo
         self._phase_ms += interval

@@ -23,7 +23,7 @@ from PyQt6.QtWidgets import (
 try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMToast, NMSegmentedChoice,
-        ThemeManager, h_spacer, NMEmptyState,
+        ThemeManager, h_spacer, NMEmptyState, NMMoodContextHeader, NMCategoryFilter,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
@@ -39,8 +39,8 @@ except ImportError:
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
     from shared.components_qt import (
-        NMModule, NMButton, NMButtonOutline, NMCard, NMToast,
-        ThemeManager, h_spacer, NMEmptyState,
+        NMModule, NMButton, NMButtonOutline, NMCard, NMToast, NMSegmentedChoice,
+        ThemeManager, h_spacer, NMEmptyState, NMMoodContextHeader, NMCategoryFilter,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qcolor,
@@ -118,6 +118,10 @@ class ModuloActividades(NMModule):
                 self._scroll_layout.removeWidget(w)
                 w.deleteLater()
 
+        # Reset stored state
+        self._all_activities: list[dict] = []
+        self._cards_widget = None
+
         # Get last mood
         animo = self._get_last_mood()
 
@@ -125,29 +129,16 @@ class ModuloActividades(NMModule):
             self._show_no_mood()
             return
 
-        # Mood banner
-        c = colors(self._modo)
-        mood_frame = QFrame()
-        mood_frame.setObjectName("MoodBanner")
-        mood_frame.setStyleSheet(f"""
-            QFrame#MoodBanner {{
-                background-color: {c['bg_surface']};
-                border-radius: {RADIUS_CARD}px;
-                border: 1px solid {c.get('border_card', c['border'])};
-            }}
-        """)
-        mood_layout = QHBoxLayout(mood_frame)
-        mood_layout.setContentsMargins(sp("md"), sp("sm") + sp("xs") // 2, sp("md"), sp("sm") + sp("xs") // 2)
-        mood_lbl = QLabel(f"Tu último ánimo registrado: {animo}/10")
-        mood_lbl.setFont(qfont("size_body"))
-        mood_lbl.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
-        mood_layout.addWidget(mood_lbl)
-        self._scroll_layout.addWidget(mood_frame)
+        # Mood context header (premium banner)
+        self._mood_header = NMMoodContextHeader(
+            score=animo, modo=self._modo, parent=self._scroll_content
+        )
+        self._scroll_layout.addWidget(self._mood_header)
 
-        # Suggestions
-        actividades = self._get_activities(animo)
+        # Load all activities for this mood
+        self._all_activities = self._get_activities(animo)
 
-        if not actividades:
+        if not self._all_activities:
             self._scroll_layout.addWidget(NMEmptyState(
                 "fa5s.running",
                 "Sin sugerencias",
@@ -156,12 +147,52 @@ class ModuloActividades(NMModule):
             ))
             return
 
-        title_lbl = QLabel("Sugerencias para vos")
-        title_lbl.setFont(qfont("size_h3", bold=True))
-        title_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
-        self._scroll_layout.addWidget(title_lbl)
+        # Category filter chips — derived from loaded activities
+        cats = sorted({act.get("categoria", "Autocuidado") for act in self._all_activities})
+        self._cat_filter = NMCategoryFilter(
+            cats, modo=self._modo, parent=self._scroll_content
+        )
+        self._cat_filter.filter_changed.connect(self._on_category_filter)
+        self._scroll_layout.addWidget(self._cat_filter)
 
-        for act in actividades[:3]:
+        # Cards container widget (rebuilt when filter changes)
+        self._cards_widget = QWidget()
+        self._cards_widget.setStyleSheet("background: transparent;")
+        self._cards_layout = QVBoxLayout(self._cards_widget)
+        self._cards_layout.setContentsMargins(0, 0, 0, 0)
+        self._cards_layout.setSpacing(GAP_CARDS)
+        self._scroll_layout.addWidget(self._cards_widget)
+
+        self._rebuild_cards("")
+
+    def _on_category_filter(self, cat: str):
+        self._rebuild_cards(cat)
+
+    def _rebuild_cards(self, cat: str):
+        """Clear and repopulate activity cards, optionally filtered by category."""
+        if not hasattr(self, "_cards_layout") or self._cards_widget is None:
+            return
+        while self._cards_layout.count():
+            item = self._cards_layout.takeAt(0)
+            w = item.widget()
+            if w:
+                self._cards_layout.removeWidget(w)
+                w.deleteLater()
+
+        activities = self._all_activities
+        if cat:
+            activities = [a for a in activities if a.get("categoria", "") == cat]
+
+        if not activities:
+            self._cards_layout.addWidget(NMEmptyState(
+                "fa5s.running",
+                "Sin actividades",
+                f"No hay actividades en la categoría \"{cat}\".",
+                self._cards_widget,
+            ))
+            return
+
+        for act in activities:
             self._build_activity_card(act)
 
     def _show_no_mood(self):
@@ -235,7 +266,8 @@ class ModuloActividades(NMModule):
 
         card_layout.addWidget(inner)
 
-        self._scroll_layout.addWidget(card)
+        target = getattr(self, "_cards_layout", self._scroll_layout)
+        target.addWidget(card)
 
     # ── _register_result (lógica preservada exacta) ───────────────────────────
 
@@ -313,7 +345,7 @@ class ModuloActividades(NMModule):
             rows = conn.execute(
                 "SELECT nombre, descripcion, categoria FROM activacion_actividades "
                 "WHERE activa = 1 AND animo_min <= ? AND animo_max >= ? "
-                "ORDER BY RANDOM() LIMIT 3",
+                "ORDER BY RANDOM() LIMIT 9",
                 (animo, animo),
             ).fetchall()
             conn.close()
@@ -332,7 +364,7 @@ class ModuloActividades(NMModule):
 
         if not pool:
             pool = _FALLBACK_ACTIVIDADES
-        return random.sample(pool, min(3, len(pool)))
+        return pool[:]  # return all matching; NMCategoryFilter handles display
 
     # ── Hooks ─────────────────────────────────────────────────────────────────
 

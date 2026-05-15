@@ -45,6 +45,7 @@ from shared.theme_qt import (
 from shared.components_qt import (
     ThemeManager, NMSidebar, NMHeader, NMFadeWidget,
     NMButton, NMButtonOutline, NMCard, NMToast, NMSkeleton, responsive_columns,
+    NMSyncOrb, NMProgressLine, NMFeaturedCard, NMModuleRing,
 )
 
 _sb_create = None
@@ -188,6 +189,10 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+        # ── NMProgressLine: ultra-thin 2px gradient header bar ────────────────
+        _prog_line = NMProgressLine(total=1, current=1, modo=self._modo, parent=self)
+        outer.addWidget(_prog_line)
         outer.addWidget(scroll)
 
         container = QWidget()
@@ -473,7 +478,13 @@ class ConfigView(QWidget):
     def __init__(self, modo: str, on_toggle_theme, on_reconnect, parent=None):
         super().__init__(parent)
         self._modo = norm_modo(modo)
+        self._sync_orb_cfg: NMSyncOrb | None = None
         self._setup(on_toggle_theme, on_reconnect)
+
+    def set_sync_state(self, state: str):
+        """Update the connection orb state: 'ok' | 'error' | 'syncing'."""
+        if self._sync_orb_cfg is not None and not sip.isdeleted(self._sync_orb_cfg):
+            self._sync_orb_cfg.set_state(state)
 
     def _setup(self, on_toggle_theme, on_reconnect):
         c = colors(self._modo)
@@ -489,24 +500,29 @@ class ConfigView(QWidget):
         title.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
         layout.addWidget(title)
 
-        def _card(titulo: str, btn_text: str, callback) -> NMCard:
-            card = NMCard(clickable=False, modo=self._modo)
-            card.setMinimumHeight(52)
-            fl = QHBoxLayout(card)
-            fl.setContentsMargins(PAD_CARD, 10, PAD_CARD, 10)
-            fl.setSpacing(8)
-            lbl = QLabel(titulo)
-            lbl.setFont(qfont("size_body", bold=True))
-            lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
-            fl.addWidget(lbl)
-            fl.addStretch()
-            btn = NMButtonOutline(btn_text, modo=self._modo)
-            btn.setFixedSize(130, 32)
-            btn.clicked.connect(callback)
-            fl.addWidget(btn)
-            return card
+        # ── Database card with NMSyncOrb ──────────────────────────────────────
+        db_card = NMCard(clickable=False, modo=self._modo)
+        db_card.setMinimumHeight(52)
+        db_fl = QHBoxLayout(db_card)
+        db_fl.setContentsMargins(PAD_CARD, 10, PAD_CARD, 10)
+        db_fl.setSpacing(8)
 
-        layout.addWidget(_card("Base de datos", "Reconectar", on_reconnect))
+        self._sync_orb_cfg = NMSyncOrb(state="syncing", size=12,
+                                        modo=self._modo, parent=db_card)
+        db_fl.addWidget(self._sync_orb_cfg,
+                        alignment=Qt.AlignmentFlag.AlignVCenter)
+
+        db_lbl = QLabel("Base de datos")
+        db_lbl.setFont(qfont("size_body", bold=True))
+        db_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+        db_fl.addWidget(db_lbl, stretch=1)
+
+        btn_rec = NMButtonOutline("Reconectar", modo=self._modo)
+        btn_rec.setFixedSize(130, 32)
+        btn_rec.clicked.connect(on_reconnect)
+        db_fl.addWidget(btn_rec)
+
+        layout.addWidget(db_card)
         layout.addStretch()
 
 
@@ -592,6 +608,33 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         self._sidebar.add_spacer()
         self._sidebar.add_separator()
         self._sidebar.add_label("Sin paciente")
+
+        # ── Sidebar footer: NMSyncOrb + collapse toggle ───────────────────────
+        footer = QWidget()
+        footer.setStyleSheet("background: transparent;")
+        footer_layout = QHBoxLayout(footer)
+        footer_layout.setContentsMargins(12, 8, 12, 12)
+        footer_layout.setSpacing(8)
+
+        self._sync_orb = NMSyncOrb(state="syncing", size=12, modo=self._modo, parent=footer)
+        footer_layout.addWidget(self._sync_orb, alignment=Qt.AlignmentFlag.AlignVCenter)
+
+        self._sync_orb_label = QLabel("Conectando…")
+        self._sync_orb_label.setFont(qfont("size_caption"))
+        c = colors(self._modo)
+        self._sync_orb_label.setStyleSheet(
+            f"color: {c['text_tertiary']}; background: transparent;"
+        )
+        footer_layout.addWidget(self._sync_orb_label, stretch=1)
+
+        self._btn_collapse = NMButtonOutline("◀", modo=self._modo)
+        self._btn_collapse.setFixedSize(26, 26)
+        self._btn_collapse.clicked.connect(self._toggle_sidebar)
+        footer_layout.addWidget(self._btn_collapse, alignment=Qt.AlignmentFlag.AlignVCenter)
+
+        self._sidebar._layout.addWidget(footer)
+        self._sidebar_collapsed = False
+
         self._sidebar.nav_changed.connect(self._on_nav)
         main_layout.addWidget(self._sidebar)
 
@@ -724,6 +767,15 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
                     self._lbl_status.setStyleSheet(
                         f"color: {c['success']}; background: transparent;"
                     )
+                    if hasattr(self, "_sync_orb"):
+                        self._sync_orb.set_state("ok")
+                    if hasattr(self, "_sync_orb_label"):
+                        self._sync_orb_label.setText("Conectado")
+                        self._sync_orb_label.setStyleSheet(
+                            f"color: {c['success']}; background: transparent;"
+                        )
+                    if hasattr(self, "_view_config"):
+                        self._view_config.set_sync_state("ok")
                     self._cargar_pacientes()
                     return
             except Exception:
@@ -733,6 +785,15 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         self._lbl_status.setStyleSheet(
             f"color: {c['error']}; background: transparent;"
         )
+        if hasattr(self, "_sync_orb"):
+            self._sync_orb.set_state("error")
+        if hasattr(self, "_sync_orb_label"):
+            self._sync_orb_label.setText("Sin conexión")
+            self._sync_orb_label.setStyleSheet(
+                f"color: {c['error']}; background: transparent;"
+            )
+        if hasattr(self, "_view_config"):
+            self._view_config.set_sync_state("error")
 
     def _cargar_pacientes(self):
         if not self._sb:
@@ -775,6 +836,13 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
     def _reconnect(self):
         self._sb, motivo = _get_sb()
         c = colors(self._modo)
+        if hasattr(self, "_sync_orb"):
+            self._sync_orb.set_state("syncing")
+        if hasattr(self, "_sync_orb_label"):
+            self._sync_orb_label.setText("Reconectando…")
+            self._sync_orb_label.setStyleSheet(
+                f"color: {c['text_tertiary']}; background: transparent;"
+            )
         if self._sb:
             try:
                 res = self._sb.table("patients").select("patient_id", count="exact").execute()
@@ -783,6 +851,15 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
                     self._lbl_status.setStyleSheet(
                         f"color: {c['success']}; background: transparent;"
                     )
+                    if hasattr(self, "_sync_orb"):
+                        self._sync_orb.set_state("ok")
+                    if hasattr(self, "_sync_orb_label"):
+                        self._sync_orb_label.setText("Conectado")
+                        self._sync_orb_label.setStyleSheet(
+                            f"color: {c['success']}; background: transparent;"
+                        )
+                    if hasattr(self, "_view_config"):
+                        self._view_config.set_sync_state("ok")
                     self._cargar_pacientes()
                     NMToast.display(self, "Conexión restablecida", variant="success", duration_ms=2000)
                     return
@@ -793,7 +870,29 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         self._lbl_status.setStyleSheet(
             f"color: {c['error']}; background: transparent;"
         )
+        if hasattr(self, "_sync_orb"):
+            self._sync_orb.set_state("error")
+        if hasattr(self, "_sync_orb_label"):
+            self._sync_orb_label.setText("Sin conexión")
+            self._sync_orb_label.setStyleSheet(
+                f"color: {c['error']}; background: transparent;"
+            )
+        if hasattr(self, "_view_config"):
+            self._view_config.set_sync_state("error")
         NMToast.display(self, f"No se pudo conectar: {motivo or 'verificación fallida'}", variant="error")
+
+    # ── Sidebar collapse ──────────────────────────────────────────────────────
+
+    def _toggle_sidebar(self):
+        self._sidebar_collapsed = not self._sidebar_collapsed
+        if self._sidebar_collapsed:
+            self._sidebar.setFixedWidth(48)
+            self._sync_orb_label.hide()
+            self._btn_collapse.setText("▶")
+        else:
+            self._sidebar.setFixedWidth(220)
+            self._sync_orb_label.show()
+            self._btn_collapse.setText("◀")
 
     # ── Tema ──────────────────────────────────────────────────────────────────
 
@@ -821,6 +920,11 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
             )
         if hasattr(self, "_lbl_ia_status"):
             self._update_ia_status()
+        if hasattr(self, "_sync_orb_label"):
+            c = colors(self._modo)
+            self._sync_orb_label.setStyleSheet(
+                f"color: {c['text_tertiary']}; background: transparent;"
+            )
 
     def closeEvent(self, event):
         event.accept()

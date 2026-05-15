@@ -34,10 +34,13 @@ from PyQt6.QtWidgets import (
 )
 
 try:
-    from shared.components_qt import NMModule, NMButton, NMToast, ThemeManager
+    from shared.components_qt import (
+        NMModule, NMButton, NMToast, ThemeManager,
+        NMEmojiPicker, NMWaveChart, NMStreakBadge,
+    )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color, qcolor_to_rgba_css,
-        get_gradient, stylesheet_slider, stylesheet_textedit, stylesheet_scrollarea,
+        get_gradient, stylesheet_textedit, stylesheet_scrollarea,
         PAD_CONTAINER, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
     )
     from shared.db import obtener_conexion
@@ -46,10 +49,13 @@ except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
-    from shared.components_qt import NMModule, NMButton, NMToast, ThemeManager
+    from shared.components_qt import (
+        NMModule, NMButton, NMToast, ThemeManager,
+        NMEmojiPicker, NMWaveChart, NMStreakBadge,
+    )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, interpolate_color, qcolor_to_rgba_css,
-        get_gradient, stylesheet_slider, stylesheet_textedit, stylesheet_scrollarea,
+        get_gradient, stylesheet_textedit, stylesheet_scrollarea,
         PAD_CONTAINER, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
     )
     from shared.db import obtener_conexion
@@ -232,28 +238,15 @@ class ModuloAnimo(NMModule):
         )
         layout.addWidget(self._valor_lbl)
 
-        # ── Slider custom ─────────────────────────────────────────────────────
-        self._slider = QSlider(Qt.Orientation.Horizontal)
-        self._slider.setRange(1, 10)
-        self._slider.setValue(5)
-        self._slider.setFixedHeight(28)
-        self._slider.setStyleSheet(stylesheet_slider(self._modo))
-        self._slider.valueChanged.connect(self._on_slider)
-        layout.addWidget(self._slider)
+        # ── Selector emoji (chips) ────────────────────────────────────────────
+        self._emoji_picker = NMEmojiPicker(self._modo)
+        self._emoji_picker.set_score(5)
+        self._emoji_picker.picked.connect(self._on_picker)
+        layout.addWidget(self._emoji_picker, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-        # Etiquetas extremos
-        ext_row = QHBoxLayout()
-        lbl_bad = QLabel("Muy mal")
-        lbl_bad.setFont(qfont("size_caption"))
-        lbl_bad.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
-        lbl_ok = QLabel("Excelente")
-        lbl_ok.setFont(qfont("size_caption"))
-        lbl_ok.setAlignment(Qt.AlignmentFlag.AlignRight)
-        lbl_ok.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
-        ext_row.addWidget(lbl_bad)
-        ext_row.addStretch()
-        ext_row.addWidget(lbl_ok)
-        layout.addLayout(ext_row)
+        # ── Streak badge ──────────────────────────────────────────────────────
+        self._streak = NMStreakBadge(self._load_streak(), self._modo)
+        layout.addWidget(self._streak, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         # ── Nota ──────────────────────────────────────────────────────────────
         nota_lbl = QLabel("Nota (opcional)")
@@ -297,6 +290,17 @@ class ModuloAnimo(NMModule):
         layout.addWidget(self._hist_scroll)
 
         self._cargar_historial()
+
+        # ── Gráfico de ánimo (dual-serie) ─────────────────────────────────────
+        chart_lbl = QLabel("Ánimo de la semana")
+        chart_lbl.setFont(qfont("size_body", bold=True))
+        chart_lbl.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
+        layout.addWidget(chart_lbl)
+
+        self._wave_chart = NMWaveChart(self._modo)
+        layout.addWidget(self._wave_chart)
+
+        self._cargar_grafico()
         self._celebration = MoodCelebration(self._content, self._modo)
 
     def _on_theme(self, modo: str) -> None:
@@ -305,10 +309,69 @@ class ModuloAnimo(NMModule):
             self._txt_nota.setStyleSheet(stylesheet_textedit(self._modo))
         if hasattr(self, "_hist_scroll"):
             self._hist_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        if hasattr(self, "_emoji_picker"):
+            self._emoji_picker._apply_theme(self._modo)
+        if hasattr(self, "_streak"):
+            self._streak._apply_theme(self._modo)
+        if hasattr(self, "_wave_chart"):
+            self._wave_chart._apply_theme(self._modo)
         self._cargar_historial()
         self.update()
 
-    # ── Slider ────────────────────────────────────────────────────────────────
+    # ── Picker ────────────────────────────────────────────────────────────────
+
+    def _on_picker(self, score: int):
+        """Recibe el puntaje del NMEmojiPicker y actualiza el estado."""
+        self._on_slider(score)
+
+    def _load_streak(self) -> int:
+        """Días consecutivos con registro de ánimo."""
+        try:
+            import datetime as dt
+            con = obtener_conexion()
+            rows = [r[0] for r in con.execute(
+                "SELECT DISTINCT date(fecha) FROM termometro ORDER BY date(fecha) DESC LIMIT 30"
+            ).fetchall()]
+            today = dt.date.today()
+            streak = 0
+            for i, d_str in enumerate(rows):
+                if str(today - dt.timedelta(days=i)) == d_str:
+                    streak += 1
+                else:
+                    break
+            return streak
+        except Exception:
+            _log.exception("Error calculando streak")
+            return 0
+
+    def _cargar_grafico(self):
+        """Carga datos de las últimas 2 semanas en el NMWaveChart."""
+        if not hasattr(self, "_wave_chart"):
+            return
+        try:
+            import datetime as dt
+            con = obtener_conexion()
+            today = dt.date.today()
+            current_data: list[float | None] = []
+            prev_data:    list[float | None] = []
+            for offset in range(6, -1, -1):
+                day = today - dt.timedelta(days=offset)
+                row = con.execute(
+                    "SELECT AVG(puntaje) FROM termometro WHERE date(fecha)=?",
+                    (str(day),)
+                ).fetchone()
+                current_data.append(float(row[0]) if row and row[0] is not None else None)
+                day_prev = day - dt.timedelta(days=7)
+                row2 = con.execute(
+                    "SELECT AVG(puntaje) FROM termometro WHERE date(fecha)=?",
+                    (str(day_prev),)
+                ).fetchone()
+                prev_data.append(float(row2[0]) if row2 and row2[0] is not None else None)
+            self._wave_chart.set_data(current_data, prev_data)
+        except Exception:
+            _log.exception("Error cargando gráfico de ánimo")
+
+    # ── Slider (reutilizado por picker) ───────────────────────────────────────
 
     def _on_slider(self, value: int):
         self.puntaje = value
@@ -358,6 +421,9 @@ class ModuloAnimo(NMModule):
             except Exception:
                 pass
             self._cargar_historial()
+            self._cargar_grafico()
+            if hasattr(self, "_streak"):
+                self._streak.set_days(self._load_streak())
             if hasattr(self._btn_reg, "play_success"):
                 self._btn_reg.play_success()
             # Buscar ventana principal para mostrar toast
@@ -432,6 +498,9 @@ class ModuloAnimo(NMModule):
 
     def on_enter(self):
         self._cargar_historial()
+        self._cargar_grafico()
+        if hasattr(self, "_streak"):
+            self._streak.set_days(self._load_streak())
 
     def on_leave(self):
         if hasattr(self, "_celebration"):

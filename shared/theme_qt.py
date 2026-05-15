@@ -1136,6 +1136,21 @@ GAP_CARDS     = LAYOUT["gap_cards"]
 GAP_ELEMENTS  = LAYOUT["gap_elements"]
 HEADER_H      = LAYOUT["header_height"]
 
+# ── Tokens de tipografía mono (Design System v3 — Mayo 2026) ──────────────────
+FONT_MONO       = TYPOGRAPHY.get("font_mono",        "Consolas")
+SIZE_TIME_LARGE = TYPOGRAPHY.get("size_time_large",  20)   # pt — NMAvisoCard, countdown respiración
+SIZE_TIME_TIMER = TYPOGRAPHY.get("size_time_timer",  18)   # pt — NMFocusArc MM:SS
+
+# ── Opacidades de aura y blob ──────────────────────────────────────────────────
+AURA_OPACITY_DARK  = LAYOUT.get("aura_opacity_dark",  0.18)
+AURA_OPACITY_LIGHT = LAYOUT.get("aura_opacity_light", 0.10)
+BLOB_OPACITY_DARK  = LAYOUT.get("blob_opacity_dark",  0.22)
+BLOB_OPACITY_LIGHT = LAYOUT.get("blob_opacity_light", 0.18)
+
+# ── Umbrales semánticos de progress rings ──────────────────────────────────────
+RING_GOOD_THRESHOLD = LAYOUT.get("ring_good_threshold", 80)   # ≥80% → teal
+RING_MID_THRESHOLD  = LAYOUT.get("ring_mid_threshold",  50)   # 50-79% → accent, <50% → violet
+
 
 def qcolor_to_rgba_css(color: "QColor") -> str:
     """Convierte un QColor a string rgba() para usar en stylesheets Qt."""
@@ -1149,6 +1164,110 @@ def label_style(modo: str, key: str = "text_primary") -> str:
     Equivale a: f'color: {C(key, modo)}; background: transparent;'
     """
     return f"color: {C(key, modo)}; background: transparent;"
+
+
+# ── Helpers v3 (Design System v3 — Mayo 2026) ─────────────────────────────────
+
+def qfont_mono(size_pt: int, bold: bool = False) -> QFont:
+    """QFont con familia monospace para timers, contadores y log de terminal.
+
+    Args:
+        size_pt: Tamaño en puntos (usar SIZE_TIME_LARGE o SIZE_TIME_TIMER como referencia)
+        bold:    True para peso Bold
+
+    Ejemplo:
+        lbl.setFont(qfont_mono(SIZE_TIME_LARGE, bold=True))
+    """
+    f = QFont(FONT_MONO, size_pt)
+    f.setWeight(QFont.Weight.Bold if bold else QFont.Weight.Normal)
+    f.setHintingPreference(QFont.HintingPreference.PreferFullHinting)
+    return f
+
+
+def ring_color(pct: float, modo: str = "dark_hybrid") -> str:
+    """Color semántico para progress rings según porcentaje de completado.
+
+    Regla:
+        ≥ RING_GOOD_THRESHOLD (80%) → teal   (bien)
+        ≥ RING_MID_THRESHOLD  (50%) → accent  (en progreso)
+        <  RING_MID_THRESHOLD       → violet  (bajo / incipiente)
+
+    Args:
+        pct:  Porcentaje 0.0–100.0
+        modo: Modo del tema
+
+    Ejemplo:
+        arc_color = ring_color(progreso * 100, modo)
+    """
+    if pct >= RING_GOOD_THRESHOLD:
+        return C("teal", modo)
+    elif pct >= RING_MID_THRESHOLD:
+        return C("accent", modo)
+    else:
+        return C("violet", modo)
+
+
+def aura_opacity(modo: str = "dark_hybrid") -> float:
+    """Opacidad del aura radial de SessionColor según modo.
+
+    dark → 0.18, light → 0.10
+    """
+    return AURA_OPACITY_DARK if "dark" in norm_modo(modo) else AURA_OPACITY_LIGHT
+
+
+def blob_opacity(modo: str = "dark_hybrid") -> float:
+    """Opacidad del blob gradient en NMFeaturedCard según modo.
+
+    dark → 0.22, light → 0.18
+    """
+    return BLOB_OPACITY_DARK if "dark" in norm_modo(modo) else BLOB_OPACITY_LIGHT
+
+
+def stylesheet_installer(modo: str = "dark_hybrid") -> str:
+    """Stylesheet para ventanas de instalador/desinstalador.
+
+    Siempre dark mode con terminal_bg y tipografía monospace.
+    """
+    c = colors("dark_hybrid")   # instaladores siempre dark
+    sc_handle = C("teal", "dark_hybrid")
+    sc_handle_end = C("accent", "dark_hybrid")
+    return f"""
+    QWidget {{
+        background-color: {c['bg_primary']};
+        color: {c['text_primary']};
+        font-family: "{_font_family()}";
+        font-size: {TYPOGRAPHY['size_body']}pt;
+    }}
+    QTextEdit, QPlainTextEdit {{
+        background-color: {c['installer_terminal_bg']};
+        color: {c['teal']};
+        border: 1px solid {c['border']};
+        border-radius: {LAYOUT['radius_input']}px;
+        padding: 8px;
+        font-family: "{FONT_MONO}";
+        font-size: {TYPOGRAPHY['size_small']}pt;
+        selection-background-color: {c['accent']};
+        selection-color: {c['text_on_accent']};
+    }}
+    QScrollBar:vertical {{
+        background: rgba(255, 255, 255, 0.05);
+        width: 6px; margin: 0; border-radius: 3px;
+    }}
+    QScrollBar::handle:vertical {{
+        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+            stop:0 {sc_handle}, stop:1 {sc_handle_end});
+        border: 1px solid {sc_handle};
+        border-radius: 3px; min-height: 30px;
+    }}
+    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
+    QToolTip {{
+        background-color: {c['bg_elevated']};
+        color: {c['text_primary']};
+        border: 1px solid {c['border_card']};
+        border-radius: 6px; padding: 4px 8px;
+        font-size: {TYPOGRAPHY['size_small']}pt;
+    }}
+    """
 
 
 # ── SessionColor — vibe aleatorio de sesión (aura + glow) ─────────────────────

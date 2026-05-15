@@ -51,6 +51,31 @@ COLORS = {
         # Progress
         "progress_track":   "#181b2e",
         "progress_fill":    "#6366f1",
+
+        # ── Tokens nuevos (Design System v3 — Mayo 2026) ──────────────────────
+        # Hub sidebar
+        "sidebar_bg":             "#12192a",
+        # Streak badge (🔥)
+        "streak_color":           "#fb923c",
+        "streak_bg":              "#2a1a0a",
+        # TCC heat bar
+        "tcc_heat_cold":          "#3b82f6",
+        "tcc_heat_hot":           "#ef4444",
+        # Routine section tints — usar al 6-8% de opacidad en stylesheets
+        "routine_morning_tint":   "#fbbf24",
+        "routine_afternoon_tint": "#f97316",
+        "routine_night_tint":     "#6366f1",
+        # Actividades
+        "cat_autocuidado_color":  "#22c55e",
+        "cat_social_color":       "#f59e0b",
+        # Hub dashboard blobs
+        "hub_blob_teal":          "#14b8a6",
+        "hub_blob_violet":        "#a855f7",
+        # Estado de sincronización
+        "sync_orb_green":         "#22c55e",
+        # Instaladores
+        "uninstall_danger":       "#ef4444",
+        "installer_terminal_bg":  "#060d1a",
     },
 
     # ============================================================
@@ -98,6 +123,31 @@ COLORS = {
         # Progress
         "progress_track":   "#e2e8f0",
         "progress_fill":    "#4f46e5",
+
+        # ── Tokens nuevos (Design System v3 — Mayo 2026) ──────────────────────
+        # Hub sidebar
+        "sidebar_bg":             "#f1f5f9",
+        # Streak badge (🔥)
+        "streak_color":           "#ea580c",
+        "streak_bg":              "#fff7ed",
+        # TCC heat bar
+        "tcc_heat_cold":          "#3b82f6",
+        "tcc_heat_hot":           "#ef4444",
+        # Routine section tints — usar al 6-8% de opacidad en stylesheets
+        "routine_morning_tint":   "#fbbf24",
+        "routine_afternoon_tint": "#f97316",
+        "routine_night_tint":     "#4f46e5",
+        # Actividades
+        "cat_autocuidado_color":  "#16a34a",
+        "cat_social_color":       "#d97706",
+        # Hub dashboard blobs
+        "hub_blob_teal":          "#0d9488",
+        "hub_blob_violet":        "#7c3aed",
+        # Estado de sincronización
+        "sync_orb_green":         "#16a34a",
+        # Instaladores (siempre dark — no aplica, valores de fallback)
+        "uninstall_danger":       "#dc2626",
+        "installer_terminal_bg":  "#060d1a",
     }
 }
 
@@ -107,6 +157,7 @@ COLORS = {
 TYPOGRAPHY = {
     "font_family":      "Segoe UI",
     "font_fallback":    "Arial",
+    "font_mono":        "Consolas",   # timers, contadores, terminal del installer
     "size_h1":          32,
     "size_h2":          22,
     "size_h3":          18,
@@ -115,6 +166,8 @@ TYPOGRAPHY = {
     "size_caption":     11,
     "size_emoji":       64,   # emoji grande en módulos (ánimo, home icon grande)
     "size_emoji_sm":    22,   # emoji pequeño en cards del home
+    "size_time_large":  20,   # hora en NMAvisoCard y countdown de respiración (pt)
+    "size_time_timer":  18,   # MM:SS en NMFocusArc del timer (pt)
     "weight_regular":   "normal",
     "weight_medium":    "bold",
 }
@@ -140,6 +193,14 @@ LAYOUT = {
     "border_button_width":  2,
     "header_height":        56,   # era 68 — header más compacto como en refs
     "min_touch_target":     44,
+    # ── Tokens de opacidad (Design System v3 — Mayo 2026) ─────────────────
+    "aura_opacity_dark":    0.18,  # SessionColor aura radial en dark mode
+    "aura_opacity_light":   0.10,  # SessionColor aura radial en light mode
+    "blob_opacity_dark":    0.22,  # Blob gradient en Hub Featured Card (dark)
+    "blob_opacity_light":   0.18,  # Blob gradient en Hub Featured Card (light)
+    # ── Umbrales para progress rings ──────────────────────────────────────
+    "ring_good_threshold":  80,    # ≥80% → teal (buen progreso)
+    "ring_mid_threshold":   50,    # 50-79% → accent, <50% → violet
 }
 
 # Gradientes (usar en canvas o como referencia para botones)
@@ -211,12 +272,12 @@ def get_gradient(modo: str = "dark_hybrid") -> list:
     return GRADIENTS.get(norm_modo(modo), GRADIENTS["dark_hybrid"])
 
 
-# Colores canónicos de categorías de activación conductual
+# Colores canónicos de categorías de activación conductual (v3 — Mayo 2026)
 CATEGORY_COLORS = {
-    "Autocuidado": "#6366f1",
-    "Física":      "#22D47E",
-    "Cognitiva":   "#9B8FE8",
-    "Placer":      "#F0A500",
-    "Social":      "#E8505B",
-    "Maestría":    "#4A9EE8",
+    "Autocuidado": "#22c55e",  # green  — salud, autocuidado
+    "Física":      "#14b8a6",  # teal   — movimiento, energía
+    "Cognitiva":   "#22d3ee",  # cyan   — mente, claridad
+    "Placer":      "#a855f7",  # violet — disfrute, creatividad
+    "Social":      "#f59e0b",  # amber  — calidez, conexión
+    "Maestría":    "#6366f1",  # indigo — logro, habilidades
 }
