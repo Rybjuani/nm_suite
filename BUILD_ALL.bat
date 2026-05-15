@@ -74,7 +74,7 @@ pyinstaller --noconfirm %MODE% --windowed --clean --optimize 2^
  --hidden-import PIL^
  --hidden-import sqlite3^
  --name "NeuroMood Suite"^
- "%ROOT%\app\main_qt.py" >nul 2>&1
+ "%ROOT%\app\main_qt.py"
 if %ERRORLEVEL% NEQ 0 goto :error
 echo     OK
 
@@ -108,7 +108,7 @@ pyinstaller --noconfirm %MODE% --windowed --clean --optimize 2^
  --hidden-import reportlab.platypus^
  --hidden-import numpy^
  --name "NeuroMood Hub Pro"^
- "%ROOT%\hub\main_qt.py" >nul 2>&1
+ "%ROOT%\hub\main_qt.py"
 if %ERRORLEVEL% NEQ 0 goto :error
 echo     OK
 

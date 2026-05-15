@@ -42,7 +42,7 @@ pyinstaller --noconfirm --onedir --windowed --clean --optimize 2^
  --icon "%ROOT%\assets\NM_icon.ico"^
  --name "Desinstalador NeuroMood Hub Pro"^
  --distpath "%ROOT%\dist"^
- "%ROOT%\installers\uninstaller_pro.py" >nul 2>&1
+ "%ROOT%\installers\uninstaller_pro.py"
 if %ERRORLEVEL% NEQ 0 goto :error
 echo     OK
 
@@ -68,7 +68,7 @@ pyinstaller --noconfirm --onedir --windowed --clean --optimize 2^
  --icon "%ROOT%\assets\installer_icon.ico"^
  --name "Instalador NeuroMood Hub Pro"^
  --distpath "%ROOT%\dist"^
- "%ROOT%\installers\installer_pro.py" >nul 2>&1
+ "%ROOT%\installers\installer_pro.py"
 if %ERRORLEVEL% NEQ 0 goto :error
 echo     OK
 

@@ -42,7 +42,7 @@ pyinstaller --noconfirm --onedir --windowed --clean --optimize 2^
  --icon "%ROOT%\assets\no_symbol.ico"^
  --name "Desinstalador NeuroMood"^
  --distpath "%ROOT%\dist"^
- "%ROOT%\installers\uninstaller.py" >nul 2>&1
+ "%ROOT%\installers\uninstaller.py"
 if %ERRORLEVEL% NEQ 0 goto :error
 echo     OK
 
@@ -68,7 +68,7 @@ pyinstaller --noconfirm --onedir --windowed --clean --optimize 2^
  --icon "%ROOT%\assets\installer_icon.ico"^
  --name "Instalador NeuroMood Suite"^
  --distpath "%ROOT%\dist"^
- "%ROOT%\installers\installer.py" >nul 2>&1
+ "%ROOT%\installers\installer.py"
 if %ERRORLEVEL% NEQ 0 goto :error
 echo     OK
 
