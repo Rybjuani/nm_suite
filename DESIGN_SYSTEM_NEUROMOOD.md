@@ -1,5 +1,5 @@
 # DESIGN SYSTEM — NeuroMood V3
-*Versión 1.0 — Mayo 2026*
+*Versión 2.0 — Mayo–Junio 2026*
 
 > Source of truth visual para Suite, Hub, instaladores y desinstaladores.
 > Toda pantalla nueva debe derivarse de este documento.
@@ -257,6 +257,232 @@ seg.choice_made.connect(self._on_choice)
 
 ---
 
+## 7.5 COMPONENTES V3 — INTEGRACIÓN POR MÓDULO
+
+Todos se auto-suscriben a `ThemeManager.theme_changed` y no requieren `_apply_theme` manual desde el módulo padre.
+
+### App Paciente — Home
+
+#### NMStreakBadge
+```python
+badge = NMStreakBadge(days=5, modo=self._modo)
+badge.set_days(0)   # se auto-oculta si days <= 0
+```
+Pill naranja con emoji 🔥. Usar en el header de HomeView debajo del logo.
+
+#### NMWelcomeBar
+```python
+bar = NMWelcomeBar(modo=self._modo)
+bar.refresh()   # llamar al inicio de cada sesión para actualizar fecha/saludo
+```
+Barra fija de 32px con saludo contextual ("Buenos días · Lunes 15 may"). Usa `C("text_secondary")`.
+
+---
+
+### App Paciente — Módulo Ánimo
+
+#### NMEmojiPicker
+```python
+picker = NMEmojiPicker(modo=self._modo)
+picker.picked.connect(self._on_score)       # emite int 1-9
+score = picker.selected_score()             # int | None
+picker.set_score(6)                          # preseleccionar
+```
+5 chips con emojis dobles (Muy bajo/Bajo/Neutro/Bien/Excelente). Chip seleccionado recibe glow de SessionColor.
+
+#### NMWaveChart
+```python
+chart = NMWaveChart(modo=self._modo)
+chart.set_data(current=[7,5,8,None,6,7,8], previous=[5,6,5,7,6,5,6])
+chart.week_changed.connect(self._on_week_nav)   # int offset (0=actual)
+```
+Gráfico de área dual-serie (teal=actual, violet=anterior). Tooltip interactivo en hover. Navegación de semanas.
+
+---
+
+### App Paciente — Módulo Respiración
+
+#### NMPhaseChip
+```python
+chips = NMPhaseChip(modo=self._modo)
+chips.set_phase("inhala")   # 'inhala' | 'manten' | 'exhala' | None
+```
+3 chips que se iluminan secuencialmente según la fase activa.
+
+#### NMCycleRing
+```python
+ring = NMCycleRing(size=56, modo=self._modo)
+ring.set_cycles(3)   # número de ciclos completados
+```
+Mini-anillo de trazo en columna izquierda. Muestra contador de ciclos.
+
+#### NMCalmBadge
+```python
+badge = NMCalmBadge(bpm=60, modo=self._modo)
+```
+Badge decorativo fijo (columna derecha). Muestra "Calm ♥" + BPM en violet. No es funcional (estético).
+
+---
+
+### App Paciente — Módulo Registro TCC
+
+#### NMTCCStepper
+```python
+stepper = NMTCCStepper(
+    steps=["Situación", "Pensamiento", "Intensidad", "Alternativa"],
+    modo=self._modo
+)
+stepper.set_step(2)   # 0-indexed
+```
+Stepper horizontal con línea conectora. Pasados: check verde. Activo: circle accent. Futuros: gris.
+
+#### NMHeatBar
+```python
+bar = NMHeatBar(value=50, modo=self._modo)
+bar.value_changed.connect(self._on_intensity)   # emite int 0-100
+```
+Barra de calor interactiva. Frío (`#3b82f6`) → neutro (`#22c55e`) → caliente (`#ef4444`). Color cambia en tiempo real.
+
+---
+
+### App Paciente — Módulo Rutina
+
+#### NMRoutineSection
+```python
+sec = NMRoutineSection("morning", "Mañana", modo=self._modo)
+sec.content_layout().addWidget(task_widget)
+```
+`section_type`: `'morning'` (dorado) | `'afternoon'` (naranja) | `'night'` (indigo). Colapsable con header tintado.
+
+#### NMDayNote
+```python
+note = NMDayNote(locked=True, lock_reason="Completa al 80%", modo=self._modo)
+note.note_changed.connect(self._on_note)   # emite str
+note.unlock()   # desbloquear programáticamente
+```
+Bloqueada: candado + razón. Desbloqueada: QTextEdit expandible.
+
+---
+
+### App Paciente — Módulo Actividades
+
+#### NMMoodContextHeader
+```python
+header = NMMoodContextHeader(score=6, modo=self._modo)
+header.set_score(8)
+```
+Banner de 44px: "Basado en tu ánimo de hoy (6/10) 😐". Score determina emoji automáticamente.
+
+#### NMCategoryFilter
+```python
+filt = NMCategoryFilter(categories=list(CATEGORY_COLORS.keys()), modo=self._modo)
+filt.filter_changed.connect(self._on_filter)   # emite str nombre o "" para Todas
+```
+Fila horizontal scrollable de chips. "Todas" siempre como primera opción.
+
+---
+
+### App Paciente — Módulo Avisos
+
+#### NMAvisoCard
+```python
+card = NMAvisoCard(
+    time_str="09:30", message="Tomar medicación",
+    status=NMAvisoCard.STATUS_ACTIVE,   # 'activo' | 'disparado' | 'expirado'
+    modo=self._modo
+)
+```
+Card con hora grande + mensaje + pill de estado semántico. Usar en grid 2 columnas.
+
+---
+
+### App Paciente / Hub — Progreso
+
+#### NMProgressLine
+```python
+line = NMProgressLine(total=7, current=3, modo=self._modo)
+line.set_progress(5)         # update current
+line.set_progress(5, 10)     # update current + total
+```
+Barra ultra-fina (2px, full-width). Gradiente teal→violet. Colocar en borde superior del área de contenido.
+
+---
+
+### Hub Profesional — Dashboard
+
+#### NMFeaturedCard
+```python
+card = NMFeaturedCard(modo=self._modo)
+card.set_score(7.4, "🙂")   # prom float, emoji str
+```
+Card con blob-gradient de fondo. Número grande + emoji en el centro. Se auto-actualiza con `_datos_ref.changed`.
+
+#### NMModuleRing
+```python
+ring = NMModuleRing(size=56, pct=0.75, modo=self._modo)
+ring.set_pct(0.5)   # 0.0–1.0
+```
+Arco circular de adherencia. Color semántico automático: ≥80%→teal / 50-79%→accent / <50%→violet.
+
+---
+
+### Hub Profesional — IA Asistente
+
+#### NMChatBubble
+```python
+bubble = NMChatBubble("Texto del mensaje", side="left", modo=self._modo)
+# side='left' → IA (bg_surface). side='right' → terapeuta (accent gradient).
+```
+Burbuja con radio asimétrico. Texto con word-wrap.
+
+#### NMTypingDots
+```python
+dots = NMTypingDots(modo=self._modo)
+dots.show(); dots.start()   # al iniciar generación IA
+dots.stop(); dots.hide()    # al recibir respuesta
+```
+3 puntos animados secuencialmente. Usar dentro del panel de resumen/sugerencias.
+
+---
+
+### Hub Profesional — Sidebar y Configuración
+
+#### NMSyncOrb
+```python
+orb = NMSyncOrb(state="syncing", size=12, modo=self._modo)
+orb.set_state("ok")      # verde estático
+orb.set_state("error")   # rojo estático
+orb.set_state("syncing") # ámbar pulsante (QTimer 40ms)
+```
+Usado en footer del sidebar Hub y en `ConfigView`. El Hub Main llama `ConfigView.set_sync_state()` para mantenerlos sincronizados.
+
+---
+
+### Instaladores y Desinstaladores
+
+#### NMInstallStepper
+```python
+# En InstallerShell: se instancia automáticamente si la subclase define STEPS
+class InstaladorMiApp(InstallerShell):
+    STEPS = ["Bienvenida", "Ruta", "Opciones", "Instalando", "Listo"]
+    _STEPPER_ACCENT = "teal"   # "teal" (Suite) | "violet" (Hub Pro)
+```
+`_STEPPER_ACCENT` controla el color del paso activo. `InstallerShell._fade_to(n)` llama `set_step(n)` automáticamente.
+
+#### NMDataPreserveCard
+```python
+card = NMDataPreserveCard(
+    "Conservar mis datos",
+    "Registros, historial y configuración",
+    checked=True
+)
+card.toggled.connect(self._on_preserve)
+conservar = card.is_checked()
+```
+Card de decisión crítica con ícono ⚠️ y toggle-switch gradiente. Siempre dark mode. Usar en desinstaladores en lugar del `QCheckBox` manual.
+
+---
+
 ## 8. SCROLLBARS
 
 **Siempre** usar las funciones de stylesheet, nunca hardcodear:
@@ -379,6 +605,9 @@ Color siempre desde `C("text_primary", modo)` o token semántico.
 - `InstallerShell` como clase base obligatoria
 - `recurso(nombre)` para rutas de assets (dev + frozen)
 - `QApplication.processEvents(QEventLoop.ExcludeUserInputEvents)` en pasos largos
+- Definir `STEPS = [...]` en la subclase para que `InstallerShell` cree `NMInstallStepper` automáticamente
+- Definir `_STEPPER_ACCENT = "teal"` (Suite) o `"violet"` (Hub Pro) para el color del paso activo
+- Usar `NMDataPreserveCard` (no QCheckBox manual) para la decisión "Conservar datos"
 
 ---
 
@@ -396,6 +625,9 @@ Antes de dar por terminada cualquier pantalla nueva:
 - [ ] Toda acción principal usa `NMButton`, no `QPushButton`
 - [ ] Todo estado vacío usa `NMEmptyState`, no widget vacío ni skeleton
 - [ ] `NMToast.display(self.window(), ...)` para feedback al usuario
+- [ ] Si el módulo tiene progreso → `NMProgressLine` en borde superior del área de contenido
+- [ ] Componentes V3 usados (NMEmojiPicker, NMWaveChart, etc.) — no reimplementar a mano
+- [ ] Instaladores: `STEPS` + `_STEPPER_ACCENT` + `NMDataPreserveCard` donde corresponda
 - [ ] `_apply_theme(modo)` implementado y conectado a `ThemeManager`
 - [ ] `sip.isdeleted(self)` en todo `QTimer.singleShot` con lambda que capture `self`
 - [ ] `removeWidget()` antes de `deleteLater()` en widgets con layout

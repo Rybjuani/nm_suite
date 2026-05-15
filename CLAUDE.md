@@ -40,6 +40,7 @@ db/                 → supabase_schema.sql
 - IA multi-proveedor para Hub (Groq, Gemini, OpenCode, Ollama Cloud) — ver `hub/ia_asistente.py`
 - pystray + winotify para avisos en bandeja/notificaciones del SO
 - pyqtgraph + reportlab para gráficos y PDF en el Hub
+- scipy (opcional) para interpolación spline en gráfico pyqtgraph del Hub — fallback a lineal si no está instalado
 - PyInstaller para compilar a .exe (--onedir por defecto, arranque <1s)
 
 ## Design System (Mayo 2026)
@@ -163,16 +164,45 @@ Se ejecutó una auditoría de 20 antipatrones y corrección quirúrgica.
 - Conservar registros: card premium con toggle switch gradiente
 - Limpieza de residuos: `dist/`, `build/`, `.spec` eliminados en cada build
 
-### Nuevos componentes (Junio 2026)
+### Componentes NM____ (Mayo–Junio 2026)
 
-| Componente | Archivo | Uso |
+#### Batch original (Junio 2026)
+
+| Componente | Archivo | API clave |
 |---|---|---|
-| `NMStatusChip` | `shared/components_qt.py` | Pill de estado con color semántico |
-| `NMSectionCard` | `shared/components_qt.py` | Card con título + `content_layout()` |
-| `NMFormField` | `shared/components_qt.py` | Label + input en fila horizontal |
-| `NMSegmentedChoice` | `shared/components_qt.py` | Grupo de botones con selección exclusiva |
+| `NMStatusChip` | `shared/components_qt.py` | `NMStatusChip("Activo", color="success", modo=)` — pill semántico |
+| `NMSectionCard` | `shared/components_qt.py` | `NMSectionCard("Título", modo=)` + `content_layout()` |
+| `NMFormField` | `shared/components_qt.py` | `NMFormField("Label", widget, modo=)` — fila label+input |
+| `NMSegmentedChoice` | `shared/components_qt.py` | `seg.choice_made.connect(cb)` — selección exclusiva |
 | `responsive_columns()` | `shared/components_qt.py` | Helper de columnas responsive |
 | `InstallerShell` | `shared/installer_common.py` | Clase base para los 4 instaladores |
+
+#### Batch V3 — Design System integrado (Mayo 2026)
+
+| Componente | Módulo / Pantalla | API clave |
+|---|---|---|
+| `NMProgressLine` | Avisos, Hub Dashboard, Hub Detalle | `NMProgressLine(total, current, modo=)` / `set_progress(n, total)` |
+| `NMStreakBadge` | Home | `NMStreakBadge(days, modo=)` / `set_days(n)` — se oculta si days≤0 |
+| `NMWelcomeBar` | Home | `NMWelcomeBar(modo=)` / `refresh()` — saludo + fecha en ES |
+| `NMEmojiPicker` | Módulo Ánimo | `picker.picked.connect(cb_score)` / `selected_score()→int|None` |
+| `NMWaveChart` | Módulo Ánimo | `set_data(current_7, previous_7)` / `week_changed(int)` signal |
+| `NMPhaseChip` | Módulo Respiración | `set_phase('inhala'|'manten'|'exhala'|None)` |
+| `NMCycleRing` | Módulo Respiración | `NMCycleRing(size=56, modo=)` / `set_cycles(n)` |
+| `NMCalmBadge` | Módulo Respiración | `NMCalmBadge(bpm=60, modo=)` — decorativo, columna derecha |
+| `NMTCCStepper` | Módulo Registro TCC | `NMTCCStepper(steps_list, modo=)` / `set_step(idx)` |
+| `NMHeatBar` | Módulo Registro TCC | `NMHeatBar(value=50, modo=)` / `value_changed(int)` signal |
+| `NMRoutineSection` | Módulo Rutina | `NMRoutineSection('morning'|'afternoon'|'night', "Título", modo=)` / `content_layout()` |
+| `NMDayNote` | Módulo Rutina | `NMDayNote(locked, lock_reason, modo=)` / `note_changed(str)` signal |
+| `NMMoodContextHeader` | Módulo Actividades | `NMMoodContextHeader(score=5, modo=)` / `set_score(n)` |
+| `NMCategoryFilter` | Módulo Actividades | `NMCategoryFilter(categories, modo=)` / `filter_changed(str)` signal |
+| `NMAvisoCard` | Módulo Avisos | `NMAvisoCard(time_str, message, status='activo'|'disparado'|'expirado', modo=)` |
+| `NMFeaturedCard` | Hub Dashboard | `NMFeaturedCard(modo=)` / `set_score(prom_float, emoji_str)` |
+| `NMModuleRing` | Hub Dashboard | `NMModuleRing(size=56, pct=0.0, modo=)` / `set_pct(float)` |
+| `NMChatBubble` | Hub IA | `NMChatBubble(text, side='left'|'right', modo=)` |
+| `NMTypingDots` | Hub IA | `NMTypingDots(modo=)` / `start()` / `stop()` |
+| `NMSyncOrb` | Hub sidebar + Config | `NMSyncOrb(state='ok'|'error'|'syncing', size=12, modo=)` / `set_state(str)` |
+| `NMInstallStepper` | Todos los instaladores | `NMInstallStepper(steps, current=0, accent_key='teal'|'violet')` / `set_step(idx)` |
+| `NMDataPreserveCard` | Desinstaladores | `NMDataPreserveCard(title, description, checked=True)` / `is_checked()` / `toggled(bool)` |
 
 ### Reglas de componentes
 
@@ -180,6 +210,10 @@ Se ejecutó una auditoría de 20 antipatrones y corrección quirúrgica.
 - **Scrollbars**: Tokenizadas con `C("teal")`/`C("accent")`/`C("violet")`. Sin colores neón hardcodeados.
 - **Círculos**: `_BreathingCircle` y `_TimerCanvas` usan `setMinimumSize` + `Expanding` + escala dinámica en `paintEvent`.
 - **Aura**: `SessionColor` (cyan/violet aleatorio) + `NMModule.paintEvent` / `DashboardView.paintEvent` con gradiente radial.
+- **NMInstallStepper auto-integrado**: `InstallerShell._build_shell()` instancia `NMInstallStepper` automáticamente si `self.STEPS` está definido. Subclases controlan el color con `_STEPPER_ACCENT = "teal"` (Suite) o `"violet"` (Hub Pro).
+- **Sidebar Hub colapsable**: `_toggle_sidebar()` alterna entre 220px y 48px. Estado en `self._sidebar_collapsed`. El label del orb se oculta/muestra; el botón arrow (`◀`/`▶`) siempre visible.
+- **ConfigView.set_sync_state(state)**: método público para actualizar el `NMSyncOrb` embebido desde `hub/main_qt.py`. Protegido con `sip.isdeleted()`.
+- **scipy opcional**: la interpolación spline en el gráfico de ánimo del Hub usa `scipy.interpolate.make_interp_spline` dentro de try/except con fallback lineal. Bundleado explícitamente con `--hidden-import scipy` en `BUILD_ALL.bat`.
 
 ### QA — Tests automáticos
 

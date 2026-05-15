@@ -101,6 +101,7 @@ Usar `NMButton` con texto claro. El color danger se aplica vía `set_accent()` e
 
 ## Componentes Reutilizables
 
+### Base
 | Componente | Uso |
 |---|---|
 | `NMButton` | Botón primario con gradiente |
@@ -109,15 +110,49 @@ Usar `NMButton` con texto claro. El color danger se aplica vía `set_accent()` e
 | `NMInput` | Input estilizado con focus animation |
 | `NMToggle` | Toggle switch pill |
 | `NMProgressBar` | Barra de progreso con shimmer |
-| `NMSkeleton` | Loading placeholder |
+| `NMSkeleton` | Loading placeholder (solo durante fetch) |
 | `NMToast` | Notificación flotante |
 | `NMStatusChip` | Pill de estado con color semántico |
-| `NMSectionCard` | Card con título decorativo + content_layout() |
+| `NMSectionCard` | Card con título decorativo + `content_layout()` |
 | `NMFormField` | Label + input en fila horizontal |
 | `NMSegmentedChoice` | Grupo de botones con selección exclusiva |
 | `NMHeader` | Header de 56px con logo + toggle |
-| `NMSidebar` | Sidebar de navegación 220px |
+| `NMSidebar` | Sidebar de navegación 220px (colapsable a 48px en Hub) |
 | `NMFadeWidget` | QStackedWidget con transición fade |
+| `NMProgressLine` | Barra 2px full-width teal→violet (borde superior de contenido) |
+
+### V3 — App Paciente
+| Componente | Módulo | API clave |
+|---|---|---|
+| `NMStreakBadge` | Home | `set_days(n)` — auto-oculta si n≤0 |
+| `NMWelcomeBar` | Home | `refresh()` — saludo + fecha en ES |
+| `NMEmojiPicker` | Ánimo | `picked(int)` signal, `selected_score()` |
+| `NMWaveChart` | Ánimo | `set_data(current, previous)`, `week_changed(int)` |
+| `NMPhaseChip` | Respiración | `set_phase('inhala'|'manten'|'exhala'|None)` |
+| `NMCycleRing` | Respiración | `set_cycles(n)` |
+| `NMCalmBadge` | Respiración | decorativo, columna derecha |
+| `NMTCCStepper` | Registro TCC | `set_step(idx)` — 4 pasos |
+| `NMHeatBar` | Registro TCC | `value_changed(int)` 0-100 |
+| `NMRoutineSection` | Rutina | `content_layout()`, section_type: morning/afternoon/night |
+| `NMDayNote` | Rutina | `unlock()`, `note_changed(str)` |
+| `NMMoodContextHeader` | Actividades | `set_score(n)` — emoji automático |
+| `NMCategoryFilter` | Actividades | `filter_changed(str)` |
+| `NMAvisoCard` | Avisos | status: activo/disparado/expirado |
+
+### V3 — Hub Profesional
+| Componente | Uso |
+|---|---|
+| `NMFeaturedCard` | Dashboard — `set_score(prom, emoji)` |
+| `NMModuleRing` | Dashboard — `set_pct(float)` color semántico automático |
+| `NMChatBubble` | IA — `side='left'|'right'` |
+| `NMTypingDots` | IA — `start()` / `stop()` |
+| `NMSyncOrb` | Sidebar + Config — `set_state('ok'|'error'|'syncing')` |
+
+### V3 — Instaladores
+| Componente | Uso |
+|---|---|
+| `NMInstallStepper` | Auto-integrado en `InstallerShell` vía `STEPS` + `_STEPPER_ACCENT` |
+| `NMDataPreserveCard` | Decisión crítica "Conservar datos" — reemplaza QCheckBox |
 
 ---
 
@@ -164,13 +199,15 @@ empty.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
 
 ## Reglas para Installers / Uninstallers
 
-1. **Header**: Logo + nombre de app + pasos numerados
+1. **Header**: Logo + nombre de app + `NMInstallStepper` (auto-integrado si `STEPS` definido)
 2. **Footer**: `btn_ant` (outline, oculto en página 0) + `btn_sig` (gradient)
 3. **Tamaños**: Suite 740×540, Hub 680×500, Uninstallers 480×340
 4. **Colores**: Usar `shared/installer_common.py` — misma paleta dark que la app
 5. **Scrollbars**: Mismo diseño glass que la app
 6. **Dark siempre**: Title bar forzado dark mode
-7. **Base class**: `InstallerShell` — provee header, footer, stack, fade transitions
+7. **Base class**: `InstallerShell` — provee header, footer, stack, fade transitions, `NMInstallStepper`
+8. **`_STEPPER_ACCENT`**: `"teal"` en Suite, `"violet"` en Hub Pro — diferencia visual entre productos
+9. **`NMDataPreserveCard`**: Usar en desinstaladores para "Conservar datos" (no QCheckBox manual)
 
 ---
 

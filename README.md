@@ -134,6 +134,7 @@ NeuroMood V3/
 | Python 3.12 | Lenguaje |
 | PyQt6 ≥6.6 | UI completa |
 | pyqtgraph ≥0.13 | Gráficos en Hub |
+| scipy | Interpolación spline en gráfico Hub (opcional, fallback lineal) |
 | SQLite | DB local (`%APPDATA%\NeuroMood\nm_data.db`) |
 | Supabase | Sync cloud paciente↔Hub |
 | Groq / Gemini / OpenAI | IA asistente Hub |
@@ -152,7 +153,17 @@ Color aleatorio cyan o violeta al iniciar sesión. Aura radial en fondo de módu
 Handle gradiente `#00F2FF→#4A00E0`, track translúcido, 6px ancho, cápsula 3px, sin flechas.
 
 ### Componentes
-`NMButton`, `NMCard`, `NMInput`, `NMProgressBar`, `NMToggle`, `NMToast`, `NMSkeleton`, `NMFadeWidget`, `NMHeader`, `NMSidebar`
+**Base**: `NMButton`, `NMButtonOutline`, `NMCard`, `NMInput`, `NMProgressBar`, `NMToggle`, `NMToast`, `NMSkeleton`, `NMFadeWidget`, `NMHeader`, `NMSidebar`, `NMModule`, `NMEmptyState`
+
+**Estructura**: `NMStatusChip`, `NMSectionCard`, `NMFormField`, `NMSegmentedChoice`
+
+**V3 — App Paciente**: `NMStreakBadge`, `NMWelcomeBar`, `NMEmojiPicker`, `NMWaveChart`, `NMPhaseChip`, `NMCycleRing`, `NMCalmBadge`, `NMTCCStepper`, `NMHeatBar`, `NMRoutineSection`, `NMDayNote`, `NMMoodContextHeader`, `NMCategoryFilter`, `NMAvisoCard`, `NMProgressLine`
+
+**V3 — Hub Profesional**: `NMFeaturedCard`, `NMModuleRing`, `NMChatBubble`, `NMTypingDots`, `NMSyncOrb`
+
+**V3 — Instaladores**: `NMInstallStepper`, `NMDataPreserveCard`
+
+Todos los componentes V3 se auto-suscriben a `ThemeManager.theme_changed` y manejan dark/light mode internamente. Ver `shared/components_qt.py` para APIs completas.
 
 ### Logo
 `assets/LOGO.png` con sombra blur 28px, glow radial animado, recolor automático en light mode.
