@@ -33,6 +33,7 @@ try:
         C, colors, norm_modo, qfont, qcolor, nm_icon,
         sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
+        RADIUS_INPUT, RADIUS_SMALL, CHECKBOX_SIZE,
         stylesheet_textedit, stylesheet_scrollarea,
     )
     from shared.db import obtener_conexion
@@ -49,6 +50,7 @@ except ImportError:
         C, colors, norm_modo, qfont, qcolor, nm_icon,
         sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
+        RADIUS_INPUT, RADIUS_SMALL, CHECKBOX_SIZE,
         stylesheet_textedit, stylesheet_scrollarea,
     )
     from shared.db import obtener_conexion
@@ -316,9 +318,9 @@ class ModuloRutina(NMModule):
                 text-decoration: {decoration};
             }}
             QCheckBox::indicator {{
-                width: 18px;
-                height: 18px;
-                border-radius: 4px;
+                width: {CHECKBOX_SIZE}px;
+                height: {CHECKBOX_SIZE}px;
+                border-radius: {RADIUS_SMALL}px;
                 border: 2px solid {c['border']};
                 background: transparent;
             }}
@@ -423,7 +425,7 @@ class ModuloRutina(NMModule):
         form.setStyleSheet(f"""
             QFrame#AddForm {{
                 background-color: {c['bg_elevated']};
-                border-radius: 8px;
+                border-radius: {RADIUS_INPUT}px;
                 border: none;
             }}
         """)
@@ -440,9 +442,8 @@ class ModuloRutina(NMModule):
                 background-color: {c['bg_input']};
                 color: {c['text_primary']};
                 border: 1px solid {c['border_accent'] if 'border_accent' in c else c['accent']};
-                border-radius: 6px;
+                border-radius: {RADIUS_SMALL}px;
                 padding: 0 {sp('sm') + sp('xs') // 2}px;
-                font-size: 13pt;
             }}
             QLineEdit:focus {{
                 border-color: {c['accent']};

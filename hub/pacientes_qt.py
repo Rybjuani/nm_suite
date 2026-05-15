@@ -33,7 +33,7 @@ try:
         apply_chart_theme,
         get_gradient, gradient_colors, stylesheet_lineedit, stylesheet_textedit,
         stylesheet_tabwidget, stylesheet_combobox, stylesheet_scrollarea,
-        RADIUS_CARD, RADIUS_BUTTON, PAD_CONTAINER, PAD_CARD,
+        RADIUS_CARD, RADIUS_BUTTON, RADIUS_SMALL, RADIUS_PILL, PAD_CONTAINER, PAD_CARD,
         GAP_CARDS, GAP_ELEMENTS, CATEGORY_COLORS,
     )
     from shared.theme import CATEGORY_COLORS
@@ -50,7 +50,7 @@ except ImportError:
         apply_chart_theme,
         get_gradient, gradient_colors, stylesheet_lineedit, stylesheet_textedit,
         stylesheet_tabwidget, stylesheet_combobox, stylesheet_scrollarea,
-        RADIUS_CARD, RADIUS_BUTTON, PAD_CONTAINER, PAD_CARD,
+        RADIUS_CARD, RADIUS_BUTTON, RADIUS_SMALL, RADIUS_PILL, PAD_CONTAINER, PAD_CARD,
         GAP_CARDS, GAP_ELEMENTS,
     )
     from shared.theme import CATEGORY_COLORS
@@ -77,7 +77,7 @@ def _row_item(text: str, modo: str) -> QFrame:
     f.setStyleSheet(f"""
         QFrame {{
             background: {c['bg_elevated']};
-            border-radius: 6px;
+            border-radius: {RADIUS_SMALL}px;
             border: none;
         }}
     """)
@@ -689,7 +689,7 @@ class _TabBanco(QWidget):
                     color: {c['text_tertiary']};
                     background: transparent;
                     border: none;
-                    border-radius: 12px;
+                    border-radius: {RADIUS_PILL}px;
                 }}
                 QPushButton:hover {{
                     color: white;

@@ -5,9 +5,15 @@ from datetime import datetime
 
 try:
     from shared.theme_qt import obtener_ruta_recurso
+    from shared.theme import COLORS as _DS_COLORS
 except ImportError:
     def obtener_ruta_recurso(nombre: str) -> str:
         return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", nombre)
+    _DS_COLORS = None
+
+# Colores de marca para PDF (siempre fijos — independiente del tema de UI)
+_PDF_ACCENT  = (_DS_COLORS["dark_hybrid"]["accent"]          if _DS_COLORS else "#6366f1")
+_PDF_CAPTION = (_DS_COLORS["light_hybrid"]["text_tertiary"]  if _DS_COLORS else "#64748b")
 
 
 def _generar(nombre: str, pid: str, datos: dict) -> str:
@@ -33,20 +39,19 @@ def _generar(nombre: str, pid: str, datos: dict) -> str:
                             leftMargin=2*cm, rightMargin=2*cm,
                             topMargin=2*cm, bottomMargin=2*cm)
     styles = getSampleStyleSheet()
-    AC = "#6366f1"
     titulo_st = ParagraphStyle("titulo", parent=styles["Title"],
-                               fontSize=18, textColor=rl_colors.HexColor(AC))
+                               fontSize=18, textColor=rl_colors.HexColor(_PDF_ACCENT))
     h2_st = ParagraphStyle("h2", parent=styles["Heading2"],
-                           fontSize=12, textColor=rl_colors.HexColor(AC), spaceAfter=4)
+                           fontSize=12, textColor=rl_colors.HexColor(_PDF_ACCENT), spaceAfter=4)
     normal_st = styles["Normal"]
     caption_st = ParagraphStyle("cap", parent=styles["Normal"], fontSize=8,
-                                textColor=rl_colors.HexColor("#555555"))
+                                textColor=rl_colors.HexColor(_PDF_CAPTION))
 
     story = []
     story.append(Paragraph(f"NeuroMood — Registro de {nombre}", titulo_st))
     story.append(Paragraph(f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", caption_st))
     story.append(HRFlowable(width="100%", thickness=1,
-                            color=rl_colors.HexColor(AC), spaceAfter=12))
+                            color=rl_colors.HexColor(_PDF_ACCENT), spaceAfter=12))
 
     def _seccion(titulo, filas, encabezados, row_fn, prom_txt=None):
         story.append(Paragraph(titulo, h2_st))
@@ -61,7 +66,7 @@ def _generar(nombre: str, pid: str, datos: dict) -> str:
         col_w = (A4[0] - 4*cm) / len(encabezados)
         t = Table(tabla_data, colWidths=[col_w] * len(encabezados), repeatRows=1)
         t.setStyle(TableStyle([
-            ("BACKGROUND",    (0, 0), (-1, 0), rl_colors.HexColor(AC)),
+            ("BACKGROUND",    (0, 0), (-1, 0), rl_colors.HexColor(_PDF_ACCENT)),
             ("TEXTCOLOR",     (0, 0), (-1, 0), rl_colors.white),
             ("FONTSIZE",      (0, 0), (-1, 0), 9),
             ("FONTSIZE",      (0, 1), (-1, -1), 8),
@@ -131,7 +136,7 @@ def _generar(nombre: str, pid: str, datos: dict) -> str:
                 preserveAspectRatio=True,
                 mask="auto",
             )
-        canvas.setStrokeColor(rl_colors.HexColor(AC))
+        canvas.setStrokeColor(rl_colors.HexColor(_PDF_ACCENT))
         canvas.setLineWidth(0.6)
         canvas.line(doc_obj.leftMargin, A4[1] - 1.55 * cm,
                     A4[0] - doc_obj.rightMargin, A4[1] - 1.55 * cm)

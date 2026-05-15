@@ -29,9 +29,10 @@ try:
         C, colors, norm_modo, qfont, qcolor,
         sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS,
-        RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL,
+        RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL, RADIUS_INPUT,
         stylesheet_textedit, stylesheet_scrollarea, stylesheet_lineedit,
     )
+    from shared.theme import TYPOGRAPHY
     from shared.db import obtener_conexion
 except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -45,9 +46,10 @@ except ImportError:
         C, colors, norm_modo, qfont, qcolor,
         sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS,
-        RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL,
+        RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL, RADIUS_INPUT,
         stylesheet_textedit, stylesheet_scrollarea, stylesheet_lineedit,
     )
+    from shared.theme import TYPOGRAPHY
     from shared.db import obtener_conexion
 
 
@@ -127,7 +129,7 @@ class _DayPillToggle(QPushButton):
                     color: {c['text_on_accent']};
                     border-radius: {RADIUS_PILL}px;
                     border: none;
-                    font-size: {10}pt;
+                    font-size: {TYPOGRAPHY['size_caption']}pt;
                     font-weight: bold;
                 }}
             """)
@@ -138,7 +140,7 @@ class _DayPillToggle(QPushButton):
                     color: {c['text_tertiary']};
                     border-radius: {RADIUS_PILL}px;
                     border: 1px solid {c.get('border_card', c['border'])};
-                    font-size: {10}pt;
+                    font-size: {TYPOGRAPHY['size_caption']}pt;
                 }}
                 QPushButton:hover {{
                     border-color: {c['accent']};
@@ -171,7 +173,7 @@ class _DeleteButton(QPushButton):
                     color: white;
                     border-radius: 14px;
                     border: none;
-                    font-size: 11pt;
+                    font-size: {TYPOGRAPHY['size_caption']}pt;
                 }}
             """)
         else:
@@ -181,7 +183,7 @@ class _DeleteButton(QPushButton):
                     color: {c['text_tertiary']};
                     border-radius: 14px;
                     border: none;
-                    font-size: 11pt;
+                    font-size: {TYPOGRAPHY['size_caption']}pt;
                 }}
                 QPushButton:hover {{
                     background-color: {c['error']};
@@ -373,7 +375,7 @@ class ModuloAvisos(NMModule):
         banner.setStyleSheet(f"""
             QFrame#Banner {{
                 background-color: {c['bg_elevated']};
-                border-radius: 8px;
+                border-radius: {RADIUS_INPUT}px;
                 border: 1px solid {c['accent']};
             }}
         """)

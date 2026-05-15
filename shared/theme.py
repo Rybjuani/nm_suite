@@ -132,6 +132,8 @@ LAYOUT = {
     "radius_input":         10,   # era 8
     "radius_badge":         20,
     "radius_pill":          24,   # para pills/chips de presets
+    "radius_small":         6,    # row items, badges pequeños, separadores
+    "checkbox_size":        18,   # indicador de QCheckBox
     "border_width":         1,
     "border_card_width":    2,
     "border_accent_width":  2,

@@ -1128,11 +1128,18 @@ RADIUS_BUTTON = LAYOUT["radius_button"]
 RADIUS_INPUT  = LAYOUT["radius_input"]
 RADIUS_PILL   = LAYOUT["radius_pill"]
 RADIUS_BADGE  = LAYOUT["radius_badge"]
+RADIUS_SMALL  = LAYOUT["radius_small"]
+CHECKBOX_SIZE = LAYOUT["checkbox_size"]
 PAD_CONTAINER = LAYOUT["padding_container"]
 PAD_CARD      = LAYOUT["padding_card"]
 GAP_CARDS     = LAYOUT["gap_cards"]
 GAP_ELEMENTS  = LAYOUT["gap_elements"]
 HEADER_H      = LAYOUT["header_height"]
+
+
+def qcolor_to_rgba_css(color: "QColor") -> str:
+    """Convierte un QColor a string rgba() para usar en stylesheets Qt."""
+    return f"rgba({color.red()}, {color.green()}, {color.blue()}, {color.alpha()})"
 
 
 def label_style(modo: str, key: str = "text_primary") -> str:

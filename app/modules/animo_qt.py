@@ -36,7 +36,7 @@ from PyQt6.QtWidgets import (
 try:
     from shared.components_qt import NMModule, NMButton, NMToast, ThemeManager
     from shared.theme_qt import (
-        C, colors, norm_modo, qcolor, qfont, interpolate_color,
+        C, colors, norm_modo, qcolor, qfont, interpolate_color, qcolor_to_rgba_css,
         get_gradient, stylesheet_slider, stylesheet_textedit, stylesheet_scrollarea,
         PAD_CONTAINER, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
     )
@@ -48,7 +48,7 @@ except ImportError:
         sys.path.insert(0, _dir)
     from shared.components_qt import NMModule, NMButton, NMToast, ThemeManager
     from shared.theme_qt import (
-        C, colors, norm_modo, qcolor, qfont, interpolate_color,
+        C, colors, norm_modo, qcolor, qfont, interpolate_color, qcolor_to_rgba_css,
         get_gradient, stylesheet_slider, stylesheet_textedit, stylesheet_scrollarea,
         PAD_CONTAINER, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
     )
@@ -420,7 +420,7 @@ class ModuloAnimo(NMModule):
             chip.setStyleSheet(f"""
                 QLabel {{
                     color: {chip_color};
-                    background: rgba({fill.red()}, {fill.green()}, {fill.blue()}, {fill.alpha()});
+                    background: {qcolor_to_rgba_css(fill)};
                     border: 1px solid {chip_color};
                     border-radius: {RADIUS_PILL}px;
                     padding: 4px 10px;

@@ -30,7 +30,7 @@ try:
         C, colors, norm_modo, qfont, qcolor,
         sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS,
-        RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL,
+        RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL, RADIUS_BADGE,
         stylesheet_textedit, stylesheet_slider, stylesheet_lineedit,
     )
     from shared.db import obtener_conexion
@@ -47,7 +47,7 @@ except ImportError:
         C, colors, norm_modo, qfont, qcolor,
         sp,
         PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS,
-        RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL,
+        RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL, RADIUS_BADGE,
         stylesheet_textedit, stylesheet_slider, stylesheet_lineedit,
     )
     from shared.db import obtener_conexion
@@ -409,7 +409,7 @@ class ModuloRegistroTCC(NMModule):
                     QLabel {{
                         color: {c['warning']};
                         background-color: {c['bg_elevated']};
-                        border-radius: 12px;
+                        border-radius: {RADIUS_BADGE}px;
                         padding: {sp('xs')}px {sp('sm')}px;
                     }}
                 """)
