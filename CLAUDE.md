@@ -26,6 +26,12 @@ db/                 → supabase_schema.sql
 - **`shared/theme.py` es el source of truth** de colores, tipografía, layout y CATEGORY_COLORS.
 - **`shared/identidad.py`** tiene la función canónica `generar_patient_id(nombre, pwd, install_code)`.
 
+### Seguridad (Junio 2026)
+
+- `guardar_password(pwd, install_code)` → PBKDF2-SHA256 (100k iteraciones, salt = install_code).
+- `obtener_password_hash(install_code)` → hash almacenado con auto-migración de texto plano.
+- `.env` NUNCA con credenciales reales en builds públicos. Ver `docs/SECURITY_NOTES.md`.
+
 ## Stack técnico
 
 - Python 3.12, PyQt6 6.6+
