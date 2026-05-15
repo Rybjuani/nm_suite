@@ -190,3 +190,29 @@ python _test_visual_auto.py                   → 15/15 PASS
 python _test_home_auto.py                     → 6/6 PASS
 python _test_responsive_final.py              → 17/17 PASS
 ```
+
+## Distribución
+
+### Windows limpio (sin Python) — checklist de prueba
+
+1. Instalar Suite: ejecutar `Instalador NeuroMood Suite.exe`
+2. Abrir Suite: ejecutar `NeuroMood Suite.exe` desde carpeta instalada
+3. Instalar Hub Pro: ejecutar `Instalador NeuroMood Hub Pro.exe`
+4. Abrir Hub Pro: ejecutar `NeuroMood Hub Pro.exe`
+5. Desinstalar Suite: `Desinstalador NeuroMood.exe`
+6. Desinstalar Hub: `Desinstalador NeuroMood Hub Pro.exe`
+7. Verificar accesos directos en Escritorio y Menú Inicio
+8. Verificar `%APPDATA%\NeuroMood\` (debe quedar vacío o eliminado tras desinstalar)
+9. Verificar `%APPDATA%\NeuroMoodPro\` (Hub)
+
+### Build para distribución
+
+```bat
+BUILD_ALL.bat              → compila Suite + Hub (onedir)
+BUILD_ALL.bat release      → onefile (más lento al abrir, .exe único)
+BUILD_INSTALLER.bat        → empaqueta instalador Suite
+BUILD_INSTALLER_PRO.bat    → empaqueta instalador Hub
+```
+
+**IMPORTANTE**: El `.env` bundled en el instalador paciente NO debe contener credenciales reales.
+Ver `docs/SECURITY_NOTES.md`.
