@@ -93,7 +93,8 @@ class _TimerCanvas(ThemeAwareWidgetMixin, QWidget):
     def __init__(self, parent=None, modo: str = "dark_hybrid"):
         super().__init__(parent)
         self._modo = norm_modo(modo)
-        self.setFixedSize(_CANVAS, _CANVAS)
+        self.setMinimumSize(200, 200)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         self._progress = 0.0        # 0.0 = lleno, 1.0 = vacío
         self._time_text = "00:00"
@@ -196,7 +197,7 @@ class _TimerCanvas(ThemeAwareWidgetMixin, QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         c = colors(self._modo)
-        cx = cy = _CANVAS / 2
+        cx = cy = self.width() / 2
         r = _R_BASE + self._pulse_offset
 
         # Track ring
@@ -223,8 +224,8 @@ class _TimerCanvas(ThemeAwareWidgetMixin, QWidget):
                 font = qfont("size_h2", bold=True)
                 p.setFont(font)
                 p.setPen(QPen(QColor(C("success", self._modo))))
-                p.drawText(QRectF(0, cy - 30, _CANVAS, 60),
-                           Qt.AlignmentFlag.AlignCenter, "¡Tiempo! ✓")
+                p.drawText(QRectF(0, cy - 28, self.width(), 56),
+                       Qt.AlignmentFlag.AlignCenter, "¡Tiempo! ✓")
                 p.restore()
         else:
             # Arco de progreso con gradiente 3-stop
@@ -251,7 +252,7 @@ class _TimerCanvas(ThemeAwareWidgetMixin, QWidget):
             font_big.setPointSize(32)
             p.setFont(font_big)
             p.setPen(QPen(QColor(c["text_primary"])))
-            p.drawText(QRectF(0, cy - 28, _CANVAS, 56),
+            p.drawText(QRectF(0, cy - 28, self.width(), 56),
                        Qt.AlignmentFlag.AlignCenter, self._time_text)
 
         p.end()

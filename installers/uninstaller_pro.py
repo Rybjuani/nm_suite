@@ -18,6 +18,7 @@ try:
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
         FONT_FAMILY, recurso, aplicar_captionbar_installer, stylesheet_installer,
+        InstallerShell, TEAL, VIOLET,
     )
 except ImportError:
     _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -213,123 +214,66 @@ class _ProUninstWorker(QThread):
 
 # ── DesinstaladorPro ──────────────────────────────────────────────────────────
 
-class DesinstaladorPro(QMainWindow):
+class DesinstaladorPro(InstallerShell):
+    APP_NAME = "NeuroMood Hub Pro"
+    WINDOW_SIZE = (480, 340)
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Desinstalador — NeuroMood Hub Pro")
-        self.setFixedSize(480, 340)
-        self.setStyleSheet(_SS)
-        try:
-            self.setWindowIcon(QIcon(recurso("no_symbol.ico")))
-        except Exception:
-            pass
-        screen = QApplication.primaryScreen().availableGeometry()
-        self.move((screen.width() - 480) // 2, (screen.height() - 300) // 2)
-        aplicar_captionbar_installer(self)
-
         self._install_dir = detectar_install_dir()
         self._worker: _ProUninstWorker | None = None
-        self._build_ui()
-
-    def _build_ui(self):
-        central = QWidget()
-        self.setCentralWidget(central)
-        layout = QVBoxLayout(central)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-
-        # Header
-        header = QWidget()
-        header.setFixedHeight(56)
-        header.setStyleSheet(f"background: {BG_SECONDARY};")
-        hl = QHBoxLayout(header)
-        hl.setContentsMargins(20, 0, 20, 0)
-        logo_lbl = QLabel()
-        try:
-            from PIL import Image as PILImage
-            img = PILImage.open(recurso("LOGO.png")).convert("RGBA")
-            img.thumbnail((120, 40), PILImage.LANCZOS)
-            from PyQt6.QtGui import QImage
-            qimg = QImage(img.tobytes("raw", "RGBA"), img.width, img.height,
-                          QImage.Format.Format_RGBA8888)
-            logo_lbl.setPixmap(QPixmap.fromImage(qimg))
-        except Exception:
-            logo_lbl.setText("NeuroMood Hub")
-            logo_lbl.setStyleSheet(f"color: {ACCENT}; font-size: 14px; font-weight: bold;")
-        hl.addWidget(logo_lbl)
-        hl.addStretch()
-        layout.addWidget(header)
-
-        sep = QFrame(); sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background: {BORDER};")
-        layout.addWidget(sep)
-
-        self._stack = QWidget()
-        self._stack_layout = QVBoxLayout(self._stack)
-        self._stack_layout.setContentsMargins(28, 16, 28, 16)
-        layout.addWidget(self._stack, stretch=1)
-
+        self._build_shell()
         self._show_confirm()
 
-    def _clear_stack(self):
-        while self._stack_layout.count():
-            item = self._stack_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-
-    def _show_confirm(self):
-        self._clear_stack()
-
+    def _build_confirm(self, page, layout):
         title = QLabel("Desinstalar NeuroMood Hub Pro")
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
-        self._stack_layout.addWidget(title)
-        self._stack_layout.addSpacing(8)
+        layout.addWidget(title)
+        layout.addSpacing(8)
 
         desc = QLabel(
             f"Se eliminaran los archivos de instalacion del Hub Profesional\n"
             f"de tu computadora.\n\nCarpeta: {self._install_dir}"
         )
         desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px;")
-        self._stack_layout.addWidget(desc)
-        self._stack_layout.addStretch()
+        layout.addWidget(desc)
+        layout.addStretch()
 
-        btn_row = QHBoxLayout()
-        btn_cancel = QPushButton("Cancelar")
-        btn_cancel.setObjectName("outline")
-        btn_cancel.setFixedSize(110, 34)
-        btn_cancel.clicked.connect(self.close)
-        btn_row.addWidget(btn_cancel)
-        btn_row.addStretch()
-        btn_uninst = QPushButton("Desinstalar")
-        btn_uninst.setFixedSize(130, 34)
-        btn_uninst.clicked.connect(self._iniciar)
-        btn_row.addWidget(btn_uninst)
-        self._stack_layout.addLayout(btn_row)
+    def _show_confirm(self):
+        self._add_page(lambda page, lay: self._build_confirm(page, lay))
+        self.btn_sig.setText("Desinstalar")
+        self.btn_sig.clicked.connect(self._iniciar)
+
+    def _show_confirm(self):
+        self._add_page(lambda page, lay: self._build_confirm(page, lay))
+        self.btn_sig.setText("Desinstalar")
+        self.btn_sig.clicked.connect(self._iniciar)
 
     def _iniciar(self):
-        self._clear_stack()
-
-        title = QLabel("Desinstalando Hub Profesional...")
-        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
-        self._stack_layout.addWidget(title)
-        self._stack_layout.addSpacing(12)
-
-        self._pbar = QProgressBar()
-        self._pbar.setRange(0, 100); self._pbar.setValue(0)
-        self._stack_layout.addWidget(self._pbar)
-        self._stack_layout.addSpacing(6)
-
-        self._status_lbl = QLabel("Preparando...")
-        self._status_lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px;")
-        self._stack_layout.addWidget(self._status_lbl)
-        self._stack_layout.addStretch()
+        self.btn_sig.setEnabled(False)
+        self.btn_sig.setText("Desinstalando...")
+        self._add_page(lambda page, lay: self._build_progress(page, lay))
+        self._ir_a(self._pagina + 1)
 
         self._worker = _ProUninstWorker(self._install_dir, self)
         self._worker.progress_signal.connect(self._set_progress)
         self._worker.done_signal.connect(self._on_done)
         self._worker.error_signal.connect(self._on_error)
         self._worker.start()
+
+    def _build_progress(self, page, layout):
+        title = QLabel("Desinstalando Hub Profesional...")
+        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
+        layout.addWidget(title)
+        layout.addSpacing(12)
+        self._pbar = QProgressBar()
+        self._pbar.setRange(0, 100); self._pbar.setValue(0)
+        layout.addWidget(self._pbar)
+        layout.addSpacing(6)
+        self._status_lbl = QLabel("Preparando...")
+        self._status_lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px;")
+        layout.addWidget(self._status_lbl)
+        layout.addStretch()
 
     def _set_progress(self, v: float, t: str):
         self._pbar.setValue(int(v * 100))

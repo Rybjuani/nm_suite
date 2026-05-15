@@ -119,7 +119,8 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
     def __init__(self, parent=None, modo: str = "dark_hybrid"):
         super().__init__(parent)
         self._modo = norm_modo(modo)
-        self.setFixedSize(_CANVAS, _CANVAS)
+        self.setMinimumSize(200, 200)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         # Estado visual
         self._circle_radius = float(_R_MIN)
@@ -269,7 +270,7 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         p.save()
 
         c = colors(self._modo)
-        cx = cy = _CANVAS / 2
+        cx = cy = self.width() / 2
 
         # ── 1. Glow radial (usando radial_glow_double premium) ─────────────────
         glow_r = self._circle_radius + 32
@@ -344,7 +345,7 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         font_big.setPointSize(38)
         p.setFont(font_big)
         p.setPen(QPen(QColor(c["text_primary"])))
-        text_rect_top = QRectF(0, cy - 44, _CANVAS, 52)
+        text_rect_top = QRectF(0, cy - 44, self.width(), 52)
         p.drawText(text_rect_top, Qt.AlignmentFlag.AlignCenter, self._center_text)
 
         # Nombre de fase debajo
