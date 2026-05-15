@@ -215,7 +215,7 @@ class _InstalWorker(QThread):
                              (clave, valor))
             conn.commit()
             conn.close()
-            guardar_password(self._pwd)
+            guardar_password(self._pwd, self._codigo)
             self.log_signal.emit("  Identidad guardada", SUCCESS)
         except Exception as e:
             self.log_signal.emit(f"  Advertencia: identidad ({e})", WARNING_C)

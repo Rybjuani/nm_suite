@@ -2,11 +2,13 @@
 
 ## Password Handling (v3.1 — Junio 2026)
 
-- **Hash**: SHA-256 determinista (misma contraseña → mismo hash).
-- **Storage**: `patient_pwd` en `config` table de SQLite usa hash, nunca texto plano.
+- **Hash**: PBKDF2-SHA256 con 100,000 iteraciones.
+- **Salt**: `install_code` (único por instalación). Sin install_code → fallback `"NeuromoodV3"`.
+- **Determinismo**: Misma (password + salt) → mismo hash. Compatible con Supabase y patient_id.
+- **Storage**: `patient_pwd` en `config` table de SQLite usa hash PBKDF2, nunca texto plano.
 - **Migration**: Si se detecta password en texto plano (no 64 chars hex), se convierte automáticamente al primer acceso vía `obtener_password_hash()`.
 - **patient_id**: Derivado de SHA-256 de `nombre + password + install_code`. No se puede revertir.
-- **Supabase**: Se envía el hash (no la contraseña original).
+- **Supabase**: Se envía el hash PBKDF2 (no la contraseña original).
 
 ## .env y Secretos
 

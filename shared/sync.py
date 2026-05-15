@@ -296,24 +296,10 @@ def sync_completo(patient_id: str = None, nombre: str = None) -> bool:
     if not pid:
         return False
     try:
-        pwd = obtener_password_hash()
         install_code = leer_config("install_code", "")
+        pwd = obtener_password_hash(install_code)
         _upsert_paciente(sb, pid, nombre, pwd, install_code)
 
-        # Desde la última semana (solapamos para no perder datos)
-        desde = (datetime.now() - timedelta(days=_DAYS_BETWEEN_SYNC + 1)).strftime("%Y-%m-%d")
-
-        _exportar_animo(sb, pid, desde)
-        _exportar_respiracion(sb, pid, desde)
-        _exportar_pensamientos(sb, pid, desde)
-        _exportar_checklist(sb, pid, desde)
-        _exportar_temporizador(sb, pid, desde)
-        _exportar_recordatorios_log(sb, pid, desde)
-        _importar_tareas_asignadas(sb, pid)
-        _importar_recordatorios_asignados(sb, pid)
-
-        guardar_config("last_sync_date", datetime.now().strftime("%Y-%m-%d"))
-        return True
     except Exception:
         return False
 
@@ -424,8 +410,8 @@ def sync_inmediato():
         return
     desde = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
     try:
-        pwd = obtener_password_hash()
         install_code = leer_config("install_code", "")
+        pwd = obtener_password_hash(install_code)
         _upsert_paciente(sb, pid, nombre, pwd, install_code)
         _exportar_animo(sb, pid, desde)
         _exportar_respiracion(sb, pid, desde)

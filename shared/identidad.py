@@ -2,10 +2,15 @@
 import hashlib
 from shared.db import guardar_config, leer_config
 
+_PWD_ITERATIONS = 100_000
+_PWD_KEY_LEN = 32
 
-def _hash_pwd(password: str) -> str:
-    """Hash SHA-256 determinista de contraseña. Misma password → mismo hash."""
-    return hashlib.sha256(password.encode()).hexdigest()
+
+def _hash_pwd(password: str, salt: str = "") -> str:
+    """Hash PBKDF2-SHA256 con salt determinista. Misma (password, salt) → mismo hash."""
+    s = salt.encode() if salt else b"NeuromoodV3"
+    dk = hashlib.pbkdf2_hmac("sha256", password.encode(), s, _PWD_ITERATIONS, dklen=_PWD_KEY_LEN)
+    return dk.hex()
 
 
 def _is_hashed(stored: str) -> bool:
@@ -19,21 +24,21 @@ def generar_patient_id(nombre: str, password: str, install_code: str = "") -> st
     return hashlib.sha256(clave.encode()).hexdigest()[:24]
 
 
-def guardar_password(password: str):
-    """Almacena hash seguro de la contraseña. SIEMPRE usar esta función."""
-    guardar_config("patient_pwd", _hash_pwd(password))
+def guardar_password(password: str, install_code: str = ""):
+    """Almacena hash PBKDF2-SHA256. Salt = install_code (único por instalación)."""
+    h = _hash_pwd(password, install_code)
+    guardar_config("patient_pwd", h)
 
 
-def obtener_password_hash() -> str:
-    """Devuelve hash almacenado. Si detecta texto plano, lo migra automáticamente."""
+def obtener_password_hash(install_code: str = "") -> str:
+    """Devuelve hash almacenado. Si detecta texto plano, lo migra automáticamente a PBKDF2."""
     stored = leer_config("patient_pwd", "")
     if not stored:
         return ""
     if not _is_hashed(stored):
-        # Migrar password en texto plano a hash
-        hashed = _hash_pwd(stored)
-        guardar_config("patient_pwd", hashed)
-        return hashed
+        h = _hash_pwd(stored, install_code)
+        guardar_config("patient_pwd", h)
+        return h
     return stored
 
 
@@ -42,7 +47,7 @@ def registrar_paciente(nombre: str, password: str, install_code: str = "") -> st
     guardar_config("patient_id", pid)
     guardar_config("patient_name", nombre.strip())
     guardar_config("install_code", install_code)
-    guardar_password(password)
+    guardar_password(password, install_code)
     return pid
 
 
