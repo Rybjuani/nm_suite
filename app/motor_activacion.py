@@ -60,17 +60,21 @@ def sugerir_actividades(animo: int, max_results: int = 3) -> list:
     return pool[:max_results]
 
 
-def registrar_resultado(nombre: str, resultado: str, animo: int):
+def registrar_resultado(nombre: str, resultado: str, animo: int, energia: int | None = None):
+    import logging
     from shared.utils import fecha_hoy, hora_actual
+    _log = logging.getLogger(__name__)
+    energia_val = energia if energia is not None else animo
     conn = obtener_conexion()
     try:
         conn.execute(
-            "INSERT INTO activacion (fecha, hora, actividad, resultado, animo) VALUES (?, ?, ?, ?, ?)",
-            (fecha_hoy(), hora_actual(), nombre, resultado, animo),
+            "INSERT INTO activacion (fecha, hora, energia, animo, actividad, resultado) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (fecha_hoy(), hora_actual(), energia_val, animo, nombre, resultado),
         )
         conn.commit()
     except Exception:
-        pass
+        _log.error("registrar_resultado falló", exc_info=True)
     conn.close()
 
 

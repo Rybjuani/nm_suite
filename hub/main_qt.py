@@ -1472,6 +1472,9 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 def main():
+    from shared.crash_log import setup as _crash_setup
+    _crash_setup("hub")
+
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName("NeuroMood Hub")
     # AA_UseHighDpiPixmaps fue eliminado en PyQt6 6.x — DPI se maneja automáticamente

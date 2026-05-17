@@ -851,6 +851,12 @@ class ModuloRegistroTCC(NMModule):
                             variant="error")
             return
 
+        try:
+            from shared.sync import sync_inmediato_background
+            sync_inmediato_background()
+        except Exception:
+            pass
+
         if hasattr(self._btn_next, "play_success"):
             self._btn_next.play_success()
         self._show_success_page()

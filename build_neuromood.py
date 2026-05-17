@@ -476,6 +476,22 @@ def main() -> int:
         cleanup_generated(keep_build=True)
         return 1
 
+    # Verificar que PyInstaller no emitió errores de hidden imports (sale con código 0 igualmente)
+    hidden_errors = []
+    try:
+        log_text = LOG_FILE.read_text(encoding="utf-8", errors="replace")
+        for line in log_text.splitlines():
+            if "ERROR: Hidden import" in line or "hidden import not found" in line.lower():
+                hidden_errors.append(line.strip())
+    except Exception:
+        pass
+    if hidden_errors:
+        print("")
+        print("ADVERTENCIA — hidden imports no encontrados (revisar dependencias):")
+        for e in hidden_errors:
+            print(f"  {e}")
+        print("")
+
     print("")
     print("Build listo:")
     print(r"  dist\NeuroMood Suite\NeuroMood Suite.exe")
@@ -486,7 +502,7 @@ def main() -> int:
     print(r"  dist\Instalador Hub\Instalador Hub.exe")
     print("")
     print("Se limpiaron specs generados y build/.")
-    return 0
+    return 1 if hidden_errors else 0
 
 
 if __name__ == "__main__":

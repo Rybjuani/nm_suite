@@ -17,10 +17,13 @@ externos (`on_module_open`, `get_status_fn`). Compatibilidad pública:
     .set_modo(modo) / .refresh_statuses() / .resizeEvent()
 """
 
+import logging
 import os
 import sys
 import datetime as _dt
 from datetime import datetime
+
+_log = logging.getLogger(__name__)
 
 from PyQt6.QtCore import (
     Qt, QTimer, QPropertyAnimation, QEasingCurve, QRectF, QPointF,
@@ -116,7 +119,7 @@ def _load_streak() -> int:
         from shared.db import obtener_conexion
         con = obtener_conexion()
         cur = con.execute(
-            "SELECT DISTINCT date(fecha) AS d FROM registros_animo "
+            "SELECT DISTINCT date(fecha) AS d FROM termometro "
             "ORDER BY d DESC LIMIT 30"
         )
         rows = [r["d"] for r in cur.fetchall()]
@@ -132,6 +135,7 @@ def _load_streak() -> int:
                 break
         return streak
     except Exception:
+        _log.warning("_load_streak falló", exc_info=True)
         return 0
 
 
@@ -148,17 +152,18 @@ def _load_weekly_mood() -> tuple[list, list]:
             d_curr = today - _dt.timedelta(days=6 - i)
             d_prev = d_curr - _dt.timedelta(days=7)
             row = con.execute(
-                "SELECT AVG(valor) AS v FROM registros_animo WHERE date(fecha)=?",
+                "SELECT AVG(puntaje) AS v FROM termometro WHERE date(fecha)=?",
                 (str(d_curr),)).fetchone()
             if row and row["v"] is not None:
                 current[i] = float(row["v"])
             row2 = con.execute(
-                "SELECT AVG(valor) AS v FROM registros_animo WHERE date(fecha)=?",
+                "SELECT AVG(puntaje) AS v FROM termometro WHERE date(fecha)=?",
                 (str(d_prev),)).fetchone()
             if row2 and row2["v"] is not None:
                 previous[i] = float(row2["v"])
         return current, previous
     except Exception:
+        _log.warning("_load_weekly_mood falló", exc_info=True)
         return [None] * 7, [None] * 7
 
 
@@ -179,34 +184,33 @@ def _load_kpis_today() -> dict:
         from shared.db import obtener_conexion
         con = obtener_conexion()
         today = str(_dt.date.today())
-        # Cada query es independiente — un fallo no rompe los demás
         for key, sql in (
             ("sesiones",
-             "SELECT COUNT(*) AS c FROM sesiones_timer WHERE date(fecha)=?"),
+             "SELECT COUNT(*) AS c FROM actividades_temporizador WHERE date(fecha)=?"),
             ("actividades",
-             "SELECT COUNT(*) AS c FROM actividades_completadas WHERE date(fecha)=?"),
+             "SELECT COUNT(*) AS c FROM activacion WHERE date(fecha)=?"),
         ):
             try:
                 row = con.execute(sql, (today,)).fetchone()
                 out[key] = int(row["c"] if row and row["c"] is not None else 0)
             except Exception:
-                pass
+                _log.warning("_load_kpis_today '%s' falló", key, exc_info=True)
         try:
             row = con.execute(
-                "SELECT COALESCE(SUM(duracion_segundos),0) AS s "
-                "FROM sesiones_respiracion WHERE date(fecha)=?",
+                "SELECT COALESCE(SUM(duracion_minutos),0.0) AS m "
+                "FROM respiracion WHERE date(fecha)=?",
                 (today,)).fetchone()
             out["respiracion_min"] = int(round(
-                (row["s"] if row and row["s"] is not None else 0) / 60))
+                row["m"] if row and row["m"] is not None else 0))
         except Exception:
-            pass
+            _log.warning("_load_kpis_today 'respiracion_min' falló", exc_info=True)
     except Exception:
-        pass
+        _log.warning("_load_kpis_today: conexión falló", exc_info=True)
     return out
 
 
 def _load_upcoming_avisos(limit: int = 3) -> list[tuple[str, str]]:
-    """Próximos avisos (hora, descripción)."""
+    """Próximos recordatorios activos (hora, mensaje)."""
     if visual_qa_enabled():
         return [
             ("09:00", "Tomar medicación"),
@@ -217,10 +221,11 @@ def _load_upcoming_avisos(limit: int = 3) -> list[tuple[str, str]]:
         from shared.db import obtener_conexion
         con = obtener_conexion()
         cur = con.execute(
-            "SELECT hora, descripcion FROM avisos "
+            "SELECT hora, mensaje FROM recordatorios "
             "WHERE activo=1 ORDER BY hora LIMIT ?", (limit,))
-        return [(r["hora"], r["descripcion"]) for r in cur.fetchall()]
+        return [(r["hora"], r["mensaje"]) for r in cur.fetchall()]
     except Exception:
+        _log.warning("_load_upcoming_avisos falló", exc_info=True)
         return []
 
 
@@ -1143,7 +1148,6 @@ class HomeView(QWidget):
         if hasattr(self, "_streak_badge") and self._streak_badge is not None:
             self._streak_badge._days = _load_streak()
             self._streak_badge._apply_theme(self._modo)
-        self._avisos_card.set_avisos(_load_upcoming_avisos())
 
     def set_modo(self, modo: str):
         self._apply_theme(modo)

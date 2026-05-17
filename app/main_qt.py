@@ -39,7 +39,8 @@ from shared.theme_qt import (
     obtener_ruta_recurso, aplicar_captionbar_qt,
     ANIM, EASE_IN, EASE_OUT, ThemeAwareWidgetMixin,
     paint_shell_background,
-    app_palette, stylesheet_base,   # usados por _apply_initial_style
+    app_palette, stylesheet_base,
+    norm_modo,
 )
 from shared.components_qt import (
     ThemeManager, NMHeader, NMFadeWidget, NMToast,
@@ -474,6 +475,9 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 def main():
+    from shared.crash_log import setup as _crash_setup
+    _crash_setup("suite")
+
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName("NeuroMood Suite")
     app.setOrganizationName("NeuroMood Suite")

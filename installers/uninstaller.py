@@ -473,9 +473,9 @@ class DesinstaladorNeuroMood(InstallerShell):
             pass
         self.btn_sig.clicked.connect(self.close)
         QApplication.instance().processEvents()
-        delay = 5000 if os.environ.get("NM_VISUAL_QA") == "1" else 1500
-        QTimer.singleShot(delay, self.close)
-        QTimer.singleShot(delay + 500, QApplication.instance().quit)
+        # delay = 5000 if os.environ.get("NM_VISUAL_QA") == "1" else 1500
+        # QTimer.singleShot(delay, self.close)
+        # QTimer.singleShot(delay + 500, QApplication.instance().quit)
 
     def _build_done(self, page, layout):
         from PyQt6.QtCore import Qt as _Qt

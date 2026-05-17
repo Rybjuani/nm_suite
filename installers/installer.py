@@ -679,10 +679,9 @@ class _InstalWorker(QThread):
                             sb.postgrest.auth(self._access_token)
                         except Exception:
                             pass
+                # Columnas que existen en la tabla patients del schema Supabase
                 payload_full = {
                     "patient_id": pid, "patient_name": self._nombre,
-                    "patient_email": self._email,
-                    "auth_user_id": self._auth_user_id,
                     "install_code": self._codigo,
                     "perm_checklist_activacion": True,
                     "perm_checklist_manual": True,
@@ -694,7 +693,6 @@ class _InstalWorker(QThread):
                 except Exception:
                     sb.table("patients").upsert({
                         "patient_id": pid, "patient_name": self._nombre,
-                        "install_code": self._codigo,
                     }).execute()
                 self.log_signal.emit("  Paciente registrado en la nube", SUCCESS)
         except Exception as e:
@@ -1729,6 +1727,8 @@ class InstaladorNeuroMood(InstallerShell):
 
 
 if __name__ == "__main__":
+    from shared.crash_log import setup as _crash_setup
+    _crash_setup("installer_suite")
     app = QApplication(sys.argv)
     win = InstaladorNeuroMood()
     win.show()

@@ -120,7 +120,7 @@ class _HeroDayCard(NMCard):
 
         self._cta = NMButton("Nueva tarea", variant="gradient",
                               size="md", modo=self._modo, width=160)
-        self._cta.clicked.connect(self.new_task_requested.emit)
+        self._cta.clicked.connect(lambda _=False: self.new_task_requested.emit())
         lay.addWidget(self._cta, alignment=Qt.AlignmentFlag.AlignVCenter)
 
         self._apply_hero_styles()
@@ -552,6 +552,11 @@ class ModuloRutina(NMModule):
                 )
             conn.commit()
             conn.close()
+            try:
+                from shared.sync import sync_inmediato_background
+                sync_inmediato_background()
+            except Exception:
+                pass
         except Exception:
             _log.exception("Operation failed")
 

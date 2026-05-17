@@ -250,7 +250,7 @@ class _NuevoAvisoPanel(QWidget):
         btn_row.setSpacing(V3_SP["sm"])
         btn_cancel = NMButton("Cancelar", variant="ghost", size="md",
                                 parent=self, modo=self._modo, width=100)
-        btn_cancel.clicked.connect(self.cancelled.emit)
+        btn_cancel.clicked.connect(lambda _=False: self.cancelled.emit())
         btn_row.addWidget(btn_cancel)
         btn_row.addStretch()
         btn_save = NMButton("Guardar", variant="gradient", size="md",
@@ -853,6 +853,11 @@ class ModuloAvisos(NMModule):
             )
             conn.commit()
             conn.close()
+            try:
+                from shared.sync import sync_inmediato_background
+                sync_inmediato_background()
+            except Exception:
+                pass
         except Exception:
             _log.exception("Failed to save reminder")
         self._load_reminders()

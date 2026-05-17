@@ -23,7 +23,7 @@ from PyQt6.QtGui import (
     QColor, QPainter, QPen, QBrush, QFont,
     QLinearGradient, QRadialGradient, QConicalGradient, QPainterPath,
     QFontMetrics, QPixmap, QPaintEvent, QMouseEvent,
-    QResizeEvent, QEnterEvent, QIcon, QPolygonF,
+    QResizeEvent, QEnterEvent, QIcon, QPolygonF, QImage,
 )
 from PyQt6.QtWidgets import (
     QWidget, QFrame, QPushButton, QLineEdit, QLabel,
@@ -2934,7 +2934,7 @@ class NMActivityCard(QFrame):
         row.addWidget(self._yes_btn)
         self._no_btn = QPushButton("\u00d7 No es para mi")
         self._no_btn.setFixedHeight(24)
-        self._no_btn.clicked.connect(self.skipped.emit)
+        self._no_btn.clicked.connect(lambda _=False: self.skipped.emit())
         row.addWidget(self._no_btn)
         row.addStretch()
         lay.addLayout(row)

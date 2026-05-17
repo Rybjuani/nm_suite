@@ -537,6 +537,11 @@ class ModuloTimer(NMModule):
             )
             conn.commit()
             conn.close()
+            try:
+                from shared.sync import sync_inmediato_background
+                sync_inmediato_background()
+            except Exception:
+                pass
         except Exception:
             _log.exception("Operation failed")
 

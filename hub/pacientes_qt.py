@@ -21,7 +21,7 @@ from PyQt6.QtGui import QColor, QPainter, QPen, QBrush, QLinearGradient
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea,
     QFrame, QTabWidget, QTextEdit, QSizePolicy, QComboBox,
-    QApplication,
+    QApplication, QPushButton,
 )
 
 try:
@@ -1202,7 +1202,7 @@ class DetallePacienteView(QWidget):
 
     def _descargar_constancia_consentimiento(self):
         if not self._legal_consent:
-            NMToast.show(self, "No hay constancia remota disponible.", "warning")
+            NMToast.display(self.window(), "No hay constancia remota disponible.", variant="warning")
             return
         try:
             from hub.exportar import generar_constancia_consentimiento
@@ -1211,9 +1211,9 @@ class DetallePacienteView(QWidget):
                 os.startfile(ruta)
             except Exception:
                 pass
-            NMToast.show(self, "Constancia de consentimiento generada.", "success")
+            NMToast.display(self.window(), "Constancia de consentimiento generada.", variant="success")
         except Exception as e:
-            NMToast.show(self, f"No se pudo generar la constancia: {str(e)[:90]}", "error")
+            NMToast.display(self.window(), f"No se pudo generar la constancia: {str(e)[:90]}", variant="error")
 
     @staticmethod
     def _parse_fecha(s) -> datetime | None:

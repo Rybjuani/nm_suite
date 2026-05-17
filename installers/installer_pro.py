@@ -555,6 +555,8 @@ class InstaladorPro(InstallerShell):
 
 
 if __name__ == "__main__":
+    from shared.crash_log import setup as _crash_setup
+    _crash_setup("installer_hub")
     app = QApplication(sys.argv)
     win = InstaladorPro()
     win.show()
