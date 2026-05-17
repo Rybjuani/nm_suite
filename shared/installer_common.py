@@ -351,8 +351,8 @@ class InstallerShell(QMainWindow):
         try:
             from PIL import Image as PILImage
             from PyQt6.QtGui import QImage
-            img = PILImage.open(recurso("LOGO.png")).convert("RGBA")
-            img.thumbnail((110, 30), PILImage.LANCZOS)
+            img = PILImage.open(recurso("logos-dark.png")).convert("RGBA")
+            img.thumbnail((130, 36), PILImage.LANCZOS)
             qimg = QImage(img.tobytes("raw", "RGBA"), img.width, img.height, QImage.Format.Format_RGBA8888)
             logo_lbl.setPixmap(QPixmap.fromImage(qimg))
         except Exception:
@@ -367,14 +367,14 @@ class InstallerShell(QMainWindow):
             sl.setSpacing(4)
             for i, name in enumerate(self.STEPS):
                 circle = QLabel(f" {i + 1} ")
-                circle.setFixedSize(22, 22)
+                circle.setFixedSize(18, 18)
                 circle.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 circle.setStyleSheet(
-                    f"background: {BORDER}; color: {TEXT_TERT}; border-radius: 11px;"
-                    f"font-weight: bold; font-size: 10px;"
+                    f"background: {BORDER}; color: {TEXT_TERT}; border-radius: 9px;"
+                    f"font-weight: bold; font-size: 9px;"
                 )
                 lbl = QLabel(name)
-                lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px; background: transparent;")
+                lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 9px; background: transparent;")
                 sl.addWidget(circle)
                 sl.addWidget(lbl)
                 if i < len(self.STEPS) - 1:
@@ -408,22 +408,36 @@ class InstallerShell(QMainWindow):
         self._stack = QStackedWidget()
         root.addWidget(self._stack, stretch=1)
 
-        # Nav footer
+        # Nav footer — premium
         nav = QWidget()
-        nav.setFixedHeight(52)
+        nav.setFixedHeight(56)
         nav.setStyleSheet(f"background: {BG_SECONDARY};")
         nl = QHBoxLayout(nav)
-        nl.setContentsMargins(16, 0, 16, 0)
+        nl.setContentsMargins(24, 10, 24, 10)
 
         self.btn_ant = QPushButton("← Anterior")
-        self.btn_ant.setObjectName("outline")
-        self.btn_ant.setFixedSize(120, 36)
+        self.btn_ant.setFixedSize(120, 38)
+        self.btn_ant.setStyleSheet(
+            f"QPushButton {{ border: 1px solid {BORDER}; border-radius: 10px;"
+            f"background: transparent; color: {TEXT_SEC}; font-size: 11px;"
+            f"font-weight: 500; padding: 6px 16px; }}"
+            f"QPushButton:hover {{ border-color: {ACCENT}; color: {ACCENT}; }}"
+        )
         self.btn_ant.setVisible(False)
         nl.addWidget(self.btn_ant)
         nl.addStretch()
 
         self.btn_sig = QPushButton("Siguiente →")
-        self.btn_sig.setFixedSize(140, 36)
+        self.btn_sig.setFixedSize(140, 38)
+        self.btn_sig.setStyleSheet(
+            f"QPushButton {{ border: none; border-radius: 10px;"
+            f"background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
+            f"stop:0 {ACCENT}, stop:1 {VIOLET});"
+            f"color: #ffffff; font-size: 11px; font-weight: 600;"
+            f"padding: 6px 20px; }}"
+            f"QPushButton:hover {{ background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
+            f"stop:0 {ACCENT_HOVER}, stop:1 {VIOLET_HOVER}); }}"
+        )
         nl.addWidget(self.btn_sig)
         root.addWidget(nav)
 

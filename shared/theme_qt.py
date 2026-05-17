@@ -167,7 +167,7 @@ _HUB_KEY_V3 = {
 
 
 def sp(key: str) -> int:
-    return SPACE[key]
+    return V3_SP[key]
 
 
 def fx(key: str, modo: str) -> float | int:
@@ -274,24 +274,17 @@ def _load_premium_fonts():
     # real del archivo cargado.
     font_groups = [
         # v3 preferida
-        ("PlusJakartaSans-Variable.ttf",  "Plus Jakarta Sans"),
         ("PlusJakartaSans-Regular.ttf",   "Plus Jakarta Sans"),
         ("PlusJakartaSans-Medium.ttf",    "Plus Jakarta Sans"),
         ("PlusJakartaSans-SemiBold.ttf",  "Plus Jakarta Sans"),
         ("PlusJakartaSans-Bold.ttf",      "Plus Jakarta Sans"),
-        # Fallback secundario v3
-        ("DMSans-Variable.ttf",           "DM Sans"),
+        # Fallback secundario
         ("DMSans-Regular.ttf",            "DM Sans"),
         ("DMSans-Medium.ttf",             "DM Sans"),
         ("DMSans-Bold.ttf",               "DM Sans"),
-        # Legacy
-        ("Inter-Variable.ttf",            "Inter"),
-        ("Inter.ttf",                     "Inter"),
-        ("Satoshi-Variable.ttf",          "Satoshi"),
-        ("Satoshi-Regular.ttf",           "Satoshi"),
         # Monospace v3 (timers, log installer)
-        ("JetBrainsMono-Variable.ttf",    "JetBrains Mono"),
         ("JetBrainsMono-Regular.ttf",     "JetBrains Mono"),
+        ("JetBrainsMono-Bold.ttf",        "JetBrains Mono"),
     ]
     base_dirs = [
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "fonts"),
@@ -1565,7 +1558,56 @@ V3_SP = V3_SPACE
 V3_RD = V3_RADIUS
 
 
-# ── SessionColor — vibe aleatorio de sesión (aura + glow) ─────────────────────
+# ── Shell background (gradiente + 3 blobs radiales spec v3) ──────────────────
+
+def paint_shell_background(painter, rect: QRectF, modo: str):
+    """Pinta el fondo de la ventana shell: gradiente diagonal + 3 blobs."""
+    is_dark = "dark" in norm_modo(modo)
+
+    # Gradiente diagonal de fondo
+    grad = QLinearGradient(rect.topLeft(), rect.bottomRight())
+    grad.setCoordinateMode(QLinearGradient.CoordinateMode.ObjectMode)
+    if is_dark:
+        grad.setColorAt(0.0, QColor("#0a0d1a"))
+        grad.setColorAt(1.0, QColor("#060912"))
+    else:
+        grad.setColorAt(0.0, QColor("#f5f8fc"))
+        grad.setColorAt(1.0, QColor("#e8eef7"))
+    painter.fillRect(rect, QBrush(grad))
+
+    w, h = rect.width(), rect.height()
+    cx, cy = w / 2, h / 2
+
+    # Blob 1: teal, 15%x 12%y — light alphas subidas para que sean visibles
+    r1 = max(w, h) * 0.55
+    blob1 = QRadialGradient(QPointF(w * 0.15, h * 0.12), r1)
+    ac1 = v3c("teal", modo)
+    ac1.setAlphaF(0.25 if is_dark else 0.32)   # light: 0.12 → 0.32
+    blob1.setColorAt(0.0, ac1)
+    blob1.setColorAt(1.0, QColor(0, 0, 0, 0))
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.setBrush(QBrush(blob1))
+    painter.drawEllipse(QPointF(w * 0.15, h * 0.12), r1, r1)
+
+    # Blob 2: violet, 85%x 18%y
+    r2 = max(w, h) * 0.45
+    blob2 = QRadialGradient(QPointF(w * 0.85, h * 0.18), r2)
+    ac2 = v3c("violet", modo)
+    ac2.setAlphaF(0.22 if is_dark else 0.28)   # light: 0.10 → 0.28
+    blob2.setColorAt(0.0, ac2)
+    blob2.setColorAt(1.0, QColor(0, 0, 0, 0))
+    painter.setBrush(QBrush(blob2))
+    painter.drawEllipse(QPointF(w * 0.85, h * 0.18), r2, r2)
+
+    # Blob 3: cyan, 50%x 85%y
+    r3 = max(w, h) * 0.30
+    blob3 = QRadialGradient(QPointF(w * 0.50, h * 0.85), r3)
+    ac3 = v3c("cyan", modo)
+    ac3.setAlphaF(0.18 if is_dark else 0.22)   # light: 0.06 → 0.22
+    blob3.setColorAt(0.0, ac3)
+    blob3.setColorAt(1.0, QColor(0, 0, 0, 0))
+    painter.setBrush(QBrush(blob3))
+    painter.drawEllipse(QPointF(w * 0.50, h * 0.85), r3, r3)
 
 import random as _random
 

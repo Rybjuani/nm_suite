@@ -307,6 +307,7 @@ class NMCard(QFrame):
         self._disabled_reason = ""
         self._success_anim: QSequentialAnimationGroup | None = None
         self._scale_anim: QPropertyAnimation | None = None
+        self._card_shadow: QGraphicsDropShadowEffect | None = None
 
         self.setObjectName("NMCard")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
@@ -315,18 +316,75 @@ class NMCard(QFrame):
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setStyleSheet(focus_ring_stylesheet(self._modo))
         self.set_disabled(disabled, disabled_reason)
+        # Aplicar sombra al construir (v3 spec) — antes solo se aplicaba
+        # al cambiar tema, dejando la primera render sin sombra (cards planas
+        # en light).
+        if not disabled:
+            self._apply_card_shadow()
 
         _tm().theme_changed.connect(self._apply_theme)
+
+    # ── sombra v3 (extraída para reutilizar desde init / theme / glow) ──────
+
+    def _apply_card_shadow(self):
+        """Crea o refresca QGraphicsDropShadowEffect según modo + glow.
+
+        Spec README V3_SHADOWS:
+          light card:  blur 12, offset (0,4), rgba(15,23,42,13)
+          dark  card:  blur 30, offset (0,10), rgba(0,0,0,115)
+          light ring:  blur 20, offset (0,4), rgba(20,184,166,76)  (glow=True)
+          dark  glow:  blur 40, offset (0,0),  rgba(94,234,212,46) (glow=True)
+        """
+        if self._disabled:
+            return
+        if self._card_shadow is None:
+            self._card_shadow = QGraphicsDropShadowEffect(self)
+        is_dark = "dark" in self._modo
+        if self._glow:
+            # Halo teal — "glow" en dark, "ring" en light
+            if is_dark:
+                self._card_shadow.setBlurRadius(40)
+                self._card_shadow.setOffset(0, 0)
+                sc = v3c("teal", self._modo)
+                sc.setAlpha(120)
+            else:
+                self._card_shadow.setBlurRadius(20)
+                self._card_shadow.setOffset(0, 4)
+                sc = v3c("teal", self._modo)
+                sc.setAlpha(96)
+        else:
+            # Sombra estándar de card
+            if is_dark:
+                self._card_shadow.setBlurRadius(30)
+                self._card_shadow.setOffset(0, 10)
+                sc = QColor(0, 0, 0, 115)
+            else:
+                self._card_shadow.setBlurRadius(16)
+                self._card_shadow.setOffset(0, 6)
+                # Spec rgba(15,23,42,13) = alpha 13/255 muy sutil;
+                # subimos a 22 para que sea visible sobre fondos claros.
+                sc = QColor(15, 23, 42, 22)
+        self._card_shadow.setColor(sc)
+        self.setGraphicsEffect(self._card_shadow)
 
     # ── hover (solo cambia el color del border, sin escalado) ─────────────────
 
     def enterEvent(self, event: QEnterEvent):
         self._hover = True
+        if not self._disabled and self.isEnabled() and self._card_shadow is not None:
+            shadow = self._card_shadow
+            shadow.setBlurRadius(36 if "dark" in self._modo else 20)
+            shadow.setOffset(0, 12 if "dark" in self._modo else 6)
         self.update()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
         self._hover = False
+        if not self._disabled and self.isEnabled() and self._card_shadow is not None:
+            shadow = self._card_shadow
+            is_dark = "dark" in self._modo
+            shadow.setBlurRadius(30 if is_dark else 12)
+            shadow.setOffset(0, 10 if is_dark else 4)
         self.update()
         super().leaveEvent(event)
 
@@ -388,11 +446,39 @@ class NMCard(QFrame):
                     r + i + 1, r + i + 1,
                 )
 
-        # 2. Superficie sólida (en dark usa surfaceSolid para QSS-friendly)
-        surface_key = "surfaceSolid" if is_dark else "surface"
-        p.setBrush(QBrush(v3c(surface_key, self._modo)))
-        p.setPen(Qt.PenStyle.NoPen)
-        p.drawRoundedRect(rect, r, r)
+        # 2. Superficie — glassmorphism en ambos temas
+        if not self._disabled and self.isEnabled():
+            if is_dark:
+                surf_col = QColor(18, 28, 45, 200)  # glass dark
+            else:
+                surf_col = QColor(255, 255, 255, 235)  # glass light (sutil translúcido)
+            p.setBrush(QBrush(surf_col))
+            p.setPen(Qt.PenStyle.NoPen)
+            p.drawRoundedRect(rect, r, r)
+
+            # 2b. Top specular highlight (efecto vidrio — línea reflejada arriba)
+            highlight_h = min(h * 0.5, 60.0)
+            hg = QLinearGradient(0, 0, 0, highlight_h)
+            if is_dark:
+                hg.setColorAt(0.0, QColor(255, 255, 255, 28))
+                hg.setColorAt(1.0, QColor(255, 255, 255, 0))
+            else:
+                hg.setColorAt(0.0, QColor(255, 255, 255, 180))
+                hg.setColorAt(1.0, QColor(255, 255, 255, 0))
+            # Clipping al rounded rect para no salirse por el border-radius
+            clip_path = QPainterPath()
+            clip_path.addRoundedRect(rect, r, r)
+            p.save()
+            p.setClipPath(clip_path)
+            p.setBrush(QBrush(hg))
+            p.drawRect(QRectF(0, 0, w, highlight_h))
+            p.restore()
+        else:
+            # Disabled: sin glassmorphism, surface sólida (legibilidad)
+            surface_key = "surfaceSolid" if is_dark else "surface"
+            p.setBrush(QBrush(v3c(surface_key, self._modo)))
+            p.setPen(Qt.PenStyle.NoPen)
+            p.drawRoundedRect(rect, r, r)
 
         # 3. Overlay gradient translúcido teal→violet (solo dark + glow)
         if self._glow and is_dark and not self._disabled and self.isEnabled():
@@ -418,16 +504,19 @@ class NMCard(QFrame):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         self.setStyleSheet(focus_ring_stylesheet(self._modo))
+        self._apply_card_shadow()
         self.update()
 
     def set_accent(self, hex_color: str | None):
-        """En v3 sólo afecta el color del halo cuando ``glow=True``."""
+        """En v3 solo afecta el color del halo cuando ``glow=True``."""
         self._accent = hex_color
         self._base_accent = hex_color
         self.update()
 
     def set_glow(self, enabled: bool):
         self._glow = bool(enabled)
+        # Re-aplicar shadow con preset distinto (card → ring/glow)
+        self._apply_card_shadow()
         self.update()
 
     def set_disabled(self, state: bool, reason: str = ""):
@@ -442,11 +531,12 @@ class NMCard(QFrame):
             self.setCursor(Qt.CursorShape.ForbiddenCursor)
         else:
             if self._disabled_effect is not None:
-                self.setGraphicsEffect(None)
                 self._disabled_effect.deleteLater()
                 self._disabled_effect = None
             self.setCursor(Qt.CursorShape.PointingHandCursor if self._clickable
                            else Qt.CursorShape.ArrowCursor)
+            # Restaurar sombra (reemplaza el QGraphicsOpacityEffect anterior)
+            self._apply_card_shadow()
         self.update()
 
     def play_success(self):
@@ -458,7 +548,6 @@ class NMCard(QFrame):
             return
         prev_accent = self._accent
         prev_glow = self._glow
-        # Activa halo flash en color success durante la animación
         self._accent = C("success", self._modo)
         self._glow = True
         self.update()
@@ -541,6 +630,7 @@ class NMButton(QPushButton):
         self._ripple_timer = QTimer(self)
         self._ripple_timer.setInterval(16)
         self._ripple_timer.timeout.connect(self._tick_ripples)
+        self._btn_shadow: QGraphicsDropShadowEffect | None = None
 
         eff_height = height if height is not None else _NM_BUTTON_HEIGHT[self._size]
         self.setFixedHeight(eff_height)
@@ -554,6 +644,7 @@ class NMButton(QPushButton):
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         self.setStyleSheet(focus_ring_stylesheet(self._modo))
 
+        self._apply_btn_shadow()
         _tm().theme_changed.connect(self._apply_theme)
 
     # ── API v3 ────────────────────────────────────────────────────────────────
@@ -561,6 +652,7 @@ class NMButton(QPushButton):
     def set_variant(self, variant: str):
         if variant in ("gradient", "secondary", "ghost"):
             self._variant = variant
+            self._apply_btn_shadow()
             self.update()
 
     def variant(self) -> str:
@@ -712,9 +804,38 @@ class NMButton(QPushButton):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         self.setStyleSheet(focus_ring_stylesheet(self._modo))
+        self._apply_btn_shadow()
         self.update()
 
+    def _apply_btn_shadow(self):
+        if not self.isEnabled():
+            self._btn_shadow = None
+            return
+        is_dark = "dark" in self._modo
+        if self._btn_shadow is None:
+            self._btn_shadow = QGraphicsDropShadowEffect(self)
+            self.setGraphicsEffect(self._btn_shadow)
+        shadow = self._btn_shadow
+        if self._variant == "gradient":
+            # Glow teal pronunciado (CTA primary)
+            shadow.setBlurRadius(30 if is_dark else 20)
+            shadow.setOffset(0, 8 if is_dark else 4)
+            sc = v3c("teal", self._modo)
+            sc.setAlpha(100 if is_dark else 55)
+        elif self._variant == "secondary":
+            # Sombra neutra sutil (lift discreto)
+            shadow.setBlurRadius(12 if is_dark else 8)
+            shadow.setOffset(0, 4 if is_dark else 2)
+            sc = QColor(0, 0, 0, 80 if is_dark else 18)
+        else:  # ghost
+            # Sombra mínima — apenas perceptible
+            shadow.setBlurRadius(6 if is_dark else 4)
+            shadow.setOffset(0, 2 if is_dark else 1)
+            sc = QColor(0, 0, 0, 50 if is_dark else 10)
+        shadow.setColor(sc)
+
     def play_success(self):
+        """Pulso de escala."""
         base = self.geometry()
         if base.isNull():
             return
@@ -868,6 +989,7 @@ class NMInput(QLineEdit):
     def __init__(self, placeholder: str = "", parent=None, modo: str = None):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
+        self._focus_glow: QGraphicsDropShadowEffect | None = None
         self.setPlaceholderText(placeholder)
         self.setFont(qfont("size_body"))
         self.setMinimumHeight(LAYOUT["min_touch_target"])
@@ -895,6 +1017,25 @@ class NMInput(QLineEdit):
             }}
             {focus_ring_stylesheet(self._modo)}
         """)
+
+    def focusInEvent(self, event):
+        """Enciende glow teal alrededor del input."""
+        super().focusInEvent(event)
+        is_dark = "dark" in self._modo
+        if self._focus_glow is None:
+            self._focus_glow = QGraphicsDropShadowEffect(self)
+        self._focus_glow.setBlurRadius(16 if is_dark else 12)
+        self._focus_glow.setOffset(0, 0)
+        gc = v3c("teal", self._modo)
+        gc.setAlpha(120 if is_dark else 70)
+        self._focus_glow.setColor(gc)
+        self.setGraphicsEffect(self._focus_glow)
+
+    def focusOutEvent(self, event):
+        """Apaga glow al perder foco."""
+        super().focusOutEvent(event)
+        self.setGraphicsEffect(None)
+        self._focus_glow = None
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
@@ -1063,7 +1204,15 @@ class NMToggle(QAbstractButton):
 
         # Track
         if self.isChecked():
-            # v3: gradient firma teal→violet
+            # v3: gradient firma teal→violet + glow shadow
+            glow_r = r + 2
+            glow_rect = QRectF(-2, -2, self._track_w + 4, self._track_h + 4)
+            glow_col = v3c("teal", self._modo)
+            glow_col.setAlpha(60)
+            p.setBrush(QBrush(glow_col))
+            p.setPen(Qt.PenStyle.NoPen)
+            p.drawRoundedRect(glow_rect, glow_r, glow_r)
+
             grad = v3_linear_gradient(track_rect, self._modo, 0, "signature")
             p.setBrush(QBrush(grad))
         else:
@@ -1150,7 +1299,7 @@ class NMToast(QWidget):
 
         self.setStyleSheet(f"""
             NMToast {{
-                background-color: rgba(30, 41, 59, 230);
+                background-color: rgba(30, 41, 59, 235);
                 border-radius: 12px;
                 border: 1px solid {self._color};
             }}
@@ -1300,9 +1449,10 @@ class _SidebarItem(QWidget):
         w, h = self.width(), self.height()
         r = RADIUS_BUTTON
 
-        # Fondo hover/active
+        # Fondo hover/active con glow sutil
         if self._active:
-            bg = QColor(c["bg_elevated"])
+            bg = QColor(C("accent", self._modo))
+            bg.setAlpha(18)
         elif self._hover:
             bg = QColor(c["bg_elevated"])
             bg.setAlpha(int(120 * self._hover_alpha))
@@ -1415,7 +1565,8 @@ class NMSidebar(QWidget):
         self._add_separator()
 
     def add_logo(self, logo_path: str = ""):
-        """Inserta LOGO.png con sombra premium al tope del sidebar."""
+        """Inserta logo premium con sombra al tope del sidebar.
+        Usa logos-icon-{light,dark}.png segun tema."""
         from PyQt6.QtGui import QPixmap
 
         w = QWidget()
@@ -1425,7 +1576,13 @@ class NMSidebar(QWidget):
 
         logo_lbl = QLabel()
         try:
-            path = logo_path or obtener_ruta_recurso("LOGO.png")
+            if logo_path:
+                path = logo_path
+            else:
+                icon_name = "logos-icon-light.png" if "light" in self._modo else "logos-icon-dark.png"
+                path = obtener_ruta_recurso(icon_name)
+                if not os.path.exists(path):
+                    path = obtener_ruta_recurso("LOGO.png")
             if os.path.exists(path):
                 pm = QPixmap(path).scaled(
                     168, 36,
@@ -1441,11 +1598,12 @@ class NMSidebar(QWidget):
             logo_lbl.setFont(qfont("size_h3", bold=True))
         logo_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        is_dark = "dark" in self._modo
         shadow = QGraphicsDropShadowEffect(logo_lbl)
-        shadow.setBlurRadius(28)
-        shadow.setOffset(0, 0)
+        shadow.setBlurRadius(8 if is_dark else 4)
+        shadow.setOffset(0, 2)
         col = QColor(C("accent", self._modo))
-        col.setAlpha(30)
+        col.setAlpha(115 if is_dark else 30)
         shadow.setColor(col)
         logo_lbl.setGraphicsEffect(shadow)
         self._logo_shadow = shadow
@@ -1542,20 +1700,31 @@ class NMSidebar(QWidget):
 
 class NMHeader(QWidget):
     """
-    Header de 56px con logo NeuroMood (N teal + M violet), nombre de usuario
+    Header de 56px con logo NeuroMood, nombre de usuario
     y toggle dark/light. Emite theme_toggle() al hacer click en el toggle.
+
+    Modos:
+      - Normal (default): logo + username + theme toggle
+      - show_back=True: boton volver + icono + titulo de modulo
+      - home_mode=True: greeting + subtitle + streak badge + theme toggle
     """
     theme_toggle = pyqtSignal()
 
     def __init__(self, parent=None, modo: str = None,
                  username: str = "", show_back: bool = False,
-                 module_title: str = "", module_icon: str = ""):
+                 module_title: str = "", module_icon: str = "",
+                 home_mode: bool = False, greeting: str = "",
+                 subtitle: str = "", streak: int = 0):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._username = username
         self._show_back = show_back
         self._module_title = module_title
         self._module_icon = module_icon
+        self._home_mode = home_mode
+        self._greeting = greeting
+        self._subtitle_text = subtitle
+        self._streak = streak
 
         self.setFixedHeight(HEADER_H)
         self._setup_ui()
@@ -1592,17 +1761,38 @@ class NMHeader(QWidget):
             self._module_title_lbl = title_lbl
             layout.addWidget(title_lbl)
         else:
-            # Home: logo NeuroMood
-            self._logo_widget = _LogoLabel(self)
-            self._logo_widget.set_modo(self._modo)
-            layout.addWidget(self._logo_widget)
+            if self._home_mode:
+                # Home mode: greeting + subtitle + streak
+                left_col = QVBoxLayout()
+                left_col.setSpacing(2)
+                greet_lbl = QLabel(self._greeting)
+                greet_lbl.setFont(qfont("size_h1", bold=True))
+                greet_lbl.setStyleSheet(label_style(self._modo, 'text_primary'))
+                self._greet_lbl = greet_lbl
+                left_col.addWidget(greet_lbl)
+                sub_lbl = QLabel(self._subtitle_text)
+                sub_lbl.setFont(qfont("size_small"))
+                sub_lbl.setStyleSheet(label_style(self._modo, 'text_tertiary'))
+                self._sub_lbl = sub_lbl
+                left_col.addWidget(sub_lbl)
+                layout.addLayout(left_col, stretch=1)
+                layout.addSpacing(sp("md"))
 
-            if self._username:
-                user_lbl = QLabel(f"Hola, {self._username}")
-                user_lbl.setFont(qfont("size_small"))
-                user_lbl.setStyleSheet(label_style(self._modo, 'text_tertiary'))
-                self._user_lbl = user_lbl
-                layout.addWidget(user_lbl)
+                if self._streak > 0:
+                    self._streak_badge = NMStreakBadge(self._streak, self._modo)
+                    layout.addWidget(self._streak_badge)
+            else:
+                # Normal home: logo NeuroMood
+                self._logo_widget = _LogoLabel(self)
+                self._logo_widget.set_modo(self._modo)
+                layout.addWidget(self._logo_widget)
+
+                if self._username:
+                    user_lbl = QLabel(f"Hola, {self._username}")
+                    user_lbl.setFont(qfont("size_small"))
+                    user_lbl.setStyleSheet(label_style(self._modo, 'text_tertiary'))
+                    self._user_lbl = user_lbl
+                    layout.addWidget(user_lbl)
 
         layout.addStretch()
 
@@ -1649,10 +1839,16 @@ class NMHeader(QWidget):
 
         if title:
             self._ensure_context_widgets()
-            if hasattr(self, "_logo_widget"):
+            if hasattr(self, "_logo_widget") and self._logo_widget is not None:
                 self._logo_widget.hide()
-            if hasattr(self, "_user_lbl"):
+            if hasattr(self, "_user_lbl") and self._user_lbl is not None:
                 self._user_lbl.hide()
+            if hasattr(self, "_greet_lbl") and self._greet_lbl is not None:
+                self._greet_lbl.hide()
+            if hasattr(self, "_sub_lbl") and self._sub_lbl is not None:
+                self._sub_lbl.hide()
+            if hasattr(self, "_streak_badge") and self._streak_badge is not None:
+                self._streak_badge.hide()
             self._context_title_lbl.setText(title)
             self._context_title_lbl.show()
             self._context_icon_lbl.setVisible(bool(icon))
@@ -1663,10 +1859,16 @@ class NMHeader(QWidget):
             self._context_title_lbl.hide()
         if hasattr(self, "_context_icon_lbl"):
             self._context_icon_lbl.hide()
-        if hasattr(self, "_logo_widget"):
+        if hasattr(self, "_logo_widget") and self._logo_widget is not None:
             self._logo_widget.show()
-        if hasattr(self, "_user_lbl"):
+        if hasattr(self, "_user_lbl") and self._user_lbl is not None:
             self._user_lbl.show()
+        if hasattr(self, "_greet_lbl") and self._greet_lbl is not None:
+            self._greet_lbl.show()
+        if hasattr(self, "_sub_lbl") and self._sub_lbl is not None:
+            self._sub_lbl.show()
+        if hasattr(self, "_streak_badge") and self._streak_badge is not None:
+            self._streak_badge.show()
         if hasattr(self, "_context_badge_lbl"):
             self._context_badge_lbl.hide()
 
@@ -1792,6 +1994,18 @@ class NMHeader(QWidget):
         self._apply_back_btn_style()
         return btn
 
+    def set_home_greeting(self, greeting: str = "", subtitle: str = "", streak: int = 0):
+        """Actualiza los textos del header en modo home."""
+        if hasattr(self, "_greet_lbl") and self._greet_lbl is not None:
+            self._greet_lbl.setText(greeting or f"Hola, {self._username}")
+        if hasattr(self, "_sub_lbl") and self._sub_lbl is not None:
+            self._sub_lbl.setText(subtitle)
+        if hasattr(self, "_streak_badge") and self._streak_badge is not None:
+            if streak > 0:
+                self._streak_badge.show()
+            else:
+                self._streak_badge.hide()
+
     def set_back_action(self, callback=None):
         btn = self._ensure_back_button() if callback else getattr(self, "_btn_back", None)
         if not btn:
@@ -1842,7 +2056,10 @@ class _LogoLabel(QWidget):
 
     def _load_logo(self):
         try:
-            logo_path = obtener_ruta_recurso("LOGO.png")
+            logo_key = "logos-light.png" if "light" in self._modo else "logos-dark.png"
+            logo_path = obtener_ruta_recurso(logo_key)
+            if not os.path.exists(logo_path):
+                logo_path = obtener_ruta_recurso("LOGO.png")
             if os.path.exists(logo_path):
                 self._pixmap = QPixmap(logo_path)
                 self._pixmap_light = None
@@ -1853,18 +2070,6 @@ class _LogoLabel(QWidget):
     def _get_pixmap(self):
         if self._pixmap is None:
             return None
-        if "light" in self._modo:
-            if self._pixmap_light is None:
-                try:
-                    from PIL import Image as PILImage
-                    img = PILImage.open(obtener_ruta_recurso("LOGO.png")).convert("RGBA")
-                    img = recolorear_logo_light(img)
-                    data = img.tobytes("raw", "RGBA")
-                    qimg = QImage(data, img.width, img.height, QImage.Format.Format_RGBA8888)
-                    self._pixmap_light = QPixmap.fromImage(qimg)
-                except Exception:
-                    return self._pixmap
-            return self._pixmap_light
         return self._pixmap
 
     def _get_glow_alpha(self) -> int:
@@ -1877,9 +2082,15 @@ class _LogoLabel(QWidget):
     glow_alpha = pyqtProperty(int, _get_glow_alpha, _set_glow_alpha)
 
     def set_modo(self, modo: str):
+        old_modo = self._modo
         self._modo = norm_modo(modo)
+        if old_modo != self._modo:
+            self._load_logo()
+        is_dark = "dark" in self._modo
         col = QColor(C("accent", self._modo))
         col.setAlpha(30)
+        self._shadow.setBlurRadius(8 if is_dark else 4)
+        self._shadow.setOffset(0, 2)
         self._shadow.setColor(col)
         self.update()
 
@@ -1890,6 +2101,23 @@ class _LogoLabel(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+
+        # Double glow in dark mode: violet radial halo behind logo
+        if "dark" in self._modo and self._glow_alpha_value > 0:
+            violet_alpha = int(self._glow_alpha_value * 0.6)
+            vglow = radial_glow(
+                QPointF(self.width() / 2, self.height() / 2),
+                max(self.width(), self.height()) * 0.6,
+                C("violet", self._modo),
+                alpha=violet_alpha,
+            )
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QBrush(vglow))
+            p.drawEllipse(
+                QPointF(self.width() / 2, self.height() / 2),
+                self.width() * 0.5,
+                self.height() * 0.8,
+            )
 
         if self._pixmap and not self._pixmap.isNull():
             pm = self._get_pixmap()
@@ -2867,6 +3095,21 @@ class NMFocusArc(QWidget):
 
         # Arco progreso (CW desde 90° = top)
         if self._pct > 0.001:
+            # Glow blur detrás del arco — teal+violet en dark, teal en light
+            is_dark = "dark" in self._modo
+            glow_w = pen_w + 6
+            glow_r_rect = QRectF(cx - r, cy - r, r * 2, r * 2)
+            glow_col = v3c("teal", self._modo)
+            glow_col.setAlpha(40 if is_dark else 28)
+            p.setPen(QPen(glow_col, glow_w, Qt.PenStyle.SolidLine, Qt.PenCapStyle.FlatCap))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawArc(glow_r_rect, int(90 * 16), int(-360.0 * self._pct * 16))
+            if is_dark:
+                glow_col2 = v3c("violet", self._modo)
+                glow_col2.setAlpha(25)
+                p.setPen(QPen(glow_col2, glow_w - 2,
+                              Qt.PenStyle.SolidLine, Qt.PenCapStyle.FlatCap))
+                p.drawArc(glow_r_rect, int(90 * 16), int(-360.0 * self._pct * 16))
             _paint_v3_arc(p, rect, 90.0, -360.0 * self._pct, pen_w, self._modo)
 
         # Textos: tiempo (mono) + estado
@@ -3524,7 +3767,9 @@ class NMCalmBadge(QWidget):
         self._blink_timer.setInterval(80)
         self._blink_timer.timeout.connect(self._on_blink)
         self._blink_timer.start()
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        self.setObjectName("NMCalmBadge")
+        # WA_StyledBackground=True para que el QSS bg/border aplique al widget
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setFixedWidth(100)
 
         lay = QVBoxLayout(self)
@@ -3535,19 +3780,16 @@ class NMCalmBadge(QWidget):
         self._calm_lbl = QLabel("Calm ♥")
         self._calm_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._calm_lbl.setFont(qfont("size_small", bold=True))
-        self._calm_lbl.setStyleSheet("background: transparent;")
         lay.addWidget(self._calm_lbl)
 
         self._bpm_lbl = QLabel(str(bpm))
         self._bpm_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._bpm_lbl.setFont(qfont_mono(SIZE_TIME_LARGE, bold=True))
-        self._bpm_lbl.setStyleSheet("background: transparent;")
         lay.addWidget(self._bpm_lbl)
 
         self._unit_lbl = QLabel("BPM")
         self._unit_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._unit_lbl.setFont(qfont("size_caption"))
-        self._unit_lbl.setStyleSheet("background: transparent;")
         lay.addWidget(self._unit_lbl)
 
         self._apply_theme(self._modo)
@@ -3560,14 +3802,18 @@ class NMCalmBadge(QWidget):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         violet = C("violet", self._modo)
-        self._calm_lbl.setStyleSheet(f"color: {violet}; background: transparent;")
-        self._bpm_lbl.setStyleSheet(f"color: {violet}; background: transparent;")
-        self._unit_lbl.setStyleSheet(label_style(self._modo, "text_tertiary"))
+        # Selector específico #NMCalmBadge para evitar herencia del border a hijos
+        # (sin esto, cada QLabel hijo se renderizaba con su propio border = chips
+        # fragmentados visualmente)
         self.setStyleSheet(
-            f"background: {C('bg_elevated', self._modo)}; "
+            f"QWidget#NMCalmBadge {{ background: {C('bg_elevated', self._modo)}; "
             f"border-radius: {RADIUS_CARD}px; "
-            f"border: 1px solid {C('border', self._modo)};"
+            f"border: 1px solid {C('border', self._modo)}; }}"
+            f"QWidget#NMCalmBadge QLabel {{ background: transparent; border: none; }}"
         )
+        self._calm_lbl.setStyleSheet(f"color: {violet};")
+        self._bpm_lbl.setStyleSheet(f"color: {violet};")
+        self._unit_lbl.setStyleSheet(label_style(self._modo, "text_tertiary"))
 
     def _on_blink(self):
         if sip.isdeleted(self):
@@ -4352,7 +4598,8 @@ class NMPatientRow(QFrame):
         text_col.addWidget(self._name)
         text_col.addWidget(self._subtitle)
         lay.addLayout(text_col, stretch=1)
-        self._ring = NMModuleRing(size=28, pct=pct, modo=self._modo)
+        # Ring 40px: tamaño suficiente para mostrar "85%" sin recorte
+        self._ring = NMModuleRing(size=40, pct=pct, modo=self._modo)
         lay.addWidget(self._ring)
         self._apply_theme(self._modo)
         _tm().theme_changed.connect(self._apply_theme)
@@ -4402,6 +4649,7 @@ class NMSettingsSection(QFrame):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self.setObjectName("NMSettingsSection")
+        self._sec_shadow: QGraphicsDropShadowEffect | None = None
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
@@ -4416,7 +4664,46 @@ class NMSettingsSection(QFrame):
         self._rows.setSpacing(0)
         lay.addLayout(self._rows)
         self._apply_theme(self._modo)
+        self._apply_section_shadow()
         _tm().theme_changed.connect(self._apply_theme)
+
+    def _apply_section_shadow(self):
+        """Sombra v3 (idem NMCard) — sin esta queda plana sobre fondo claro."""
+        if self._sec_shadow is None:
+            self._sec_shadow = QGraphicsDropShadowEffect(self)
+        is_dark = "dark" in self._modo
+        if is_dark:
+            self._sec_shadow.setBlurRadius(30); self._sec_shadow.setOffset(0, 10)
+            self._sec_shadow.setColor(QColor(0, 0, 0, 115))
+        else:
+            self._sec_shadow.setBlurRadius(16); self._sec_shadow.setOffset(0, 6)
+            self._sec_shadow.setColor(QColor(15, 23, 42, 22))
+        self.setGraphicsEffect(self._sec_shadow)
+
+    def paintEvent(self, event):
+        """Pinta el QSS background + top specular highlight (efecto vidrio)."""
+        super().paintEvent(event)
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        is_dark = "dark" in self._modo
+        r = V3_RD["lg"]
+        w, h = self.width(), self.height()
+        # Top highlight con clip al rounded rect
+        highlight_h = min(h * 0.4, 50.0)
+        hg = QLinearGradient(0, 0, 0, highlight_h)
+        if is_dark:
+            hg.setColorAt(0.0, QColor(255, 255, 255, 22))
+            hg.setColorAt(1.0, QColor(255, 255, 255, 0))
+        else:
+            hg.setColorAt(0.0, QColor(255, 255, 255, 140))
+            hg.setColorAt(1.0, QColor(255, 255, 255, 0))
+        clip_path = QPainterPath()
+        clip_path.addRoundedRect(QRectF(0, 0, w, h), r, r)
+        p.setClipPath(clip_path)
+        p.setBrush(QBrush(hg))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawRect(QRectF(0, 0, w, highlight_h))
+        p.end()
 
     def add_row(self, label: str, value):
         row = QWidget()
@@ -4474,6 +4761,9 @@ class NMSettingsSection(QFrame):
             if lbl is not self._header:
                 lbl.setStyleSheet(
                     f"color: {text_body}; background: transparent;")
+        # Re-aplicar sombra al cambiar tema
+        if getattr(self, "_sec_shadow", None) is not None:
+            self._apply_section_shadow()
 
 
 class NMInstallProgress(QWidget):
@@ -4559,8 +4849,9 @@ class NMHubSidebar(QWidget):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._active = active or (items[0][0] if items else "")
+        self._items_tuple = items
         self._buttons: dict[str, QPushButton] = {}
-        self.setFixedWidth(200)
+        self.setFixedWidth(240)
         lay = QVBoxLayout(self)
         self._layout = lay
         lay.setContentsMargins(8, 12, 8, 8)
@@ -4572,9 +4863,16 @@ class NMHubSidebar(QWidget):
         )
         lay.addWidget(self._logo)
         for key, icon, label in items:
-            btn = QPushButton(f"{icon}  {label}")
+            btn = QPushButton(f"  {label}")
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setFixedHeight(32)
+            try:
+                qicon = nm_icon(icon, C("text3", self._modo), size=16)
+                if qicon and not qicon.isNull():
+                    btn.setIcon(qicon)
+                    btn.setIconSize(QSize(18, 18))
+            except Exception:
+                pass
             btn.clicked.connect(lambda checked=False, k=key: self._select(k))
             lay.addWidget(btn)
             self._buttons[key] = btn
@@ -4619,6 +4917,16 @@ class NMHubSidebar(QWidget):
                 f"border-radius: 8px; padding: 7px 10px; font-size: {TYPOGRAPHY['size_small']}pt; }}"
                 f"QPushButton:hover {{ background: {_rgba('#ffffff', 0.05)}; color: {c['text_secondary']}; }}"
             )
+            icon_color = c['text_primary'] if active else c['text_tertiary']
+            for item in self._items_tuple:
+                if item[0] == key:
+                    try:
+                        qicon = nm_icon(item[1], icon_color, size=16)
+                        if qicon and not qicon.isNull():
+                            btn.setIcon(qicon)
+                    except Exception:
+                        pass
+                    break
 
 
 class NMFeaturedCard(QFrame):
@@ -4845,6 +5153,22 @@ class NMModuleRing(QWidget):
         r_arc    = s / 2 - pen_w - 1
         arc_rect = QRectF(cx - r_arc, cy - r_arc, r_arc * 2, r_arc * 2)
 
+        # ── 0. Glow radial detrás del arco (teal/violet) — solo si hay progreso ──
+        # Spec README: "Anillos de progreso: glow blur teal+violet detrás del
+        # arco en dark". Más sutil en light.
+        is_dark = "dark" in self._modo
+        if self._pct > 0.05:
+            glow_r = r_arc + pen_w * 1.5
+            glow_grad = QRadialGradient(QPointF(cx, cy), glow_r)
+            # Color base: teal del gradient firma v3
+            glow_col = v3c("teal", self._modo)
+            glow_col.setAlpha(70 if is_dark else 30)
+            glow_grad.setColorAt(0.5, glow_col)
+            glow_grad.setColorAt(1.0, QColor(0, 0, 0, 0))
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QBrush(glow_grad))
+            p.drawEllipse(QPointF(cx, cy), glow_r, glow_r)
+
         # Track sutil (borderSoft v3 — TODOS los rings usan el mismo lenguaje)
         track_c = v3c("borderSoft", self._modo)
         p.setPen(QPen(track_c, pen_w, Qt.PenStyle.SolidLine, Qt.PenCapStyle.FlatCap))
@@ -4988,33 +5312,39 @@ class NMTypingDots(QWidget):
 
     Llamar a start()/stop() para controlar la animación.
     """
+    # Spec README v3: "3 dots con animación translateY(-4px) escalonada
+    # (delay 0/0.15/0.3s)" — implementado con phase continuous + sin wave.
+    _PERIOD_MS = 1200            # ciclo completo
+    _STAGGER_MS = 150            # 0.15s entre dots
+    _BOUNCE_PX = 4               # translateY -4px en el pico
+
     def __init__(self, modo: str = None, parent=None):
         super().__init__(parent)
         self._modo   = norm_modo(modo or _tm().modo)
-        self._alphas = [0.3, 0.3, 0.3]
-        self._phase  = 0
+        self._t_ms   = 0
         self._timer  = QTimer(self)
-        self._timer.setInterval(220)
+        self._timer.setInterval(33)   # ~30 fps (suave para anim continua)
         self._timer.timeout.connect(self._tick)
+        self._running = False
         self.setFixedSize(48, 24)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
         _tm().theme_changed.connect(self._apply_theme)
 
     def start(self):
+        self._running = True
+        self._t_ms = 0
         self._timer.start()
 
     def stop(self):
+        self._running = False
         self._timer.stop()
-        self._alphas = [0.3, 0.3, 0.3]
         self.update()
 
     def _tick(self):
         if sip.isdeleted(self):
             self._timer.stop()
             return
-        self._phase      = (self._phase + 1) % 3
-        self._alphas     = [0.3, 0.3, 0.3]
-        self._alphas[self._phase] = 1.0
+        self._t_ms = (self._t_ms + 33) % self._PERIOD_MS
         self.update()
 
     def _apply_theme(self, modo: str):
@@ -5022,20 +5352,36 @@ class NMTypingDots(QWidget):
         self.update()
 
     def paintEvent(self, event):
+        import math
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.save()
         dot_r   = 4
         gap     = 12
-        y_c     = self.height() // 2
+        y_c     = self.height() / 2
         x_start = dot_r + 2
         base_c  = QColor(C("teal", self._modo))
-        for i, alpha in enumerate(self._alphas):
+        for i in range(3):
+            # Phase shift por dot — 0.15s stagger
+            if self._running:
+                phase = ((self._t_ms - i * self._STAGGER_MS) % self._PERIOD_MS) / self._PERIOD_MS
+                # bounce: pico arriba en phase 0.5, queda abajo en 0/1
+                # Usamos curva senoidal solo en la primera mitad del ciclo
+                if 0 <= phase < 0.5:
+                    bounce = math.sin(phase * math.pi)   # 0→1→0
+                else:
+                    bounce = 0.0
+                offset_y = -self._BOUNCE_PX * bounce
+                alpha = 0.4 + 0.6 * bounce               # 0.4 idle, 1.0 peak
+            else:
+                offset_y = 0.0
+                alpha = 0.3
             dc = QColor(base_c)
             dc.setAlphaF(alpha)
             p.setBrush(QBrush(dc))
             p.setPen(Qt.PenStyle.NoPen)
-            p.drawEllipse(QPointF(x_start + i * gap, y_c), dot_r, dot_r)
+            p.drawEllipse(QPointF(x_start + i * gap, y_c + offset_y),
+                           dot_r, dot_r)
         p.restore()
         p.end()
 
@@ -5881,5 +6227,16 @@ class NMPlayButton(QPushButton):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        self._apply_shadow()
+        self.setStyleSheet(focus_ring_stylesheet(self._modo))
+        if not self._disabled and self.isEnabled():
+            if self._card_shadow is None:
+                self._card_shadow = QGraphicsDropShadowEffect(self)
+            is_dark = "dark" in self._modo
+            self._card_shadow.setBlurRadius(30 if is_dark else 12)
+            self._card_shadow.setOffset(0, 10 if is_dark else 4)
+            sc = v3c("teal", self._modo) if is_dark else QColor(15, 23, 42, 13)
+            if is_dark:
+                sc.setAlpha(115)
+            self._card_shadow.setColor(sc)
+            self.setGraphicsEffect(self._card_shadow)
         self.update()

@@ -243,7 +243,7 @@ class _ProUninstWorker(QThread):
 
 class DesinstaladorPro(InstallerShell):
     APP_NAME = "Desinstalador Hub"
-    WINDOW_SIZE = (620, 420)
+    WINDOW_SIZE = (760, 620)
     WINDOW_ROLE = ""
     STEPS = ["Confirmar", "Eliminando", "Finalizado"]
     _STEPPER_ACCENT = "error"   # tono rojo de alerta para acción destructiva

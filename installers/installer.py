@@ -157,6 +157,127 @@ def ruta_app_bundled(exe: str) -> str:
     return os.path.join(base, exe)
 
 
+INSTALL_MANIFEST_NAME = ".neuromood_install_manifest.json"
+INSTALL_BUILD_ID = "clean-reinstall-2026-05-17"
+
+
+def _safe_join(base: Path, rel: str) -> Path | None:
+    """Une rutas de manifiesto sin permitir salir de install_dir."""
+    try:
+        target = (base / rel).resolve()
+        target.relative_to(base.resolve())
+        return target
+    except Exception:
+        return None
+
+
+def _remove_path(path: Path) -> None:
+    if path.is_dir():
+        shutil.rmtree(path)
+    elif path.exists():
+        path.unlink()
+
+
+def _collect_relative_files(path: Path, base: Path) -> list[str]:
+    files: list[str] = []
+    if not path.exists():
+        return files
+    if path.is_file():
+        try:
+            files.append(path.relative_to(base).as_posix())
+        except Exception:
+            pass
+        return files
+    for child in path.rglob("*"):
+        if child.is_file():
+            try:
+                files.append(child.relative_to(base).as_posix())
+            except Exception:
+                pass
+    return files
+
+
+def _dangerous_install_dir(path: Path) -> bool:
+    """Evita limpiar carpetas demasiado amplias por error de selección."""
+    try:
+        resolved = path.expanduser().resolve()
+        home = Path.home().resolve()
+        anchors = {Path(resolved.anchor).resolve()} if resolved.anchor else set()
+        blocked = {home, home.parent, Path(os.environ.get("APPDATA", str(home))).resolve()}
+        return resolved in blocked or resolved in anchors
+    except Exception:
+        return False
+
+
+def _clean_previous_payload(install_dir: Path, known_items: list[str]) -> list[str]:
+    """Elimina solo archivos del bundle anterior, no datos de usuario en AppData."""
+    removed: list[str] = []
+    if _dangerous_install_dir(install_dir):
+        raise RuntimeError(f"Ruta de instalación insegura para reemplazar: {install_dir}")
+
+    manifest = install_dir / INSTALL_MANIFEST_NAME
+    if manifest.exists():
+        try:
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+            for rel in data.get("files", []):
+                target = _safe_join(install_dir, str(rel))
+                if target and target.exists():
+                    _remove_path(target)
+                    removed.append(str(rel))
+            # limpiar directorios vacíos más comunes después del manifest
+            for rel in sorted(data.get("dirs", []), key=lambda x: len(str(x)), reverse=True):
+                target = _safe_join(install_dir, str(rel))
+                if target and target.exists() and target.is_dir():
+                    try:
+                        target.rmdir()
+                    except OSError:
+                        pass
+        except Exception:
+            # Si el manifest está corrupto, seguimos con los ítems conocidos.
+            pass
+
+    for name in known_items:
+        target = install_dir / name
+        if target.exists():
+            _remove_path(target)
+            removed.append(name)
+    return removed
+
+
+def _copy_payload_from_bundled_exe(src_exe: str, dest_dir: Path) -> list[str]:
+    """Copia un bundle PyInstaller one-dir u one-file y devuelve archivos relativos copiados."""
+    src = Path(src_exe)
+    if not src.exists():
+        raise FileNotFoundError(str(src))
+    before: set[str] = set(_collect_relative_files(dest_dir, dest_dir))
+    src_dir = src.parent
+    if src_dir.name == src.stem:
+        for child in src_dir.iterdir():
+            dest = dest_dir / child.name
+            if child.is_dir():
+                shutil.copytree(child, dest, dirs_exist_ok=True)
+            else:
+                shutil.copy2(child, dest)
+    else:
+        shutil.copy2(src, dest_dir / src.name)
+    after: set[str] = set(_collect_relative_files(dest_dir, dest_dir))
+    return sorted(after - before)
+
+
+def _write_install_manifest(install_dir: Path, files: list[str], product: str) -> None:
+    dirs = sorted({str(Path(f).parent).replace("\\", "/") for f in files if str(Path(f).parent) != "."})
+    payload = {
+        "product": product,
+        "build_id": INSTALL_BUILD_ID,
+        "installed_at_utc": _utc_now_iso(),
+        "files": sorted(set(files)),
+        "dirs": dirs,
+    }
+    (install_dir / INSTALL_MANIFEST_NAME).write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
 # ── Hilo de instalación ───────────────────────────────────────────────────────
 
 class _AuthWorker(QThread):
@@ -361,28 +482,44 @@ class _InstalWorker(QThread):
     def run(self):
         try:
             install_dir = Path(self._path)
-            total = 4
+            total = 5
             paso = 0
+            manifest_files: list[str] = []
+            uninst_dest = install_dir / "Desinstalador Suite" / "Desinstalador Suite.exe"
 
-            self.progress_signal.emit(0, "Creando carpeta de instalacion...")
+            self.progress_signal.emit(0, "Preparando instalación limpia...")
             install_dir.mkdir(parents=True, exist_ok=True)
+            removed = _clean_previous_payload(
+                install_dir,
+                [
+                    APP_EXE,
+                    "_internal",
+                    "base_library.zip",
+                    "NM_icon.ico",
+                    "install_path.txt",
+                    "Desinstalador Suite",
+                    "Desinstalador Suite.exe",
+                    INSTALL_MANIFEST_NAME,
+                ],
+            )
             paso += 1
-            self.progress_signal.emit(paso / total, "Carpeta lista.")
+            self.progress_signal.emit(paso / total, "Carpeta lista y versión anterior reemplazada.")
             self.log_signal.emit(f"  Carpeta: {install_dir}", TEXT_SEC)
+            if removed:
+                self.log_signal.emit(f"  Limpieza previa: {len(removed)} elementos reemplazados", SUCCESS)
 
             # NeuroMood Suite (copia carpeta completa si es onedir)
-            self.progress_signal.emit(paso / total, "Copiando NeuroMood Suite...")
+            self.progress_signal.emit(paso / total, "Copiando NeuroMood Suite actualizado...")
             src = ruta_app_bundled(APP_EXE)
-            if not os.path.exists(src):
+            try:
+                copied = _copy_payload_from_bundled_exe(src, install_dir)
+                manifest_files.extend(copied)
+                if not (install_dir / APP_EXE).exists():
+                    raise FileNotFoundError(f"No quedó instalado {APP_EXE}")
+                self.log_signal.emit(f"  {APP_NOMBRE} actualizado", SUCCESS)
+            except FileNotFoundError:
                 self.log_signal.emit(f"  No encontrado: {APP_EXE}", ERROR_C)
-            else:
-                src_dir = os.path.dirname(src)
-                # onedir: la carpeta tiene el mismo nombre que el exe (sin .exe)
-                if os.path.basename(src_dir) == APP_EXE.replace(".exe", ""):
-                    shutil.copytree(src_dir, install_dir, dirs_exist_ok=True)
-                else:
-                    shutil.copy2(src, install_dir / APP_EXE)
-                self.log_signal.emit(f"  {APP_NOMBRE}", SUCCESS)
+                raise
             paso += 1
             self.progress_signal.emit(paso / total, "NeuroMood Suite copiado.")
             time.sleep(0.05)
@@ -393,23 +530,30 @@ class _InstalWorker(QThread):
                 icon_path = install_dir / "NM_icon.ico"
                 shutil.copy2(recurso("NM_icon.ico"), icon_path)
                 icon_dest = str(icon_path)
+                manifest_files.append("NM_icon.ico")
             except Exception:
                 pass
 
             # Desinstalador (copia carpeta completa si es onedir)
-            self.progress_signal.emit(paso / total, "Copiando desinstalador...")
+            self.progress_signal.emit(paso / total, "Copiando desinstalador actualizado...")
             uninst_exe = "Desinstalador Suite.exe"
             uninst_src = ruta_app_bundled(uninst_exe)
             try:
-                uninst_src_dir = os.path.dirname(uninst_src)
-                if os.path.basename(uninst_src_dir) == uninst_exe.replace(".exe", ""):
-                    uninst_dest_dir = install_dir / "Desinstalador Suite"
-                    shutil.copytree(uninst_src_dir, uninst_dest_dir, dirs_exist_ok=True)
+                uninst_dest_dir = install_dir / "Desinstalador Suite"
+                if Path(uninst_src).exists() and Path(uninst_src).parent.name == uninst_exe.replace(".exe", ""):
+                    before = set(_collect_relative_files(install_dir, install_dir))
+                    shutil.copytree(Path(uninst_src).parent, uninst_dest_dir, dirs_exist_ok=True)
+                    after = set(_collect_relative_files(install_dir, install_dir))
+                    manifest_files.extend(sorted(after - before))
                     uninst_dest = uninst_dest_dir / uninst_exe
-                else:
-                    uninst_dest = install_dir / uninst_exe
+                elif Path(uninst_src).exists():
+                    uninst_dest_dir.mkdir(parents=True, exist_ok=True)
+                    uninst_dest = uninst_dest_dir / uninst_exe
                     shutil.copy2(uninst_src, uninst_dest)
-                self.log_signal.emit("  Desinstalador copiado", SUCCESS)
+                    manifest_files.append(uninst_dest.relative_to(install_dir).as_posix())
+                else:
+                    raise FileNotFoundError(uninst_src)
+                self.log_signal.emit("  Desinstalador actualizado", SUCCESS)
             except Exception as e:
                 self.log_signal.emit(f"  Desinstalador no disponible: {e}", WARNING_C)
             paso += 1
@@ -420,8 +564,14 @@ class _InstalWorker(QThread):
                 path_txt = install_dir / "install_path.txt"
                 path_txt.write_text(str(install_dir), encoding="utf-8")
                 _ct.windll.kernel32.SetFileAttributesW(str(path_txt), 0x2)
+                manifest_files.append("install_path.txt")
             except Exception:
                 pass
+
+            try:
+                _write_install_manifest(install_dir, manifest_files, APP_NOMBRE)
+            except Exception as e:
+                self.log_signal.emit(f"  Manifest omitido: {e}", WARNING_C)
 
             # Registro Windows
             self._registrar_windows(install_dir, uninst_dest)
@@ -543,7 +693,7 @@ class _InstalWorker(QThread):
 class InstaladorNeuroMood(InstallerShell):
     APP_NAME = "Instalador Suite"
     WINDOW_ROLE = ""
-    WINDOW_SIZE = (740, 540)
+    WINDOW_SIZE = (820, 660)
     STEPS = ["Bienvenida", "Cuenta", "Consentimiento", "Instalar", "Finalizar"]
 
     def __init__(self):

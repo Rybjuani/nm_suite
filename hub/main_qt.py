@@ -31,7 +31,7 @@ from PyQt6.QtWidgets import (
     QLabel, QScrollArea, QGridLayout, QFrame, QSizePolicy,
     QGraphicsDropShadowEffect, QStackedWidget,
 )
-from PyQt6.QtCore import Qt, QTimer, QSize, QPointF
+from PyQt6.QtCore import Qt, QTimer, QSize, QPointF, QRectF
 from PyQt6.QtGui import QColor, QIcon, QPainter, QPen, QBrush, QRadialGradient
 from PyQt6 import sip
 
@@ -41,6 +41,7 @@ from shared.theme_qt import (
     obtener_ruta_recurso, aplicar_captionbar_qt,
     RADIUS_CARD, RADIUS_BUTTON, PAD_CONTAINER, PAD_CARD, GAP_CARDS,
     ThemeAwareWidgetMixin, HUB_ICONS, nm_icon,
+    paint_shell_background,
 )
 from shared.components_qt import (
     ThemeManager, NMSidebar, NMHeader, NMFadeWidget,
@@ -62,17 +63,13 @@ _NAV_ITEMS = [
 ]
 
 _HUB_NAV_ITEMS = [
-    ("dashboard", "📊", "Dashboard"),
-    ("pacientes", "👥", "Pacientes"),
-    ("config", "⚙", "Config"),
+    ("pacientes", "users", "Pacientes"),
+    ("dashboard", "dashboard", "Dashboard"),
+    ("ia", "ai", "IA Asistente"),
+    ("config", "cog", "Config"),
 ]
 
-_HUB_NAV_ITEMS = [
-    ("pacientes", "👥", "Pacientes"),
-    ("dashboard", "📊", "Dashboard"),
-    ("ia", "🧠", "IA Asistente"),
-    ("config", "⚙", "Config"),
-]
+_ = _HUB_NAV_ITEMS  # primera definicion absorbida
 
 
 def _disconnect_theme_tree(widget: QWidget):
@@ -981,6 +978,22 @@ class IAAssistantView(ThemeAwareWidgetMixin, QWidget):
             self._messages_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
 
 
+class _ShellWidget(QWidget):
+    """Central widget con fondo shell v3: gradiente + blobs."""
+    def __init__(self, parent=None, modo: str = "dark_hybrid"):
+        super().__init__(parent)
+        self._modo = modo
+
+    def set_shell_modo(self, modo: str):
+        self._modo = modo
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        paint_shell_background(p, QRectF(self.rect()), self._modo)
+        p.end()
+
+
 class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
 
     def __init__(self):
@@ -995,8 +1008,8 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         ThemeManager.instance().switch_mode(self._modo)
 
         self.setWindowTitle("NeuroMood Hub")
-        self.setMinimumSize(QSize(900, 560))
-        self.resize(QSize(1100, 680))
+        self.setMinimumSize(QSize(1120, 760))
+        self.resize(QSize(1360, 920))
         self._center()
         self._apply_icon()
         self._apply_initial_style()
@@ -1046,7 +1059,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
     # ── Build ─────────────────────────────────────────────────────────────────
 
     def _build_ui(self):
-        central = QWidget()
+        central = _ShellWidget(modo=self._modo)
         self.setCentralWidget(central)
         main_layout = QHBoxLayout(central)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -1075,8 +1088,9 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         )
         footer_layout.addWidget(self._sync_orb_label, stretch=1)
 
-        self._btn_collapse = NMButtonOutline("◀", modo=self._modo)
+        self._btn_collapse = NMButtonOutline("", modo=self._modo)
         self._btn_collapse.setFixedSize(26, 26)
+        self._btn_collapse.setIcon(nm_icon("arrowLeft", C("text3", self._modo), size=12))
         self._btn_collapse.clicked.connect(self._toggle_sidebar)
         footer_layout.addWidget(self._btn_collapse, alignment=Qt.AlignmentFlag.AlignVCenter)
 
@@ -1399,11 +1413,11 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         if self._sidebar_collapsed:
             self._sidebar.setFixedWidth(48)
             self._sync_orb_label.hide()
-            self._btn_collapse.setText("▶")
+            self._btn_collapse.setIcon(nm_icon("arrowRight", C("text3", self._modo), size=12))
         else:
-            self._sidebar.setFixedWidth(200)
+            self._sidebar.setFixedWidth(240)
             self._sync_orb_label.show()
-            self._btn_collapse.setText("◀")
+            self._btn_collapse.setIcon(nm_icon("arrowLeft", C("text3", self._modo), size=12))
 
     # ── Tema ──────────────────────────────────────────────────────────────────
 
@@ -1420,6 +1434,9 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         self._apply_style()
+        cw = self.centralWidget()
+        if isinstance(cw, _ShellWidget):
+            cw.set_shell_modo(self._modo)
         if hasattr(self, "_sidebar"):
             self._sidebar._apply_theme(self._modo)
         if hasattr(self, "_header"):

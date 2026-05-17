@@ -7,6 +7,8 @@ import os
 import shutil
 import subprocess
 import time
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from PyQt6.QtWidgets import (
@@ -68,6 +70,116 @@ def ruta_bundled(exe: str) -> str:
     return onedir_path  # fallback
 
 
+INSTALL_MANIFEST_NAME = ".neuromood_hub_install_manifest.json"
+INSTALL_BUILD_ID = "clean-reinstall-2026-05-17"
+
+
+def _safe_join(base: Path, rel: str) -> Path | None:
+    try:
+        target = (base / rel).resolve()
+        target.relative_to(base.resolve())
+        return target
+    except Exception:
+        return None
+
+
+def _remove_path(path: Path) -> None:
+    if path.is_dir():
+        shutil.rmtree(path)
+    elif path.exists():
+        path.unlink()
+
+
+def _collect_relative_files(path: Path, base: Path) -> list[str]:
+    files: list[str] = []
+    if not path.exists():
+        return files
+    if path.is_file():
+        try:
+            files.append(path.relative_to(base).as_posix())
+        except Exception:
+            pass
+        return files
+    for child in path.rglob("*"):
+        if child.is_file():
+            try:
+                files.append(child.relative_to(base).as_posix())
+            except Exception:
+                pass
+    return files
+
+
+def _dangerous_install_dir(path: Path) -> bool:
+    try:
+        resolved = path.expanduser().resolve()
+        home = Path.home().resolve()
+        anchors = {Path(resolved.anchor).resolve()} if resolved.anchor else set()
+        blocked = {home, home.parent, Path(os.environ.get("APPDATA", str(home))).resolve()}
+        return resolved in blocked or resolved in anchors
+    except Exception:
+        return False
+
+
+def _clean_previous_payload(install_dir: Path, known_items: list[str]) -> list[str]:
+    removed: list[str] = []
+    if _dangerous_install_dir(install_dir):
+        raise RuntimeError(f"Ruta de instalación insegura para reemplazar: {install_dir}")
+    manifest = install_dir / INSTALL_MANIFEST_NAME
+    if manifest.exists():
+        try:
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+            for rel in data.get("files", []):
+                target = _safe_join(install_dir, str(rel))
+                if target and target.exists():
+                    _remove_path(target)
+                    removed.append(str(rel))
+            for rel in sorted(data.get("dirs", []), key=lambda x: len(str(x)), reverse=True):
+                target = _safe_join(install_dir, str(rel))
+                if target and target.exists() and target.is_dir():
+                    try:
+                        target.rmdir()
+                    except OSError:
+                        pass
+        except Exception:
+            pass
+    for name in known_items:
+        target = install_dir / name
+        if target.exists():
+            _remove_path(target)
+            removed.append(name)
+    return removed
+
+
+def _copy_payload_from_bundled_exe(src_exe: str, dest_dir: Path) -> list[str]:
+    src = Path(src_exe)
+    if not src.exists():
+        raise FileNotFoundError(str(src))
+    before: set[str] = set(_collect_relative_files(dest_dir, dest_dir))
+    src_dir = src.parent
+    if src_dir.name == src.stem:
+        for child in src_dir.iterdir():
+            dest = dest_dir / child.name
+            if child.is_dir():
+                shutil.copytree(child, dest, dirs_exist_ok=True)
+            else:
+                shutil.copy2(child, dest)
+    else:
+        shutil.copy2(src, dest_dir / src.name)
+    after: set[str] = set(_collect_relative_files(dest_dir, dest_dir))
+    return sorted(after - before)
+
+
+def _write_install_manifest(install_dir: Path, files: list[str], product: str) -> None:
+    dirs = sorted({str(Path(f).parent).replace("\\", "/") for f in files if str(Path(f).parent) != "."})
+    payload = {
+        "product": product,
+        "build_id": INSTALL_BUILD_ID,
+        "installed_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "files": sorted(set(files)),
+        "dirs": dirs,
+    }
+    (install_dir / INSTALL_MANIFEST_NAME).write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+
 # ── Worker ────────────────────────────────────────────────────────────────────
 
 class _ProWorker(QThread):
@@ -83,39 +195,60 @@ class _ProWorker(QThread):
     def run(self):
         try:
             install_dir = Path(self._path)
-            self.progress_signal.emit(0, "Creando carpeta...")
-            install_dir.mkdir(parents=True, exist_ok=True)
-            self.log_signal.emit(f"  Carpeta: {install_dir}", TEXT_SEC)
-
-            # Hub exe (copia carpeta completa si es onedir)
-            self.progress_signal.emit(0.3, "Instalando NeuroMood Hub...")
-            src = ruta_bundled(HUB_EXE)
-            if os.path.exists(src):
-                src_dir = os.path.dirname(src)
-                # onedir: la carpeta contiene el exe + dependencias
-                if os.path.basename(src_dir) == HUB_EXE.replace(".exe", ""):
-                    shutil.copytree(src_dir, install_dir, dirs_exist_ok=True)
-                else:
-                    shutil.copy2(src, install_dir / HUB_EXE)
-                self.log_signal.emit("  NeuroMood Hub", SUCCESS)
-            else:
-                self.log_signal.emit(f"  {HUB_EXE} no encontrado", WARNING_C)
-
-            # Desinstalador (copia carpeta completa si es onedir)
-            self.progress_signal.emit(0.5, "Instalando desinstalador...")
-            src_un = ruta_bundled(UNINST_EXE)
+            manifest_files: list[str] = []
             uninst_dest_dir = install_dir / UNINST_EXE.replace(".exe", "")
             uninst_dest = uninst_dest_dir / UNINST_EXE
-            if os.path.exists(src_un):
-                src_un_dir = os.path.dirname(src_un)
-                if os.path.basename(src_un_dir) == UNINST_EXE.replace(".exe", ""):
-                    shutil.copytree(src_un_dir, uninst_dest_dir, dirs_exist_ok=True)
-                else:
+
+            self.progress_signal.emit(0, "Preparando instalación limpia...")
+            install_dir.mkdir(parents=True, exist_ok=True)
+            removed = _clean_previous_payload(
+                install_dir,
+                [
+                    HUB_EXE,
+                    "_internal",
+                    "base_library.zip",
+                    "NM_icon.ico",
+                    UNINST_EXE.replace(".exe", ""),
+                    UNINST_EXE,
+                    INSTALL_MANIFEST_NAME,
+                ],
+            )
+            self.log_signal.emit(f"  Carpeta: {install_dir}", TEXT_SEC)
+            if removed:
+                self.log_signal.emit(f"  Limpieza previa: {len(removed)} elementos reemplazados", SUCCESS)
+
+            # Hub exe (copia carpeta completa si es onedir)
+            self.progress_signal.emit(0.3, "Instalando NeuroMood Hub actualizado...")
+            src = ruta_bundled(HUB_EXE)
+            try:
+                copied = _copy_payload_from_bundled_exe(src, install_dir)
+                manifest_files.extend(copied)
+                if not (install_dir / HUB_EXE).exists():
+                    raise FileNotFoundError(f"No quedó instalado {HUB_EXE}")
+                self.log_signal.emit("  NeuroMood Hub actualizado", SUCCESS)
+            except FileNotFoundError:
+                self.log_signal.emit(f"  {HUB_EXE} no encontrado", ERROR_C)
+                raise
+
+            # Desinstalador (copia carpeta completa si es onedir)
+            self.progress_signal.emit(0.5, "Instalando desinstalador actualizado...")
+            src_un = ruta_bundled(UNINST_EXE)
+            try:
+                if Path(src_un).exists() and Path(src_un).parent.name == UNINST_EXE.replace(".exe", ""):
+                    before = set(_collect_relative_files(install_dir, install_dir))
+                    shutil.copytree(Path(src_un).parent, uninst_dest_dir, dirs_exist_ok=True)
+                    after = set(_collect_relative_files(install_dir, install_dir))
+                    manifest_files.extend(sorted(after - before))
+                    uninst_dest = uninst_dest_dir / UNINST_EXE
+                elif Path(src_un).exists():
                     uninst_dest_dir.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(src_un, uninst_dest)
-                self.log_signal.emit("  Desinstalador", SUCCESS)
-            else:
-                self.log_signal.emit("  Desinstalador no encontrado", WARNING_C)
+                    manifest_files.append(uninst_dest.relative_to(install_dir).as_posix())
+                else:
+                    raise FileNotFoundError(src_un)
+                self.log_signal.emit("  Desinstalador actualizado", SUCCESS)
+            except Exception as e:
+                self.log_signal.emit(f"  Desinstalador no disponible: {e}", WARNING_C)
                 uninst_dest = install_dir  # fallback
 
             # Icono
@@ -125,6 +258,7 @@ class _ProWorker(QThread):
                 icon_path = install_dir / "NM_icon.ico"
                 shutil.copy2(recurso("NM_icon.ico"), icon_path)
                 icon_dest = str(icon_path)
+                manifest_files.append("NM_icon.ico")
             except Exception:
                 pass
 
@@ -144,6 +278,11 @@ class _ProWorker(QThread):
                     self.log_signal.emit(f"  Config red: {e}", WARNING_C)
             else:
                 self.log_signal.emit("  Configuracion de red no incluida en el paquete", WARNING_C)
+
+            try:
+                _write_install_manifest(install_dir, manifest_files, "NeuroMood Hub")
+            except Exception as e:
+                self.log_signal.emit(f"  Manifest omitido: {e}", WARNING_C)
 
             # Registro Windows
             self._registrar_windows(install_dir, uninst_dest)
@@ -182,7 +321,7 @@ class _ProWorker(QThread):
 class InstaladorPro(InstallerShell):
     APP_NAME = "Instalador Hub"
     WINDOW_ROLE = ""
-    WINDOW_SIZE = (700, 540)
+    WINDOW_SIZE = (820, 660)
     _STEPPER_ACCENT = "violet"
     STEPS = ["Bienvenida", "Ruta", "Instalar", "Finalizar"]
 

@@ -31,14 +31,15 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QStackedWidget,
     QGraphicsOpacityEffect, QMessageBox,
 )
-from PyQt6.QtCore import QTimer, QSize, QPropertyAnimation, QEasingCurve, QAbstractAnimation
-from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import QTimer, QSize, QRectF, QPropertyAnimation, QEasingCurve, QAbstractAnimation
+from PyQt6.QtGui import QIcon, QPainter
 from PyQt6 import sip
 
 from shared.theme_qt import (
-    C, colors, norm_modo, app_palette, stylesheet_base,
     obtener_ruta_recurso, aplicar_captionbar_qt,
     ANIM, EASE_IN, EASE_OUT, ThemeAwareWidgetMixin,
+    paint_shell_background,
+    app_palette, stylesheet_base,   # usados por _apply_initial_style
 )
 from shared.components_qt import (
     ThemeManager, NMHeader, NMFadeWidget, NMToast,
@@ -80,6 +81,22 @@ _MODULE_UI_BADGES = {
 }
 
 # Metadata de módulos para títulos e íconos.
+class _ShellWidget(QWidget):
+    """Central widget con fondo shell v3: gradiente + blobs."""
+    def __init__(self, parent=None, modo: str = "dark_hybrid"):
+        super().__init__(parent)
+        self._modo = modo
+
+    def set_shell_modo(self, modo: str):
+        self._modo = modo
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        paint_shell_background(p, QRectF(self.rect()), self._modo)
+        p.end()
+
+
 class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
 
     def __init__(self):
@@ -102,8 +119,8 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
 
         # ── Ventana ────────────────────────────────────────────────────────────
         self.setWindowTitle(f"NeuroMood Suite — Hola, {self._nombre}")
-        self.setMinimumSize(QSize(720, 520))
-        self.resize(QSize(860, 640))
+        self.setMinimumSize(QSize(1100, 720))
+        self.resize(QSize(1320, 860))
         self._center_window()
         self._apply_icon()
         self._apply_initial_style()
@@ -131,14 +148,15 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
     # ── Construcción de UI ────────────────────────────────────────────────────
 
     def _build_ui(self):
-        central = QWidget()
+        central = _ShellWidget(modo=self._modo)
         self.setCentralWidget(central)
         main_layout = QVBoxLayout(central)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # Header full-width
-        self._header = NMHeader(central, modo=self._modo, username=self._nombre)
+        # Header full-width — home_mode usa greeting/strike desde HomeView
+        self._header = NMHeader(central, modo=self._modo, home_mode=True,
+                                greeting="")
         self._header.theme_toggle.connect(self._toggle_theme)
         main_layout.addWidget(self._header)
 
@@ -156,6 +174,11 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         )
         self._stack.addWidget(self._home)
         self._navigate_to(self._home)
+        # Greeting inicial desde HomeView
+        self._header.set_home_greeting(
+            self._home._greeting_text(),
+            self._home._subtitle_text(),
+        )
 
     # ── Navegación ────────────────────────────────────────────────────────────
 
@@ -261,6 +284,11 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         self._header.set_back_action(None)
         self._header.set_context_title("")
         self._header.set_context_badge("")
+        # Update home greeting from HomeView
+        self._header.set_home_greeting(
+            self._home._greeting_text(),
+            self._home._subtitle_text(),
+        )
 
     def _back_to_home(self):
         self._go_home()
@@ -286,6 +314,9 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         self._apply_global_style(self._modo)
+        cw = self.centralWidget()
+        if isinstance(cw, _ShellWidget):
+            cw.set_shell_modo(self._modo)
         if hasattr(self, "_header"):
             self._header._apply_theme(self._modo)
         if hasattr(self, "_home"):

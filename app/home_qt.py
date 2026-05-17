@@ -46,7 +46,7 @@ try:
     from shared.components_qt import (
         ThemeManager, responsive_columns,
         NMCard, NMIcon, NMModuleRing, NMButton, NMPlayButton, NMToggle,
-        NMStreakBadge, NMWaveChart, NMProgressLine,
+        NMStreakBadge, NMWaveChart, NMProgressLine, NMWelcomeBar,
     )
 except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -63,7 +63,7 @@ except ImportError:
     from shared.components_qt import (
         ThemeManager, responsive_columns,
         NMCard, NMIcon, NMModuleRing, NMButton, NMPlayButton, NMToggle,
-        NMStreakBadge, NMWaveChart, NMProgressLine,
+        NMStreakBadge, NMWaveChart, NMProgressLine, NMWelcomeBar,
     )
 
 from shared.visual_qa import visual_qa_enabled
@@ -966,8 +966,9 @@ class HomeView(QWidget):
                                  V3_SP["xl"], V3_SP["xl"])
         body.setSpacing(V3_SP["lg"])
 
-        # 1. Header
-        body.addLayout(self._build_header())
+        # 1. Welcome bar (no header — global NMHeader handles greeting + toggle)
+        self._welcome_bar = NMWelcomeBar(self._modo)
+        body.addWidget(self._welcome_bar)
 
         # 2. Hero
         self._hero = _HeroCard(self._modo)
@@ -1163,8 +1164,9 @@ class HomeView(QWidget):
         for card in self._cards.values():
             card.refresh()
         self._refresh_data()
-        self._streak_badge._days = _load_streak()
-        self._streak_badge._apply_theme(self._modo)
+        if hasattr(self, "_streak_badge") and self._streak_badge is not None:
+            self._streak_badge._days = _load_streak()
+            self._streak_badge._apply_theme(self._modo)
         self._avisos_card.set_avisos(_load_upcoming_avisos())
 
     def set_modo(self, modo: str):
@@ -1209,14 +1211,13 @@ class HomeView(QWidget):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-        self._title_lbl.setText(self._greeting_text())
-        self._subtitle_lbl.setText(self._subtitle_text())
-        self._apply_header_styles()
-        # Sincronizar toggle sin emitir señal recursiva
-        self._theme_toggle.blockSignals(True)
-        self._theme_toggle.setChecked("dark" in self._modo)
-        self._theme_toggle.blockSignals(False)
-        self._streak_badge._apply_theme(self._modo)
+        if hasattr(self, "_title_lbl") and self._title_lbl is not None:
+            self._title_lbl.setText(self._greeting_text())
+        if hasattr(self, "_subtitle_lbl") and self._subtitle_lbl is not None:
+            self._subtitle_lbl.setText(self._subtitle_text())
+        # Theme toggle y streak ahora en NMHeader global — no duplicar
+        if hasattr(self, "_streak_badge") and self._streak_badge is not None:
+            self._streak_badge._apply_theme(self._modo)
         for card in self._cards.values():
             card._apply_theme(self._modo)
         # Section titles
@@ -1229,13 +1230,17 @@ class HomeView(QWidget):
     # ── fondo ─────────────────────────────────────────────────────────────────
 
     def paintEvent(self, event):
+        # Use shell background (gradient + 3 blobs teal/violet/cyan) — consistente
+        # con NeuroMoodApp shell. Sin esto, HomeView taparía los blobs del shell
+        # padre con un fill opaco.
+        from shared.theme_qt import paint_shell_background
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        p.fillRect(self.rect(),
-                   v3c("bg" if "dark" not in self._modo else "bgAlt", self._modo))
-        # Aura radial sutil (50% de la opacidad anterior para no competir con cards)
+        paint_shell_background(p, QRectF(self.rect()), self._modo)
+        # Aura SessionColor sutil encima (50% de opacidad para no competir
+        # con los blobs del shell)
         w, h = self.width(), self.height()
-        alpha = int(aura_opacity(self._modo) * 255 * 0.5)
+        alpha = int(aura_opacity(self._modo) * 255 * 0.4)
         aura_c = self._session.qcolor(self._modo, alpha)
         aura = QRadialGradient(QPointF(w * 0.18, h * 0.50), w * 0.85)
         aura.setColorAt(0.0, aura_c)

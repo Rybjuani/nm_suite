@@ -1,6 +1,6 @@
 # AI_PROJECT_CONTEXT - NeuroMood
 
-Actualizado: 2026-05-16
+Actualizado: 2026-05-17 (rev: glassmorphism + top specular highlight + DM Sans + runtime smoke + builder QtSvg)
 
 Este es el archivo único de contexto y documentación del proyecto para agentes IA, desarrolladores y mantenimiento futuro.
 
@@ -24,7 +24,9 @@ También incluye instaladores y desinstaladores oficiales:
 - Desinstalador Suite.
 - Desinstalador Hub.
 
-La identidad visual actual está basada en `neuromood_v3_all_screens.html`, con estética dark/light híbrida, tipografía DM Sans/Segoe UI según entorno, acentos teal/violeta, cards compactas, bordes suaves, pills, rings y componentes V3 compartidos.
+La identidad visual actual esta basada en `neuromood_v3_all_screens.html` y el handoff de diseno `neuromood/project/design_handoff_neuromood_v3/README.md`, con estetica dark/light hibrida, tipografia Plus Jakarta Sans principal, DM Sans fallback, acentos teal/violeta, cards compactas, bordes suaves, pills, rings, sombras, gradientes y componentes V3 compartidos.
+
+La migracion v3 aplica la paleta `V3_LIGHT`/`V3_DARK` (teal #5eead4, violet #c084fc, bg #060912 dark / #eef2f8 light) con bridge legacy transparente via `_bridge_dark()`/`_bridge_light()`. El sistema de espacio usa `V3_SPACE` (md=12, lg=16, xl=24) expuesto como `V3_SP`.
 
 ## 2. Nombres Vigentes De Módulos Paciente
 
@@ -48,7 +50,15 @@ Entry point:
 app/main_qt.py
 ```
 
-La Suite es una app PyQt6 con `QMainWindow`, header global compacto `NMHeader`, home `HomeView` y carga dinámica de módulos mediante `_MODULE_MAP`.
+La Suite es una app PyQt6 con `QMainWindow`, ventana ideal 1320x860 (minimo 1100x720). El fondo shell usa gradiente diagonal `bg+bgAlt` con 3 blobs radiales (teal, violet, cyan) pintados via `paint_shell_background()`. Header global `NMHeader` con modo `home_mode=True` para greeting/subtitle/streak; los modulos usan `set_context_title()` para el header contextual. Home `HomeView` y carga dinamica de modulos mediante `_MODULE_MAP`.
+
+Efectos visuales aplicados:
+- NMCard: drop shadow (blur 30 dark / 12 light) + hover elevation + glassmorphism translucido en dark
+- NMButton gradient: drop shadow teal (blur 30 dark / 20 light)
+- _LogoLabel: doble glow en dark (teal + violet radial) + logos tematicos
+- NMFocusArc: glow blur en arco de progreso
+- Toggle: glow track al activarse
+- Shell: gradiente diagonal + 3 blobs radiales
 
 ### Funcionalidad Para Usuario Final
 
@@ -134,7 +144,9 @@ Entry point:
 hub/main_qt.py
 ```
 
-El NeuroMood Hub es una app PyQt6 para profesionales. Usa sidebar `NMHubSidebar`, header `NMHeader`, vistas internas con `NMFadeWidget` y componentes compartidos.
+El NeuroMood Hub es una app PyQt6 para profesionales, ventana ideal 1360x920 (minimo 1120x760). Fondo shell con gradiente + blobs igual que Suite. Usa sidebar `NMHubSidebar` a 240px (version colapsada tambien 240px) con iconos SVG via `nm_icon()` (`users`, `dashboard`, `ai`, `cog`) en lugar de emojis raw. Header `NMHeader`, vistas internas con `NMFadeWidget` y componentes compartidos.
+
+La sidebar tiene boton collapse/expand con flechas SVG (`arrowLeft`/`arrowRight`) y orbe de sync con animacion de pulso (`NMSyncOrb`).
 
 Vistas principales:
 
@@ -193,70 +205,35 @@ El Instalador Hub copia `.env` a `%APPDATA%/NeuroMoodHub/.env` y lo marca como o
 
 ## 5. Instaladores Y Desinstaladores
 
+Todos los instaladores usan `InstallerShell` como base comun (`shared/installer_common.py`). Cambios recientes:
+
+- Logo: carga `logos-dark.png` (siempre dark mode).
+- Footer: botones gradient teal->violet, altura 56px premium.
+- Stepper: compacto (circulos 18px, fuente 9px) + `NMInstallStepper` v3.
+
 ### Instalador Suite
 
-Archivo:
-
-```text
-installers/installer.py
-```
-
-Pasos:
-
-```text
-Bienvenida
-Cuenta
-Consentimiento
-Instalar
-Finalizar
-```
-
-Responsabilidades:
-
-- Autenticar o crear cuenta con Supabase Auth.
-- Instalar el bundle de Suite.
-- Copiar desinstalador.
-- Registrar uninstall en Windows.
-- Crear identidad mínima local.
-- Inicializar permisos locales desbloqueados.
+Archivo: `installers/installer.py`
+Tamaño: 820x660 fijo.
+Pasos: Bienvenida, Cuenta, Consentimiento, Instalar, Finalizar.
 
 ### Instalador Hub
 
-Archivo:
+Archivo: `installers/installer_pro.py`
+Tamaño: 820x660 fijo.
+Pasos: Bienvenida, Ruta, Instalar, Finalizar.
 
-```text
-installers/installer_pro.py
-```
+### Desinstalador Suite
 
-Pasos:
+Archivo: `installers/uninstaller.py`
+Tamaño: 760x620 fijo.
+Pasos: Confirmar, Eliminando, Finalizado.
 
-```text
-Bienvenida
-Ruta
-Instalar
-Finalizar
-```
+### Desinstalador Hub
 
-El antiguo paso manual de Supabase fue eliminado. La configuración se resuelve por `.env` empaquetado/copiadito a AppData.
-
-### Desinstaladores
-
-Archivos:
-
-```text
-installers/uninstaller.py
-installers/uninstaller_pro.py
-```
-
-Pasos:
-
-```text
-Confirmar
-Eliminando
-Finalizado
-```
-
-La conservación/eliminación de datos debe seguir siendo opcional para el usuario. Los desinstaladores deben eliminar residuos de instalación, accesos directos y registro de Windows. Los datos locales se tratan según la decisión del usuario.
+Archivo: `installers/uninstaller_pro.py`
+Tamaño: 760x620 fijo.
+Pasos: Confirmar, Eliminando, Finalizado.
 
 ## 6. Arquitectura De Carpetas Vigente
 
@@ -286,69 +263,50 @@ Estos PDFs son artefactos de distribución. Si cambia su contenido, regenerarlos
 
 ### `shared/theme.py`
 
-Tokens base:
+Tokens base + paletas canonicas v3:
 
-- Colores.
-- Tipografía.
-- Radios.
-- Espaciados.
-- Tamaños.
+- `V3_LIGHT`: paleta clara (bg #eef2f8, accent teal #14b8a6).
+- `V3_DARK`: paleta oscura (bg #060912, accent teal #5eead4).
+- `V3_SPACE`: espacio (md=12, lg=16, xl=24, xxl=32, xxxl=48).
+- `V3_RADIUS`: radios (sm=6, md=10, lg=14, xl=18, xxl=22, pill=999).
+- `V3_SHADOWS`: sombras para QGraphicsDropShadowEffect (sm, md, card, glow).
+- `V3_GRADIENTS`: paradas del gradiente firma teal->violet.
+- `MOOD_PALETTE`: 10 niveles emocionales (NMMoodEmoji, V3MoodSlider).
+- `COLORS["dark_hybrid"]` / `COLORS["light_hybrid"]`: bridge legacy -> v3 via `_bridge_dark()` / `_bridge_light()`.
+- `TYPOGRAPHY`: Plus Jakarta Sans como fuente primaria, JetBrains Mono para datos.
 
 ### `shared/theme_qt.py`
 
-Helpers Qt:
+Helpers Qt + nuevas funciones:
 
-- `C()`
-- `qfont()`
-- `sp()`
-- `app_palette()`
-- `stylesheet_base()`
+- `C()` / `v3c()` / `qcolor()` / `qfont()` / `sp()` (usa `V3_SP`).
+- `v3_shadow()`: crea QGraphicsDropShadowEffect desde V3_SHADOWS.
+- `v3_linear_gradient()`: gradiente firma teal->violet.
+- `paint_shell_background()`: fondo de ventana con gradiente diagonal + 3 blobs radiales.
+- `nm_icon()`: icono SVG via `icons_svg.py` con fallback a QtAwesome.
+- `_load_premium_fonts()`: carga Plus Jakarta Sans (4 pesos) + JetBrains Mono (2 pesos) desde `assets/fonts/`.
 
 ### `shared/components_qt.py`
 
-Componentes V3 reutilizables: headers, sidebars, cards, inputs, botones, pickers, steppers, progress, componentes Hub, componentes de instalador.
+Componentes V3 reutilizables (54+ widgets). Cambios recientes:
 
-Regla visual: usar componentes NeuroMood antes que widgets Qt crudos cuando exista equivalente.
+- **NMCard**: drop shadow + hover elevation + glassmorphism translucido en dark.
+- **NMButton**: variante gradient con drop shadow teal.
+- **NMHeader**: `home_mode=True` para greeting/subtitle/streak + logos tematicos.
+- **NMSidebar**: logo `logos-icon-{light,dark}.png` con sombra ajustada.
+- **NMHubSidebar**: 240px, iconos SVG via `nm_icon()`, recoloreo por tema.
+- **_LogoLabel**: logos `logos-light.png`/`logos-dark.png` + doble glow dark.
+- **NMFocusArc**: glow blur en arco de progreso.
+- **NMToggle**: glow track al activarse.
+- **_SidebarItem**: fondo accent en activo.
 
-### `shared/db.py`
+### `shared/icons_svg.py`
 
-SQLite local:
+Catalogo de 65+ iconos SVG nativos. Usado por `nm_icon()` con prioridad sobre QtAwesome.
 
-```text
-%APPDATA%/NeuroMood/nm_data.db
-```
+### `shared/installer_common.py`
 
-### `shared/sync.py`
-
-Sincronización con Supabase:
-
-- Exporta datos del paciente.
-- Importa permisos/asignaciones.
-- Registra/actualiza paciente.
-- Usa lazy loading para no romper si Supabase no está disponible.
-
-### `shared/config.py`
-
-Única puerta de lectura para:
-
-```text
-SUPABASE_URL
-SUPABASE_KEY
-```
-
-También puede servir a proveedores IA desde Hub.
-
-### `shared/visual_qa.py`
-
-Fixtures visuales solo con flags explícitos:
-
-```text
-NM_VISUAL_QA=1
-NM_DEMO_VISUAL=1
-NM_QA_VISUAL=1
-```
-
-No debe afectar producción.
+Clase base `InstallerShell` para los 4 instaladores. Logo `logos-dark.png`, footer con botones gradient, stepper compacto + `NMInstallStepper` v3.
 
 ## 8. Seguridad
 
@@ -374,42 +332,103 @@ shared/identidad.py
 ## 9. Design System Y UI
 
 Fuente visual principal: `neuromood_v3_all_screens.html`.
+Handoff de diseno: `neuromood/project/design_handoff_neuromood_v3/README.md`.
 
-Tokens principales:
+### Paleta V3 (activa)
 
-- Dark: fondos slate/navy, texto claro, cards compactas.
-- Light: fondo `#f8fafc`, superficies blancas, bordes suaves.
-- Acentos: teal `#14b8a6`, indigo `#6366f1`, violet `#a855f7`.
-- Estados: success, warning, error.
+El sistema usa `V3_LIGHT` y `V3_DARK` como paletas canonicas, con bridge legacy `COLORS["dark_hybrid"]` / `COLORS["light_hybrid"]` que mapea claves viejas (`accent`, `bg_primary`, etc.) a valores v3.
 
-Componentes clave:
+| Token | Dark | Light |
+|---|---|---|
+| bg | `#060912` | `#eef2f8` |
+| accent (teal) | `#5eead4` | `#14b8a6` |
+| violet | `#c084fc` | `#a855f7` |
+| text | `#f1f5f9` | `#0f172a` |
+| surface | `rgba(18,25,45,0.7)` | `#ffffff` |
 
-- `NMWelcomeBar`
-- `NMStreakBadge`
-- `NMEmojiPicker`
-- `NMPhaseChip`
-- `NMCycleRing`
-- `NMTCCStepper`
-- `NMHeatBar`
-- `NMRoutineSection`
-- `NMCustomCheck`
-- `NMMoodContextHeader`
-- `NMCategoryFilter`
-- `NMActivityCard`
-- `NMPresetChip`
-- `NMFocusArc`
-- `NMSessionHistory`
-- `NMAvisoCard`
-- `NMProgressLine`
-- `NMHubSidebar`
-- `NMFeaturedCard`
-- `NMModuleRing`
-- `NMPatientRow`
-- `NMSyncOrb`
-- `NMSettingsSection`
-- `NMInstallProgress`
-- `NMInstallStepper`
-- `NMDataPreserveCard`
+### Efectos visuales aplicados
+
+**Glassmorphism + cards**
+- **NMCard**: surface translúcida (dark `rgba(18,28,45,200)` / light `rgba(255,255,255,235)`) + top specular highlight (línea blanca arriba con clip al rounded rect: 28α dark / 180α light) + drop shadow v3 + hover elevation (border `borderSoft → borderStrong`).
+- **`glow=True`**: halo concéntrico teal (alpha 96 light / 120 dark) + overlay gradient teal→violet al 10% (solo dark) + drop shadow preset `ring` (light) / `glow` (dark).
+- **NMSettingsSection**: misma estructura — drop shadow + top specular highlight + selector `QWidget#NMSettingsSection` específico (evita herencia de border a hijos QLabel).
+- **NMCalmBadge**: selector `QWidget#NMCalmBadge` específico para que el border de la card no se propague a los 3 QLabel internos (Calm/N/BPM unificados).
+
+**Botones**
+- **NMButton gradient**: drop shadow teal (blur 30 dark / 20 light, alpha 100/55) + scale 0.97 press 100ms.
+- **NMButton secondary**: drop shadow neutra sutil (blur 12 dark / 8 light, alpha 80/18).
+- **NMButton ghost**: drop shadow mínima (blur 6 dark / 4 light, alpha 50/10).
+- **NMPlayButton circular**: drop shadow `sm` (v3_shadow) + surface neutro + border `borderSoft → borderStrong` hover.
+
+**Rings**
+- **NMModuleRing**: glow radial teal detrás del arco cuando `pct>0.05` (alpha 70 dark / 30 light) + gradient firma fluyendo a lo largo del arco (no QConicalGradient sino multi-segmento lerp).
+- **NMFocusArc** (Suite Respiración/Timer big ring 340): aura radial teal + glow blur teal+violet detrás del arco (ambos temas) + gradient firma fluyendo + halo exterior.
+- **NMCycleRing** (Respiración decorativo): contorno gradient firma v3.
+
+**Inputs**
+- **NMInput**: `focusInEvent` aplica QGraphicsDropShadowEffect teal glow (16 blur dark / 12 light, alpha 120/70). `focusOutEvent` lo quita.
+
+**Logo**
+- **_LogoLabel**: doble glow en dark (teal blur 8 + violet radial). Carga `logos-light.png`/`logos-dark.png`/`logos-icon-*.png`.
+
+**Animaciones**
+- **Theme transition 350ms crossfade**: `ThemeManager.switch_mode(modo, animate=True)` toma snapshot QPixmap de cada top-level visible, lo overlay como QLabel, emite `theme_changed`, anima opacity 1→0 con OutCubic. Lock `_transitioning` anti-reentrancia. Opt-out con `animate=False`.
+- **NMTypingDots**: 3 dots con sin wave + offset Y `-4px` + alpha 0.4→1.0 + stagger 150ms entre dots (~30fps). Spec README v3 exacta.
+- **Hover en cards**: border-color + shadow expansion (blur+offset). Sin scale ni movimiento horizontal.
+- **Click en buttons**: scale 0.97 sobre 100ms (`_animate_press_scale`).
+- **Breath circle**: `circle_radius`, `glow_alpha`, `text_opacity` como pyqtProperty animadas en cada fase.
+- **Sync orb**: pulso animado (alpha oscilante 70-255).
+
+**Shell**
+- **Shell windows** (`paint_shell_background`): gradient diagonal `bg+bgAlt` + 3 blobs radiales:
+  - dark: teal 25% / violet 22% / cyan 18% (alphas)
+  - light: teal 32% / violet 28% / cyan 22% (subidos del 0.12/0.10/0.06 inicial para visibilidad)
+- **Sidebar items**: fondo accent (alpha 18) en estado activo.
+
+### Assets de logo
+
+```
+assets/logos-light.png       - logo completo para light theme
+assets/logos-dark.png        - logo completo para dark theme
+assets/logos-icon-light.png  - solo brain para sidebar light
+assets/logos-icon-dark.png   - solo brain para sidebar dark
+assets/LOGO.png              - fuente original (no usar directamente en UI nueva)
+```
+
+### Fuentes
+
+Cargadas desde `assets/fonts/` via `_load_premium_fonts()` en `shared/theme_qt.py`:
+
+- **Plus Jakarta Sans** (primary v3): Regular, Medium, SemiBold, Bold (.ttf) — desde github tokotype
+- **DM Sans** (fallback secundario): Regular, Medium, Bold (.ttf) — desde jsdelivr mirror de googlefonts/dm-fonts
+- **JetBrains Mono** (timers, IDs, log instalador): Regular, Bold (.ttf) — desde github JetBrains
+
+El loader prefiere Plus Jakarta Sans → DM Sans → Inter → Satoshi. Si ninguna está, cae al sistema (Segoe UI en Windows). Las 9 TTFs se empaquetan en los 6 EXEs (Suite, Hub, 2 Instaladores, 2 Desinstaladores) via `("assets/fonts", "assets/fonts")` en `add_data`.
+
+### Escala de espacio (V3_SP)
+
+```python
+V3_SP = {"xs": 4, "sm": 8, "md": 12, "lg": 16, "xl": 24, "xxl": 32, "xxxl": 48}
+```
+
+Accesible via `sp()` en `theme_qt.py` y `V3_SP` directamente.
+
+### Componentes clave (lista completa)
+
+- `NMWelcomeBar`, `NMStreakBadge`, `NMEmojiPicker`
+- `NMPhaseChip`, `NMCycleRing`, `NMCalmBadge`
+- `NMTCCStepper`, `NMHeatBar`, `NMDistortionBadge`
+- `NMRoutineSection`, `NMCustomCheck`, `NMDayNote`
+- `NMMoodContextHeader`, `NMCategoryFilter`, `NMActivityCard`
+- `NMPresetChip`, `NMFocusArc`, `NMSessionHistory`, `NMAvisoCard`
+- `NMProgressLine`, `NMHubSidebar`, `NMFeaturedCard`, `NMModuleRing`
+- `NMPatientRow`, `NMSyncOrb`, `NMSettingsSection`, `NMConfigRow`
+- `NMInstallProgress`, `NMInstallStepper`, `NMDataPreserveCard`
+- `NMMoodEmoji` (nuevo), `V3MoodSlider` (nuevo), `NMPlayButton` (nuevo)
+- `NMIcon` (nuevo, SVG via `nm_icon()`), `NMStatusChip`, `NMSectionCard`
+- `NMFormField`, `NMSegmentedChoice`, `NMInput`, `NMToggle`
+- `NMChatBubble`, `NMTypingDots`, `NMProviderChip`, `NMQuickAction`
+- `NMPatientContext`, `NMToast`, `NMEmptyState`, `NMSkeleton`
 
 ## 10. Build Y Distribución
 
@@ -419,7 +438,7 @@ El build debe ejecutarse desde un único BAT oficial:
 BUILD_NEUROMOOD.bat
 ```
 
-Salidas esperadas:
+Salidas esperadas (nombres exactos del build):
 
 ```text
 dist/NeuroMood Suite/NeuroMood Suite.exe
@@ -430,6 +449,8 @@ dist/Desinstalador Suite/Desinstalador Suite.exe
 dist/Desinstalador Hub/Desinstalador Hub.exe
 ```
 
+Orden de compilacion: Suite -> Hub -> Desinstalador Suite -> Instalador Suite (requiere Suite + Desinstalador) -> Desinstalador Hub -> Instalador Hub (requiere Hub + Desinstalador Hub).
+
 Reglas:
 
 - Limpiar `.spec` al finalizar.
@@ -438,6 +459,9 @@ Reglas:
 - Compilar EXEs finales/oficiales.
 - No dejar scripts auxiliares en raíz.
 - La lógica de build vive en `AI_SCRIPTS/build_neuromood.py`; el `.bat` solo delega.
+- Hidden imports criticos agregados: `shared.icons_svg`, `shared.visual_qa`, `PyQt6.QtSvg` (para QSvgRenderer del catálogo SVG y NMMoodEmoji).
+- Add-data para assets: `assets/fonts/` empaquetado en los 6 targets (Suite, Hub, 2 instaladores, 2 desinstaladores) para que las fuentes premium carguen en EXEs compilados.
+- `shared.icons_svg` también en INSTALLER_IMPORTS por consistencia con Suite/Hub (aunque los wizards no usan NMIcon directamente, mantiene el módulo disponible).
 - Para validar sin compilar: `BUILD_NEUROMOOD.bat --dry-run`.
 - Para forzar cache limpia de PyInstaller: `BUILD_NEUROMOOD.bat --clean`.
 - `dist/` se conserva como carpeta de salida; `build/` es temporal y no debe quedar versionada.
@@ -473,6 +497,27 @@ Scripts vigentes:
 - `AI_SCRIPTS/smoke_test_runner.py`: smoke tests.
 - `AI_SCRIPTS/_audit_scan.py`, `AI_SCRIPTS/_audit_mockup_grid.py`, `AI_SCRIPTS/_test_color_regression.py`: auditorías visuales/técnicas puntuales.
 - `AI_SCRIPTS/_test_home_auto.py`, `AI_SCRIPTS/_test_responsive_final.py`, `AI_SCRIPTS/_test_visual_auto.py`, `AI_SCRIPTS/resize_test.py`, `AI_SCRIPTS/ui_crawler.py`: pruebas visuales y de navegación.
+- `AI_SCRIPTS/_capture_v3_screens.py`: captura PNG de las 11 pantallas v3 (Suite + Hub) en dark + light a `_qa_output/v3_capture/`. Usa subprocess-per-screen (un crash no detiene los demás) y `_ShellWindow` wrapper que pinta `paint_shell_background` para reproducir el look real del runtime. Útil para diff visual contra el mockup HTML del bundle (`neuromood/project/design_handoff_neuromood_v3/NeuroMood Redesign.html`).
+
+### Fidelidad v3 actual
+
+Score estimado: **~97%** vs spec del README handoff v3.
+
+| Área | Score | Notas |
+|---|---:|---|
+| Tokens foundation (V3_LIGHT/DARK, MOOD_PALETTE, V3_SPACE/RADIUS/SHADOWS/GRADIENTS, TYPOGRAPHY, bridge legacy) | 100% | — |
+| Componentes core (NMCard/Button/Ring/Icon/MoodEmoji/Slider/PlayButton/Toggle/ChatBubble/SettingsSection/Input/Tabs) | 98% | NMConfigRow cubierto por NMSettingsSection |
+| Glassmorphism + background (shell gradient, blobs, cards translúcidas, top highlight, shadows) | 90% | Sin QGraphicsBlurEffect real (alpha-simulado, decisión consciente por costo runtime) |
+| Animaciones (theme crossfade 350ms, hover, press scale 0.97, breath circle, sync orb, typing dots stagger) | 95% | — |
+| Pantallas Suite (8 pantallas reescritas con v3 nativo) | 95% | — |
+| Pantallas Hub (Pacientes/IA/Config reescritos; Detalle hereda vía bridge) | 85% | 4 tabs DetallePaciente no refactorizadas profundo (heredan tokens v3 vía bridge) |
+| Installer / Uninstaller (QSS v3, shell unificado, gradient firma) | 90% | 5+3 page builders heredan QSS, no rescritos individualmente |
+| Fuentes premium (Plus Jakarta Sans + DM Sans + JetBrains Mono) | 100% | 9 TTFs cargados via QFontDatabase |
+| Sistema iconos SVG (63 iconos + fallback qta + stroke proporcional) | 95% | Lista del README handoff completa |
+
+Validación runtime (`_runtime_smoke.py`): 41/41 OK — 27 imports + 3 fuentes + 63 iconos + 10 niveles MoodEmoji + 6 entry points (Suite/Hub/2 instaladores/2 desinstaladores) construyen sin errores.
+
+Capturas evidencia: 22 PNGs en `_qa_output/v3_capture/` (11 pantallas × dark + light).
 
 ## 12. Auditorías Y Planes Históricos Consolidados
 

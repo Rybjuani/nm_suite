@@ -80,7 +80,9 @@ def _v3_elevated(modo: str) -> str:
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _card_frame(modo: str) -> QFrame:
-    """Frame card v3 — superficie + border `borderSoft` + radius lg (14)."""
+    """Frame card v3 — superficie + border `borderSoft` + radius lg (14) + sombra."""
+    from PyQt6.QtWidgets import QGraphicsDropShadowEffect
+
     surface = _v3_surface(modo)
     border = v3c("borderSoft", modo).name()
     f = QFrame()
@@ -91,6 +93,16 @@ def _card_frame(modo: str) -> QFrame:
             border: 1px solid {border};
         }}
     """)
+    # Sombra v3 — sin esta, las cards en light son indistinguibles del fondo
+    is_dark = "dark" in norm_modo(modo)
+    shadow = QGraphicsDropShadowEffect(f)
+    if is_dark:
+        shadow.setBlurRadius(30); shadow.setOffset(0, 10)
+        shadow.setColor(QColor(0, 0, 0, 115))
+    else:
+        shadow.setBlurRadius(16); shadow.setOffset(0, 6)
+        shadow.setColor(QColor(15, 23, 42, 22))
+    f.setGraphicsEffect(shadow)
     return f
 
 
