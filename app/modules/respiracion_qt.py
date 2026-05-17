@@ -1,24 +1,19 @@
 """
-app/modules/respiracion_qt.py — Módulo Respiración (PyQt6)
+app/modules/respiracion_qt.py — Módulo Respiración 4-7-8 v3 (PyQt6)
 
-LÓGICA DE NEGOCIO PRESERVADA EXACTA de respiracion.py:
+Estructura según design_handoff_neuromood_v3 (Suite > Respiración):
+
+  Header        eyebrow + pills de preset (3 / 5 / 10 min)
+  2-col main    LEFT: BIG breath circle (340, stroke 14) + phase chips
+                      + 3 controles NMPlayButton (play/stop/refresh)
+                RIGHT rail: cronómetro mono / BPM (NMCalmBadge) / calm bar
+  3 step cards  Inhala 4s / Mantén 7s / Exhala 8s
+  Historial     4 mini cards con fecha + duración + ring de ciclos
+
+LÓGICA DE NEGOCIO PRESERVADA EXACTA:
   TECNICA, FASES, PRESETS, CICLO_TOTAL
   _tick() con intervalo 100ms, _save_session(), get_card_status()
-  _start(), _pause(), _stop(), _finish()
-
-NUEVAS CAPACIDADES UI:
-  Círculo que respira físicamente:
-    - QPropertyAnimation sobre circle_radius (95→130→95) en sync con fases
-    - Easing InOutSine igual que la respiración natural
-  Glow pulsante:
-    - QPropertyAnimation sobre glow_alpha (40→120→40) en sync
-    - Pintado con QRadialGradient
-  Arco gradiente:
-    - QPainter + QConicalGradient teal→violet
-    - Arco exterior delgado (2px) para progreso total de sesión
-  Texto central animado:
-    - QGraphicsOpacityEffect fade 300ms al cambiar de fase
-  60fps via QTimer(16ms)
+  _start(), _pause(), _stop(), _finish() (incluido winsound.Beep al finalizar)
 """
 
 import os
@@ -30,44 +25,54 @@ _log = logging.getLogger(__name__)
 
 from PyQt6.QtCore import (
     Qt, QTimer, QPropertyAnimation, QEasingCurve, QRectF, QPointF,
-    pyqtProperty, QAbstractAnimation, QSequentialAnimationGroup,
+    pyqtProperty, QAbstractAnimation,
 )
 from PyQt6.QtGui import (
-    QColor, QPainter, QPen, QBrush, QFont, QPainterPath,
-    QConicalGradient, QRadialGradient, QLinearGradient,
+    QColor, QPainter, QPen, QBrush, QRadialGradient, QLinearGradient,
 )
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSizePolicy,
-    QGraphicsOpacityEffect, QFrame,
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSizePolicy, QFrame,
+    QScrollArea,
 )
 
 try:
     from shared.components_qt import (
-        NMModule, NMButton, NMButtonOutline, ThemeManager, NMEmptyState,
-        NMPhaseChip, NMCycleRing, NMCalmBadge,
+        NMModule, NMButton, NMButtonOutline, ThemeManager,
+        NMCard, NMIcon, NMPlayButton, NMPhaseChip,
+        NMCycleRing, NMCalmBadge, NMModuleRing, NMProgressLine,
     )
     from shared.theme_qt import (
-        C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        radial_glow, radial_glow_double, conical_arc_gradient, get_gradient, gradient_colors,
-        RADIUS_CARD, RADIUS_PILL, PAD_CONTAINER, GAP_ELEMENTS, ThemeAwareWidgetMixin,
+        C, colors, norm_modo, qfont, qfont_mono,
+        interpolate_color, radial_glow_double,
+        gradient_colors, v3c, v3_mode, V3_SP, V3_RD,
+        ThemeAwareWidgetMixin,
+        PAD_CONTAINER,
     )
+    from shared.theme import TYPOGRAPHY, V3_GRADIENTS
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy, hora_actual
+    from shared.visual_qa import visual_qa_enabled
 except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
     from shared.components_qt import (
-        NMModule, NMButton, NMButtonOutline, ThemeManager, NMEmptyState,
-        NMPhaseChip, NMCycleRing, NMCalmBadge,
+        NMModule, NMButton, NMButtonOutline, ThemeManager,
+        NMCard, NMIcon, NMPlayButton, NMPhaseChip,
+        NMCycleRing, NMCalmBadge, NMModuleRing, NMProgressLine,
     )
     from shared.theme_qt import (
-        C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        radial_glow, radial_glow_double, conical_arc_gradient, get_gradient, gradient_colors,
-        RADIUS_CARD, RADIUS_PILL, PAD_CONTAINER, GAP_ELEMENTS, ThemeAwareWidgetMixin,
+        C, colors, norm_modo, qfont, qfont_mono,
+        interpolate_color, radial_glow_double,
+        gradient_colors, v3c, v3_mode, V3_SP, V3_RD,
+        ThemeAwareWidgetMixin,
+        PAD_CONTAINER,
     )
+    from shared.theme import TYPOGRAPHY, V3_GRADIENTS
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy, hora_actual
+    from shared.visual_qa import visual_qa_enabled
+
 
 # ── Constantes de negocio (preservadas exactas) ───────────────────────────────
 
@@ -85,46 +90,76 @@ PRESETS = [
     ("10 min", 10),
 ]
 
-# Radios del círculo animado
-_R_MIN   = 88    # radio en reposo / exhala final
-_R_MAX   = 128   # radio máximo en inhala
-_R_TRACK = 140   # radio del track ring (fijo)
-_CANVAS  = 300   # tamaño del widget circular
+# Big ring v3: README "Big ring (size 340, stroke 14)"
+_CANVAS_V3 = 340
+_RING_STROKE = 14
+_R_MIN = 110   # radio en reposo / exhala final
+_R_MAX = 154   # radio máximo en inhala
 
 
-def _rich_color_at(modo: str, t: float) -> str:
-    palette = gradient_colors(modo)
-    if len(palette) < 3:
-        return interpolate_color(palette[0], palette[-1], t)
-    if t <= 0.45:
-        return interpolate_color(palette[0], palette[1], t / 0.45)
-    return interpolate_color(palette[1], palette[2], (t - 0.45) / 0.55)
+def _v3_arc_lerp(p: QPainter, rect: QRectF, start_deg: float, span_deg: float,
+                 pen_w: int, modo: str, segments: int = 48):
+    """Pinta un arco con gradient firma v3 segmento-a-segmento.
+
+    Versión local del helper (no importamos el privado de components_qt).
+    """
+    if abs(span_deg) < 0.1:
+        return
+    stops = V3_GRADIENTS[v3_mode(modo)]
+    direction = 1 if span_deg > 0 else -1
+    abs_span = abs(span_deg)
+
+    def color_at(t):
+        t = max(0.0, min(1.0, t))
+        for i in range(len(stops) - 1):
+            h0, t0 = stops[i]
+            h1, t1 = stops[i + 1]
+            if t0 <= t <= t1:
+                local = (t - t0) / max(1e-9, t1 - t0)
+                return QColor(interpolate_color(h0, h1, local))
+        return QColor(stops[-1][0])
+
+    p.setBrush(Qt.BrushStyle.NoBrush)
+    for i in range(segments):
+        t0 = i / segments
+        t1 = (i + 1) / segments
+        mid_t = (t0 + t1) / 2
+        pen = QPen(color_at(mid_t), pen_w, Qt.PenStyle.SolidLine,
+                   Qt.PenCapStyle.FlatCap)
+        p.setPen(pen)
+        a0 = start_deg + direction * abs_span * t0
+        a1 = start_deg + direction * abs_span * t1
+        p.drawArc(rect, int(a0 * 16), int((a1 - a0) * 16))
+
+    # Round caps manuales en los extremos
+    cx, cy = rect.center().x(), rect.center().y()
+    rx, ry = rect.width() / 2, rect.height() / 2
+    cap_r = pen_w / 2
+    for endpoint_t in (0.0, 1.0):
+        ang = math.radians(start_deg + direction * abs_span * endpoint_t)
+        px = cx + rx * math.cos(ang)
+        py = cy - ry * math.sin(ang)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(color_at(endpoint_t)))
+        p.drawEllipse(QPointF(px, py), cap_r, cap_r)
 
 
-# ── CircleWidget — el corazón visual ─────────────────────────────────────────
+# ── _BreathCircle v3 ─────────────────────────────────────────────────────────
 
 class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
-    """
-    Círculo de respiración con animaciones Qt nativas.
+    """Círculo de respiración v3 — 340px, stroke 14, gradient teal→violet.
 
-    Propiedades animables (pyqtProperty):
-      circle_radius: float — radio del círculo relleno
-      glow_alpha:    int   — intensidad del glow radial (0–255)
-      text_opacity:  float — opacidad del texto central (0.0–1.0)
-
-    Datos que se actualizan en cada tick:
-      phase_progress: float 0–1 (progreso dentro de la fase actual)
-      session_progress: float 0–1 (progreso total de la sesión)
-      center_text: str — segundos restantes
-      phase_text: str — nombre de la fase
-      phase_color: str — color hex de la fase
+    Animaciones (pyqtProperty):
+      circle_radius: float  → radio del círculo relleno (pulsing breath)
+      glow_alpha:    int    → intensidad del halo radial (0-255)
+      text_opacity:  float  → fade del texto al cambiar de fase (0-1)
     """
 
     def __init__(self, parent=None, modo: str = "dark_hybrid"):
         super().__init__(parent)
         self._modo = norm_modo(modo)
-        self.setMinimumSize(200, 200)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setFixedSize(_CANVAS_V3, _CANVAS_V3)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
         # Estado visual
         self._circle_radius = float(_R_MIN)
@@ -134,16 +169,13 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         self._session_progress = 0.0
         self._center_text = ""
         self._phase_text = ""
-        self.update()
-        self._phase_text = ""
-        self._phase_color = C("accent", self._modo)
 
-        # Animaciones de entrada (se crean una vez, se reinician en cada fase)
+        # Animaciones
         self._anim_radius: QPropertyAnimation | None = None
         self._anim_glow: QPropertyAnimation | None = None
         self._anim_text_fade: QPropertyAnimation | None = None
 
-        # Timer de 60fps para redibujado
+        # Render timer 60 fps
         self._render_timer = QTimer(self)
         self._render_timer.timeout.connect(self.update)
 
@@ -176,29 +208,16 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
 
     text_opacity = pyqtProperty(float, _get_text_opacity, _set_text_opacity)
 
-    # ── API para el módulo ────────────────────────────────────────────────────
+    # ── API ───────────────────────────────────────────────────────────────────
 
     def update_data(self, phase_progress: float, session_progress: float,
                     center_text: str, phase_text: str, phase_idx: int):
-        """Actualizar datos del frame actual. Llamar en cada tick."""
         self._phase_progress = phase_progress
         self._session_progress = session_progress
         self._center_text = center_text
         self._phase_text = phase_text
-        if phase_idx == 0:
-            self._phase_color = C("teal", self._modo)
-        elif phase_idx == 2:
-            self._phase_color = C("violet", self._modo)
-        else:
-            self._phase_color = C("accent", self._modo)
 
-    def animate_phase(self, phase_idx: int, phase_dur_s: int, expanding: bool):
-        """
-        Iniciar animaciones de la fase:
-          Inhala (expanding=True):  radius MIN→MAX, glow 40→120
-          Mantén (expanding=None):  radio fijo, solo glow pulsante
-          Exhala (expanding=False): radius MAX→MIN, glow 120→40
-        """
+    def animate_phase(self, phase_idx: int, phase_dur_s: int, expanding):
         self._start_rendering()
         dur = phase_dur_s * 1000
 
@@ -215,7 +234,6 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
             self._anim_radius.setStartValue(float(_R_MAX))
             self._anim_radius.setEndValue(float(_R_MIN))
         else:
-            # Mantén: radio fijo, sin animación de tamaño
             self._circle_radius = float(_R_MAX)
         if expanding is not None:
             self._anim_radius.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
@@ -233,18 +251,15 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
             self._anim_glow.setStartValue(120)
             self._anim_glow.setEndValue(40)
         else:
-            # Mantén: glow constante alto
             self._glow_alpha = 100
         if expanding is not None:
             self._anim_glow.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
     def animate_text_change(self):
-        """Fade out→in del texto al cambiar de fase (300ms)."""
         if self._anim_text_fade:
             self._anim_text_fade.stop()
         self._anim_text_fade = QPropertyAnimation(self, b"text_opacity", self)
         self._anim_text_fade.setDuration(300)
-        # out → in
         self._anim_text_fade.setKeyValueAt(0.0, 1.0)
         self._anim_text_fade.setKeyValueAt(0.4, 0.0)
         self._anim_text_fade.setKeyValueAt(1.0, 1.0)
@@ -263,6 +278,8 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         self._phase_progress = 0.0
         self._session_progress = 0.0
         self._center_text = ""
+        self._phase_text = ""
+        self.update()
 
     def _start_rendering(self):
         if self.isVisible() and not self._render_timer.isActive():
@@ -281,103 +298,89 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         self._stop_rendering()
         super().hideEvent(event)
 
-    # ── paintEvent ────────────────────────────────────────────────────────────
+    # ── paintEvent v3 ─────────────────────────────────────────────────────────
 
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-        p.save()
 
-        c = colors(self._modo)
-        scale = min(self.width(), self.height()) / _CANVAS
+        is_dark = "dark" in self._modo
         cx = cy = self.width() / 2
 
-        # ── 1. Glow radial ──────────────────────────────────────────────────
-        glow_r = (self._circle_radius + 32) * scale
-        glow_center = QPointF(cx, cy)
-        glow_grad = radial_glow_double(glow_center, glow_r, self._phase_color)
+        # 1. Halo radial (color teal del tema, intensidad animada)
+        halo_color = v3c("teal", self._modo)
+        halo_r = self._circle_radius + 40
+        glow = QRadialGradient(QPointF(cx, cy), halo_r)
+        inner = QColor(halo_color); inner.setAlpha(self._glow_alpha)
+        outer = QColor(halo_color); outer.setAlpha(0)
+        glow.setColorAt(0.0, inner)
+        glow.setColorAt(1.0, outer)
         p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(QBrush(glow_grad))
-        p.drawEllipse(glow_center, glow_r, glow_r)
+        p.setBrush(QBrush(glow))
+        p.drawEllipse(QPointF(cx, cy), halo_r, halo_r)
 
-        # ── 2. Track ring ───────────────────────────────────────────────────
-        track_r = _R_TRACK * scale
-        track_pen = QPen(QColor(c["progress_track"]), 2)
+        # 2. Track ring exterior (stroke 14, borderSoft)
+        track_r = (_CANVAS_V3 / 2) - _RING_STROKE / 2 - 2
+        track_pen = QPen(v3c("borderSoft", self._modo), _RING_STROKE,
+                         Qt.PenStyle.SolidLine, Qt.PenCapStyle.FlatCap)
         p.setPen(track_pen)
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawEllipse(QPointF(cx, cy), track_r, track_r)
 
-        # Arco de sesión (progreso total, delgado, gris suave)
-        if self._session_progress > 0:
-            session_pen = QPen(QColor(c["text_tertiary"]), 2)
-            session_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-            p.setPen(session_pen)
-            rect_track = QRectF(
-                cx - track_r, cy - track_r,
-                track_r * 2, track_r * 2
-            )
-            span_deg = int(-self._session_progress * 360 * 16)
-            p.drawArc(rect_track, 90 * 16, span_deg)
+        # 3. Arco de sesión total (gradient firma v3 teal→violet)
+        if self._session_progress > 0.001:
+            arc_rect = QRectF(cx - track_r, cy - track_r,
+                              track_r * 2, track_r * 2)
+            _v3_arc_lerp(p, arc_rect, 90.0,
+                         -360.0 * self._session_progress,
+                         _RING_STROKE, self._modo)
 
-        # ── 3. Círculo relleno que respira ────────────────────────────────────
-        r = self._circle_radius * scale
+        # 4. Círculo relleno que respira (fill suave)
+        r = self._circle_radius
         fill_grad = QRadialGradient(QPointF(cx, cy), r)
-        base_c = QColor(self._phase_color)
-        base_c.setAlpha(40)
-        rim_c = QColor(self._phase_color)
-        rim_c.setAlpha(20)
-        fill_grad.setColorAt(0.0, base_c)
-        fill_grad.setColorAt(1.0, rim_c)
+        base = v3c("teal", self._modo); base.setAlpha(48)
+        rim = v3c("violet", self._modo); rim.setAlpha(22)
+        fill_grad.setColorAt(0.0, base)
+        fill_grad.setColorAt(1.0, rim)
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QBrush(fill_grad))
         p.drawEllipse(QPointF(cx, cy), r, r)
 
-        # Borde del círculo
-        border_pen = QPen(QColor(self._phase_color), 2)
+        # Borde del círculo respirando (tono teal del tema)
+        border_pen = QPen(v3c("teal", self._modo), 2)
         border_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         p.setPen(border_pen)
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawEllipse(QPointF(cx, cy), r, r)
 
-        # ── 4. Arco de fase ──────────────────────────────────────────────────
-        if self._phase_progress > 0:
-            arc_r = r - 8 * scale
-            rect_arc = QRectF(cx - arc_r, cy - arc_r, arc_r * 2, arc_r * 2)
+        # 5. Arco de progreso de fase (interior, finito, gradient v3)
+        if self._phase_progress > 0.001:
+            inner_r = r - 12
+            inner_rect = QRectF(cx - inner_r, cy - inner_r,
+                                inner_r * 2, inner_r * 2)
+            _v3_arc_lerp(p, inner_rect, 90.0,
+                         -360.0 * self._phase_progress, 6, self._modo,
+                         segments=36)
 
-            # Arco de progreso de la fase
-            extent = max(self._phase_progress * 360, 2)
-            segs = max(4, int(36 * self._phase_progress))
-            seg_ext = extent / segs
-            for i in range(segs):
-                t = i / max(segs - 1, 1)
-                col = _rich_color_at(self._modo, t)
-                arc_pen = QPen(QColor(col), 6)
-                arc_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-                p.setPen(arc_pen)
-                angle = 90 - i * seg_ext
-                p.drawArc(rect_arc, int(angle * 16), int(-seg_ext * 16))
-
-        # ── 5. Texto central ──────────────────────────────────────────────────
+        # 6. Texto central
         p.setOpacity(self._text_opacity)
 
-        # Número grande (segundos)
-        font_big = qfont("size_h1", bold=True)
-        font_big.setPointSize(38)
-        p.setFont(font_big)
-        p.setPen(QPen(QColor(c["text_primary"])))
-        text_rect_top = QRectF(0, cy - 44, self.width(), 52)
-        p.drawText(text_rect_top, Qt.AlignmentFlag.AlignCenter, self._center_text)
+        # Número grande (segundos) — tipografía mono v3, escalada a tamaño
+        p.setFont(qfont_mono(48, bold=False))
+        p.setPen(QPen(v3c("text", self._modo)))
+        text_rect_top = QRectF(0, cy - 50, self.width(), 60)
+        p.drawText(text_rect_top, Qt.AlignmentFlag.AlignCenter,
+                   self._center_text)
 
-        # Nombre de fase debajo
+        # Nombre de fase
         if self._phase_text:
-            font_small = qfont("size_caption")
-            p.setFont(font_small)
-            p.setPen(QPen(QColor(self._phase_color)))
-            text_rect_bot = QRectF(0, cy + 12, self.width(), 28)
-            p.drawText(text_rect_bot, Qt.AlignmentFlag.AlignCenter, self._phase_text)
-
-        p.restore()
+            p.setFont(qfont("size_small",
+                            weight=TYPOGRAPHY["weight_semibold"]))
+            p.setPen(QPen(v3c("teal", self._modo)))
+            text_rect_bot = QRectF(0, cy + 16, self.width(), 24)
+            p.drawText(text_rect_bot, Qt.AlignmentFlag.AlignCenter,
+                       self._phase_text)
         p.end()
 
     def _apply_theme(self, modo: str):
@@ -385,78 +388,132 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         self.update()
 
 
-# ── StepCard ──────────────────────────────────────────────────────────────────
+# ── StepCard v3 ──────────────────────────────────────────────────────────────
 
-class _StepCard(ThemeAwareWidgetMixin, QFrame):
-    def __init__(self, label: str, secs: str, parent=None, modo: str = "dark_hybrid"):
-        super().__init__(parent)
-        self._modo = norm_modo(modo)
+class _StepCard(NMCard):
+    """Card de fase: ICONO/LABEL + segundos. Activa = glow + accent."""
+
+    def __init__(self, label: str, secs: str, modo: str = None, parent=None):
+        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
+        self._label_text = label
+        self._secs_text = secs
         self._active = False
-        self._accent = C("accent", self._modo)
+        self._build()
 
-        self.setMinimumHeight(60)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-
+    def _build(self):
         vl = QVBoxLayout(self)
-        vl.setContentsMargins(8, 8, 8, 8)
+        vl.setContentsMargins(V3_SP["md"], V3_SP["md"],
+                              V3_SP["md"], V3_SP["md"])
         vl.setSpacing(2)
         vl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        self._lbl = QLabel(label)
-        self._lbl.setFont(qfont("size_small", bold=True))
+        self._lbl = QLabel(self._label_text)
+        self._lbl.setFont(qfont("size_small",
+                                weight=TYPOGRAPHY["weight_semibold"]))
         self._lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         vl.addWidget(self._lbl)
-
-        self._secs_lbl = QLabel(secs)
-        self._secs_lbl.setFont(qfont("size_caption"))
+        self._secs_lbl = QLabel(self._secs_text)
+        self._secs_lbl.setFont(qfont_mono(11, bold=False))
         self._secs_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         vl.addWidget(self._secs_lbl)
+        self._apply_step_styles()
 
-        self._update_style()
-        self._connect_theme()
+    def set_active(self, active: bool):
+        if active != self._active:
+            self._active = active
+            self.set_glow(active)
+            self._apply_step_styles()
 
-    def set_active(self, active: bool, accent: str = None):
-        self._active = active
-        if accent:
-            self._accent = accent
-        self._update_style()
-
-    def _update_style(self):
-        c = colors(self._modo)
-        if self._active:
-            self.setStyleSheet(f"""
-                _StepCard {{
-                    background: {c['bg_elevated']};
-                    border: 2px solid {self._accent};
-                    border-radius: {RADIUS_CARD}px;
-                }}
-            """)
-            self._lbl.setStyleSheet(f"color: {self._accent}; background: transparent;")
-            self._secs_lbl.setStyleSheet(f"color: {self._accent}; background: transparent;")
-        else:
-            self.setStyleSheet(f"""
-                _StepCard {{
-                    background: {c['bg_surface']};
-                    border: 1px solid {c.get('border_card', c['border'])};
-                    border-radius: {RADIUS_CARD}px;
-                }}
-            """)
-            self._lbl.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
-            self._secs_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+    def _apply_step_styles(self):
+        color_main = (v3c("teal", self._modo).name() if self._active
+                      else v3c("text2", self._modo).name())
+        color_sec = (v3c("teal", self._modo).name() if self._active
+                     else v3c("text3", self._modo).name())
+        self._lbl.setStyleSheet(
+            f"color: {color_main}; background: transparent;")
+        self._secs_lbl.setStyleSheet(
+            f"color: {color_sec}; background: transparent;")
 
     def _apply_theme(self, modo: str):
-        self._modo = norm_modo(modo)
-        self._update_style()
+        super()._apply_theme(modo)
+        self._apply_step_styles()
 
 
-# ── ModuloRespiracion ─────────────────────────────────────────────────────────
+# ── _HistorialCard ──────────────────────────────────────────────────────────
+
+class _HistorialMiniCard(NMCard):
+    """Card mini de sesión pasada: fecha + duración + ring de ciclos."""
+
+    def __init__(self, fecha: str, hora: str, duracion: float, ciclos: int,
+                 modo: str = None, parent=None):
+        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
+        self._fecha = fecha
+        self._hora = hora
+        self._duracion = duracion
+        self._ciclos = ciclos
+        self._build()
+
+    def _build(self):
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(V3_SP["md"], V3_SP["md"],
+                                V3_SP["md"], V3_SP["md"])
+        lay.setSpacing(V3_SP["sm"])
+
+        # Ring chico con % ciclos vs target (15 ciclos = full)
+        ring_pct = min(self._ciclos / 15.0, 1.0)
+        self._ring = NMModuleRing(size=40, pct=ring_pct, modo=self._modo)
+        lay.addWidget(self._ring)
+
+        col = QVBoxLayout()
+        col.setSpacing(0)
+        self._date_lbl = QLabel(self._format_date())
+        self._date_lbl.setFont(qfont("size_caption",
+                                      weight=TYPOGRAPHY["weight_semibold"]))
+        col.addWidget(self._date_lbl)
+        self._dur_lbl = QLabel(self._format_duration())
+        self._dur_lbl.setFont(qfont("size_caption_xs"))
+        col.addWidget(self._dur_lbl)
+        lay.addLayout(col, stretch=1)
+        self._apply_hist_styles()
+
+    def _format_date(self) -> str:
+        try:
+            import datetime as dt
+            d = dt.datetime.strptime(self._fecha, "%Y-%m-%d").date()
+            today = dt.date.today()
+            if d == today:
+                return f"Hoy · {self._hora[:5]}"
+            if d == today - dt.timedelta(days=1):
+                return f"Ayer · {self._hora[:5]}"
+            return f"{d.strftime('%d/%m')} · {self._hora[:5]}"
+        except Exception:
+            return f"{self._fecha} {self._hora[:5]}"
+
+    def _format_duration(self) -> str:
+        return f"{self._duracion:g} min · {self._ciclos} ciclos"
+
+    def _apply_hist_styles(self):
+        self._date_lbl.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; background: transparent;")
+        self._dur_lbl.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;")
+
+    def _apply_theme(self, modo: str):
+        super()._apply_theme(modo)
+        self._ring._modo = self._modo
+        self._ring.update()
+        self._apply_hist_styles()
+
+
+# ── ModuloRespiracion v3 ─────────────────────────────────────────────────────
 
 class ModuloRespiracion(NMModule):
     MODULE_TITLE = "Respiración"
     MODULE_ICON = "respiracion"
 
+    # ── build ────────────────────────────────────────────────────────────────
+
     def build_ui(self):
-        # ── Estado de negocio (preservado exacto) ─────────────────────────────
+        # Estado preservado exacto
         self._running = False
         self._paused = False
         self._elapsed_ms = 0
@@ -466,91 +523,190 @@ class ModuloRespiracion(NMModule):
         self._timer_id: QTimer | None = None
         self._phase_idx = 0
         self._phase_ms = 0
-        self._last_phase_idx = -1   # para detectar cambio de fase
+        self._last_phase_idx = -1
 
-        # ── Layout principal ───────────────────────────────────────────────────
-        layout = QVBoxLayout(self._content)
-        layout.setContentsMargins(PAD_CONTAINER, PAD_CONTAINER,
-                                   PAD_CONTAINER, PAD_CONTAINER)
-        layout.setSpacing(GAP_ELEMENTS)
-        layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        outer = QVBoxLayout(self._content)
+        outer.setContentsMargins(0, 0, 0, 0)
 
-        c = colors(self._modo)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        outer.addWidget(scroll)
+        self._scroll = scroll
 
-        # ── Pills de preset ────────────────────────────────────────────────────
-        self._empty_state = NMEmptyState(
-            "fa5s.wind",
-            "Momento de respirar",
-            "Iniciá una sesión guiada.",
-            self._content,
-        )
-        layout.addWidget(self._empty_state)
+        body = QWidget()
+        body.setStyleSheet("background: transparent;")
+        scroll.setWidget(body)
 
-        pills_row = QHBoxLayout()
-        pills_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        pills_row.setSpacing(8)
+        lay = QVBoxLayout(body)
+        lay.setContentsMargins(V3_SP["xl"], V3_SP["lg"],
+                                V3_SP["xl"], V3_SP["xl"])
+        lay.setSpacing(V3_SP["lg"])
+
+        # 1. Eyebrow + pills de preset
+        header_row = QHBoxLayout()
+        self._range_lbl = QLabel("RESPIRACIÓN 4-7-8")
+        self._range_lbl.setFont(
+            qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
+        header_row.addWidget(self._range_lbl)
+        header_row.addStretch()
+        # Pills
         self._pill_btns: list[tuple[NMButtonOutline, int]] = []
         for label, mins in PRESETS:
-            btn = NMButtonOutline(label, modo=self._modo)
-            btn.setFixedSize(80, 34)
+            btn = NMButtonOutline(label, modo=self._modo,
+                                   toggleable=False, size="sm")
+            btn.setFixedSize(80, 32)
             btn.clicked.connect(lambda _, m=mins: self._select_preset(m))
-            pills_row.addWidget(btn)
+            header_row.addWidget(btn)
             self._pill_btns.append((btn, mins))
-        layout.addLayout(pills_row)
+        lay.addLayout(header_row)
         self._highlight_preset(5)
 
-        # ── Layout de 3 columnas: izquierda | círculo | derecha ───────────────
-        three_col = QHBoxLayout()
-        three_col.setSpacing(16)
-        three_col.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        # 2. Main 2-col: LEFT breath circle + controls, RIGHT rail
+        main_row = QHBoxLayout()
+        main_row.setSpacing(V3_SP["xl"])
 
-        # Columna izquierda: cycle ring + sesión
+        # ── LEFT col ─────────────────────────────────────────────────────────
         left_col = QVBoxLayout()
-        left_col.setSpacing(6)
-        left_col.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._cycle_ring = NMCycleRing(size=60, modo=self._modo)
-        left_col.addWidget(self._cycle_ring, alignment=Qt.AlignmentFlag.AlignCenter)
-        self._session_lbl = QLabel("Sesión")
-        self._session_lbl.setFont(qfont("size_caption"))
-        self._session_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._session_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
-        left_col.addWidget(self._session_lbl)
-        three_col.addLayout(left_col)
+        left_col.setSpacing(V3_SP["lg"])
+        left_col.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
-        # Columna central: círculo animado
         self._circle = _BreathCircle(self._content, self._modo)
-        three_col.addWidget(self._circle, alignment=Qt.AlignmentFlag.AlignCenter)
+        left_col.addWidget(self._circle,
+                           alignment=Qt.AlignmentFlag.AlignHCenter)
 
-        # Columna derecha: calm badge
-        self._calm_badge = NMCalmBadge(bpm=60, modo=self._modo)
-        three_col.addWidget(self._calm_badge, alignment=Qt.AlignmentFlag.AlignCenter)
-
-        layout.addLayout(three_col)
-
-        # ── Phase chips (Inhala / Mantén / Exhala) ─────────────────────────────
+        # Phase chips
         self._phase_chip = NMPhaseChip(self._modo)
-        layout.addWidget(self._phase_chip, alignment=Qt.AlignmentFlag.AlignHCenter)
+        left_col.addWidget(self._phase_chip,
+                           alignment=Qt.AlignmentFlag.AlignHCenter)
 
-        # ── Controles ──────────────────────────────────────────────────────────
+        # Controles NMPlayButton: refresh / play|pause / stop
         ctrl_row = QHBoxLayout()
-        ctrl_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        ctrl_row.setSpacing(8)
+        ctrl_row.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        ctrl_row.setSpacing(V3_SP["md"])
 
-        self._btn_start = NMButton("Iniciar", modo=self._modo, width=110, height=42)
-        self._btn_start.clicked.connect(self._start)
-        ctrl_row.addWidget(self._btn_start)
+        self._btn_reset = NMPlayButton(icon_name="refresh", size="md",
+                                        modo=self._modo)
+        self._btn_reset.clicked.connect(self._stop)
+        ctrl_row.addWidget(self._btn_reset)
 
-        self._btn_pause = NMButtonOutline("Pausa", modo=self._modo)
-        self._btn_pause.setFixedSize(110, 42)
-        self._btn_pause.clicked.connect(self._pause)
-        ctrl_row.addWidget(self._btn_pause)
+        self._btn_play = NMPlayButton(icon_name="play", size="lg",
+                                       modo=self._modo)
+        self._btn_play.clicked.connect(self._toggle_play_pause)
+        ctrl_row.addWidget(self._btn_play)
 
-        self._btn_stop = NMButtonOutline("Detener", modo=self._modo)
-        self._btn_stop.setFixedSize(110, 42)
+        self._btn_stop = NMPlayButton(icon_name="stop", size="md",
+                                       modo=self._modo)
         self._btn_stop.clicked.connect(self._stop)
         ctrl_row.addWidget(self._btn_stop)
 
-        layout.addLayout(ctrl_row)
+        left_col.addLayout(ctrl_row)
+        main_row.addLayout(left_col, stretch=2)
+
+        # ── RIGHT rail ───────────────────────────────────────────────────────
+        right_rail = QVBoxLayout()
+        right_rail.setSpacing(V3_SP["md"])
+        right_rail.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # Cronómetro card (mono grande)
+        chrono_card = NMCard(modo=self._modo, clickable=False)
+        chrono_lay = QVBoxLayout(chrono_card)
+        chrono_lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
+                                       V3_SP["lg"], V3_SP["lg"])
+        chrono_lay.setSpacing(2)
+        chrono_eyebrow = QLabel("CRONÓMETRO")
+        chrono_eyebrow.setFont(qfont("size_caption_xs",
+                                      weight=TYPOGRAPHY["weight_semibold"]))
+        chrono_lay.addWidget(chrono_eyebrow)
+        self._session_lbl = QLabel("00:00")
+        self._session_lbl.setFont(qfont_mono(28, bold=False))
+        chrono_lay.addWidget(self._session_lbl)
+        self._chrono_meta = QLabel("Listo para comenzar")
+        self._chrono_meta.setFont(qfont("size_caption"))
+        chrono_lay.addWidget(self._chrono_meta)
+        right_rail.addWidget(chrono_card)
+        self._chrono_card = chrono_card
+        self._chrono_eyebrow = chrono_eyebrow
+
+        # BPM card (NMCalmBadge envuelto en NMCard mini)
+        bpm_card = NMCard(modo=self._modo, clickable=False)
+        bpm_lay = QVBoxLayout(bpm_card)
+        bpm_lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
+                                    V3_SP["lg"], V3_SP["lg"])
+        bpm_lay.setSpacing(V3_SP["sm"])
+        bpm_eyebrow = QLabel("RITMO CARDÍACO")
+        bpm_eyebrow.setFont(qfont("size_caption_xs",
+                                   weight=TYPOGRAPHY["weight_semibold"]))
+        bpm_lay.addWidget(bpm_eyebrow)
+        self._calm_badge = NMCalmBadge(bpm=60, modo=self._modo)
+        bpm_lay.addWidget(self._calm_badge,
+                          alignment=Qt.AlignmentFlag.AlignLeft)
+        right_rail.addWidget(bpm_card)
+        self._bpm_card = bpm_card
+        self._bpm_eyebrow = bpm_eyebrow
+
+        # Calma card (barra de progreso v3)
+        calm_card = NMCard(modo=self._modo, clickable=False)
+        calm_lay = QVBoxLayout(calm_card)
+        calm_lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
+                                     V3_SP["lg"], V3_SP["lg"])
+        calm_lay.setSpacing(V3_SP["sm"])
+        calm_eyebrow = QLabel("ESTADO DE CALMA")
+        calm_eyebrow.setFont(qfont("size_caption_xs",
+                                    weight=TYPOGRAPHY["weight_semibold"]))
+        calm_lay.addWidget(calm_eyebrow)
+        self._calm_bar = NMProgressLine(modo=self._modo)
+        self._calm_bar.set_progress(0.45)
+        calm_lay.addWidget(self._calm_bar)
+        right_rail.addWidget(calm_card)
+        self._calm_card = calm_card
+        self._calm_eyebrow = calm_eyebrow
+
+        right_rail.addStretch()
+
+        main_row.addLayout(right_rail, stretch=1)
+        lay.addLayout(main_row)
+
+        # 3. 3 step cards (Inhala / Mantén / Exhala)
+        step_row = QHBoxLayout()
+        step_row.setSpacing(V3_SP["md"])
+        self._step_cards: list[_StepCard] = []
+        for label, secs in FASES:
+            sc = _StepCard(label, f"{secs}s", modo=self._modo)
+            step_row.addWidget(sc, stretch=1)
+            self._step_cards.append(sc)
+        lay.addLayout(step_row)
+
+        # 4. Historial card (4 mini cards horizontal)
+        hist_section_lbl = QLabel("ÚLTIMAS SESIONES")
+        hist_section_lbl.setFont(qfont("size_caption_xs",
+                                        weight=TYPOGRAPHY["weight_semibold"]))
+        hist_section_lbl.setContentsMargins(0, V3_SP["sm"], 0, 0)
+        lay.addWidget(hist_section_lbl)
+        self._hist_section_lbl = hist_section_lbl
+
+        self._hist_row_widget = QWidget()
+        self._hist_row = QHBoxLayout(self._hist_row_widget)
+        self._hist_row.setSpacing(V3_SP["md"])
+        self._hist_row.setContentsMargins(0, 0, 0, 0)
+        lay.addWidget(self._hist_row_widget)
+
+        self._cargar_historial()
+        self._apply_text_styles()
+
+    def _apply_text_styles(self):
+        c = v3c("text3", self._modo).name()
+        for lbl in (self._range_lbl, self._chrono_eyebrow, self._bpm_eyebrow,
+                     self._calm_eyebrow, self._hist_section_lbl):
+            lbl.setStyleSheet(f"color: {c}; background: transparent;")
+        self._session_lbl.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; background: transparent;")
+        self._chrono_meta.setStyleSheet(
+            f"color: {v3c('text2', self._modo).name()}; background: transparent;")
+
+    # ── theme ────────────────────────────────────────────────────────────────
 
     def _on_theme(self, modo: str) -> None:
         super()._on_theme(modo)
@@ -558,13 +714,16 @@ class ModuloRespiracion(NMModule):
             self._circle._apply_theme(self._modo)
         if hasattr(self, "_phase_chip"):
             self._phase_chip._apply_theme(self._modo)
-        if hasattr(self, "_cycle_ring"):
-            self._cycle_ring._apply_theme(self._modo)
         if hasattr(self, "_calm_badge"):
             self._calm_badge._apply_theme(self._modo)
+        if hasattr(self, "_calm_bar"):
+            self._calm_bar._modo = self._modo
+            self._calm_bar.update()
+        if hasattr(self, "_range_lbl"):
+            self._apply_text_styles()
         self.update()
 
-    # ── Lógica de preset (preservada) ─────────────────────────────────────────
+    # ── presets ──────────────────────────────────────────────────────────────
 
     def _select_preset(self, mins: int):
         if self._running:
@@ -576,19 +735,18 @@ class ModuloRespiracion(NMModule):
         for btn, mins in self._pill_btns:
             btn.set_active(mins == selected)
 
-    # ── Controles (lógica preservada, adaptada a QTimer) ──────────────────────
+    # ── controles ────────────────────────────────────────────────────────────
+
+    def _toggle_play_pause(self):
+        """Toggle único entre play / pause / resume (NMPlayButton spec v3)."""
+        if not self._running:
+            self._start()
+        else:
+            self._pause()
 
     def _start(self):
-        if self._running and self._paused:
-            self._paused = False
-            self._btn_start.setText("Reanudar")
-            self._circle._start_rendering()
-            self._tick()
-            return
         if self._running:
             return
-        if hasattr(self, "_empty_state"):
-            self._empty_state.hide()
         self._running = True
         self._paused = False
         self._elapsed_ms = 0
@@ -597,17 +755,26 @@ class ModuloRespiracion(NMModule):
         self._phase_idx = 0
         self._phase_ms = 0
         self._last_phase_idx = -1
-        self._btn_start.setText("Reanudar")
+        self._btn_play.set_icon("pause")
+        self._chrono_meta.setText("En curso")
         self._tick()
 
     def _pause(self):
         if not self._running:
             return
-        self._paused = True
-        self._btn_pause.setText("Pausado")
-        if self._timer_id:
-            self._timer_id.stop()
-            self._timer_id = None
+        if self._paused:
+            self._paused = False
+            self._btn_play.set_icon("pause")
+            self._chrono_meta.setText("En curso")
+            self._circle._start_rendering()
+            self._tick()
+        else:
+            self._paused = True
+            self._btn_play.set_icon("play")
+            self._chrono_meta.setText("Pausado")
+            if self._timer_id:
+                self._timer_id.stop()
+                self._timer_id = None
 
     def _stop(self):
         if self._timer_id:
@@ -617,18 +784,17 @@ class ModuloRespiracion(NMModule):
             self._save_session()
         self._running = False
         self._paused = False
-        self._btn_start.setText("Iniciar")
-        self._btn_pause.setText("Pausa")
-        if hasattr(self, "_empty_state"):
-            self._empty_state.show()
+        self._btn_play.set_icon("play")
         self._circle.reset_idle()
-        self._session_lbl.setText("Sesión")
+        self._session_lbl.setText("00:00")
+        self._chrono_meta.setText("Listo para comenzar")
         if hasattr(self, "_phase_chip"):
             self._phase_chip.set_phase(None)
-        if hasattr(self, "_cycle_ring"):
-            self._cycle_ring.set_cycles(0)
+        for sc in getattr(self, "_step_cards", []):
+            sc.set_active(False)
+        self._cargar_historial()
 
-    # ── Tick loop (lógica preservada, 100ms) ──────────────────────────────────
+    # ── tick (lógica preservada) ─────────────────────────────────────────────
 
     def _tick(self):
         if not self._running or self._paused:
@@ -645,13 +811,14 @@ class ModuloRespiracion(NMModule):
         phase_dur_ms = phase_dur * 1000
         phase_progress = self._phase_ms / phase_dur_ms
 
-        # Detectar cambio de fase para animar
         if self._phase_idx != self._last_phase_idx:
             self._last_phase_idx = self._phase_idx
             self._on_phase_change(self._phase_idx, phase_dur)
             self._circle.animate_text_change()
+            # Step card activa
+            for i, sc in enumerate(self._step_cards):
+                sc.set_active(i == self._phase_idx)
 
-        # Actualizar datos del círculo
         secs_left = max(0, phase_dur - int(self._phase_ms / 1000))
         session_progress = self._elapsed_ms / total_ms
         self._circle.update_data(
@@ -662,16 +829,17 @@ class ModuloRespiracion(NMModule):
             phase_idx=self._phase_idx,
         )
 
-        # Phase chip — iluminar la fase activa
+        # Phase chip
         _PHASE_KEYS = ["inhala", "manten", "exhala"]
         if hasattr(self, "_phase_chip"):
             self._phase_chip.set_phase(_PHASE_KEYS[self._phase_idx])
 
-        # Cycle ring — actualizar conteo de ciclos
-        if hasattr(self, "_cycle_ring"):
-            self._cycle_ring.set_cycles(self._ciclos)
+        # Calm bar progreso (sube con la sesión)
+        if hasattr(self, "_calm_bar"):
+            calm_target = 0.45 + session_progress * 0.5
+            self._calm_bar.set_progress(min(calm_target, 0.95))
 
-        # Cronómetro en label de sesión
+        # Cronómetro
         self._session_ms += interval
         s_total = self._session_ms // 1000
         self._session_lbl.setText(f"{s_total // 60:02d}:{s_total % 60:02d}")
@@ -694,8 +862,6 @@ class ModuloRespiracion(NMModule):
         self._timer_id.start(interval)
 
     def _on_phase_change(self, phase_idx: int, phase_dur: int):
-        """Iniciar animación de círculo apropiada para la nueva fase."""
-        # 0=Inhala, 1=Mantén, 2=Exhala
         if phase_idx == 0:
             self._circle.animate_phase(phase_idx, phase_dur, expanding=True)
         elif phase_idx == 1:
@@ -712,17 +878,19 @@ class ModuloRespiracion(NMModule):
         self._circle.reset_idle()
         if hasattr(self, "_phase_chip"):
             self._phase_chip.set_phase(None)
-        if hasattr(self, "_cycle_ring"):
-            self._cycle_ring.set_cycles(self._ciclos)
-        self._session_lbl.setText(f"✓ Sesión completa · {self._ciclos} ciclos")
-        self._btn_start.setText("Iniciar")
+        for sc in self._step_cards:
+            sc.set_active(False)
+        self._session_lbl.setText("00:00")
+        self._chrono_meta.setText(f"Completo · {self._ciclos} ciclos")
+        self._btn_play.set_icon("play")
         try:
             import winsound
             winsound.Beep(800, 300)
         except Exception:
             _log.exception("Operation failed")
+        self._cargar_historial()
 
-    # ── DB (preservado exacto) ────────────────────────────────────────────────
+    # ── DB (preservado exacto) ───────────────────────────────────────────────
 
     def _save_session(self):
         try:
@@ -736,10 +904,66 @@ class ModuloRespiracion(NMModule):
             )
             conn.commit()
             conn.close()
-            if hasattr(self._btn_start, "play_success"):
-                self._btn_start.play_success()
         except Exception:
             _log.exception("Operation failed")
+
+    # ── historial ────────────────────────────────────────────────────────────
+
+    def _load_recent_sessions(self, limit: int = 4):
+        if visual_qa_enabled():
+            return [
+                ("2026-05-17", "08:30", 5.0, 6),
+                ("2026-05-16", "21:15", 10.0, 12),
+                ("2026-05-16", "07:00", 3.5, 4),
+                ("2026-05-15", "12:00", 5.0, 6),
+            ]
+        try:
+            conn = obtener_conexion()
+            rows = conn.execute(
+                "SELECT fecha, hora, duracion_minutos, ciclos FROM respiracion "
+                "ORDER BY fecha DESC, hora DESC LIMIT ?", (limit,)
+            ).fetchall()
+            conn.close()
+            out = []
+            for r in rows:
+                if hasattr(r, "keys"):
+                    out.append((r["fecha"], r["hora"],
+                                float(r["duracion_minutos"] or 0),
+                                int(r["ciclos"] or 0)))
+                else:
+                    out.append((r[0], r[1], float(r[2] or 0), int(r[3] or 0)))
+            return out
+        except Exception:
+            _log.exception("Error cargando historial respiración")
+            return []
+
+    def _cargar_historial(self):
+        # Clear
+        while self._hist_row.count():
+            item = self._hist_row.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
+        sessions = self._load_recent_sessions(4)
+        if not sessions:
+            empty = QLabel("Aún no hay sesiones registradas.")
+            empty.setFont(qfont("size_small"))
+            empty.setStyleSheet(
+                f"color: {v3c('text3', self._modo).name()}; "
+                f"background: transparent;")
+            self._hist_row.addWidget(empty)
+            self._hist_row.addStretch()
+            return
+        for fecha, hora, dur, ciclos in sessions:
+            card = _HistorialMiniCard(fecha, hora, dur, ciclos,
+                                        modo=self._modo)
+            self._hist_row.addWidget(card, stretch=1)
+        # Si hay menos de 4, rellenar con stretch
+        if len(sessions) < 4:
+            for _ in range(4 - len(sessions)):
+                self._hist_row.addStretch()
+
+    # ── hooks NMModule ───────────────────────────────────────────────────────
 
     def on_leave(self):
         self._stop()

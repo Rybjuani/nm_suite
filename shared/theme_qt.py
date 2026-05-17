@@ -30,17 +30,26 @@ from PyQt6.QtWidgets import QGraphicsDropShadowEffect, QApplication
 
 # ── Importación robusta de tokens ─────────────────────────────────────────────
 try:
-    from shared.theme import COLORS, TYPOGRAPHY, LAYOUT, GRADIENTS, CATEGORY_COLORS, get_gradient
+    from shared.theme import (
+        COLORS, TYPOGRAPHY, LAYOUT, GRADIENTS, CATEGORY_COLORS, get_gradient,
+        V3_LIGHT, V3_DARK, V3_SPACE, V3_RADIUS, V3_SHADOWS, V3_GRADIENTS,
+        MOOD_PALETTE, get_v3_palette, get_mood, v3_mode, icon_stroke_width,
+    )
 except ImportError:
     _dir = os.path.dirname(os.path.abspath(__file__))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
-    from theme import COLORS, TYPOGRAPHY, LAYOUT, GRADIENTS, CATEGORY_COLORS, get_gradient
+    from theme import (
+        COLORS, TYPOGRAPHY, LAYOUT, GRADIENTS, CATEGORY_COLORS, get_gradient,
+        V3_LIGHT, V3_DARK, V3_SPACE, V3_RADIUS, V3_SHADOWS, V3_GRADIENTS,
+        MOOD_PALETTE, get_v3_palette, get_mood, v3_mode, icon_stroke_width,
+    )
 
 
+# Escala tipográfica (alineada a v3: h1=24, display=28, weights numéricos)
 FONT_SCALE = {
     "display": {"size": 28, "weight": 700, "line_height": 1.2},
-    "h1":      {"size": 22, "weight": 600, "line_height": 1.3},
+    "h1":      {"size": 24, "weight": 600, "line_height": 1.3},
     "h2":      {"size": 18, "weight": 600, "line_height": 1.35},
     "h3":      {"size": 15, "weight": 500, "line_height": 1.4},
     "body":    {"size": 13, "weight": 400, "line_height": 1.6},
@@ -48,7 +57,22 @@ FONT_SCALE = {
     "caption": {"size": 11, "weight": 400, "line_height": 1.4},
 }
 
-_DEFAULT_FONT_FAMILY = TYPOGRAPHY.get("font_family", "DM Sans")
+
+def _resolve_default_family() -> str:
+    """Devuelve la PRIMERA familia disponible del fallback chain v3.
+
+    `TYPOGRAPHY['font_family']` ahora es un string CSS-style ("Plus Jakarta Sans,
+    DM Sans, system-ui, sans-serif"). Qt no resuelve fallback chains: tomamos la
+    primera familia del chain explícito, o splitteamos el string como fallback.
+    """
+    chain = TYPOGRAPHY.get("font_family_fallback_chain")
+    if isinstance(chain, (list, tuple)) and chain:
+        return chain[0]
+    raw = TYPOGRAPHY.get("font_family", "DM Sans")
+    return raw.split(",")[0].strip().strip("'\"")
+
+
+_DEFAULT_FONT_FAMILY = _resolve_default_family()
 
 
 SPACE = {
@@ -124,6 +148,23 @@ _ICON_FALLBACKS = {
     "fa5s.list-check": "fa5s.tasks",
 }
 
+# v3 — mapeo de claves legacy (módulos/hub) → nombres SVG del catálogo v3
+_MODULE_KEY_V3 = {
+    "animo":         "mood",
+    "respiracion":   "breath",
+    "registro_tcc":  "brain",
+    "rutina":        "routine",
+    "actividades":   "run",
+    "timer":         "timer",
+    "avisos":        "bell",
+}
+_HUB_KEY_V3 = {
+    "pacientes":     "users",
+    "ia_asistente":  "ai",
+    "exportar":      "download",
+    "configuracion": "cog",
+}
+
 
 def sp(key: str) -> int:
     return SPACE[key]
@@ -163,6 +204,32 @@ def apply_chart_theme(modo: str):
 
 
 def nm_icon(key: str, color: str, size: int = 20):
+    """QIcon desde catálogo SVG v3 → fallback QtAwesome (legacy).
+
+    1. Mapea ``key`` legacy ('animo', 'pacientes', …) a nombre v3
+       ('mood', 'users', …) si aplica.
+    2. Si el nombre existe en ``shared.icons_svg``, renderiza SVG con
+       stroke proporcional y lo envuelve en QIcon.
+    3. Si no, cae a QtAwesome con el mapping legacy MODULE_ICONS/HUB_ICONS.
+    """
+    # 1. Intentar catálogo v3
+    try:
+        from shared.icons_svg import nm_svg_pixmap, has_icon
+    except ImportError:
+        try:
+            from icons_svg import nm_svg_pixmap, has_icon  # type: ignore
+        except ImportError:
+            nm_svg_pixmap = None
+            has_icon = lambda _n: False  # noqa: E731
+    if has_icon is not None:
+        v3_name = _MODULE_KEY_V3.get(key) or _HUB_KEY_V3.get(key) or key
+        if has_icon(v3_name):
+            pix = nm_svg_pixmap(v3_name, color, size)
+            if pix is not None and not pix.isNull():
+                from PyQt6.QtGui import QIcon
+                return QIcon(pix)
+
+    # 2. Fallback QtAwesome
     icon_name = MODULE_ICONS.get(key, HUB_ICONS.get(key, key))
     icon_name = _ICON_FALLBACKS.get(icon_name, icon_name)
     try:
@@ -195,25 +262,58 @@ class ThemeAwareWidgetMixin:
 
 
 def _load_premium_fonts():
-    """Intenta cargar Inter Variable o Satoshi si estan disponibles."""
-    font_candidates = [
-        "Inter-Variable.ttf", "Inter.ttf",
-        "Satoshi-Variable.ttf", "Satoshi-Regular.ttf",
+    """Carga fuentes desde assets/fonts/ — v3 prefiere Plus Jakarta Sans.
+
+    Orden de preferencia (la primera que cargue gana):
+        Plus Jakarta Sans → DM Sans → Inter → Satoshi
+    También se cargan los pesos individuales si están como ficheros separados
+    (Regular/Medium/SemiBold/Bold) para que QFont.Weight 400/500/600/700 funcione.
+    """
+    # Pares (filename, family_name_preferida). El segundo elemento es el que
+    # se reporta como "familia ganadora", aunque QFontDatabase use el nombre
+    # real del archivo cargado.
+    font_groups = [
+        # v3 preferida
+        ("PlusJakartaSans-Variable.ttf",  "Plus Jakarta Sans"),
+        ("PlusJakartaSans-Regular.ttf",   "Plus Jakarta Sans"),
+        ("PlusJakartaSans-Medium.ttf",    "Plus Jakarta Sans"),
+        ("PlusJakartaSans-SemiBold.ttf",  "Plus Jakarta Sans"),
+        ("PlusJakartaSans-Bold.ttf",      "Plus Jakarta Sans"),
+        # Fallback secundario v3
+        ("DMSans-Variable.ttf",           "DM Sans"),
+        ("DMSans-Regular.ttf",            "DM Sans"),
+        ("DMSans-Medium.ttf",             "DM Sans"),
+        ("DMSans-Bold.ttf",               "DM Sans"),
+        # Legacy
+        ("Inter-Variable.ttf",            "Inter"),
+        ("Inter.ttf",                     "Inter"),
+        ("Satoshi-Variable.ttf",          "Satoshi"),
+        ("Satoshi-Regular.ttf",           "Satoshi"),
+        # Monospace v3 (timers, log installer)
+        ("JetBrainsMono-Variable.ttf",    "JetBrains Mono"),
+        ("JetBrainsMono-Regular.ttf",     "JetBrains Mono"),
     ]
     base_dirs = [
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "fonts"),
         os.path.join(os.path.expanduser("~"), "NeuroMood", "assets", "fonts"),
     ]
-    loaded = []
+    loaded_families = []
     for d in base_dirs:
-        for f in font_candidates:
-            path = os.path.join(d, f)
+        for filename, family_hint in font_groups:
+            path = os.path.join(d, filename)
             if os.path.exists(path):
                 fid = QFontDatabase.addApplicationFont(path)
                 if fid >= 0:
-                    families = QFontDatabase.applicationFontFamilies(fid)
-                    loaded.extend(families)
-    return loaded[0] if loaded else None
+                    fams = QFontDatabase.applicationFontFamilies(fid)
+                    for f in fams:
+                        if f not in loaded_families:
+                            loaded_families.append(f)
+
+    # Preferimos Plus Jakarta Sans si está cargada, luego DM Sans.
+    for pref in ("Plus Jakarta Sans", "DM Sans", "Inter", "Satoshi"):
+        if pref in loaded_families:
+            return pref
+    return loaded_families[0] if loaded_families else None
 
 
 _PREMIUM_FONT_FAMILY = None
@@ -337,20 +437,21 @@ def blend_color(color_hex: str, bg_hex: str, alpha: float) -> str:
 # ── QFont ─────────────────────────────────────────────────────────────────────
 
 def qfont(size_key: str = "size_body", bold: bool = False,
-          family: str = None) -> QFont:
+          family: str = None, weight: int | None = None) -> QFont:
     """
     Devuelve un QFont configurado con los tokens de tipografía del tema.
 
     Args:
-        size_key: Key de TYPOGRAPHY (ej: 'size_h1', 'size_body', 'size_caption')
-                  o un int directo de tamaño de punto.
-        bold:     Si True, peso QFont.Weight.Bold, si no Normal.
-        family:   Override de familia; si None usa TYPOGRAPHY['font_family'].
+        size_key: Key de TYPOGRAPHY (ej: 'size_h1', 'size_body') o int directo.
+        bold:     Si True, peso QFont.Weight.Bold (legacy, ignorado si `weight`).
+        family:   Override de familia; None → fuente premium cargada o default v3.
+        weight:   Peso numérico v3 (400/500/600/700). Si se pasa, tiene prioridad
+                  sobre `bold`. Para tokens v3 usar TYPOGRAPHY['weight_medium'] etc.
 
     Ejemplos:
         qfont('size_h2', bold=True)
-        qfont('size_body')
-        qfont(size_key=28, bold=True)  # tamaño directo
+        qfont('size_h2', weight=TYPOGRAPHY['weight_semibold'])  # v3
+        qfont(28, weight=700)
     """
     fam = family or _font_family()
     if isinstance(size_key, int):
@@ -359,8 +460,15 @@ def qfont(size_key: str = "size_body", bold: bool = False,
         pt = TYPOGRAPHY.get(size_key, TYPOGRAPHY.get("size_body", 14))
 
     f = QFont(fam, pt)
-    f.setWeight(QFont.Weight.Bold if bold else QFont.Weight.Normal)
-    if size_key in ("size_h1", "size_h2"):
+    if weight is not None:
+        # QFont.setWeight acepta int 1-1000 desde Qt6 (mapeo CSS-compatible).
+        try:
+            f.setWeight(QFont.Weight(int(weight)))
+        except (ValueError, TypeError):
+            f.setWeight(QFont.Weight.Bold if weight and int(weight) >= 600 else QFont.Weight.Normal)
+    else:
+        f.setWeight(QFont.Weight.Bold if bold else QFont.Weight.Normal)
+    if size_key in ("size_h1", "size_h2", "size_display"):
         f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 0)
     f.setHintingPreference(QFont.HintingPreference.PreferFullHinting)
     return f
@@ -1270,6 +1378,191 @@ def stylesheet_installer(modo: str = "dark_hybrid") -> str:
         font-size: {TYPOGRAPHY['size_small']}pt;
     }}
     """
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Helpers v3 (Design System v3 — Mayo 2026)
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# Estos helpers consumen la superficie nueva de tokens (V3_LIGHT/V3_DARK,
+# V3_SHADOWS, V3_GRADIENTS, MOOD_PALETTE) y serán usados por la próxima
+# refactorización de components_qt.py. Los helpers legacy de arriba siguen
+# operando contra el bridge COLORS y obtienen los mismos colores v3.
+# ══════════════════════════════════════════════════════════════════════════════
+
+import re as _re
+
+_RGBA_RE = _re.compile(
+    r"rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)",
+    _re.IGNORECASE,
+)
+
+
+def parse_rgba(value: str) -> QColor:
+    """Convierte un string ``rgba(r,g,b,a01)`` o ``#rrggbb`` a QColor.
+
+    En V3_DARK varias claves (surface, border, tealSoft, …) están como
+    ``rgba(r, g, b, opacity_0_1)``. Qt no acepta ese formato directamente
+    en todos los properties — este helper lo traduce a QColor con alpha 0-255.
+    """
+    if isinstance(value, QColor):
+        return QColor(value)
+    s = (value or "").strip()
+    m = _RGBA_RE.match(s)
+    if m:
+        r, g, b = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        a01 = float(m.group(4)) if m.group(4) is not None else 1.0
+        a = max(0, min(255, round(a01 * 255)))
+        return QColor(r, g, b, a)
+    return QColor(s) if s else QColor()
+
+
+def v3c(key: str, modo: str = "dark", alpha: int | None = None) -> QColor:
+    """QColor desde la paleta v3 (V3_LIGHT / V3_DARK).
+
+    Args:
+        key:   Clave v3 (``"bg"``, ``"surface"``, ``"text"``, ``"text2"``,
+               ``"teal"``, ``"violet"``, ``"gradFrom"``, ``"borderStrong"``…).
+        modo:  ``"light"`` / ``"dark"`` (o cualquier alias legacy: se normaliza).
+        alpha: Override 0-255. Si ``None``, respeta el alpha del rgba() original.
+
+    Soporta los keys translúcidos de dark (``rgba(…)``) gracias a parse_rgba.
+    """
+    pal = get_v3_palette(modo)
+    raw = pal.get(key)
+    if raw is None:
+        # Fallback razonable: buscar en bridge legacy
+        raw = C(key, modo)
+    c = parse_rgba(raw)
+    if alpha is not None:
+        c.setAlpha(max(0, min(255, int(alpha))))
+    return c
+
+
+def v3_shadow(name: str = "card", modo: str = "dark",
+              parent=None) -> QGraphicsDropShadowEffect:
+    """QGraphicsDropShadowEffect parametrizado desde V3_SHADOWS.
+
+    Args:
+        name:  ``"sm"`` / ``"md"`` / ``"card"`` / ``"ring"`` (light)
+               o ``"sm"`` / ``"md"`` / ``"card"`` / ``"glow"`` (dark).
+        modo:  ``"light"`` / ``"dark"`` (o alias legacy).
+        parent: QObject padre opcional.
+    """
+    bucket = V3_SHADOWS[v3_mode(modo)]
+    spec = bucket.get(name) or next(iter(bucket.values()))
+    eff = QGraphicsDropShadowEffect(parent)
+    eff.setBlurRadius(spec["blur"])
+    dx, dy = spec["offset"]
+    eff.setOffset(dx, dy)
+    r, g, b, a = spec["color"]
+    eff.setColor(QColor(r, g, b, a))
+    return eff
+
+
+def _angle_endpoints(rect: QRectF, angle_deg: float):
+    import math
+    rad = math.radians(angle_deg)
+    cx, cy = rect.center().x(), rect.center().y()
+    half = max(rect.width(), rect.height()) / 2
+    dx = math.cos(rad) * half
+    dy = math.sin(rad) * half
+    return QPointF(cx - dx, cy - dy), QPointF(cx + dx, cy + dy)
+
+
+def v3_linear_gradient(rect: QRectF, modo: str = "dark",
+                       angle: float = 135.0,
+                       kind: str = "signature") -> QLinearGradient:
+    """Gradiente lineal v3 sobre ``rect``.
+
+    Args:
+        rect:  área del widget.
+        modo:  ``"light"`` / ``"dark"`` (o alias legacy).
+        angle: grados (0=horizontal derecha, 90=vertical abajo, 135=diagonal).
+        kind:  ``"signature"`` (teal → violet, V3_GRADIENTS) o ``"mood"`` para
+               la slashbar emocional (que NO varía con theme).
+    """
+    if kind == "mood":
+        # Mood gradient: idéntico en light y dark según README v3
+        stops = [
+            (V3_LIGHT["moodGradFrom"], 0.0),
+            (V3_LIGHT["moodGradMid"],  0.5),
+            (V3_LIGHT["moodGradTo"],   1.0),
+        ]
+    else:
+        stops = V3_GRADIENTS[v3_mode(modo)]
+    p1, p2 = _angle_endpoints(rect, angle)
+    grad = QLinearGradient(p1, p2)
+    for color_hex, pos in stops:
+        grad.setColorAt(pos, QColor(color_hex))
+    return grad
+
+
+def v3_conical_signature(center: QPointF, start_angle: float = 90.0,
+                         modo: str = "dark") -> QConicalGradient:
+    """Cónico teal → violet para anillos (V3Ring, Respiración, Timer)."""
+    grad = QConicalGradient(center, start_angle)
+    for color_hex, pos in V3_GRADIENTS[v3_mode(modo)]:
+        grad.setColorAt(pos, QColor(color_hex))
+    return grad
+
+
+def v3_font(size_token: str = "size_body",
+            weight: str | int = "weight_regular",
+            mono: bool = False) -> QFont:
+    """QFont desde tokens v3 (TYPOGRAPHY size + peso numérico).
+
+    Args:
+        size_token: clave de TYPOGRAPHY (``size_display`` … ``size_caption_xs``)
+                    o int directo en pt.
+        weight:     clave de TYPOGRAPHY (``weight_regular`` / ``weight_medium``
+                    / ``weight_semibold`` / ``weight_bold``) o int 1-1000.
+        mono:       True → familia JetBrains Mono (timers, IDs, log installer).
+    """
+    pt = size_token if isinstance(size_token, int) \
+        else TYPOGRAPHY.get(size_token, TYPOGRAPHY.get("size_body", 13))
+    if isinstance(weight, str):
+        w = TYPOGRAPHY.get(weight, 400)
+    else:
+        w = int(weight)
+    fam = TYPOGRAPHY.get("font_mono", "JetBrains Mono") if mono else _font_family()
+    f = QFont(fam, pt)
+    try:
+        f.setWeight(QFont.Weight(w))
+    except (ValueError, TypeError):
+        f.setWeight(QFont.Weight.Bold if w >= 600 else QFont.Weight.Normal)
+    f.setHintingPreference(QFont.HintingPreference.PreferFullHinting)
+    return f
+
+
+def mood_qcolor(level: int, key: str = "to", alpha: int = 255) -> QColor:
+    """QColor desde MOOD_PALETTE.
+
+    Args:
+        level: 1-10 (se clampa).
+        key:   ``"from"`` (claro), ``"to"`` (base, default) o ``"glow"``.
+        alpha: 0-255.
+    """
+    spec = get_mood(level)
+    c = QColor(spec.get(key, spec["to"]))
+    c.setAlpha(max(0, min(255, int(alpha))))
+    return c
+
+
+def mood_gradient(rect: QRectF, level: int,
+                  angle: float = 135.0) -> QLinearGradient:
+    """Gradiente lineal del MOOD nivel: from → to (NMMoodEmoji, V3MoodSlider)."""
+    spec = get_mood(level)
+    p1, p2 = _angle_endpoints(rect, angle)
+    grad = QLinearGradient(p1, p2)
+    grad.setColorAt(0.0, QColor(spec["from"]))
+    grad.setColorAt(1.0, QColor(spec["to"]))
+    return grad
+
+
+# Atajos numéricos de SPACE/RADIUS v3 expuestos para componentes nuevos
+V3_SP = V3_SPACE
+V3_RD = V3_RADIUS
 
 
 # ── SessionColor — vibe aleatorio de sesión (aura + glow) ─────────────────────

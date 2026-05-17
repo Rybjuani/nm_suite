@@ -1,4 +1,4 @@
-"""uninstaller.py — Desinstalador NeuroMood (PyQt6)"""
+"""uninstaller.py — Desinstalador Suite (PyQt6)"""
 import sys
 import os
 import shutil
@@ -8,7 +8,7 @@ from pathlib import Path
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-    QLabel, QPushButton, QCheckBox, QFrame,
+    QLabel, QCheckBox, QFrame,
 )
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
 from PyQt6.QtGui import QIcon, QPixmap
@@ -59,7 +59,7 @@ def detectar_install_dir() -> str:
         import winreg
         with winreg.OpenKey(
             winreg.HKEY_CURRENT_USER,
-            r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMood",
+            r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMoodSuite",
         ) as k:
             val, _ = winreg.QueryValueEx(k, "InstallLocation")
             if val:
@@ -74,6 +74,7 @@ def detectar_install_dir() -> str:
 
 
 def matar_procesos_neuromood(install_dir: str):
+    current_pid = os.getpid()
     for proc_name in NM_PROCESOS:
         try:
             subprocess.run(["taskkill", "/F", "/IM", proc_name],
@@ -88,7 +89,7 @@ def matar_procesos_neuromood(install_dir: str):
         )
         for line in result.stdout.splitlines():
             pid = line.strip()
-            if pid.isdigit():
+            if pid.isdigit() and int(pid) != current_pid:
                 subprocess.run(["taskkill", "/F", "/PID", pid],
                                capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW, timeout=5)
     except Exception:
@@ -97,7 +98,7 @@ def matar_procesos_neuromood(install_dir: str):
 
 def eliminar_registro_windows():
     import winreg
-    key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMood"
+    key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMoodSuite"
     for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
         try:
             winreg.DeleteKey(hive, key_path)
@@ -186,13 +187,26 @@ def relanzar_desde_temp() -> bool:
     if "--from-temp" in sys.argv:
         return False
     temp_dir = os.environ.get("TEMP", os.path.expanduser("~"))
-    self_exe = sys.executable
-    temp_exe = str(Path(temp_dir) / "_nm_desinstalar.exe")
-    if os.path.normcase(self_exe) == os.path.normcase(temp_exe):
-        return False
+    self_exe = Path(sys.executable)
+    self_dir = self_exe.parent
     install_dir = detectar_install_dir()
+    if (self_dir / "_internal").exists():
+        temp_root = Path(temp_dir) / f"_nm_desinstalar_{os.getpid()}"
+        temp_bundle = temp_root / self_dir.name
+        temp_exe = temp_bundle / self_exe.name
+        try:
+            if temp_root.exists():
+                shutil.rmtree(temp_root, ignore_errors=True)
+            shutil.copytree(self_dir, temp_bundle)
+            subprocess.Popen([str(temp_exe), "--install-dir", install_dir, "--from-temp"])
+            return True
+        except Exception:
+            return False
+    temp_exe = str(Path(temp_dir) / "_nm_desinstalar.exe")
+    if os.path.normcase(str(self_exe)) == os.path.normcase(temp_exe):
+        return False
     try:
-        shutil.copy2(self_exe, temp_exe)
+        shutil.copy2(str(self_exe), temp_exe)
         subprocess.Popen([temp_exe, "--install-dir", install_dir, "--from-temp"])
         return True
     except Exception:
@@ -240,8 +254,11 @@ class _UninstWorker(QThread):
 # ── DesinstaladorNeuroMood ────────────────────────────────────────────────────
 
 class DesinstaladorNeuroMood(InstallerShell):
-    APP_NAME = "NeuroMood Suite"
-    WINDOW_SIZE = (480, 340)
+    APP_NAME = "Desinstalador Suite"
+    WINDOW_SIZE = (620, 420)
+    WINDOW_ROLE = ""
+    STEPS = ["Confirmar", "Eliminando", "Finalizado"]
+    _STEPPER_ACCENT = "error"   # tono rojo de alerta para acción destructiva
 
     def __init__(self):
         super().__init__()
@@ -251,7 +268,7 @@ class DesinstaladorNeuroMood(InstallerShell):
         self._show_confirm()
 
     def _build_confirm(self, page, layout):
-        title = QLabel("Desinstalar NeuroMood Suite")
+        title = QLabel("Desinstalador Suite")
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
         layout.addWidget(title)
         layout.addSpacing(8)
@@ -318,19 +335,6 @@ class DesinstaladorNeuroMood(InstallerShell):
             layout.addWidget(conservar_card)
         layout.addStretch()
 
-        btn_row = QHBoxLayout()
-        btn_cancel = QPushButton("Cancelar")
-        btn_cancel.setObjectName("outline")
-        btn_cancel.setFixedSize(110, 34)
-        btn_cancel.clicked.connect(self.close)
-        btn_row.addWidget(btn_cancel)
-        btn_row.addStretch()
-        btn_uninst = QPushButton("Desinstalar")
-        btn_uninst.setFixedSize(130, 34)
-        btn_uninst.clicked.connect(self._iniciar)
-        btn_row.addWidget(btn_uninst)
-        layout.addLayout(btn_row)
-
     def _show_confirm(self):
         self._add_page(lambda page, lay: self._build_confirm(page, lay))
         self.btn_sig.setText("Desinstalar")
@@ -380,11 +384,42 @@ class DesinstaladorNeuroMood(InstallerShell):
             self._status_lbl.setText(t)
 
     def _on_done(self):
-        self._status_lbl.setStyleSheet(f"color: {SUCCESS}; font-size: 16px; font-weight: bold;")
-        self._status_lbl.setText("Desinstalacion completada. Cerrando...")
+        self._install_progress.set_progress(100, "Desinstalacion completada")
+        self._install_progress.append_line("✓ Desinstalacion completada")
+        self._add_page(lambda page, lay: self._build_done(page, lay))
+        self._ir_a(self._pagina + 1)
+        self.btn_sig.setEnabled(True)
+        self.btn_sig.setText("Cerrar")
+        try:
+            self.btn_sig.clicked.disconnect()
+        except TypeError:
+            pass
+        self.btn_sig.clicked.connect(self.close)
         QApplication.instance().processEvents()
-        QTimer.singleShot(1500, self.close)
-        QTimer.singleShot(2000, QApplication.instance().quit)
+        delay = 5000 if os.environ.get("NM_VISUAL_QA") == "1" else 1500
+        QTimer.singleShot(delay, self.close)
+        QTimer.singleShot(delay + 500, QApplication.instance().quit)
+
+    def _build_done(self, page, layout):
+        title = QLabel("Desinstalacion completada")
+        title.setStyleSheet(f"color: {SUCCESS}; font-size: 18px; font-weight: bold;")
+        layout.addWidget(title)
+        layout.addSpacing(8)
+        desc = QLabel(
+            "NeuroMood Suite fue eliminado de este equipo.\n"
+            "Los datos personales se conservaron segun la opcion seleccionada."
+        )
+        desc.setWordWrap(True)
+        desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px;")
+        layout.addWidget(desc)
+        if _HAS_PRESERVE_CARD:
+            layout.addSpacing(10)
+            layout.addWidget(NMDataPreserveCard(
+                "Datos preservados",
+                "Registros, historial y configuracion local",
+                checked=True,
+            ))
+        layout.addStretch()
 
     def _on_error(self, msg: str):
         self._status_lbl.setText(f"Error: {msg}")

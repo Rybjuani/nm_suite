@@ -1,6 +1,6 @@
 """
-installer_pro.py — Instalador Hub Profesional NeuroMood (PyQt6)
-Compilar con: BUILD_INSTALLER_PRO.bat
+installer_pro.py — Instalador Hub (PyQt6)
+Compilar con: BUILD_NEUROMOOD.bat
 """
 import sys
 import os
@@ -35,9 +35,9 @@ except ImportError:
         stylesheet_installer, InstallerShell,
     )
 
-DEFAULT_INSTALL = os.path.join(os.path.expanduser("~"), "NeuroMood Pro")
-HUB_EXE    = "NeuroMood Hub Pro.exe"
-UNINST_EXE = "Desinstalador NeuroMood Hub Pro.exe"
+DEFAULT_INSTALL = os.path.join(os.path.expanduser("~"), "NeuroMood Hub")
+HUB_EXE    = "NeuroMood Hub.exe"
+UNINST_EXE = "Desinstalador Hub.exe"
 
 _SS = stylesheet_installer()   # design system premium unificado
 
@@ -88,7 +88,7 @@ class _ProWorker(QThread):
             self.log_signal.emit(f"  Carpeta: {install_dir}", TEXT_SEC)
 
             # Hub exe (copia carpeta completa si es onedir)
-            self.progress_signal.emit(0.3, "Instalando Hub Profesional...")
+            self.progress_signal.emit(0.3, "Instalando NeuroMood Hub...")
             src = ruta_bundled(HUB_EXE)
             if os.path.exists(src):
                 src_dir = os.path.dirname(src)
@@ -97,7 +97,7 @@ class _ProWorker(QThread):
                     shutil.copytree(src_dir, install_dir, dirs_exist_ok=True)
                 else:
                     shutil.copy2(src, install_dir / HUB_EXE)
-                self.log_signal.emit("  Hub Profesional", SUCCESS)
+                self.log_signal.emit("  NeuroMood Hub", SUCCESS)
             else:
                 self.log_signal.emit(f"  {HUB_EXE} no encontrado", WARNING_C)
 
@@ -128,9 +128,9 @@ class _ProWorker(QThread):
             except Exception:
                 pass
 
-            # .env → AppData/NeuroMoodPro
+            # .env → AppData/NeuroMoodHub
             appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
-            env_dir = os.path.join(appdata, "NeuroMoodPro")
+            env_dir = os.path.join(appdata, "NeuroMoodHub")
             os.makedirs(env_dir, exist_ok=True)
             env_src = recurso(".env")
             if os.path.exists(env_src):
@@ -143,12 +143,12 @@ class _ProWorker(QThread):
                 except Exception as e:
                     self.log_signal.emit(f"  Config red: {e}", WARNING_C)
             else:
-                self.log_signal.emit("  Sin .env bundleado — configurar manualmente", WARNING_C)
+                self.log_signal.emit("  Configuracion de red no incluida en el paquete", WARNING_C)
 
             # Registro Windows
             self._registrar_windows(install_dir, uninst_dest)
             self.progress_signal.emit(1.0, "Completado.")
-            self.log_signal.emit("  ¡Hub Profesional instalado!", SUCCESS)
+            self.log_signal.emit("  ¡NeuroMood Hub instalado!", SUCCESS)
             self.done_signal.emit(str(install_dir), icon_dest)
 
         except PermissionError:
@@ -164,9 +164,9 @@ class _ProWorker(QThread):
         try:
             import winreg
             exe = install_dir / HUB_EXE
-            key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMoodPro"
+            key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMoodHub"
             with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as k:
-                winreg.SetValueEx(k, "DisplayName",     0, winreg.REG_SZ,    "NeuroMood Hub Pro")
+                winreg.SetValueEx(k, "DisplayName",     0, winreg.REG_SZ,    "NeuroMood Hub")
                 winreg.SetValueEx(k, "UninstallString", 0, winreg.REG_SZ,    f'"{uninst_dest}"')
                 winreg.SetValueEx(k, "DisplayIcon",     0, winreg.REG_SZ,    f'"{exe}",0')
                 winreg.SetValueEx(k, "Publisher",       0, winreg.REG_SZ,    "NeuroMood")
@@ -180,10 +180,11 @@ class _ProWorker(QThread):
 # ── InstaladorPro ─────────────────────────────────────────────────────────────
 
 class InstaladorPro(InstallerShell):
-    APP_NAME = "NeuroMood Hub Pro"
+    APP_NAME = "Instalador Hub"
+    WINDOW_ROLE = ""
     WINDOW_SIZE = (700, 540)
     _STEPPER_ACCENT = "violet"
-    STEPS = ["Bienvenida", "Ruta", "Supabase", "Instalar", "Finalizar"]
+    STEPS = ["Bienvenida", "Ruta", "Instalar", "Finalizar"]
 
     def __init__(self):
         super().__init__()
@@ -198,30 +199,41 @@ class InstaladorPro(InstallerShell):
 
         self._add_page(lambda p: self._build_p0(p))
         self._add_page(lambda p: self._build_p1(p))
-        self._add_page(lambda p: self._build_p2(p))
         self._add_page(lambda p: self._build_p3(p))
         self._add_page(lambda p: self._build_p4(p))
 
+        self._apply_visual_qa_defaults()
         self._ir_a(0)
+
+    def _apply_visual_qa_defaults(self):
+        if os.environ.get("NM_VISUAL_QA") != "1":
+            return
+        qa_root = os.path.join(os.path.expanduser("~"), "NeuromoodV3_QA")
+        self._ent_path.setText(
+            os.environ.get(
+                "NM_QA_HUB_INSTALL_DIR",
+                os.path.join(qa_root, "NeuroMood Hub"),
+            )
+        )
 
     def _fade_to(self, n: int):
         super()._fade_to(n)
-        if n == 4:
+        if n == 3:
             self.btn_sig.setText("Finalizar")
-        elif n == 3:
+        elif n == 2:
             self.btn_sig.setText("Instalar")
         else:
             self.btn_sig.setText("Siguiente →")
-        self.btn_ant.setVisible(n > 0 and n < 4)
+        self.btn_ant.setVisible(n > 0 and n < 3)
 
     def _build_p0(self, page: QWidget):
         lay = QVBoxLayout(page)
         lay.setContentsMargins(26, 22, 26, 8)
         lay.setSpacing(0)
-        t1 = QLabel("Hub Profesional")
+        t1 = QLabel("Instalador Hub")
         t1.setStyleSheet(f"color: {ACCENT}; font-size: 24px; font-weight: bold;")
         lay.addWidget(t1)
-        t2 = QLabel("NeuroMood Suite — Instalacion para profesionales")
+        t2 = QLabel("Instalador Hub - instalacion para profesionales")
         t2.setStyleSheet(f"color: {TEXT_TERT}; font-size: 13px;")
         lay.addWidget(t2)
         lay.addSpacing(20)
@@ -230,7 +242,7 @@ class InstaladorPro(InstallerShell):
         lay.addWidget(line)
         lay.addSpacing(20)
         desc = QLabel(
-            "Este instalador configurara el Hub Profesional NeuroMood\n"
+            "Este instalador configurara el NeuroMood Hub\n"
             "en tu computadora.\n\n"
             "Desde el Hub podras ver datos de tus pacientes,\n"
             "asignar tareas y recordatorios en la nube,\n"
@@ -257,7 +269,7 @@ class InstaladorPro(InstallerShell):
         title = QLabel("Instalacion")
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: bold;")
         lay.addWidget(title)
-        sub = QLabel("Elegi donde instalar el Hub Profesional")
+        sub = QLabel("Elegi donde instalar el NeuroMood Hub")
         sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px;")
         lay.addWidget(sub)
         lay.addSpacing(20)
@@ -274,57 +286,11 @@ class InstaladorPro(InstallerShell):
         lay.addWidget(path_row)
         lay.addStretch()
 
-    def _build_p2(self, page: QWidget):
-        lay = QVBoxLayout(page)
-        lay.setContentsMargins(26, 22, 26, 8)
-        lay.setSpacing(0)
-        title = QLabel("Configurar conexion Supabase")
-        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: bold;")
-        lay.addWidget(title)
-        sub = QLabel("Ingresa las credenciales del proyecto del consultorio.")
-        sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px;")
-        lay.addWidget(sub)
-        lay.addSpacing(16)
-
-        card = QFrame()
-        card.setStyleSheet(
-            f"QFrame {{background: {BG_SURFACE}; border-radius: 12px; border: 1px solid {BORDER};}}"
-            f"QLabel {{background: transparent; color: {TEXT_SEC}; font-size: 12px; border: none;}}"
-        )
-        cl = QVBoxLayout(card)
-        cl.setContentsMargins(16, 14, 16, 14)
-        cl.setSpacing(7)
-        cl.addWidget(QLabel("URL del proyecto"))
-        self._ent_supabase_url = NMInput("https://tu-proyecto.supabase.co")
-        cl.addWidget(self._ent_supabase_url)
-        cl.addWidget(QLabel("API Key (anon)"))
-        self._ent_supabase_key = NMInput("eyJhbGciOi...")
-        self._ent_supabase_key.setEchoMode(QLineEdit.EchoMode.Password)
-        cl.addWidget(self._ent_supabase_key)
-        info_row = QHBoxLayout()
-        hint = QLabel("La clave se almacena localmente junto al Hub.")
-        hint.setStyleSheet(f"color: {TEXT_TERT}; font-size: 10px; background: transparent; border: none;")
-        info_row.addWidget(hint)
-        info_row.addStretch()
-        btn_test = QPushButton("Probar conexion")
-        btn_test.setObjectName("outline")
-        btn_test.setFixedSize(130, 30)
-        btn_test.clicked.connect(self._test_supabase)
-        info_row.addWidget(btn_test)
-        cl.addLayout(info_row)
-        self._lbl_supabase_status = QLabel("")
-        self._lbl_supabase_status.setStyleSheet(
-            f"color: {SUCCESS}; font-size: 11px; background: transparent; border: none;"
-        )
-        cl.addWidget(self._lbl_supabase_status)
-        lay.addWidget(card)
-        lay.addStretch()
-
     def _build_p3(self, page: QWidget):
         lay = QVBoxLayout(page)
         lay.setContentsMargins(26, 22, 26, 8)
         lay.setSpacing(0)
-        title = QLabel("Instalando Hub Pro...")
+        title = QLabel("Instalando NeuroMood Hub...")
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: bold;")
         lay.addWidget(title)
         sub = QLabel("No cierres esta ventana durante el proceso.")
@@ -349,7 +315,7 @@ class InstaladorPro(InstallerShell):
         lay.addWidget(ok)
         lay.addSpacing(8)
         desc = QLabel(
-            "El Hub Profesional NeuroMood ya esta instalado.\n"
+            "El NeuroMood Hub ya esta instalado.\n"
             "Los accesos directos seleccionados se crearan al presionar Finalizar."
         )
         desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 13px;")
@@ -378,7 +344,7 @@ class InstaladorPro(InstallerShell):
         lay.addStretch()
 
     def _anterior(self):
-        if self._pagina in (1, 2, 3):
+        if self._pagina in (1, 2):
             self._ir_a(self._pagina - 1)
 
     def _siguiente(self):
@@ -387,11 +353,8 @@ class InstaladorPro(InstallerShell):
         elif self._pagina == 1:
             self._ir_a(2)
         elif self._pagina == 2:
-            self._guardar_supabase_local()
-            self._ir_a(3)
-        elif self._pagina == 3:
             if self._install_dir:
-                self._ir_a(4)
+                self._ir_a(3)
                 return
             self.btn_sig.setEnabled(False); self.btn_sig.setText("Instalando...")
             self.btn_ant.setEnabled(False)
@@ -401,17 +364,8 @@ class InstaladorPro(InstallerShell):
             self._worker.done_signal.connect(self._on_done)
             self._worker.error_signal.connect(self._on_error)
             self._worker.start()
-        elif self._pagina == 4:
+        elif self._pagina == 3:
             self._finalizar(); self.close()
-
-    def _test_supabase(self):
-        if hasattr(self, "_lbl_supabase_status"):
-            self._lbl_supabase_status.setText("✓ Formato listo. La conexion se validara al abrir el Hub.")
-
-    def _guardar_supabase_local(self):
-        # El installer no fuerza credenciales: preserva flujo offline y deja datos para futuro hook.
-        self._supabase_url = getattr(self, "_ent_supabase_url", None).text().strip() if hasattr(self, "_ent_supabase_url") else ""
-        self._supabase_key = getattr(self, "_ent_supabase_key", None).text().strip() if hasattr(self, "_ent_supabase_key") else ""
 
     def _browse(self):
         folder = QFileDialog.getExistingDirectory(self, "Elegí carpeta", self._ent_path.text())

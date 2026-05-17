@@ -13,6 +13,7 @@ Toda la lógica de DB/Supabase preservada exacta de pacientes.py.
 import os
 import sys
 import threading
+from datetime import datetime, timezone
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QRectF, QObject
 from PyQt6 import sip
@@ -30,15 +31,17 @@ try:
         NMProgressLine, NMFeaturedCard, NMModuleRing, NMTypingDots,
     )
     from shared.theme_qt import (
-        C, colors, norm_modo, qcolor, qfont, interpolate_color,
+        C, colors, norm_modo, qcolor, qfont, qfont_mono, interpolate_color,
         apply_chart_theme,
         get_gradient, gradient_colors, stylesheet_lineedit, stylesheet_textedit,
         stylesheet_tabwidget, stylesheet_combobox, stylesheet_scrollarea,
         sp,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_SMALL, RADIUS_PILL, PAD_CONTAINER, PAD_CARD,
         GAP_CARDS, GAP_ELEMENTS, CATEGORY_COLORS,
+        # v3
+        v3c, V3_SP, V3_RD,
     )
-    from shared.theme import CATEGORY_COLORS
+    from shared.theme import CATEGORY_COLORS, TYPOGRAPHY
 except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if _dir not in sys.path:
@@ -49,48 +52,67 @@ except ImportError:
         NMProgressLine, NMFeaturedCard, NMModuleRing, NMTypingDots,
     )
     from shared.theme_qt import (
-        C, colors, norm_modo, qcolor, qfont, interpolate_color,
+        C, colors, norm_modo, qcolor, qfont, qfont_mono, interpolate_color,
         apply_chart_theme,
         get_gradient, gradient_colors, stylesheet_lineedit, stylesheet_textedit,
         stylesheet_tabwidget, stylesheet_combobox, stylesheet_scrollarea,
         sp,
         RADIUS_CARD, RADIUS_BUTTON, RADIUS_SMALL, RADIUS_PILL, PAD_CONTAINER, PAD_CARD,
         GAP_CARDS, GAP_ELEMENTS,
+        v3c, V3_SP, V3_RD,
     )
-    from shared.theme import CATEGORY_COLORS
+    from shared.theme import CATEGORY_COLORS, TYPOGRAPHY
+
+
+# ── v3 surface helpers ──────────────────────────────────────────────────────
+
+def _v3_surface(modo: str) -> str:
+    """Surface color v3 con awareness dark/light."""
+    return v3c("surfaceSolid" if "dark" in norm_modo(modo) else "surface",
+                modo).name()
+
+
+def _v3_elevated(modo: str) -> str:
+    return v3c("elevatedSolid" if "dark" in norm_modo(modo) else "elevated",
+                modo).name()
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _card_frame(modo: str) -> QFrame:
-    c = colors(norm_modo(modo))
+    """Frame card v3 — superficie + border `borderSoft` + radius lg (14)."""
+    surface = _v3_surface(modo)
+    border = v3c("borderSoft", modo).name()
     f = QFrame()
     f.setStyleSheet(f"""
         QFrame {{
-            background: {c['bg_surface']};
-            border-radius: {RADIUS_CARD}px;
-            border: 1px solid {c.get('border_card', c['border'])};
+            background: {surface};
+            border-radius: {V3_RD['lg']}px;
+            border: 1px solid {border};
         }}
     """)
     return f
 
 
 def _row_item(text: str, modo: str) -> QFrame:
-    c = colors(norm_modo(modo))
+    """Row item v3 — fondo `elevated` + radius sm + texto `text2`."""
+    elev = _v3_elevated(modo)
+    text_color = v3c("text2", modo).name()
     f = QFrame()
     f.setStyleSheet(f"""
         QFrame {{
-            background: {c['bg_elevated']};
-            border-radius: {RADIUS_SMALL}px;
+            background: {elev};
+            border-radius: {V3_RD['sm']}px;
             border: none;
         }}
     """)
     lbl = QLabel(text)
     lbl.setFont(qfont("size_caption"))
-    lbl.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
+    lbl.setStyleSheet(f"color: {text_color}; background: transparent;")
     lbl.setWordWrap(True)
     lay = QHBoxLayout(f)
-    lay.setContentsMargins(8, 4, 8, 4)
+    lay.setContentsMargins(V3_SP["sm"], V3_SP["xs"],
+                             V3_SP["sm"], V3_SP["xs"])
     lay.addWidget(lbl)
     return f
 
@@ -242,6 +264,8 @@ class _TabRegistros(QWidget):
         self._scroll = QScrollArea()
         self._scroll.setWidgetResizable(True)
         self._scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         self._list_w = QWidget()
         self._list_w.setStyleSheet("background: transparent;")
@@ -593,6 +617,8 @@ class _TabBanco(QWidget):
         self._list_scroll = QScrollArea()
         self._list_scroll.setWidgetResizable(True)
         self._list_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._list_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._list_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._list_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         self._list_w = QWidget()
         self._list_w.setStyleSheet("background: transparent;")
@@ -1052,6 +1078,34 @@ class DetallePacienteView(QWidget):
         # Wire data signal to update featured card when records load
         self._datos_ref.changed.connect(self._update_featured)
 
+        self._legal_consent: dict | None = None
+        legal_wrapper = QWidget()
+        legal_wrapper.setStyleSheet("background: transparent;")
+        legal_layout = QHBoxLayout(legal_wrapper)
+        legal_layout.setContentsMargins(PAD_CONTAINER, 0, PAD_CONTAINER, sp("sm"))
+        self._legal_card = NMCard(modo=self._modo)
+        legal_inner = QHBoxLayout(self._legal_card)
+        legal_inner.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
+        legal_inner.setSpacing(12)
+        legal_text = QVBoxLayout()
+        legal_title = QLabel("Estado legal / Consentimiento")
+        legal_title.setFont(qfont("size_body", bold=True))
+        legal_title.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+        self._legal_status = QLabel("Consultando consentimiento...")
+        self._legal_status.setWordWrap(True)
+        self._legal_status.setFont(qfont("size_caption"))
+        self._legal_status.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+        legal_text.addWidget(legal_title)
+        legal_text.addWidget(self._legal_status)
+        legal_inner.addLayout(legal_text, stretch=1)
+        self._btn_consent_pdf = NMButton("Descargar constancia", modo=self._modo, width=170, height=30)
+        self._btn_consent_pdf.setEnabled(False)
+        self._btn_consent_pdf.clicked.connect(self._descargar_constancia_consentimiento)
+        legal_inner.addWidget(self._btn_consent_pdf, alignment=Qt.AlignmentFlag.AlignTop)
+        legal_layout.addWidget(self._legal_card)
+        layout.addWidget(legal_wrapper)
+        self._load_legal_consent()
+
         # QTabWidget con stylesheet pills
         self._tabs = QTabWidget()
         self._tabs.setStyleSheet(stylesheet_tabwidget(self._modo))
@@ -1075,21 +1129,160 @@ class DetallePacienteView(QWidget):
 
         layout.addWidget(self._tabs)
 
+    def _load_legal_consent(self):
+        if not self._sb:
+            self._set_legal_consent(None, "pendiente")
+            return
+
+        def _fetch():
+            try:
+                res = (self._sb.table("legal_consents")
+                       .select("status,accepted_at_utc,disclaimer_version,privacy_version,neuromood_suite_version,disclaimer_text_hash,privacy_text_hash,consent_scope,product_name,instalador_suite_version")
+                       .eq("patient_id", self._pid)
+                       .order("accepted_at_utc", desc=True)
+                       .limit(1)
+                       .execute())
+                data = getattr(res, "data", None) or []
+                consent = data[0] if data else None
+                QTimer.singleShot(0, lambda c=consent: self._set_legal_consent(c, None) if not sip.isdeleted(self) else None)
+            except Exception:
+                QTimer.singleShot(0, lambda: self._set_legal_consent(None, "pendiente") if not sip.isdeleted(self) else None)
+
+        threading.Thread(target=_fetch, daemon=True).start()
+
+    def _set_legal_consent(self, consent: dict | None, fallback_status: str | None):
+        self._legal_consent = consent
+        c = colors(self._modo)
+        status = (consent or {}).get("status") or fallback_status or "pendiente"
+        accepted = (consent or {}).get("accepted_at_utc") or "Sin constancia remota"
+        disc = (consent or {}).get("disclaimer_version") or "—"
+        priv = (consent or {}).get("privacy_version") or "—"
+        suite_v = (consent or {}).get("neuromood_suite_version") or "—"
+        h = (consent or {}).get("disclaimer_text_hash") or "—"
+        if status == "vigente":
+            color = c["success"]
+            prefix = "Consentimiento vigente"
+            self._btn_consent_pdf.setEnabled(True)
+            if hasattr(self, "_tabs"):
+                self._tabs.setEnabled(True)
+        elif status == "desactualizado":
+            color = c["warning"]
+            prefix = "Requiere nueva aceptación"
+            self._btn_consent_pdf.setEnabled(bool(consent))
+            if hasattr(self, "_tabs"):
+                self._tabs.setEnabled(False)
+        elif status == "revocado":
+            color = c["error"]
+            prefix = "Consentimiento revocado"
+            self._btn_consent_pdf.setEnabled(bool(consent))
+            if hasattr(self, "_tabs"):
+                self._tabs.setEnabled(False)
+        else:
+            color = c["error"]
+            prefix = "Consentimiento pendiente"
+            self._btn_consent_pdf.setEnabled(False)
+            if hasattr(self, "_tabs"):
+                self._tabs.setEnabled(False)
+        self._legal_status.setText(
+            f"{prefix} · UTC: {accepted} · Aviso: {disc} · Privacidad: {priv} · Suite: {suite_v} · Hash: {h[:16] if h != '—' else h}"
+        )
+        self._legal_status.setStyleSheet(f"color: {color}; background: transparent;")
+
+    def _descargar_constancia_consentimiento(self):
+        if not self._legal_consent:
+            NMToast.show(self, "No hay constancia remota disponible.", "warning")
+            return
+        try:
+            from hub.exportar import generar_constancia_consentimiento
+            ruta = generar_constancia_consentimiento(self._nombre, self._pid, self._legal_consent)
+            try:
+                os.startfile(ruta)
+            except Exception:
+                pass
+            NMToast.show(self, "Constancia de consentimiento generada.", "success")
+        except Exception as e:
+            NMToast.show(self, f"No se pudo generar la constancia: {str(e)[:90]}", "error")
+
+    @staticmethod
+    def _parse_fecha(s) -> datetime | None:
+        if not s:
+            return None
+        try:
+            return datetime.fromisoformat(str(s).replace("Z", "+00:00"))
+        except (ValueError, TypeError):
+            return None
+
+    @staticmethod
+    def _dias_desde(s) -> str:
+        dt = DetallePacienteView._parse_fecha(s)
+        if dt is None:
+            return "—"
+        now = datetime.now(timezone.utc)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        d = (now - dt).days
+        if d == 0:
+            return "hoy"
+        if d == 1:
+            return "1 día"
+        return f"{d} días"
+
+    @staticmethod
+    def _semanas_desde(s) -> int:
+        dt = DetallePacienteView._parse_fecha(s)
+        if dt is None:
+            return 0
+        now = datetime.now(timezone.utc)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return max(1, (now - dt).days // 7)
+
     def _update_featured(self, datos: dict):
         """Update NMFeaturedCard when patient data loads."""
         if not hasattr(self, "_featured_card") or sip.isdeleted(self._featured_card):
             return
         animo = datos.get("animo", [])
-        puntajes = [r.get("puntaje") for r in animo if r.get("puntaje") is not None]
-        if puntajes:
-            prom = sum(puntajes) / len(puntajes)
-            if prom < 4:
-                emoji = "😞"
-            elif prom < 7:
-                emoji = "😐"
-            else:
-                emoji = "😊"
-            self._featured_card.set_score(round(prom, 1), emoji)
+        con_puntaje = [r for r in animo if r.get("puntaje") is not None]
+        if not con_puntaje:
+            return
+
+        # Ordenar por fecha desc
+        def _fecha_key(r):
+            return r.get("fecha") or r.get("creado_en") or ""
+        ordenados = sorted(con_puntaje, key=_fecha_key, reverse=True)
+
+        recientes = [r["puntaje"] for r in ordenados[:7]]
+        previos   = [r["puntaje"] for r in ordenados[7:14]]
+        prom = sum(recientes) / len(recientes)
+
+        emoji = "😞" if prom < 4 else "😐" if prom < 7 else "😊"
+        self._featured_card.set_score(round(prom, 1), emoji)
+
+        # Delta vs semana anterior
+        if previos:
+            prom_prev = sum(previos) / len(previos)
+            self._featured_card.set_delta(round(prom - prom_prev, 1))
+        else:
+            self._featured_card.set_delta(None)
+
+        # Meta line
+        fecha_primera = _fecha_key(ordenados[-1])
+        fecha_ultima  = _fecha_key(ordenados[0])
+        semanas = self._semanas_desde(fecha_primera)
+        dias_ult = self._dias_desde(fecha_ultima)
+        self._featured_card.set_meta(
+            f"{semanas} semana{'s' if semanas != 1 else ''} en programa · Última sesión: hace {dias_ult}"
+        )
+
+        # Tags derivados de datos
+        tags = []
+        if prom >= 7:
+            tags.append(("Progreso alto", "teal"))
+        elif prom < 4:
+            tags.append(("Requiere atención", "violet"))
+        if len(ordenados) >= 21:
+            tags.append(("Constancia", "accent"))
+        self._featured_card.set_tags(tags)
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)

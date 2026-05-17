@@ -2,7 +2,7 @@
 
 Busca el .env en este orden de prioridad:
   1. APPDATA/NeuroMood/.env    (produccion paciente - copiado por instalador)
-  2. APPDATA/NeuroMoodPro/.env (produccion Hub - copiado por instalador pro)
+  2. APPDATA/NeuroMoodHub/.env (produccion Hub - copiado por instalador pro)
   3. Carpeta del ejecutable    (produccion alternativa)
   4. Raiz del proyecto         (modo desarrollo)
   5. Variables de entorno del sistema (siempre disponibles)
@@ -23,8 +23,8 @@ def _env_candidates() -> list:
     # 1. %APPDATA%\NeuroMood\.env  — instalacion del paciente
     candidates.append(Path(appdata) / "NeuroMood" / ".env")
 
-    # 2. %APPDATA%\NeuroMoodPro\.env — instalacion del Hub
-    candidates.append(Path(appdata) / "NeuroMoodPro" / ".env")
+    # 2. %APPDATA%\NeuroMoodHub\.env — instalacion del Hub
+    candidates.append(Path(appdata) / "NeuroMoodHub" / ".env")
 
     # 3. Carpeta del ejecutable (frozen) o raiz del proyecto (dev)
     if getattr(sys, "frozen", False):

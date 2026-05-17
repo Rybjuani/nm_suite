@@ -1,69 +1,72 @@
 """
-app/modules/timer_qt.py — Módulo Timer (PyQt6)
+app/modules/timer_qt.py — Timer de enfoque v3 (PyQt6)
 
-LÓGICA PRESERVADA EXACTA de timer.py:
-  PRESETS, _tick() a 16ms (60fps), _save_session(), get_card_status()
-  _start(), _pause(), _stop(), _finish()
+Estructura según design_handoff_neuromood_v3 (Suite > Timer):
 
-NUEVAS CAPACIDADES:
-  Tick a 16ms (60fps) para arco fluido
-  Círculo pulsante sutil (±4px a 0.8Hz) mientras corre
-  Texto MM:SS solo en el centro del arco (sin label externo)
-  Finish screen: arco success + "¡Tiempo! ✓" con scale bounce en 500ms OutBack
-  Vibración visual últimos 10s: alpha 100%→70%→100% cada 500ms
+  Header        eyebrow + nombre de actividad
+  2-col main    LEFT: BIG NMFocusArc (340, stroke 14, mono MM:SS)
+                       + chip "Sesión en curso" / "Lista para empezar"
+                       + 3 NMPlayButton (refresh / play|pause / skip)
+                RIGHT rail: NMCard "DETALLES DE SESIÓN" con NMInput +
+                            chips preset (5/10/25/45/custom)
+                            NMCard "SESIONES DE HOY" con lista del día
+
+LÓGICA DE NEGOCIO PRESERVADA EXACTA:
+  PRESETS, _tick() (1s), _save_session() (INSERT INTO actividades_temporizador),
+  _finish() con winsound.Beep doble + auto-restore window + toast,
+  on_leave() guarda si elapsed ≥ 30s, get_card_status().
 """
 
 import os
 import sys
-import math
 import logging
 
 _log = logging.getLogger(__name__)
 
-from PyQt6.QtCore import (
-    Qt, QTimer, QPropertyAnimation, QEasingCurve, QRectF, QPointF,
-    pyqtProperty, QAbstractAnimation, QSequentialAnimationGroup,
-    QVariantAnimation,
-)
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6 import sip
-from PyQt6.QtGui import (
-    QColor, QPainter, QPen, QBrush, QPainterPath,
-    QConicalGradient, QRadialGradient,
-)
+from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QSizePolicy, QGraphicsOpacityEffect,
+    QSizePolicy, QFrame, QScrollArea,
 )
 
 try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMInput, NMToast, ThemeManager,
-        NMEmptyState, NMPresetChip, NMFocusArc, NMSessionHistory,
+        NMCard, NMIcon, NMPlayButton, NMFocusArc,
     )
     from shared.theme_qt import (
-        C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        get_gradient, gradient_colors, stylesheet_lineedit,
-        PAD_CONTAINER, GAP_ELEMENTS, RADIUS_BUTTON, RADIUS_PILL,
-        ThemeAwareWidgetMixin, sp,
+        C, colors, norm_modo, qfont, qfont_mono,
+        v3c, V3_SP, V3_RD,
+        stylesheet_lineedit, stylesheet_scrollarea,
+        PAD_CONTAINER,
     )
+    from shared.theme import TYPOGRAPHY
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy, hora_actual
+    from shared.visual_qa import visual_qa_enabled, timer_sessions
 except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMInput, NMToast, ThemeManager,
-        NMEmptyState, NMPresetChip, NMFocusArc, NMSessionHistory,
+        NMCard, NMIcon, NMPlayButton, NMFocusArc,
     )
     from shared.theme_qt import (
-        C, colors, norm_modo, qcolor, qfont, interpolate_color,
-        get_gradient, gradient_colors, stylesheet_lineedit,
-        PAD_CONTAINER, GAP_ELEMENTS, RADIUS_BUTTON, RADIUS_PILL,
-        ThemeAwareWidgetMixin, sp,
+        C, colors, norm_modo, qfont, qfont_mono,
+        v3c, V3_SP, V3_RD,
+        stylesheet_lineedit, stylesheet_scrollarea,
+        PAD_CONTAINER,
     )
+    from shared.theme import TYPOGRAPHY
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy, hora_actual
+    from shared.visual_qa import visual_qa_enabled, timer_sessions
+
+
+# ── Presets (preservados) ────────────────────────────────────────────────────
 
 PRESETS = [
     ("5 min",  5 * 60),
@@ -72,239 +75,92 @@ PRESETS = [
     ("45 min", 45 * 60),
 ]
 
-_CANVAS = 280
-_R_BASE = 110       # radio base del arco
-_ARC_W  = 10        # grosor del arco
 
+# ── _SessionsListCard ───────────────────────────────────────────────────────
 
-def _rich_color_at(modo: str, t: float) -> str:
-    palette = gradient_colors(modo)
-    if len(palette) < 3:
-        return interpolate_color(palette[0], palette[-1], t)
-    if t <= 0.45:
-        return interpolate_color(palette[0], palette[1], t / 0.45)
-    return interpolate_color(palette[1], palette[2], (t - 0.45) / 0.55)
+class _SessionsListCard(NMCard):
+    """Card v3 con lista de sesiones del día (tabla compacta)."""
 
+    def __init__(self, modo: str = None, parent=None):
+        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
+        self._build()
 
-# ── TimerCanvas ───────────────────────────────────────────────────────────────
+    def _build(self):
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
+                                V3_SP["lg"], V3_SP["lg"])
+        lay.setSpacing(V3_SP["sm"])
+        self._eyebrow = QLabel("SESIONES DE HOY")
+        self._eyebrow.setFont(qfont("size_caption_xs",
+                                     weight=TYPOGRAPHY["weight_semibold"]))
+        lay.addWidget(self._eyebrow)
+        self._items_layout = QVBoxLayout()
+        self._items_layout.setContentsMargins(0, 0, 0, 0)
+        self._items_layout.setSpacing(V3_SP["xs"])
+        lay.addLayout(self._items_layout)
+        lay.addStretch()
+        self._apply_sess_styles()
 
-class _TimerCanvas(ThemeAwareWidgetMixin, QWidget):
-    """
-    Canvas del timer. Propiedades animables:
-      arc_alpha:     float 0–1  (parpadeo en últimos 10s)
-      pulse_offset:  float      (oscilación radio ±4px)
-      finish_scale:  float 0–1  (scale bounce del texto ¡Tiempo! ✓)
-    """
+    def set_sessions(self, items: list[str]):
+        """Cada item es 'nombre · MM:SS' (formato preservado por compat)."""
+        while self._items_layout.count():
+            child = self._items_layout.takeAt(0)
+            w = child.widget()
+            if w:
+                w.deleteLater()
+        if not items:
+            empty = QLabel("Sin sesiones todavía hoy.")
+            empty.setFont(qfont("size_small"))
+            empty.setStyleSheet(
+                f"color: {v3c('text3', self._modo).name()}; "
+                f"background: transparent;")
+            self._items_layout.addWidget(empty)
+            return
+        for text in items:
+            # Parse "nombre · MM:SS" → mostrar nombre + chip de duración
+            parts = text.split("·")
+            nombre = parts[0].strip() if parts else text
+            duracion = parts[1].strip() if len(parts) > 1 else ""
+            row = QHBoxLayout()
+            row.setSpacing(V3_SP["sm"])
+            icon = NMIcon("timer", size=16, color_key="teal",
+                           modo=self._modo)
+            row.addWidget(icon)
+            name_lbl = QLabel(nombre)
+            name_lbl.setFont(qfont("size_small"))
+            name_lbl.setStyleSheet(
+                f"color: {v3c('text', self._modo).name()}; "
+                f"background: transparent;")
+            row.addWidget(name_lbl, stretch=1)
+            if duracion:
+                dur_lbl = QLabel(duracion)
+                dur_lbl.setFont(qfont_mono(10, bold=False))
+                dur_lbl.setStyleSheet(
+                    f"color: {v3c('teal', self._modo).name()}; "
+                    f"background: transparent;")
+                row.addWidget(dur_lbl)
+            wrap = QWidget()
+            wrap.setLayout(row)
+            self._items_layout.addWidget(wrap)
 
-    def __init__(self, parent=None, modo: str = "dark_hybrid"):
-        super().__init__(parent)
-        self._modo = norm_modo(modo)
-        self.setMinimumSize(200, 200)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-
-        self._progress = 0.0        # 0.0 = lleno, 1.0 = vacío
-        self._time_text = "00:00"
-        self._finished = False
-        self._arc_alpha = 1.0
-        self._pulse_offset = 0.0
-        self._finish_scale = 0.0
-
-        # Timer de 60fps
-        self._fps_timer = QTimer(self)
-        self._fps_timer.timeout.connect(self.update)
-
-        # Animación de pulso (radio ±4px a 0.8Hz = 1250ms)
-        self._pulse_anim: QPropertyAnimation | None = None
-
-        self._connect_theme()
-
-    # ── pyqtProperties ───────────────────────────────────────────────────────
-
-    def _get_arc_alpha(self) -> float: return self._arc_alpha
-    def _set_arc_alpha(self, v: float): self._arc_alpha = v
-
-    arc_alpha = pyqtProperty(float, _get_arc_alpha, _set_arc_alpha)
-
-    def _get_pulse_offset(self) -> float: return self._pulse_offset
-    def _set_pulse_offset(self, v: float): self._pulse_offset = v
-
-    pulse_offset = pyqtProperty(float, _get_pulse_offset, _set_pulse_offset)
-
-    def _get_finish_scale(self) -> float: return self._finish_scale
-    def _set_finish_scale(self, v: float): self._finish_scale = v
-
-    finish_scale = pyqtProperty(float, _get_finish_scale, _set_finish_scale)
-
-    # ── API ───────────────────────────────────────────────────────────────────
-
-    def update_data(self, progress: float, time_text: str):
-        self._progress = progress
-        self._time_text = time_text
-        self.update()
-
-    def _start_rendering(self):
-        if self.isVisible() and not self._fps_timer.isActive():
-            self._fps_timer.start(16)
-
-    def _stop_rendering(self):
-        if self._fps_timer.isActive():
-            self._fps_timer.stop()
-
-    def start_pulse(self):
-        self._start_rendering()
-        if self._pulse_anim:
-            self._pulse_anim.stop()
-        self._pulse_anim = QPropertyAnimation(self, b"pulse_offset", self)
-        self._pulse_anim.setDuration(1250)
-        self._pulse_anim.setStartValue(0.0)
-        self._pulse_anim.setKeyValueAt(0.5, 4.0)
-        self._pulse_anim.setEndValue(0.0)
-        self._pulse_anim.setEasingCurve(QEasingCurve.Type.InOutSine)
-        self._pulse_anim.setLoopCount(-1)  # loop infinito
-        self._pulse_anim.start()
-
-    def stop_pulse(self):
-        if self._pulse_anim:
-            self._pulse_anim.stop()
-            self._pulse_anim = None
-        self._pulse_offset = 0.0
-        if not getattr(self, "_blink_anim", None):
-            self._stop_rendering()
-
-    def start_blink(self):
-        """Parpadeo de los últimos 10s."""
-        self._start_rendering()
-        a = QPropertyAnimation(self, b"arc_alpha", self)
-        a.setDuration(500)
-        a.setStartValue(1.0)
-        a.setKeyValueAt(0.5, 0.65)
-        a.setEndValue(1.0)
-        a.setLoopCount(-1)
-        a.start()
-        self._blink_anim = a
-
-    def stop_blink(self):
-        if hasattr(self, "_blink_anim"):
-            self._blink_anim.stop()
-            self._blink_anim = None
-        self._arc_alpha = 1.0
-        if not self._pulse_anim:
-            self._stop_rendering()
-
-    def show_finish(self):
-        """Arco success + texto bounce."""
-        self._finished = True
-        self._start_rendering()
-        self.stop_pulse()
-        self.stop_blink()
-        self._start_rendering()
-        a = QPropertyAnimation(self, b"finish_scale", self)
-        a.setDuration(500)
-        a.setStartValue(0.0)
-        a.setEndValue(1.0)
-        a.setEasingCurve(QEasingCurve.Type.OutBack)
-        a.finished.connect(self._stop_rendering)
-        a.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
-
-    def reset(self):
-        self.stop_pulse()
-        self.stop_blink()
-        self._finished = False
-        self._finish_scale = 0.0
-        self._arc_alpha = 1.0
-        self._progress = 0.0
-        self._time_text = "00:00"
-        self._stop_rendering()
-
-    def showEvent(self, event):
-        super().showEvent(event)
-        if self._pulse_anim or getattr(self, "_blink_anim", None) or self._finished:
-            self._start_rendering()
-
-    def hideEvent(self, event):
-        self._stop_rendering()
-        super().hideEvent(event)
-
-    # ── paintEvent ────────────────────────────────────────────────────────────
-
-    def paintEvent(self, event):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        c = colors(self._modo)
-        cx = cy = self.width() / 2
-        sc = min(self.width(), self.height()) / _CANVAS
-        r = (_R_BASE + self._pulse_offset) * sc
-        arc_w = _ARC_W * sc
-
-        # Track ring
-        track_pen = QPen(QColor(c["progress_track"]), arc_w)
-        p.setPen(track_pen)
-        p.setBrush(Qt.BrushStyle.NoBrush)
-        p.drawEllipse(QPointF(cx, cy), r, r)
-
-        if self._finished:
-            # Arco success completo
-            arc_pen = QPen(QColor(C("success", self._modo)), arc_w)
-            arc_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-            p.setPen(arc_pen)
-            rect = QRectF(cx - r, cy - r, r * 2, r * 2)
-            p.drawArc(rect, 90 * 16, -360 * 16)
-
-            # Texto "¡Tiempo! ✓" con scale bounce
-            if self._finish_scale > 0:
-                p.save()
-                scale = self._finish_scale
-                p.translate(cx, cy)
-                p.scale(scale, scale)
-                p.translate(-cx, -cy)
-                font = qfont("size_h2", bold=True)
-                p.setFont(font)
-                p.setPen(QPen(QColor(C("success", self._modo))))
-                p.drawText(QRectF(0, cy - 28, self.width(), 56),
-                       Qt.AlignmentFlag.AlignCenter, "¡Tiempo! ✓")
-                p.restore()
-        else:
-            # Arco de progreso con gradiente 3-stop
-            p.setOpacity(self._arc_alpha)
-            extent = max(self._progress * 360, 2)
-            rect = QRectF(cx - r, cy - r, r * 2, r * 2)
-            arc_pen = QPen(QColor(gradient_colors(self._modo)[0]), arc_w)
-            arc_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-            p.setPen(arc_pen)
-            segs = 36
-            seg_ext = extent / segs
-            for i in range(segs):
-                t = i / max(segs - 1, 1)
-                col = _rich_color_at(self._modo, t)
-                pen = QPen(QColor(col), arc_w)
-                pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-                p.setPen(pen)
-                angle = 90 - i * seg_ext
-                p.drawArc(rect, int(angle * 16), int(-seg_ext * 16))
-
-            # Texto MM:SS central
-            p.setOpacity(1.0)
-            font_big = qfont("size_h1", bold=True)
-            font_big.setPointSize(32)
-            p.setFont(font_big)
-            p.setPen(QPen(QColor(c["text_primary"])))
-            p.drawText(QRectF(0, cy - 28, self.width(), 56),
-                       Qt.AlignmentFlag.AlignCenter, self._time_text)
-
-        p.end()
+    def _apply_sess_styles(self):
+        self._eyebrow.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; "
+            f"background: transparent;")
 
     def _apply_theme(self, modo: str):
-        self._modo = norm_modo(modo)
+        super()._apply_theme(modo)
+        self._apply_sess_styles()
 
 
-# ── ModuloTimer ───────────────────────────────────────────────────────────────
+# ── ModuloTimer v3 ──────────────────────────────────────────────────────────
 
 class ModuloTimer(NMModule):
-    MODULE_TITLE = "Temporizador"
+    MODULE_TITLE = "Timer"
     MODULE_ICON = "timer"
 
     def build_ui(self):
-        # Estado de negocio (preservado exacto)
+        # Estado preservado exacto
         self._running = False
         self._paused = False
         self._total_sec = 25 * 60
@@ -313,106 +169,192 @@ class ModuloTimer(NMModule):
         self._custom_mode = False
         self._last_10s_blink = False
 
-        layout = QVBoxLayout(self._content)
-        layout.setContentsMargins(PAD_CONTAINER, PAD_CONTAINER,
-                                   PAD_CONTAINER, PAD_CONTAINER)
-        layout.setSpacing(GAP_ELEMENTS)
-        layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        outer = QVBoxLayout(self._content)
+        outer.setContentsMargins(0, 0, 0, 0)
 
-        c = colors(self._modo)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        outer.addWidget(scroll)
+        self._scroll = scroll
 
-        # ── Actividad ──────────────────────────────────────────────────────────
-        self._empty_state = NMEmptyState(
-            "fa5s.hourglass-half",
-            "Timer listo",
-            "Configurá el tiempo y empezá.",
-            self._content,
-        )
-        layout.addWidget(self._empty_state)
+        body = QWidget()
+        body.setStyleSheet("background: transparent;")
+        scroll.setWidget(body)
 
-        self._ent_actividad = NMInput("Nombre de la actividad (opcional)", modo=self._modo)
-        layout.addWidget(self._ent_actividad)
+        lay = QVBoxLayout(body)
+        lay.setContentsMargins(V3_SP["xl"], V3_SP["lg"],
+                                V3_SP["xl"], V3_SP["xl"])
+        lay.setSpacing(V3_SP["lg"])
 
-        # ── Chips de preset ───────────────────────────────────────────────────
+        # 1. Eyebrow
+        self._eyebrow = QLabel("TIMER DE ENFOQUE")
+        self._eyebrow.setFont(qfont("size_caption_xs",
+                                     weight=TYPOGRAPHY["weight_semibold"]))
+        lay.addWidget(self._eyebrow)
+
+        # 2. Main 2-col
+        main_row = QHBoxLayout()
+        main_row.setSpacing(V3_SP["xl"])
+
+        # ── LEFT col ─────────────────────────────────────────────────────────
+        left_col = QVBoxLayout()
+        left_col.setSpacing(V3_SP["lg"])
+        left_col.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+
+        # BIG ring (340)
+        self._canvas = NMFocusArc(size=340, modo=self._modo)
+        self._canvas.set_data(0.0, "25:00", "Lista para empezar")
+        left_col.addWidget(self._canvas,
+                            alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        # Chip "Sesión en curso" / estado
+        self._state_chip = QLabel("Lista para empezar")
+        self._state_chip.setFont(qfont("size_caption",
+                                        weight=TYPOGRAPHY["weight_semibold"]))
+        self._state_chip.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._state_chip.setContentsMargins(V3_SP["md"], 4, V3_SP["md"], 4)
+        left_col.addWidget(self._state_chip,
+                            alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        # 3 NMPlayButton (refresh / play|pause / skip)
+        ctrl_row = QHBoxLayout()
+        ctrl_row.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        ctrl_row.setSpacing(V3_SP["md"])
+
+        self._btn_reset = NMPlayButton(icon_name="refresh", size="md",
+                                        modo=self._modo)
+        self._btn_reset.clicked.connect(self._stop)
+        ctrl_row.addWidget(self._btn_reset)
+
+        self._btn_play = NMPlayButton(icon_name="play", size="lg",
+                                       modo=self._modo)
+        self._btn_play.clicked.connect(self._toggle_play_pause)
+        ctrl_row.addWidget(self._btn_play)
+
+        self._btn_skip = NMPlayButton(icon_name="skip", size="md",
+                                       modo=self._modo)
+        self._btn_skip.clicked.connect(self._finish)
+        ctrl_row.addWidget(self._btn_skip)
+
+        left_col.addLayout(ctrl_row)
+        main_row.addLayout(left_col, stretch=2)
+
+        # ── RIGHT rail ───────────────────────────────────────────────────────
+        right_rail = QVBoxLayout()
+        right_rail.setSpacing(V3_SP["md"])
+        right_rail.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # DETALLES DE SESIÓN card
+        details_card = NMCard(modo=self._modo, clickable=False)
+        details_lay = QVBoxLayout(details_card)
+        details_lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
+                                        V3_SP["lg"], V3_SP["lg"])
+        details_lay.setSpacing(V3_SP["sm"])
+        self._details_eyebrow = QLabel("DETALLES DE SESIÓN")
+        self._details_eyebrow.setFont(qfont("size_caption_xs",
+                                             weight=TYPOGRAPHY["weight_semibold"]))
+        details_lay.addWidget(self._details_eyebrow)
+
+        self._activity_lbl = QLabel("Actividad")
+        self._activity_lbl.setFont(qfont("size_small"))
+        details_lay.addWidget(self._activity_lbl)
+
+        self._ent_actividad = NMInput("¿En qué vas a trabajar?",
+                                       modo=self._modo)
+        if visual_qa_enabled():
+            self._ent_actividad.setText("Deep Work Session")
+        details_lay.addWidget(self._ent_actividad)
+
+        self._duration_lbl = QLabel("Duración")
+        self._duration_lbl.setFont(qfont("size_small"))
+        self._duration_lbl.setContentsMargins(0, V3_SP["sm"], 0, 0)
+        details_lay.addWidget(self._duration_lbl)
+
+        # Preset chips (NMButtonOutline toggleables)
         chips_row = QHBoxLayout()
-        chips_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        chips_row.setSpacing(6)
-        self._chip_btns: list[tuple[NMPresetChip, int]] = []
+        chips_row.setSpacing(V3_SP["xs"] + 2)
+        self._chip_btns: list[tuple[NMButtonOutline, int]] = []
         for label, secs in PRESETS:
-            btn = NMPresetChip(label, modo=self._modo)
-            btn.setFixedSize(76, 32)
+            btn = NMButtonOutline(label, modo=self._modo,
+                                   toggleable=False, size="sm")
+            btn.setFixedSize(70, 30)
             btn.clicked.connect(lambda _, s=secs: self._select_preset(s))
             chips_row.addWidget(btn)
             self._chip_btns.append((btn, secs))
-
-        # Chip "Otro"
-        self._btn_custom = NMButtonOutline("Otro", modo=self._modo)
-        self._btn_custom.setFixedSize(56, 32)
-        self._btn_custom.clicked.connect(self._show_custom_input)
-        chips_row.addWidget(self._btn_custom)
-        layout.addLayout(chips_row)
+        details_lay.addLayout(chips_row)
         self._highlight_preset(25 * 60)
 
-        # Input custom (oculto por defecto)
+        # Custom input (hidden by default)
         self._custom_widget = QWidget()
         self._custom_widget.setVisible(False)
         cw_row = QHBoxLayout(self._custom_widget)
-        cw_row.setContentsMargins(0, 0, 0, 0)
+        cw_row.setContentsMargins(0, V3_SP["xs"], 0, 0)
         cw_row.setSpacing(6)
         self._entry_custom = QLineEdit()
-        self._entry_custom.setPlaceholderText("min")
-        self._entry_custom.setFixedSize(80, 34)
+        self._entry_custom.setPlaceholderText("minutos")
+        self._entry_custom.setFixedSize(80, 30)
         self._entry_custom.setStyleSheet(stylesheet_lineedit(self._modo))
         cw_row.addWidget(self._entry_custom)
-        btn_ok = NMButtonOutline("OK", modo=self._modo)
-        btn_ok.setFixedSize(42, 34)
+        btn_ok = NMButton("OK", modo=self._modo, variant="secondary",
+                          size="sm", width=48)
         btn_ok.clicked.connect(self._apply_custom)
         cw_row.addWidget(btn_ok)
-        layout.addWidget(self._custom_widget, alignment=Qt.AlignmentFlag.AlignHCenter)
+        details_lay.addWidget(self._custom_widget)
+        right_rail.addWidget(details_card)
+        self._details_card = details_card
 
-        # ── Canvas ────────────────────────────────────────────────────────────
-        self._canvas = NMFocusArc(size=160, modo=self._modo)
-        self._canvas.update_data(0.0, "25:00")
-        layout.addWidget(self._canvas, alignment=Qt.AlignmentFlag.AlignHCenter)
+        # SESIONES DE HOY card
+        self._sessions_card = _SessionsListCard(modo=self._modo)
+        right_rail.addWidget(self._sessions_card)
 
-        # ── Controles ─────────────────────────────────────────────────────────
-        ctrl_row = QHBoxLayout()
-        ctrl_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        ctrl_row.setSpacing(8)
+        right_rail.addStretch()
+        main_row.addLayout(right_rail, stretch=1)
+        lay.addLayout(main_row)
 
-        self._btn_start = NMButton("Iniciar", modo=self._modo, width=110, height=42)
-        self._btn_start.clicked.connect(self._start)
-        ctrl_row.addWidget(self._btn_start)
-
-        self._btn_pause = NMButtonOutline("Pausa", modo=self._modo)
-        self._btn_pause.setFixedSize(110, 42)
-        self._btn_pause.clicked.connect(self._pause)
-        ctrl_row.addWidget(self._btn_pause)
-
-        self._btn_stop = NMButtonOutline("Detener", modo=self._modo)
-        self._btn_stop.setFixedSize(110, 42)
-        self._btn_stop.clicked.connect(self._stop)
-        ctrl_row.addWidget(self._btn_stop)
-
-        layout.addLayout(ctrl_row)
-
-        # ── Activity name label (shown during session) ────────────────────────
-        self._lbl_active_name = QLabel("")
-        self._lbl_active_name.setFont(qfont("size_caption"))
-        self._lbl_active_name.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._lbl_active_name.setStyleSheet(
-            f"color: {c['text_secondary']}; background: transparent;"
-        )
-        self._lbl_active_name.hide()
-        layout.addWidget(self._lbl_active_name)
-
-        # ── Quick history footer (last 3 sessions today) ──────────────────────
-        self._session_history = NMSessionHistory(modo=self._modo)
-        layout.addWidget(self._session_history)
-
+        self._apply_text_styles()
+        self._update_canvas()
         self._load_quick_history()
 
-    # ── Presets ───────────────────────────────────────────────────────────────
+    def _apply_text_styles(self):
+        c = v3c("text3", self._modo).name()
+        for lbl in (self._eyebrow, self._details_eyebrow):
+            lbl.setStyleSheet(f"color: {c}; background: transparent;")
+        for lbl in (self._activity_lbl, self._duration_lbl):
+            lbl.setStyleSheet(
+                f"color: {v3c('text2', self._modo).name()}; "
+                f"background: transparent;")
+        self._apply_state_chip_style()
+
+    def _apply_state_chip_style(self):
+        is_active = self._running and not self._paused
+        if is_active:
+            color = v3c("teal", self._modo).name()
+            qc = QColor(color)
+            bg = f"rgba({qc.red()},{qc.green()},{qc.blue()},36)"
+            self._state_chip.setStyleSheet(
+                f"color: {color}; background: {bg}; border-radius: 10px;")
+        else:
+            color = v3c("text3", self._modo).name()
+            self._state_chip.setStyleSheet(
+                f"color: {color}; background: transparent;")
+
+    def _on_theme(self, modo: str) -> None:
+        super()._on_theme(modo)
+        if hasattr(self, "_scroll"):
+            self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        if hasattr(self, "_canvas"):
+            self._canvas._apply_theme(self._modo)
+        if hasattr(self, "_entry_custom"):
+            self._entry_custom.setStyleSheet(stylesheet_lineedit(self._modo))
+        if hasattr(self, "_eyebrow"):
+            self._apply_text_styles()
+        self.update()
+
+    # ── Presets ──────────────────────────────────────────────────────────────
 
     def _select_preset(self, secs: int):
         if self._running:
@@ -427,15 +369,6 @@ class ModuloTimer(NMModule):
     def _highlight_preset(self, selected: int):
         for btn, secs in self._chip_btns:
             btn.set_active(secs == selected and not self._custom_mode)
-        self._btn_custom.set_active(self._custom_mode)
-
-    def _show_custom_input(self):
-        if self._running:
-            return
-        self._custom_mode = True
-        self._custom_widget.setVisible(True)
-        self._highlight_preset(-1)
-        self._entry_custom.setFocus()
 
     def _apply_custom(self):
         try:
@@ -448,54 +381,66 @@ class ModuloTimer(NMModule):
             pass
         self._custom_widget.setVisible(False)
 
-    # ── Display ───────────────────────────────────────────────────────────────
+    # ── Display ──────────────────────────────────────────────────────────────
 
     def _format_time(self, secs: int) -> str:
         return f"{secs // 60:02d}:{secs % 60:02d}"
 
     def _update_canvas(self):
-        progress = (self._remaining_sec / self._total_sec) if self._total_sec > 0 else 1.0
-        self._canvas.update_data(progress, self._format_time(self._remaining_sec))
+        # NMFocusArc usa progress 0-1 (cuánto LLEVA, no cuánto queda)
+        if self._total_sec > 0:
+            progress = (self._total_sec - self._remaining_sec) / self._total_sec
+        else:
+            progress = 0.0
+        state = "Sesión en curso" if (self._running and not self._paused) \
+            else ("Pausado" if self._paused
+                  else "Lista para empezar")
+        self._canvas.set_data(progress,
+                               self._format_time(self._remaining_sec),
+                               state)
+        self._state_chip.setText(state)
+        self._apply_state_chip_style()
 
-    # ── Controles (preservados) ───────────────────────────────────────────────
+    # ── Controles ────────────────────────────────────────────────────────────
 
-    def _start(self):
-        if self._running and self._paused:
+    def _toggle_play_pause(self):
+        """Toggle único: play / pause / resume."""
+        if not self._running:
+            self._start()
+        elif self._paused:
+            # resume
             self._paused = False
-            self._btn_pause.setText("Pausa")
+            self._btn_play.set_icon("pause")
             self._canvas.start_pulse()
             self._tick()
+            self._update_canvas()
+        else:
+            # pause
+            self._pause()
+
+    def _start(self):
+        if self._running and not self._paused:
             return
-        if self._running:
-            return
-        if hasattr(self, "_empty_state"):
-            self._empty_state.hide()
         self._running = True
         self._paused = False
         self._remaining_sec = self._total_sec
         self._last_10s_blink = False
-        self._btn_start.setText("Reanudar")
+        self._btn_play.set_icon("pause")
         self._canvas.reset()
         self._canvas.start_pulse()
-        # Show activity name below canvas during session
-        nombre = self._ent_actividad.text().strip()
-        if hasattr(self, "_lbl_active_name"):
-            if nombre:
-                self._lbl_active_name.setText(nombre)
-                self._lbl_active_name.show()
-            else:
-                self._lbl_active_name.hide()
         self._tick()
+        self._update_canvas()
 
     def _pause(self):
         if not self._running:
             return
         self._paused = True
-        self._btn_pause.setText("Pausado")
+        self._btn_play.set_icon("play")
         self._canvas.stop_pulse()
         if self._timer_id:
             self._timer_id.stop()
             self._timer_id = None
+        self._update_canvas()
 
     def _stop(self):
         was_running = self._running
@@ -510,17 +455,12 @@ class ModuloTimer(NMModule):
         self._running = False
         self._paused = False
         self._remaining_sec = self._total_sec
-        self._btn_start.setText("Iniciar")
-        self._btn_pause.setText("Pausa")
-        if hasattr(self, "_empty_state"):
-            self._empty_state.show()
-        if hasattr(self, "_lbl_active_name"):
-            self._lbl_active_name.hide()
+        self._btn_play.set_icon("play")
         self._canvas.reset()
         self._update_canvas()
         self._load_quick_history()
 
-    # ── Tick (16ms = 60fps, pero lógica de segundos preservada) ──────────────
+    # ── Tick (1s interval — preservado) ─────────────────────────────────────
 
     def _tick(self):
         if not self._running or self._paused:
@@ -532,7 +472,6 @@ class ModuloTimer(NMModule):
         self._remaining_sec -= 1
         self._update_canvas()
 
-        # Activar parpadeo en últimos 10 segundos
         if self._remaining_sec <= 10 and not self._last_10s_blink:
             self._last_10s_blink = True
             self._canvas.start_blink()
@@ -548,8 +487,7 @@ class ModuloTimer(NMModule):
             self._timer_id.stop()
             self._timer_id = None
         self._save_session(self._total_sec)
-        self._btn_start.setText("Iniciar")
-        self._btn_pause.setText("Pausa")
+        self._btn_play.set_icon("play")
         self._canvas.show_finish()
         try:
             import winsound
@@ -558,7 +496,6 @@ class ModuloTimer(NMModule):
         except Exception:
             _log.exception("Operation failed")
 
-        # Auto-restaurar ventana y mostrar toast
         nombre = self._ent_actividad.text().strip() or "Sin nombre"
         top = self.window()
         if top and top.isMinimized():
@@ -566,23 +503,29 @@ class ModuloTimer(NMModule):
         if top:
             top.raise_()
             top.activateWindow()
-        NMToast.display(top, f"Tiempo para \"{nombre}\" finalizado ✓", variant="success", duration_ms=4000)
+        NMToast.display(top,
+                         f"Tiempo para \"{nombre}\" finalizado",
+                         variant="success", duration_ms=4000)
 
-        # Reset después de 4 segundos
-        QTimer.singleShot(4000, lambda: self._reset_after_finish() if not sip.isdeleted(self) else None)
+        QTimer.singleShot(4000, lambda: self._reset_after_finish()
+                          if not sip.isdeleted(self) else None)
 
     def _reset_after_finish(self):
         self._canvas.reset()
         self._remaining_sec = self._total_sec
         self._update_canvas()
-        if hasattr(self, "_lbl_active_name"):
-            self._lbl_active_name.hide()
         self._load_quick_history()
 
-    # ── DB (preservado exacto) ────────────────────────────────────────────────
+    # ── DB (preservado exacto) ───────────────────────────────────────────────
 
     def _save_session(self, duracion: int):
-        nombre = self._format_time(self._total_sec) + " timer"
+        if visual_qa_enabled():
+            if hasattr(self._btn_play, "play_success"):
+                # NMPlayButton no tiene play_success, ignorar gracefully
+                pass
+            return
+        nombre = self._ent_actividad.text().strip() or \
+            (self._format_time(self._total_sec) + " timer")
         try:
             conn = obtener_conexion()
             conn.execute(
@@ -594,30 +537,33 @@ class ModuloTimer(NMModule):
             )
             conn.commit()
             conn.close()
-            if hasattr(self._btn_start, "play_success"):
-                self._btn_start.play_success()
         except Exception:
             _log.exception("Operation failed")
 
     def _load_quick_history(self):
-        """Populate the quick history footer with last 3 sessions today."""
+        if visual_qa_enabled():
+            self._sessions_card.set_sessions(timer_sessions())
+            return
         sessions = []
         try:
             conn = obtener_conexion()
             rows = conn.execute(
                 "SELECT nombre, duracion_real FROM actividades_temporizador "
-                "WHERE fecha = ? ORDER BY rowid DESC LIMIT 3",
+                "WHERE fecha = ? ORDER BY rowid DESC LIMIT 6",
                 (fecha_hoy(),)
             ).fetchall()
             conn.close()
             for row in rows:
-                dr = row["duracion_real"] if isinstance(row, dict) or hasattr(row, "keys") else row[1]
+                if hasattr(row, "keys"):
+                    name = row["nombre"]
+                    dr = row["duracion_real"]
+                else:
+                    name = row[0]
+                    dr = row[1]
                 mins = dr // 60
                 secs = dr % 60
-                name = row["nombre"] if isinstance(row, dict) or hasattr(row, "keys") else row[0]
                 sessions.append(f"{name} · {mins:02d}:{secs:02d}")
-            if hasattr(self, "_session_history"):
-                self._session_history.set_sessions(sessions)
+            self._sessions_card.set_sessions(sessions)
         except Exception:
             _log.exception("Operation failed")
 
@@ -625,10 +571,13 @@ class ModuloTimer(NMModule):
         if self._running:
             elapsed = self._total_sec - self._remaining_sec
             self._stop()
-            msg = "Sesión guardada" if elapsed >= 30 else "Timer detenido — menos de 30 s, no se guardó"
+            msg = ("Sesión guardada" if elapsed >= 30
+                   else "Timer detenido — menos de 30 s, no se guardó")
             NMToast.display(self.window(), msg, variant="warning")
 
     def get_card_status(self) -> str:
+        if visual_qa_enabled():
+            return "2 sesiones"
         try:
             conn = obtener_conexion()
             row = conn.execute(

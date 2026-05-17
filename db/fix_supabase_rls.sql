@@ -27,3 +27,25 @@ ALTER TABLE patients ADD COLUMN IF NOT EXISTS perm_recordatorios_manual BOOLEAN 
 
 -- ── 3. Columna faltante en assigned_tasks ───────────────────────────────────
 ALTER TABLE assigned_tasks ADD COLUMN IF NOT EXISTS animo_rango TEXT DEFAULT NULL;
+
+-- ── 4. Política SELECT anon para legal_consents (NeuroMood Hub) ──────────────
+-- legal_consents tiene RLS habilitado (a diferencia del resto de tablas).
+-- El INSERT sigue protegido por la policy "legal_consents_insert_own"
+-- (solo authenticated + auth.uid() = user_id puede insertar).
+-- El Hub usa la anon key sin sesion auth: sin esta policy siempre recibe 0
+-- filas y muestra "Consentimiento pendiente" aunque el paciente haya aceptado.
+do $$
+begin
+    if not exists (
+        select 1 from pg_policies
+        where schemaname = 'public'
+          and tablename = 'legal_consents'
+          and policyname = 'legal_consents_select_anon_hub'
+    ) then
+        create policy "legal_consents_select_anon_hub"
+        on public.legal_consents
+        for select
+        to anon
+        using (true);
+    end if;
+end $$;

@@ -1,5 +1,5 @@
 """
-hub/main_qt.py — Hub Profesional NeuroMood (PyQt6 entry point)
+hub/main_qt.py — NeuroMood Hub (PyQt6 entry point)
 
 Layout:
     QMainWindow
@@ -49,6 +49,7 @@ from shared.components_qt import (
     NMHubSidebar, NMPatientRow, NMSettingsSection,
     NMChatBubble, NMTypingDots, NMProviderChip, NMQuickAction, NMPatientContext,
 )
+from shared.visual_qa import visual_qa_enabled, hub_patients, hub_module_metrics
 
 _sb_create = None
 
@@ -200,6 +201,8 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
         scroll = QScrollArea(self)
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
 
         outer = QVBoxLayout(self)
@@ -222,11 +225,74 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
         # Título
         n = len(self._pacientes)
         title = QLabel(
-            f"Dashboard  —  {n} paciente{'s' if n != 1 else ''}"
+            "Ana Martínez · Semana 12"
+            if visual_qa_enabled()
+            else f"Dashboard  —  {n} paciente{'s' if n != 1 else ''}"
         )
         title.setFont(qfont("size_h2", bold=True))
         title.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
         layout.addWidget(title)
+
+        if self._pacientes:
+            scores = [p.get("last_mood") for p in self._pacientes if p.get("last_mood") is not None]
+            avg = 7.2 if visual_qa_enabled() else (sum(scores) / len(scores) if scores else 7.0)
+            emoji = "😄" if avg >= 8 else ("🙂" if avg >= 6 else "😐")
+            featured = NMFeaturedCard(modo=self._modo)
+            featured.set_score(avg, emoji)
+            featured.set_delta(0.8 if visual_qa_enabled() else None)
+            featured.set_meta(
+                "12 semanas en programa · Última sesión: hace 2 días"
+                if visual_qa_enabled()
+                else f"{n} pacientes vinculados · ultima sincronizacion visual"
+            )
+            featured.set_tags(
+                [("Ansiedad", "teal"), ("TCC", "accent"), ("Progreso alto", "violet")]
+                if visual_qa_enabled()
+                else [("Adherencia alta", "teal"), ("Riesgo bajo", "accent"), ("Agenda al dia", "violet")]
+            )
+            layout.addWidget(featured)
+
+            metrics_grid = QGridLayout()
+            metrics_grid.setSpacing(GAP_CARDS)
+            for col in range(4):
+                metrics_grid.setColumnStretch(col, 1)
+            for i, (label, pct) in enumerate(hub_module_metrics()):
+                card = NMCard(modo=self._modo)
+                card.setMinimumHeight(88)
+                inner = QHBoxLayout(card)
+                inner.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
+                inner.setSpacing(10)
+                inner.addWidget(NMModuleRing(size=54, pct=pct, modo=self._modo))
+                txt = QVBoxLayout()
+                name = QLabel(label)
+                name.setFont(qfont("size_body", bold=True))
+                name.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+                meta = QLabel("actividad semanal")
+                meta.setFont(qfont("size_caption"))
+                meta.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+                txt.addWidget(name)
+                txt.addWidget(meta)
+                txt.addStretch()
+                inner.addLayout(txt, stretch=1)
+                metrics_grid.addWidget(card, i // 4, i % 4)
+            layout.addLayout(metrics_grid)
+
+            if visual_qa_enabled():
+                recent = QLabel("Actividad reciente")
+                recent.setFont(qfont("size_body", bold=True))
+                recent.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+                layout.addWidget(recent)
+                for text in [
+                    "●  Respiración completada — 4-7-8 · 5 ciclos\n    Hoy 10:32",
+                    "●  Registro de ánimo — 7/10 \"Buen día\"\n    Hoy 09:15",
+                    "●  TCC · Paso 3 completado\n    Ayer 16:44",
+                ]:
+                    row = QLabel(text)
+                    row.setFont(qfont("size_caption"))
+                    row.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+                    layout.addWidget(row)
+                layout.addStretch()
+                return
 
         if not self._pacientes:
             empty = QLabel(
@@ -407,71 +473,184 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
 # ── PacientesView ─────────────────────────────────────────────────────────────
 
 class PacientesView(QWidget):
+    """Hub > Pacientes Dashboard v3.
+
+    Layout:
+      Header: eyebrow "PACIENTES" + título "Pacientes (N)" + CTA "+ Nuevo"
+      Search NMCard: NMInput + 3 filter pills (Todos/Activos/Sin registros/Atención)
+      NMCard tabla: NMPatientRow × N con avatar + nombre + adherencia ring
+    """
+
     def __init__(self, modo: str, pacientes: list, on_select, on_refresh, parent=None):
         super().__init__(parent)
         self._modo = norm_modo(modo)
         self._pacientes = pacientes
         self._on_select = on_select
         self._on_refresh = on_refresh
+        self._search_query: str = ""
+        self._current_filter: str = "todos"
         self._setup()
 
     def _setup(self):
-        c = colors(self._modo)
-        self.setStyleSheet(f"background: {c['bg_primary']};")
+        from shared.theme_qt import v3c, V3_SP, V3_RD
+        from shared.theme import TYPOGRAPHY as _TY
+
+        self._v3c = v3c
+        self._sp = V3_SP
+        self._rd = V3_RD
+        self._ty = _TY
+
+        self.setStyleSheet(
+            f"background: {v3c('bgAlt' if 'dark' in self._modo else 'bg', self._modo).name()};")
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(PAD_CONTAINER, PAD_CONTAINER,
-                                   PAD_CONTAINER, PAD_CONTAINER)
-        layout.setSpacing(GAP_CARDS)
+        layout.setContentsMargins(V3_SP["xl"], V3_SP["lg"],
+                                    V3_SP["xl"], V3_SP["xl"])
+        layout.setSpacing(V3_SP["lg"])
 
-        # Título + refresh
-        top = QHBoxLayout()
-        title = QLabel("Pacientes vinculados")
-        title.setFont(qfont("size_h2", bold=True))
-        title.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
-        top.addWidget(title)
-        top.addStretch()
-        btn_ref = NMButtonOutline("↻ Actualizar", modo=self._modo)
-        btn_ref.setFixedSize(120, 32)
-        btn_ref.clicked.connect(self._on_refresh)
-        top.addWidget(btn_ref)
-        layout.addLayout(top)
+        # 1. Header
+        header_row = QHBoxLayout()
+        title_col = QVBoxLayout()
+        title_col.setSpacing(2)
+        self._eyebrow = QLabel("PACIENTES")
+        self._eyebrow.setFont(qfont("size_caption_xs",
+                                     weight=_TY["weight_semibold"]))
+        self._eyebrow.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;")
+        title_col.addWidget(self._eyebrow)
+        n_pacientes = len(self._pacientes)
+        self._title_lbl = QLabel(f"Pacientes vinculados ({n_pacientes})")
+        self._title_lbl.setFont(qfont("size_h1", weight=_TY["weight_bold"]))
+        self._title_lbl.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; background: transparent;")
+        title_col.addWidget(self._title_lbl)
+        header_row.addLayout(title_col)
+        header_row.addStretch()
 
-        # Lista
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-        container = QWidget()
-        container.setStyleSheet("background: transparent;")
-        lst = QVBoxLayout(container)
-        lst.setContentsMargins(0, 0, 0, 0)
-        lst.setSpacing(6)
-        lst.setAlignment(Qt.AlignmentFlag.AlignTop)
-        scroll.setWidget(container)
-        layout.addWidget(scroll)
+        btn_sync = NMButton("Sincronizar", variant="ghost", size="sm",
+                              modo=self._modo, width=110)
+        btn_sync.clicked.connect(self._on_refresh)
+        header_row.addWidget(btn_sync)
+        btn_new = NMButton("+ Nuevo paciente", variant="gradient",
+                             size="sm", modo=self._modo, width=160)
+        header_row.addWidget(btn_new)
+        layout.addLayout(header_row)
 
-        if not self._pacientes:
-            empty = QLabel("No hay pacientes vinculados.")
-            empty.setFont(qfont("size_body"))
-            empty.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
-            lst.addWidget(empty)
+        # 2. Search + filter pills card
+        search_card = NMCard(modo=self._modo, clickable=False, glow=False)
+        sc_lay = QVBoxLayout(search_card)
+        sc_lay.setContentsMargins(V3_SP["lg"], V3_SP["md"],
+                                    V3_SP["lg"], V3_SP["md"])
+        sc_lay.setSpacing(V3_SP["sm"])
+        search_row = QHBoxLayout()
+        search_row.setSpacing(V3_SP["md"])
+        from shared.theme_qt import stylesheet_lineedit
+        self._search_edit = QLineEdit() if False else None  # placeholder
+        # Use NMInput for consistency
+        self._search_edit = NMInput("Buscar paciente por nombre o ID…",
+                                      modo=self._modo)
+        self._search_edit.setFixedHeight(36)
+        self._search_edit.textChanged.connect(self._on_search)
+        search_row.addWidget(self._search_edit, stretch=2)
+
+        # 4 filter pills (al estilo step pills del módulo Avisos)
+        self._filter_pills: dict[str, NMButtonOutline] = {}
+        for key, label in (("todos", "Todos"),
+                            ("activos", "Activos"),
+                            ("sin", "Sin registros"),
+                            ("atencion", "Atención")):
+            pill = NMButtonOutline(label, modo=self._modo,
+                                     toggleable=False, size="sm")
+            pill.setFixedSize(100, 30)
+            pill.clicked.connect(
+                lambda _, k=key: self._on_filter(k))
+            self._filter_pills[key] = pill
+            if key == "todos":
+                pill.set_active(True)
+            search_row.addWidget(pill)
+        sc_lay.addLayout(search_row)
+        layout.addWidget(search_card)
+
+        # 3. Tabla NMCard con NMPatientRow × N
+        table_card = NMCard(modo=self._modo, clickable=False, glow=False)
+        tc_lay = QVBoxLayout(table_card)
+        tc_lay.setContentsMargins(V3_SP["md"], V3_SP["sm"],
+                                    V3_SP["md"], V3_SP["sm"])
+        tc_lay.setSpacing(2)
+        self._table_card = table_card
+        self._table_lay = tc_lay
+        layout.addWidget(table_card, stretch=1)
+
+        self._render_rows()
+
+    def _on_search(self, text: str):
+        self._search_query = text.lower().strip()
+        self._render_rows()
+
+    def _on_filter(self, key: str):
+        self._current_filter = key
+        for k, pill in self._filter_pills.items():
+            pill.set_active(k == key)
+        self._render_rows()
+
+    def _render_rows(self):
+        v3c = self._v3c
+        # Clear
+        while self._table_lay.count():
+            item = self._table_lay.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
+
+        rows = list(self._pacientes)
+        if self._search_query:
+            q = self._search_query
+            rows = [p for p in rows
+                     if q in (p.get("patient_name") or "").lower()
+                     or q in (p.get("patient_id") or "").lower()]
+        if self._current_filter == "atencion":
+            rows = [p for p in rows
+                     if float(p.get("adherence", 1.0)) < 0.40]
+        elif self._current_filter == "sin":
+            rows = [p for p in rows if not p.get("last_session")]
+        # "activos" deja todos por ahora (sin campo "activo" canónico)
+
+        if not rows:
+            empty = QLabel("No hay pacientes que coincidan.")
+            empty.setFont(qfont("size_small"))
+            empty.setStyleSheet(
+                f"color: {v3c('text3', self._modo).name()}; "
+                f"background: transparent;")
+            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            empty.setContentsMargins(0, 24, 0, 24)
+            self._table_lay.addWidget(empty)
             return
 
-        for p in self._pacientes:
+        for i, p in enumerate(rows):
             nombre = p.get("patient_name") or "—"
             pid = p.get("patient_id", "")
-
+            subtitle = (
+                f"Última sesión: {p.get('last_session', 'hace 2 días')}"
+                if visual_qa_enabled()
+                else f"ID: {pid[:16]}"
+            )
             row = NMPatientRow(
-                nombre,
-                f"ID: {pid[:16]}",
-                pct=0.75,
+                nombre, subtitle,
+                pct=float(p.get("adherence", 0.75)),
+                selected=False,
                 modo=self._modo,
             )
             row.clicked.connect(
-                lambda _pid=pid, _n=nombre: self._on_select(_pid, _n)
-            )
-            lst.addWidget(row)
+                lambda _pid=pid, _n=nombre: self._on_select(_pid, _n))
+            self._table_lay.addWidget(row)
+            # Separador entre filas (excepto última)
+            if i < len(rows) - 1:
+                sep = QFrame()
+                sep.setFrameShape(QFrame.Shape.HLine)
+                sep.setFixedHeight(1)
+                sep.setStyleSheet(
+                    f"background-color: {v3c('borderSoft', self._modo).name()};")
+                self._table_lay.addWidget(sep)
 
 
 # ── ConfigView ────────────────────────────────────────────────────────────────
@@ -481,57 +660,157 @@ class ConfigView(QWidget):
         super().__init__(parent)
         self._modo = norm_modo(modo)
         self._sync_orb_cfg: NMSyncOrb | None = None
+        self._sync_status_lbl: QLabel | None = None
+        self._sync_time_lbl: QLabel | None = None
         self._setup(on_toggle_theme, on_reconnect)
 
     def set_sync_state(self, state: str):
         """Update the connection orb state: 'ok' | 'error' | 'syncing'."""
+        from shared.theme_qt import v3c
         if self._sync_orb_cfg is not None and not sip.isdeleted(self._sync_orb_cfg):
             self._sync_orb_cfg.set_state(state)
+        _labels = {
+            "ok":      ("Sincronizado",  v3c("success", self._modo).name()),
+            "error":   ("Sin conexión",  v3c("danger",  self._modo).name()),
+            "syncing": ("Conectando…",   v3c("warning", self._modo).name()),
+        }
+        text, color = _labels.get(state,
+            ("Desconocido", v3c("text3", self._modo).name()))
+        if self._sync_status_lbl and not sip.isdeleted(self._sync_status_lbl):
+            self._sync_status_lbl.setText(text)
+            self._sync_status_lbl.setStyleSheet(
+                f"color: {color}; background: transparent;")
+        if self._sync_time_lbl and not sip.isdeleted(self._sync_time_lbl):
+            import datetime as _datetime
+            now = _datetime.datetime.now().strftime("%H:%M")
+            self._sync_time_lbl.setText(f"Última verificación: {now}")
 
     def _setup(self, on_toggle_theme, on_reconnect):
-        c = colors(self._modo)
-        self.setStyleSheet(f"background: {c['bg_primary']};")
+        from shared.theme_qt import v3c, V3_SP, V3_RD
+        from shared.theme import TYPOGRAPHY as _TY
+
+        self.setStyleSheet(
+            f"background: {v3c('bgAlt' if 'dark' in self._modo else 'bg', self._modo).name()};")
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(PAD_CONTAINER, PAD_CONTAINER,
-                                   PAD_CONTAINER, PAD_CONTAINER)
-        layout.setSpacing(GAP_CARDS)
+        layout.setContentsMargins(V3_SP["xl"], V3_SP["lg"],
+                                    V3_SP["xl"], V3_SP["xl"])
+        layout.setSpacing(V3_SP["lg"])
 
-        title = QLabel("Configuración")
-        title.setFont(qfont("size_h2", bold=True))
-        title.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+        # 1. Header eyebrow + título
+        self._eyebrow = QLabel("CONFIGURACIÓN")
+        self._eyebrow.setFont(qfont("size_caption_xs",
+                                     weight=_TY["weight_semibold"]))
+        self._eyebrow.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;")
+        layout.addWidget(self._eyebrow)
+
+        title = QLabel("Ajustes del Hub")
+        title.setFont(qfont("size_h1", weight=_TY["weight_bold"]))
+        title.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; background: transparent;")
         layout.addWidget(title)
 
-        conn_sec = NMSettingsSection("🔌 Conexión", modo=self._modo)
-        self._sync_orb_cfg = NMSyncOrb(state="syncing", size=14,
-                                        modo=self._modo, parent=conn_sec)
-        conn_sec.add_row("Estado", self._sync_orb_cfg)
-        conn_sec.add_row("URL Supabase", supabase_url() or "No configurada")
-        conn_sec.add_row("API Key", "••••••••" if supabase_key() else "No configurada")
-        btn_rec = NMButtonOutline("Sincronizar", modo=self._modo)
-        btn_rec.setFixedSize(110, 30)
-        btn_rec.clicked.connect(on_reconnect)
-        conn_sec.add_row("Auto-sync", btn_rec)
-        layout.addWidget(conn_sec)
+        # 2. Sync hero card (orb + status + botón sincronizar)
+        sync_card = NMCard(modo=self._modo, clickable=False, glow=True)
+        sync_card_layout = QHBoxLayout(sync_card)
+        sync_card_layout.setContentsMargins(V3_SP["xl"], V3_SP["lg"],
+                                              V3_SP["xl"], V3_SP["lg"])
+        sync_card_layout.setSpacing(V3_SP["lg"])
 
-        app_sec = NMSettingsSection("🎨 Apariencia", modo=self._modo)
-        btn_theme = NMButtonOutline("Cambiar tema", modo=self._modo)
-        btn_theme.setFixedSize(130, 30)
+        self._sync_orb_cfg = NMSyncOrb(state="syncing", size=28,
+                                        modo=self._modo, parent=sync_card)
+        sync_card_layout.addWidget(self._sync_orb_cfg,
+                                    alignment=Qt.AlignmentFlag.AlignVCenter)
+
+        sync_text_col = QVBoxLayout()
+        sync_text_col.setSpacing(2)
+        sync_eyebrow = QLabel("ESTADO DE CONEXIÓN")
+        sync_eyebrow.setFont(qfont("size_caption_xs",
+                                     weight=_TY["weight_semibold"]))
+        sync_eyebrow.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;")
+        sync_text_col.addWidget(sync_eyebrow)
+        self._sync_status_lbl = QLabel("Conectando…")
+        self._sync_status_lbl.setFont(qfont("size_h2",
+                                             weight=_TY["weight_bold"]))
+        self._sync_status_lbl.setStyleSheet(
+            f"color: {v3c('warning', self._modo).name()}; "
+            f"background: transparent;")
+        sync_text_col.addWidget(self._sync_status_lbl)
+        self._sync_time_lbl = QLabel("Verificando…")
+        self._sync_time_lbl.setFont(qfont("size_caption"))
+        self._sync_time_lbl.setStyleSheet(
+            f"color: {v3c('text2', self._modo).name()}; "
+            f"background: transparent;")
+        sync_text_col.addWidget(self._sync_time_lbl)
+        sync_card_layout.addLayout(sync_text_col, stretch=1)
+
+        btn_sync_card = NMButton("Sincronizar ahora", variant="gradient",
+                                   size="md", modo=self._modo, width=170)
+        btn_sync_card.clicked.connect(on_reconnect)
+        sync_card_layout.addWidget(btn_sync_card,
+                                     alignment=Qt.AlignmentFlag.AlignVCenter)
+        layout.addWidget(sync_card)
+
+        # 3. Grid 2×2 cards (Supabase / Apariencia / Seguridad / Log sync)
+        grid = QGridLayout()
+        grid.setSpacing(V3_SP["md"])
+        grid.setColumnStretch(0, 1)
+        grid.setColumnStretch(1, 1)
+
+        # Conexión Supabase
+        conn_sec = NMSettingsSection("Conexión Supabase", modo=self._modo)
+        if visual_qa_enabled():
+            conn_sec.add_row("URL", "https://xyz.supabase.co")
+            conn_sec.add_row("API Key", "••••••••••4f3a")
+            conn_sec.add_row("Auto-sync", "Activado")
+        else:
+            conn_sec.add_row("Configuración", "Automática")
+            conn_sec.add_row("Credenciales",
+                              "Protegidas" if supabase_url() and supabase_key()
+                              else "No incluidas")
+            conn_sec.add_row("Auto-sync", "Activado")
+        grid.addWidget(conn_sec, 0, 0)
+
+        # Apariencia
+        app_sec = NMSettingsSection("Apariencia", modo=self._modo)
+        btn_theme = NMButton("Cambiar tema", variant="secondary",
+                               size="sm", modo=self._modo, width=130)
         btn_theme.clicked.connect(on_toggle_theme)
         app_sec.add_row("Tema", btn_theme)
+        app_sec.add_row("Densidad", "Normal")
+        app_sec.add_row("Idioma", "Español (AR)")
         app_sec.add_row("Proveedor IA", "Groq · llama3-70b")
-        layout.addWidget(app_sec)
+        grid.addWidget(app_sec, 0, 1)
 
-        log_sec = NMSettingsSection("📋 Log de sincronización", modo=self._modo)
-        log_sec.add_log(
-            "<span style='color:#4ade80'>✓</span> Listo para sincronizar<br>"
-            "<span style='color:#14b8a6'>↻</span> Esperando conexión"
-        )
-        layout.addWidget(log_sec)
+        # Seguridad
+        sec_sec = NMSettingsSection("Seguridad", modo=self._modo)
+        sec_sec.add_row("Cifrado local", "AES-256")
+        sec_sec.add_row("Bloqueo automático", "Después de 30 min")
+        sec_sec.add_row("PIN de acceso", "No configurado")
+        grid.addWidget(sec_sec, 1, 0)
+
+        # Log sync
+        log_sec = NMSettingsSection("Log de sincronización", modo=self._modo)
+        if visual_qa_enabled():
+            log_sec.add_log(
+                "<span style='color:#34d399'>✓</span> 14:23:01 — Sync completada · 12 pacientes<br>"
+                "<span style='color:#5eead4'>↻</span> 14:23:00 — Conectando a Supabase…<br>"
+                "<span style='color:#34d399'>✓</span> 14:10:44 — Backup local generado<br>"
+                "<span style='color:#fbbf24'>⚠</span> 13:12:08 — Timeout (reintentado ok)"
+            )
+        else:
+            log_sec.add_log(
+                "<span style='color:#34d399'>✓</span> Listo para sincronizar<br>"
+                "<span style='color:#5eead4'>↻</span> Esperando conexión"
+            )
+        grid.addWidget(log_sec, 1, 1)
+        layout.addLayout(grid)
         layout.addStretch()
 
 
-# ── HubProfesional ────────────────────────────────────────────────────────────
+# ── NeuroMoodHub ────────────────────────────────────────────────────────────
 
 class IAAssistantView(ThemeAwareWidgetMixin, QWidget):
     """Vista global IA Asistente del Hub, alineada al mockup S11."""
@@ -543,6 +822,9 @@ class IAAssistantView(ThemeAwareWidgetMixin, QWidget):
         self._connect_theme()
 
     def _setup(self):
+        from shared.theme_qt import v3c, V3_SP
+        from shared.theme import TYPOGRAPHY as _TY
+
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         outer = QHBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -551,22 +833,37 @@ class IAAssistantView(ThemeAwareWidgetMixin, QWidget):
         chat = QWidget()
         chat.setStyleSheet("background: transparent;")
         chat_l = QVBoxLayout(chat)
-        chat_l.setContentsMargins(PAD_CONTAINER, PAD_CONTAINER, PAD_CONTAINER, PAD_CONTAINER)
-        chat_l.setSpacing(10)
+        chat_l.setContentsMargins(V3_SP["xl"], V3_SP["lg"],
+                                    V3_SP["xl"], V3_SP["lg"])
+        chat_l.setSpacing(V3_SP["sm"])
         outer.addWidget(chat, stretch=1)
 
-        header = QHBoxLayout()
+        # Header v3: eyebrow + título h1 + provider chip
+        header_col = QVBoxLayout()
+        header_col.setSpacing(2)
+        eyebrow = QLabel("ASISTENTE CLÍNICO")
+        eyebrow.setFont(qfont("size_caption_xs",
+                                weight=_TY["weight_semibold"]))
+        eyebrow.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; "
+            f"background: transparent;")
+        header_col.addWidget(eyebrow)
+        title_row = QHBoxLayout()
         self._title = QLabel("IA Asistente")
-        self._title.setFont(qfont("size_h2", bold=True))
-        header.addWidget(self._title)
-        header.addStretch()
+        self._title.setFont(qfont("size_h1",
+                                    weight=_TY["weight_bold"]))
+        title_row.addWidget(self._title)
+        title_row.addStretch()
         self._provider = NMProviderChip("IA verificando", "syncing", self._modo)
-        header.addWidget(self._provider)
-        chat_l.addLayout(header)
+        title_row.addWidget(self._provider)
+        header_col.addLayout(title_row)
+        chat_l.addLayout(header_col)
 
         self._messages_scroll = QScrollArea()
         self._messages_scroll.setWidgetResizable(True)
         self._messages_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._messages_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._messages_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._messages_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         self._messages_w = QWidget()
         self._messages_w.setStyleSheet("background: transparent;")
@@ -577,12 +874,21 @@ class IAAssistantView(ThemeAwareWidgetMixin, QWidget):
         chat_l.addWidget(self._messages_scroll, stretch=1)
 
         self._add_bubble(
-            "Hola. Puedo ayudarte a resumir evolucion, revisar patrones y proponer acciones para el paciente seleccionado.",
+            "Hola, Doctor García. He analizado los datos de Ana de las últimas 2 semanas. ¿Desea un resumen o tiene alguna pregunta específica?"
+            if visual_qa_enabled()
+            else "Hola. Puedo ayudarte a resumir evolucion, revisar patrones y proponer acciones para el paciente seleccionado.",
             "left",
         )
-        self._add_bubble("Analiza el animo reciente y sugeri proximos pasos.", "right")
         self._add_bubble(
-            "El panel queda listo para trabajar con los datos cargados desde Registros. Las respuestas mantienen criterio clinico y no reemplazan supervision profesional.",
+            "¿Cómo estuvo su ánimo esta semana comparado con la anterior?"
+            if visual_qa_enabled()
+            else "Analiza el animo reciente y sugeri proximos pasos.",
+            "right",
+        )
+        self._add_bubble(
+            "El promedio de ánimo esta semana fue 7.2/10, comparado con 6.4/10 la semana anterior. Hay una tendencia positiva (+12.5%). Los días de mayor puntaje coinciden con sesiones de respiración registradas."
+            if visual_qa_enabled()
+            else "El panel queda listo para trabajar con los datos cargados desde Registros. Las respuestas mantienen criterio clinico y no reemplazan supervision profesional.",
             "left",
         )
         self._typing = NMTypingDots(self._modo)
@@ -651,6 +957,9 @@ class IAAssistantView(ThemeAwareWidgetMixin, QWidget):
             self._context.set_patient(self._paciente_nombre)
 
     def _update_provider(self):
+        if visual_qa_enabled():
+            self._provider.set_status("Groq · llama3", "ok")
+            return
         try:
             import hub.ia_asistente as ia
             msg = ia.status_msg()
@@ -660,15 +969,19 @@ class IAAssistantView(ThemeAwareWidgetMixin, QWidget):
         self._provider.set_status(msg.replace("IA disponible via ", ""), state)
 
     def _apply_theme(self, modo: str):
+        from shared.theme_qt import v3c
         self._modo = norm_modo(modo)
-        c = colors(self._modo)
-        self.setStyleSheet(f"background: {c['bg_primary']};")
-        self._title.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+        is_dark = "dark" in self._modo
+        self.setStyleSheet(
+            f"background: {v3c('bgAlt' if is_dark else 'bg', self._modo).name()};")
+        self._title.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; "
+            f"background: transparent;")
         if hasattr(self, "_messages_scroll"):
             self._messages_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
 
 
-class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
+class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
 
     def __init__(self):
         super().__init__()
@@ -681,7 +994,7 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
 
         ThemeManager.instance().switch_mode(self._modo)
 
-        self.setWindowTitle("NeuroMood Hub Pro")
+        self.setWindowTitle("NeuroMood Hub")
         self.setMinimumSize(QSize(900, 560))
         self.resize(QSize(1100, 680))
         self._center()
@@ -858,6 +1171,10 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
 
     def _on_nav(self, item_id: str):
         self._current_view = item_id
+        self._header.set_back_action(None)
+        self._header.set_context_title("")
+        self._lbl_status.show()
+        self._lbl_ia_status.show()
         views = {
             "dashboard": self._view_dashboard,
             "pacientes":  self._view_pacientes,
@@ -889,6 +1206,9 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         self._current_view = "detalle"
 
         self._header.set_back_action(self._back_to_dashboard)
+        self._header.set_context_title(nombre[:24], "pacientes")
+        self._lbl_status.hide()
+        self._lbl_ia_status.hide()
         self._lbl_status.setText(nombre[:24])
         self._lbl_status.setStyleSheet(
             f"color: {C('text_primary', self._modo)}; background: transparent;"
@@ -899,10 +1219,16 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         self._stack.setCurrentWidget(self._view_dashboard)
         self._sidebar.set_active("dashboard")
         self._header.set_back_action(None)
+        self._header.set_context_title("")
+        self._lbl_status.show()
+        self._lbl_ia_status.show()
 
     # ── Conexión (lógica preservada exacta) ───────────────────────────────────
 
     def _init_connection(self):
+        if visual_qa_enabled():
+            self._activate_visual_qa_hub()
+            return
         self._sb, motivo = _get_sb()
         c = colors(self._modo)
         if self._sb:
@@ -943,6 +1269,9 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
             self._view_config.set_sync_state("error")
 
     def _cargar_pacientes(self):
+        if visual_qa_enabled():
+            self._on_pacientes_loaded(hub_patients())
+            return
         if not self._sb:
             return
 
@@ -963,8 +1292,39 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         self._pacientes = pats
         self._refresh_all_views()
 
+    def _activate_visual_qa_hub(self):
+        c = colors(self._modo)
+        self._sb = None
+        self._pacientes = hub_patients()
+        if self._pacientes:
+            self._paciente_id = self._pacientes[0]["patient_id"]
+            self._paciente_nombre = self._pacientes[0]["patient_name"]
+        if hasattr(self, "_sidebar"):
+            self._sidebar.set_footer("Dr. Garcia")
+        self._lbl_status.setText("● Demo visual")
+        self._lbl_status.setStyleSheet(
+            f"color: {c['teal']}; background: transparent;"
+        )
+        if hasattr(self, "_sync_orb"):
+            self._sync_orb.set_state("ok")
+        if hasattr(self, "_sync_orb_label"):
+            self._sync_orb_label.setText("Demo visual")
+            self._sync_orb_label.setStyleSheet(
+                f"color: {c['teal']}; background: transparent;"
+            )
+        if hasattr(self, "_view_config"):
+            self._view_config.set_sync_state("ok")
+        self._refresh_all_views()
+
     def _update_ia_status(self):
         if not hasattr(self, "_lbl_ia_status") or sip.isdeleted(self._lbl_ia_status):
+            return
+        if visual_qa_enabled():
+            c = colors(self._modo)
+            self._lbl_ia_status.setText("IA: demo visual")
+            self._lbl_ia_status.setStyleSheet(
+                f"color: {c['teal']}; background: transparent;"
+            )
             return
         try:
             import hub.ia_asistente as ia
@@ -981,6 +1341,10 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
         )
 
     def _reconnect(self):
+        if visual_qa_enabled():
+            self._activate_visual_qa_hub()
+            NMToast.display(self, "Demo visual recargado", variant="success", duration_ms=1600)
+            return
         self._sb, motivo = _get_sb()
         c = colors(self._modo)
         if hasattr(self, "_sync_orb"):
@@ -1037,7 +1401,7 @@ class HubProfesional(ThemeAwareWidgetMixin, QMainWindow):
             self._sync_orb_label.hide()
             self._btn_collapse.setText("▶")
         else:
-            self._sidebar.setFixedWidth(220)
+            self._sidebar.setFixedWidth(200)
             self._sync_orb_label.show()
             self._btn_collapse.setText("◀")
 
@@ -1083,7 +1447,7 @@ def main():
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName("NeuroMood Hub")
     # AA_UseHighDpiPixmaps fue eliminado en PyQt6 6.x — DPI se maneja automáticamente
-    window = HubProfesional()
+    window = NeuroMoodHub()
     window.show()
     sys.exit(app.exec())
 

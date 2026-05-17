@@ -1,4 +1,4 @@
-"""uninstaller_pro.py — Desinstalador Hub Profesional NeuroMood (PyQt6)"""
+"""uninstaller_pro.py — Desinstalador Hub (PyQt6)"""
 import sys
 import os
 import shutil
@@ -30,17 +30,17 @@ except ImportError:
         FONT_FAMILY, recurso, aplicar_captionbar_installer, stylesheet_installer,
     )
 
-REG_KEY = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMoodPro"
+REG_KEY = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMoodHub"
 
 _SS = stylesheet_installer()   # design system premium unificado
 
 try:
-    from shared.components_qt import NMInstallProgress
+    from shared.components_qt import NMInstallProgress, NMDataPreserveCard
 except ImportError:
     _root_cmp = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if _root_cmp not in sys.path:
         sys.path.insert(0, _root_cmp)
-    from shared.components_qt import NMInstallProgress
+    from shared.components_qt import NMInstallProgress, NMDataPreserveCard
 
 # ── Lógica de negocio (preservada exacta) ─────────────────────────────────────
 
@@ -62,7 +62,8 @@ def detectar_install_dir() -> str:
 
 
 def matar_procesos_pro(install_dir: str):
-    for proc_name in ["NeuroMood Hub Pro.exe"]:
+    current_pid = os.getpid()
+    for proc_name in ["NeuroMood Hub.exe"]:
         try:
             subprocess.run(["taskkill", "/F", "/IM", proc_name],
                            capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW, timeout=10)
@@ -76,7 +77,7 @@ def matar_procesos_pro(install_dir: str):
         )
         for line in result.stdout.splitlines():
             pid = line.strip()
-            if pid.isdigit():
+            if pid.isdigit() and int(pid) != current_pid:
                 subprocess.run(["taskkill", "/F", "/PID", pid],
                                capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW, timeout=5)
     except Exception:
@@ -95,7 +96,7 @@ def eliminar_accesos_pro():
     escritorio = Path(os.path.expanduser("~")) / "Desktop"
     start_menu = (Path(os.environ.get("APPDATA", "")) /
                   "Microsoft" / "Windows" / "Start Menu" / "Programs" / "NeuroMood")
-    for nombre in ["NeuroMood Hub Pro", "NeuroMood Hub Profesional"]:
+    for nombre in ["NeuroMood Hub"]:
         try:
             (escritorio / f"{nombre}.lnk").unlink(missing_ok=True)
         except Exception:
@@ -176,13 +177,26 @@ def relanzar_desde_temp() -> bool:
     if "--from-temp" in sys.argv:
         return False
     temp_dir = os.environ.get("TEMP", os.path.expanduser("~"))
-    self_exe = sys.executable
-    temp_exe = str(Path(temp_dir) / "_nm_pro_desinstalar.exe")
-    if os.path.normcase(self_exe) == os.path.normcase(temp_exe):
-        return False
+    self_exe = Path(sys.executable)
+    self_dir = self_exe.parent
     install_dir = detectar_install_dir()
+    if (self_dir / "_internal").exists():
+        temp_root = Path(temp_dir) / f"_nm_pro_desinstalar_{os.getpid()}"
+        temp_bundle = temp_root / self_dir.name
+        temp_exe = temp_bundle / self_exe.name
+        try:
+            if temp_root.exists():
+                shutil.rmtree(temp_root, ignore_errors=True)
+            shutil.copytree(self_dir, temp_bundle)
+            subprocess.Popen([str(temp_exe), "--install-dir", install_dir, "--from-temp"])
+            return True
+        except Exception:
+            return False
+    temp_exe = str(Path(temp_dir) / "_nm_pro_desinstalar.exe")
+    if os.path.normcase(str(self_exe)) == os.path.normcase(temp_exe):
+        return False
     try:
-        shutil.copy2(self_exe, temp_exe)
+        shutil.copy2(str(self_exe), temp_exe)
         subprocess.Popen([temp_exe, "--install-dir", install_dir, "--from-temp"])
         return True
     except Exception:
@@ -202,7 +216,7 @@ class _ProUninstWorker(QThread):
 
     def run(self):
         try:
-            self.progress_signal.emit(0.10, "Cerrando Hub Profesional...")
+            self.progress_signal.emit(0.10, "Cerrando NeuroMood Hub...")
             matar_procesos_pro(self._install_dir)
             time.sleep(1.5)
             self.progress_signal.emit(0.25, "Eliminando accesos directos...")
@@ -215,7 +229,7 @@ class _ProUninstWorker(QThread):
             self.progress_signal.emit(0.80, "Eliminando archivos...")
             vaciar_carpeta(self._install_dir)
             self.progress_signal.emit(0.85, "Eliminando datos de configuracion...")
-            appdata_pro = str(Path(os.environ.get("APPDATA", "")) / "NeuroMoodPro")
+            appdata_pro = str(Path(os.environ.get("APPDATA", "")) / "NeuroMoodHub")
             vaciar_carpeta(appdata_pro)
             self.progress_signal.emit(0.90, "Finalizando...")
             lanzar_bat_limpieza(self._install_dir)
@@ -228,8 +242,11 @@ class _ProUninstWorker(QThread):
 # ── DesinstaladorPro ──────────────────────────────────────────────────────────
 
 class DesinstaladorPro(InstallerShell):
-    APP_NAME = "NeuroMood Hub Pro"
-    WINDOW_SIZE = (480, 340)
+    APP_NAME = "Desinstalador Hub"
+    WINDOW_SIZE = (620, 420)
+    WINDOW_ROLE = ""
+    STEPS = ["Confirmar", "Eliminando", "Finalizado"]
+    _STEPPER_ACCENT = "error"   # tono rojo de alerta para acción destructiva
 
     def __init__(self):
         super().__init__()
@@ -239,13 +256,13 @@ class DesinstaladorPro(InstallerShell):
         self._show_confirm()
 
     def _build_confirm(self, page, layout):
-        title = QLabel("Desinstalar NeuroMood Hub Pro")
+        title = QLabel("Desinstalador Hub")
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
         layout.addWidget(title)
         layout.addSpacing(8)
 
         desc = QLabel(
-            f"Se eliminaran los archivos de instalacion del Hub Profesional\n"
+            f"Se eliminaran los archivos de instalacion del NeuroMood Hub\n"
             f"de tu computadora.\n\nCarpeta: {self._install_dir}"
         )
         desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px;")
@@ -270,14 +287,14 @@ class DesinstaladorPro(InstallerShell):
         self._worker.start()
 
     def _build_progress(self, page, layout):
-        title = QLabel("Desinstalando Hub Profesional...")
+        title = QLabel("Desinstalando NeuroMood Hub...")
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
         layout.addWidget(title)
         layout.addSpacing(12)
         self._install_progress = NMInstallProgress(accent_key="violet")
         self._install_progress.set_progress(0, "Preparando...")
         self._install_progress.set_lines([
-            "○ Preparando desinstalación Hub Pro",
+            "○ Preparando desinstalación NeuroMood Hub",
             "○ Cerrando procesos",
             "○ Eliminando archivos",
         ])
@@ -295,11 +312,41 @@ class DesinstaladorPro(InstallerShell):
             self._status_lbl.setText(t)
 
     def _on_done(self):
-        self._status_lbl.setStyleSheet(f"color: {SUCCESS}; font-size: 16px; font-weight: bold;")
-        self._status_lbl.setText("Desinstalacion completada. Cerrando...")
+        self._install_progress.set_progress(100, "Desinstalacion completada")
+        self._install_progress.append_line("✓ Desinstalacion completada")
+        self._add_page(lambda page, lay: self._build_done(page, lay))
+        self._ir_a(self._pagina + 1)
+        self.btn_sig.setEnabled(True)
+        self.btn_sig.setText("Cerrar")
+        try:
+            self.btn_sig.clicked.disconnect()
+        except TypeError:
+            pass
+        self.btn_sig.clicked.connect(self.close)
         QApplication.instance().processEvents()
-        QTimer.singleShot(1500, self.close)
-        QTimer.singleShot(2000, QApplication.instance().quit)
+        delay = 5000 if os.environ.get("NM_VISUAL_QA") == "1" else 1500
+        QTimer.singleShot(delay, self.close)
+        QTimer.singleShot(delay + 500, QApplication.instance().quit)
+
+    def _build_done(self, page, layout):
+        title = QLabel("Desinstalacion completada")
+        title.setStyleSheet(f"color: {SUCCESS}; font-size: 18px; font-weight: bold;")
+        layout.addWidget(title)
+        layout.addSpacing(8)
+        desc = QLabel(
+            "NeuroMood Hub fue eliminado de este equipo.\n"
+            "La configuracion local se preservo segun la opcion seleccionada."
+        )
+        desc.setWordWrap(True)
+        desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px;")
+        layout.addWidget(desc)
+        layout.addSpacing(10)
+        layout.addWidget(NMDataPreserveCard(
+            "Datos preservados",
+            "Credenciales locales, registros y configuracion",
+            checked=True,
+        ))
+        layout.addStretch()
 
     def _on_error(self, msg: str):
         self._status_lbl.setText(f"Error: {msg}")

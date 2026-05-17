@@ -39,10 +39,22 @@ def registrar_paciente_en_nube(patient_id: str, nombre: str, pwd: str = "") -> b
             "patient_id": patient_id,
             "patient_name": nombre,
             "pwd": pwd,
+            "perm_checklist_activacion": True,
+            "perm_checklist_manual": True,
+            "perm_temporizador_manual": True,
+            "perm_recordatorios_manual": True,
         }).execute()
         return True
     except Exception:
-        return False
+        try:
+            sb.table("patients").upsert({
+                "patient_id": patient_id,
+                "patient_name": nombre,
+                "pwd": pwd,
+            }).execute()
+            return True
+        except Exception:
+            return False
 
 
 # ── Exportación (paciente → nube) ─────────────────────────────────────────────
@@ -257,6 +269,10 @@ def _upsert_paciente(sb, pid: str, nombre: str, pwd: str, install_code: str):
         "patient_name": nombre,
         "pwd":          pwd,
         "install_code": install_code,
+        "perm_checklist_activacion": True,
+        "perm_checklist_manual":     True,
+        "perm_temporizador_manual":  True,
+        "perm_recordatorios_manual": True,
     }
     payload_min = {
         "patient_id":   pid,
@@ -316,9 +332,9 @@ def _importar_permisos(sb, patient_id: str):
             return
         d = res.data
         guardar_config("perm_checklist_activacion", "1" if d.get("perm_checklist_activacion", True) else "0")
-        guardar_config("perm_checklist_manual",     "1" if d.get("perm_checklist_manual", False) else "0")
-        guardar_config("perm_temporizador_manual",  "1" if d.get("perm_temporizador_manual", False) else "0")
-        guardar_config("perm_recordatorios_manual", "1" if d.get("perm_recordatorios_manual", False) else "0")
+        guardar_config("perm_checklist_manual",     "1" if d.get("perm_checklist_manual", True) else "0")
+        guardar_config("perm_temporizador_manual",  "1" if d.get("perm_temporizador_manual", True) else "0")
+        guardar_config("perm_recordatorios_manual", "1" if d.get("perm_recordatorios_manual", True) else "0")
     except Exception:
         pass
 

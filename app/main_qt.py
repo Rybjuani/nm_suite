@@ -46,6 +46,7 @@ from shared.components_qt import (
 from shared.db import inicializar_tablas
 from shared.identidad import obtener_nombre_paciente
 from app import avisos_daemon
+from shared.visual_qa import visual_qa_enabled, qa_patient_name, module_status as qa_module_status
 
 # Módulos disponibles: id → (módulo Python, clase Qt)
 # Se migrarán a Qt de a uno; mientras tanto se carga versión CTk si la Qt no existe
@@ -59,6 +60,25 @@ _MODULE_MAP = {
     "avisos":      ("app.modules.avisos_qt",       "ModuloAvisos"),
 }
 
+_MODULE_UI_META = {
+    "animo":       ("Ánimo", "animo"),
+    "respiracion": ("Respiración", "respiracion"),
+    "registro":    ("Registro TCC", "registro_tcc"),
+    "rutina":      ("Rutina del día", "rutina"),
+    "actividades": ("Actividades", "actividades"),
+    "timer":       ("Timer de enfoque", "timer"),
+    "avisos":      ("Avisos", "avisos"),
+}
+
+_MODULE_UI_BADGES = {
+    "animo": ("🔥 5 días", "warning"),
+    "respiracion": ("3 ciclos", "teal"),
+    "registro": ("Paso 1/4", "accent"),
+    "rutina": ("8/10 · 80%", "teal"),
+    "actividades": ("3 completadas hoy", "text_tertiary"),
+    "avisos": ("2/5", "teal"),
+}
+
 # Metadata de módulos para títulos e íconos.
 class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
 
@@ -69,8 +89,12 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         self._module_cache: dict[str, QWidget] = {}  # caché de módulos instanciados
 
         # ── Init DB y nombre ───────────────────────────────────────────────────
-        inicializar_tablas()
-        self._nombre = obtener_nombre_paciente() or "Paciente"
+        self._visual_qa = visual_qa_enabled()
+        if self._visual_qa:
+            self._nombre = qa_patient_name()
+        else:
+            inicializar_tablas()
+            self._nombre = obtener_nombre_paciente() or "Paciente"
 
         # ── ThemeManager ───────────────────────────────────────────────────────
         self._tm = ThemeManager.instance()
@@ -95,10 +119,13 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         )
 
         # ── Daemon de avisos ───────────────────────────────────────────────────
-        self._avisos_stop = avisos_daemon.iniciar(on_abrir_app=self._restaurar_ventana)
+        self._avisos_stop = None
+        if not self._visual_qa:
+            self._avisos_stop = avisos_daemon.iniciar(on_abrir_app=self._restaurar_ventana)
 
         # ── Sync background ────────────────────────────────────────────────────
-        QTimer.singleShot(600, self._sync_background)
+        if not self._visual_qa:
+            QTimer.singleShot(600, self._sync_background)
         self._connect_theme()
 
     # ── Construcción de UI ────────────────────────────────────────────────────
@@ -191,6 +218,10 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
             if hasattr(mod, "on_enter"):
                 mod.on_enter()
             self._header.set_back_action(self._go_home)
+            title, icon = _MODULE_UI_META.get(module_id, ("", ""))
+            self._header.set_context_title(title, icon)
+            badge, color = _MODULE_UI_BADGES.get(module_id, ("", "teal"))
+            self._header.set_context_badge(badge, color)
             return
 
         mod_path, cls_name = _MODULE_MAP[module_id]
@@ -214,6 +245,10 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         if hasattr(instance, "on_enter"):
             instance.on_enter()
         self._header.set_back_action(self._go_home)
+        title, icon = _MODULE_UI_META.get(module_id, ("", ""))
+        self._header.set_context_title(title, icon)
+        badge, color = _MODULE_UI_BADGES.get(module_id, ("", "teal"))
+        self._header.set_context_badge(badge, color)
 
     def _go_home(self):
         if self._current_module:
@@ -224,6 +259,8 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         self._navigate_to(self._home)
         self._home.refresh_statuses()
         self._header.set_back_action(None)
+        self._header.set_context_title("")
+        self._header.set_context_badge("")
 
     def _back_to_home(self):
         self._go_home()
@@ -284,7 +321,7 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
 
     def _on_close(self, event=None):
         """Minimiza a bandeja si hay avisos activos o timer corriendo, si no cierra."""
-        if os.environ.get("NM_TEST_FORCE_CLOSE") == "1":
+        if os.environ.get("NM_TEST_FORCE_CLOSE") == "1" or getattr(self, "_visual_qa", False):
             avisos_daemon.detener()
             if event:
                 event.accept()
@@ -345,6 +382,8 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
     # ── Status de módulos (lógica preservada exacta del main.py CTk) ──────────
 
     def _get_module_status(self, module_id: str) -> str:
+        if getattr(self, "_visual_qa", False):
+            return qa_module_status(module_id)
         try:
             from shared.db import obtener_conexion
             from shared.utils import fecha_hoy
@@ -361,7 +400,7 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
                 n = conn.execute(
                     "SELECT COUNT(*) FROM respiracion WHERE fecha=?", (hoy,)
                 ).fetchone()[0]
-                result = f"{n} sesión{'es' if n > 1 else ''}" if n else ""
+                result = "Activo" if n else ""
             elif module_id == "registro":
                 n = conn.execute(
                     "SELECT COUNT(*) FROM pensamientos WHERE fecha=?", (hoy,)
@@ -374,12 +413,15 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
                 done = conn.execute(
                     "SELECT COUNT(*) FROM checklist_completadas WHERE fecha=?", (hoy,)
                 ).fetchone()[0]
-                result = f"{done}/{total}" if total else ""
+                if total:
+                    result = f"✓ {done}/{total}" if done == total else f"{done}/{total}"
+                else:
+                    result = ""
             elif module_id == "actividades":
                 n = conn.execute(
                     "SELECT COUNT(*) FROM activacion WHERE fecha=?", (hoy,)
                 ).fetchone()[0]
-                result = f"{n} actividad{'es' if n > 1 else ''}" if n else ""
+                result = f"{n} hoy" if n else ""
             elif module_id == "timer":
                 n = conn.execute(
                     "SELECT COUNT(*) FROM actividades_temporizador WHERE fecha=?", (hoy,)

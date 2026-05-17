@@ -51,3 +51,6 @@ create_installer_icon.py
 generar_icono.py
 ejemplos creativos/
 _dev/
+build.log
+neuromood/
+_qa_output/

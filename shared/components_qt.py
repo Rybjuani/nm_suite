@@ -10,6 +10,7 @@ NO importa CustomTkinter. Compatible con contexto frozen.
 
 import sys
 import os
+from datetime import datetime as _dt
 
 from PyQt6.QtCore import (
     Qt, QPropertyAnimation, QEasingCurve, QTimer, QPoint, QRectF,
@@ -33,6 +34,7 @@ from PyQt6.QtWidgets import (
 
 try:
     from shared.theme_qt import (
+        # Legacy (intacto)
         qcolor, qfont, qfont_mono, linear_gradient, rich_gradient,
         linear_gradient_vertical, radial_glow, noise_overlay, gradient_colors,
         conical_arc_gradient, ring_color, aura_opacity, blob_opacity,
@@ -46,8 +48,17 @@ try:
         RING_GOOD_THRESHOLD, RING_MID_THRESHOLD,
         stylesheet_lineedit, aplicar_captionbar_qt,
         obtener_ruta_recurso, recolorear_logo_light,
+        # v3 (nuevos helpers para los sub-pasos 2-8)
+        v3c, parse_rgba, v3_shadow, v3_linear_gradient,
+        v3_conical_signature, v3_font, mood_qcolor, mood_gradient,
+        V3_SP, V3_RD,
     )
-    from shared.theme import TYPOGRAPHY, LAYOUT, CATEGORY_COLORS, get_gradient
+    from shared.theme import (
+        TYPOGRAPHY, LAYOUT, CATEGORY_COLORS, get_gradient,
+        # v3
+        V3_LIGHT, V3_DARK, V3_SPACE, V3_RADIUS, V3_SHADOWS, V3_GRADIENTS,
+        MOOD_PALETTE, get_v3_palette, get_mood, v3_mode, icon_stroke_width,
+    )
 except ImportError:
     _dir = os.path.dirname(os.path.abspath(__file__))
     if _dir not in sys.path:
@@ -66,8 +77,15 @@ except ImportError:
         RING_GOOD_THRESHOLD, RING_MID_THRESHOLD,
         stylesheet_lineedit, aplicar_captionbar_qt,
         obtener_ruta_recurso, recolorear_logo_light,
+        v3c, parse_rgba, v3_shadow, v3_linear_gradient,
+        v3_conical_signature, v3_font, mood_qcolor, mood_gradient,
+        V3_SP, V3_RD,
     )
-    from theme import TYPOGRAPHY, LAYOUT, CATEGORY_COLORS, get_gradient
+    from theme import (
+        TYPOGRAPHY, LAYOUT, CATEGORY_COLORS, get_gradient,
+        V3_LIGHT, V3_DARK, V3_SPACE, V3_RADIUS, V3_SHADOWS, V3_GRADIENTS,
+        MOOD_PALETTE, get_v3_palette, get_mood, v3_mode, icon_stroke_width,
+    )
 
 
 # ── ThemeManager singleton ────────────────────────────────────────────────────
@@ -77,11 +95,20 @@ class ThemeManager(QObject):
     Singleton que propaga cambios de tema a todos los componentes registrados.
 
     Uso:
-        ThemeManager.instance().switch_mode("light_hybrid")
+        ThemeManager.instance().switch_mode("light_hybrid")          # animado
+        ThemeManager.instance().switch_mode("light_hybrid", False)   # instantáneo
         # En cualquier widget:
         ThemeManager.instance().theme_changed.connect(self._apply_theme)
+
+    Transición v3 (350ms): por cada ventana top-level visible, toma snapshot del
+    estado actual, lo overlay como QLabel, dispara el switch (que re-pinta todo
+    bajo el overlay con el tema nuevo), y anima la opacidad del overlay de 1.0
+    → 0.0 con OutCubic. Crossfade limpio sin tocar el paint de cada widget.
     """
     theme_changed = pyqtSignal(str)   # emite el nuevo modo
+
+    # Duración de la transición (spec README v3)
+    TRANSITION_MS = 350
 
     _inst = None
 
@@ -94,19 +121,100 @@ class ThemeManager(QObject):
     def __init__(self):
         super().__init__()
         self._modo = "dark_hybrid"
+        self._transitioning = False   # evita re-entradas durante una animación
 
     @property
     def modo(self) -> str:
         return self._modo
 
-    def switch_mode(self, new_modo: str):
+    def switch_mode(self, new_modo: str, animate: bool = True):
         new_modo = norm_modo(new_modo)
-        if new_modo == self._modo:
+        if new_modo == self._modo or self._transitioning:
             return
+
+        if not animate or QApplication.instance() is None:
+            # Modo instantáneo (initial load, tests, headless)
+            self._modo = new_modo
+            for widget in QApplication.topLevelWidgets() if QApplication.instance() else []:
+                widget.update()
+            self.theme_changed.emit(new_modo)
+            return
+
+        # 1. Snapshot de cada ventana top-level visible (antes del switch)
+        snapshots: list[tuple[QWidget, QPixmap]] = []
+        for win in QApplication.topLevelWidgets():
+            if not win.isVisible():
+                continue
+            if win.isMinimized():
+                continue
+            if win.size().width() <= 0 or win.size().height() <= 0:
+                continue
+            try:
+                snap = win.grab()
+                if not snap.isNull():
+                    snapshots.append((win, snap))
+            except Exception:
+                # No es crítico — seguimos sin overlay para esa ventana
+                pass
+
+        # 2. Overlay snapshot ANTES del switch para que cubra el repaint
+        overlays: list[QLabel] = []
+        for win, snap in snapshots:
+            try:
+                ov = QLabel(win)
+                ov.setPixmap(snap)
+                ov.setGeometry(0, 0, win.width(), win.height())
+                ov.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+                ov.setScaledContents(False)
+                ov.show()
+                ov.raise_()
+                overlays.append(ov)
+            except Exception:
+                pass
+
+        # 3. Procesar eventos para asegurar que overlays están pintados
+        try:
+            QApplication.processEvents()
+        except Exception:
+            pass
+
+        # 4. Switch real (widgets reciben theme_changed y se repintan bajo el overlay)
         self._modo = new_modo
-        for widget in QApplication.topLevelWidgets():
-            widget.update()
-        self.theme_changed.emit(new_modo)
+        self._transitioning = True
+        try:
+            self.theme_changed.emit(new_modo)
+            for widget in QApplication.topLevelWidgets():
+                widget.update()
+        except Exception:
+            pass
+
+        # 5. Animar cada overlay: fade out 350ms, luego deleteLater
+        for ov in overlays:
+            self._fade_out_overlay(ov)
+
+        # Si no había overlays (caso headless), unlock inmediato
+        if not overlays:
+            self._transitioning = False
+        else:
+            # Unlock cuando termina la última animación
+            QTimer.singleShot(self.TRANSITION_MS + 20,
+                              lambda: setattr(self, "_transitioning", False))
+
+    def _fade_out_overlay(self, overlay: QLabel):
+        """Anima la opacidad del overlay 1.0 → 0.0 en TRANSITION_MS."""
+        try:
+            eff = QGraphicsOpacityEffect(overlay)
+            overlay.setGraphicsEffect(eff)
+            eff.setOpacity(1.0)
+            anim = QPropertyAnimation(eff, b"opacity", overlay)
+            anim.setDuration(self.TRANSITION_MS)
+            anim.setStartValue(1.0)
+            anim.setEndValue(0.0)
+            anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+            anim.finished.connect(overlay.deleteLater)
+            anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
+        except Exception:
+            overlay.deleteLater()
 
 
 def _tm() -> ThemeManager:
@@ -165,26 +273,39 @@ class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
 
 class NMCard(QFrame):
     """
-    Card con sombra real, hover animado, borde izquierdo de color accent
-    y efecto de escala al hacer click.
+    Card v3 — superficie limpia con border ``borderSoft`` y radius 14.
+
+    Spec del README v3:
+      - Surface ``v3c("surface")`` (o ``surfaceSolid`` en dark para QSS).
+      - Border 1px ``borderSoft`` → cambia a ``borderStrong`` en hover.
+      - Sin scale ni desplazamiento horizontal en press (eso es de botones).
+      - ``glow=True``: halo teal concéntrico alrededor + (solo dark)
+        overlay gradient teal→violet al 10% de opacidad.
+
+    Args:
+        accent_color: Hex que tiñe el halo si ``glow=True`` (default = teal).
+        clickable:    Cursor pointer + emite ``clicked`` al soltar.
+        modo:         Override de tema; ``None`` = sigue ThemeManager.
+        disabled:     Opacity 0.45 + cursor forbidden + tooltip reason.
+        glow:         Halo + (en dark) overlay gradient translúcido.
     """
     clicked = pyqtSignal()
 
     def __init__(self, parent=None, accent_color: str = None,
                  clickable: bool = True, modo: str = None,
-                 disabled: bool = False, disabled_reason: str = ""):
+                 disabled: bool = False, disabled_reason: str = "",
+                 glow: bool = False):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
-        self._accent = accent_color or C("accent", self._modo)
-        self._base_accent = self._accent
+        self._accent = accent_color
+        self._base_accent = accent_color
         self._clickable = clickable
+        self._glow = glow
         self._hover = False
         self._disabled = False
         self._disabled_effect: QGraphicsOpacityEffect | None = None
         self._disabled_reason = ""
         self._success_anim: QSequentialAnimationGroup | None = None
-        self._session = SessionColor.instance()
-        self._press_geom = None
         self._scale_anim: QPropertyAnimation | None = None
 
         self.setObjectName("NMCard")
@@ -197,7 +318,7 @@ class NMCard(QFrame):
 
         _tm().theme_changed.connect(self._apply_theme)
 
-    # ── hover ─────────────────────────────────────────────────────────────────
+    # ── hover (solo cambia el color del border, sin escalado) ─────────────────
 
     def enterEvent(self, event: QEnterEvent):
         self._hover = True
@@ -209,25 +330,18 @@ class NMCard(QFrame):
         self.update()
         super().leaveEvent(event)
 
-    # ── click scale ───────────────────────────────────────────────────────────
-
-    def mousePressEvent(self, event: QMouseEvent):
-        if self._clickable and not self._disabled and event.button() == Qt.MouseButton.LeftButton:
-            self._animate_press_scale(0.97)
-            self.update()
-        super().mousePressEvent(event)
+    # ── click (v3 no aplica scale a cards en press; solo se emite clicked) ────
 
     def mouseReleaseEvent(self, event: QMouseEvent):
-        if self._clickable and not self._disabled and event.button() == Qt.MouseButton.LeftButton:
-            self._animate_press_scale(1.0)
-            if self.rect().contains(event.pos()):
-                self.clicked.emit()
+        if (self._clickable and not self._disabled
+                and event.button() == Qt.MouseButton.LeftButton
+                and self.rect().contains(event.pos())):
+            self.clicked.emit()
         super().mouseReleaseEvent(event)
 
     def _animate_press_scale(self, scale: float):
-        if self._press_geom is None or scale < 1.0:
-            self._press_geom = self.geometry()
-        base = self._press_geom
+        """Pulso de escala — usado por ``play_success`` (no por hover/click)."""
+        base = self.geometry()
         if not base or base.isNull():
             return
         if scale >= 1.0:
@@ -244,92 +358,76 @@ class NMCard(QFrame):
         self._scale_anim.setEndValue(target)
         self._scale_anim.setEasingCurve(EASE_OUT)
         self._scale_anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
-        if scale >= 1.0:
-            self._press_geom = None
 
-    # ── paintEvent: barra izquierda de color ──────────────────────────────────
+    # ── paintEvent v3 ─────────────────────────────────────────────────────────
 
     def paintEvent(self, event: QPaintEvent):
         super().paintEvent(event)
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        c = colors(self._modo)
-        r = RADIUS_CARD
-        bar_w = 5
 
-        # Fondo
-        bg_path = QPainterPath()
-        bg_path.addRoundedRect(QRectF(0, 0, self.width(), self.height()), r, r)
-        p.fillPath(bg_path, QBrush(QColor(c["bg_surface"])))
+        is_dark = "dark" in self._modo
+        r = V3_RD["lg"]                 # radius 14
+        w, h = self.width(), self.height()
+        rect = QRectF(0, 0, w, h)
 
-        bar_rect = QRectF(0, 0, bar_w, self.height())
-        bar_grad = linear_gradient_vertical(
-            bar_rect,
-            self._session.qcolor(self._modo, 180),
-            QColor(self._accent),
-        )
-
-        path = QPainterPath()
-        path.addRoundedRect(QRectF(0, 0, bar_w, self.height()), r // 2, r // 2)
-        p.fillPath(path, QBrush(bar_grad))
-
-        c = colors(self._modo)
-        border_col = QColor(c.get("border_card", c["border"]))
-        border_col.setAlpha(60)
-        p.setPen(QPen(border_col, 1))
-        p.setBrush(Qt.BrushStyle.NoBrush)
-        p.drawRoundedRect(QRectF(1, 1, self.width() - 2, self.height() - 2), r, r)
-
-        # Hover glow dinámico (session color)
-        if self._hover and not self._disabled and self.isEnabled():
-            glow_c = self._session.glow_qcolor(self._modo)
-            glow_r = r + int(fx("card_glow_radius", self._modo))
-            glow_opacity = float(fx("card_glow_opacity", self._modo))
-            for layer in range(3):
-                alpha = int(glow_c.alpha() * max(0.0, glow_opacity - layer * 0.08))
-                if alpha <= 0:
-                    continue
-                gc = QColor(glow_c)
-                gc.setAlpha(alpha)
-                glow_pen = QPen(gc, max(1, int(fx("card_glow_radius", self._modo) / 3)) + layer * 2)
-                p.setPen(glow_pen)
+        # 1. Halo exterior (glow=True): líneas concéntricas decrecientes
+        if self._glow and not self._disabled and self.isEnabled():
+            halo_hex = self._accent or v3c("teal", self._modo).name()
+            base_alpha = 96 if is_dark else 50
+            for i in range(6):
+                a = int(base_alpha * (1 - i * 0.16))
+                if a <= 0:
+                    break
+                col = QColor(halo_hex)
+                col.setAlpha(a)
+                p.setPen(QPen(col, 1))
                 p.setBrush(Qt.BrushStyle.NoBrush)
                 p.drawRoundedRect(
-                    QRectF(1 - layer, 1 - layer,
-                           self.width() - 2 + layer * 2,
-                           self.height() - 2 + layer * 2),
-                    glow_r, glow_r,
+                    QRectF(-i - 1, -i - 1, w + (i + 1) * 2, h + (i + 1) * 2),
+                    r + i + 1, r + i + 1,
                 )
 
-        noise_overlay(
-            p,
-            QRectF(bar_w, 0, self.width() - bar_w, self.height()),
-            opacity=float(fx("noise_opacity", self._modo)),
-            modo=self._modo,
-        )
+        # 2. Superficie sólida (en dark usa surfaceSolid para QSS-friendly)
+        surface_key = "surfaceSolid" if is_dark else "surface"
+        p.setBrush(QBrush(v3c(surface_key, self._modo)))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawRoundedRect(rect, r, r)
 
-        if self._disabled or not self.isEnabled():
-            p.setOpacity(0.4)
-            pen = QPen(QColor(255, 255, 255, 15), 1)
-            p.setPen(pen)
-            for i in range(0, self.width() + self.height(), 8):
-                p.drawLine(i, 0, 0, i)
-            p.setOpacity(1.0)
+        # 3. Overlay gradient translúcido teal→violet (solo dark + glow)
+        if self._glow and is_dark and not self._disabled and self.isEnabled():
+            p.save()
+            p.setOpacity(0.10)
+            grad = v3_linear_gradient(rect, self._modo, 135, "signature")
+            p.setBrush(QBrush(grad))
+            p.setPen(Qt.PenStyle.NoPen)
+            p.drawRoundedRect(rect, r, r)
+            p.restore()
+
+        # 4. Border: borderSoft normal, borderStrong en hover
+        border_key = "borderStrong" if (self._hover and self.isEnabled()
+                                        and not self._disabled) else "borderSoft"
+        p.setPen(QPen(v3c(border_key, self._modo), 1))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawRoundedRect(QRectF(0.5, 0.5, w - 1, h - 1), r, r)
+
         p.end()
 
     # ── theme ─────────────────────────────────────────────────────────────────
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        if not self._accent or self._accent == C("accent", "dark_hybrid"):
-            self._accent = C("accent", self._modo)
-            self._base_accent = self._accent
         self.setStyleSheet(focus_ring_stylesheet(self._modo))
         self.update()
 
-    def set_accent(self, hex_color: str):
+    def set_accent(self, hex_color: str | None):
+        """En v3 sólo afecta el color del halo cuando ``glow=True``."""
         self._accent = hex_color
         self._base_accent = hex_color
+        self.update()
+
+    def set_glow(self, enabled: bool):
+        self._glow = bool(enabled)
         self.update()
 
     def set_disabled(self, state: bool, reason: str = ""):
@@ -352,20 +450,25 @@ class NMCard(QFrame):
         self.update()
 
     def play_success(self):
-        """Pulso de escala + flush de color al completar una accion."""
+        """Pulso de escala + flash del halo en success."""
         if self._disabled:
             return
         base = self.geometry()
         if base.isNull():
             return
+        prev_accent = self._accent
+        prev_glow = self._glow
+        # Activa halo flash en color success durante la animación
+        self._accent = C("success", self._modo)
+        self._glow = True
+        self.update()
+
         target = base.adjusted(
             -int(base.width() * 0.02),
             -int(base.height() * 0.02),
             int(base.width() * 0.02),
             int(base.height() * 0.02),
         )
-        self._accent = C("success", self._modo)
-        self.update()
         if self._success_anim:
             self._success_anim.stop()
         grow = QPropertyAnimation(self, b"geometry", self)
@@ -385,7 +488,8 @@ class NMCard(QFrame):
         self._success_anim.addAnimation(shrink)
 
         def _restore():
-            self._accent = self._base_accent
+            self._accent = prev_accent
+            self._glow = prev_glow
             self.update()
 
         self._success_anim.finished.connect(_restore)
@@ -394,37 +498,83 @@ class NMCard(QFrame):
 
 # ── NMButton ──────────────────────────────────────────────────────────────────
 
+# Sizes v3 según README: sm/md/lg → 32/40/48
+_NM_BUTTON_HEIGHT = {"sm": 32, "md": 40, "lg": 48}
+_NM_BUTTON_FONT   = {"sm": "size_small", "md": "size_body", "lg": "size_body"}
+
+
 class NMButton(QPushButton):
     """
-    Botón con gradiente lineal teal→violet pintado en paintEvent.
-    Hover: gradiente más brillante. Press: ligera escala visual.
+    Botón v3 — pill, 3 variantes (``gradient`` / ``secondary`` / ``ghost``),
+    3 sizes (``sm`` / ``md`` / ``lg`` → 32 / 40 / 48).
+
+    Comportamiento:
+      - Press: scale 0.97 por 100 ms (spec README v3 para botones).
+      - Hover: variante ``gradient`` añade glow exterior teal; las otras
+        cambian color de fondo y/o border.
+      - Ripple blanco al click solo en variante ``gradient``.
+
+    Args:
+        text:    label
+        parent:  QWidget parent
+        modo:    override de tema; ``None`` = sigue ThemeManager
+        width:   minWidth (legacy, default 180)
+        height:  fixedHeight; ``None`` = derivado de ``size``
+        variant: ``"gradient"`` (primary teal→violet) | ``"secondary"``
+                 (surface + border) | ``"ghost"`` (transparente)
+        size:    ``"sm"`` / ``"md"`` / ``"lg"``
     """
 
     def __init__(self, text: str = "", parent=None, modo: str = None,
-                 width: int = 180, height: int = 44):
+                 width: int = 180, height: int | None = None,
+                 variant: str = "gradient", size: str = "md"):
         super().__init__(text, parent)
         self._modo = norm_modo(modo or _tm().modo)
+        self._variant = variant if variant in ("gradient", "secondary", "ghost") else "gradient"
+        self._size = size if size in ("sm", "md", "lg") else "md"
         self._hover = False
         self._pressed = False
-        self._opacity = 1.0
         self._ripples = []
         self._success_anim: QSequentialAnimationGroup | None = None
+        self._scale_anim: QPropertyAnimation | None = None
+        self._base_geom = None
         self._ripple_timer = QTimer(self)
         self._ripple_timer.setInterval(16)
         self._ripple_timer.timeout.connect(self._tick_ripples)
 
-        self.setFixedHeight(height)
+        eff_height = height if height is not None else _NM_BUTTON_HEIGHT[self._size]
+        self.setFixedHeight(eff_height)
         if width:
             self.setMinimumWidth(width)
-        self.setFont(qfont("size_body", bold=True))
+        self.setFont(qfont(_NM_BUTTON_FONT[self._size],
+                           weight=TYPOGRAPHY["weight_semibold"]))
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setFlat(True)
-        # Sin stylesheet en el botón — todo en paintEvent
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         self.setStyleSheet(focus_ring_stylesheet(self._modo))
 
         _tm().theme_changed.connect(self._apply_theme)
+
+    # ── API v3 ────────────────────────────────────────────────────────────────
+
+    def set_variant(self, variant: str):
+        if variant in ("gradient", "secondary", "ghost"):
+            self._variant = variant
+            self.update()
+
+    def variant(self) -> str:
+        return self._variant
+
+    def set_size(self, size: str):
+        if size in ("sm", "md", "lg") and size != self._size:
+            self._size = size
+            self.setFixedHeight(_NM_BUTTON_HEIGHT[size])
+            self.setFont(qfont(_NM_BUTTON_FONT[size],
+                               weight=TYPOGRAPHY["weight_semibold"]))
+            self.update()
+
+    # ── ripples (solo variant=gradient) ───────────────────────────────────────
 
     def _tick_ripples(self):
         alive = []
@@ -445,50 +595,66 @@ class NMButton(QPushButton):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        r = RADIUS_BUTTON
+        h = self.height()
+        # Pill perfecto: cap radius a half-height por si LAYOUT['radius_button']
+        # es 999 (default v3) y el botón es bajo.
+        r = min(LAYOUT["radius_button"], h // 2)
         rect = QRectF(self.rect())
-
-        # Gradiente
-        grad = rich_gradient(rect, self._modo)
-        if self._hover and not self._pressed:
-            for color_hex, pos in get_gradient(self._modo):
-                c = QColor(color_hex)
-                c.setAlpha(220)
-                grad.setColorAt(pos, c)
-        if self._pressed:
-            for color_hex, pos in get_gradient(self._modo):
-                dark = interpolate_color(color_hex, "#000000", 0.15)
-                grad.setColorAt(pos, QColor(dark))
-
         path = QPainterPath()
         path.addRoundedRect(rect, r, r)
 
         if not self.isEnabled():
             p.setOpacity(0.4)
 
-        p.fillPath(path, QBrush(grad))
+        if self._variant == "gradient":
+            grad = v3_linear_gradient(rect, self._modo, 135, "signature")
+            p.fillPath(path, QBrush(grad))
 
-        if self._hover and not self._pressed and self.isEnabled():
-            glow = QColor(C("accent", self._modo))
-            glow.setAlpha(int(255 * float(fx("card_glow_opacity", self._modo))))
-            glow_width = max(1, int(fx("button_glow_radius", self._modo)))
-            p.setPen(QPen(glow, glow_width))
+            # Glow exterior teal en hover
+            if self._hover and not self._pressed and self.isEnabled():
+                glow = v3c("teal", self._modo)
+                glow.setAlpha(90 if "dark" in self._modo else 64)
+                glow_w = 2
+                p.setPen(QPen(glow, glow_w))
+                p.setBrush(Qt.BrushStyle.NoBrush)
+                inset = glow_w / 2
+                p.drawRoundedRect(rect.adjusted(inset, inset, -inset, -inset), r, r)
+
+            text_color = QColor(C("text_on_accent", self._modo))
+
+        elif self._variant == "secondary":
+            is_dark = "dark" in self._modo
+            surf_key = "surfaceSolid" if is_dark else "surface"
+            elev_key = "elevatedSolid" if is_dark else "elevated"
+            bg_col = v3c(elev_key if self._hover else surf_key, self._modo)
+            p.fillPath(path, QBrush(bg_col))
+
+            border_key = "borderStrong" if (self._hover or self._pressed) else "border"
+            border_col = v3c(border_key, self._modo)
+            p.setPen(QPen(border_col, 1))
             p.setBrush(Qt.BrushStyle.NoBrush)
-            inset = glow_width / 2
-            p.drawRoundedRect(rect.adjusted(inset, inset, -inset, -inset), r, r)
+            p.drawRoundedRect(QRectF(0.5, 0.5, self.width() - 1, h - 1), r, r)
+
+            text_color = v3c("text", self._modo)
+
+        else:  # ghost
+            if self._hover and not self._pressed and self.isEnabled():
+                bg_col = v3c("borderSoft", self._modo)
+                p.fillPath(path, QBrush(bg_col))
+            text_color = v3c("text2", self._modo)
 
         # Texto
-        c = colors(self._modo)
-        text_color = QColor(c["text_on_accent"])
         p.setPen(QPen(text_color))
         p.setFont(self.font())
         p.drawText(rect.toRect(), Qt.AlignmentFlag.AlignCenter, self.text())
 
-        for rip in self._ripples:
-            rip_col = QColor(255, 255, 255, rip["a"])
-            p.setBrush(QBrush(rip_col))
-            p.setPen(Qt.PenStyle.NoPen)
-            p.drawEllipse(rip["center"], rip["r"], rip["r"])
+        # Ripples (solo gradient)
+        if self._variant == "gradient":
+            for rip in self._ripples:
+                rip_col = QColor(255, 255, 255, rip["a"])
+                p.setBrush(QBrush(rip_col))
+                p.setPen(Qt.PenStyle.NoPen)
+                p.drawEllipse(rip["center"], rip["r"], rip["r"])
         p.end()
 
     def enterEvent(self, event):
@@ -502,18 +668,46 @@ class NMButton(QPushButton):
         super().leaveEvent(event)
 
     def mousePressEvent(self, event: QMouseEvent):
-        if event.button() == Qt.MouseButton.LeftButton:
-            pos = event.position() if hasattr(event, "position") else QPointF(event.pos())
-            self._ripples.append({"center": pos, "r": 0, "a": 80})
-            self._ripple_timer.start()
+        if event.button() == Qt.MouseButton.LeftButton and self.isEnabled():
+            if self._variant == "gradient":
+                pos = event.position() if hasattr(event, "position") else QPointF(event.pos())
+                self._ripples.append({"center": pos, "r": 0, "a": 80})
+                self._ripple_timer.start()
             self._pressed = True
+            self._animate_press_scale(0.97)
             self.update()
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
-        self._pressed = False
-        self.update()
+        if self._pressed:
+            self._pressed = False
+            self._animate_press_scale(1.0)
+            self.update()
         super().mouseReleaseEvent(event)
+
+    def _animate_press_scale(self, scale: float):
+        """Scale 0.97 ↔ 1.0 (100ms) — spec README v3 para botones."""
+        if scale < 1.0:
+            self._base_geom = self.geometry()
+        base = self._base_geom or self.geometry()
+        if not base or base.isNull():
+            return
+        if scale >= 1.0:
+            target = base
+        else:
+            dw = int(base.width() * (1.0 - scale) / 2)
+            dh = int(base.height() * (1.0 - scale) / 2)
+            target = base.adjusted(dw, dh, -dw, -dh)
+        if self._scale_anim:
+            self._scale_anim.stop()
+        self._scale_anim = QPropertyAnimation(self, b"geometry", self)
+        self._scale_anim.setDuration(100)
+        self._scale_anim.setStartValue(self.geometry())
+        self._scale_anim.setEndValue(target)
+        self._scale_anim.setEasingCurve(EASE_OUT)
+        self._scale_anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
+        if scale >= 1.0:
+            self._base_geom = None
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
@@ -546,23 +740,29 @@ class NMButton(QPushButton):
 # ── NMButtonOutline ───────────────────────────────────────────────────────────
 
 class NMButtonOutline(QPushButton):
-    """Botón con borde 2px accent, fondo transparente. Hover: fill 15% accent.
-    Si toggleable=True, alterna estado activo/inactivo en cada click."""
+    """Botón pill toggleable v3 — variant ``secondary`` cuando inactivo,
+    fill gradient teal→violet cuando activo.
+
+    Si ``toggleable=True`` alterna ``active`` en cada click. Estilo coherente
+    con :class:`NMButton` (mismo radius pill, misma tipografía sm).
+    """
 
     def __init__(self, text: str = "", parent=None, modo: str = None,
-                 toggleable: bool = False):
+                 toggleable: bool = False, size: str = "md"):
         super().__init__(text, parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._hover = False
         self._active = False
         self._toggleable = toggleable
+        self._size = size if size in ("sm", "md", "lg") else "md"
         self._success_anim: QSequentialAnimationGroup | None = None
 
-        self.setFont(qfont("size_small", bold=False))
+        self.setFont(qfont(_NM_BUTTON_FONT[self._size],
+                           weight=TYPOGRAPHY["weight_medium"]))
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setFlat(True)
-        self.setMinimumHeight(34)
+        self.setMinimumHeight(_NM_BUTTON_HEIGHT[self._size])
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         self.setStyleSheet(focus_ring_stylesheet(self._modo))
 
@@ -579,38 +779,36 @@ class NMButtonOutline(QPushButton):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        c = colors(self._modo)
-        accent = QColor(C("accent", self._modo))
-        r = RADIUS_BUTTON
+        h = self.height()
+        r = min(LAYOUT["radius_button"], h // 2)
         rect = QRectF(self.rect())
-
         path = QPainterPath()
-        path.addRoundedRect(rect.adjusted(1, 1, -1, -1), r, r)
+        path.addRoundedRect(rect, r, r)
 
         if self._active:
-            # Fondo accent sólido
-            p.fillPath(path, QBrush(accent))
-            text_color = QColor(c["text_on_accent"])
-            pen_color = accent
+            # Fill gradient teal→violet (v3 active = primary)
+            grad = v3_linear_gradient(rect, self._modo, 135, "signature")
+            p.fillPath(path, QBrush(grad))
+            text_color = QColor(C("text_on_accent", self._modo))
         elif self._hover:
-            # Fill 15%
-            fill = QColor(accent)
-            fill.setAlpha(38)   # 15% de 255
-            p.fillPath(path, QBrush(fill))
-            text_color = QColor(c["text_primary"])
-            pen_color = accent
+            # secondary hover
+            is_dark = "dark" in self._modo
+            elev_key = "elevatedSolid" if is_dark else "elevated"
+            p.fillPath(path, QBrush(v3c(elev_key, self._modo)))
+            border_col = v3c("borderStrong", self._modo)
+            p.setPen(QPen(border_col, 1))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawRoundedRect(QRectF(0.5, 0.5, self.width() - 1, h - 1), r, r)
+            text_color = v3c("text", self._modo)
         else:
-            p.fillPath(path, QBrush(QColor(0, 0, 0, 0)))
-            text_color = QColor(c["text_secondary"])
-            pen_color = accent
+            is_dark = "dark" in self._modo
+            surf_key = "surfaceSolid" if is_dark else "surface"
+            p.fillPath(path, QBrush(v3c(surf_key, self._modo)))
+            p.setPen(QPen(v3c("border", self._modo), 1))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawRoundedRect(QRectF(0.5, 0.5, self.width() - 1, h - 1), r, r)
+            text_color = v3c("text2", self._modo)
 
-        # Borde
-        if not self._active:
-            pen = QPen(pen_color, 2)
-            p.setPen(pen)
-            p.drawPath(path)
-
-        # Texto
         p.setPen(QPen(text_color))
         p.setFont(self.font())
         p.drawText(rect.toRect(), Qt.AlignmentFlag.AlignCenter, self.text())
@@ -821,10 +1019,11 @@ class NMToggle(QAbstractButton):
     def __init__(self, parent=None, modo: str = None):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
-        self._track_w = 48
-        self._track_h = 26
-        self._thumb_r = 10
-        self._thumb_x = float(self._thumb_r + 3)  # posición X animada
+        # v3: track 42×24, thumb 9px (deja 3px margin top/bot)
+        self._track_w = 42
+        self._track_h = 24
+        self._thumb_r = 9
+        self._thumb_x = float(self._thumb_r + 3)
 
         self.setCheckable(True)
         self.setFixedSize(self._track_w, self._track_h)
@@ -857,22 +1056,34 @@ class NMToggle(QAbstractButton):
     def paintEvent(self, event: QPaintEvent):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        c = colors(self._modo)
 
         r = self._track_h // 2
         track_rect = QRectF(0, 0, self._track_w, self._track_h)
+        is_dark = "dark" in self._modo
 
         # Track
-        track_color = QColor(C("accent", self._modo)) if self.isChecked() \
-            else QColor(c["bg_elevated"])
-        p.setBrush(QBrush(track_color))
+        if self.isChecked():
+            # v3: gradient firma teal→violet
+            grad = v3_linear_gradient(track_rect, self._modo, 0, "signature")
+            p.setBrush(QBrush(grad))
+        else:
+            # Inactivo: borderSoft sutil
+            track_col = v3c("borderSoft", self._modo) if not is_dark \
+                else v3c("borderSolid", self._modo)
+            p.setBrush(QBrush(track_col))
         p.setPen(Qt.PenStyle.NoPen)
         p.drawRoundedRect(track_rect, r, r)
 
-        # Thumb
+        # Thumb (knob blanco) — sombra suave solo cuando activo (v3 spec)
         ty = self._track_h / 2
-        p.setBrush(QBrush(QColor("white")))
-        p.drawEllipse(QPointF(self._thumb_x, ty), self._thumb_r, self._thumb_r)
+        if self.isChecked():
+            shadow_col = QColor(0, 0, 0, 50)
+            p.setBrush(QBrush(shadow_col))
+            p.drawEllipse(QPointF(self._thumb_x, ty + 1),
+                          self._thumb_r, self._thumb_r)
+        p.setBrush(QBrush(QColor("#ffffff")))
+        p.drawEllipse(QPointF(self._thumb_x, ty),
+                      self._thumb_r, self._thumb_r)
         p.end()
 
     def _apply_theme(self, modo: str):
@@ -1353,8 +1564,8 @@ class NMHeader(QWidget):
 
     def _setup_ui(self):
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(16, 0, 16, 0)
-        layout.setSpacing(8)
+        layout.setContentsMargins(sp("md"), 0, sp("md"), 0)
+        layout.setSpacing(sp("sm"))
 
         c = colors(self._modo)
 
@@ -1362,7 +1573,7 @@ class NMHeader(QWidget):
             # Módulo: botón back estilo pill (mockup: .back-btn)
             self._btn_back = QPushButton("← Volver")
             self._btn_back.setFont(qfont("size_caption", bold=True))
-            self._btn_back.setFixedHeight(32)
+            self._btn_back.setFixedHeight(30)
             self._btn_back.setCursor(Qt.CursorShape.PointingHandCursor)
             self._apply_back_btn_style()
             layout.addWidget(self._btn_back)
@@ -1405,6 +1616,84 @@ class NMHeader(QWidget):
         self._toggle.setChecked("light" in self._modo)
         self._toggle.toggled.connect(lambda _: self.theme_toggle.emit())
         layout.addWidget(self._toggle)
+
+    def _ensure_context_widgets(self):
+        if hasattr(self, "_context_title_lbl"):
+            return
+        icon_lbl = QLabel()
+        icon_lbl.setFixedSize(22, 22)
+        icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        icon_lbl.setStyleSheet("background: transparent;")
+        title_lbl = QLabel("")
+        title_lbl.setFont(qfont("size_h3", bold=True))
+        title_lbl.setStyleSheet(label_style(self._modo, "text_primary"))
+
+        self._context_icon_lbl = icon_lbl
+        self._context_title_lbl = title_lbl
+        self._module_icon_lbl = icon_lbl
+        self._module_title_lbl = title_lbl
+
+        layout = self.layout()
+        if layout:
+            insert_at = 1 if hasattr(self, "_btn_back") else 0
+            layout.insertWidget(insert_at, icon_lbl)
+            layout.insertWidget(insert_at + 1, title_lbl)
+        icon_lbl.hide()
+        title_lbl.hide()
+
+    def set_context_title(self, title: str = "", icon: str = ""):
+        """Activa el header contextual compacto usado por pantallas internas."""
+        title = (title or "").strip()
+        self._module_title = title
+        self._module_icon = icon or ""
+
+        if title:
+            self._ensure_context_widgets()
+            if hasattr(self, "_logo_widget"):
+                self._logo_widget.hide()
+            if hasattr(self, "_user_lbl"):
+                self._user_lbl.hide()
+            self._context_title_lbl.setText(title)
+            self._context_title_lbl.show()
+            self._context_icon_lbl.setVisible(bool(icon))
+            self._apply_module_icon()
+            return
+
+        if hasattr(self, "_context_title_lbl"):
+            self._context_title_lbl.hide()
+        if hasattr(self, "_context_icon_lbl"):
+            self._context_icon_lbl.hide()
+        if hasattr(self, "_logo_widget"):
+            self._logo_widget.show()
+        if hasattr(self, "_user_lbl"):
+            self._user_lbl.show()
+        if hasattr(self, "_context_badge_lbl"):
+            self._context_badge_lbl.hide()
+
+    def set_context_badge(self, text: str = "", color_key: str = "teal"):
+        text = (text or "").strip()
+        if not hasattr(self, "_context_badge_lbl"):
+            self._context_badge_lbl = QLabel("")
+            self._context_badge_lbl.setFont(qfont("size_caption", bold=True))
+            self._context_badge_lbl.setContentsMargins(8, 2, 8, 2)
+            layout = self.layout()
+            if layout:
+                layout.insertWidget(max(0, layout.count() - 3), self._context_badge_lbl)
+        self._context_badge_key = color_key or "teal"
+        self._context_badge_lbl.setText(text)
+        self._context_badge_lbl.setVisible(bool(text))
+        self._apply_context_badge_style()
+
+    def _apply_context_badge_style(self):
+        if not hasattr(self, "_context_badge_lbl"):
+            return
+        key = getattr(self, "_context_badge_key", "teal")
+        fg = C(key, self._modo) if key in colors(self._modo) else C("teal", self._modo)
+        bg = _rgba(fg, 0.14)
+        self._context_badge_lbl.setStyleSheet(
+            f"QLabel {{ color: {fg}; background: {bg}; "
+            f"border-radius: {RADIUS_PILL}px; padding: 2px 8px; }}"
+        )
 
     def _theme_label_text(self) -> str:
         return "Claro" if "light" in self._modo else "Oscuro"
@@ -1456,8 +1745,8 @@ class NMHeader(QWidget):
             f"color: {C('text_tertiary', self._modo)}; "
             f"background-color: {bg}; "
             f"border: 1px solid {border}; "
-            f"border-radius: 8px; "
-            f"padding: 4px 10px; "
+            f"border-radius: {RADIUS_SMALL}px; "
+            f"padding: 3px 10px; "
             f"font-size: 11pt; "
             f"font-weight: 600; "
             f"}} "
@@ -1482,6 +1771,7 @@ class NMHeader(QWidget):
         if hasattr(self, "_theme_lbl"):
             self._theme_lbl.setText(self._theme_label_text())
             self._theme_lbl.setStyleSheet(label_style(modo, "text_secondary"))
+        self._apply_context_badge_style()
         self._toggle._apply_theme(modo)
         was_blocked = self._toggle.blockSignals(True)
         self._toggle.setChecked("light" in modo)
@@ -1492,7 +1782,7 @@ class NMHeader(QWidget):
             return self._btn_back
         btn = QPushButton("← Volver", self)
         btn.setFont(qfont("size_caption", bold=True))
-        btn.setFixedHeight(32)
+        btn.setFixedHeight(30)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
         layout = self.layout()
         if layout:
@@ -1520,10 +1810,7 @@ class NMHeader(QWidget):
         self.set_back_action(callback)
 
     def set_title_info(self, title: str = "", icon: str = ""):
-        if hasattr(self, "_module_title_lbl"):
-            self._module_title_lbl.setText(title)
-        if hasattr(self, "_module_icon_lbl"):
-            self._module_icon_lbl.setText(icon)
+        self.set_context_title(title, icon)
 
 
 class _LogoLabel(QWidget):
@@ -2010,6 +2297,267 @@ def _rgba(hex_color: str, alpha: float) -> str:
     return f"rgba({c.red()}, {c.green()}, {c.blue()}, {a})"
 
 
+# ── Helpers v3 para rings (NMFocusArc / NMModuleRing / NMCycleRing) ──────────
+
+def _ring_stroke(size: int) -> int:
+    """Stroke proporcional al tamaño (README v3).
+
+        ≤ 40       → 3-4
+        60-100     → 5-8
+        ≥ 100      → 10-14   (340 → 14)
+    """
+    if size <= 40:
+        return max(3, round(size * 0.085))
+    if size <= 60:
+        return 5
+    if size <= 80:
+        return 6
+    if size <= 100:
+        return 8
+    if size <= 140:
+        return 10
+    if size <= 200:
+        return 12
+    return 14
+
+
+def _color_at_t(stops, t: float) -> QColor:
+    """Interpola entre stops ``[(hex, t_pos), …]`` ordenados por t_pos."""
+    t = max(0.0, min(1.0, t))
+    for i in range(len(stops) - 1):
+        h0, t0 = stops[i]
+        h1, t1 = stops[i + 1]
+        if t0 <= t <= t1:
+            local = (t - t0) / max(1e-9, t1 - t0)
+            return QColor(interpolate_color(h0, h1, local))
+    return QColor(stops[-1][0])
+
+
+def _paint_v3_arc(p: QPainter, rect: QRectF,
+                  start_angle_deg: float, span_deg: float,
+                  pen_width: int, modo: str,
+                  segments: int = 64):
+    """Pinta un arco con el gradient firma v3 fluyendo a lo largo del arco.
+
+    Implementación segmento-a-segmento con FlatCap (sin spokes intermedios) y
+    círculos sólidos en los extremos para simular RoundCap. Funciona en
+    cualquier dirección (CW o CCW) sin los líos de QConicalGradient.
+    """
+    import math
+    if abs(span_deg) < 0.1:
+        return
+    stops = V3_GRADIENTS[v3_mode(modo)]
+    direction = 1 if span_deg > 0 else -1
+    abs_span = abs(span_deg)
+
+    p.setBrush(Qt.BrushStyle.NoBrush)
+    for i in range(segments):
+        t0 = i / segments
+        t1 = (i + 1) / segments
+        mid_t = (t0 + t1) / 2
+        col = _color_at_t(stops, mid_t)
+        pen = QPen(col, pen_width, Qt.PenStyle.SolidLine, Qt.PenCapStyle.FlatCap)
+        p.setPen(pen)
+        a0 = start_angle_deg + direction * abs_span * t0
+        a1 = start_angle_deg + direction * abs_span * t1
+        p.drawArc(rect, int(a0 * 16), int((a1 - a0) * 16))
+
+    # Round caps manuales en los extremos del arco
+    cx, cy = rect.center().x(), rect.center().y()
+    rx, ry = rect.width() / 2, rect.height() / 2
+    cap_r = pen_width / 2
+    for endpoint_t, color_t in ((0.0, 0.0), (1.0, 1.0)):
+        angle = math.radians(start_angle_deg + direction * abs_span * endpoint_t)
+        # Qt: y aumenta hacia abajo, ángulo positivo es CCW desde +x
+        px = cx + rx * math.cos(angle)
+        py = cy - ry * math.sin(angle)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(_color_at_t(stops, color_t)))
+        p.drawEllipse(QPointF(px, py), cap_r, cap_r)
+
+
+# ── NMIcon ───────────────────────────────────────────────────────────────────
+
+try:
+    from shared.icons_svg import nm_svg_pixmap as _nm_svg_pixmap, has_icon as _has_v3_icon
+except ImportError:
+    try:
+        from icons_svg import nm_svg_pixmap as _nm_svg_pixmap, has_icon as _has_v3_icon  # type: ignore
+    except ImportError:
+        _nm_svg_pixmap = None
+        _has_v3_icon = lambda _n: False  # noqa: E731
+
+
+class NMIcon(QLabel):
+    """Widget de icono SVG v3.
+
+    Args:
+        name:      nombre del icono (``shared.icons_svg.available_icons()``).
+        size:      lado del icono en px.
+        color:     hex literal (estático).
+        color_key: clave de la paleta v3 (``'text'``, ``'text2'``, ``'text3'``,
+                   ``'teal'``, ``'violet'``, ``'danger'``…). Si se pasa, el
+                   icono se re-renderiza automáticamente en cada theme change
+                   y ``color`` se ignora.
+        modo:      override de tema (None = sigue ThemeManager).
+
+    Si el nombre no está en el catálogo v3, cae a QtAwesome vía
+    :func:`shared.theme_qt.nm_icon` (compat durante migración).
+    """
+
+    def __init__(self, name: str, size: int = 24,
+                 color: str | None = None, color_key: str | None = None,
+                 modo: str = None, parent=None):
+        super().__init__(parent)
+        self._name = name
+        self._size = size
+        self._color = color
+        self._color_key = color_key
+        self._modo = norm_modo(modo or _tm().modo)
+        self.setFixedSize(size, size)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        self._render()
+        if color_key is not None:
+            _tm().theme_changed.connect(self._apply_theme)
+
+    # ── API ───────────────────────────────────────────────────────────────────
+
+    def set_name(self, name: str):
+        if name != self._name:
+            self._name = name
+            self._render()
+
+    def set_size(self, size: int):
+        if size != self._size:
+            self._size = size
+            self.setFixedSize(size, size)
+            self._render()
+
+    def set_color(self, color: str):
+        """Color hex estático (desactiva tracking de theme)."""
+        self._color = color
+        self._color_key = None
+        try:
+            _tm().theme_changed.disconnect(self._apply_theme)
+        except (RuntimeError, TypeError):
+            pass
+        self._render()
+
+    def set_color_key(self, key: str):
+        """Color seguido a través de la paleta v3 (theme-aware)."""
+        if self._color_key is None and key is not None:
+            _tm().theme_changed.connect(self._apply_theme)
+        self._color_key = key
+        self._render()
+
+    # ── render ───────────────────────────────────────────────────────────────
+
+    def _resolve_color(self) -> str:
+        if self._color_key is not None:
+            return v3c(self._color_key, self._modo).name()
+        if self._color:
+            return self._color
+        return v3c("text", self._modo).name()
+
+    def _render(self):
+        col = self._resolve_color()
+        pix = None
+        if _nm_svg_pixmap is not None and _has_v3_icon(self._name):
+            pix = _nm_svg_pixmap(self._name, col, self._size)
+        if pix is None or pix.isNull():
+            # Fallback QtAwesome via nm_icon legacy
+            icon = nm_icon(self._name, col, self._size)
+            pix = icon.pixmap(self._size, self._size)
+        self.setPixmap(pix)
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self._render()
+
+
+# ── NMMoodEmoji ───────────────────────────────────────────────────────────────
+
+try:
+    from shared.icons_svg import nm_mood_pixmap as _nm_mood_pixmap
+except ImportError:
+    try:
+        from icons_svg import nm_mood_pixmap as _nm_mood_pixmap  # type: ignore
+    except ImportError:
+        _nm_mood_pixmap = None
+
+
+class NMMoodEmoji(QLabel):
+    """Emoji de mood v3 — 10 niveles, SVG line-style.
+
+    Spec del README (sección "Mood emoji system"):
+      - Círculo de línea del color ``palette[lv]['to']``, sin relleno.
+      - Ojos (2 círculos), boca curva (path varía con nivel).
+      - Cejas inclinadas en niveles 1-3 y 9-10.
+      - Lágrimas en 1-2, blush en 7-10, sparkles en 9-10 (+ corona en 10).
+      - Halo radial opcional detrás (más fuerte en dark: 0.22 vs 0.15).
+
+    El emoji es **100% SVG inline** — no usa Apple Color Emoji ni Unicode,
+    coherente con el lenguaje visual del resto de iconos v3.
+
+    Args:
+        level: 1-10 (se clampa).
+        size:  lado en px.
+        glow:  halo radial detrás (default True).
+        modo:  override de tema; afecta intensidad del halo.
+    """
+
+    def __init__(self, level: int = 5, size: int = 64,
+                 glow: bool = True, modo: str = None, parent=None):
+        super().__init__(parent)
+        self._level = max(1, min(10, int(level)))
+        self._size = size
+        self._glow = bool(glow)
+        self._modo = norm_modo(modo or _tm().modo)
+        self.setFixedSize(size, size)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        self._render()
+        _tm().theme_changed.connect(self._apply_theme)
+
+    # ── API ──────────────────────────────────────────────────────────────────
+
+    def set_level(self, level: int):
+        lv = max(1, min(10, int(level)))
+        if lv != self._level:
+            self._level = lv
+            self._render()
+
+    def level(self) -> int:
+        return self._level
+
+    def set_size(self, size: int):
+        if size != self._size:
+            self._size = size
+            self.setFixedSize(size, size)
+            self._render()
+
+    def set_glow(self, glow: bool):
+        if bool(glow) != self._glow:
+            self._glow = bool(glow)
+            self._render()
+
+    # ── render ───────────────────────────────────────────────────────────────
+
+    def _render(self):
+        if _nm_mood_pixmap is None:
+            return
+        is_dark = "dark" in self._modo
+        pix = _nm_mood_pixmap(self._level, self._size,
+                              glow=self._glow, is_dark=is_dark)
+        if pix is not None and not pix.isNull():
+            self.setPixmap(pix)
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self._render()
+
+
 # ── NMSegmentedChoice ─────────────────────────────────────────────────────────
 
 class NMSegmentedChoice(QWidget):
@@ -2295,30 +2843,43 @@ class NMFocusArc(QWidget):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         w = self.width()
         cx = cy = w / 2
+
+        # Aura radial teal v3
         aura = QRadialGradient(QPointF(cx, cy), w * 0.42)
-        ac = QColor(C("accent", self._modo))
+        ac = v3c("teal", self._modo)
         ac.setAlphaF(0.18 if "dark" in self._modo else 0.12)
         aura.setColorAt(0.0, ac)
         aura.setColorAt(1.0, QColor(0, 0, 0, 0))
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(aura)
         p.drawEllipse(QPointF(cx, cy), w * 0.38, w * 0.38)
-        r = w * 0.4125
-        pen_w = max(7, int(w * 0.056))
+
+        # Track + arco progreso con gradient v3 teal→violet
+        pen_w = _ring_stroke(w)
+        r = w / 2 - pen_w - 1
+        rect = QRectF(cx - r, cy - r, r * 2, r * 2)
+
+        # Track sutil
+        track_col = v3c("borderSoft", self._modo)
+        p.setPen(QPen(track_col, pen_w, Qt.PenStyle.SolidLine, Qt.PenCapStyle.FlatCap))
         p.setBrush(Qt.BrushStyle.NoBrush)
-        p.setPen(QPen(QColor(C("progress_track", self._modo)), pen_w, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
         p.drawEllipse(QPointF(cx, cy), r, r)
-        if self._pct > 0:
-            rect = QRectF(cx - r, cy - r, r * 2, r * 2)
-            pen = QPen(QColor(C("accent", self._modo)), pen_w, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
-            p.setPen(pen)
-            p.drawArc(rect, 90 * 16, int(-360 * self._pct * 16))
-        p.setPen(QColor(C("text_primary", self._modo)))
-        p.setFont(qfont_mono(SIZE_TIME_TIMER + 6, bold=False))
-        p.drawText(QRectF(0, cy - 20, w, 28), Qt.AlignmentFlag.AlignCenter, self._time_text)
-        p.setPen(QColor(C("text_tertiary", self._modo)))
+
+        # Arco progreso (CW desde 90° = top)
+        if self._pct > 0.001:
+            _paint_v3_arc(p, rect, 90.0, -360.0 * self._pct, pen_w, self._modo)
+
+        # Textos: tiempo (mono) + estado
+        time_pt = max(16, int(w * 0.15))
+        state_pt = max(10, int(w * 0.075))
+        p.setPen(v3c("text", self._modo))
+        p.setFont(qfont_mono(time_pt, bold=False))
+        p.drawText(QRectF(0, cy - time_pt, w, time_pt + 8),
+                   Qt.AlignmentFlag.AlignCenter, self._time_text)
+        p.setPen(v3c("text3", self._modo))
         p.setFont(qfont("size_caption"))
-        p.drawText(QRectF(0, cy + 9, w, 18), Qt.AlignmentFlag.AlignCenter, self._state_text)
+        p.drawText(QRectF(0, cy + 6, w, state_pt + 10),
+                   Qt.AlignmentFlag.AlignCenter, self._state_text)
         p.end()
 
     def _apply_theme(self, modo: str):
@@ -2479,97 +3040,132 @@ class NMStreakBadge(QLabel):
 # ── NMWelcomeBar ──────────────────────────────────────────────────────────────
 
 class NMWelcomeBar(QWidget):
-    """Barra de bienvenida con saludo y fecha: 'Buenos días · Lunes 15 may'.
+    """Tarjeta de bienvenida accent: '✨ Bienvenida de vuelta / ¿Empezamos?'.
 
-    Se usa debajo del logo en HomeView.
+    Se usa debajo del saludo en HomeView.
     """
-    _GREETINGS = [(5, "Buenos días"), (13, "Buenas tardes"), (20, "Buenas noches")]
-    _DAYS_ES   = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-    _MONTHS_ES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"]
 
     def __init__(self, modo: str = None, parent=None):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
-        self.setFixedHeight(32)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(sp("md"), 0, sp("md"), 0)
-        self._lbl = QLabel()
-        self._lbl.setFont(qfont("size_small"))
-        self._lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lay.addWidget(self._lbl, alignment=Qt.AlignmentFlag.AlignCenter)
+        lay.setContentsMargins(sp("md"), sp("sm"), sp("md"), sp("sm"))
+        lay.setSpacing(sp("sm"))
 
-        self._refresh()
+        icon_lbl = QLabel("✨")
+        icon_lbl.setFont(qfont("size_h3"))
+        icon_lbl.setStyleSheet("background: transparent;")
+        lay.addWidget(icon_lbl)
+
+        text_col = QVBoxLayout()
+        text_col.setSpacing(1)
+        text_col.setContentsMargins(0, 0, 0, 0)
+
+        self._title_lbl = QLabel("Bienvenida de vuelta")
+        self._title_lbl.setFont(qfont("size_small", bold=True))
+        self._title_lbl.setStyleSheet("background: transparent;")
+        text_col.addWidget(self._title_lbl)
+
+        self._sub_lbl = QLabel("Tu última sesión fue ayer. ¿Empezamos?")
+        self._sub_lbl.setFont(qfont("size_caption"))
+        self._sub_lbl.setStyleSheet("background: transparent;")
+        text_col.addWidget(self._sub_lbl)
+
+        lay.addLayout(text_col, stretch=1)
+
+        self._action_lbl = QLabel("Comenzar →")
+        self._action_lbl.setFont(qfont("size_caption", bold=True))
+        self._action_lbl.setStyleSheet("background: transparent;")
+        self._action_lbl.setCursor(Qt.CursorShape.PointingHandCursor)
+        lay.addWidget(self._action_lbl)
+
         self._apply_theme(self._modo)
         _tm().theme_changed.connect(self._apply_theme)
 
-    def _greeting(self) -> str:
-        import datetime
-        now = datetime.datetime.now()
-        text = "Buenas noches"
-        for hour_from, g in self._GREETINGS:
-            if now.hour >= hour_from:
-                text = g
-        day  = self._DAYS_ES[now.weekday()]
-        month = self._MONTHS_ES[now.month - 1]
-        return f"{text}  ·  {day} {now.day} {month}"
-
-    def _refresh(self):
-        self._lbl.setText(self._greeting())
-
     def refresh(self):
-        """Actualiza el texto (llamar al inicio de cada sesión)."""
-        self._refresh()
+        pass
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        self._lbl.setStyleSheet(label_style(self._modo, "text_secondary"))
-        self.setStyleSheet(
-            f"background: {C('bg_surface', self._modo)}; "
-            f"border-radius: {RADIUS_SMALL}px;"
-        )
+        accent = C("accent", self._modo)
+        c = QColor(accent)
+        bg_r, bg_g, bg_b = c.red(), c.green(), c.blue()
+        self.setStyleSheet(f"""
+            NMWelcomeBar {{
+                background-color: rgba({bg_r},{bg_g},{bg_b},20);
+                border: 1px solid rgba({bg_r},{bg_g},{bg_b},51);
+                border-radius: {RADIUS_INPUT}px;
+            }}
+        """)
+        self._title_lbl.setStyleSheet(f"color: {accent}; background: transparent;")
+        self._sub_lbl.setStyleSheet(f"color: {C('text_tertiary', self._modo)}; background: transparent;")
+        self._action_lbl.setStyleSheet(f"color: {accent}; background: transparent;")
 
 
 # ── NMEmojiPicker ─────────────────────────────────────────────────────────────
 
 class NMEmojiPicker(QWidget):
-    """Fila de chips de emoji para selección de estado de ánimo (1-10).
+    """5 botones circulares de emoji para selección de estado de ánimo (1-10).
 
-    Emite picked(int) con el puntaje del chip seleccionado.
+    Emite picked(int) con el puntaje seleccionado. Las etiquetas aparecen
+    debajo de la fila de botones, no sobre ellos.
     """
     picked = pyqtSignal(int)
 
     _CHIPS = [
-        ("\U0001f61e\U0001f61f", "Muy bajo", 1),
-        ("\U0001f615\U0001f641", "Bajo",      3),
-        ("\U0001f610\U0001f611", "Neutro",    5),
-        ("\U0001f642\U0001f60a", "Bien",      7),
-        ("\U0001f604\U0001f929", "Excelente", 9),
+        ("\U0001f61e", "Muy bajo", 1),
+        ("\U0001f615", "Bajo",      3),
+        ("\U0001f610", "Neutro",    5),
+        ("\U0001f642", "Bien",      7),
+        ("\U0001f604", "Excelente", 9),
     ]
+
+    _BTN_SIZE = 48
 
     def __init__(self, modo: str = None, parent=None):
         super().__init__(parent)
-        self._modo  = norm_modo(modo or _tm().modo)
+        self._modo     = norm_modo(modo or _tm().modo)
         self._selected: int | None = None
-        self._btns: list[QPushButton] = []
+        self._btns:   list[QPushButton] = []
+        self._labels: list[QLabel]      = []
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
 
-        lay = QHBoxLayout(self)
-        lay.setContentsMargins(0, 0, 0, 0)
-        lay.setSpacing(sp("sm"))
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(4)
+
+        btn_row = QHBoxLayout()
+        btn_row.setContentsMargins(0, 0, 0, 0)
+        btn_row.setSpacing(sp("sm"))
 
         for i, (emoji, label, score) in enumerate(self._CHIPS):
-            btn = QPushButton(f"{emoji}\n{label}")
-            btn.setFont(qfont("size_small"))
-            btn.setFixedSize(84, 62)
+            btn = QPushButton(emoji)
+            btn.setFixedSize(self._BTN_SIZE, self._BTN_SIZE)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.clicked.connect(lambda _=False, idx=i, sc=score: self._select(idx, sc))
-            lay.addWidget(btn)
+            btn_row.addWidget(btn)
             self._btns.append(btn)
 
-        lay.addStretch()
+        btn_row.addStretch()
+        outer.addLayout(btn_row)
+
+        lbl_row = QHBoxLayout()
+        lbl_row.setContentsMargins(0, 0, 0, 0)
+        lbl_row.setSpacing(sp("sm"))
+
+        for _, label, _ in self._CHIPS:
+            lbl = QLabel(label)
+            lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            lbl.setFixedWidth(self._BTN_SIZE)
+            lbl_row.addWidget(lbl)
+            self._labels.append(lbl)
+
+        lbl_row.addStretch()
+        outer.addLayout(lbl_row)
+
         self._apply_theme(self._modo)
         _tm().theme_changed.connect(self._apply_theme)
 
@@ -2594,25 +3190,44 @@ class NMEmojiPicker(QWidget):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        for i, btn in enumerate(self._btns):
+        teal   = C("teal",          self._modo)
+        border = C("border",        self._modo)
+        bg_el  = C("bg_elevated",   self._modo)
+        bg_ov  = C("bg_overlay",    self._modo)
+        txt_s  = C("text_secondary", self._modo)
+        r      = self._BTN_SIZE // 2
+
+        for i, (btn, lbl) in enumerate(zip(self._btns, self._labels)):
             is_sel = (i == self._selected)
-            bg     = C("accent", self._modo) if is_sel else C("bg_elevated", self._modo)
-            col    = C("text_on_accent", self._modo) if is_sel else C("text_secondary", self._modo)
-            border = C("accent", self._modo) if is_sel else C("border", self._modo)
-            btn.setStyleSheet(f"""
-                QPushButton {{
-                    background: {bg};
-                    color: {col};
-                    border: 2px solid {border};
-                    border-radius: {RADIUS_BUTTON}px;
-                    font-size: {TYPOGRAPHY['size_small']}pt;
-                    padding: 4px;
-                }}
-                QPushButton:hover {{
-                    background: {C('bg_overlay', self._modo)};
-                    border-color: {C('accent', self._modo)};
-                }}
-            """)
+            if is_sel:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background: transparent;
+                        border: 2px solid {teal};
+                        border-radius: {r}px;
+                        font-size: 22pt;
+                    }}
+                    QPushButton:hover {{ background: {bg_ov}; }}
+                """)
+                lbl.setStyleSheet(
+                    f"color: {teal}; font-weight: bold; font-size: {TYPOGRAPHY['size_caption']}pt;"
+                )
+            else:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background: {bg_el};
+                        border: 1px solid {border};
+                        border-radius: {r}px;
+                        font-size: 20pt;
+                    }}
+                    QPushButton:hover {{
+                        background: {bg_ov};
+                        border-color: {teal};
+                    }}
+                """)
+                lbl.setStyleSheet(
+                    f"color: {txt_s}; font-size: {TYPOGRAPHY['size_caption']}pt;"
+                )
 
 
 # ── NMWaveChart ───────────────────────────────────────────────────────────────
@@ -2814,13 +3429,26 @@ class NMPhaseChip(QWidget):
         self._active = phase
         self._apply_theme(self._modo)
 
+    _PHASE_COLOR_KEY = {
+        "inhala": "teal",
+        "manten": "accent",
+        "exhala": "violet",
+    }
+
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         for key, chip in self._chips.items():
             active = (key == self._active)
-            bg     = C("teal", self._modo) if active else C("bg_elevated", self._modo)
-            col    = C("text_on_accent", self._modo) if active else C("text_secondary", self._modo)
-            border = C("teal", self._modo) if active else C("border", self._modo)
+            phase_color = C(self._PHASE_COLOR_KEY.get(key, "teal"), self._modo)
+            if active:
+                bg     = phase_color
+                col    = C("text_on_accent", self._modo)
+                border = phase_color
+            else:
+                # Estado preview: tint suave del color de fase + texto del color
+                bg     = _rgba(phase_color, 0.12)
+                col    = phase_color
+                border = _rgba(phase_color, 0.25)
             chip.setStyleSheet(f"""
                 QLabel {{
                     background: {bg};
@@ -2863,16 +3491,20 @@ class NMCycleRing(QWidget):
         p.save()
         s  = self._size
         cx, cy = s / 2, s / 2
-        pen_w  = 4
-        r_out  = s / 2 - pen_w - 1
-        pen = QPen(QColor(C("teal", self._modo)), pen_w)
-        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-        p.setPen(pen)
-        p.setBrush(Qt.BrushStyle.NoBrush)
-        p.drawEllipse(QRectF(cx - r_out, cy - r_out, r_out * 2, r_out * 2))
-        p.setPen(QColor(C("text_primary", self._modo)))
-        p.setFont(qfont_mono(max(8, int(s * 0.22)), bold=True))
-        p.drawText(QRectF(0, 0, s, s), Qt.AlignmentFlag.AlignCenter, str(self._cycles))
+        pen_w = _ring_stroke(s)
+        r_out = s / 2 - pen_w - 1
+        rect = QRectF(cx - r_out, cy - r_out, r_out * 2, r_out * 2)
+
+        # Contorno completo con gradient firma v3 (no es progreso — siempre 360°)
+        _paint_v3_arc(p, rect, 90.0, -359.99, pen_w, self._modo, segments=80)
+
+        p.setPen(v3c("text", self._modo))
+        p.setFont(qfont_mono(max(10, int(s * 0.22)),
+                             bold=False))
+        # Peso semibold sin usar bold flag: usar v3_font sería ideal pero qfont_mono no
+        # acepta weight; pintamos directo con la familia mono y dejamos bold=False
+        p.drawText(QRectF(0, 0, s, s), Qt.AlignmentFlag.AlignCenter,
+                   str(self._cycles))
         p.restore()
         p.end()
 
@@ -2886,6 +3518,12 @@ class NMCalmBadge(QWidget):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._bpm  = bpm
+        self._blink_alpha = 255
+        self._blink_dir   = -1
+        self._blink_timer = QTimer(self)
+        self._blink_timer.setInterval(80)
+        self._blink_timer.timeout.connect(self._on_blink)
+        self._blink_timer.start()
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
         self.setFixedWidth(100)
 
@@ -2930,6 +3568,30 @@ class NMCalmBadge(QWidget):
             f"border-radius: {RADIUS_CARD}px; "
             f"border: 1px solid {C('border', self._modo)};"
         )
+
+    def _on_blink(self):
+        if sip.isdeleted(self):
+            self._blink_timer.stop()
+            return
+        self._blink_alpha += self._blink_dir * 12
+        if self._blink_alpha <= 80:
+            self._blink_dir = 1
+            self._blink_alpha = 80
+        elif self._blink_alpha >= 255:
+            self._blink_dir = -1
+            self._blink_alpha = 255
+        self.update()
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        c = QColor(C("violet", self._modo))
+        c.setAlpha(self._blink_alpha)
+        p.setBrush(QBrush(c))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawEllipse(QRectF(self.width() - 14, 8, 6, 6))
+        p.end()
 
 
 # ── NMTCCStepper ──────────────────────────────────────────────────────────────
@@ -3031,7 +3693,7 @@ class NMHeatBar(QWidget):
     value_changed = pyqtSignal(int)
 
     _COLD = "#3b82f6"
-    _MID  = "#22c55e"
+    _MID  = "#8b5cf6"
     _HOT  = "#ef4444"
 
     def __init__(self, value: int = 50, modo: str = None, parent=None):
@@ -3171,6 +3833,20 @@ class NMRoutineSection(QWidget):
         self._title_lbl.setStyleSheet("background: transparent;")
         h_lay.addWidget(self._title_lbl, stretch=1)
 
+        # Mini progress bar inline (60×3px) + label "N/N"
+        self._mini_prog = QWidget()
+        self._mini_prog.setFixedSize(60, 3)
+        self._mini_prog_pct = 0.0
+        self._mini_prog.paintEvent = self._paint_mini_prog
+        self._mini_prog.setVisible(False)
+        h_lay.addWidget(self._mini_prog)
+
+        self._prog_lbl = QLabel("")
+        self._prog_lbl.setFont(qfont("size_caption", bold=True))
+        self._prog_lbl.setStyleSheet("background: transparent;")
+        self._prog_lbl.setVisible(False)
+        h_lay.addWidget(self._prog_lbl)
+
         self._toggle_lbl = QLabel("▼")
         self._toggle_lbl.setFont(qfont("size_caption"))
         self._toggle_lbl.setStyleSheet("background: transparent;")
@@ -3194,6 +3870,54 @@ class NMRoutineSection(QWidget):
         self._collapsed = not self._collapsed
         self._content.setVisible(not self._collapsed)
         self._toggle_lbl.setText("▶" if self._collapsed else "▼")
+
+    def set_progress(self, done: int, total: int):
+        """Muestra mini-bar inline + label 'N/N' (o 'N/N ✓' si completo) en el header."""
+        if total <= 0:
+            self._mini_prog.setVisible(False)
+            self._prog_lbl.setVisible(False)
+            return
+        self._mini_prog_pct = max(0.0, min(1.0, done / total))
+        complete = done >= total
+        self._prog_lbl.setText(f"{done}/{total} ✓" if complete else f"{done}/{total}")
+        c = colors(self._modo)
+        if complete:
+            col = C("success", self._modo) if "success" in c else C("teal", self._modo)
+        elif self._mini_prog_pct >= 0.5:
+            col = C("warning", self._modo)
+        else:
+            col = C("text_tertiary", self._modo)
+        self._prog_lbl.setStyleSheet(f"color: {col}; background: transparent;")
+        self._mini_prog.setVisible(True)
+        self._prog_lbl.setVisible(True)
+        self._mini_prog.update()
+
+    def _paint_mini_prog(self, _event):
+        p = QPainter(self._mini_prog)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.save()
+        w, h = self._mini_prog.width(), self._mini_prog.height()
+        c = colors(self._modo)
+        # Track
+        track_c = QColor(c.get("border_card", c["border"]))
+        track_path = QPainterPath()
+        track_path.addRoundedRect(QRectF(0, 0, w, h), h / 2, h / 2)
+        p.fillPath(track_path, track_c)
+        # Fill
+        if self._mini_prog_pct > 0:
+            complete = self._mini_prog_pct >= 1.0
+            if complete:
+                fill_c = QColor(C("success", self._modo) if "success" in c else C("teal", self._modo))
+            elif self._mini_prog_pct >= 0.5:
+                fill_c = QColor(C("warning", self._modo))
+            else:
+                fill_c = QColor(C("teal", self._modo))
+            fill_path = QPainterPath()
+            fw = w * self._mini_prog_pct
+            fill_path.addRoundedRect(QRectF(0, 0, fw, h), h / 2, h / 2)
+            p.fillPath(fill_path, fill_c)
+        p.restore()
+        p.end()
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
@@ -3467,9 +4191,12 @@ class NMAvisoCard(QFrame):
         self._modo   = norm_modo(modo or _tm().modo)
         self._status = status
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        # Quitamos border en setStyleSheet; lo dibujamos manualmente para tener accent bar
+        self.setAutoFillBackground(False)
 
         outer = QHBoxLayout(self)
-        outer.setContentsMargins(sp("md"), sp("sm"), sp("md"), sp("sm"))
+        # Margen izquierdo extra para dejar espacio al accent bar de 3px
+        outer.setContentsMargins(sp("md") + 6, sp("sm"), sp("md"), sp("sm"))
         outer.setSpacing(sp("md"))
 
         # Left: big monospaced time
@@ -3530,12 +4257,9 @@ class NMAvisoCard(QFrame):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        c = colors(self._modo)
-        self.setStyleSheet(
-            f"QFrame {{ background: {c['bg_surface']}; "
-            f"border-radius: {RADIUS_CARD}px; "
-            f"border: 1px solid {c.get('border_card', c['border'])}; }}"
-        )
+        # No usamos border/background en setStyleSheet — los pintamos en paintEvent
+        # para tener accent bar gradient teal→violet a la izquierda.
+        self.setStyleSheet("QFrame { background: transparent; border: none; }")
         time_key = "text_primary" if self._status != self.STATUS_EXPIRED else "text_tertiary"
         self._time_lbl.setStyleSheet(f"color: {C(time_key, self._modo)}; background: transparent;")
         msg_key = "text_primary" if self._status != self.STATUS_EXPIRED else "text_tertiary"
@@ -3546,9 +4270,57 @@ class NMAvisoCard(QFrame):
             f"border-radius: 10px; font-size: {TYPOGRAPHY['size_caption']}pt; "
             f"font-weight: bold; }}"
         )
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.save()
+        w, h = self.width(), self.height()
+        r = RADIUS_CARD
+        c = colors(self._modo)
+
+        # Card background + border
+        bg = QColor(c["bg_surface"])
+        if self._status == self.STATUS_EXPIRED:
+            bg.setAlphaF(0.5)
+        path = QPainterPath()
+        path.addRoundedRect(QRectF(0, 0, w, h), r, r)
+        p.fillPath(path, bg)
+
+        # Accent bar lateral 3px con gradient teal→violet (gris si expirado)
+        if self._status == self.STATUS_EXPIRED:
+            bar_top = QColor(c.get("border_card", c["border"]))
+            bar_bot = QColor(bar_top)
+        else:
+            bar_top = QColor(C("teal",   self._modo))
+            bar_bot = QColor(C("violet", self._modo))
+        bar_path = QPainterPath()
+        bar_path.addRoundedRect(QRectF(0, 0, 3, h), 1.5, 1.5)
+        bar_grad = QLinearGradient(0, 0, 0, h)
+        bar_grad.setColorAt(0.0, bar_top)
+        bar_grad.setColorAt(1.0, bar_bot)
+        p.fillPath(bar_path, bar_grad)
+
+        # Border sutil
+        border_c = QColor(c.get("border_card", c["border"]))
+        p.setPen(QPen(border_c, 1))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawRoundedRect(QRectF(0.5, 0.5, w - 1, h - 1), r, r)
+
+        p.restore()
+        p.end()
 
 
 # ── NMFeaturedCard ────────────────────────────────────────────────────────────
+
+_PATIENT_AVATAR_PAIRS = [
+    ("accent", "teal"),
+    ("teal", "violet"),
+    ("violet", "accent"),
+    ("accent", "violet"),
+]
+
 
 class NMPatientRow(QFrame):
     """Fila de paciente del Hub con avatar e indicador de adherencia."""
@@ -3560,6 +4332,7 @@ class NMPatientRow(QFrame):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._selected = selected
+        self._name_hash = sum(ord(c) for c in (name or "?")) % len(_PATIENT_AVATAR_PAIRS)
         self.setObjectName("NMPatientRow")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         lay = QHBoxLayout(self)
@@ -3606,17 +4379,25 @@ class NMPatientRow(QFrame):
             f"QFrame#NMPatientRow {{ background: {bg}; border: 1px solid {border}; "
             f"border-radius: 10px; }}"
         )
+        k1, k2 = _PATIENT_AVATAR_PAIRS[self._name_hash]
         self._avatar.setStyleSheet(
             f"QLabel {{ background: qlineargradient(x1:0,y1:0,x2:1,y2:1, "
-            f"stop:0 {C('accent', self._modo)}, stop:1 {C('teal', self._modo)}); "
-            f"color: white; border-radius: 16px; }}"
+            f"stop:0 {C(k1, self._modo)}, stop:1 {C(k2, self._modo)}); "
+            f"color: white; border-radius: 16px; "
+            f"border: 1px solid {_rgba('#ffffff', 0.18 if 'dark' in self._modo else 0.35)}; }}"
         )
         self._name.setStyleSheet(label_style(self._modo, "text_primary"))
         self._subtitle.setStyleSheet(label_style(self._modo, "text_tertiary"))
 
 
 class NMSettingsSection(QFrame):
-    """Seccion de configuracion con header y filas compactas."""
+    """Sección de configuración v3 (NMConfigRow del README).
+
+      - Surface card con radius ``V3_RD["lg"]`` (14).
+      - Header eyebrow (caption semibold) con separador ``borderSoft``.
+      - Filas key-value separadas con line ``borderSoft``.
+      - Right slot acepta QWidget arbitrario (NMToggle, NMStatusChip, valor).
+    """
     def __init__(self, title: str, modo: str = None, parent=None):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
@@ -3625,8 +4406,10 @@ class NMSettingsSection(QFrame):
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
         self._header = QLabel(title)
-        self._header.setFont(qfont("size_caption", bold=True))
-        self._header.setContentsMargins(14, 10, 14, 10)
+        self._header.setFont(qfont("size_caption",
+                                   weight=TYPOGRAPHY["weight_semibold"]))
+        self._header.setContentsMargins(V3_SP["lg"], V3_SP["md"],
+                                         V3_SP["lg"], V3_SP["md"])
         lay.addWidget(self._header)
         self._rows = QVBoxLayout()
         self._rows.setContentsMargins(0, 0, 0, 0)
@@ -3639,7 +4422,8 @@ class NMSettingsSection(QFrame):
         row = QWidget()
         row.setObjectName("NMSettingsRow")
         lay = QHBoxLayout(row)
-        lay.setContentsMargins(14, 9, 14, 9)
+        lay.setContentsMargins(V3_SP["lg"], V3_SP["sm"] + 2,
+                                V3_SP["lg"], V3_SP["sm"] + 2)
         left = QLabel(label)
         left.setFont(qfont("size_small"))
         lay.addWidget(left)
@@ -3648,7 +4432,9 @@ class NMSettingsSection(QFrame):
             lay.addWidget(value)
         else:
             right = QLabel(str(value))
-            right.setFont(qfont_mono(9) if "http" in str(value) or "..." in str(value) else qfont("size_caption"))
+            sval = str(value)
+            right.setFont(qfont_mono(9) if "http" in sval or "..." in sval
+                          else qfont("size_caption"))
             lay.addWidget(right)
         self._rows.addWidget(row)
         self._apply_theme(self._modo)
@@ -3659,26 +4445,35 @@ class NMSettingsSection(QFrame):
         log.setTextFormat(Qt.TextFormat.RichText)
         log.setFont(qfont_mono(9))
         log.setWordWrap(True)
-        log.setContentsMargins(14, 8, 14, 8)
+        log.setContentsMargins(V3_SP["lg"], V3_SP["sm"],
+                                V3_SP["lg"], V3_SP["sm"])
         self._rows.addWidget(log)
         self._apply_theme(self._modo)
         return log
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        c = colors(self._modo)
+        is_dark = "dark" in self._modo
+        surf_key = "surfaceSolid" if is_dark else "surface"
+        bg = v3c(surf_key, self._modo).name()
+        border = v3c("borderSoft", self._modo).name()
+        text_eyebrow = v3c("text3", self._modo).name()
+        text_body = v3c("text2", self._modo).name()
+        radius = V3_RD["lg"]
         self.setStyleSheet(
-            f"QFrame#NMSettingsSection {{ background: {c['bg_surface']}; "
-            f"border: 1px solid {c.get('border_card', c['border'])}; border-radius: {RADIUS_CARD}px; }}"
-            f"QWidget#NMSettingsRow {{ background: transparent; border-top: 1px solid {c['bg_elevated']}; }}"
+            f"QFrame#NMSettingsSection {{ background: {bg}; "
+            f"border: 1px solid {border}; border-radius: {radius}px; }}"
+            f"QWidget#NMSettingsRow {{ background: transparent; "
+            f"border-top: 1px solid {border}; }}"
         )
         self._header.setStyleSheet(
-            f"color: {c['text_secondary']}; background: transparent; "
-            f"border-bottom: 1px solid {c['bg_elevated']};"
+            f"color: {text_eyebrow}; background: transparent; "
+            f"border-bottom: 1px solid {border};"
         )
         for lbl in self.findChildren(QLabel):
             if lbl is not self._header:
-                lbl.setStyleSheet(label_style(self._modo, "text_secondary"))
+                lbl.setStyleSheet(
+                    f"color: {text_body}; background: transparent;")
 
 
 class NMInstallProgress(QWidget):
@@ -3722,6 +4517,39 @@ class NMInstallProgress(QWidget):
         )
 
 
+class _GradientTextLabel(QWidget):
+    """Label que pinta texto con gradiente horizontal izquierda→derecha."""
+
+    def __init__(self, text: str, font, color_left: str, color_right: str,
+                 height: int = 28, margins=(10, 6, 10, 10), parent=None):
+        super().__init__(parent)
+        self._text = text
+        self._font = font
+        self._c1   = QColor(color_left)
+        self._c2   = QColor(color_right)
+        self.setFixedHeight(height)
+        self.setContentsMargins(*margins)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+
+    def set_colors(self, color_left: str, color_right: str):
+        self._c1 = QColor(color_left)
+        self._c2 = QColor(color_right)
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.setFont(self._font)
+        grad = QLinearGradient(0, 0, self.width(), 0)
+        grad.setColorAt(0.0, self._c1)
+        grad.setColorAt(1.0, self._c2)
+        p.setPen(QPen(QBrush(grad), 1))
+        r = self.contentsRect()
+        p.drawText(r, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self._text)
+        p.end()
+
+
 class NMHubSidebar(QWidget):
     """Sidebar del Hub con nav vertical y pill activo."""
     nav_clicked = pyqtSignal(str)
@@ -3732,14 +4560,16 @@ class NMHubSidebar(QWidget):
         self._modo = norm_modo(modo or _tm().modo)
         self._active = active or (items[0][0] if items else "")
         self._buttons: dict[str, QPushButton] = {}
-        self.setFixedWidth(168)
+        self.setFixedWidth(200)
         lay = QVBoxLayout(self)
         self._layout = lay
         lay.setContentsMargins(8, 12, 8, 8)
         lay.setSpacing(3)
-        self._logo = QLabel("NeuroMood Hub")
-        self._logo.setFont(qfont("size_small", bold=True))
-        self._logo.setContentsMargins(10, 6, 10, 10)
+        self._logo = _GradientTextLabel(
+            "NeuroMood Hub", qfont("size_small", bold=True),
+            C("accent", self._modo), C("teal", self._modo),
+            height=28, margins=(10, 6, 10, 10),
+        )
         lay.addWidget(self._logo)
         for key, icon, label in items:
             btn = QPushButton(f"{icon}  {label}")
@@ -3774,7 +4604,7 @@ class NMHubSidebar(QWidget):
             f"background: {C('sidebar_bg', self._modo)}; "
             f"border-right: 1px solid {c.get('border_card', c['border'])};"
         )
-        self._logo.setStyleSheet(f"color: {C('teal', self._modo)}; background: transparent;")
+        self._logo.set_colors(C("accent", self._modo), C("teal", self._modo))
         self._footer.setStyleSheet(
             f"color: {c['text_tertiary']}; background: transparent; "
             f"border-top: 1px solid {c.get('border_card', c['border'])};"
@@ -3795,6 +4625,7 @@ class NMFeaturedCard(QFrame):
     """Card principal del Hub Dashboard con blob gradient de fondo.
 
     Muestra ánimo promedio como número grande + emoji + subtítulo.
+    API: set_score(float, str), set_delta(float|None), set_meta(str), set_tags(list[tuple[str,str]])
     """
     def __init__(self, modo: str = None, parent=None):
         super().__init__(parent)
@@ -3804,34 +4635,60 @@ class NMFeaturedCard(QFrame):
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(sp("lg"), sp("md"), sp("lg"), sp("md"))
-        lay.setSpacing(sp("sm"))
+        lay.setSpacing(sp("xs") if hasattr(sp, "__call__") else 4)
 
-        title_row = QHBoxLayout()
-        self._title_lbl = QLabel("Ánimo promedio")
-        self._title_lbl.setFont(qfont("size_body", bold=True))
+        # Sub-label superior teal uppercase (ej. "Ánimo promedio · semana")
+        self._title_lbl = QLabel("Ánimo promedio · semana")
+        self._title_lbl.setFont(qfont("size_caption", bold=True))
         self._title_lbl.setStyleSheet("background: transparent;")
-        title_row.addWidget(self._title_lbl)
-        title_row.addStretch()
-        lay.addLayout(title_row)
+        lay.addWidget(self._title_lbl)
 
+        # Fila: score grande + "/10" + emoji + delta pill
         score_row = QHBoxLayout()
         score_row.setSpacing(sp("sm"))
         self._score_lbl = QLabel("—")
         self._score_lbl.setFont(qfont("size_h1", bold=True))
         self._score_lbl.setStyleSheet("background: transparent;")
         score_row.addWidget(self._score_lbl)
+
+        self._slash_lbl = QLabel("/ 10")
+        self._slash_lbl.setFont(qfont("size_small"))
+        self._slash_lbl.setStyleSheet("background: transparent;")
+        score_row.addWidget(self._slash_lbl)
+
         self._emoji_lbl = QLabel("\U0001f610")
         self._emoji_lbl.setFont(qfont("size_h2"))
         self._emoji_lbl.setStyleSheet("background: transparent;")
         score_row.addWidget(self._emoji_lbl)
+
+        self._delta_lbl = QLabel()
+        self._delta_lbl.setFont(qfont("size_caption", bold=True))
+        self._delta_lbl.setVisible(False)
+        score_row.addWidget(self._delta_lbl)
+
         score_row.addStretch()
         lay.addLayout(score_row)
 
-        self._sub_lbl = QLabel("Esta semana")
+        # Meta line: "N semanas en programa · Última sesión: hace X días"
+        self._sub_lbl = QLabel()
         self._sub_lbl.setFont(qfont("size_small"))
         self._sub_lbl.setStyleSheet("background: transparent;")
+        self._sub_lbl.setVisible(False)
         lay.addWidget(self._sub_lbl)
+
+        # Tags row (pills)
+        self._tags_widget = QWidget()
+        self._tags_widget.setStyleSheet("background: transparent;")
+        self._tags_layout = QHBoxLayout(self._tags_widget)
+        self._tags_layout.setContentsMargins(0, 0, 0, 0)
+        self._tags_layout.setSpacing(sp("xs") if hasattr(sp, "__call__") else 4)
+        self._tags_layout.addStretch()
+        self._tags_widget.setVisible(False)
+        lay.addWidget(self._tags_widget)
+
         lay.addStretch()
+
+        self._last_delta = None  # cache para re-aplicar en cambio de tema
 
         self._apply_theme(self._modo)
         _tm().theme_changed.connect(self._apply_theme)
@@ -3840,6 +4697,62 @@ class NMFeaturedCard(QFrame):
         self._score_lbl.setText(f"{score:.1f}")
         self._emoji_lbl.setText(emoji)
         self.update()
+
+    def set_delta(self, delta):
+        """Muestra pill con delta vs semana anterior. None oculta el pill."""
+        self._last_delta = delta
+        if delta is None:
+            self._delta_lbl.setVisible(False)
+            return
+        sign = "↑" if delta >= 0 else "↓"
+        text = f"{sign} {abs(delta):.1f} vs semana anterior"
+        self._delta_lbl.setText(text)
+        teal = C("teal", self._modo)
+        amber = C("warning", self._modo)
+        bg_color = _rgba(teal, 0.14) if delta >= 0 else _rgba(amber, 0.14)
+        fg_color = teal if delta >= 0 else amber
+        self._delta_lbl.setStyleSheet(
+            f"QLabel {{ background: {bg_color}; color: {fg_color}; "
+            f"border-radius: 10px; padding: 2px 8px; }}"
+        )
+        self._delta_lbl.setVisible(True)
+
+    def set_meta(self, text: str):
+        """Muestra línea gris con meta info (semanas, última sesión)."""
+        if not text:
+            self._sub_lbl.setVisible(False)
+            return
+        self._sub_lbl.setText(text)
+        self._sub_lbl.setStyleSheet(label_style(self._modo, "text_tertiary"))
+        self._sub_lbl.setVisible(True)
+
+    def set_tags(self, tags):
+        """tags: list[tuple[str, str]] donde str2 es 'teal'|'violet'|'accent'."""
+        # Limpiar tags anteriores (conservar el stretch)
+        while self._tags_layout.count() > 1:
+            item = self._tags_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        if not tags:
+            self._tags_widget.setVisible(False)
+            return
+        color_map = {
+            "teal":   ("teal",   0.14),
+            "violet": ("violet", 0.14),
+            "accent": ("accent", 0.14),
+        }
+        for label_text, color_key in tags[:3]:
+            key, alpha = color_map.get(color_key, ("teal", 0.14))
+            fg = C(key, self._modo)
+            bg = _rgba(fg, alpha)
+            chip = QLabel(label_text)
+            chip.setFont(qfont("size_caption", bold=True))
+            chip.setStyleSheet(
+                f"QLabel {{ background: {bg}; color: {fg}; "
+                f"border-radius: 10px; padding: 2px 9px; }}"
+            )
+            self._tags_layout.insertWidget(self._tags_layout.count() - 1, chip)
+        self._tags_widget.setVisible(True)
 
     def paintEvent(self, event):
         p = QPainter(self)
@@ -3881,10 +4794,18 @@ class NMFeaturedCard(QFrame):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         self.setStyleSheet("QFrame { background: transparent; border: none; }")
-        self._title_lbl.setStyleSheet(label_style(self._modo, "text_secondary"))
+        teal = C("teal", self._modo)
+        self._title_lbl.setStyleSheet(
+            f"color: {teal}; background: transparent; letter-spacing: 0.06em;"
+        )
         self._score_lbl.setStyleSheet(f"color: {C('text_primary', self._modo)}; background: transparent;")
+        self._slash_lbl.setStyleSheet(label_style(self._modo, "text_tertiary"))
         self._emoji_lbl.setStyleSheet("background: transparent;")
-        self._sub_lbl.setStyleSheet(label_style(self._modo, "text_tertiary"))
+        if self._sub_lbl.isVisible():
+            self._sub_lbl.setStyleSheet(label_style(self._modo, "text_tertiary"))
+        # Re-aplicar delta con los nuevos colores de tema
+        if hasattr(self, "_last_delta"):
+            self.set_delta(self._last_delta)
         self.update()
 
 
@@ -3920,27 +4841,23 @@ class NMModuleRing(QWidget):
 
         s        = self._size
         cx, cy   = s / 2, s / 2
-        pen_w    = 5
+        pen_w    = _ring_stroke(s)
         r_arc    = s / 2 - pen_w - 1
         arc_rect = QRectF(cx - r_arc, cy - r_arc, r_arc * 2, r_arc * 2)
 
-        # Track
-        track_c = QColor(C("progress_track", self._modo))
-        p.setPen(QPen(track_c, pen_w, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+        # Track sutil (borderSoft v3 — TODOS los rings usan el mismo lenguaje)
+        track_c = v3c("borderSoft", self._modo)
+        p.setPen(QPen(track_c, pen_w, Qt.PenStyle.SolidLine, Qt.PenCapStyle.FlatCap))
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawEllipse(QPointF(cx, cy), r_arc, r_arc)
 
-        # Arc
+        # Arco progreso con gradient firma v3 (uniforme entre rings)
         if self._pct > 0.001:
-            arc_col = ring_color(self._pct * 100, self._modo)
-            pen = QPen(QColor(arc_col), pen_w, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
-            p.setPen(pen)
-            span = int(-self._pct * 360 * 16)
-            p.drawArc(arc_rect, 90 * 16, span)
+            _paint_v3_arc(p, arc_rect, 90.0, -360.0 * self._pct, pen_w, self._modo)
 
-        # Text
-        p.setPen(QColor(C("text_primary", self._modo)))
-        p.setFont(qfont_mono(max(8, int(s * 0.18)), bold=True))
+        # Texto centrado
+        p.setPen(v3c("text", self._modo))
+        p.setFont(qfont_mono(max(9, int(s * 0.20)), bold=False))
         p.drawText(QRectF(0, 0, s, s), Qt.AlignmentFlag.AlignCenter,
                    f"{int(self._pct * 100)}%")
 
@@ -3951,15 +4868,23 @@ class NMModuleRing(QWidget):
 # ── NMChatBubble ──────────────────────────────────────────────────────────────
 
 class NMChatBubble(QWidget):
-    """Burbuja de chat para el Hub IA.
+    """Burbuja de chat v3 (Hub IA).
 
-    side='left' → IA (bg_surface). side='right' → terapeuta (accent).
+      - ``side="left"``  → IA       (surface + borderSoft, texto principal).
+      - ``side="right"`` → usuario  (gradient firma teal→violet, texto on-accent).
+
+    Soporta ``typing=True``: muestra ``...`` que se actualiza cíclicamente cada
+    400ms (placeholder ligero; para una animación con `NMTypingDots` pleno,
+    instanciar éste como hijo).
     """
-    def __init__(self, text: str, side: str = "left",
-                 modo: str = None, parent=None):
+    def __init__(self, text: str = "", side: str = "left",
+                 modo: str = None, typing: bool = False, parent=None):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._side = side
+        self._typing = bool(typing)
+        self._typing_dots_state = 1
+        self._original_text = text
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
@@ -3974,37 +4899,86 @@ class NMChatBubble(QWidget):
         self._bubble.setFont(qfont("size_body"))
         self._bubble.setWordWrap(True)
         self._bubble.setMaximumWidth(360)
-        self._bubble.setContentsMargins(sp("md"), sp("sm"), sp("md"), sp("sm"))
-        self._bubble.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self._bubble.setContentsMargins(V3_SP["md"], V3_SP["sm"],
+                                        V3_SP["md"], V3_SP["sm"])
+        self._bubble.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse)
         outer.addWidget(self._bubble)
 
         if side == "left":
             outer.addStretch()
 
+        # Timer interno para typing dots
+        self._typing_timer = QTimer(self)
+        self._typing_timer.setInterval(400)
+        self._typing_timer.timeout.connect(self._tick_typing)
+        if self._typing:
+            self._typing_timer.start()
+            self._refresh_typing_text()
+
         self._apply_theme(self._modo)
         _tm().theme_changed.connect(self._apply_theme)
 
     def set_text(self, text: str):
+        self._original_text = text
+        self._typing = False
+        if self._typing_timer.isActive():
+            self._typing_timer.stop()
         self._bubble.setText(text)
+
+    def set_typing(self, typing: bool):
+        """Activa/desactiva el indicador de 'IA escribiendo' (3 dots cíclicos)."""
+        self._typing = bool(typing)
+        if self._typing:
+            self._typing_timer.start()
+            self._refresh_typing_text()
+        else:
+            self._typing_timer.stop()
+            self._bubble.setText(self._original_text)
+
+    def _tick_typing(self):
+        self._typing_dots_state = (self._typing_dots_state % 3) + 1
+        self._refresh_typing_text()
+
+    def _refresh_typing_text(self):
+        self._bubble.setText("●" * self._typing_dots_state +
+                             "○" * (3 - self._typing_dots_state))
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        c = colors(self._modo)
+        is_dark = "dark" in self._modo
+        r = V3_RD["lg"]                 # radius 14
+        pad = f"padding: {V3_SP['sm']}px {V3_SP['md']}px;"
+        fsize = f"font-size: {TYPOGRAPHY['size_body']}pt;"
         if self._side == "left":
-            bg     = c["bg_surface"]
-            col    = c["text_primary"]
-            border = c.get("border_card", c["border"])
+            # IA — superficie clara con borderSoft, cola en top-left
+            surf_key = "surfaceSolid" if is_dark else "surface"
+            bg = v3c(surf_key, self._modo).name()
+            col = v3c("text", self._modo).name()
+            border = v3c("borderSoft", self._modo).name()
+            radii = (f"border-top-left-radius: 3px; "
+                     f"border-top-right-radius: {r}px; "
+                     f"border-bottom-left-radius: {r}px; "
+                     f"border-bottom-right-radius: {r}px;")
+            self._bubble.setStyleSheet(
+                f"QLabel {{ background: {bg}; color: {col}; "
+                f"border: 1px solid {border}; {radii} {pad} {fsize} }}"
+            )
         else:
-            bg     = C("accent", self._modo)
-            col    = c["text_on_accent"]
-            border = C("accent_hover", self._modo)
-        r = RADIUS_CARD
-        self._bubble.setStyleSheet(
-            f"QLabel {{ background: {bg}; color: {col}; "
-            f"border: 1px solid {border}; border-radius: {r}px; "
-            f"padding: {sp('sm')}px {sp('md')}px; "
-            f"font-size: {TYPOGRAPHY['size_body']}pt; }}"
-        )
+            # Usuario — gradient firma v3 (teal → cyan-mid → violet), cola en top-right
+            gf = v3c("gradFrom", self._modo).name()
+            gm = v3c("gradMid",  self._modo).name()
+            gt = v3c("gradTo",   self._modo).name()
+            text_col = C("text_on_accent", self._modo)
+            radii = (f"border-top-left-radius: {r}px; "
+                     f"border-top-right-radius: 3px; "
+                     f"border-bottom-left-radius: {r}px; "
+                     f"border-bottom-right-radius: {r}px;")
+            self._bubble.setStyleSheet(
+                f"QLabel {{ background: qlineargradient("
+                f"x1:0,y1:0,x2:1,y2:1, stop:0 {gf}, stop:0.5 {gm}, stop:1 {gt}); "
+                f"color: {text_col}; border: none; {radii} {pad} {fsize} }}"
+            )
 
 
 # ── NMTypingDots ──────────────────────────────────────────────────────────────
@@ -4201,7 +5175,7 @@ class NMSyncOrb(QWidget):
         self._anim_alpha = 255
         self._fade_dir   = -1
         self._timer      = QTimer(self)
-        self._timer.setInterval(40)
+        self._timer.setInterval(80)
         self._timer.timeout.connect(self._pulse)
         self.setFixedSize(size, size)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
@@ -4221,7 +5195,7 @@ class NMSyncOrb(QWidget):
         if sip.isdeleted(self):
             self._timer.stop()
             return
-        self._anim_alpha += self._fade_dir * 8
+        self._anim_alpha += self._fade_dir * 14
         if self._anim_alpha <= 70:
             self._fade_dir =  1
         elif self._anim_alpha >= 255:
@@ -4240,12 +5214,28 @@ class NMSyncOrb(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.save()
+        w, h = self.width(), self.height()
+        cx, cy = w / 2, h / 2
         c = self._color()
+
+        # Glow halo radial — alpha modulado por pulso (max 100)
+        glow = QRadialGradient(cx, cy, cx)
+        glow_c = QColor(c)
+        glow_c.setAlpha(int(self._anim_alpha * 0.39))  # ~100 en estado estático
+        transparent = QColor(c)
+        transparent.setAlpha(0)
+        glow.setColorAt(0.3, glow_c)
+        glow.setColorAt(1.0, transparent)
+        p.setBrush(QBrush(glow))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawEllipse(QRectF(0, 0, w, h))
+
+        # Círculo sólido centrado
         c.setAlpha(self._anim_alpha)
         p.setBrush(QBrush(c))
-        p.setPen(Qt.PenStyle.NoPen)
-        m = 1
-        p.drawEllipse(QRectF(m, m, self.width() - m * 2, self.height() - m * 2))
+        m = max(1, w // 4)
+        p.drawEllipse(QRectF(m, m, w - m * 2, h - m * 2))
+
         p.restore()
         p.end()
 
@@ -4256,7 +5246,7 @@ class NMInstallStepper(QWidget):
     """Stepper horizontal para instaladores y desinstaladores (3-5 pasos).
 
     Siempre usa dark mode (instaladores son siempre dark).
-    Accent configurable: 'teal' para Suite, 'violet' para Hub Pro.
+    Accent configurable: 'teal' para Suite, 'violet' para NeuroMood Hub.
     """
     def __init__(self, steps: list[str], current: int = 0,
                  accent_key: str = "teal", parent=None):
@@ -4347,7 +5337,8 @@ class NMDataPreserveCard(QWidget):
         super().__init__(parent)
         self._modo    = "dark_hybrid"
         self._checked = checked
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        self.setObjectName("NMDataPreserveCard")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(sp("lg"), sp("md"), sp("lg"), sp("md"))
@@ -4400,9 +5391,10 @@ class NMDataPreserveCard(QWidget):
     def _apply_theme(self, modo: str = None):
         c = colors(self._modo)
         self.setStyleSheet(
+            f"QWidget#NMDataPreserveCard {{ "
             f"background: {c['bg_surface']}; "
             f"border-radius: {RADIUS_CARD}px; "
-            f"border: 2px solid {C('warning', self._modo)};"
+            f"border: 1px solid {C('warning', self._modo)}; }}"
         )
         self._desc_lbl.setStyleSheet(label_style(self._modo, "text_secondary"))
         if self._checked:
@@ -4418,3 +5410,476 @@ class NMDataPreserveCard(QWidget):
                 f"border-radius: {RADIUS_PILL}px; border: 1px solid {c['border']}; }}"
             )
             self._state_lbl.setStyleSheet(label_style(self._modo, "text_tertiary"))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# V3MoodSlider + NMPlayButton — componentes nuevos v3 (aditivos)
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── helpers privados para clicks tipados ──────────────────────────────────────
+
+class _MoodPickWidget(QWidget):
+    """Widget interno que emite ``picked(int)`` al hacer click izquierdo."""
+    picked = pyqtSignal(int)
+
+    def __init__(self, value: int, parent=None):
+        super().__init__(parent)
+        self._value = value
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.picked.emit(self._value)
+        super().mousePressEvent(event)
+
+
+class _MoodPickLabel(QLabel):
+    """QLabel que emite ``picked(int)`` al hacer click izquierdo."""
+    picked = pyqtSignal(int)
+
+    def __init__(self, text: str, value: int, parent=None):
+        super().__init__(text, parent)
+        self._value = value
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.picked.emit(self._value)
+        super().mousePressEvent(event)
+
+
+# ── _MoodTrackBar (subcomponente del V3MoodSlider) ───────────────────────────
+
+class _MoodTrackBar(QWidget):
+    """Track horizontal con gradient arcoíris emocional + 10 dots clickeables.
+
+    El gradient NO varía con el theme (paleta emocional fija, ver README v3).
+    El dot activo: 16x16 blanco con border 3px del color del nivel + halo.
+    Dots inactivos: 6x6 semi-transparentes.
+    """
+    level_clicked = pyqtSignal(int)
+
+    # 7-stop rainbow emocional (literal del README v3)
+    _RAINBOW_STOPS = (
+        ("#5b6cb8", 0.00),
+        ("#7ba8e6", 0.22),
+        ("#f5d76a", 0.50),
+        ("#5dd6a3", 0.70),
+        ("#36cfb8", 0.80),
+        ("#a78bfa", 0.95),
+        ("#ec4899", 1.00),
+    )
+
+    def __init__(self, level: int = 5, parent=None):
+        super().__init__(parent)
+        self._level = max(1, min(10, int(level)))
+        self.setFixedHeight(56)
+        self.setMinimumWidth(280)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def set_level(self, level: int):
+        lv = max(1, min(10, int(level)))
+        if lv != self._level:
+            self._level = lv
+            self.update()
+
+    def level(self) -> int:
+        return self._level
+
+    def _dot_positions(self) -> list[float]:
+        margin_x = 16
+        w = self.width() - 2 * margin_x
+        return [margin_x + (i / 9) * w for i in range(10)]
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        h = self.height()
+        bar_y = h // 2 - 4
+        bar_h = 8
+        margin_x = 16
+        bar_w = self.width() - 2 * margin_x
+        bar_rect = QRectF(margin_x, bar_y, bar_w, bar_h)
+
+        # Track con gradient rainbow (opacity .85 según JSX)
+        grad = QLinearGradient(bar_rect.left(), 0, bar_rect.right(), 0)
+        for hex_c, pos in self._RAINBOW_STOPS:
+            grad.setColorAt(pos, QColor(hex_c))
+        path = QPainterPath()
+        path.addRoundedRect(bar_rect, bar_h / 2, bar_h / 2)
+        p.setOpacity(0.85)
+        p.fillPath(path, QBrush(grad))
+        p.setOpacity(1.0)
+
+        # Dots (10)
+        positions = self._dot_positions()
+        center_y = h / 2
+        for i, x in enumerate(positions):
+            n = i + 1
+            lv_color = get_mood(n)["to"]
+            if n == self._level:
+                # Halo exterior
+                halo = QColor(lv_color)
+                halo.setAlpha(64)
+                p.setPen(Qt.PenStyle.NoPen)
+                p.setBrush(QBrush(halo))
+                p.drawEllipse(QPointF(x, center_y), 14, 14)
+                # Halo intermedio
+                halo2 = QColor(lv_color)
+                halo2.setAlpha(110)
+                p.setBrush(QBrush(halo2))
+                p.drawEllipse(QPointF(x, center_y), 10, 10)
+                # Dot blanco con borde
+                p.setBrush(QBrush(QColor("#ffffff")))
+                p.setPen(QPen(QColor(lv_color), 3))
+                p.drawEllipse(QPointF(x, center_y), 8, 8)
+            else:
+                p.setPen(Qt.PenStyle.NoPen)
+                p.setBrush(QBrush(QColor(255, 255, 255, 180)))
+                p.drawEllipse(QPointF(x, center_y), 3, 3)
+        p.end()
+
+    def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton:
+            x = (event.position().x() if hasattr(event, "position")
+                 else float(event.pos().x()))
+            positions = self._dot_positions()
+            closest = min(range(10), key=lambda i: abs(positions[i] - x))
+            n = closest + 1
+            if n != self._level:
+                self.set_level(n)
+            self.level_clicked.emit(n)
+        super().mousePressEvent(event)
+
+
+# ── V3MoodSlider ─────────────────────────────────────────────────────────────
+
+class V3MoodSlider(QWidget):
+    """Slider de mood 1-10 v3 (Suite > Mood Tracker > Slashbar 1-10).
+
+    Composición:
+      • Header: título + subtítulo + cluster derecho (eyebrow "HOY", nombre del
+        nivel grande en color, "n/10" mono, emoji 104px con glow).
+      • Slashbar gradient arcoíris emocional con 10 dots clickeables.
+      • Fila de números 1-10 (mono); el activo coloreado del nivel.
+      • Range descriptors (3 columnas: izq/centro/der).
+      • Panel inferior con 10 mini emojis preview; el activo escala 1.18 + glow.
+
+    Signal:
+        level_changed(int)  emitido cada vez que cambia el nivel.
+    """
+    level_changed = pyqtSignal(int)
+
+    def __init__(self, level: int = 5,
+                 title: str = "¿Cómo te sientes hoy?",
+                 subtitle: str = "Deslizá para encontrar el número que mejor describe tu estado.",
+                 modo: str = None, parent=None):
+        super().__init__(parent)
+        self._level = max(1, min(10, int(level)))
+        self._modo = norm_modo(modo or _tm().modo)
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(V3_SP["lg"])
+
+        # ── Header ───────────────────────────────────────────────────────────
+        header = QHBoxLayout()
+        header.setSpacing(V3_SP["lg"])
+
+        title_col = QVBoxLayout()
+        title_col.setSpacing(4)
+        self._title_lbl = QLabel(title)
+        self._title_lbl.setFont(qfont("size_h2",
+                                      weight=TYPOGRAPHY["weight_bold"]))
+        self._subtitle_lbl = QLabel(subtitle)
+        self._subtitle_lbl.setFont(qfont("size_small"))
+        self._subtitle_lbl.setWordWrap(True)
+        title_col.addWidget(self._title_lbl)
+        title_col.addWidget(self._subtitle_lbl)
+        title_col.addStretch()
+        header.addLayout(title_col, stretch=1)
+
+        right = QHBoxLayout()
+        right.setSpacing(V3_SP["md"])
+
+        text_col = QVBoxLayout()
+        text_col.setSpacing(2)
+        self._eyebrow_lbl = QLabel("HOY")
+        self._eyebrow_lbl.setFont(
+            qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
+        self._eyebrow_lbl.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self._name_lbl = QLabel(get_mood(self._level)["name"])
+        self._name_lbl.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self._name_lbl.setFont(
+            qfont("size_display", weight=TYPOGRAPHY["weight_bold"]))
+        self._numeric_lbl = QLabel(f"{self._level}/10")
+        self._numeric_lbl.setFont(qfont_mono(12, bold=False))
+        self._numeric_lbl.setAlignment(Qt.AlignmentFlag.AlignRight)
+        text_col.addWidget(self._eyebrow_lbl)
+        text_col.addWidget(self._name_lbl)
+        text_col.addWidget(self._numeric_lbl)
+        text_col.addStretch()
+        right.addLayout(text_col)
+
+        self._emoji_big = NMMoodEmoji(level=self._level, size=104,
+                                      glow=True, modo=self._modo)
+        right.addWidget(self._emoji_big,
+                        alignment=Qt.AlignmentFlag.AlignVCenter)
+
+        header.addLayout(right)
+        root.addLayout(header)
+
+        # ── Slashbar ──────────────────────────────────────────────────────────
+        self._track = _MoodTrackBar(level=self._level)
+        self._track.level_clicked.connect(self._on_level_clicked)
+        root.addWidget(self._track)
+
+        # ── Fila de números 1-10 ──────────────────────────────────────────────
+        num_row = QWidget()
+        nrow_layout = QHBoxLayout(num_row)
+        nrow_layout.setContentsMargins(16, 0, 16, 0)
+        nrow_layout.setSpacing(0)
+        self._num_labels: list[_MoodPickLabel] = []
+        for n in range(1, 11):
+            lbl = _MoodPickLabel(str(n), n)
+            lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            lbl.setFixedWidth(24)
+            lbl.picked.connect(self._on_level_clicked)
+            self._num_labels.append(lbl)
+            nrow_layout.addWidget(lbl)
+            if n < 10:
+                nrow_layout.addStretch()
+        root.addWidget(num_row)
+
+        # ── Range descriptors ─────────────────────────────────────────────────
+        desc_row = QHBoxLayout()
+        desc_row.setContentsMargins(0, V3_SP["sm"], 0, 0)
+        d_left = QLabel("Necesito apoyo")
+        d_mid = QLabel("En el medio")
+        d_mid.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        d_right = QLabel("Me siento pleno")
+        d_right.setAlignment(Qt.AlignmentFlag.AlignRight)
+        for d in (d_left, d_mid, d_right):
+            d.setFont(qfont("size_caption",
+                            weight=TYPOGRAPHY["weight_semibold"]))
+        desc_row.addWidget(d_left, 1)
+        desc_row.addWidget(d_mid, 1)
+        desc_row.addWidget(d_right, 1)
+        self._desc_labels = (d_left, d_mid, d_right)
+        root.addLayout(desc_row)
+
+        # ── Panel inferior con 10 mini emojis ─────────────────────────────────
+        self._preview_panel = QFrame()
+        self._preview_panel.setObjectName("MoodPreviewPanel")
+        prow = QHBoxLayout(self._preview_panel)
+        prow.setContentsMargins(14, 16, 14, 16)
+        prow.setSpacing(0)
+        self._preview_cells: list[tuple[_MoodPickWidget, NMMoodEmoji, QLabel, int]] = []
+        for n in range(1, 11):
+            cell = _MoodPickWidget(n)
+            cell.setFixedWidth(40)
+            col = QVBoxLayout(cell)
+            col.setContentsMargins(0, 0, 0, 0)
+            col.setSpacing(2)
+            col.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+            is_active = (n == self._level)
+            emoji = NMMoodEmoji(level=n,
+                                size=(38 if is_active else 32),
+                                glow=is_active, modo=self._modo)
+            num_lbl = QLabel(str(n))
+            num_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            num_lbl.setFont(qfont_mono(9, bold=is_active))
+            col.addWidget(emoji, alignment=Qt.AlignmentFlag.AlignHCenter)
+            col.addWidget(num_lbl)
+            cell.picked.connect(self._on_level_clicked)
+            self._preview_cells.append((cell, emoji, num_lbl, n))
+            prow.addWidget(cell)
+            if n < 10:
+                prow.addStretch()
+        root.addWidget(self._preview_panel)
+
+        self._apply_theme(self._modo)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    # ── API pública ──────────────────────────────────────────────────────────
+
+    def level(self) -> int:
+        return self._level
+
+    def set_level(self, level: int):
+        lv = max(1, min(10, int(level)))
+        if lv == self._level:
+            return
+        self._level = lv
+        self._track.set_level(lv)
+        self._emoji_big.set_level(lv)
+        self._name_lbl.setText(get_mood(lv)["name"])
+        self._numeric_lbl.setText(f"{lv}/10")
+        for cell, emoji, lbl, n in self._preview_cells:
+            active = (n == lv)
+            emoji.set_size(38 if active else 32)
+            emoji.set_glow(active)
+        self._refresh_styles()
+        self.level_changed.emit(lv)
+
+    # ── internals ────────────────────────────────────────────────────────────
+
+    def _on_level_clicked(self, n: int):
+        self.set_level(int(n))
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self._refresh_styles()
+
+    def _refresh_styles(self):
+        is_dark = "dark" in self._modo
+        c_text = v3c("text", self._modo).name()
+        c_text2 = v3c("text2", self._modo).name()
+        c_text3 = v3c("text3", self._modo).name()
+        c_text4 = v3c("text4", self._modo).name()
+        elev_key = "elevatedSolid" if is_dark else "elevated"
+        c_elev = v3c(elev_key, self._modo).name()
+        c_border = v3c("borderSoft", self._modo).name()
+        lv_color = get_mood(self._level)["to"]
+
+        self._title_lbl.setStyleSheet(
+            f"color: {c_text}; background: transparent;")
+        self._subtitle_lbl.setStyleSheet(
+            f"color: {c_text2}; background: transparent;")
+        self._eyebrow_lbl.setStyleSheet(
+            f"color: {c_text3}; background: transparent;")
+        self._name_lbl.setStyleSheet(
+            f"color: {lv_color}; background: transparent;")
+        self._numeric_lbl.setStyleSheet(
+            f"color: {c_text2}; background: transparent;")
+        for d in self._desc_labels:
+            d.setStyleSheet(f"color: {c_text3}; background: transparent;")
+        for lbl in self._num_labels:
+            active = (lbl._value == self._level)
+            col = (get_mood(lbl._value)["to"] if active else c_text3)
+            lbl.setFont(qfont_mono(11, bold=active))
+            lbl.setStyleSheet(f"color: {col}; background: transparent;")
+        for cell, emoji, num_lbl, n in self._preview_cells:
+            active = (n == self._level)
+            col = get_mood(n)["to"] if active else c_text4
+            num_lbl.setFont(qfont_mono(9, bold=active))
+            num_lbl.setStyleSheet(f"color: {col}; background: transparent;")
+        self._preview_panel.setStyleSheet(
+            f"#MoodPreviewPanel {{ background: {c_elev}; "
+            f"border: 1px solid {c_border}; border-radius: {V3_RD['lg']}px; }}"
+        )
+
+
+# ── NMPlayButton ─────────────────────────────────────────────────────────────
+
+class NMPlayButton(QPushButton):
+    """Botón circular minimal para controles de player (play/pause/stop/skip/refresh).
+
+    Spec README v3:
+      - Tamaños sm/md/lg → diámetro 40/48/56.
+      - Background ``surface`` (neutro), border ``borderSoft`` sutil,
+        sombra suave ``v3_shadow("sm")``.
+      - **Sin gradient**, **sin texto**. Solo icono SVG centrado.
+      - Hover: fondo ``elevated`` + border ``borderStrong``.
+
+    Args:
+        icon_name: nombre del icono SVG v3 ("play"/"pause"/"stop"/"skip"/"refresh").
+        size:      "sm" / "md" / "lg".
+        modo:      override de tema.
+    """
+
+    _SIZE_MAP = {"sm": 40, "md": 48, "lg": 56}
+
+    def __init__(self, icon_name: str = "play", size: str = "md",
+                 modo: str = None, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._icon_name = icon_name
+        self._size_key = size if size in self._SIZE_MAP else "md"
+        self._hover = False
+        diameter = self._SIZE_MAP[self._size_key]
+        self.setFixedSize(diameter, diameter)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setFlat(True)
+        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+        self._apply_shadow()
+        _tm().theme_changed.connect(self._apply_theme)
+
+    # ── API ──────────────────────────────────────────────────────────────────
+
+    def set_icon(self, name: str):
+        if name != self._icon_name:
+            self._icon_name = name
+            self.update()
+
+    def icon_name(self) -> str:
+        return self._icon_name
+
+    def set_size(self, size: str):
+        if size in self._SIZE_MAP and size != self._size_key:
+            self._size_key = size
+            d = self._SIZE_MAP[size]
+            self.setFixedSize(d, d)
+            self.update()
+
+    # ── eventos ──────────────────────────────────────────────────────────────
+
+    def enterEvent(self, event):
+        self._hover = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._hover = False
+        self.update()
+        super().leaveEvent(event)
+
+    # ── paint ────────────────────────────────────────────────────────────────
+
+    def paintEvent(self, event: QPaintEvent):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        is_dark = "dark" in self._modo
+        d = self.width()
+        rect = QRectF(1, 1, d - 2, d - 2)
+
+        # Background surface (elevated en hover)
+        surf_key = ("elevatedSolid" if (self._hover and is_dark)
+                    else "elevated" if self._hover
+                    else "surfaceSolid" if is_dark
+                    else "surface")
+        bg = v3c(surf_key, self._modo)
+        p.setBrush(QBrush(bg))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawEllipse(rect)
+
+        # Border sutil
+        border_key = "borderStrong" if self._hover else "borderSoft"
+        p.setPen(QPen(v3c(border_key, self._modo), 1))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawEllipse(QRectF(0.5, 0.5, d - 1, d - 1))
+
+        # Icono SVG centrado
+        if _nm_svg_pixmap is not None and _has_v3_icon(self._icon_name):
+            icon_size = max(14, int(d * 0.45))
+            color = v3c("text", self._modo).name()
+            pix = _nm_svg_pixmap(self._icon_name, color, icon_size)
+            if pix is not None and not pix.isNull():
+                px = (d - icon_size) // 2
+                p.drawPixmap(px, px, pix)
+        p.end()
+
+    # ── theme ────────────────────────────────────────────────────────────────
+
+    def _apply_shadow(self):
+        eff = v3_shadow("sm", self._modo, parent=self)
+        self.setGraphicsEffect(eff)
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self._apply_shadow()
+        self.update()

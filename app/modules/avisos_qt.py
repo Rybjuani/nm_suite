@@ -1,10 +1,22 @@
 """
-app/modules/avisos_qt.py — Gestión de recordatorios / avisos (PyQt6)
+app/modules/avisos_qt.py — Recordatorios v3 (PyQt6)
 
-LÓGICA PRESERVADA EXACTA:
+Estructura según design_handoff_neuromood_v3 (Suite > Recordatorios):
+
+  Header        eyebrow
+  Search card   NMCard con NMInput búsqueda + 3 step pills filtro
+                ("Todos / Activos / Hoy")
+  Grid 3-col    _ReminderCardV3 (NMCard) con NMIcon grande coloreado por
+                categoría inferida + chip cat + nombre + hora chip mono +
+                frecuencia + status badge + NMButton "Completar"
+  Footer        _DayProgressCard con progress bar de avisos activos vs total
+  Opciones      Card de silencio (horario) + autostart (Windows registry)
+
+LÓGICA DE NEGOCIO PRESERVADA EXACTA:
   _save_reminder(), _toggle_active(), _delete_reminder(),
-  _guardar_silencio(), _get_autostart(), _set_autostart(),
-  get_card_status()
+  _leer_silencio(), _guardar_silencio(), _get_autostart(), _set_autostart(),
+  get_card_status(), schema DB ``recordatorios`` y ``config``,
+  _NuevoAvisoPanel (form inline preservado con tokens v3).
 """
 
 import os
@@ -14,202 +26,157 @@ import logging
 _log = logging.getLogger(__name__)
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QColor, QPainter, QPen, QBrush, QPainterPath
+from PyQt6.QtGui import QColor, QPainter, QPen, QBrush
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea,
-    QFrame, QPushButton,
+    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel,
+    QScrollArea, QFrame, QPushButton, QLineEdit, QSizePolicy,
 )
 
 try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMInput, NMToggle,
-        NMToast, NMProgressBar, NMSkeleton, ThemeManager, h_spacer, NMEmptyState,
-        NMProgressLine, NMAvisoCard,
+        NMToast, NMProgressBar, NMSkeleton, ThemeManager, NMEmptyState,
+        NMProgressLine, NMIcon, NMPlayButton,
     )
     from shared.theme_qt import (
-        C, colors, norm_modo, qfont, qcolor,
-        sp,
-        PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS,
-        RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL, RADIUS_INPUT,
+        C, colors, norm_modo, qfont, qfont_mono,
+        v3c, V3_SP, V3_RD,
         stylesheet_textedit, stylesheet_scrollarea, stylesheet_lineedit,
+        PAD_CONTAINER,
     )
     from shared.theme import TYPOGRAPHY
     from shared.db import obtener_conexion
+    from shared.visual_qa import visual_qa_enabled, reminder_rows
 except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMCard, NMInput, NMToggle,
-        NMToast, NMProgressBar, NMSkeleton, ThemeManager, h_spacer, NMEmptyState,
-        NMProgressLine, NMAvisoCard,
+        NMToast, NMProgressBar, NMSkeleton, ThemeManager, NMEmptyState,
+        NMProgressLine, NMIcon, NMPlayButton,
     )
     from shared.theme_qt import (
-        C, colors, norm_modo, qfont, qcolor,
-        sp,
-        PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS,
-        RADIUS_CARD, RADIUS_BUTTON, RADIUS_PILL, RADIUS_INPUT,
+        C, colors, norm_modo, qfont, qfont_mono,
+        v3c, V3_SP, V3_RD,
         stylesheet_textedit, stylesheet_scrollarea, stylesheet_lineedit,
+        PAD_CONTAINER,
     )
     from shared.theme import TYPOGRAPHY
     from shared.db import obtener_conexion
+    from shared.visual_qa import visual_qa_enabled, reminder_rows
 
 
-# ── Day labels (preservados exactos) ─────────────────────────────────────────
+# ── Day labels (preservados) ────────────────────────────────────────────────
 
 DIAS_LABELS = ["L", "M", "X", "J", "V", "S", "D"]
-DIAS_FULL   = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+DIAS_FULL = ["Lunes", "Martes", "Miércoles", "Jueves",
+              "Viernes", "Sábado", "Domingo"]
 
 
-# ── Day pill (display-only) ───────────────────────────────────────────────────
+# ── Categorización inferida ─────────────────────────────────────────────────
 
-class _DayPill(QWidget):
-    """Píldora de día de la semana — solo display, sin interacción."""
-
-    def __init__(self, label: str, active: bool, modo: str = "dark_hybrid", parent=None):
-        super().__init__(parent)
-        self._label = label
-        self._active = active
-        self._modo = norm_modo(modo)
-        self.setFixedSize(26, 26)
-
-    def paintEvent(self, event):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        c = colors(self._modo)
-        r = 13
-
-        if self._active:
-            p.setBrush(QBrush(QColor(c["accent"])))
-            text_color = QColor(c["text_on_accent"])
-        else:
-            p.setBrush(QBrush(QColor(c["bg_elevated"])))
-            text_color = QColor(c["text_tertiary"])
-
-        p.setPen(Qt.PenStyle.NoPen)
-        p.drawEllipse(1, 1, 24, 24)
-
-        p.setPen(text_color)
-        p.setFont(qfont("size_caption", bold=True))
-        p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self._label)
-        p.end()
+def _categorize(msg: str) -> tuple[str, str, str]:
+    """Infiere (categoria, icon_v3, color_token) según keywords del mensaje."""
+    m = (msg or "").lower()
+    if any(k in m for k in ("medic", "remedio", "pastilla", "pildora")):
+        return ("Salud", "medicine", "danger")
+    if any(k in m for k in ("agua", "hidrat", "beber")):
+        return ("Hidratación", "water", "cyan")
+    if any(k in m for k in ("respir", "calma", "medit", "mindful")):
+        return ("Calma", "leaf", "teal")
+    if any(k in m for k in ("ejerci", "yoga", "camin", "estira", "correr",
+                              "gimnasio", "gym")):
+        return ("Actividad", "run", "teal")
+    if any(k in m for k in ("comer", "comida", "almuerz", "almorz",
+                              "cena", "cenar", "desayun", "merienda",
+                              "merendar")):
+        return ("Comida", "spark", "warning")
+    if any(k in m for k in ("trabajo", "trabajar", "estudio", "estudiar",
+                              "tarea", "reunión", "reunion")):
+        return ("Trabajo", "bookmark", "violet")
+    if any(k in m for k in ("dormir", "acostar", "sueño", "sueno", "noche")):
+        return ("Descanso", "moon", "violet")
+    if any(k in m for k in ("terap", "doctor", "psico", "médic", "medic")):
+        return ("Terapia", "therapy", "violet")
+    return ("Recordatorio", "bell", "text2")
 
 
-# ── Day pill toggleable (for form) ────────────────────────────────────────────
+def _format_frequency(dias: str) -> str:
+    """Convierte '1,2,3,4,5' → 'Lun a Vie', etc."""
+    if not dias:
+        return "Todos los días"
+    try:
+        parts = sorted({int(d) for d in dias.split(",") if d.strip()})
+    except ValueError:
+        return "Todos los días"
+    if parts == [1, 2, 3, 4, 5, 6, 7]:
+        return "Todos los días"
+    if parts == [1, 2, 3, 4, 5]:
+        return "Lun a Vie"
+    if parts == [6, 7]:
+        return "Fin de semana"
+    return ", ".join(DIAS_LABELS[i - 1] for i in parts)
+
+
+def _is_today(dias: str) -> bool:
+    """True si el día actual está en la lista."""
+    if not dias:
+        return True
+    import datetime as _dt
+    today = _dt.datetime.now().weekday() + 1   # 1=Lunes
+    return str(today) in dias.split(",")
+
+
+# ── _DayPillToggle (preservado para form) ───────────────────────────────────
 
 class _DayPillToggle(QPushButton):
-    """Píldora de día toggleable para el formulario de nuevo aviso."""
+    """Pill clickable v3 — toggleable. Usado en _NuevoAvisoPanel."""
 
     def __init__(self, label: str, modo: str = "dark_hybrid", parent=None):
         super().__init__(label, parent)
         self._modo = norm_modo(modo)
-        self._active = True  # default: all days selected
-        self.setFixedSize(30, 30)
+        self._active = False
         self.setCheckable(False)
-        self.setFlat(True)
+        self.setFixedSize(34, 28)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._apply_style()
+        self.setFont(qfont("size_small",
+                           weight=TYPOGRAPHY["weight_semibold"]))
         self.clicked.connect(self._toggle)
-
-    def _toggle(self):
-        self._active = not self._active
-        self._apply_style()
+        self._refresh()
 
     def is_active(self) -> bool:
         return self._active
 
-    def set_active(self, v: bool):
-        self._active = v
-        self._apply_style()
+    def _toggle(self):
+        self._active = not self._active
+        self._refresh()
 
-    def _apply_style(self):
-        c = colors(self._modo)
+    def _refresh(self):
         if self._active:
-            self.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {c['accent']};
-                    color: {c['text_on_accent']};
-                    border-radius: {RADIUS_PILL}px;
-                    border: none;
-                    font-size: {TYPOGRAPHY['size_caption']}pt;
-                    font-weight: bold;
-                }}
-            """)
+            grad_from = v3c("gradFrom", self._modo).name()
+            grad_to = v3c("gradTo", self._modo).name()
+            color = C("text_on_accent", self._modo)
+            self.setStyleSheet(
+                f"QPushButton {{ background: qlineargradient(x1:0,y1:0,x2:1,y2:0,"
+                f"stop:0 {grad_from}, stop:1 {grad_to}); "
+                f"color: {color}; border: none; "
+                f"border-radius: 14px; }}")
         else:
-            self.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {c['bg_elevated']};
-                    color: {c['text_tertiary']};
-                    border-radius: {RADIUS_PILL}px;
-                    border: 1px solid {c.get('border_card', c['border'])};
-                    font-size: {TYPOGRAPHY['size_caption']}pt;
-                }}
-                QPushButton:hover {{
-                    border-color: {c['accent']};
-                    color: {c['text_primary']};
-                }}
-            """)
+            self.setStyleSheet(
+                f"QPushButton {{ background: transparent; "
+                f"color: {v3c('text2', self._modo).name()}; "
+                f"border: 1px solid {v3c('border', self._modo).name()}; "
+                f"border-radius: 14px; }}"
+                f"QPushButton:hover {{ "
+                f"border-color: {v3c('borderStrong', self._modo).name()}; }}")
 
 
-# ── Delete button with red hover ──────────────────────────────────────────────
-
-class _DeleteButton(QPushButton):
-    """Botón ✕ que se vuelve rojo en hover."""
-
-    def __init__(self, modo: str = "dark_hybrid", parent=None):
-        super().__init__("✕", parent)
-        self._modo = norm_modo(modo)
-        self._hovered = False
-        self.setFixedSize(28, 28)
-        self.setFlat(True)
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._apply_style()
-        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
-
-    def _apply_style(self):
-        c = colors(self._modo)
-        r = RADIUS_PILL
-        ton = C("text_on_accent", self._modo)
-        if self._hovered:
-            self.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {c['error']};
-                    color: {ton};
-                    border-radius: {r}px;
-                    border: none;
-                    font-size: {TYPOGRAPHY['size_caption']}pt;
-                }}
-            """)
-        else:
-            self.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: transparent;
-                    color: {c['text_tertiary']};
-                    border-radius: {r}px;
-                    border: none;
-                    font-size: {TYPOGRAPHY['size_caption']}pt;
-                }}
-                QPushButton:hover {{
-                    background-color: {c['error']};
-                    color: {ton};
-                }}
-            """)
-
-    def enterEvent(self, event):
-        self._hovered = True
-        self._apply_style()
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):
-        self._hovered = False
-        self._apply_style()
-        super().leaveEvent(event)
-
-
-# ── New reminder inline panel ──────────────────────────────────────────────────
+# ── _NuevoAvisoPanel (form inline preservado) ───────────────────────────────
 
 class _NuevoAvisoPanel(QWidget):
-    """Panel inline para crear un nuevo recordatorio — se muestra dentro del modulo."""
+    """Form inline para crear un nuevo recordatorio v3."""
+
     saved = pyqtSignal(dict)
     cancelled = pyqtSignal()
 
@@ -220,52 +187,48 @@ class _NuevoAvisoPanel(QWidget):
         self._build_ui()
 
     def _build_ui(self):
-        c = colors(self._modo)
-
-        # Fondo glass premium para el panel overlay
-        self.setStyleSheet(f"""
-            _NuevoAvisoPanel {{
-                background-color: {c['bg_glass']};
-                border-radius: {RADIUS_CARD}px;
-                border: 1px solid {c.get('border_card', c['border'])};
-            }}
-            QLabel {{
-                background: transparent;
-            }}
-        """)
+        is_dark = "dark" in self._modo
+        bg_key = "surfaceSolid" if is_dark else "surface"
+        self.setStyleSheet(
+            f"_NuevoAvisoPanel {{ background: {v3c(bg_key, self._modo).name()}; "
+            f"border: 1px solid {v3c('borderStrong', self._modo).name()}; "
+            f"border-radius: {V3_RD['lg']}px; }}"
+            f"QLabel {{ background: transparent; }}")
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(sp("md") + sp("xs"), sp("md"), sp("md") + sp("xs"), sp("md"))
-        layout.setSpacing(sp("sm") + sp("xs"))
+        layout.setContentsMargins(V3_SP["lg"], V3_SP["md"],
+                                   V3_SP["lg"], V3_SP["md"])
+        layout.setSpacing(V3_SP["sm"])
 
-        # Title
-        title_lbl = QLabel("Nuevo aviso")
-        title_lbl.setFont(qfont("size_h3", bold=True))
-        title_lbl.setStyleSheet(f"color: {c['text_primary']};")
-        layout.addWidget(title_lbl)
+        title = QLabel("Nuevo aviso")
+        title.setFont(qfont("size_h3",
+                            weight=TYPOGRAPHY["weight_bold"]))
+        title.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()};")
+        layout.addWidget(title)
 
-        # Hour
+        # Hora
         row_hora = QHBoxLayout()
         lbl_hora = QLabel("Hora:")
         lbl_hora.setFont(qfont("size_body"))
-        lbl_hora.setStyleSheet(f"color: {c['text_secondary']};")
+        lbl_hora.setStyleSheet(
+            f"color: {v3c('text2', self._modo).name()};")
         lbl_hora.setMinimumWidth(55)
         row_hora.addWidget(lbl_hora)
-
         self._entry_hora = NMInput("HH:MM", modo=self._modo)
         self._entry_hora.setMinimumWidth(72)
         row_hora.addWidget(self._entry_hora)
         row_hora.addStretch()
         layout.addLayout(row_hora)
 
-        # Days
+        # Días
         row_dias = QHBoxLayout()
         lbl_dias = QLabel("Días:")
         lbl_dias.setFont(qfont("size_body"))
-        lbl_dias.setStyleSheet(f"color: {c['text_secondary']};")
+        lbl_dias.setStyleSheet(
+            f"color: {v3c('text2', self._modo).name()};")
         lbl_dias.setMinimumWidth(55)
         row_dias.addWidget(lbl_dias)
-
         for lbl in DIAS_LABELS:
             pill = _DayPillToggle(lbl, self._modo)
             row_dias.addWidget(pill)
@@ -273,41 +236,34 @@ class _NuevoAvisoPanel(QWidget):
         row_dias.addStretch()
         layout.addLayout(row_dias)
 
-        # Message
+        # Mensaje
         lbl_msg = QLabel("Mensaje:")
         lbl_msg.setFont(qfont("size_body"))
-        lbl_msg.setStyleSheet(f"color: {c['text_secondary']};")
+        lbl_msg.setStyleSheet(
+            f"color: {v3c('text2', self._modo).name()};")
         layout.addWidget(lbl_msg)
-
         self._entry_mensaje = NMInput("Ej: Tomar medicación", modo=self._modo)
         layout.addWidget(self._entry_mensaje)
 
         # Buttons
         btn_row = QHBoxLayout()
-        btn_row.setSpacing(sp("sm"))
-
-        btn_cancel = NMButtonOutline("Cancelar", parent=self, modo=self._modo)
-        btn_cancel.setFixedHeight(36)
-        btn_cancel.setMinimumWidth(90)
+        btn_row.setSpacing(V3_SP["sm"])
+        btn_cancel = NMButton("Cancelar", variant="ghost", size="md",
+                                parent=self, modo=self._modo, width=100)
         btn_cancel.clicked.connect(self.cancelled.emit)
         btn_row.addWidget(btn_cancel)
-
         btn_row.addStretch()
-
-        btn_save = NMButton("Guardar", parent=self, modo=self._modo, width=90, height=36)
+        btn_save = NMButton("Guardar", variant="gradient", size="md",
+                              parent=self, modo=self._modo, width=120)
         btn_save.clicked.connect(self._on_save)
         btn_row.addWidget(btn_save)
         self._btn_save = btn_save
-
         layout.addLayout(btn_row)
 
     def _on_save(self):
-        hora    = self._entry_hora.text().strip()
+        hora = self._entry_hora.text().strip()
         mensaje = self._entry_mensaje.text().strip()
-
-        if not hora or not mensaje:
-            return
-        if ":" not in hora:
+        if not hora or not mensaje or ":" not in hora:
             return
         parts = hora.split(":")
         try:
@@ -317,14 +273,11 @@ class _NuevoAvisoPanel(QWidget):
             hora = f"{h:02d}:{m:02d}"
         except (ValueError, IndexError):
             return
-
         dias = ",".join(
-            str(i + 1) for i, pill in enumerate(self._day_pills) if pill.is_active()
-        )
+            str(i + 1) for i, p in enumerate(self._day_pills) if p.is_active())
         if not dias:
             dias = "1,2,3,4,5,6,7"
-
-        # Validar que la hora no haya expirado si hoy es un día seleccionado
+        # Validar hora no expirada hoy
         import datetime as _dt
         now = _dt.datetime.now()
         dia_hoy = str(now.weekday() + 1)
@@ -335,231 +288,471 @@ class _NuevoAvisoPanel(QWidget):
                     "La hora ya pasó. Elegí al menos 1 minuto en adelante para hoy.",
                     variant="warning", duration_ms=3000)
                 return
-
-        data = {"hora": hora, "mensaje": mensaje, "dias": dias}
-        self.saved.emit(data)
+        self.saved.emit({"hora": hora, "mensaje": mensaje, "dias": dias})
 
 
-# ── ModuloAvisos ──────────────────────────────────────────────────────────────
+# ── _StepPill (filtro tabs) ─────────────────────────────────────────────────
+
+class _StepPill(QPushButton):
+    """Step pill toggleable — usado para tabs filtro (Todos/Activos/Hoy)."""
+
+    def __init__(self, label: str, active: bool = False,
+                 modo: str = "dark_hybrid", parent=None):
+        super().__init__(label, parent)
+        self._modo = norm_modo(modo)
+        self._active = active
+        self.setFixedHeight(32)
+        self.setMinimumWidth(80)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFont(qfont("size_small",
+                           weight=TYPOGRAPHY["weight_semibold"]))
+        self._refresh()
+
+    def set_active(self, active: bool):
+        if active != self._active:
+            self._active = active
+            self._refresh()
+
+    def _refresh(self):
+        if self._active:
+            gf = v3c("gradFrom", self._modo).name()
+            gt = v3c("gradTo", self._modo).name()
+            self.setStyleSheet(
+                f"QPushButton {{ background: qlineargradient(x1:0,y1:0,x2:1,y2:0,"
+                f"stop:0 {gf}, stop:1 {gt}); "
+                f"color: {C('text_on_accent', self._modo)}; "
+                f"border: none; border-radius: 16px; padding: 0 16px; }}")
+        else:
+            self.setStyleSheet(
+                f"QPushButton {{ background: transparent; "
+                f"color: {v3c('text2', self._modo).name()}; "
+                f"border: 1px solid {v3c('border', self._modo).name()}; "
+                f"border-radius: 16px; padding: 0 16px; }}"
+                f"QPushButton:hover {{ "
+                f"border-color: {v3c('borderStrong', self._modo).name()}; }}")
+
+
+# ── _ReminderCardV3 ─────────────────────────────────────────────────────────
+
+class _ReminderCardV3(NMCard):
+    """Card v3 de recordatorio — icono grande coloreado + chip cat + hora mono + freq + status + Completar."""
+
+    completed = pyqtSignal(int)   # rec_id
+    deleted = pyqtSignal(int)
+    toggled = pyqtSignal(int, bool)
+
+    def __init__(self, row, modo: str = None, parent=None):
+        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
+        # Normalizar acceso a row
+        if hasattr(row, "keys"):
+            self._id = row["id"]
+            self._hora = row["hora"]
+            self._mensaje = row["mensaje"]
+            self._dias = row["dias"] or ""
+            self._activo = bool(row["activo"])
+            self._done = bool(row.get("done", False)) if hasattr(row, "get") else False
+        else:
+            self._id = row[0]
+            self._hora = row[1]
+            self._mensaje = row[2]
+            self._dias = row[3] or ""
+            self._activo = bool(row[4])
+            self._done = False
+        self._cat_name, self._icon_name, self._color_token = _categorize(self._mensaje)
+        # Halo del color de la categoría
+        self.set_accent(v3c(self._color_token, self._modo).name())
+        self._build()
+
+    def _build(self):
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
+                                V3_SP["lg"], V3_SP["lg"])
+        lay.setSpacing(V3_SP["sm"])
+
+        # Top: icono grande + delete button
+        top = QHBoxLayout()
+        top.setSpacing(V3_SP["sm"])
+        self._icon = NMIcon(self._icon_name, size=36,
+                             color=v3c(self._color_token, self._modo).name(),
+                             modo=self._modo)
+        top.addWidget(self._icon)
+        top.addStretch()
+        self._cat_chip = QLabel(self._cat_name)
+        self._cat_chip.setFont(qfont("size_caption_xs",
+                                       weight=TYPOGRAPHY["weight_semibold"]))
+        self._cat_chip.setContentsMargins(8, 2, 8, 2)
+        top.addWidget(self._cat_chip)
+        lay.addLayout(top)
+
+        # Mensaje (título)
+        self._msg_lbl = QLabel(self._mensaje)
+        self._msg_lbl.setFont(qfont("size_h3",
+                                     weight=TYPOGRAPHY["weight_semibold"]))
+        self._msg_lbl.setWordWrap(True)
+        lay.addWidget(self._msg_lbl)
+
+        # Hora chip + frecuencia
+        meta_row = QHBoxLayout()
+        meta_row.setSpacing(V3_SP["sm"])
+        self._hora_chip = QLabel(self._hora)
+        self._hora_chip.setFont(qfont_mono(11, bold=False))
+        self._hora_chip.setContentsMargins(8, 2, 8, 2)
+        meta_row.addWidget(self._hora_chip)
+        self._freq_lbl = QLabel(_format_frequency(self._dias))
+        self._freq_lbl.setFont(qfont("size_caption"))
+        meta_row.addWidget(self._freq_lbl)
+        meta_row.addStretch()
+        lay.addLayout(meta_row)
+
+        # Status badge + completar button
+        bottom = QHBoxLayout()
+        bottom.setSpacing(V3_SP["sm"])
+        self._status_lbl = QLabel("")
+        self._status_lbl.setFont(qfont("size_caption_xs",
+                                        weight=TYPOGRAPHY["weight_semibold"]))
+        self._status_lbl.setContentsMargins(8, 2, 8, 2)
+        bottom.addWidget(self._status_lbl)
+        bottom.addStretch()
+        self._btn_done = NMButton("Completar", variant="ghost", size="sm",
+                                    modo=self._modo, width=110)
+        self._btn_done.clicked.connect(
+            lambda: self.completed.emit(self._id))
+        bottom.addWidget(self._btn_done)
+        lay.addLayout(bottom)
+
+        self._apply_card_styles()
+
+    def _apply_card_styles(self):
+        # Chip categoría
+        cat_color = v3c(self._color_token, self._modo).name()
+        qc = QColor(cat_color)
+        bg_rgba = f"rgba({qc.red()},{qc.green()},{qc.blue()},36)"
+        self._cat_chip.setStyleSheet(
+            f"color: {cat_color}; background: {bg_rgba}; border-radius: 8px;")
+        # Hora chip
+        teal = v3c("teal", self._modo).name()
+        qt_ = QColor(teal)
+        bg_hora = f"rgba({qt_.red()},{qt_.green()},{qt_.blue()},36)"
+        self._hora_chip.setStyleSheet(
+            f"color: {teal}; background: {bg_hora}; border-radius: 8px;")
+        # Frecuencia
+        self._freq_lbl.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; "
+            f"background: transparent;")
+        # Mensaje
+        self._msg_lbl.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; "
+            f"background: transparent;")
+        # Status badge
+        if self._done:
+            stat_color = v3c("success", self._modo).name()
+            stat_text = "Completado"
+        elif not self._activo:
+            stat_color = v3c("text3", self._modo).name()
+            stat_text = "Pausado"
+        elif _is_today(self._dias):
+            stat_color = v3c("warning", self._modo).name()
+            stat_text = "Hoy"
+        else:
+            stat_color = v3c("teal", self._modo).name()
+            stat_text = "Activo"
+        qs = QColor(stat_color)
+        bg_stat = f"rgba({qs.red()},{qs.green()},{qs.blue()},36)"
+        self._status_lbl.setText(stat_text)
+        self._status_lbl.setStyleSheet(
+            f"color: {stat_color}; background: {bg_stat}; "
+            f"border-radius: 8px;")
+
+    def _apply_theme(self, modo: str):
+        super()._apply_theme(modo)
+        if self._icon is not None:
+            self._icon._modo = self._modo
+            self._icon._render()
+        self.set_accent(v3c(self._color_token, self._modo).name())
+        self._apply_card_styles()
+
+
+# ── _DayProgressCard (footer) ───────────────────────────────────────────────
+
+class _DayProgressCard(NMCard):
+    """Footer v3: progreso de avisos activos vs total del día."""
+
+    def __init__(self, modo: str = None, parent=None):
+        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
+        self._active = 0
+        self._total = 0
+        self._build()
+
+    def _build(self):
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
+                                V3_SP["lg"], V3_SP["lg"])
+        lay.setSpacing(V3_SP["md"])
+        col = QVBoxLayout()
+        col.setSpacing(4)
+        self._eyebrow = QLabel("PROGRESO DEL DÍA")
+        self._eyebrow.setFont(qfont("size_caption_xs",
+                                     weight=TYPOGRAPHY["weight_semibold"]))
+        col.addWidget(self._eyebrow)
+        self._stat_lbl = QLabel("0 de 0 activos")
+        self._stat_lbl.setFont(qfont("size_h3",
+                                      weight=TYPOGRAPHY["weight_semibold"]))
+        col.addWidget(self._stat_lbl)
+        self._bar = NMProgressLine(modo=self._modo)
+        self._bar.set_progress(0.0)
+        col.addWidget(self._bar)
+        lay.addLayout(col, stretch=1)
+        self._apply_dp_styles()
+
+    def set_stats(self, active: int, total: int):
+        self._active = active
+        self._total = total
+        self._stat_lbl.setText(f"{active} de {total} activos")
+        self._bar.set_progress(active / total if total else 0.0)
+
+    def _apply_dp_styles(self):
+        self._eyebrow.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; "
+            f"background: transparent;")
+        self._stat_lbl.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; "
+            f"background: transparent;")
+
+    def _apply_theme(self, modo: str):
+        super()._apply_theme(modo)
+        self._bar._modo = self._modo
+        self._bar.update()
+        self._apply_dp_styles()
+
+
+# ── ModuloAvisos v3 ─────────────────────────────────────────────────────────
 
 class ModuloAvisos(NMModule):
-    MODULE_TITLE = "Avisos"
+    MODULE_TITLE = "Recordatorios"
     MODULE_ICON  = "avisos"
 
     def build_ui(self):
-        c = colors(self._modo)
+        self._search_query: str = ""
+        self._current_filter: str = "todos"   # "todos" | "activos" | "hoy"
+        self._all_rows: list = []
 
-        # ── Root layout ───────────────────────────────────────────────────────
-        root = QVBoxLayout(self._content)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(0)
+        outer = QVBoxLayout(self._content)
+        outer.setContentsMargins(0, 0, 0, 0)
 
-        # ── NMProgressLine — ultra-thin 2px top border ────────────────────────
-        self._progress_line = NMProgressLine(total=1, current=0,
-                                             modo=self._modo, parent=self._content)
-        root.addWidget(self._progress_line)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        outer.addWidget(scroll)
+        self._scroll = scroll
 
-        # ── Inner content (padded) ────────────────────────────────────────────
-        inner = QWidget()
-        inner.setStyleSheet("background: transparent;")
-        inner_layout = QVBoxLayout(inner)
-        inner_layout.setContentsMargins(PAD_CONTAINER, sp("sm") + sp("xs"),
-                                        PAD_CONTAINER, sp("sm") + sp("xs"))
-        inner_layout.setSpacing(sp("sm"))
-        root.addWidget(inner, stretch=1)
-        root = inner_layout  # redirect further additions to padded inner
+        body = QWidget()
+        body.setStyleSheet("background: transparent;")
+        scroll.setWidget(body)
 
-        # ── Top bar ───────────────────────────────────────────────────────────
-        top_bar = QWidget()
-        top_bar.setStyleSheet("background: transparent;")
-        top_layout = QHBoxLayout(top_bar)
-        top_layout.setContentsMargins(0, 0, 0, 0)
-        top_layout.setSpacing(0)
+        lay = QVBoxLayout(body)
+        lay.setContentsMargins(V3_SP["xl"], V3_SP["lg"],
+                                V3_SP["xl"], V3_SP["xl"])
+        lay.setSpacing(V3_SP["lg"])
 
-        lbl_tus = QLabel("Tus recordatorios")
-        lbl_tus.setFont(qfont("size_body"))
-        lbl_tus.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
-        top_layout.addWidget(lbl_tus)
+        # 1. Header eyebrow + acciones
+        header_row = QHBoxLayout()
+        self._eyebrow = QLabel("RECORDATORIOS")
+        self._eyebrow.setFont(qfont("size_caption_xs",
+                                     weight=TYPOGRAPHY["weight_semibold"]))
+        header_row.addWidget(self._eyebrow)
+        header_row.addStretch()
+        self._btn_new = NMButton("+ Nuevo aviso", variant="gradient",
+                                  size="sm", modo=self._modo, width=140)
+        self._btn_new.clicked.connect(self._show_form)
+        header_row.addWidget(self._btn_new)
+        lay.addLayout(header_row)
 
-        self._reminder_count_lbl = QLabel("")
-        self._reminder_count_lbl.setFont(qfont("size_caption"))
-        self._reminder_count_lbl.setStyleSheet(
-            f"color: {c['text_tertiary']}; background: transparent;"
-        )
-        top_layout.addWidget(self._reminder_count_lbl)
-        top_layout.addStretch()
+        # 2. Search + filter pills card
+        search_card = NMCard(modo=self._modo, clickable=False)
+        sc_lay = QVBoxLayout(search_card)
+        sc_lay.setContentsMargins(V3_SP["lg"], V3_SP["md"],
+                                   V3_SP["lg"], V3_SP["md"])
+        sc_lay.setSpacing(V3_SP["sm"])
 
-        root.addWidget(top_bar)
+        # Search input + filter pills (mismo row)
+        search_row = QHBoxLayout()
+        search_row.setSpacing(V3_SP["md"])
+        self._search_edit = QLineEdit()
+        self._search_edit.setPlaceholderText("Buscar aviso por nombre u hora…")
+        self._search_edit.setStyleSheet(stylesheet_lineedit(self._modo))
+        self._search_edit.setFixedHeight(36)
+        self._search_edit.textChanged.connect(self._on_search)
+        search_row.addWidget(self._search_edit, stretch=2)
 
-        # ── Banner informativo (accent border, QLabel) ────────────────────────
-        banner = QFrame()
-        banner.setObjectName("Banner")
-        banner.setStyleSheet(f"""
-            QFrame#Banner {{
-                background-color: {c['bg_elevated']};
-                border-radius: {RADIUS_INPUT}px;
-                border: 1px solid {c['accent']};
-            }}
-        """)
-        banner_layout = QHBoxLayout(banner)
-        banner_layout.setContentsMargins(sp("sm") + sp("xs"), sp("sm"), sp("sm") + sp("xs"), sp("sm"))
+        # Filter step pills
+        self._filter_pills: dict[str, _StepPill] = {}
+        for key, label in (("todos", "Todos"),
+                           ("activos", "Activos"),
+                           ("hoy", "Hoy")):
+            pill = _StepPill(label, active=(key == "todos"),
+                              modo=self._modo)
+            pill.clicked.connect(
+                lambda _, k=key: self._on_filter_changed(k))
+            self._filter_pills[key] = pill
+            search_row.addWidget(pill)
+        sc_lay.addLayout(search_row)
+        lay.addWidget(search_card)
+        self._search_card = search_card
 
-        banner_lbl = QLabel(
-            "Los avisos funcionan aunque cierres la app; "
-            "se minimiza a la bandeja del sistema."
-        )
-        banner_lbl.setFont(qfont("size_small"))
-        banner_lbl.setWordWrap(True)
-        banner_lbl.setStyleSheet(f"color: {c['accent']}; background: transparent;")
-        banner_layout.addWidget(banner_lbl)
-        root.addWidget(banner)
+        # 3. Form inline placeholder (insertado dinámicamente con _show_form)
+        self._form_placeholder = QWidget()
+        self._form_placeholder_lay = QVBoxLayout(self._form_placeholder)
+        self._form_placeholder_lay.setContentsMargins(0, 0, 0, 0)
+        self._form_placeholder_lay.setSpacing(0)
+        lay.addWidget(self._form_placeholder)
 
-        # ── Scroll area for reminder list ─────────────────────────────────────
-        self._scroll = QScrollArea()
-        self._scroll.setWidgetResizable(True)
-        self._scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        # 4. Grid 3-col
+        self._list_widget = QWidget()
+        self._list_widget.setStyleSheet("background: transparent;")
+        self._list_layout = QGridLayout(self._list_widget)
+        self._list_layout.setContentsMargins(0, 0, 0, 0)
+        self._list_layout.setSpacing(V3_SP["md"])
+        for col in range(3):
+            self._list_layout.setColumnStretch(col, 1)
+        lay.addWidget(self._list_widget)
 
-        self._list_content = QWidget()
-        self._list_content.setStyleSheet("background: transparent;")
-        self._list_layout = QVBoxLayout(self._list_content)
-        self._list_layout.setContentsMargins(0, 0, sp("sm"), 0)
-        self._list_layout.setSpacing(GAP_ELEMENTS)
-        self._list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        # 5. Footer day progress card
+        self._day_progress = _DayProgressCard(modo=self._modo)
+        lay.addWidget(self._day_progress)
 
-        self._scroll.setWidget(self._list_content)
-        root.addWidget(self._scroll, stretch=1)
+        # 6. Opciones (silencio + autostart)
+        if not visual_qa_enabled():
+            self._build_opciones(lay)
 
-        # ── FAB "+" floating action button ───────────────────────────────────
-        fab_row = QHBoxLayout()
-        fab_row.setContentsMargins(0, sp("sm"), 0, 0)
-        fab_row.addStretch()
-        self._fab_btn = NMButton("+", parent=self._content,
-                                  modo=self._modo, width=50, height=50)
-        self._fab_btn.clicked.connect(self._show_form)
-        self._fab_btn.setStyleSheet(
-            self._fab_btn.styleSheet() + " border-radius: 25px;"
-        )
-        fab_row.addWidget(self._fab_btn)
-        root.addLayout(fab_row)
-
-        # ── Opciones del sistema ──────────────────────────────────────────────
-        self._build_opciones(root)
-
-        # ── Load reminders ────────────────────────────────────────────────────
+        self._apply_text_styles()
         self._load_reminders()
+
+    def _apply_text_styles(self):
+        self._eyebrow.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; "
+            f"background: transparent;")
 
     def _on_theme(self, modo: str) -> None:
         super()._on_theme(modo)
         if hasattr(self, "_scroll"):
             self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-        # NMProgressLine auto-handles theme via ThemeManager
+        if hasattr(self, "_search_edit"):
+            self._search_edit.setStyleSheet(stylesheet_lineedit(self._modo))
+        if hasattr(self, "_eyebrow"):
+            self._apply_text_styles()
+        for pill in getattr(self, "_filter_pills", {}).values():
+            pill._modo = self._modo
+            pill._refresh()
         self._load_reminders()
         self.update()
 
-    # ── Load reminders ─────────────────────────────────────────────────────
+    # ── Filtros ───────────────────────────────────────────────────────────────
+
+    def _on_search(self, text: str):
+        self._search_query = text.lower().strip()
+        self._render_reminders()
+
+    def _on_filter_changed(self, key: str):
+        self._current_filter = key
+        for k, pill in self._filter_pills.items():
+            pill.set_active(k == key)
+        self._render_reminders()
+
+    # ── Carga / render ───────────────────────────────────────────────────────
 
     def _load_reminders(self):
-        # Clear list
+        if visual_qa_enabled():
+            self._all_rows = reminder_rows()
+        else:
+            try:
+                conn = obtener_conexion()
+                self._all_rows = conn.execute(
+                    "SELECT id, hora, mensaje, dias, activo "
+                    "FROM recordatorios ORDER BY hora"
+                ).fetchall()
+                conn.close()
+            except Exception:
+                self._all_rows = []
+        # Update day progress
+        total = len(self._all_rows)
+        if visual_qa_enabled():
+            active = sum(1 for r in self._all_rows if r.get("done"))
+        else:
+            active = sum(
+                1 for r in self._all_rows
+                if (r["activo"] if hasattr(r, "keys") else r[4])
+            )
+        if hasattr(self, "_day_progress"):
+            self._day_progress.set_stats(active, total)
+        self._render_reminders()
+
+    def _row_get(self, row, key, idx):
+        return row[key] if hasattr(row, "keys") else row[idx]
+
+    def _render_reminders(self):
+        # Clear grid
         while self._list_layout.count():
             item = self._list_layout.takeAt(0)
             w = item.widget()
             if w:
-                self._list_layout.removeWidget(w)
                 w.deleteLater()
 
-        try:
-            conn = obtener_conexion()
-            rows = conn.execute(
-                "SELECT id, hora, mensaje, dias, activo "
-                "FROM recordatorios ORDER BY hora"
-            ).fetchall()
-            conn.close()
-        except Exception:
-            rows = []
+        rows = list(self._all_rows)
+        # Search filter
+        if self._search_query:
+            rows = [
+                r for r in rows
+                if self._search_query in self._row_get(r, "mensaje", 2).lower()
+                or self._search_query in self._row_get(r, "hora", 1).lower()
+            ]
+        # Tab filter
+        if self._current_filter == "activos":
+            rows = [r for r in rows if self._row_get(r, "activo", 4)]
+        elif self._current_filter == "hoy":
+            rows = [
+                r for r in rows
+                if self._row_get(r, "activo", 4)
+                and _is_today(self._row_get(r, "dias", 3) or "")
+            ]
 
         if not rows:
-            if hasattr(self, "_progress_line"):
-                self._progress_line.set_progress(0, 1)
-            if hasattr(self, "_reminder_count_lbl"):
-                self._reminder_count_lbl.setText("")
-            self._list_layout.addWidget(NMEmptyState(
-                "fa5s.bell",
-                "Sin avisos configurados",
-                "Usá el botón + para agregar recordatorios.",
-                self._list_content,
-            ))
+            empty_msg = ("Sin avisos configurados"
+                         if not self._all_rows
+                         else "Sin resultados con esos filtros")
+            empty_sub = (
+                "Usá el botón \"+ Nuevo aviso\" para empezar."
+                if not self._all_rows
+                else "Probá cambiar los filtros o la búsqueda.")
+            empty = NMEmptyState(
+                "fa5s.bell", empty_msg, empty_sub, self._list_widget)
+            self._list_layout.addWidget(empty, 0, 0, 1, 3)
             return
 
-        for row in rows:
-            self._build_reminder_card(row)
+        for i, row in enumerate(rows):
+            card = _ReminderCardV3(row, modo=self._modo)
+            card.completed.connect(self._on_completar)
+            r = i // 3
+            c = i % 3
+            self._list_layout.addWidget(card, r, c)
 
-        # Update progress line
-        total = len(rows)
-        active = sum(1 for r in rows if (r["activo"] if hasattr(r, "keys") else r[4]))
-        if hasattr(self, "_progress_line"):
-            self._progress_line.set_progress(active, total)
-        if hasattr(self, "_reminder_count_lbl"):
-            self._reminder_count_lbl.setText(
-                f"  {active}/{total} activos" if total > 0 else ""
-            )
+    # ── Acciones de cards ────────────────────────────────────────────────────
 
-    def _build_reminder_card(self, row):
-        c = colors(self._modo)
-        rec_id = row["id"] if hasattr(row, "keys") else row[0]
-        hora   = row["hora"] if hasattr(row, "keys") else row[1]
-        msg    = row["mensaje"] if hasattr(row, "keys") else row[2]
-        dias   = row["dias"] if hasattr(row, "keys") else row[3]
-        activo = bool(row["activo"] if hasattr(row, "keys") else row[4])
-        status = NMAvisoCard.STATUS_ACTIVE if activo else NMAvisoCard.STATUS_EXPIRED
+    def _on_completar(self, rec_id: int):
+        """'Completar' deactiva el aviso (interpretación v3 del README)."""
+        self._toggle_active(rec_id, False)
+        self._load_reminders()
+        NMToast.display(self.window(), "Aviso completado",
+                         variant="success", duration_ms=1500)
 
-        # Wrapper frame for the full card (including actions + days)
-        wrapper = QFrame()
-        wrapper.setStyleSheet("QFrame { background: transparent; }")
-        wrapper_lay = QVBoxLayout(wrapper)
-        wrapper_lay.setContentsMargins(0, 0, 0, 0)
-        wrapper_lay.setSpacing(2)
-
-        # Action row: delete + toggle aligned right (above the card)
-        action_row = QHBoxLayout()
-        action_row.setSpacing(sp("xs"))
-        action_row.addStretch()
-
-        del_btn = _DeleteButton(self._modo, wrapper)
-        del_btn.clicked.connect(lambda checked=False, rid=rec_id, wr=wrapper:
-                                self._delete_reminder(rid, wr))
-        action_row.addWidget(del_btn)
-
-        toggle = NMToggle(wrapper, self._modo)
-        toggle.setChecked(activo)
-        toggle.toggled.connect(lambda checked, rid=rec_id: self._toggle_active(rid, checked))
-        action_row.addWidget(toggle)
-        wrapper_lay.addLayout(action_row)
-
-        # NMAvisoCard — premium display with monospaced time + status pill
-        aviso_card = NMAvisoCard(hora, msg, status=status,
-                                  modo=self._modo, parent=wrapper)
-        wrapper_lay.addWidget(aviso_card)
-
-        # Days pills row
-        dias_str = dias if dias else "1,2,3,4,5,6,7"
-        dias_activos = set(dias_str.split(","))
-        days_row = QHBoxLayout()
-        days_row.setContentsMargins(sp("md"), sp("xs") // 2, sp("md"), sp("xs") // 2)
-        days_row.setSpacing(sp("xs"))
-        days_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        for i, lbl in enumerate(DIAS_LABELS, start=1):
-            is_active = str(i) in dias_activos
-            pill = _DayPill(lbl, is_active, self._modo, wrapper)
-            days_row.addWidget(pill)
-        days_row.addStretch()
-        wrapper_lay.addLayout(days_row)
-
-        self._list_layout.addWidget(wrapper)
-
-    # ── _toggle_active (lógica preservada exacta) ─────────────────────────────
+    # ── _toggle_active (lógica preservada exacta) ───────────────────────────
 
     def _toggle_active(self, rec_id: int, checked: bool):
+        if visual_qa_enabled():
+            self._load_reminders()
+            return
         try:
             conn = obtener_conexion()
             conn.execute(
@@ -571,9 +764,12 @@ class ModuloAvisos(NMModule):
         except Exception:
             _log.exception("Failed to save reminder")
 
-    # ── _delete_reminder (lógica preservada exacta) ───────────────────────────
+    # ── _delete_reminder (lógica preservada exacta) ─────────────────────────
 
-    def _delete_reminder(self, rec_id: int, card_widget: QWidget):
+    def _delete_reminder(self, rec_id: int):
+        if visual_qa_enabled():
+            self._load_reminders()
+            return
         try:
             conn = obtener_conexion()
             conn.execute("DELETE FROM recordatorios WHERE id = ?", (rec_id,))
@@ -581,143 +777,126 @@ class ModuloAvisos(NMModule):
             conn.close()
         except Exception:
             _log.exception("Failed to delete reminder %s", rec_id)
-        self._list_layout.removeWidget(card_widget)
-        card_widget.deleteLater()
+        self._load_reminders()
 
-    # ── Show form (inline panel) ────────────────────────────────────────────────
+    # ── Show form inline ─────────────────────────────────────────────────────
 
     def _show_form(self):
-        # Solo permitir un panel a la vez
-        for i in range(self._list_layout.count()):
-            item = self._list_layout.itemAt(i)
-            w = item.widget() if item else None
-            if isinstance(w, _NuevoAvisoPanel):
-                self._list_layout.removeWidget(w)
+        # Solo un panel a la vez
+        while self._form_placeholder_lay.count():
+            item = self._form_placeholder_lay.takeAt(0)
+            w = item.widget()
+            if w:
                 w.deleteLater()
-                break
         panel = _NuevoAvisoPanel(self._content, self._modo)
-        panel.saved.connect(lambda data: (self._save_reminder(data), self._list_layout.removeWidget(panel), panel.deleteLater()))
-        panel.cancelled.connect(lambda: (self._list_layout.removeWidget(panel), panel.deleteLater()))
-        self._list_layout.insertWidget(0, panel)
+        panel.saved.connect(self._on_form_saved)
+        panel.cancelled.connect(self._on_form_cancelled)
+        self._form_placeholder_lay.addWidget(panel)
+        self._current_panel = panel
 
-    def _handle_new_reminder_saved(self, panel: QWidget, data: dict):
+    def _on_form_saved(self, data: dict):
         self._save_reminder(data)
-        if hasattr(panel, "_btn_save") and hasattr(panel._btn_save, "play_success"):
-            panel._btn_save.play_success()
-        self._list_layout.removeWidget(panel)
-        panel.deleteLater()
+        self._on_form_cancelled()
+        NMToast.display(self.window(), "Aviso guardado",
+                         variant="success", duration_ms=1500)
 
-    # ── _save_reminder (lógica preservada exacta, adaptada para dict) ─────────
+    def _on_form_cancelled(self):
+        while self._form_placeholder_lay.count():
+            item = self._form_placeholder_lay.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
+
+    # ── _save_reminder (lógica preservada exacta) ───────────────────────────
 
     def _save_reminder(self, data: dict):
-        hora    = data["hora"]
-        mensaje = data["mensaje"]
-        dias    = data["dias"]
-
+        if visual_qa_enabled():
+            self._load_reminders()
+            return
         try:
             conn = obtener_conexion()
             conn.execute(
                 "INSERT INTO recordatorios (hora, mensaje, dias, activo) "
                 "VALUES (?, ?, ?, 1)",
-                (hora, mensaje, dias),
+                (data["hora"], data["mensaje"], data["dias"]),
             )
             conn.commit()
             conn.close()
         except Exception:
             _log.exception("Failed to save reminder")
-
         self._load_reminders()
 
-    # ── Opciones del sistema ──────────────────────────────────────────────────
+    # ── Opciones del sistema (silencio + autostart) ─────────────────────────
 
     def _build_opciones(self, parent_layout: QVBoxLayout):
-        c = colors(self._modo)
+        opts_card = NMCard(modo=self._modo, clickable=False)
+        opts_lay = QVBoxLayout(opts_card)
+        opts_lay.setContentsMargins(V3_SP["lg"], V3_SP["md"],
+                                     V3_SP["lg"], V3_SP["md"])
+        opts_lay.setSpacing(V3_SP["sm"])
 
-        frame = QFrame()
-        frame.setObjectName("OpcionesCard")
-        frame.setStyleSheet(f"""
-            QFrame#OpcionesCard {{
-                background-color: {c['bg_surface']};
-                border-radius: {RADIUS_CARD}px;
-                border: 1px solid {c.get('border_card', c['border'])};
-            }}
-        """)
-        inner_layout = QVBoxLayout(frame)
-        inner_layout.setContentsMargins(
-            sp("md") - sp("xs") // 2,
-            sp("sm") + sp("xs"),
-            sp("md") - sp("xs") // 2,
-            sp("sm") + sp("xs"),
-        )
-        inner_layout.setSpacing(sp("sm") + sp("xs") // 2)
+        opts_eyebrow = QLabel("OPCIONES DEL SISTEMA")
+        opts_eyebrow.setFont(qfont("size_caption_xs",
+                                    weight=TYPOGRAPHY["weight_semibold"]))
+        opts_eyebrow.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; "
+            f"background: transparent;")
+        opts_lay.addWidget(opts_eyebrow)
+        self._opts_eyebrow = opts_eyebrow
 
-        # Title
-        title_lbl = QLabel("Opciones")
-        title_lbl.setFont(qfont("size_body", bold=True))
-        title_lbl.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
-        inner_layout.addWidget(title_lbl)
-
-        # ── Horario de silencio ────────────────────────────────────────────
+        # Silencio
         sil_ini, sil_fin = self._leer_silencio()
-
         sil_row = QHBoxLayout()
-        sil_row.setSpacing(sp("sm"))
-
-        sil_lbl = QLabel("Silencio:")
-        sil_lbl.setFont(qfont("size_body"))
-        sil_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+        sil_row.setSpacing(V3_SP["sm"])
+        sil_lbl = QLabel("Horario de silencio")
+        sil_lbl.setFont(qfont("size_small"))
+        sil_lbl.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; "
+            f"background: transparent;")
         sil_row.addWidget(sil_lbl)
-
+        sil_row.addStretch()
         self._entry_sil_ini = NMInput("22:00", modo=self._modo)
-        self._entry_sil_ini.setMinimumWidth(64)
-        self._entry_sil_ini.setFixedHeight(32)
+        self._entry_sil_ini.setFixedSize(70, 32)
         if sil_ini:
             self._entry_sil_ini.setText(sil_ini)
         sil_row.addWidget(self._entry_sil_ini)
-
-        arrow_lbl = QLabel("→")
-        arrow_lbl.setFont(qfont("size_small"))
-        arrow_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
-        sil_row.addWidget(arrow_lbl)
-
+        arrow = QLabel("→")
+        arrow.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; "
+            f"background: transparent;")
+        sil_row.addWidget(arrow)
         self._entry_sil_fin = NMInput("08:00", modo=self._modo)
-        self._entry_sil_fin.setMinimumWidth(64)
-        self._entry_sil_fin.setFixedHeight(32)
+        self._entry_sil_fin.setFixedSize(70, 32)
         if sil_fin:
             self._entry_sil_fin.setText(sil_fin)
         sil_row.addWidget(self._entry_sil_fin)
-
-        btn_apply = NMButtonOutline("Aplicar", modo=self._modo)
-        btn_apply.setFixedHeight(32)
-        btn_apply.setMinimumWidth(68)
+        btn_apply = NMButton("Aplicar", variant="secondary",
+                              size="sm", modo=self._modo, width=80)
         btn_apply.clicked.connect(self._guardar_silencio)
-        sil_row.addWidget(btn_apply)
         self._btn_apply_silencio = btn_apply
-        sil_row.addStretch()
+        sil_row.addWidget(btn_apply)
+        opts_lay.addLayout(sil_row)
 
-        inner_layout.addLayout(sil_row)
-
-        # ── Iniciar con Windows ────────────────────────────────────────────
-        win_row = QHBoxLayout()
-        win_row.setSpacing(sp("sm"))
-
-        win_lbl = QLabel("Iniciar con Windows")
-        win_lbl.setFont(qfont("size_body"))
-        win_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
-        win_row.addWidget(win_lbl)
-        win_row.addStretch()
-
-        self._autostart_toggle = NMToggle(frame, self._modo)
+        # Autostart
+        auto_row = QHBoxLayout()
+        auto_row.setSpacing(V3_SP["sm"])
+        auto_lbl = QLabel("Iniciar con Windows")
+        auto_lbl.setFont(qfont("size_small"))
+        auto_lbl.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; "
+            f"background: transparent;")
+        auto_row.addWidget(auto_lbl)
+        auto_row.addStretch()
+        self._autostart_toggle = NMToggle(parent=opts_card, modo=self._modo)
         self._autostart_toggle.setChecked(self._get_autostart())
         self._autostart_toggle.toggled.connect(
-            lambda checked: self._set_autostart(checked)
-        )
-        win_row.addWidget(self._autostart_toggle)
+            lambda checked: self._set_autostart(checked))
+        auto_row.addWidget(self._autostart_toggle)
+        opts_lay.addLayout(auto_row)
 
-        inner_layout.addLayout(win_row)
-        parent_layout.addWidget(frame)
+        parent_layout.addWidget(opts_card)
 
-    # ── Silence logic (lógica preservada exacta) ──────────────────────────────
+    # ── Silencio (lógica preservada exacta) ─────────────────────────────────
 
     def _leer_silencio(self):
         try:
@@ -744,7 +923,8 @@ class ModuloAvisos(NMModule):
                 return
         try:
             conn = obtener_conexion()
-            for clave, valor in (("silencio_inicio", ini), ("silencio_fin", fin)):
+            for clave, valor in (("silencio_inicio", ini),
+                                  ("silencio_fin", fin)):
                 if valor:
                     conn.execute(
                         "INSERT INTO config (clave, valor) VALUES (?, ?) "
@@ -755,12 +935,12 @@ class ModuloAvisos(NMModule):
                     conn.execute("DELETE FROM config WHERE clave=?", (clave,))
             conn.commit()
             conn.close()
-            if hasattr(self, "_btn_apply_silencio") and hasattr(self._btn_apply_silencio, "play_success"):
+            if hasattr(self._btn_apply_silencio, "play_success"):
                 self._btn_apply_silencio.play_success()
         except Exception:
-            _log.exception("Failed to save config %s", clave)
+            _log.exception("Failed to save silencio config")
 
-    # ── Autostart (lógica preservada exacta) ──────────────────────────────────
+    # ── Autostart (lógica preservada exacta) ────────────────────────────────
 
     def _get_autostart(self) -> bool:
         try:
@@ -777,7 +957,8 @@ class ModuloAvisos(NMModule):
 
     def _set_autostart(self, activar: bool):
         try:
-            import winreg, sys as _sys
+            import winreg
+            import sys as _sys
             key = winreg.OpenKey(
                 winreg.HKEY_CURRENT_USER,
                 r"Software\Microsoft\Windows\CurrentVersion\Run",
@@ -785,7 +966,8 @@ class ModuloAvisos(NMModule):
             )
             if activar:
                 exe = _sys.executable if getattr(_sys, "frozen", False) else _sys.argv[0]
-                winreg.SetValueEx(key, "NeuroMood", 0, winreg.REG_SZ, f'"{exe}"')
+                winreg.SetValueEx(key, "NeuroMood", 0, winreg.REG_SZ,
+                                   f'"{exe}"')
             else:
                 try:
                     winreg.DeleteValue(key, "NeuroMood")
@@ -795,12 +977,14 @@ class ModuloAvisos(NMModule):
         except Exception:
             _log.exception("Failed to update autostart registry")
 
-    # ── Hooks ─────────────────────────────────────────────────────────────────
+    # ── Hooks ────────────────────────────────────────────────────────────────
 
     def on_enter(self):
         self._load_reminders()
 
     def get_card_status(self) -> str:
+        if visual_qa_enabled():
+            return "4 activos"
         try:
             conn = obtener_conexion()
             row = conn.execute(

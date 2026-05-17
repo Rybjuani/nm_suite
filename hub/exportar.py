@@ -166,3 +166,85 @@ def exportar_pdf(paciente_nombre: str, paciente_id: str, datos: dict,
                 QTimer.singleShot(0, lambda: on_error(str(e)))
 
     threading.Thread(target=_run, daemon=True).start()
+
+
+def generar_constancia_consentimiento(paciente_nombre: str, paciente_id: str,
+                                      consentimiento: dict) -> str:
+    """Genera una constancia legal separada del PDF clinico/de evolucion."""
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib import colors as rl_colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import cm
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+    except ImportError:
+        raise RuntimeError("reportlab no esta instalado.")
+
+    nombre_seg = "".join(c for c in paciente_nombre if c.isalnum() or c in " _-") or "paciente"
+    fecha_str = datetime.now().strftime("%Y%m%d_%H%M")
+    filename = f"NeuroMood_constancia_consentimiento_{nombre_seg}_{fecha_str}.pdf"
+    downloads = os.path.join(os.path.expanduser("~"), "Downloads")
+    if not os.path.exists(downloads):
+        downloads = os.path.expanduser("~")
+    filepath = os.path.join(downloads, filename)
+
+    doc = SimpleDocTemplate(
+        filepath,
+        pagesize=A4,
+        leftMargin=2 * cm,
+        rightMargin=2 * cm,
+        topMargin=2 * cm,
+        bottomMargin=2 * cm,
+    )
+    styles = getSampleStyleSheet()
+    title_st = ParagraphStyle("legal_title", parent=styles["Title"], fontSize=18,
+                              textColor=rl_colors.HexColor(_PDF_ACCENT))
+    h2_st = ParagraphStyle("legal_h2", parent=styles["Heading2"], fontSize=11,
+                           textColor=rl_colors.HexColor(_PDF_ACCENT), spaceAfter=4)
+    normal_st = styles["Normal"]
+    caption_st = ParagraphStyle("legal_cap", parent=styles["Normal"], fontSize=8,
+                                textColor=rl_colors.HexColor(_PDF_CAPTION))
+
+    rows = [
+        ("Paciente", paciente_nombre),
+        ("Patient ID", paciente_id),
+        ("Estado", consentimiento.get("status", "pendiente")),
+        ("Aceptado UTC", consentimiento.get("accepted_at_utc", "—")),
+        ("Producto", consentimiento.get("product_name", "NeuroMood Suite")),
+        ("Version NeuroMood Suite", consentimiento.get("neuromood_suite_version", "—")),
+        ("Version Instalador Suite", consentimiento.get("instalador_suite_version", "—")),
+        ("Version aviso legal", consentimiento.get("disclaimer_version", "—")),
+        ("Version privacidad", consentimiento.get("privacy_version", "—")),
+        ("Hash aviso legal", consentimiento.get("disclaimer_text_hash", "—")),
+        ("Hash privacidad", consentimiento.get("privacy_text_hash", "—")),
+        ("Alcance", consentimiento.get("consent_scope", "—")),
+    ]
+    table = Table(rows, colWidths=[4.4 * cm, 11.2 * cm])
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (0, -1), rl_colors.HexColor("#F4F8FC")),
+        ("TEXTCOLOR", (0, 0), (0, -1), rl_colors.HexColor(_PDF_ACCENT)),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("GRID", (0, 0), (-1, -1), 0.4, rl_colors.HexColor("#CCDDEE")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+
+    story = [
+        Paragraph("Constancia de consentimiento digital", title_st),
+        Paragraph("NeuroMood Suite para pacientes", caption_st),
+        Spacer(1, 8),
+        HRFlowable(width="100%", thickness=1, color=rl_colors.HexColor(_PDF_ACCENT), spaceAfter=12),
+        Paragraph("Detalle auditable", h2_st),
+        table,
+        Spacer(1, 12),
+        Paragraph(
+            "Esta constancia acredita el estado tecnico del consentimiento registrado para uso complementario "
+            "de NeuroMood Suite. No es un informe clinico ni contiene evolucion terapeutica.",
+            normal_st,
+        ),
+    ]
+    doc.build(story)
+    return filepath

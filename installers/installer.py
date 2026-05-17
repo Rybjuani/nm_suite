@@ -1,6 +1,6 @@
 """
-installer.py — NeuroMood Installer (PyQt6)
-Compilar con: BUILD_INSTALLER.bat
+installer.py — Instalador Suite (PyQt6)
+Compilar con: BUILD_NEUROMOOD.bat
 """
 import sys
 import os
@@ -11,12 +11,14 @@ import time
 import hashlib
 import sqlite3
 import secrets
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-    QLabel, QLineEdit, QPushButton, QProgressBar,
-    QScrollArea, QFrame, QFileDialog, QMessageBox, QButtonGroup,
+    QLabel, QLineEdit, QPushButton, QProgressBar, QCheckBox,
+    QScrollArea, QFrame, QFileDialog, QMessageBox, QButtonGroup, QInputDialog,
     QSizePolicy, QStackedWidget, QGraphicsOpacityEffect,
 )
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal, QPropertyAnimation, QEasingCurve, QAbstractAnimation, QEventLoop
@@ -44,6 +46,85 @@ except ImportError:
 DEFAULT_INSTALL = os.path.join(os.path.expanduser("~"), "NeuroMood")
 APP_EXE    = "NeuroMood Suite.exe"
 APP_NOMBRE = "NeuroMood Suite"
+NEUROMOOD_SUITE_VERSION = "1.0.0"
+INSTALADOR_SUITE_VERSION = "1.0.0"
+DISCLAIMER_VERSION = "legal-2026-05-16"
+PRIVACY_VERSION = "privacy-2026-05-16"
+CONSENT_SCOPE = (
+    "db_local,sync_autorizado,revision_profesional,visualizacion_neuromood_hub,"
+    "ia_asistida_profesional,constancia_legal_remota"
+)
+LEGAL_DISCLAIMER_TEXT = """NeuroMood Suite es una herramienta digital complementaria de bienestar, registro emocional, organización de hábitos y apoyo personal. Su finalidad es facilitar el registro de estados de ánimo, rutinas, pensamientos, actividades, recordatorios y ejercicios de autorregulación.
+
+NeuroMood Suite no realiza diagnósticos médicos, psicológicos ni psiquiátricos; no indica tratamientos; no reemplaza la evaluación, seguimiento, criterio ni intervención de profesionales de la salud habilitados; y no debe utilizarse como único medio para tomar decisiones sobre la salud física o mental.
+
+NeuroMood Suite puede utilizarse como apoyo complementario dentro de un proceso acompañado por profesionales habilitados. El seguimiento, interpretación clínica, evaluación de riesgo, indicación terapéutica, derivación o toma de decisiones corresponden exclusivamente al profesional tratante.
+
+Los contenidos, registros, gráficos, sugerencias, recordatorios o actividades incluidos en NeuroMood Suite tienen carácter orientativo, educativo y de apoyo complementario. Su interpretación y uso quedan bajo responsabilidad del paciente y, cuando corresponda, del profesional tratante.
+
+NeuroMood Suite no es un servicio de emergencias. En caso de crisis emocional intensa, riesgo de autolesión, ideación suicida, emergencia médica, empeoramiento significativo del estado de salud o cualquier situación de peligro, el paciente debe comunicarse inmediatamente con un servicio de emergencias, guardia médica, línea local de asistencia, familiar responsable o profesional de confianza.
+
+NeuroMood Suite puede tratar datos personales y datos sensibles vinculados al bienestar emocional, hábitos, registros de ánimo, pensamientos, actividades, recordatorios y uso de módulos. El paciente acepta que NeuroMood Suite pueda almacenar estos datos localmente y sincronizarlos, cuando corresponda, para el funcionamiento de NeuroMood Suite, continuidad de uso, visualización de evolución y, si existe vinculación profesional, revisión desde NeuroMood Hub por parte del profesional o equipo autorizado.
+
+Cuando exista vinculación con un profesional, los registros sincronizados podrán ser utilizados en NeuroMood Hub para organizar información, preparar preguntas, generar borradores o sintetizar contexto mediante funciones asistidas por inteligencia artificial. La IA no realiza diagnósticos, evaluaciones clínicas, detección de riesgo, indicaciones terapéuticas, prescripciones, decisiones clínicas ni seguimiento autónomo del paciente. Todo contenido generado por IA debe ser revisado, validado y corregido por el profesional antes de utilizarse.
+
+El paciente acepta que NeuroMood Suite registre una constancia técnica de esta aceptación, localmente y en un registro remoto seguro, incluyendo fecha, cuenta asociada, versión de NeuroMood Suite, versión del Instalador Suite, versión del aviso legal, versión de privacidad y hash del texto aceptado. Esta constancia podrá ser consultada por el profesional o equipo autorizado desde NeuroMood Hub únicamente para verificar el estado del consentimiento.
+
+Estos datos se utilizarán exclusivamente para el funcionamiento de NeuroMood Suite, la continuidad de uso, la sincronización autorizada, la visualización profesional cuando corresponda, la constancia legal de consentimiento y el acompañamiento complementario dentro del entorno correspondiente. Su tratamiento deberá realizarse conforme a la política de privacidad aplicable, con medidas razonables de seguridad, confidencialidad y control de acceso.
+
+La autenticación puede requerir email y contraseña mediante el sistema de cuenta de NeuroMood Suite. La contraseña no debe guardarse localmente en texto plano. El paciente se compromete a no compartir su cuenta, contraseña ni equipo con terceros no autorizados.
+
+Al continuar, el paciente declara haber leído, comprendido y aceptado este aviso legal, el consentimiento de uso, el tratamiento de datos personales y sensibles, la sincronización autorizada cuando corresponda, la visualización profesional desde NeuroMood Hub y la generación de una constancia auditable de consentimiento."""
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _legal_hash(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+DISCLAIMER_TEXT_HASH = _legal_hash(LEGAL_DISCLAIMER_TEXT)
+PRIVACY_TEXT_HASH = _legal_hash(
+    f"{PRIVACY_VERSION}|{CONSENT_SCOPE}|{DISCLAIMER_TEXT_HASH}"
+)
+
+
+def _patient_id_from_auth(email: str, auth_user_id: str) -> str:
+    return auth_user_id.strip() or hashlib.sha256(email.strip().lower().encode()).hexdigest()[:24]
+
+
+def _consent_file_path() -> Path:
+    base = Path(os.environ.get("APPDATA", os.path.expanduser("~"))) / "NeuroMood"
+    return base / "legal_consent.json"
+
+
+def _load_local_consent(email: str, auth_user_id: str) -> dict | None:
+    path = _consent_file_path()
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    if data.get("email", "").strip().lower() != email.strip().lower():
+        return None
+    if data.get("user_id", "") != auth_user_id.strip():
+        return None
+    if data.get("disclaimer_version") != DISCLAIMER_VERSION:
+        return None
+    if data.get("privacy_version") != PRIVACY_VERSION:
+        return None
+    if data.get("disclaimer_text_hash") != DISCLAIMER_TEXT_HASH:
+        return None
+    if data.get("status") != "vigente":
+        return None
+    return data
+
+
+def _save_local_consent(payload: dict) -> None:
+    path = _consent_file_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
 
 # ── Paleta del instalador aplicada globalmente ────────────────────────────────
 _SS = stylesheet_installer()   # design system premium unificado
@@ -67,16 +148,199 @@ def ruta_app_bundled(exe: str) -> str:
     base = sys._MEIPASS if getattr(sys, "frozen", False) else os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "dist"
     )
-    # onedir: NeuroMood\NeuroMood.exe
+    # onedir: carpeta del ejecutable + dependencias
     folder = os.path.join(base, exe.replace(".exe", ""))
     onedir_path = os.path.join(folder, exe)
     if os.path.exists(onedir_path):
         return onedir_path
-    # onefile: NeuroMood.exe
+    # onefile: ejecutable directo
     return os.path.join(base, exe)
 
 
 # ── Hilo de instalación ───────────────────────────────────────────────────────
+
+class _AuthWorker(QThread):
+    done_signal = pyqtSignal(str, str, str, bool, str, str, str)
+    error_signal = pyqtSignal(str)
+
+    def __init__(self, action: str, email: str, password: str = "", parent=None):
+        super().__init__(parent)
+        self._action = action
+        self._email = email.strip().lower()
+        self._password = password
+
+    def run(self):
+        try:
+            from shared.config import supabase_url, supabase_key
+            from supabase import create_client
+
+            url, key = supabase_url(), supabase_key()
+            if not url or not key:
+                self.error_signal.emit(
+                    "No encontramos la configuracion de Supabase. Revisa la conexion o la configuracion incluida."
+                )
+                return
+
+            client = create_client(url, key)
+
+            if self._action == "login":
+                res = client.auth.sign_in_with_password({
+                    "email": self._email,
+                    "password": self._password,
+                })
+                user = getattr(res, "user", None)
+                session = getattr(res, "session", None)
+                user_id = getattr(user, "id", "") if user else ""
+                if not user_id:
+                    self.error_signal.emit("No pudimos iniciar sesion. Revisa email y contrasena.")
+                    return
+                self.done_signal.emit(
+                    "login",
+                    "Sesion iniciada correctamente. Ya podes continuar.",
+                    user_id,
+                    True,
+                    self._email,
+                    getattr(session, "access_token", "") or "",
+                    getattr(session, "refresh_token", "") or "",
+                )
+                return
+
+            if self._action == "signup":
+                res = client.auth.sign_up({
+                    "email": self._email,
+                    "password": self._password,
+                })
+                user = getattr(res, "user", None)
+                session = getattr(res, "session", None)
+                user_id = getattr(user, "id", "") if user else ""
+                if session and user_id:
+                    self.done_signal.emit(
+                        "signup",
+                        "Cuenta creada e iniciada correctamente. Ya podes continuar.",
+                        user_id,
+                        True,
+                        self._email,
+                        getattr(session, "access_token", "") or "",
+                        getattr(session, "refresh_token", "") or "",
+                    )
+                else:
+                    self.done_signal.emit(
+                        "signup",
+                        "Cuenta creada. Si Supabase requiere confirmacion, revisa tu correo y luego inicia sesion.",
+                        user_id,
+                        False,
+                        self._email,
+                        "",
+                        "",
+                    )
+                return
+
+            if self._action == "reset":
+                client.auth.reset_password_for_email(self._email)
+                self.done_signal.emit(
+                    "reset",
+                    "Te enviamos un enlace para restablecer tu contrasena. Revisa tu correo.\n"
+                    "Este correo fue enviado automaticamente. No respondas a este mail.",
+                    "",
+                    False,
+                    self._email,
+                    "",
+                    "",
+                )
+                return
+
+            self.error_signal.emit("Accion de autenticacion no reconocida.")
+        except Exception as e:
+            msg = str(e).strip() or "Error desconocido"
+            low = msg.lower()
+            if "invalid login" in low or "invalid credentials" in low:
+                msg = "Email o contrasena incorrectos."
+            elif "email not confirmed" in low:
+                msg = "Tu email aun no esta confirmado. Revisa tu correo y volve a intentar."
+            elif "already registered" in low or "user already" in low:
+                msg = "Ese email ya tiene cuenta. Proba iniciar sesion."
+            elif any(x in low for x in ("network", "connection", "timeout", "failed to establish")):
+                msg = "No pudimos conectarnos con Supabase. Revisa internet y reintenta."
+            self.error_signal.emit(msg)
+
+
+class _ConsentWorker(QThread):
+    done_signal = pyqtSignal(dict)
+    error_signal = pyqtSignal(str)
+
+    def __init__(self, email: str, auth_user_id: str, access_token: str = "",
+                 refresh_token: str = "", parent=None):
+        super().__init__(parent)
+        self._email = email.strip().lower()
+        self._auth_user_id = auth_user_id.strip()
+        self._access_token = access_token
+        self._refresh_token = refresh_token
+
+    def run(self):
+        try:
+            from shared.config import supabase_url, supabase_key
+            from supabase import create_client
+
+            url, key = supabase_url(), supabase_key()
+            if not url or not key:
+                self.error_signal.emit("No encontramos la configuracion remota para registrar el consentimiento.")
+                return
+
+            client = create_client(url, key)
+            if self._access_token:
+                try:
+                    client.auth.set_session(self._access_token, self._refresh_token)
+                except Exception:
+                    try:
+                        client.postgrest.auth(self._access_token)
+                    except Exception:
+                        pass
+
+            accepted_at = _utc_now_iso()
+            patient_id = _patient_id_from_auth(self._email, self._auth_user_id)
+            payload = {
+                "user_id": self._auth_user_id,
+                "patient_id": patient_id,
+                "email": self._email,
+                "accepted_at_utc": accepted_at,
+                "product_name": "NeuroMood Suite",
+                "neuromood_suite_version": NEUROMOOD_SUITE_VERSION,
+                "instalador_suite_version": INSTALADOR_SUITE_VERSION,
+                "disclaimer_version": DISCLAIMER_VERSION,
+                "privacy_version": PRIVACY_VERSION,
+                "disclaimer_text_hash": DISCLAIMER_TEXT_HASH,
+                "privacy_text_hash": PRIVACY_TEXT_HASH,
+                "consent_scope": CONSENT_SCOPE,
+                "status": "vigente",
+                "created_at": accepted_at,
+            }
+            # Verificar si ya existe un registro vigente con las mismas versiones
+            # para no acumular duplicados en Supabase.
+            existing = (
+                client.table("legal_consents")
+                .select("id")
+                .eq("user_id", self._auth_user_id)
+                .eq("disclaimer_version", DISCLAIMER_VERSION)
+                .eq("privacy_version", PRIVACY_VERSION)
+                .eq("status", "vigente")
+                .limit(1)
+                .execute()
+            )
+            if not (getattr(existing, "data", None) or []):
+                client.table("legal_consents").insert(payload).execute()
+            _save_local_consent(payload)
+            self.done_signal.emit(payload)
+        except Exception as e:
+            msg = str(e).strip() or "Error desconocido"
+            low = msg.lower()
+            if "relation" in low and "legal_consents" in low:
+                msg = "La tabla legal_consents no existe o no esta disponible. Creala en Supabase y reintenta."
+            elif any(x in low for x in ("network", "connection", "timeout", "failed to establish")):
+                msg = "No pudimos registrar el consentimiento por un problema de red. Revisa internet y reintenta."
+            else:
+                msg = f"No pudimos registrar el consentimiento remoto: {msg[:180]}"
+            self.error_signal.emit(msg)
+
 
 class _InstalWorker(QThread):
     """Ejecuta _instalar() en un hilo separado para no bloquear la UI."""
@@ -85,12 +349,13 @@ class _InstalWorker(QThread):
     done_signal    = pyqtSignal(str, str)   # (install_dir, icon_dest)
     error_signal   = pyqtSignal(str)
 
-    def __init__(self, install_path: str, nombre: str, pwd: str,
+    def __init__(self, install_path: str, email: str, auth_user_id: str,
                  codigo: str, parent=None):
         super().__init__(parent)
         self._path = install_path
-        self._nombre = nombre
-        self._pwd = pwd
+        self._email = email.strip().lower()
+        self._auth_user_id = auth_user_id.strip()
+        self._nombre = self._email.split("@", 1)[0] if self._email else "Paciente"
         self._codigo = codigo
 
     def run(self):
@@ -105,8 +370,8 @@ class _InstalWorker(QThread):
             self.progress_signal.emit(paso / total, "Carpeta lista.")
             self.log_signal.emit(f"  Carpeta: {install_dir}", TEXT_SEC)
 
-            # NeuroMood (copia carpeta completa si es onedir)
-            self.progress_signal.emit(paso / total, "Copiando NeuroMood...")
+            # NeuroMood Suite (copia carpeta completa si es onedir)
+            self.progress_signal.emit(paso / total, "Copiando NeuroMood Suite...")
             src = ruta_app_bundled(APP_EXE)
             if not os.path.exists(src):
                 self.log_signal.emit(f"  No encontrado: {APP_EXE}", ERROR_C)
@@ -119,7 +384,7 @@ class _InstalWorker(QThread):
                     shutil.copy2(src, install_dir / APP_EXE)
                 self.log_signal.emit(f"  {APP_NOMBRE}", SUCCESS)
             paso += 1
-            self.progress_signal.emit(paso / total, "NeuroMood copiado.")
+            self.progress_signal.emit(paso / total, "NeuroMood Suite copiado.")
             time.sleep(0.05)
 
             # Icono
@@ -133,12 +398,12 @@ class _InstalWorker(QThread):
 
             # Desinstalador (copia carpeta completa si es onedir)
             self.progress_signal.emit(paso / total, "Copiando desinstalador...")
-            uninst_exe = "Desinstalador NeuroMood.exe"
+            uninst_exe = "Desinstalador Suite.exe"
             uninst_src = ruta_app_bundled(uninst_exe)
             try:
                 uninst_src_dir = os.path.dirname(uninst_src)
                 if os.path.basename(uninst_src_dir) == uninst_exe.replace(".exe", ""):
-                    uninst_dest_dir = install_dir / "Desinstalador NeuroMood"
+                    uninst_dest_dir = install_dir / "Desinstalador Suite"
                     shutil.copytree(uninst_src_dir, uninst_dest_dir, dirs_exist_ok=True)
                     uninst_dest = uninst_dest_dir / uninst_exe
                 else:
@@ -164,7 +429,7 @@ class _InstalWorker(QThread):
             paso += 1
             self.progress_signal.emit(1.0, "Completado.")
             self.log_signal.emit("", TEXT_SEC)
-            self.log_signal.emit("  ¡NeuroMood instalado correctamente!", SUCCESS)
+            self.log_signal.emit("  ¡NeuroMood Suite instalado correctamente!", SUCCESS)
 
             # Identidad del paciente
             self._registrar_identidad(install_dir)
@@ -184,9 +449,9 @@ class _InstalWorker(QThread):
     def _registrar_windows(self, install_dir: Path, uninst_path: Path):
         try:
             import winreg
-            key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMood"
+            key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMoodSuite"
             with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as k:
-                winreg.SetValueEx(k, "DisplayName",      0, winreg.REG_SZ,    "NeuroMood")
+                winreg.SetValueEx(k, "DisplayName",      0, winreg.REG_SZ,    "NeuroMood Suite")
                 winreg.SetValueEx(k, "UninstallString",  0, winreg.REG_SZ,    f'"{uninst_path}"')
                 winreg.SetValueEx(k, "DisplayIcon",      0, winreg.REG_SZ,    f'"{uninst_path}",0')
                 winreg.SetValueEx(k, "Publisher",        0, winreg.REG_SZ,    "NeuroMood")
@@ -198,9 +463,7 @@ class _InstalWorker(QThread):
             pass
 
     def _registrar_identidad(self, install_dir: Path):
-        from shared.identidad import generar_patient_id, guardar_password, obtener_password_hash
-        pid = generar_patient_id(self._nombre, self._pwd, self._codigo)
-        pwd_hash = ""
+        pid = self._auth_user_id or hashlib.sha256(self._email.encode()).hexdigest()[:24]
 
         db_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "NeuroMood")
         os.makedirs(db_dir, exist_ok=True)
@@ -211,15 +474,19 @@ class _InstalWorker(QThread):
             conn.execute("CREATE TABLE IF NOT EXISTS config (clave TEXT PRIMARY KEY, valor TEXT)")
             for clave, valor in [
                 ("patient_name", self._nombre),
+                ("patient_email", self._email),
                 ("patient_id",   pid),
+                ("auth_user_id",  self._auth_user_id),
                 ("install_code",  self._codigo),
+                ("perm_checklist_activacion", "1"),
+                ("perm_checklist_manual",     "1"),
+                ("perm_temporizador_manual",  "1"),
+                ("perm_recordatorios_manual", "1"),
             ]:
                 conn.execute("INSERT OR REPLACE INTO config (clave, valor) VALUES (?, ?)",
                              (clave, valor))
             conn.commit()
             conn.close()
-            guardar_password(self._pwd, self._codigo)
-            pwd_hash = obtener_password_hash(self._codigo)
             self.log_signal.emit("  Identidad guardada", SUCCESS)
         except Exception as e:
             self.log_signal.emit(f"  Advertencia: identidad ({e})", WARNING_C)
@@ -248,13 +515,24 @@ class _InstalWorker(QThread):
             from supabase import create_client
             url, key = supabase_url(), supabase_key()
             if url and key:
-                if not pwd_hash:
-                    pwd_hash = obtener_password_hash(self._codigo)
                 sb = create_client(url, key)
-                sb.table("patients").upsert({
+                payload_full = {
                     "patient_id": pid, "patient_name": self._nombre,
-                    "pwd": pwd_hash, "install_code": self._codigo,
-                }).execute()
+                    "patient_email": self._email,
+                    "auth_user_id": self._auth_user_id,
+                    "install_code": self._codigo,
+                    "perm_checklist_activacion": True,
+                    "perm_checklist_manual": True,
+                    "perm_temporizador_manual": True,
+                    "perm_recordatorios_manual": True,
+                }
+                try:
+                    sb.table("patients").upsert(payload_full).execute()
+                except Exception:
+                    sb.table("patients").upsert({
+                        "patient_id": pid, "patient_name": self._nombre,
+                        "install_code": self._codigo,
+                    }).execute()
                 self.log_signal.emit("  Paciente registrado en la nube", SUCCESS)
         except Exception as e:
             self.log_signal.emit(f"  Registro en nube omitido ({str(e)[:50]})", WARNING_C)
@@ -263,16 +541,25 @@ class _InstalWorker(QThread):
 # ── InstaladorNeuroMood ───────────────────────────────────────────────────────
 
 class InstaladorNeuroMood(InstallerShell):
-    APP_NAME = "NeuroMood Suite"
+    APP_NAME = "Instalador Suite"
+    WINDOW_ROLE = ""
     WINDOW_SIZE = (740, 540)
-    STEPS = ["Bienvenida", "Cuenta", "Instalar", "Finalizar"]
+    STEPS = ["Bienvenida", "Cuenta", "Consentimiento", "Instalar", "Finalizar"]
 
     def __init__(self):
         super().__init__()
         self._pagina = 0
         self._install_dir: str = ""
         self._icon_dest: str = ""
-        self._es_login = False
+        self._auth_ok = False
+        self._auth_email = ""
+        self._auth_user_id = ""
+        self._auth_access_token = ""
+        self._auth_refresh_token = ""
+        self._consent_ok = False
+        self._consent_payload: dict = {}
+        self._auth_worker: _AuthWorker | None = None
+        self._consent_worker: _ConsentWorker | None = None
         self._codigo_instalacion = ""
         self._worker: _InstalWorker | None = None
 
@@ -285,21 +572,46 @@ class InstaladorNeuroMood(InstallerShell):
         self._add_page(lambda p: self._build_p1(p))
         self._add_page(lambda p: self._build_p2(p))
         self._add_page(lambda p: self._build_p3(p))
+        self._add_page(lambda p: self._build_p4(p))
 
+        self._apply_visual_qa_defaults()
         self._ir_a(0)
+
+    def _apply_visual_qa_defaults(self):
+        if os.environ.get("NM_VISUAL_QA") != "1":
+            return
+        qa_root = os.path.join(os.path.expanduser("~"), "NeuromoodV3_QA")
+        if hasattr(self, "_ent_email"):
+            self._ent_email.setText(os.environ.get("NM_QA_PATIENT_EMAIL", "visualqa@example.com"))
+        if hasattr(self, "_ent_pwd"):
+            self._ent_pwd.setText(os.environ.get("NM_QA_PATIENT_PASSWORD", "visualqa-pass"))
+        self._ent_path.setText(
+            os.environ.get(
+                "NM_QA_SUITE_INSTALL_DIR",
+                os.path.join(qa_root, "NeuroMood Suite"),
+            )
+        )
 
     # ── Override fade_to para textos de botón específicos ─────────────────────
 
     def _fade_to(self, n: int):
         super()._fade_to(n)
-        if n == 3:
+        if n == 4:
             self.btn_sig.setText("Finalizar")
-        elif n == 2:
+        elif n == 3:
             self.btn_sig.setText("Instalar")
+        elif n == 2:
+            self.btn_sig.setText("Continuar")
         else:
             self.btn_sig.setText("Siguiente →")
-        self.btn_sig.setEnabled(True)
-        self.btn_ant.setVisible(n > 0 and n < 3)
+        if n == 1:
+            self.btn_sig.setEnabled(self._auth_ok)
+        elif n == 2:
+            accepted = bool(getattr(self, "_chk_legal", None) and self._chk_legal.isChecked())
+            self.btn_sig.setEnabled(self._consent_ok or accepted)
+        else:
+            self.btn_sig.setEnabled(True)
+        self.btn_ant.setVisible(n > 0 and n < 4)
 
     # ── Página 0: Bienvenida ──────────────────────────────────────────────────
 
@@ -310,7 +622,7 @@ class InstaladorNeuroMood(InstallerShell):
         sub = QLabel("Bienvenido a")
         sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 14px;")
         lay.addWidget(sub)
-        title = QLabel("NeuroMood")
+        title = QLabel("Instalador Suite")
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 26px; font-weight: bold;")
         lay.addWidget(title)
         line = QFrame()
@@ -321,7 +633,7 @@ class InstaladorNeuroMood(InstallerShell):
         lay.addSpacing(20)
         desc = QLabel(
             "Este instalador configurará en tu computadora\n"
-            "NeuroMood, diseñada para acompañar tu bienestar\n"
+            "NeuroMood Suite, diseñada para acompañar tu bienestar\n"
             "emocional y mental.\n\n"
             "En los siguientes pasos crearás tu perfil y\n"
             "la app quedará lista para usar."
@@ -347,164 +659,299 @@ class InstaladorNeuroMood(InstallerShell):
     def _build_p1(self, page: QWidget):
         lay = QVBoxLayout(page)
         lay.setContentsMargins(28, 24, 28, 8)
-        lay.setSpacing(0)
+        lay.setSpacing(8)
 
-        self._lbl_reg_titulo = QLabel("Crear cuenta nueva")
-        self._lbl_reg_titulo.setStyleSheet(
-            f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: bold;"
-        )
-        lay.addWidget(self._lbl_reg_titulo)
+        title = QLabel("Cuenta NeuroMood")
+        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: bold;")
+        lay.addWidget(title)
 
-        self._lbl_reg_sub = QLabel("Configurá tu perfil para empezar")
-        self._lbl_reg_sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px;")
-        lay.addWidget(self._lbl_reg_sub)
-        lay.addSpacing(10)
+        sub = QLabel("Inicia sesion o crea tu cuenta con Supabase Auth para continuar.")
+        sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px;")
+        lay.addWidget(sub)
 
-        # Segmented: Primera vez | Ya tengo cuenta
-        seg_row = QHBoxLayout()
-        seg_row.setSpacing(1)
-        self._btn_primera = QPushButton("Primera vez")
-        self._btn_ya = QPushButton("Ya tengo cuenta")
-        self._seg_btns = []
-
-        def _apply_seg(active_btn):
-            for btn in [self._btn_primera, self._btn_ya]:
-                is_active = btn is active_btn
-                btn.setStyleSheet(
-                    f"QPushButton {{background: {ACCENT if is_active else BG_SURFACE};"
-                    f"color: {TEXT_ON_ACCENT if is_active else TEXT_SEC};"
-                    f"border-radius: {2 if isinstance(btn, QPushButton) else 0}px; border: none;"
-                    f"font-size: 12px; padding: 8px 18px;}}"
-                    f"QPushButton:hover {{background: {ACCENT_HOVER}; color: {TEXT_ON_ACCENT};}}"
-                )
-
-        self._apply_seg = _apply_seg
-        self._btn_primera.clicked.connect(lambda: (_apply_seg(self._btn_primera), self._cambiar_modo(False)))
-        self._btn_ya.clicked.connect(lambda: (_apply_seg(self._btn_ya), self._cambiar_modo(True)))
-
-        for btn in [self._btn_primera, self._btn_ya]:
-            btn.setFixedHeight(34)
-            btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            seg_row.addWidget(btn)
-        _apply_seg(self._btn_primera)
-        lay.addLayout(seg_row)
-        lay.addSpacing(10)
-
-        # Card de inputs
         card = QFrame()
+        card.setObjectName("AuthCard")
         card.setStyleSheet(
-            f"QFrame {{background: {BG_SURFACE}; border-radius: 10px; border: 1px solid {BORDER};}}"
+            f"QFrame#AuthCard {{background: {BG_SURFACE}; border-radius: 14px; border: 1px solid {BORDER};}}"
             f"QLabel {{background: transparent; border: none; font-size: 12px; color: {TEXT_SEC};}}"
         )
         cl = QVBoxLayout(card)
-        cl.setContentsMargins(16, 12, 16, 12)
-        cl.setSpacing(4)
+        cl.setContentsMargins(18, 16, 18, 14)
+        cl.setSpacing(8)
 
-        cl.addWidget(QLabel("Nombre completo"))
-        self._ent_nombre = NMInput("Tu nombre y apellido") if _COMPONENTS_OK else QLineEdit()
+        cl.addWidget(QLabel("Email"))
+        self._ent_email = NMInput("tu@email.com") if _COMPONENTS_OK else QLineEdit()
         if not _COMPONENTS_OK:
-            self._ent_nombre.setPlaceholderText("Tu nombre y apellido")
-        cl.addWidget(self._ent_nombre)
+            self._ent_email.setPlaceholderText("tu@email.com")
+        cl.addWidget(self._ent_email)
 
-        cl.addSpacing(4)
         cl.addWidget(QLabel("Contraseña"))
-        self._ent_pwd = NMInput("Mínimo 6 caracteres") if _COMPONENTS_OK else QLineEdit()
+        self._ent_pwd = NMInput("Minimo 6 caracteres") if _COMPONENTS_OK else QLineEdit()
         if not _COMPONENTS_OK:
-            self._ent_pwd.setPlaceholderText("Mínimo 6 caracteres")
+            self._ent_pwd.setPlaceholderText("Minimo 6 caracteres")
         self._ent_pwd.setEchoMode(QLineEdit.EchoMode.Password)
         cl.addWidget(self._ent_pwd)
+        self._ent_email.textEdited.connect(self._invalidate_auth)
+        self._ent_pwd.textEdited.connect(self._invalidate_auth)
 
-        # Confirmar (visible en modo "Primera vez")
-        self._frame_confirm = QWidget()
-        self._frame_confirm.setStyleSheet("background: transparent;")
-        fcl = QVBoxLayout(self._frame_confirm)
-        fcl.setContentsMargins(0, 4, 0, 0)
-        fcl.setSpacing(4)
-        lbl_conf = QLabel("Confirmar contraseña")
-        lbl_conf.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px; background: transparent;")
-        fcl.addWidget(lbl_conf)
-        self._ent_confirm = NMInput() if _COMPONENTS_OK else QLineEdit()
-        self._ent_confirm.setEchoMode(QLineEdit.EchoMode.Password)
-        fcl.addWidget(self._ent_confirm)
-        cl.addWidget(self._frame_confirm)
+        btn_row = QHBoxLayout()
+        btn_row.setSpacing(8)
+        self._btn_login = QPushButton("Iniciar sesión")
+        self._btn_signup = QPushButton("Crear cuenta nueva")
+        self._btn_signup.setObjectName("outline")
+        for btn in (self._btn_login, self._btn_signup):
+            btn.setFixedHeight(36)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._btn_login.clicked.connect(lambda: self._start_auth("login"))
+        self._btn_signup.clicked.connect(lambda: self._start_auth("signup"))
+        btn_row.addWidget(self._btn_login)
+        btn_row.addWidget(self._btn_signup)
+        cl.addLayout(btn_row)
 
-        # Código (visible en modo "Ya tengo cuenta")
-        self._frame_codigo = QWidget()
-        self._frame_codigo.setStyleSheet("background: transparent;")
-        self._frame_codigo.hide()
-        fkl = QVBoxLayout(self._frame_codigo)
-        fkl.setContentsMargins(0, 4, 0, 0)
-        fkl.setSpacing(2)
-        lbl_cod = QLabel("Código de instalación")
-        lbl_cod.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px; background: transparent;")
-        fkl.addWidget(lbl_cod)
-        self._ent_codigo = NMInput("XXXXXX") if _COMPONENTS_OK else QLineEdit()
-        if not _COMPONENTS_OK:
-            self._ent_codigo.setPlaceholderText("XXXXXX")
-        fkl.addWidget(self._ent_codigo)
-        lbl_hint = QLabel(
-            "El código lo encontrás en tu primera instalación\n"
-            "o lo provee tu terapeuta."
+        self._btn_reset = QPushButton("¿Olvidaste tu contraseña?")
+        self._btn_reset.setObjectName("ghost")
+        self._btn_reset.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._btn_reset.clicked.connect(self._reset_password)
+        cl.addWidget(self._btn_reset, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        self._lbl_auth_status = QLabel("La cuenta es obligatoria para continuar.")
+        self._lbl_auth_status.setWordWrap(True)
+        self._lbl_auth_status.setStyleSheet(
+            f"color: {TEXT_TERT}; font-size: 11px; background: transparent; border: none;"
         )
-        lbl_hint.setStyleSheet(f"color: {TEXT_TERT}; font-size: 10px; background: transparent;")
-        fkl.addWidget(lbl_hint)
-        cl.addWidget(self._frame_codigo)
+        cl.addWidget(self._lbl_auth_status)
+
+        sep = QFrame()
+        sep.setFixedHeight(1)
+        sep.setStyleSheet(f"background: {BORDER};")
+        cl.addWidget(sep)
+
         lay.addWidget(card)
-        lay.addSpacing(8)
-
-        # Info card (verde)
-        info_card = QFrame()
-        info_card.setObjectName("InfoCard")
-        info_card.setStyleSheet(
-            f"QFrame#InfoCard {{background: {SUCCESS_BG}; border-radius: 8px; border: 1px solid {SUCCESS};}}"
-        )
-        icl = QVBoxLayout(info_card)
-        icl.setContentsMargins(12, 7, 12, 7)
-        self._lbl_info_reg = QLabel(
-            "Tu contraseña es tu clave de acceso única.\n"
-            "   El profesional puede recuperarla desde el Hub si la olvidás."
-        )
-        self._lbl_info_reg.setStyleSheet(
-            f"color: {SUCCESS}; font-size: 11px; background: transparent; border: none;"
-        )
-        icl.addWidget(self._lbl_info_reg)
-        lay.addWidget(info_card)
-        lay.addSpacing(4)
-
-        self._lbl_error = QLabel("")
-        self._lbl_error.setStyleSheet(
-            f"color: {ERROR_C}; font-size: 12px; background: transparent;"
-        )
-        lay.addWidget(self._lbl_error)
         lay.addStretch()
 
-    def _cambiar_modo(self, es_login: bool):
-        self._es_login = es_login
-        active = self._btn_ya if es_login else self._btn_primera
-        self._apply_seg(active)
-        if es_login:
-            self._lbl_reg_titulo.setText("Iniciar sesión")
-            self._lbl_reg_sub.setText("Recuperá tu progreso con tus credenciales")
-            self._frame_confirm.hide()
-            self._frame_codigo.show()
-            self._lbl_info_reg.setText(
-                "Usá el mismo nombre y contraseña exactos de tu cuenta.\n"
-                "   Tus datos en la nube se sincronizarán al abrir la app."
-            )
-        else:
-            self._lbl_reg_titulo.setText("Crear cuenta nueva")
-            self._lbl_reg_sub.setText("Configurá tu perfil para empezar")
-            self._frame_confirm.show()
-            self._frame_codigo.hide()
-            self._lbl_info_reg.setText(
-                "Tu contraseña es tu clave de acceso única.\n"
-                "   El profesional puede recuperarla desde el Hub si la olvidás."
-            )
-        self._lbl_error.setText("")
+    def _is_valid_email(self, email: str) -> bool:
+        return "@" in email and "." in email.rsplit("@", 1)[-1]
 
-    # ── Página 2: Instalación ─────────────────────────────────────────────────
+    def _invalidate_auth(self):
+        if not self._auth_ok:
+            return
+        self._auth_ok = False
+        self._auth_email = ""
+        self._auth_user_id = ""
+        self._auth_access_token = ""
+        self._auth_refresh_token = ""
+        self._consent_ok = False
+        self._consent_payload = {}
+        self.btn_sig.setEnabled(False)
+        self._set_auth_status("Volvé a iniciar sesión si cambiás el email o la contraseña.", WARNING_C)
+
+    def _set_auth_status(self, text: str, color: str = TEXT_TERT):
+        self._lbl_auth_status.setText(text)
+        self._lbl_auth_status.setStyleSheet(
+            f"color: {color}; font-size: 11px; background: transparent; border: none;"
+        )
+
+    def _set_auth_loading(self, loading: bool):
+        for w in (self._ent_email, self._ent_pwd, self._btn_login, self._btn_signup, self._btn_reset):
+            w.setEnabled(not loading)
+        if self._pagina == 1:
+            self.btn_sig.setEnabled(self._auth_ok and not loading)
+
+    def _start_auth(self, action: str):
+        email = self._ent_email.text().strip().lower()
+        pwd = self._ent_pwd.text()
+        self._auth_ok = False
+        self._consent_ok = False
+        self._consent_payload = {}
+        self.btn_sig.setEnabled(False)
+        if not self._is_valid_email(email):
+            self._set_auth_status("Ingresá un email valido.", ERROR_C)
+            return
+        if len(pwd) < 6:
+            self._set_auth_status("La contraseña debe tener al menos 6 caracteres.", ERROR_C)
+            return
+
+        label = "Iniciando sesión..." if action == "login" else "Creando cuenta..."
+        self._set_auth_status(label, TEXT_SEC)
+        self._set_auth_loading(True)
+        self._auth_worker = _AuthWorker(action, email, pwd, self)
+        self._auth_worker.done_signal.connect(self._on_auth_done)
+        self._auth_worker.error_signal.connect(self._on_auth_error)
+        self._auth_worker.start()
+
+    def _on_auth_done(self, action: str, message: str, user_id: str, can_continue: bool,
+                      email: str, access_token: str, refresh_token: str):
+        self._set_auth_loading(False)
+        self._auth_ok = bool(can_continue and user_id)
+        if self._auth_ok:
+            self._auth_email = email
+            self._auth_user_id = user_id
+            self._auth_access_token = access_token
+            self._auth_refresh_token = refresh_token
+            self._consent_payload = _load_local_consent(email, user_id) or {}
+            self._consent_ok = bool(self._consent_payload)
+            self._codigo_instalacion = secrets.token_hex(3).upper()
+            self.btn_sig.setEnabled(True)
+            if self._consent_ok:
+                self._set_auth_status(
+                    message + "\nConsentimiento legal vigente registrado para esta versión.",
+                    SUCCESS,
+                )
+            else:
+                self._set_auth_status(message + "\nEl siguiente paso requiere aceptar el aviso legal.", SUCCESS)
+        else:
+            self.btn_sig.setEnabled(False)
+            self._set_auth_status(message, WARNING_C if action == "signup" else SUCCESS)
+
+    def _on_auth_error(self, message: str):
+        self._set_auth_loading(False)
+        self._auth_ok = False
+        self._consent_ok = False
+        self.btn_sig.setEnabled(False)
+        self._set_auth_status(message, ERROR_C)
+
+    def _reset_password(self):
+        default_email = self._ent_email.text().strip().lower() if hasattr(self, "_ent_email") else ""
+        email, ok = QInputDialog.getText(
+            self,
+            "Restablecer contraseña",
+            "Email de tu cuenta:",
+            QLineEdit.EchoMode.Normal,
+            default_email,
+        )
+        email = email.strip().lower()
+        if not ok:
+            return
+        if not self._is_valid_email(email):
+            self._set_auth_status("Ingresá un email valido para restablecer la contraseña.", ERROR_C)
+            return
+        self._ent_email.setText(email)
+        self._set_auth_status("Enviando enlace de restablecimiento...", TEXT_SEC)
+        self._set_auth_loading(True)
+        self._auth_worker = _AuthWorker("reset", email, "", self)
+        self._auth_worker.done_signal.connect(self._on_auth_done)
+        self._auth_worker.error_signal.connect(self._on_auth_error)
+        self._auth_worker.start()
 
     def _build_p2(self, page: QWidget):
+        lay = QVBoxLayout(page)
+        lay.setContentsMargins(28, 20, 28, 8)
+        lay.setSpacing(8)
+
+        title = QLabel("Aviso legal y consentimiento de uso")
+        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: bold;")
+        lay.addWidget(title)
+
+        sub = QLabel("Obligatorio para asociar la aceptación a tu cuenta antes de instalar NeuroMood Suite.")
+        sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px;")
+        lay.addWidget(sub)
+
+        panel = QFrame()
+        panel.setObjectName("LegalPanel")
+        panel.setStyleSheet(
+            f"QFrame#LegalPanel {{background: {BG_SURFACE}; border-radius: 14px; border: 1px solid {BORDER};}}"
+        )
+        pl = QVBoxLayout(panel)
+        pl.setContentsMargins(14, 12, 14, 12)
+        pl.setSpacing(8)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setMinimumHeight(210)
+        scroll.setStyleSheet(f"QScrollArea {{background: transparent; border: none;}}")
+        content = QLabel(LEGAL_DISCLAIMER_TEXT)
+        content.setWordWrap(True)
+        content.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        content.setStyleSheet(
+            f"color: {TEXT_SEC}; font-size: 11px; line-height: 1.35; background: transparent; border: none;"
+        )
+        content.setContentsMargins(4, 2, 10, 2)
+        scroll.setWidget(content)
+        pl.addWidget(scroll)
+
+        meta = QLabel(
+            f"Aviso: {DISCLAIMER_VERSION} · Privacidad: {PRIVACY_VERSION} · Hash: {DISCLAIMER_TEXT_HASH[:16]}..."
+        )
+        meta.setStyleSheet(f"color: {TEXT_TERT}; font-size: 10px; background: transparent; border: none;")
+        pl.addWidget(meta)
+
+        lay.addWidget(panel)
+
+        self._chk_legal = QCheckBox("Leí y acepto el aviso legal, el consentimiento de uso y el tratamiento de datos")
+        self._chk_legal.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._chk_legal.setStyleSheet(
+            f"QCheckBox {{color: {TEXT_PRIMARY}; font-size: 12px; spacing: 10px;}}"
+            f"QCheckBox::indicator {{width: 18px; height: 18px; border-radius: 5px; border: 1px solid {BORDER}; background: {BG_SURFACE};}}"
+            f"QCheckBox::indicator:checked {{background: {ACCENT}; border: 1px solid {ACCENT};}}"
+        )
+        self._chk_legal.stateChanged.connect(self._on_legal_check_changed)
+        lay.addWidget(self._chk_legal)
+
+        self._lbl_legal_status = QLabel(
+            "Para continuar se registrará una constancia local y remota auditable."
+        )
+        self._lbl_legal_status.setWordWrap(True)
+        self._lbl_legal_status.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px;")
+        lay.addWidget(self._lbl_legal_status)
+        lay.addStretch()
+
+        if self._consent_ok:
+            self._chk_legal.setChecked(True)
+            self._chk_legal.setEnabled(False)
+            self._set_legal_status("Consentimiento vigente ya registrado para esta cuenta y versión.", SUCCESS)
+
+    def _on_legal_check_changed(self):
+        if self._pagina == 2 and not self._consent_ok:
+            self.btn_sig.setEnabled(self._chk_legal.isChecked())
+
+    def _set_legal_status(self, text: str, color: str = TEXT_TERT):
+        if hasattr(self, "_lbl_legal_status"):
+            self._lbl_legal_status.setText(text)
+            self._lbl_legal_status.setStyleSheet(f"color: {color}; font-size: 11px;")
+
+    def _set_consent_loading(self, loading: bool):
+        if hasattr(self, "_chk_legal") and not self._consent_ok:
+            self._chk_legal.setEnabled(not loading)
+        self.btn_sig.setEnabled(False if loading else (self._consent_ok or self._chk_legal.isChecked()))
+        self.btn_sig.setText("Registrando..." if loading else "Continuar")
+
+    def _register_consent(self):
+        if self._consent_ok:
+            self._ir_a(3)
+            return
+        if not self._auth_ok:
+            self._set_legal_status("Primero iniciá sesión para asociar el consentimiento a tu cuenta.", ERROR_C)
+            return
+        if not getattr(self, "_chk_legal", None) or not self._chk_legal.isChecked():
+            self._set_legal_status("Debés aceptar el aviso legal y el tratamiento de datos para continuar.", ERROR_C)
+            return
+        self._set_legal_status("Registrando consentimiento remoto seguro...", TEXT_SEC)
+        self._set_consent_loading(True)
+        self._consent_worker = _ConsentWorker(
+            self._auth_email,
+            self._auth_user_id,
+            self._auth_access_token,
+            self._auth_refresh_token,
+            self,
+        )
+        self._consent_worker.done_signal.connect(self._on_consent_done)
+        self._consent_worker.error_signal.connect(self._on_consent_error)
+        self._consent_worker.start()
+
+    def _on_consent_done(self, payload: dict):
+        self._consent_ok = True
+        self._consent_payload = payload
+        self._set_consent_loading(False)
+        self._set_legal_status("Consentimiento registrado correctamente. Ya podés continuar.", SUCCESS)
+        self._ir_a(3)
+
+    def _on_consent_error(self, message: str):
+        self._consent_ok = False
+        self._set_consent_loading(False)
+        self._set_legal_status(message, ERROR_C)
+
+    def _build_p3(self, page: QWidget):
         lay = QVBoxLayout(page)
         lay.setContentsMargins(28, 24, 28, 8)
         lay.setSpacing(0)
@@ -552,7 +999,7 @@ class InstaladorNeuroMood(InstallerShell):
 
     # ── Página 3: Finalizar ───────────────────────────────────────────────────
 
-    def _build_p3(self, page: QWidget):
+    def _build_p4(self, page: QWidget):
         lay = QVBoxLayout(page)
         lay.setContentsMargins(28, 24, 28, 8)
         lay.setSpacing(0)
@@ -562,14 +1009,14 @@ class InstaladorNeuroMood(InstallerShell):
         lay.addSpacing(6)
 
         desc = QLabel(
-            "NeuroMood ya esta instalado.\n"
+            "NeuroMood Suite ya esta instalado.\n"
             "Los accesos directos seleccionados se crearan al presionar Finalizar."
         )
         desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 13px;")
         lay.addWidget(desc)
         lay.addSpacing(12)
 
-        btn_abrir = QPushButton("Abrir NeuroMood ahora →")
+        btn_abrir = QPushButton("Abrir NeuroMood Suite ahora →")
         btn_abrir.setFixedSize(230, 40)
         btn_abrir.clicked.connect(self._abrir_app)
         lay.addWidget(btn_abrir)
@@ -613,35 +1060,26 @@ class InstaladorNeuroMood(InstallerShell):
             self._ir_a(0)
         elif self._pagina == 2:
             self._ir_a(1)
+        elif self._pagina == 3:
+            self._ir_a(2 if not self._consent_ok else 1)
 
     def _siguiente(self):
         if self._pagina == 0:
             self._ir_a(1)
 
         elif self._pagina == 1:
-            nombre = self._ent_nombre.text().strip()
-            pwd = self._ent_pwd.text()
-            if not nombre:
-                self._lbl_error.setText("  El nombre no puede estar vacío.")
+            if not self._auth_ok:
+                self._set_auth_status("Primero inicia sesion o crea tu cuenta para continuar.", ERROR_C)
                 return
-            if len(pwd) < 6:
-                self._lbl_error.setText("  La contraseña debe tener al menos 6 caracteres.")
-                return
-            if not self._es_login:
-                if pwd != self._ent_confirm.text():
-                    self._lbl_error.setText("  Las contraseñas no coinciden.")
-                    return
-                self._codigo_instalacion = secrets.token_hex(3).upper()
+            if self._consent_ok:
+                self._ir_a(3)
             else:
-                codigo = self._ent_codigo.text().strip().upper()
-                if not codigo:
-                    self._lbl_error.setText("  Ingresá tu código de instalación.")
-                    return
-                self._codigo_instalacion = codigo
-            self._lbl_error.setText("")
-            self._ir_a(2)
+                self._ir_a(2)
 
         elif self._pagina == 2:
+            self._register_consent()
+
+        elif self._pagina == 3:
             path = self._ent_path.text().strip()
             if self._es_ruta_protegida(path):
                 resp = QMessageBox.question(
@@ -658,7 +1096,7 @@ class InstaladorNeuroMood(InstallerShell):
             self.btn_sig.setText("Instalando...")
             self._iniciar_instalacion(path)
 
-        elif self._pagina == 3:
+        elif self._pagina == 4:
             self._finalizar()
             self.close()
 
@@ -706,10 +1144,13 @@ class InstaladorNeuroMood(InstallerShell):
         QApplication.processEvents(QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)
 
     def _iniciar_instalacion(self, path: str):
-        nombre = self._ent_nombre.text().strip()
-        pwd = self._ent_pwd.text()
-
-        self._worker = _InstalWorker(path, nombre, pwd, self._codigo_instalacion, self)
+        self._worker = _InstalWorker(
+            path,
+            self._auth_email,
+            self._auth_user_id,
+            self._codigo_instalacion,
+            self,
+        )
         self._worker.log_signal.connect(self._log)
         self._worker.progress_signal.connect(self._set_progress)
         self._worker.done_signal.connect(self._on_install_done)
@@ -721,7 +1162,7 @@ class InstaladorNeuroMood(InstallerShell):
         self._icon_dest = icon_dest
         QTimer.singleShot(
             900,
-            lambda: self._ir_a(3) if not sip.isdeleted(self) else None,
+            lambda: self._ir_a(4) if not sip.isdeleted(self) else None,
         )
 
     def _on_install_error(self, tipo: str):
@@ -731,7 +1172,7 @@ class InstaladorNeuroMood(InstallerShell):
         else:
             self._progress_lbl.setStyleSheet(f"color: {ERROR_C}; font-size: 12px; font-weight: bold;")
             self._progress_lbl.setText("Error inesperado. Revisa el log arriba.")
-        self._ir_a(2)
+        self._ir_a(3)
         self.btn_sig.setEnabled(True)
         self.btn_sig.setText("Instalar")
 

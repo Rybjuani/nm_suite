@@ -5,40 +5,57 @@ import subprocess
 import tempfile
 
 try:
-    from shared.theme import COLORS, TYPOGRAPHY, LAYOUT
+    from shared.theme import COLORS, TYPOGRAPHY, LAYOUT, V3_DARK
 except ImportError:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from theme import COLORS, TYPOGRAPHY, LAYOUT
+    from theme import COLORS, TYPOGRAPHY, LAYOUT, V3_DARK
 
-# ── Colores para instaladores (desde theme hybrid) ──────────────────────────
+# ── Colores para instaladores ──────────────────────────────────────────────
+# Instaladores siempre dark (spec README v3). Tokens v3 desde V3_DARK puro,
+# con fallback al bridge legacy donde no hay equivalente directo.
 _C = COLORS["dark_hybrid"]
 _T = TYPOGRAPHY
 
-BG_PRIMARY = _C["bg_primary"]
-BG_SECONDARY = _C["bg_secondary"]
-BG_SURFACE = _C["bg_surface"]
-ACCENT = _C["accent"]
-ACCENT_HOVER = _C["accent_hover"]
-TEXT_PRIMARY = _C["text_primary"]
-TEXT_SEC = _C["text_secondary"]
-TEXT_TERT = _C["text_tertiary"]
-TEXT_ON_ACCENT = _C["text_on_accent"]
-BORDER = _C["border"]
-SUCCESS = _C["success"]
-WARNING_C = _C["warning"]
-ERROR_C = _C["error"]
+BG_PRIMARY     = V3_DARK["bg"]
+BG_SECONDARY   = V3_DARK["bgAlt"]
+BG_SURFACE     = V3_DARK["surfaceSolid"]
+BG_ELEVATED    = V3_DARK["elevatedSolid"]
+ACCENT         = V3_DARK["teal"]            # accent dominante v3
+ACCENT_HOVER   = V3_DARK["cyan"]
+TEXT_PRIMARY   = V3_DARK["text"]
+TEXT_SEC       = V3_DARK["text2"]
+TEXT_TERT      = V3_DARK["text3"]
+TEXT_ON_ACCENT = "#0b1220"                  # texto oscuro sobre gradient claro
+BORDER         = V3_DARK["borderSolid"]
+SUCCESS        = V3_DARK["success"]
+WARNING_C      = V3_DARK["warning"]
+ERROR_C        = V3_DARK["danger"]
 
-FONT_FAMILY = _T.get("font_family", "Segoe UI")
-RADIUS_BUTTON = LAYOUT["radius_button"]
-RADIUS_CARD = LAYOUT["radius_card"]
+# v3 signature gradient stops (teal → cyan-mid → violet)
+GRAD_FROM = V3_DARK["gradFrom"]   # #22d3ee cyan
+GRAD_MID  = V3_DARK["gradMid"]    # #5eead4 teal claro
+GRAD_TO   = V3_DARK["gradTo"]     # #c084fc violet claro
 
-# Colores del gradiente teal→violet del tema
-_GRAD = COLORS["dark_hybrid"]
-VIOLET       = _GRAD["violet"]
-VIOLET_HOVER = _GRAD["violet_hover"]
-TEAL         = _GRAD.get("teal", ACCENT)
-TEAL_HOVER   = _GRAD.get("teal_hover", TEAL)
-SUCCESS_BG   = "#091E10"   # fondo info verde oscuro
+# Danger gradient (rojo → amarillo) para uninstaller — spec README
+DANGER_FROM = V3_DARK["danger"]   # #f87171
+DANGER_TO   = V3_DARK["warning"]  # #fbbf24
+
+# Tipografía: usa fallback chain (instaladores no cargan fuentes premium)
+FONT_FAMILY = (_T.get("font_family_fallback_chain", ["Segoe UI"])[0]
+                if isinstance(_T.get("font_family_fallback_chain"), list)
+                else "Segoe UI")
+# Para inputs no usar pill radius (999) — mantener 10 para legibilidad
+RADIUS_INPUT  = 10
+RADIUS_BUTTON = LAYOUT["radius_button"]    # 999 = pill (v3)
+RADIUS_CARD   = LAYOUT["radius_card"]
+
+# Compat: aliases viejos que otras partes del código pueden usar
+_GRAD       = COLORS["dark_hybrid"]
+VIOLET      = V3_DARK["violet"]
+VIOLET_HOVER = V3_DARK["violet"]
+TEAL        = V3_DARK["teal"]
+TEAL_HOVER  = V3_DARK["cyan"]
+SUCCESS_BG  = "#091E10"   # fondo info verde oscuro (preservado)
 
 
 def stylesheet_installer() -> str:
@@ -52,79 +69,99 @@ def stylesheet_installer() -> str:
 QMainWindow, QWidget {{ background: {BG_PRIMARY}; }}
 QLabel {{ background: transparent; }}
 
-/* ── Inputs ──────────────────────────────────────────────────── */
+/* ── Inputs (radius v3 lg, no pill para legibilidad) ─────────── */
 QLineEdit {{
     background: {BG_SURFACE};
     color: {TEXT_PRIMARY};
     border: 1px solid {BORDER};
-    border-radius: {RADIUS_BUTTON}px;
-    padding: 6px 12px;
+    border-radius: {RADIUS_INPUT}px;
+    padding: 8px 14px;
     font-size: 13px;
     selection-background-color: {ACCENT};
+    selection-color: #0b1220;
 }}
-QLineEdit:focus {{ border-color: {ACCENT}; border-width: 2px; }}
-QLineEdit::placeholder {{ color: {_GRAD["text_tertiary"]}; }}
+QLineEdit:focus {{ border-color: {GRAD_MID}; border-width: 2px; }}
+QLineEdit::placeholder {{ color: {TEXT_TERT}; }}
 
-/* ── Botón primario — gradiente simulado con borde accent ───── */
+/* ── Botón primario — gradient firma v3 teal→cyan→violet (pill) ── */
 QPushButton {{
     background: qlineargradient(
         x1:0, y1:0, x2:1, y2:0,
-        stop:0 {ACCENT}, stop:0.45 {TEAL}, stop:1 {VIOLET}
+        stop:0 {GRAD_FROM}, stop:0.5 {GRAD_MID}, stop:1 {GRAD_TO}
     );
     color: {TEXT_ON_ACCENT};
     border: none;
     border-radius: {RADIUS_BUTTON}px;
-    padding: 8px 20px;
+    padding: 9px 22px;
     font-size: 13px;
-    font-weight: bold;
+    font-weight: 600;
 }}
 QPushButton:hover {{
     background: qlineargradient(
         x1:0, y1:0, x2:1, y2:0,
-        stop:0 {ACCENT_HOVER}, stop:0.45 {TEAL_HOVER}, stop:1 {VIOLET_HOVER}
+        stop:0 {GRAD_FROM}, stop:0.5 {GRAD_MID}, stop:1 {GRAD_TO}
     );
+    border: 1px solid {GRAD_MID};
+}}
+QPushButton:pressed {{
+    padding: 10px 22px 8px 22px;
 }}
 QPushButton:disabled {{
     background: {BORDER};
-    color: {_GRAD["text_tertiary"]};
+    color: {TEXT_TERT};
 }}
 
-/* ── Botón outline ───────────────────────────────────────────── */
+/* ── Botón outline (ghost/secondary) ────────────────────────── */
 QPushButton#outline {{
     background: transparent;
-    color: {ACCENT};
-    border: 2px solid {ACCENT};
+    color: {TEXT_PRIMARY};
+    border: 1px solid {BORDER};
+    font-weight: 500;
 }}
 QPushButton#outline:hover {{
-    background: {_GRAD["bg_elevated"]};
+    background: {BG_ELEVATED};
+    border-color: {GRAD_MID};
 }}
 
-/* ── Botón danger (desinstalar) ─────────────────────────────── */
+/* ── Botón danger v3 (uninstaller): gradient rojo → amarillo ── */
 QPushButton#danger {{
-    background: {ERROR_C};
-    color: {TEXT_ON_ACCENT};
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 {DANGER_FROM}, stop:1 {DANGER_TO}
+    );
+    color: #0b1220;
     border: none;
+    font-weight: 600;
 }}
-QPushButton#danger:hover {{ background: #c83040; }}
+QPushButton#danger:hover {{
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 {DANGER_FROM}, stop:1 {DANGER_TO}
+    );
+    border: 1px solid {DANGER_FROM};
+}}
 
-/* ── Checkbox ───────────────────────────────────────────────── */
+/* ── Checkbox v3 — activo = gradient firma ────────────────── */
 QCheckBox {{
     color: {TEXT_SEC};
-    font-size: 11px;
-    spacing: 8px;
+    font-size: 12px;
+    spacing: 10px;
 }}
 QCheckBox::indicator {{
     width: 18px; height: 18px;
     border-radius: 4px;
-    border: 2px solid {BORDER};
+    border: 1px solid {BORDER};
     background: {BG_SURFACE};
 }}
 QCheckBox::indicator:checked {{
-    background: {ACCENT};
-    border-color: {ACCENT};
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:1,
+        stop:0 {GRAD_FROM}, stop:1 {GRAD_TO}
+    );
+    border-color: {GRAD_MID};
 }}
 
-/* ── Progress bar ───────────────────────────────────────────── */
+/* ── Progress bar v3 — gradient firma teal→violet ────────── */
 QProgressBar {{
     background: {BORDER};
     border-radius: 4px;
@@ -134,7 +171,16 @@ QProgressBar {{
 QProgressBar::chunk {{
     background: qlineargradient(
         x1:0, y1:0, x2:1, y2:0,
-        stop:0 {ACCENT}, stop:0.45 {TEAL}, stop:1 {VIOLET}
+        stop:0 {GRAD_FROM}, stop:0.5 {GRAD_MID}, stop:1 {GRAD_TO}
+    );
+    border-radius: 4px;
+}}
+
+/* ── Progress bar danger (uninstaller): rojo→amarillo ──── */
+QProgressBar#danger::chunk {{
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 {DANGER_FROM}, stop:1 {DANGER_TO}
     );
     border-radius: 4px;
 }}
@@ -266,6 +312,7 @@ class InstallerShell(QMainWindow):
     APP_NAME: str = "NeuroMood"
     WINDOW_SIZE: tuple = (680, 480)
     STEPS: list[str] = []
+    WINDOW_ROLE: str = "Instalador"
 
     def __init__(self):
         super().__init__()
@@ -273,7 +320,7 @@ class InstallerShell(QMainWindow):
         self._pages: list[QWidget] = []
         self._step_widgets: list[tuple[QLabel, QLabel]] = []
 
-        self.setWindowTitle(f"Instalador — {self.APP_NAME}")
+        self.setWindowTitle(self.APP_NAME if not self.WINDOW_ROLE else f"{self.WINDOW_ROLE} — {self.APP_NAME}")
         w, h = self.WINDOW_SIZE
         self.setFixedSize(w, h)
         self.setStyleSheet(stylesheet_installer())
@@ -440,26 +487,35 @@ class InstallerShell(QMainWindow):
             self._stack.setCurrentIndex(n)
             overlay.deleteLater()
 
-        # Update step indicators
+        # Update step indicators (v3: active = gradient firma, done = success)
         for i, (circle, lbl) in enumerate(self._step_widgets):
             if i == n:
                 circle.setStyleSheet(
-                    f"background: {ACCENT}; color: {TEXT_ON_ACCENT}; border-radius: 11px;"
-                    f"font-weight: bold; font-size: 10px;"
+                    f"background: qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+                    f"stop:0 {GRAD_FROM}, stop:1 {GRAD_TO}); "
+                    f"color: {TEXT_ON_ACCENT}; border-radius: 11px;"
+                    f"font-weight: 600; font-size: 10px;"
                 )
-                lbl.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 11px; font-weight: bold; background: transparent;")
+                lbl.setStyleSheet(
+                    f"color: {TEXT_PRIMARY}; font-size: 11px; "
+                    f"font-weight: 600; background: transparent;"
+                )
             elif i < n:
                 circle.setStyleSheet(
-                    f"background: {SUCCESS}; color: {TEXT_ON_ACCENT}; border-radius: 11px;"
-                    f"font-weight: bold; font-size: 10px;"
+                    f"background: {SUCCESS}; color: #0b1220; border-radius: 11px;"
+                    f"font-weight: 600; font-size: 10px;"
                 )
-                lbl.setStyleSheet(f"color: {TEXT_SEC}; font-size: 11px; background: transparent;")
+                lbl.setStyleSheet(
+                    f"color: {TEXT_SEC}; font-size: 11px; background: transparent;"
+                )
             else:
                 circle.setStyleSheet(
                     f"background: {BORDER}; color: {TEXT_TERT}; border-radius: 11px;"
-                    f"font-weight: bold; font-size: 10px;"
+                    f"font-weight: 500; font-size: 10px;"
                 )
-                lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px; background: transparent;")
+                lbl.setStyleSheet(
+                    f"color: {TEXT_TERT}; font-size: 11px; background: transparent;"
+                )
 
         self.btn_ant.setVisible(n > 0)
         self.btn_sig.setEnabled(True)

@@ -1,219 +1,409 @@
 """
-app/modules/rutina_qt.py — Checklist de rutina diaria (PyQt6)
+app/modules/rutina_qt.py — Rutina del día v3 (PyQt6)
 
-LÓGICA PRESERVADA EXACTA:
-  SECCIONES, _load_tasks(), _on_check(), _add_task(), _guardar_nota(),
-  get_card_status()
+Estructura según design_handoff_neuromood_v3 (Suite > Rutina):
+
+  Header        eyebrow
+  Hero card     Ring grande del día (120) + título + descripción +
+                NMButton gradient "Nueva tarea" (asume sección horaria actual)
+  3-col grid    3 _SectionCard (Mañana / Tarde / Noche):
+                  • Header: NMIcon temático + label + ring chico + counter "N/M"
+                  • Body: lista de NMCustomCheck (tareas)
+                  • Footer: NMButton ghost "+ Agregar tarea"
+  Nota del día  NMDayNote (existente, sin cambios)
+
+LÓGICA DE NEGOCIO PRESERVADA EXACTA:
+  SECCIONES, _load_tasks(), _on_check(), _add_task(), _guardar_nota_text(),
+  get_card_status(), schema DB (checklist_tareas, checklist_completadas,
+  checklist_notas_dia), winsound.Beep al completar tarea.
 """
 
 import os
 import sys
 import logging
+import datetime as _dt
 
 _log = logging.getLogger(__name__)
 
-from PyQt6.QtCore import (
-    Qt, QTimer,
-)
-from PyQt6.QtGui import (
-    QColor, QFont,
-)
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QScrollArea, QFrame, QTextEdit, QLineEdit, QSizePolicy,
-    QPushButton,
+    QScrollArea, QFrame, QLineEdit, QSizePolicy,
 )
+from PyQt6.QtGui import QColor
 
 try:
     from shared.components_qt import (
-        NMModule, NMButton, NMButtonOutline, NMProgressBar, NMToast,
-        ThemeManager, h_spacer, NMEmptyState, NMRoutineSection, NMDayNote,
-        NMCustomCheck,
+        NMModule, NMButton, NMToast, ThemeManager,
+        NMCard, NMIcon, NMModuleRing, NMDayNote,
+        NMCustomCheck, NMEmptyState,
     )
     from shared.theme_qt import (
-        C, colors, norm_modo, qfont, qcolor, nm_icon,
-        sp,
-        PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
-        RADIUS_INPUT, RADIUS_SMALL,
+        C, colors, norm_modo, qfont, qfont_mono,
+        v3c, V3_SP, V3_RD,
         stylesheet_textedit, stylesheet_scrollarea,
+        PAD_CONTAINER,
     )
+    from shared.theme import TYPOGRAPHY
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy
+    from shared.visual_qa import visual_qa_enabled, routine_sections
 except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
     from shared.components_qt import (
-        NMModule, NMButton, NMButtonOutline, NMProgressBar, NMToast,
-        ThemeManager, h_spacer, NMEmptyState, NMRoutineSection, NMDayNote,
-        NMCustomCheck,
+        NMModule, NMButton, NMToast, ThemeManager,
+        NMCard, NMIcon, NMModuleRing, NMDayNote,
+        NMCustomCheck, NMEmptyState,
     )
     from shared.theme_qt import (
-        C, colors, norm_modo, qfont, qcolor, nm_icon,
-        sp,
-        PAD_CONTAINER, GAP_CARDS, GAP_ELEMENTS, RADIUS_CARD, RADIUS_PILL,
-        RADIUS_INPUT, RADIUS_SMALL,
+        C, colors, norm_modo, qfont, qfont_mono,
+        v3c, V3_SP, V3_RD,
         stylesheet_textedit, stylesheet_scrollarea,
+        PAD_CONTAINER,
     )
+    from shared.theme import TYPOGRAPHY
     from shared.db import obtener_conexion
     from shared.utils import fecha_hoy
+    from shared.visual_qa import visual_qa_enabled, routine_sections
 
 
-# ── Secciones (preservadas exactas) ──────────────────────────────────────────
+# ── Constantes preservadas ───────────────────────────────────────────────────
 
+# v3: SVG icons en lugar de fa5s
 SECCIONES = [
-    ("manana", "Mañana", "fa5s.sun"),
-    ("tarde",  "Tarde",  "fa5s.cloud-sun"),
-    ("noche",  "Noche",  "fa5s.moon"),
+    ("manana", "Mañana", "sun"),
+    ("tarde",  "Tarde",  "spark"),
+    ("noche",  "Noche",  "moon"),
 ]
 
-# Maps SECCIONES key → NMRoutineSection section_type
-_SECTION_TYPE = {
-    "manana": "morning",
-    "tarde":  "afternoon",
-    "noche":  "night",
-}
+
+# ── _HeroDayCard ─────────────────────────────────────────────────────────────
+
+class _HeroDayCard(NMCard):
+    """Hero v3: ring 120 del progreso del día + título + descripción + CTA."""
+
+    new_task_requested = pyqtSignal()
+
+    def __init__(self, modo: str = None, parent=None):
+        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
+        self._done = 0
+        self._total = 0
+        self._build()
+
+    def _build(self):
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(V3_SP["xl"], V3_SP["xl"],
+                                V3_SP["xl"], V3_SP["xl"])
+        lay.setSpacing(V3_SP["xl"])
+
+        self._ring = NMModuleRing(size=120, pct=0.0, modo=self._modo)
+        lay.addWidget(self._ring, alignment=Qt.AlignmentFlag.AlignVCenter)
+
+        col = QVBoxLayout()
+        col.setSpacing(4)
+        self._eyebrow = QLabel("PROGRESO DEL DÍA")
+        self._eyebrow.setFont(qfont("size_caption_xs",
+                                     weight=TYPOGRAPHY["weight_semibold"]))
+        col.addWidget(self._eyebrow)
+        self._title_lbl = QLabel("Sin tareas configuradas")
+        self._title_lbl.setFont(qfont("size_h2",
+                                       weight=TYPOGRAPHY["weight_bold"]))
+        col.addWidget(self._title_lbl)
+        self._desc_lbl = QLabel("Tu rutina se va construyendo paso a paso.")
+        self._desc_lbl.setFont(qfont("size_small"))
+        self._desc_lbl.setWordWrap(True)
+        col.addWidget(self._desc_lbl)
+        col.addStretch()
+        lay.addLayout(col, stretch=1)
+
+        self._cta = NMButton("Nueva tarea", variant="gradient",
+                              size="md", modo=self._modo, width=160)
+        self._cta.clicked.connect(self.new_task_requested.emit)
+        lay.addWidget(self._cta, alignment=Qt.AlignmentFlag.AlignVCenter)
+
+        self._apply_hero_styles()
+
+    def set_progress(self, done: int, total: int):
+        self._done = done
+        self._total = total
+        if total > 0:
+            pct = done / total
+            self._ring.set_pct(pct)
+            self._title_lbl.setText(f"{done} de {total} tareas completadas")
+            self._desc_lbl.setText(
+                f"{int(pct * 100)}% del día completado." if pct < 1.0
+                else "¡Excelente! Rutina del día completa.")
+        else:
+            self._ring.set_pct(0.0)
+            self._title_lbl.setText("Sin tareas configuradas")
+            self._desc_lbl.setText(
+                "Agregá una primera tarea para empezar tu rutina.")
+
+    def _apply_hero_styles(self):
+        self._eyebrow.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; "
+            f"background: transparent;")
+        self._title_lbl.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; "
+            f"background: transparent;")
+        self._desc_lbl.setStyleSheet(
+            f"color: {v3c('text2', self._modo).name()}; "
+            f"background: transparent;")
+
+    def _apply_theme(self, modo: str):
+        super()._apply_theme(modo)
+        self._ring._modo = self._modo
+        self._ring.update()
+        self._apply_hero_styles()
 
 
-# ── ModuloRutina ──────────────────────────────────────────────────────────────
+# ── _SectionCard ─────────────────────────────────────────────────────────────
+
+class _SectionCard(NMCard):
+    """Card v3 para una sección de rutina (Mañana / Tarde / Noche).
+
+    Composición:
+      Header: NMIcon temático + label + counter "N/M" + NMModuleRing(40)
+      Body:   QVBoxLayout que el módulo padre llena con NMCustomCheck
+      Footer: NMButton ghost "+ Agregar tarea"
+    """
+
+    add_requested = pyqtSignal(str)   # emite la key de sección
+
+    def __init__(self, key: str, label: str, icon_name: str,
+                 modo: str = None, parent=None):
+        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
+        self._key = key
+        self._label = label
+        self._icon_name = icon_name
+        self._build()
+
+    def _build(self):
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
+                                V3_SP["lg"], V3_SP["lg"])
+        lay.setSpacing(V3_SP["md"])
+
+        head = QHBoxLayout()
+        head.setSpacing(V3_SP["sm"])
+        self._icon = NMIcon(self._icon_name, size=24, color_key="teal",
+                             modo=self._modo)
+        head.addWidget(self._icon)
+        self._title = QLabel(self._label)
+        self._title.setFont(qfont("size_h3",
+                                   weight=TYPOGRAPHY["weight_semibold"]))
+        head.addWidget(self._title)
+        head.addStretch()
+        self._count_lbl = QLabel("0/0")
+        self._count_lbl.setFont(qfont_mono(10, bold=False))
+        head.addWidget(self._count_lbl)
+        self._ring = NMModuleRing(size=40, pct=0.0, modo=self._modo)
+        head.addWidget(self._ring)
+        lay.addLayout(head)
+
+        # Body: layout vertical para tareas
+        self._body = QWidget()
+        self._body.setStyleSheet("background: transparent;")
+        self._body_lay = QVBoxLayout(self._body)
+        self._body_lay.setContentsMargins(0, 0, 0, 0)
+        self._body_lay.setSpacing(V3_SP["xs"])
+        self._body_lay.setAlignment(Qt.AlignmentFlag.AlignTop)
+        lay.addWidget(self._body, stretch=1)
+
+        # Footer: botón ghost "+ Agregar tarea"
+        self._add_btn = NMButton("+ Agregar tarea", variant="ghost",
+                                  size="sm", modo=self._modo, width=0)
+        self._add_btn.clicked.connect(
+            lambda: self.add_requested.emit(self._key))
+        lay.addWidget(self._add_btn)
+
+        self._apply_section_styles()
+
+    # ── API pública usada por el módulo ──────────────────────────────────────
+
+    def body_layout(self) -> QVBoxLayout:
+        return self._body_lay
+
+    def section_key(self) -> str:
+        return self._key
+
+    def set_progress(self, done: int, total: int):
+        if total > 0:
+            self._ring.set_pct(done / total)
+            self._count_lbl.setText(f"{done}/{total}")
+        else:
+            self._ring.set_pct(0.0)
+            self._count_lbl.setText("0/0")
+
+    def show_add_inline(self, on_save):
+        """Inserta una fila inline (input + botón check) al final del body."""
+        form = QFrame()
+        form.setObjectName("AddForm")
+        form_lay = QHBoxLayout(form)
+        form_lay.setContentsMargins(V3_SP["sm"], V3_SP["xs"],
+                                     V3_SP["sm"], V3_SP["xs"])
+        form_lay.setSpacing(V3_SP["sm"])
+        entry = QLineEdit()
+        entry.setPlaceholderText("Nueva tarea…")
+        entry.setFont(qfont("size_body"))
+        entry.setFixedHeight(32)
+        entry.setStyleSheet(
+            f"QLineEdit {{ background: {v3c('bg', self._modo).name()}; "
+            f"color: {v3c('text', self._modo).name()}; "
+            f"border: 1px solid {v3c('borderStrong', self._modo).name()}; "
+            f"border-radius: 8px; padding: 0 8px; }}"
+            f"QLineEdit:focus {{ border-color: "
+            f"{v3c('teal', self._modo).name()}; }}")
+        form_lay.addWidget(entry, stretch=1)
+        btn = NMButton("✓", variant="gradient", size="sm",
+                        modo=self._modo, width=36)
+        form_lay.addWidget(btn)
+
+        form.setStyleSheet(
+            f"#AddForm {{ background: {v3c('borderSoft', self._modo).name()}; "
+            f"border-radius: 10px; }}")
+        self._body_lay.addWidget(form)
+        entry.setFocus()
+
+        def _commit():
+            txt = entry.text().strip()
+            if not txt:
+                return
+            self._body_lay.removeWidget(form)
+            form.deleteLater()
+            on_save(self._key, txt, btn)
+
+        btn.clicked.connect(_commit)
+        entry.returnPressed.connect(_commit)
+
+    # ── styles / theme ───────────────────────────────────────────────────────
+
+    def _apply_section_styles(self):
+        self._title.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; "
+            f"background: transparent;")
+        self._count_lbl.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; "
+            f"background: transparent;")
+
+    def _apply_theme(self, modo: str):
+        super()._apply_theme(modo)
+        if self._icon is not None:
+            self._icon._modo = self._modo
+            self._icon._render()
+        self._ring._modo = self._modo
+        self._ring.update()
+        self._apply_section_styles()
+
+
+# ── ModuloRutina v3 ──────────────────────────────────────────────────────────
 
 class ModuloRutina(NMModule):
     MODULE_TITLE = "Rutina"
     MODULE_ICON  = "rutina"
 
     def build_ui(self):
-        self._section_collapsed: dict[str, bool] = {}
-        self._section_bodies:    dict[str, QWidget] = {}
-        self._section_progs:     dict[str, NMProgressBar] = {}
-        self._section_count_lbl: dict[str, QLabel] = {}
-        self._section_frames:    dict[str, QFrame] = {}
-        self._task_checks:       dict[int, NMCustomCheck] = {}  # tarea_id → row
-        self._task_done:         dict[int, bool] = {}       # tarea_id → bool
+        self._task_checks: dict[int, NMCustomCheck] = {}
+        self._task_done:   dict[int, bool] = {}
+        self._task_section: dict[int, str] = {}
+        self._section_cards: dict[str, _SectionCard] = {}
 
-        c = colors(self._modo)
+        outer = QVBoxLayout(self._content)
+        outer.setContentsMargins(0, 0, 0, 0)
 
-        # ── Root layout inside self._content ─────────────────────────────────
-        root = QVBoxLayout(self._content)
-        root.setContentsMargins(PAD_CONTAINER, PAD_CONTAINER,
-                                PAD_CONTAINER, PAD_CONTAINER)
-        root.setSpacing(sp("sm"))
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        outer.addWidget(scroll)
+        self._scroll = scroll
 
-        # Badge summary
-        self._badge_lbl = QLabel("Sin tareas configuradas")
-        self._badge_lbl.setFont(qfont("size_body", bold=True))
-        self._badge_lbl.setStyleSheet(
-            f"color: {c['accent']}; background: transparent;"
-        )
-        root.addWidget(self._badge_lbl)
-        root.addSpacing(10)
+        body = QWidget()
+        body.setStyleSheet("background: transparent;")
+        scroll.setWidget(body)
 
-        # ── Scroll area ───────────────────────────────────────────────────────
-        self._scroll = QScrollArea()
-        self._scroll.setWidgetResizable(True)
-        self._scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        lay = QVBoxLayout(body)
+        lay.setContentsMargins(V3_SP["xl"], V3_SP["lg"],
+                                V3_SP["xl"], V3_SP["xl"])
+        lay.setSpacing(V3_SP["lg"])
 
-        self._scroll_content = QWidget()
-        self._scroll_content.setStyleSheet("background: transparent;")
-        self._scroll_layout = QVBoxLayout(self._scroll_content)
-        self._scroll_layout.setContentsMargins(0, 0, sp("sm"), 0)
-        self._scroll_layout.setSpacing(GAP_CARDS)
-        self._scroll_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        # 1. Eyebrow
+        self._eyebrow = QLabel("RUTINA DE HOY")
+        self._eyebrow.setFont(qfont("size_caption_xs",
+                                     weight=TYPOGRAPHY["weight_semibold"]))
+        lay.addWidget(self._eyebrow)
 
-        self._scroll.setWidget(self._scroll_content)
-        root.addWidget(self._scroll)
+        # 2. Hero card
+        self._hero = _HeroDayCard(modo=self._modo)
+        self._hero.new_task_requested.connect(self._on_new_task_hero)
+        lay.addWidget(self._hero)
 
-        # ── Build section frames ──────────────────────────────────────────────
+        # 3. Empty state (oculta cuando hay tareas)
         self._empty_state = NMEmptyState(
             "fa5s.list-check",
             "Sin rutina asignada",
-            "Tu terapeuta te enviará actividades pronto.",
-            self._scroll_content,
+            "Tu terapeuta te enviará actividades pronto, o podés agregarlas "
+            "vos manualmente con el botón de cada sección.",
+            parent=body,
         )
         self._empty_state.hide()
-        self._scroll_layout.addWidget(self._empty_state)
+        lay.addWidget(self._empty_state)
 
-        for key, label, icon in SECCIONES:
-            self._build_section(key, label, icon)
+        # 4. 3-col grid de _SectionCard
+        sections_row = QHBoxLayout()
+        sections_row.setSpacing(V3_SP["md"])
+        for key, label, icon_name in SECCIONES:
+            card = _SectionCard(key, label, icon_name, modo=self._modo)
+            card.add_requested.connect(self._on_section_add)
+            sections_row.addWidget(card, stretch=1)
+            self._section_cards[key] = card
+        lay.addLayout(sections_row)
 
-        # ── Nota del día ──────────────────────────────────────────────────────
-        self._build_nota_dia()
+        # 5. Nota del día (NMDayNote ya existente)
+        self._build_nota_dia(lay)
 
-        # ── Load tasks ────────────────────────────────────────────────────────
+        self._apply_text_styles()
         self._load_tasks()
+
+    def _apply_text_styles(self):
+        self._eyebrow.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; "
+            f"background: transparent;")
 
     def _on_theme(self, modo: str) -> None:
         super()._on_theme(modo)
         if hasattr(self, "_scroll"):
             self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-        if hasattr(self, "_nota_txt"):
-            self._nota_txt.setStyleSheet(stylesheet_textedit(self._modo))
-        for prog in getattr(self, "_section_progs", {}).values():
-            prog._apply_theme(self._modo)
-        # Re-aplicar estilos a todos los checkboxes
+        if hasattr(self, "_nota_txt") and self._nota_txt is not None:
+            try:
+                self._nota_txt.setStyleSheet(stylesheet_textedit(self._modo))
+            except Exception:
+                pass
+        if hasattr(self, "_eyebrow"):
+            self._apply_text_styles()
+        # Re-check estilos de cada checkbox (asegurar)
         for tid, cb in getattr(self, "_task_checks", {}).items():
             done = self._task_done.get(tid, False)
-            cb.set_checked(done)
+            try:
+                cb.set_checked(done)
+            except Exception:
+                pass
         self.update()
 
-    # ── Section building ─────────────────────────────────────────────────────
-
-    def _build_section(self, key: str, label: str, icon: str):
-        c = colors(self._modo)
-        section_type = _SECTION_TYPE.get(key, "morning")
-
-        # Premium collapsible section with tinted gradient header
-        sec = NMRoutineSection(section_type, label, modo=self._modo,
-                               parent=self._scroll_content)
-        self._section_frames[key] = sec  # stored for visibility toggle in _load_tasks
-
-        cl = sec.content_layout()
-
-        # Count + add-task row inside content area
-        controls_row = QHBoxLayout()
-        controls_row.setContentsMargins(0, 0, 0, 0)
-        controls_row.setSpacing(sp("sm"))
-
-        count_lbl = QLabel("")
-        count_lbl.setFont(qfont("size_small"))
-        count_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
-        self._section_count_lbl[key] = count_lbl
-        controls_row.addWidget(count_lbl)
-
-        controls_row.addStretch()
-
-        add_btn = NMButton("+", modo=self._modo, width=30, height=30)
-        add_btn.clicked.connect(lambda checked=False, k=key: self._show_add_form(k))
-        controls_row.addWidget(add_btn)
-        cl.addLayout(controls_row)
-
-        # Thin progress bar
-        prog = NMProgressBar(height=4, modo=self._modo)
-        cl.addWidget(prog)
-        self._section_progs[key] = prog
-
-        # Task body — plain widget that _load_tasks populates
-        body = QWidget()
-        body.setStyleSheet("background: transparent;")
-        body_layout = QVBoxLayout(body)
-        body_layout.setContentsMargins(0, sp("xs") // 2, 0, 0)
-        body_layout.setSpacing(sp("xs") // 2)
-        body_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        cl.addWidget(body)
-        self._section_bodies[key] = body
-
-        self._scroll_layout.addWidget(sec)
-
-    # ── Load tasks from DB (lógica preservada exacta) ────────────────────────
+    # ── load tasks (lógica preservada exacta) ────────────────────────────────
 
     def _load_tasks(self):
         self._task_checks.clear()
         self._task_done.clear()
+        self._task_section.clear()
 
-        # Clear existing task widgets in each section
-        for key in self._section_bodies:
-            body = self._section_bodies[key]
-            layout = body.layout()
+        # Limpiar bodies
+        for key, card in self._section_cards.items():
+            layout = card.body_layout()
             while layout.count():
                 item = layout.takeAt(0)
                 w = item.widget()
@@ -221,10 +411,13 @@ class ModuloRutina(NMModule):
                     layout.removeWidget(w)
                     w.deleteLater()
 
+        if visual_qa_enabled():
+            self._load_visual_qa_tasks()
+            return
+
         try:
             conn = obtener_conexion()
             hoy = fecha_hoy()
-
             for key, _, _ in SECCIONES:
                 tareas = conn.execute(
                     "SELECT id, descripcion FROM checklist_tareas "
@@ -242,48 +435,70 @@ class ModuloRutina(NMModule):
                     ).fetchall()
                     completadas = {r["tarea_id"] for r in rows}
 
-                body = self._section_bodies[key]
-                layout = body.layout()
-                c = colors(self._modo)
-
+                card = self._section_cards[key]
+                layout = card.body_layout()
                 for tarea in tareas:
                     tid = tarea["id"]
                     done = tid in completadas
                     self._task_done[tid] = done
-
-                    cb = NMCustomCheck(tarea["descripcion"], checked=done, modo=self._modo)
+                    self._task_section[tid] = key
+                    cb = NMCustomCheck(tarea["descripcion"],
+                                        checked=done, modo=self._modo)
                     cb.setEnabled(not done)
                     cb.toggled.connect(
-                        lambda state, t=tid, checkbox=cb: self._on_check(t, checkbox)
-                    )
+                        lambda state, t=tid, checkbox=cb: self._on_check(t, checkbox))
                     layout.addWidget(cb)
                     self._task_checks[tid] = cb
 
-                # Update section count label and progress bar
                 done_count = sum(1 for t in tareas if t["id"] in completadas)
                 total = len(tareas)
-                count_lbl = self._section_count_lbl[key]
-                count_lbl.setText(f"{done_count}/{total}" if total > 0 else "")
-                if key in self._section_progs and total > 0:
-                    self._section_progs[key].animate_to(done_count / total)
-                elif key in self._section_progs:
-                    self._section_progs[key].animate_to(0.0)
-
+                card.set_progress(done_count, total)
             conn.close()
         except Exception:
             _log.exception("Operation failed")
 
-        self._update_badge()
+        self._refresh_hero()
         has_tasks = bool(self._task_checks)
-        if hasattr(self, "_empty_state"):
-            self._empty_state.setVisible(not has_tasks)
-        for frame in getattr(self, "_section_frames", {}).values():
-            frame.setVisible(has_tasks)
+        self._empty_state.setVisible(not has_tasks)
+        for card in self._section_cards.values():
+            card.setVisible(has_tasks)
 
-    # ── on_check (lógica preservada exacta) ─────────────────────────────────
+    def _load_visual_qa_tasks(self):
+        fixtures = routine_sections()
+        for key, _, _ in SECCIONES:
+            tareas = fixtures.get(key, [])
+            card = self._section_cards[key]
+            layout = card.body_layout()
+            for tarea in tareas:
+                tid = int(tarea["id"])
+                done = bool(tarea.get("done"))
+                self._task_done[tid] = done
+                self._task_section[tid] = key
+                cb = NMCustomCheck(tarea["descripcion"],
+                                    checked=done, modo=self._modo)
+                cb.toggled.connect(
+                    lambda state, t=tid, checkbox=cb: self._on_check(t, checkbox))
+                layout.addWidget(cb)
+                self._task_checks[tid] = cb
+            done_count = sum(1 for t in tareas if t.get("done"))
+            total = len(tareas)
+            card.set_progress(done_count, total)
+        self._refresh_hero()
+        has_tasks = bool(self._task_checks)
+        self._empty_state.setVisible(not has_tasks)
+        for card in self._section_cards.values():
+            card.setVisible(has_tasks)
+
+    # ── on_check (lógica preservada) ─────────────────────────────────────────
 
     def _on_check(self, tarea_id: int, checkbox: NMCustomCheck):
         checked = checkbox.isChecked()
+        if visual_qa_enabled():
+            self._task_done[tarea_id] = checked
+            checkbox.set_checked(checked)
+            self._refresh_hero()
+            self._update_section_progress()
+            return
         hoy = fecha_hoy()
         try:
             conn = obtener_conexion()
@@ -293,10 +508,10 @@ class ModuloRutina(NMModule):
                     "(tarea_id, fecha) VALUES (?, ?)",
                     (tarea_id, hoy),
                 )
-                checkbox.setEnabled(False)  # deshabilitar hasta el día siguiente
+                checkbox.setEnabled(False)
                 self._play_beep()
-                top = self.window()
-                NMToast.display(top, "Tarea completada ✔", variant="success", duration_ms=1500)
+                NMToast.display(self.window(), "Tarea completada",
+                                 variant="success", duration_ms=1500)
             else:
                 conn.execute(
                     "DELETE FROM checklist_completadas "
@@ -309,9 +524,8 @@ class ModuloRutina(NMModule):
             _log.exception("Operation failed")
 
         self._task_done[tarea_id] = checked
-        # Update checkbox style for line-through effect
         checkbox.set_checked(checked)
-        self._update_badge()
+        self._refresh_hero()
         self._update_section_progress()
 
     def _play_beep(self):
@@ -321,30 +535,34 @@ class ModuloRutina(NMModule):
         except Exception:
             _log.exception("Operation failed")
 
-    def _update_badge(self):
+    # ── progress refresh ─────────────────────────────────────────────────────
+
+    def _refresh_hero(self):
         total = len(self._task_done)
-        done  = sum(1 for v in self._task_done.values() if v)
-        c = colors(self._modo)
-        if total > 0:
-            self._badge_lbl.setText(f"{done}/{total} completadas")
-        else:
-            self._badge_lbl.setText("Sin tareas configuradas")
+        done = sum(1 for v in self._task_done.values() if v)
+        self._hero.set_progress(done, total)
 
     def _update_section_progress(self):
+        if visual_qa_enabled():
+            for key, _, _ in SECCIONES:
+                ids = [tid for tid, s in self._task_section.items() if s == key]
+                total = len(ids)
+                done = sum(1 for tid in ids if self._task_done.get(tid))
+                if key in self._section_cards:
+                    self._section_cards[key].set_progress(done, total)
+            return
         try:
             conn = obtener_conexion()
             hoy = fecha_hoy()
             for key, _, _ in SECCIONES:
-                if key not in self._section_progs:
+                if key not in self._section_cards:
                     continue
                 tareas = conn.execute(
                     "SELECT id FROM checklist_tareas WHERE seccion = ?", (key,)
                 ).fetchall()
                 total = len(tareas)
                 if total == 0:
-                    self._section_progs[key].animate_to(0.0)
-                    if key in self._section_count_lbl:
-                        self._section_count_lbl[key].setText("")
+                    self._section_cards[key].set_progress(0, 0)
                     continue
                 ids = [t["id"] for t in tareas]
                 done = conn.execute(
@@ -352,69 +570,37 @@ class ModuloRutina(NMModule):
                     f"WHERE fecha = ? AND tarea_id IN ({','.join('?' * len(ids))})",
                     [hoy] + ids,
                 ).fetchone()[0]
-                self._section_progs[key].animate_to(done / total)
-                if key in self._section_count_lbl:
-                    self._section_count_lbl[key].setText(f"{done}/{total}")
+                self._section_cards[key].set_progress(done, total)
             conn.close()
         except Exception:
             _log.exception("Operation failed")
 
-    # ── Add task inline form ──────────────────────────────────────────────────
+    # ── add task (lógica preservada) ─────────────────────────────────────────
 
-    def _show_add_form(self, seccion: str):
-        c = colors(self._modo)
-        body = self._section_bodies[seccion]
-        layout = body.layout()
+    def _on_section_add(self, seccion_key: str):
+        """Click en '+ Agregar tarea' de una card de sección."""
+        card = self._section_cards.get(seccion_key)
+        if card is None:
+            return
+        card.show_add_inline(self._add_task)
 
-        form = QFrame()
-        form.setObjectName("AddForm")
-        form.setStyleSheet(f"""
-            QFrame#AddForm {{
-                background-color: {c['bg_elevated']};
-                border-radius: {RADIUS_INPUT}px;
-                border: none;
-            }}
-        """)
-        form_layout = QHBoxLayout(form)
-        form_layout.setContentsMargins(sp("sm"), sp("sm") - sp("xs") // 2, sp("sm"), sp("sm") - sp("xs") // 2)
-        form_layout.setSpacing(sp("sm") - sp("xs") // 2)
+    def _on_new_task_hero(self):
+        """Click en CTA del hero: añadir a la sección horaria actual."""
+        hour = _dt.datetime.now().hour
+        if hour < 12:
+            key = "manana"
+        elif hour < 19:
+            key = "tarde"
+        else:
+            key = "noche"
+        self._on_section_add(key)
 
-        entry = QLineEdit()
-        entry.setPlaceholderText("Nueva tarea...")
-        entry.setFont(qfont("size_body"))
-        entry.setFixedHeight(32)
-        entry.setStyleSheet(f"""
-            QLineEdit {{
-                background-color: {c['bg_input']};
-                color: {c['text_primary']};
-                border: 1px solid {c['border_accent'] if 'border_accent' in c else c['accent']};
-                border-radius: {RADIUS_SMALL}px;
-                padding: 0 {sp('sm') + sp('xs') // 2}px;
-            }}
-            QLineEdit:focus {{
-                border-color: {c['accent']};
-            }}
-        """)
-        form_layout.addWidget(entry)
-
-        btn_save = NMButton("✓", modo=self._modo, width=32, height=32)
-        btn_save.clicked.connect(
-            lambda: self._add_task(seccion, entry.text(), form, btn_save)
-        )
-        form_layout.addWidget(btn_save)
-
-        entry.returnPressed.connect(
-            lambda: self._add_task(seccion, entry.text(), form)
-        )
-
-        layout.addWidget(form)
-        entry.setFocus()
-
-    # ── _add_task (lógica preservada exacta) ─────────────────────────────────
-
-    def _add_task(self, seccion: str, descripcion: str, form_widget: QWidget, save_button: QWidget | None = None):
+    def _add_task(self, seccion: str, descripcion: str, save_button=None):
         descripcion = descripcion.strip()
         if not descripcion:
+            return
+        if visual_qa_enabled():
+            self._load_tasks()
             return
         try:
             conn = obtener_conexion()
@@ -433,45 +619,48 @@ class ModuloRutina(NMModule):
                 save_button.play_success()
         except Exception:
             _log.exception("Operation failed")
-        layout = form_widget.parentWidget().layout() if form_widget.parentWidget() else None
-        if layout is not None:
-            layout.removeWidget(form_widget)
-        form_widget.deleteLater()
         self._load_tasks()
 
-    # ── Nota del día ─────────────────────────────────────────────────────────
+    # ── nota del día (lógica preservada) ─────────────────────────────────────
 
-    def _build_nota_dia(self):
-        # Check if note already saved today → locked state
+    def _build_nota_dia(self, parent_layout: QVBoxLayout):
         existing_note: str | None = None
-        try:
-            conn = obtener_conexion()
-            row = conn.execute(
-                "SELECT nota FROM checklist_notas_dia WHERE fecha = ?",
-                (fecha_hoy(),)
-            ).fetchone()
-            conn.close()
-            if row and row[0]:
-                existing_note = row[0]
-        except Exception:
-            _log.exception("Operation failed")
+        if visual_qa_enabled():
+            existing_note = "Día estable, energía alta y buena adherencia a la rutina."
+        else:
+            try:
+                conn = obtener_conexion()
+                row = conn.execute(
+                    "SELECT nota FROM checklist_notas_dia WHERE fecha = ?",
+                    (fecha_hoy(),)
+                ).fetchone()
+                conn.close()
+                if row and row[0]:
+                    existing_note = row[0]
+            except Exception:
+                _log.exception("Operation failed")
 
         locked = existing_note is not None
-        lock_reason = "Nota guardada para hoy ✓" if locked else ""
+        lock_reason = "Nota guardada para hoy" if locked else ""
 
         self._day_note = NMDayNote(
-            locked=locked, lock_reason=lock_reason,
-            modo=self._modo, parent=self._scroll_content,
-        )
+            locked=locked, lock_reason=lock_reason, modo=self._modo)
         if existing_note:
             self._day_note.set_note(existing_note)
         self._day_note.note_changed.connect(self._guardar_nota_text)
-        self._scroll_layout.addWidget(self._day_note)
+        # Compatibilidad con _on_theme: nombrar attribute si el día_note expone textarea
+        self._nota_txt = getattr(self._day_note, "_text", None)
+        parent_layout.addWidget(self._day_note)
 
     def _guardar_nota_text(self, text: str):
-        """Called by NMDayNote.note_changed — saves note and locks the card."""
         nota = text.strip()
         if not nota:
+            return
+        if visual_qa_enabled():
+            if hasattr(self, "_day_note"):
+                self._day_note.set_locked(True, "Nota guardada para hoy")
+            NMToast.display(self.window(), "Nota guardada en demo visual",
+                             variant="success", duration_ms=1600)
             return
         try:
             conn = obtener_conexion()
@@ -486,15 +675,18 @@ class ModuloRutina(NMModule):
             _log.exception("Operation failed")
             return
         if hasattr(self, "_day_note"):
-            self._day_note.set_locked(True, "Nota guardada para hoy ✓")
-        NMToast.display(self.window(), "Nota guardada ✓", variant="success", duration_ms=2000)
+            self._day_note.set_locked(True, "Nota guardada para hoy")
+        NMToast.display(self.window(), "Nota guardada",
+                         variant="success", duration_ms=2000)
 
-    # ── Hooks ─────────────────────────────────────────────────────────────────
+    # ── Hooks NMModule ───────────────────────────────────────────────────────
 
     def on_enter(self):
         self._load_tasks()
 
     def get_card_status(self) -> str:
+        if visual_qa_enabled():
+            return "8/10"
         try:
             conn = obtener_conexion()
             hoy = fecha_hoy()
