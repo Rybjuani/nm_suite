@@ -320,22 +320,6 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         p.setBrush(QBrush(glow))
         p.drawEllipse(QPointF(cx, cy), halo_r, halo_r)
 
-        # 2. Track ring exterior (stroke 14, borderSoft)
-        track_r = (_CANVAS_V3 / 2) - _RING_STROKE / 2 - 2
-        track_pen = QPen(v3c("borderSoft", self._modo), _RING_STROKE,
-                         Qt.PenStyle.SolidLine, Qt.PenCapStyle.FlatCap)
-        p.setPen(track_pen)
-        p.setBrush(Qt.BrushStyle.NoBrush)
-        p.drawEllipse(QPointF(cx, cy), track_r, track_r)
-
-        # 3. Arco de sesión total (gradient firma v3 teal→violet)
-        if self._session_progress > 0.001:
-            arc_rect = QRectF(cx - track_r, cy - track_r,
-                              track_r * 2, track_r * 2)
-            _v3_arc_lerp(p, arc_rect, 90.0,
-                         -360.0 * self._session_progress,
-                         _RING_STROKE, self._modo)
-
         # 4. Círculo relleno que respira (fill suave)
         r = self._circle_radius
         fill_grad = QRadialGradient(QPointF(cx, cy), r)
@@ -353,15 +337,6 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         p.setPen(border_pen)
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawEllipse(QPointF(cx, cy), r, r)
-
-        # 5. Arco de progreso de fase (interior, finito, gradient v3)
-        if self._phase_progress > 0.001:
-            inner_r = r - 12
-            inner_rect = QRectF(cx - inner_r, cy - inner_r,
-                                inner_r * 2, inner_r * 2)
-            _v3_arc_lerp(p, inner_rect, 90.0,
-                         -360.0 * self._phase_progress, 6, self._modo,
-                         segments=36)
 
         # 6. Texto central
         p.setOpacity(self._text_opacity)
@@ -797,69 +772,69 @@ class ModuloRespiracion(NMModule):
     # ── tick (lógica preservada) ─────────────────────────────────────────────
 
     def _tick(self):
-        if not self._running or self._paused:
-            return
+        try:
+            if not self._running or self._paused:
+                return
 
-        total_ms = self._duration_min * 60 * 1000
-        interval = 100
+            total_ms = self._duration_min * 60 * 1000
+            interval = 100
 
-        if self._elapsed_ms >= total_ms:
-            self._finish()
-            return
+            if self._elapsed_ms >= total_ms:
+                self._finish()
+                return
 
-        phase_name, phase_dur = FASES[self._phase_idx]
-        phase_dur_ms = phase_dur * 1000
-        phase_progress = self._phase_ms / phase_dur_ms
+            phase_name, phase_dur = FASES[self._phase_idx]
+            phase_dur_ms = phase_dur * 1000
+            phase_progress = self._phase_ms / phase_dur_ms
 
-        if self._phase_idx != self._last_phase_idx:
-            self._last_phase_idx = self._phase_idx
-            self._on_phase_change(self._phase_idx, phase_dur)
-            self._circle.animate_text_change()
-            # Step card activa
-            for i, sc in enumerate(self._step_cards):
-                sc.set_active(i == self._phase_idx)
+            if self._phase_idx != self._last_phase_idx:
+                self._last_phase_idx = self._phase_idx
+                self._on_phase_change(self._phase_idx, phase_dur)
+                self._circle.animate_text_change()
+                for i, sc in enumerate(self._step_cards):
+                    sc.set_active(i == self._phase_idx)
 
-        secs_left = max(0, phase_dur - int(self._phase_ms / 1000))
-        session_progress = self._elapsed_ms / total_ms
-        self._circle.update_data(
-            phase_progress=phase_progress,
-            session_progress=session_progress,
-            center_text=str(secs_left),
-            phase_text=phase_name,
-            phase_idx=self._phase_idx,
-        )
+            secs_left = max(0, phase_dur - int(self._phase_ms / 1000))
+            session_progress = self._elapsed_ms / total_ms
+            self._circle.update_data(
+                phase_progress=phase_progress,
+                session_progress=session_progress,
+                center_text=str(secs_left),
+                phase_text=phase_name,
+                phase_idx=self._phase_idx,
+            )
 
-        # Phase chip
-        _PHASE_KEYS = ["inhala", "manten", "exhala"]
-        if hasattr(self, "_phase_chip"):
-            self._phase_chip.set_phase(_PHASE_KEYS[self._phase_idx])
+            _PHASE_KEYS = ["inhala", "manten", "exhala"]
+            if hasattr(self, "_phase_chip"):
+                self._phase_chip.set_phase(_PHASE_KEYS[self._phase_idx])
 
-        # Calm bar progreso (sube con la sesión)
-        if hasattr(self, "_calm_bar"):
-            calm_target = 0.45 + session_progress * 0.5
-            self._calm_bar.set_progress(min(calm_target, 0.95))
+            if hasattr(self, "_calm_bar"):
+                calm_target = 0.45 + session_progress * 0.5
+                self._calm_bar.set_progress(min(calm_target, 0.95))
 
-        # Cronómetro
-        self._session_ms += interval
-        s_total = self._session_ms // 1000
-        self._session_lbl.setText(f"{s_total // 60:02d}:{s_total % 60:02d}")
+            self._session_ms += interval
+            s_total = self._session_ms // 1000
+            self._session_lbl.setText(f"{s_total // 60:02d}:{s_total % 60:02d}")
 
-        # Avanzar tiempo
-        self._phase_ms += interval
-        self._elapsed_ms += interval
+            self._phase_ms += interval
+            self._elapsed_ms += interval
 
-        if self._phase_ms >= phase_dur_ms:
-            self._phase_ms = 0
-            self._phase_idx += 1
-            if self._phase_idx >= len(FASES):
-                self._phase_idx = 0
-                self._ciclos += 1
+            if self._phase_ms >= phase_dur_ms:
+                self._phase_ms = 0
+                self._phase_idx += 1
+                if self._phase_idx >= len(FASES):
+                    self._phase_idx = 0
+                    self._ciclos += 1
 
-        # Siguiente tick
-        if self._timer_id is None:
-            self._timer_id = QTimer(self)
-            self._timer_id.timeout.connect(self._tick)
-        self._timer_id.start(interval)
+            if self._timer_id is None:
+                self._timer_id = QTimer(self)
+                self._timer_id.timeout.connect(self._tick)
+            self._timer_id.start(interval)
+        except Exception as e:
+            _log.error(f"Error in _tick: {e}")
+            import traceback
+            traceback.print_exc()
+            self._running = False
 
     def _on_phase_change(self, phase_idx: int, phase_dur: int):
         if phase_idx == 0:

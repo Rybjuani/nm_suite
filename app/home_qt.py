@@ -33,6 +33,7 @@ from PyQt6.QtWidgets import (
     QWidget, QScrollArea, QGridLayout, QVBoxLayout, QHBoxLayout,
     QLabel, QSizePolicy, QFrame, QGraphicsOpacityEffect,
 )
+from PyQt6.QtCore import pyqtSignal
 
 try:
     from shared.theme_qt import (
@@ -291,8 +292,8 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         # Top: icono SVG + chip subcontexto
         top = QHBoxLayout()
         top.setSpacing(V3_SP["sm"])
-        self._icon = NMIcon(self._config["icon_v3"], size=36,
-                            color_key="text", modo=self._modo)
+        self._icon = NMIcon(self._config["icon_v3"], size=48,
+                            color=self._accent, modo=self._modo)
         top.addWidget(self._icon)
         top.addStretch()
         self._chip = QLabel(self._config.get("chip", ""))
@@ -501,7 +502,7 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         self._accent = _dot_color(self._idx, self._modo)
-        self._icon._modo = self._modo
+        self._icon._color = self._accent
         self._icon._render()
         self._apply_styles()
         self._ring._modo = self._modo
@@ -926,8 +927,8 @@ class HomeView(QWidget):
     """Vista Home v3 — hero, wave chart, KPIs, módulos grid, bottom 3-col, footer."""
 
     def __init__(self, modo: str = "dark_hybrid",
-                 on_module_open=None, get_status_fn=None,
-                 username: str = "", parent=None):
+                  on_module_open=None, get_status_fn=None,
+                  username: str = "", parent=None):
         super().__init__(parent)
         self._modo = norm_modo(modo)
         self._open_cb = on_module_open or (lambda mid: None)
@@ -936,6 +937,8 @@ class HomeView(QWidget):
         self._cards: dict[str, ModuleCard] = {}
         self._grid_cols = 0
         self._session = SessionColor.instance()
+        # Signal to request theme switch from main window (to avoid conflicts)
+        self._theme_switch_requested = pyqtSignal(bool)
         self._setup()
         ThemeManager.instance().theme_changed.connect(self._apply_theme)
 
@@ -966,28 +969,10 @@ class HomeView(QWidget):
                                  V3_SP["xl"], V3_SP["xl"])
         body.setSpacing(V3_SP["lg"])
 
-        # 1. Welcome bar (no header — global NMHeader handles greeting + toggle)
-        self._welcome_bar = NMWelcomeBar(self._modo)
-        body.addWidget(self._welcome_bar)
-
+        # 1. (eliminado: WelcomeBar - bienvenido de vuelta)
         # 2. Hero
         self._hero = _HeroCard(self._modo)
         body.addWidget(self._hero)
-
-        # 3. Wave chart card
-        wave_card = NMCard(modo=self._modo, clickable=False, glow=False)
-        wlay = QVBoxLayout(wave_card)
-        wlay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
-                                 V3_SP["lg"], V3_SP["lg"])
-        wlay.setSpacing(V3_SP["sm"])
-        self._wave_title = QLabel("EVOLUCIÓN 7 DÍAS")
-        self._wave_title.setFont(qfont("size_caption_xs",
-                                        weight=TYPOGRAPHY["weight_semibold"]))
-        wlay.addWidget(self._wave_title)
-        self._wave = NMWaveChart(modo=self._modo)
-        wlay.addWidget(self._wave)
-        body.addWidget(wave_card)
-        self._wave_card = wave_card
 
         # 4. KPI row
         kpi_row = QHBoxLayout()
@@ -1025,15 +1010,7 @@ class HomeView(QWidget):
         self._sync_availability()
         self._rebuild_grid()
 
-        # 6. Bottom 3-col
-        bottom_row = QHBoxLayout()
-        bottom_row.setSpacing(V3_SP["md"])
-        self._rec_card = _RecommendationsCard(self._modo)
-        self._quick_card = _QuickSessionCard(self._modo)
-        self._avisos_card = _AvisosCard(self._modo)
-        for c in (self._rec_card, self._quick_card, self._avisos_card):
-            bottom_row.addWidget(c, stretch=1)
-        body.addLayout(bottom_row)
+        # 6. (eliminado: Bottom 3-col - para hoy)
 
         # 7. Footer quote
         self._footer = _FooterQuoteCard(self._modo)
@@ -1087,8 +1064,8 @@ class HomeView(QWidget):
         return top
 
     def _on_theme_toggled(self, checked: bool):
-        new_modo = "dark_hybrid" if checked else "light_hybrid"
-        ThemeManager.instance().switch_mode(new_modo)
+        # Emit signal for main window to handle theme switching consistently
+        self._theme_switch_requested.emit(checked)
 
     def _apply_header_styles(self):
         self._title_lbl.setStyleSheet(
@@ -1101,8 +1078,7 @@ class HomeView(QWidget):
     # ── data refresh ──────────────────────────────────────────────────────────
 
     def _refresh_data(self):
-        curr, prev = _load_weekly_mood()
-        self._wave.set_data(curr, prev)
+        curr, _prev = _load_weekly_mood()
         score = _wellness_from_week(curr)
         self._hero.set_score(score)
         # KPIs
@@ -1221,7 +1197,7 @@ class HomeView(QWidget):
         for card in self._cards.values():
             card._apply_theme(self._modo)
         # Section titles
-        for lbl in (self._wave_title, self._modules_title):
+        for lbl in (self._modules_title,):
             lbl.setStyleSheet(
                 f"color: {v3c('text3', self._modo).name()}; "
                 f"background: transparent;")

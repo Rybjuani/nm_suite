@@ -123,6 +123,17 @@ QPushButton#outline:hover {{
     border-color: {GRAD_MID};
 }}
 
+/* ── Botón ghost (texto sin borde) ────────────────────────── */
+QPushButton#ghost {{
+    background: transparent;
+    color: {TEXT_SEC};
+    border: none;
+    font-weight: 500;
+}}
+QPushButton#ghost:hover {{
+    color: {TEXT_PRIMARY};
+}}
+
 /* ── Botón danger v3 (uninstaller): gradient rojo → amarillo ── */
 QPushButton#danger {{
     background: qlineargradient(

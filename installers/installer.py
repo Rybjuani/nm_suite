@@ -712,6 +712,8 @@ class InstaladorNeuroMood(InstallerShell):
         self._consent_worker: _ConsentWorker | None = None
         self._codigo_instalacion = ""
         self._worker: _InstalWorker | None = None
+        self._email_needs_confirmation = False
+        self._pending_auth_action = None
 
         self._build_shell()
         self.btn_sig.clicked.connect(self._siguiente)
@@ -755,7 +757,8 @@ class InstaladorNeuroMood(InstallerShell):
         else:
             self.btn_sig.setText("Siguiente →")
         if n == 1:
-            self.btn_sig.setEnabled(self._auth_ok)
+            # Enable btn_sig if authenticated OR if waiting for email confirmation after signup
+            self.btn_sig.setEnabled(self._auth_ok or self._email_needs_confirmation)
         elif n == 2:
             accepted = bool(getattr(self, "_chk_legal", None) and self._chk_legal.isChecked())
             self.btn_sig.setEnabled(self._consent_ok or accepted)
@@ -847,6 +850,7 @@ class InstaladorNeuroMood(InstallerShell):
         btn_row = QHBoxLayout()
         btn_row.setSpacing(8)
         self._btn_login = QPushButton("Iniciar sesión")
+        self._btn_login.setObjectName("outline")
         self._btn_signup = QPushButton("Crear cuenta nueva")
         self._btn_signup.setObjectName("outline")
         for btn in (self._btn_login, self._btn_signup):
@@ -859,7 +863,7 @@ class InstaladorNeuroMood(InstallerShell):
         cl.addLayout(btn_row)
 
         self._btn_reset = QPushButton("¿Olvidaste tu contraseña?")
-        self._btn_reset.setObjectName("ghost")
+        self._btn_reset.setObjectName("outline")
         self._btn_reset.setCursor(Qt.CursorShape.PointingHandCursor)
         self._btn_reset.clicked.connect(self._reset_password)
         cl.addWidget(self._btn_reset, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -930,9 +934,11 @@ class InstaladorNeuroMood(InstallerShell):
         self._auth_worker.start()
 
     def _on_auth_done(self, action: str, message: str, user_id: str, can_continue: bool,
-                      email: str, access_token: str, refresh_token: str):
+                       email: str, access_token: str, refresh_token: str):
         self._set_auth_loading(False)
         self._auth_ok = bool(can_continue and user_id)
+        self._pending_auth_action = None  # Clear pending action
+        
         if self._auth_ok:
             self._auth_email = email
             self._auth_user_id = user_id
@@ -950,13 +956,25 @@ class InstaladorNeuroMood(InstallerShell):
             else:
                 self._set_auth_status(message + "\nEl siguiente paso requiere aceptar el aviso legal.", SUCCESS)
         else:
-            self.btn_sig.setEnabled(False)
-            self._set_auth_status(message, WARNING_C if action == "signup" else SUCCESS)
+            # Check if this is a signup that needs email confirmation
+            if action == "signup" and not can_continue and user_id:
+                # User created account but needs email confirmation
+                self._email_needs_confirmation = True
+                self._auth_email = email
+                self._auth_user_id = user_id
+                self._set_auth_status(
+                    message + "\nRevisa tu correo para confirmar el email antes de continuar.", 
+                    WARNING_C
+                )
+            else:
+                self.btn_sig.setEnabled(False)
+                self._set_auth_status(message, WARNING_C if action == "signup" else SUCCESS)
 
     def _on_auth_error(self, message: str):
         self._set_auth_loading(False)
         self._auth_ok = False
         self._consent_ok = False
+        self._email_needs_confirmation = False
         self.btn_sig.setEnabled(False)
         self._set_auth_status(message, ERROR_C)
 
@@ -1123,6 +1141,7 @@ class InstaladorNeuroMood(InstallerShell):
         self._ent_path.setText(DEFAULT_INSTALL)
         pr.addWidget(self._ent_path, stretch=1)
         btn_browse = QPushButton("Examinar")
+        btn_browse.setObjectName("outline")
         btn_browse.setFixedSize(110, 36)
         btn_browse.clicked.connect(self._browse)
         pr.addWidget(btn_browse)
@@ -1167,6 +1186,7 @@ class InstaladorNeuroMood(InstallerShell):
         lay.addSpacing(12)
 
         btn_abrir = QPushButton("Abrir NeuroMood Suite ahora →")
+        btn_abrir.setObjectName("outline")
         btn_abrir.setFixedSize(230, 40)
         btn_abrir.clicked.connect(self._abrir_app)
         lay.addWidget(btn_abrir)

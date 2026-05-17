@@ -247,32 +247,36 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
                 if visual_qa_enabled()
                 else [("Adherencia alta", "teal"), ("Riesgo bajo", "accent"), ("Agenda al dia", "violet")]
             )
-            layout.addWidget(featured)
 
-            metrics_grid = QGridLayout()
-            metrics_grid.setSpacing(GAP_CARDS)
-            for col in range(4):
-                metrics_grid.setColumnStretch(col, 1)
-            for i, (label, pct) in enumerate(hub_module_metrics()):
+            # Layout 2 columnas: Featured izquierda + Metrics apilados derecha
+            two_col = QHBoxLayout()
+            two_col.setSpacing(GAP_CARDS)
+            two_col.addWidget(featured, stretch=3)
+
+            metrics_col = QVBoxLayout()
+            metrics_col.setSpacing(GAP_CARDS)
+            for label, pct in hub_module_metrics():
                 card = NMCard(modo=self._modo)
-                card.setMinimumHeight(88)
+                card.setMinimumHeight(72)
                 inner = QHBoxLayout(card)
-                inner.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
+                inner.setContentsMargins(PAD_CARD, 10, PAD_CARD, 10)
                 inner.setSpacing(10)
-                inner.addWidget(NMModuleRing(size=54, pct=pct, modo=self._modo))
+                inner.addWidget(NMModuleRing(size=44, pct=pct, modo=self._modo))
                 txt = QVBoxLayout()
                 name = QLabel(label)
                 name.setFont(qfont("size_body", bold=True))
-                name.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+                name.setStyleSheet(
+                    f"color: {c['text_primary']}; background: transparent;")
                 meta = QLabel("actividad semanal")
                 meta.setFont(qfont("size_caption"))
-                meta.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+                meta.setStyleSheet(
+                    f"color: {c['text_tertiary']}; background: transparent;")
                 txt.addWidget(name)
                 txt.addWidget(meta)
-                txt.addStretch()
                 inner.addLayout(txt, stretch=1)
-                metrics_grid.addWidget(card, i // 4, i % 4)
-            layout.addLayout(metrics_grid)
+                metrics_col.addWidget(card)
+            two_col.addLayout(metrics_col, stretch=2)
+            layout.addLayout(two_col)
 
             if visual_qa_enabled():
                 recent = QLabel("Actividad reciente")
@@ -790,17 +794,20 @@ class ConfigView(QWidget):
 
         # Log sync
         log_sec = NMSettingsSection("Log de sincronización", modo=self._modo)
+        _clr_ok   = v3c("success", self._modo).name()
+        _clr_teal = v3c("teal",    self._modo).name()
+        _clr_warn = v3c("warning", self._modo).name()
         if visual_qa_enabled():
             log_sec.add_log(
-                "<span style='color:#34d399'>✓</span> 14:23:01 — Sync completada · 12 pacientes<br>"
-                "<span style='color:#5eead4'>↻</span> 14:23:00 — Conectando a Supabase…<br>"
-                "<span style='color:#34d399'>✓</span> 14:10:44 — Backup local generado<br>"
-                "<span style='color:#fbbf24'>⚠</span> 13:12:08 — Timeout (reintentado ok)"
+                f"<span style='color:{_clr_ok}'>✓</span> 14:23:01 — Sync completada · 12 pacientes<br>"
+                f"<span style='color:{_clr_teal}'>↻</span> 14:23:00 — Conectando a Supabase…<br>"
+                f"<span style='color:{_clr_ok}'>✓</span> 14:10:44 — Backup local generado<br>"
+                f"<span style='color:{_clr_warn}'>⚠</span> 13:12:08 — Timeout (reintentado ok)"
             )
         else:
             log_sec.add_log(
-                "<span style='color:#34d399'>✓</span> Listo para sincronizar<br>"
-                "<span style='color:#5eead4'>↻</span> Esperando conexión"
+                f"<span style='color:{_clr_ok}'>✓</span> Listo para sincronizar<br>"
+                f"<span style='color:{_clr_teal}'>↻</span> Esperando conexión"
             )
         grid.addWidget(log_sec, 1, 1)
         layout.addLayout(grid)
@@ -1453,6 +1460,8 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
             self._sync_orb_label.setStyleSheet(
                 f"color: {c['text_tertiary']}; background: transparent;"
             )
+        if hasattr(self, "_stack"):
+            self._refresh_all_views()
 
     def closeEvent(self, event):
         event.accept()
@@ -1465,7 +1474,7 @@ def main():
     app.setApplicationName("NeuroMood Hub")
     # AA_UseHighDpiPixmaps fue eliminado en PyQt6 6.x — DPI se maneja automáticamente
     window = NeuroMoodHub()
-    window.show()
+    window.showMaximized()
     sys.exit(app.exec())
 
 

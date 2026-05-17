@@ -247,26 +247,61 @@ class ModuloAnimo(NMModule):
                                 V3_SP["xl"], V3_SP["xl"])
         lay.setSpacing(V3_SP["lg"])
 
-        # 1. Header row con eyebrow del rango
-        header_row = QHBoxLayout()
+        # 1. Card unificada: wave chart (160px) + 3 stats compactos
+        hist_card = NMCard(modo=self._modo, clickable=False, glow=False)
+        hist_lay = QVBoxLayout(hist_card)
+        hist_lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
+                                    V3_SP["lg"], V3_SP["lg"])
+        hist_lay.setSpacing(V3_SP["sm"])
+
         self._range_lbl = QLabel("ÚLTIMOS 7 DÍAS")
         self._range_lbl.setFont(
             qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
-        header_row.addWidget(self._range_lbl)
-        header_row.addStretch()
-        lay.addLayout(header_row)
+        hist_lay.addWidget(self._range_lbl)
 
-        # 2. Wave chart card (altura 280)
-        wave_card = NMCard(modo=self._modo, clickable=False, glow=False)
-        wave_lay = QVBoxLayout(wave_card)
-        wave_lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
-                                     V3_SP["lg"], V3_SP["lg"])
         self._wave_chart = NMWaveChart(modo=self._modo)
-        self._wave_chart.setMinimumHeight(280)
-        self._wave_chart.setMaximumHeight(280)
-        wave_lay.addWidget(self._wave_chart)
-        lay.addWidget(wave_card)
-        self._wave_card = wave_card
+        self._wave_chart.setMinimumHeight(160)
+        self._wave_chart.setMaximumHeight(160)
+        hist_lay.addWidget(self._wave_chart)
+
+        # Divisor
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setFixedHeight(1)
+        hist_lay.addWidget(sep)
+        self._hist_sep = sep
+
+        # Fila de 3 stats compactos (sin ring)
+        stats_row = QHBoxLayout()
+        stats_row.setSpacing(0)
+        self._stat_avg_lbl   = QLabel("—")
+        self._stat_streak_lbl = QLabel("0 días")
+        self._stat_prog_lbl  = QLabel("—")
+        self._stat_avg_cap   = QLabel("PROMEDIO 7 DÍAS")
+        self._stat_streak_cap = QLabel("RACHA ACTUAL")
+        self._stat_prog_cap  = QLabel("PROGRESO SEMANAL")
+
+        for cap, val in (
+            (self._stat_avg_cap,    self._stat_avg_lbl),
+            (self._stat_streak_cap, self._stat_streak_lbl),
+            (self._stat_prog_cap,   self._stat_prog_lbl),
+        ):
+            col_w = QWidget()
+            col_w.setStyleSheet("background: transparent;")
+            col_lay = QVBoxLayout(col_w)
+            col_lay.setContentsMargins(V3_SP["md"], V3_SP["sm"],
+                                       V3_SP["md"], V3_SP["xs"])
+            col_lay.setSpacing(2)
+            cap.setFont(qfont("size_caption_xs",
+                               weight=TYPOGRAPHY["weight_semibold"]))
+            val.setFont(qfont("size_h2", weight=TYPOGRAPHY["weight_bold"]))
+            col_lay.addWidget(cap)
+            col_lay.addWidget(val)
+            stats_row.addWidget(col_w, stretch=1)
+
+        hist_lay.addLayout(stats_row)
+        lay.addWidget(hist_card)
+        self._hist_card = hist_card
 
         # 3. V3MoodSlider card con glow
         slider_card = NMCard(modo=self._modo, clickable=False, glow=True)
@@ -315,20 +350,6 @@ class ModuloAnimo(NMModule):
         lay.addWidget(note_card)
         self._note_card = note_card
 
-        # 5. Insights row (Promedio / Racha / Progreso)
-        insights_row = QHBoxLayout()
-        insights_row.setSpacing(V3_SP["md"])
-        self._insight_avg = _InsightCard(
-            "PROMEDIO 7 DÍAS", "—", 0.0, modo=self._modo)
-        self._insight_streak = _InsightCard(
-            "RACHA ACTUAL", "0 días", 0.0, modo=self._modo)
-        self._insight_progress = _InsightCard(
-            "PROGRESO SEMANAL", "—", 0.0, modo=self._modo)
-        for c in (self._insight_avg, self._insight_streak,
-                  self._insight_progress):
-            insights_row.addWidget(c, stretch=1)
-        lay.addLayout(insights_row)
-
         # Datos iniciales
         self._cargar_grafico()
         self._refresh_insights()
@@ -340,12 +361,15 @@ class ModuloAnimo(NMModule):
     # ── styles helper ────────────────────────────────────────────────────────
 
     def _apply_text_styles(self):
-        self._range_lbl.setStyleSheet(
-            f"color: {v3c('text3', self._modo).name()}; background: transparent;")
-        self._note_eyebrow.setStyleSheet(
-            f"color: {v3c('text3', self._modo).name()}; background: transparent;")
-        self._note_counter.setStyleSheet(
-            f"color: {v3c('text3', self._modo).name()}; background: transparent;")
+        c3 = v3c("text3", self._modo).name()
+        ct = v3c("text", self._modo).name()
+        sep_c = v3c("borderSoft", self._modo).name()
+        for lbl in (self._range_lbl, self._note_eyebrow, self._note_counter,
+                    self._stat_avg_cap, self._stat_streak_cap, self._stat_prog_cap):
+            lbl.setStyleSheet(f"color: {c3}; background: transparent;")
+        for lbl in (self._stat_avg_lbl, self._stat_streak_lbl, self._stat_prog_lbl):
+            lbl.setStyleSheet(f"color: {ct}; background: transparent;")
+        self._hist_sep.setStyleSheet(f"background-color: {sep_c};")
 
     # ── theme switch ─────────────────────────────────────────────────────────
 
@@ -363,7 +387,6 @@ class ModuloAnimo(NMModule):
             self._celebration._modo = self._modo
         if hasattr(self, "_range_lbl"):
             self._apply_text_styles()
-        # Insights y cards heredados se auto-refrescan vía ThemeManager
         self.update()
 
     # ── slider callbacks ─────────────────────────────────────────────────────
@@ -457,33 +480,26 @@ class ModuloAnimo(NMModule):
         self._wave_chart.set_data(current, previous)
 
     def _refresh_insights(self):
-        """Actualiza los 3 insights cards a partir de los datos semanales."""
+        """Actualiza los 3 stats compactos a partir de los datos semanales."""
         current, previous = self._get_weekly_series()
 
-        # Promedio (current week)
         c_valid = [v for v in current if v is not None]
         if c_valid:
             avg = sum(c_valid) / len(c_valid)
-            self._insight_avg.set_value(f"{avg:.1f}/10", avg / 10.0)
+            self._stat_avg_lbl.setText(f"{avg:.1f}/10")
         else:
-            self._insight_avg.set_value("—", 0.0)
+            self._stat_avg_lbl.setText("—")
 
-        # Racha
         streak = self._load_streak()
-        days_label = "1 día" if streak == 1 else f"{streak} días"
-        self._insight_streak.set_value(days_label, min(streak / 10.0, 1.0))
+        self._stat_streak_lbl.setText("1 día" if streak == 1 else f"{streak} días")
 
-        # Progreso semanal (delta avg current vs previous)
         p_valid = [v for v in previous if v is not None]
         if c_valid and p_valid:
-            c_avg = sum(c_valid) / len(c_valid)
-            p_avg = sum(p_valid) / len(p_valid)
-            delta = c_avg - p_avg
+            delta = sum(c_valid) / len(c_valid) - sum(p_valid) / len(p_valid)
             sign = "+" if delta >= 0 else ""
-            self._insight_progress.set_value(
-                f"{sign}{delta:.1f}", min(abs(delta) / 5.0, 1.0))
+            self._stat_prog_lbl.setText(f"{sign}{delta:.1f}")
         else:
-            self._insight_progress.set_value("—", 0.0)
+            self._stat_prog_lbl.setText("—")
 
     # ── registrar (lógica preservada exacta) ─────────────────────────────────
 

@@ -36,7 +36,7 @@ try:
     from shared.components_qt import (
         NMModule, NMButton, NMToast, ThemeManager,
         NMCard, NMIcon, NMModuleRing, NMDayNote,
-        NMCustomCheck, NMEmptyState,
+        NMCustomCheck, NMEmptyState, NMProgressLine,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qfont_mono,
@@ -55,7 +55,7 @@ except ImportError:
     from shared.components_qt import (
         NMModule, NMButton, NMToast, ThemeManager,
         NMCard, NMIcon, NMModuleRing, NMDayNote,
-        NMCustomCheck, NMEmptyState,
+        NMCustomCheck, NMEmptyState, NMProgressLine,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qfont_mono,
@@ -239,44 +239,50 @@ class _SectionCard(NMCard):
 
     def show_add_inline(self, on_save):
         """Inserta una fila inline (input + botón check) al final del body."""
-        form = QFrame()
-        form.setObjectName("AddForm")
-        form_lay = QHBoxLayout(form)
-        form_lay.setContentsMargins(V3_SP["sm"], V3_SP["xs"],
-                                     V3_SP["sm"], V3_SP["xs"])
-        form_lay.setSpacing(V3_SP["sm"])
-        entry = QLineEdit()
-        entry.setPlaceholderText("Nueva tarea…")
-        entry.setFont(qfont("size_body"))
-        entry.setFixedHeight(32)
-        entry.setStyleSheet(
-            f"QLineEdit {{ background: {v3c('bg', self._modo).name()}; "
-            f"color: {v3c('text', self._modo).name()}; "
-            f"border: 1px solid {v3c('borderStrong', self._modo).name()}; "
-            f"border-radius: 8px; padding: 0 8px; }}"
-            f"QLineEdit:focus {{ border-color: "
-            f"{v3c('teal', self._modo).name()}; }}")
-        form_lay.addWidget(entry, stretch=1)
-        btn = NMButton("✓", variant="gradient", size="sm",
-                        modo=self._modo, width=36)
-        form_lay.addWidget(btn)
+        try:
+            _log.debug(f"show_add_inline called, modo={getattr(self, '_modo', 'N/A')}")
+            form = QFrame()
+            form.setObjectName("AddForm")
+            form_lay = QHBoxLayout(form)
+            form_lay.setContentsMargins(V3_SP["sm"], V3_SP["xs"],
+                                         V3_SP["sm"], V3_SP["xs"])
+            form_lay.setSpacing(V3_SP["sm"])
+            entry = QLineEdit()
+            entry.setPlaceholderText("Nueva tarea…")
+            entry.setFont(qfont("size_body"))
+            entry.setFixedHeight(32)
+            entry.setStyleSheet(
+                f"QLineEdit {{ background: {v3c('bg', self._modo).name()}; "
+                f"color: {v3c('text', self._modo).name()}; "
+                f"border: 1px solid {v3c('borderStrong', self._modo).name()}; "
+                f"border-radius: 8px; padding: 0 8px; }}"
+                f"QLineEdit:focus {{ border-color: "
+                f"{v3c('teal', self._modo).name()}; }}")
+            form_lay.addWidget(entry, stretch=1)
+            btn = NMButton("✓", variant="gradient", size="sm",
+                            modo=self._modo, width=36)
+            form_lay.addWidget(btn)
 
-        form.setStyleSheet(
-            f"#AddForm {{ background: {v3c('borderSoft', self._modo).name()}; "
-            f"border-radius: 10px; }}")
-        self._body_lay.addWidget(form)
-        entry.setFocus()
+            form.setStyleSheet(
+                f"#AddForm {{ background: {v3c('borderSoft', self._modo).name()}; "
+                f"border-radius: 10px; }}")
+            self._body_lay.addWidget(form)
+            entry.setFocus()
 
-        def _commit():
-            txt = entry.text().strip()
-            if not txt:
-                return
-            self._body_lay.removeWidget(form)
-            form.deleteLater()
-            on_save(self._key, txt, btn)
+            def _commit():
+                txt = entry.text().strip()
+                if not txt:
+                    return
+                self._body_lay.removeWidget(form)
+                form.deleteLater()
+                on_save(self._key, txt, btn)
 
-        btn.clicked.connect(_commit)
-        entry.returnPressed.connect(_commit)
+            btn.clicked.connect(_commit)
+            entry.returnPressed.connect(_commit)
+        except Exception as e:
+            _log.error(f"Error in show_add_inline: {e}")
+            import traceback
+            traceback.print_exc()
 
     # ── styles / theme ───────────────────────────────────────────────────────
 
@@ -331,18 +337,38 @@ class ModuloRutina(NMModule):
                                 V3_SP["xl"], V3_SP["xl"])
         lay.setSpacing(V3_SP["lg"])
 
-        # 1. Eyebrow
+        # 1. Slim progress header (reemplaza _HeroDayCard)
+        slim = QWidget()
+        slim.setStyleSheet("background: transparent;")
+        sh = QHBoxLayout(slim)
+        sh.setContentsMargins(0, 0, 0, 0)
+        sh.setSpacing(V3_SP["lg"])
+
+        left_col = QVBoxLayout()
+        left_col.setSpacing(V3_SP["xs"])
         self._eyebrow = QLabel("RUTINA DE HOY")
-        self._eyebrow.setFont(qfont("size_caption_xs",
-                                     weight=TYPOGRAPHY["weight_semibold"]))
-        lay.addWidget(self._eyebrow)
+        self._eyebrow.setFont(
+            qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
+        self._progress_lbl = QLabel("Sin tareas configuradas")
+        self._progress_lbl.setFont(
+            qfont("size_h3", weight=TYPOGRAPHY["weight_semibold"]))
+        self._progress_bar = NMProgressLine(
+            total=100, current=0, modo=self._modo)
+        left_col.addWidget(self._eyebrow)
+        left_col.addWidget(self._progress_lbl)
+        left_col.addWidget(self._progress_bar)
+        sh.addLayout(left_col, stretch=1)
 
-        # 2. Hero card
-        self._hero = _HeroDayCard(modo=self._modo)
-        self._hero.new_task_requested.connect(self._on_new_task_hero)
-        lay.addWidget(self._hero)
+        self._nueva_tarea_btn = NMButton(
+            "Nueva tarea", variant="gradient",
+            size="md", modo=self._modo, width=160)
+        self._nueva_tarea_btn.clicked.connect(self._on_new_task_hero)
+        sh.addWidget(self._nueva_tarea_btn,
+                     alignment=Qt.AlignmentFlag.AlignVCenter)
 
-        # 3. Empty state (oculta cuando hay tareas)
+        lay.addWidget(slim)
+
+        # 2. Empty state (oculta cuando hay tareas)
         self._empty_state = NMEmptyState(
             "fa5s.list-check",
             "Sin rutina asignada",
@@ -373,6 +399,9 @@ class ModuloRutina(NMModule):
         self._eyebrow.setStyleSheet(
             f"color: {v3c('text3', self._modo).name()}; "
             f"background: transparent;")
+        self._progress_lbl.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; "
+            f"background: transparent;")
 
     def _on_theme(self, modo: str) -> None:
         super()._on_theme(modo)
@@ -385,6 +414,9 @@ class ModuloRutina(NMModule):
                 pass
         if hasattr(self, "_eyebrow"):
             self._apply_text_styles()
+        if hasattr(self, "_progress_bar"):
+            self._progress_bar._modo = self._modo
+            self._progress_bar.update()
         # Re-check estilos de cada checkbox (asegurar)
         for tid, cb in getattr(self, "_task_checks", {}).items():
             done = self._task_done.get(tid, False)
@@ -540,7 +572,20 @@ class ModuloRutina(NMModule):
     def _refresh_hero(self):
         total = len(self._task_done)
         done = sum(1 for v in self._task_done.values() if v)
-        self._hero.set_progress(done, total)
+        if total > 0:
+            pct = done / total
+            if pct >= 1.0:
+                self._progress_lbl.setText("¡Rutina completa!")
+            else:
+                self._progress_lbl.setText(
+                    f"{done} de {total} tareas completadas · {int(pct * 100)}%")
+            self._progress_bar._total = 100
+            self._progress_bar._current = int(round(pct * 100))
+        else:
+            self._progress_lbl.setText("Sin tareas configuradas")
+            self._progress_bar._total = 100
+            self._progress_bar._current = 0
+        self._progress_bar.update()
 
     def _update_section_progress(self):
         if visual_qa_enabled():
@@ -579,10 +624,15 @@ class ModuloRutina(NMModule):
 
     def _on_section_add(self, seccion_key: str):
         """Click en '+ Agregar tarea' de una card de sección."""
-        card = self._section_cards.get(seccion_key)
-        if card is None:
-            return
-        card.show_add_inline(self._add_task)
+        try:
+            card = self._section_cards.get(seccion_key)
+            if card is None:
+                return
+            card.show_add_inline(self._add_task)
+        except Exception as e:
+            _log.error(f"Error in _on_section_add: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _on_new_task_hero(self):
         """Click en CTA del hero: añadir a la sección horaria actual."""

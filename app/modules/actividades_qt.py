@@ -610,7 +610,7 @@ class ModuloActividades(NMModule):
             f"background: transparent;")
         self._scroll_layout.addWidget(self._eyebrow)
 
-        # 2. Mood context header
+        # 2. Load activities (sin MoodContextHeader — info ya está en Ánimo)
         animo = self._get_last_mood()
         if animo is None:
             self._scroll_layout.addWidget(NMEmptyState(
@@ -620,10 +620,6 @@ class ModuloActividades(NMModule):
             ))
             return
 
-        self._mood_header = NMMoodContextHeader(score=animo, modo=self._modo)
-        self._scroll_layout.addWidget(self._mood_header)
-
-        # 3. Load activities
         self._all_activities = self._get_activities(animo)
         if not self._all_activities:
             self._scroll_layout.addWidget(NMEmptyState(
@@ -633,46 +629,22 @@ class ModuloActividades(NMModule):
             ))
             return
 
-        # 4. Categories card
+        # 3. Categories card (filtro)
         self._categories = _CategoriesCard(modo=self._modo)
         self._categories.update_counts(self._all_activities)
         self._categories.category_changed.connect(self._on_category_filter)
         self._scroll_layout.addWidget(self._categories)
 
-        # 5. Sugeridas section (3 cards)
-        self._sug_title = QLabel("SUGERIDAS PARA VOS")
-        self._sug_title.setFont(qfont("size_caption_xs",
-                                       weight=TYPOGRAPHY["weight_semibold"]))
-        self._sug_title.setStyleSheet(
-            f"color: {v3c('text3', self._modo).name()}; "
-            f"background: transparent;")
-        self._scroll_layout.addWidget(self._sug_title)
+        # 4. Grid unificado de actividades (3 columnas)
+        self._grid_container = QWidget()
+        self._grid_container.setStyleSheet("background: transparent;")
+        from PyQt6.QtWidgets import QGridLayout
+        self._grid_layout = QGridLayout(self._grid_container)
+        self._grid_layout.setContentsMargins(0, 0, 0, 0)
+        self._grid_layout.setSpacing(V3_SP["md"])
+        self._scroll_layout.addWidget(self._grid_container)
 
-        self._sug_row_widget = QWidget()
-        self._sug_row_widget.setStyleSheet("background: transparent;")
-        self._sug_row = QHBoxLayout(self._sug_row_widget)
-        self._sug_row.setContentsMargins(0, 0, 0, 0)
-        self._sug_row.setSpacing(V3_SP["md"])
-        self._scroll_layout.addWidget(self._sug_row_widget)
-
-        # 6. Otras opciones tabla
-        self._otras_title = QLabel("OTRAS OPCIONES")
-        self._otras_title.setFont(qfont("size_caption_xs",
-                                         weight=TYPOGRAPHY["weight_semibold"]))
-        self._otras_title.setStyleSheet(
-            f"color: {v3c('text3', self._modo).name()}; "
-            f"background: transparent;")
-        self._otras_title.setContentsMargins(0, V3_SP["sm"], 0, 0)
-        self._scroll_layout.addWidget(self._otras_title)
-
-        self._otras_card = NMCard(modo=self._modo, clickable=False)
-        self._otras_lay = QVBoxLayout(self._otras_card)
-        self._otras_lay.setContentsMargins(V3_SP["md"], V3_SP["sm"],
-                                            V3_SP["md"], V3_SP["sm"])
-        self._otras_lay.setSpacing(2)
-        self._scroll_layout.addWidget(self._otras_card)
-
-        # 7. Footer count label
+        # 5. Footer count
         self._footer_lbl = QLabel("")
         self._footer_lbl.setFont(qfont("size_caption"))
         self._footer_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -688,20 +660,14 @@ class ModuloActividades(NMModule):
         self._rebuild_lists(cat)
 
     def _rebuild_lists(self, cat: str):
-        # Clear suggested row
-        while self._sug_row.count():
-            item = self._sug_row.takeAt(0)
+        # Limpiar grid unificado
+        while self._grid_layout.count():
+            item = self._grid_layout.takeAt(0)
             w = item.widget()
             if w:
-                self._sug_row.removeWidget(w)
                 w.deleteLater()
-        # Clear otras
-        while self._otras_lay.count():
-            item = self._otras_lay.takeAt(0)
-            w = item.widget()
-            if w:
-                self._otras_lay.removeWidget(w)
-                w.deleteLater()
+        self._suggested_cards.clear()
+        self._row_widgets.clear()
 
         activities = self._all_activities
         if cat:
@@ -714,13 +680,13 @@ class ModuloActividades(NMModule):
                 f"color: {v3c('text3', self._modo).name()}; "
                 f"background: transparent;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self._sug_row.addWidget(empty)
+            self._grid_layout.addWidget(empty, 0, 0, 1, 3)
             self._footer_lbl.setText("")
             return
 
-        # 3 sugeridas (primeras 3)
-        suggested = activities[:3]
-        for act in suggested:
+        # Grid unificado 3 columnas — todas las actividades como _SuggestedCard
+        cols = 3
+        for i, act in enumerate(activities):
             card = _SuggestedCard(act, modo=self._modo)
             card.completed.connect(
                 lambda n, cd=card: self._register_result(n, "hecha", cd, None))
@@ -728,37 +694,8 @@ class ModuloActividades(NMModule):
                 lambda n, cd=card: self._register_result(n, "no_pude", cd, None))
             if visual_qa_enabled() and act.get("done"):
                 card.set_done("hecha")
-            self._sug_row.addWidget(card, stretch=1)
+            self._grid_layout.addWidget(card, i // cols, i % cols)
             self._suggested_cards.append(card)
-        # Stretch fill si menos de 3
-        for _ in range(3 - len(suggested)):
-            self._sug_row.addStretch(1)
-
-        # Otras opciones (resto)
-        others = activities[3:]
-        if not others:
-            empty = QLabel("Sin opciones adicionales.")
-            empty.setFont(qfont("size_small"))
-            empty.setStyleSheet(
-                f"color: {v3c('text3', self._modo).name()}; "
-                f"background: transparent;")
-            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self._otras_lay.addWidget(empty)
-        else:
-            for i, act in enumerate(others):
-                row = _ActivityRow(act, modo=self._modo)
-                row.play_clicked.connect(
-                    lambda n, r=row: self._register_result(n, "hecha", r, None))
-                self._otras_lay.addWidget(row)
-                self._row_widgets.append(row)
-                # Separador
-                if i < len(others) - 1:
-                    sep = QFrame()
-                    sep.setFrameShape(QFrame.Shape.HLine)
-                    sep.setFixedHeight(1)
-                    sep.setStyleSheet(
-                        f"background-color: {v3c('borderSoft', self._modo).name()};")
-                    self._otras_lay.addWidget(sep)
 
         n = len(activities)
         self._footer_lbl.setText(

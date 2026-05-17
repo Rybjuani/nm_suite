@@ -172,6 +172,7 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
             get_status_fn=self._get_module_status,
             username=self._nombre,
         )
+        self._home._theme_switch_requested.connect(self._toggle_theme)
         self._stack.addWidget(self._home)
         self._navigate_to(self._home)
         # Greeting inicial desde HomeView
@@ -479,7 +480,7 @@ def main():
     # AA_UseHighDpiPixmaps fue eliminado en PyQt6 6.x — DPI se maneja automáticamente
 
     window = NeuroMoodApp()
-    window.show()
+    window.showMaximized()
     sys.exit(app.exec())
 
 

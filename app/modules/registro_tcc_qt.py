@@ -655,6 +655,7 @@ class ModuloRegistroTCC(NMModule):
     # ── distortion detection (lógica preservada exacta) ──────────────────────
 
     def _detect_distortions(self, _event):
+        _log.debug(f"Detecting distortions, modo={getattr(self, '_modo', 'N/A')}")
         text = ""
         try:
             text = self._txt_pensamiento.toPlainText().strip().lower()
@@ -746,14 +747,19 @@ class ModuloRegistroTCC(NMModule):
             self._stepper.set_step(self._step)
 
     def _show_step(self):
-        self._update_progress()
-        if 0 <= self._step < len(self._pages):
-            self._stack.setCurrentWidget(self._pages[self._step])
-        self._btn_prev.setEnabled(self._step > 0)
-        if self._step == 3:
-            self._btn_next.setText("Guardar")
-        else:
-            self._btn_next.setText("Siguiente")
+        try:
+            self._update_progress()
+            if 0 <= self._step < len(self._pages):
+                self._stack.setCurrentWidget(self._pages[self._step])
+            self._btn_prev.setEnabled(self._step > 0)
+            if self._step == 3:
+                self._btn_next.setText("Guardar")
+            else:
+                self._btn_next.setText("Siguiente")
+        except Exception as e:
+            _log.error(f"Error in _show_step: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _save_current_step_data(self):
         if self._step == 0:
@@ -769,7 +775,10 @@ class ModuloRegistroTCC(NMModule):
                 self._data["pensamiento"] = self._txt_pensamiento.toPlainText().strip()
             except Exception:
                 pass
-            self._detect_distortions(None)
+            try:
+                self._detect_distortions(None)
+            except Exception as e:
+                _log.warning(f"Distortion detection failed: {e}")
         elif self._step == 3:
             try:
                 self._data["respuesta"] = self._txt_respuesta.toPlainText().strip()
@@ -779,27 +788,32 @@ class ModuloRegistroTCC(NMModule):
             self._resumen.update_data(self._data)
 
     def _next_step(self):
-        self._save_current_step_data()
+        try:
+            self._save_current_step_data()
 
-        # Validación por paso (preservada)
-        campo_requerido = {
-            0: ("situacion",   "Describí la situación para continuar."),
-            1: ("emocion",     "Seleccioná la emoción que sentiste."),
-            2: ("pensamiento", "Escribí el pensamiento automático."),
-        }
-        if self._step in campo_requerido:
-            campo, hint = campo_requerido[self._step]
-            if not self._data.get(campo, "").strip():
-                self._error_lbl.setText(hint)
+            # Validación por paso (preservada)
+            campo_requerido = {
+                0: ("situacion",   "Describí la situación para continuar."),
+                1: ("emocion",     "Seleccioná la emoción que sentiste."),
+                2: ("pensamiento", "Escribí el pensamiento automático."),
+            }
+            if self._step in campo_requerido:
+                campo, hint = campo_requerido[self._step]
+                if not self._data.get(campo, "").strip():
+                    self._error_lbl.setText(hint)
+                    return
+                self._error_lbl.setText("")
+
+            if self._step == 3:
+                self._guardar()
                 return
-            self._error_lbl.setText("")
 
-        if self._step == 3:
-            self._guardar()
-            return
-
-        self._step += 1
-        self._show_step()
+            self._step += 1
+            self._show_step()
+        except Exception as e:
+            _log.error(f"Error in _next_step: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _prev_step(self):
         self._save_current_step_data()

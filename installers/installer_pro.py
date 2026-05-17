@@ -323,7 +323,7 @@ class InstaladorPro(InstallerShell):
     WINDOW_ROLE = ""
     WINDOW_SIZE = (820, 660)
     _STEPPER_ACCENT = "violet"
-    STEPS = ["Bienvenida", "Ruta", "Instalar", "Finalizar"]
+    STEPS = ["Bienvenida", "Instalar", "Finalizar"]
 
     def __init__(self):
         super().__init__()
@@ -338,8 +338,7 @@ class InstaladorPro(InstallerShell):
 
         self._add_page(lambda p: self._build_p0(p))
         self._add_page(lambda p: self._build_p1(p))
-        self._add_page(lambda p: self._build_p3(p))
-        self._add_page(lambda p: self._build_p4(p))
+        self._add_page(lambda p: self._build_p2(p))
 
         self._apply_visual_qa_defaults()
         self._ir_a(0)
@@ -357,13 +356,13 @@ class InstaladorPro(InstallerShell):
 
     def _fade_to(self, n: int):
         super()._fade_to(n)
-        if n == 3:
+        if n == 2:
             self.btn_sig.setText("Finalizar")
-        elif n == 2:
+        elif n == 1:
             self.btn_sig.setText("Instalar")
         else:
             self.btn_sig.setText("Siguiente →")
-        self.btn_ant.setVisible(n > 0 and n < 3)
+        self.btn_ant.setVisible(n > 0 and n < 2)
 
     def _build_p0(self, page: QWidget):
         lay = QVBoxLayout(page)
@@ -405,24 +404,38 @@ class InstaladorPro(InstallerShell):
         lay = QVBoxLayout(page)
         lay.setContentsMargins(26, 22, 26, 8)
         lay.setSpacing(0)
-        title = QLabel("Instalacion")
+        title = QLabel("Instalando...")
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: bold;")
         lay.addWidget(title)
-        sub = QLabel("Elegi donde instalar el NeuroMood Hub")
-        sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px;")
-        lay.addWidget(sub)
-        lay.addSpacing(20)
+        lay.addSpacing(12)
+
         path_lbl = QLabel("Carpeta de instalacion:")
         path_lbl.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px;")
         lay.addWidget(path_lbl)
-        lay.addSpacing(4)
-        path_row = QWidget(); pr = QHBoxLayout(path_row)
-        pr.setContentsMargins(0, 0, 0, 0); pr.setSpacing(8)
+        lay.addSpacing(3)
+
+        path_row = QWidget()
+        pr = QHBoxLayout(path_row)
+        pr.setContentsMargins(0, 0, 0, 0)
+        pr.setSpacing(8)
         self._ent_path = QLineEdit(DEFAULT_INSTALL)
+        self._ent_path.setText(DEFAULT_INSTALL)
         pr.addWidget(self._ent_path, stretch=1)
-        btn_b = QPushButton("Examinar"); btn_b.setFixedSize(110, 36); btn_b.clicked.connect(self._browse)
-        pr.addWidget(btn_b)
+        btn_browse = QPushButton("Examinar")
+        btn_browse.setObjectName("outline")
+        btn_browse.setFixedSize(110, 36)
+        btn_browse.clicked.connect(self._browse)
+        pr.addWidget(btn_browse)
         lay.addWidget(path_row)
+        lay.addSpacing(12)
+
+        self._install_progress = NMInstallProgress(accent_key="violet")
+        self._install_progress.set_progress(0, "Presiona 'Instalar' para continuar.")
+        lay.addWidget(self._install_progress)
+        self._progress_bar = self._install_progress
+        self._progress_lbl = self._install_progress._label
+        self._log_layout = None
+        self._log_scroll = None
         lay.addStretch()
 
     def _build_p3(self, page: QWidget):
@@ -445,7 +458,7 @@ class InstaladorPro(InstallerShell):
         self._log_scroll = None
         lay.addStretch()
 
-    def _build_p4(self, page: QWidget):
+    def _build_p2(self, page: QWidget):
         lay = QVBoxLayout(page)
         lay.setContentsMargins(26, 22, 26, 8)
         lay.setSpacing(0)

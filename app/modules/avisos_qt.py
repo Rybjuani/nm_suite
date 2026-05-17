@@ -261,34 +261,65 @@ class _NuevoAvisoPanel(QWidget):
         layout.addLayout(btn_row)
 
     def _on_save(self):
-        hora = self._entry_hora.text().strip()
-        mensaje = self._entry_mensaje.text().strip()
-        if not hora or not mensaje or ":" not in hora:
-            return
-        parts = hora.split(":")
         try:
-            h, m = int(parts[0]), int(parts[1])
-            if h < 0 or h > 23 or m < 0 or m > 59:
-                return
-            hora = f"{h:02d}:{m:02d}"
-        except (ValueError, IndexError):
-            return
-        dias = ",".join(
-            str(i + 1) for i, p in enumerate(self._day_pills) if p.is_active())
-        if not dias:
-            dias = "1,2,3,4,5,6,7"
-        # Validar hora no expirada hoy
-        import datetime as _dt
-        now = _dt.datetime.now()
-        dia_hoy = str(now.weekday() + 1)
-        if dia_hoy in dias.split(","):
-            hh, mm = int(hora[:2]), int(hora[3:])
-            if hh < now.hour or (hh == now.hour and mm <= now.minute):
+            hora = self._entry_hora.text().strip()
+            mensaje = self._entry_mensaje.text().strip()
+            if not hora or not mensaje or ":" not in hora:
                 NMToast.display(self.window(),
-                    "La hora ya pasó. Elegí al menos 1 minuto en adelante para hoy.",
+                    "Completá la hora y el mensaje.",
                     variant="warning", duration_ms=3000)
                 return
-        self.saved.emit({"hora": hora, "mensaje": mensaje, "dias": dias})
+            parts = hora.split(":")
+            try:
+                h, m = int(parts[0]), int(parts[1])
+                if h < 0 or h > 23 or m < 0 or m > 59:
+                    NMToast.display(self.window(),
+                        "Hora inválida. Formato: HH:MM (00-23:00-59).",
+                        variant="error", duration_ms=3000)
+                    return
+                hora = f"{h:02d}:{m:02d}"
+            except (ValueError, IndexError):
+                NMToast.display(self.window(),
+                    "Hora inválida. Usá formato HH:MM.",
+                    variant="error", duration_ms=3000)
+                return
+            dias = ",".join(
+                str(i + 1) for i, p in enumerate(self._day_pills) if p.is_active())
+            if not dias:
+                dias = "1,2,3,4,5,6,7"
+            # Validar hora no expirada hoy
+            import datetime as _dt
+            now = _dt.datetime.now()
+            dia_hoy = str(now.weekday() + 1)
+            if dia_hoy in dias.split(","):
+                try:
+                    hh, mm = int(hora[:2]), int(hora[3:])
+                    if hh < now.hour or (hh == now.hour and mm <= now.minute):
+                        NMToast.display(self.window(),
+                            "La hora ya pasó. Elegí al menos 1 minuto en adelante para hoy.",
+                            variant="warning", duration_ms=3000)
+                        return
+                except (ValueError, IndexError) as e:
+                    _log.warning(f"Error parsing hour in validation: {e}")
+            # Validar que al menos un día sea futuro o hoy
+            dias_futuros = []
+            for d in dias.split(","):
+                d_num = int(d)
+                # Los días de la semana: 1=lunes, 7=domingo
+                dias_futuros.append(d_num >= now.weekday() + 1 or d_num <= (now.weekday() + 1) % 7 + 1)
+            if not any(dias_futuros):
+                NMToast.display(self.window(),
+                    "Los días seleccionados ya pasaron. Elegí días futuros.",
+                    variant="warning", duration_ms=3000)
+                return
+            self.saved.emit({"hora": hora, "mensaje": mensaje, "dias": dias})
+        except Exception as e:
+            _log.error(f"Error in _on_save: {e}")
+            import traceback
+            traceback.print_exc()
+            NMToast.display(self.window(),
+                "Error al guardar el aviso. Verificá los datos.",
+                variant="error", duration_ms=3000)
 
 
 # ── _StepPill (filtro tabs) ─────────────────────────────────────────────────
