@@ -1731,17 +1731,6 @@ class NMHeader(QWidget):
         self._apply_bg()
         _tm().theme_changed.connect(self._apply_theme)
 
-    def _apply_theme(self, modo: str):
-        """Actualiza el tema y el logo cuando cambia."""
-        self._modo = norm_modo(modo)
-        self._apply_bg()
-        if hasattr(self, '_logo_widget') and self._logo_widget is not None:
-            self._logo_widget.set_modo(self._modo)
-        if hasattr(self, '_theme_lbl'):
-            self._theme_lbl.setStyleSheet(label_style(self._modo, "text_secondary"))
-        if hasattr(self, '_toggle'):
-            self._toggle._apply_theme(modo)
-
     def _setup_ui(self):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(sp("md"), 0, sp("md"), 0)
@@ -1773,10 +1762,21 @@ class NMHeader(QWidget):
             layout.addWidget(title_lbl)
         else:
             if self._home_mode:
-                # Home mode: logo NeuroMood (reemplaza greeting + subtitle)
-                self._logo_widget = _LogoLabel(self)
-                self._logo_widget.set_modo(self._modo)
-                layout.addWidget(self._logo_widget)
+                # Home mode: greeting + subtitle + streak
+                left_col = QVBoxLayout()
+                left_col.setSpacing(2)
+                greet_lbl = QLabel(self._greeting)
+                greet_lbl.setFont(qfont("size_h1", bold=True))
+                greet_lbl.setStyleSheet(label_style(self._modo, 'text_primary'))
+                self._greet_lbl = greet_lbl
+                left_col.addWidget(greet_lbl)
+                sub_lbl = QLabel(self._subtitle_text)
+                sub_lbl.setFont(qfont("size_small"))
+                sub_lbl.setStyleSheet(label_style(self._modo, 'text_tertiary'))
+                self._sub_lbl = sub_lbl
+                left_col.addWidget(sub_lbl)
+                layout.addLayout(left_col, stretch=1)
+                layout.addSpacing(sp("md"))
 
                 if self._streak > 0:
                     self._streak_badge = NMStreakBadge(self._streak, self._modo)
@@ -4915,7 +4915,7 @@ class NMHubSidebar(QWidget):
                 f"color: {c['text_primary'] if active else c['text_tertiary']}; "
                 f"border: none; border-left: {3 if active else 0}px solid {C('teal', self._modo)}; "
                 f"border-radius: 8px; padding: 7px 10px; font-size: {TYPOGRAPHY['size_small']}pt; }}"
-                f"QPushButton:hover {{ background: {_rgba('#ffffff', 0.05) if 'dark' in self._modo else _rgba('#000000', 0.04)}; color: {c['text_secondary']}; }}"
+                f"QPushButton:hover {{ background: {_rgba('#ffffff', 0.05)}; color: {c['text_secondary']}; }}"
             )
             icon_color = c['text_primary'] if active else c['text_tertiary']
             for item in self._items_tuple:
@@ -5794,79 +5794,35 @@ class _MoodPickLabel(QLabel):
         super().mousePressEvent(event)
 
 
-# ── helpers para V3MoodSlider ────────────────────────────────────────────────
-
-_MOOD_LEVEL_ICONS = {
-    1: "moon",    2: "moon",
-    3: "water",   4: "leaf",
-    5: "leaf",    6: "sun",
-    7: "heart",   8: "heart",
-    9: "spark",   10: "sparkle",
-}
-
-
-def _mood_gradient_color(n: int, modo: str) -> str:
-    """Interpola rojo→amarillo→verde para nivel n (1-10), theme-aware."""
-    is_dark = "dark" in norm_modo(modo)
-    t = (max(1, min(10, int(n))) - 1) / 9.0
-    if is_dark:
-        c_red = (0xef, 0x44, 0x44)
-        c_mid = (0xea, 0xb3, 0x08)
-        c_grn = (0x22, 0xc5, 0x5e)
-    else:
-        c_red = (0xdc, 0x26, 0x26)
-        c_mid = (0xca, 0x8a, 0x04)
-        c_grn = (0x16, 0xa3, 0x4a)
-    if t <= 0.5:
-        t2 = t / 0.5
-        c_a, c_b = c_red, c_mid
-    else:
-        t2 = (t - 0.5) / 0.5
-        c_a, c_b = c_mid, c_grn
-    r = int(c_a[0] + (c_b[0] - c_a[0]) * t2)
-    g_val = int(c_a[1] + (c_b[1] - c_a[1]) * t2)
-    b = int(c_a[2] + (c_b[2] - c_a[2]) * t2)
-    return f"#{r:02x}{g_val:02x}{b:02x}"
-
-
 # ── _MoodTrackBar (subcomponente del V3MoodSlider) ───────────────────────────
 
 class _MoodTrackBar(QWidget):
-    """Track horizontal rojo→amarillo→verde + 10 dots clickeables y arrastrables.
+    """Track horizontal con gradient arcoíris emocional + 10 dots clickeables.
 
-    El gradient varía entre dark y light theme. Soporta drag (mouseMoveEvent).
-    El dot activo: blanco con border 3px del color del nivel + halo.
+    El gradient NO varía con el theme (paleta emocional fija, ver README v3).
+    El dot activo: 16x16 blanco con border 3px del color del nivel + halo.
     Dots inactivos: 6x6 semi-transparentes.
     """
     level_clicked = pyqtSignal(int)
 
-    _STOPS_DARK = (
-        ("#ef4444", 0.00),
-        ("#eab308", 0.50),
-        ("#22c55e", 1.00),
-    )
-    _STOPS_LIGHT = (
-        ("#dc2626", 0.00),
-        ("#ca8a04", 0.50),
-        ("#16a34a", 1.00),
+    # 7-stop rainbow emocional (literal del README v3)
+    _RAINBOW_STOPS = (
+        ("#5b6cb8", 0.00),
+        ("#7ba8e6", 0.22),
+        ("#f5d76a", 0.50),
+        ("#5dd6a3", 0.70),
+        ("#36cfb8", 0.80),
+        ("#a78bfa", 0.95),
+        ("#ec4899", 1.00),
     )
 
-    def __init__(self, level: int = 5, modo: str = None, parent=None):
+    def __init__(self, level: int = 5, parent=None):
         super().__init__(parent)
         self._level = max(1, min(10, int(level)))
-        self._modo = norm_modo(modo or _tm().modo)
         self.setFixedHeight(56)
         self.setMinimumWidth(280)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        _tm().theme_changed.connect(self._apply_theme)
-
-    def _apply_theme(self, modo: str):
-        self._modo = norm_modo(modo)
-        self.update()
-
-    def _stops(self):
-        return self._STOPS_LIGHT if "light" in self._modo else self._STOPS_DARK
 
     def set_level(self, level: int):
         lv = max(1, min(10, int(level)))
@@ -5882,10 +5838,6 @@ class _MoodTrackBar(QWidget):
         w = self.width() - 2 * margin_x
         return [margin_x + (i / 9) * w for i in range(10)]
 
-    def _x_to_level(self, x: float) -> int:
-        positions = self._dot_positions()
-        return min(range(10), key=lambda i: abs(positions[i] - x)) + 1
-
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -5897,9 +5849,9 @@ class _MoodTrackBar(QWidget):
         bar_w = self.width() - 2 * margin_x
         bar_rect = QRectF(margin_x, bar_y, bar_w, bar_h)
 
-        # Track con gradient rojo→amarillo→verde
+        # Track con gradient rainbow (opacity .85 según JSX)
         grad = QLinearGradient(bar_rect.left(), 0, bar_rect.right(), 0)
-        for hex_c, pos in self._stops():
+        for hex_c, pos in self._RAINBOW_STOPS:
             grad.setColorAt(pos, QColor(hex_c))
         path = QPainterPath()
         path.addRoundedRect(bar_rect, bar_h / 2, bar_h / 2)
@@ -5912,7 +5864,7 @@ class _MoodTrackBar(QWidget):
         center_y = h / 2
         for i, x in enumerate(positions):
             n = i + 1
-            lv_color = _mood_gradient_color(n, self._modo)
+            lv_color = get_mood(n)["to"]
             if n == self._level:
                 # Halo exterior
                 halo = QColor(lv_color)
@@ -5939,21 +5891,13 @@ class _MoodTrackBar(QWidget):
         if event.button() == Qt.MouseButton.LeftButton:
             x = (event.position().x() if hasattr(event, "position")
                  else float(event.pos().x()))
-            n = self._x_to_level(x)
+            positions = self._dot_positions()
+            closest = min(range(10), key=lambda i: abs(positions[i] - x))
+            n = closest + 1
             if n != self._level:
                 self.set_level(n)
             self.level_clicked.emit(n)
         super().mousePressEvent(event)
-
-    def mouseMoveEvent(self, event: QMouseEvent):
-        if event.buttons() & Qt.MouseButton.LeftButton:
-            x = (event.position().x() if hasattr(event, "position")
-                 else float(event.pos().x()))
-            n = self._x_to_level(x)
-            if n != self._level:
-                self.set_level(n)
-                self.level_clicked.emit(n)
-        super().mouseMoveEvent(event)
 
 
 # ── V3MoodSlider ─────────────────────────────────────────────────────────────
@@ -6025,9 +5969,8 @@ class V3MoodSlider(QWidget):
         text_col.addStretch()
         right.addLayout(text_col)
 
-        self._emoji_big = NMIcon(
-            _MOOD_LEVEL_ICONS[self._level], size=80,
-            color=_mood_gradient_color(self._level, self._modo))
+        self._emoji_big = NMMoodEmoji(level=self._level, size=104,
+                                      glow=True, modo=self._modo)
         right.addWidget(self._emoji_big,
                         alignment=Qt.AlignmentFlag.AlignVCenter)
 
@@ -6035,7 +5978,7 @@ class V3MoodSlider(QWidget):
         root.addLayout(header)
 
         # ── Slashbar ──────────────────────────────────────────────────────────
-        self._track = _MoodTrackBar(level=self._level, modo=self._modo)
+        self._track = _MoodTrackBar(level=self._level)
         self._track.level_clicked.connect(self._on_level_clicked)
         root.addWidget(self._track)
 
@@ -6079,7 +6022,7 @@ class V3MoodSlider(QWidget):
         prow = QHBoxLayout(self._preview_panel)
         prow.setContentsMargins(14, 16, 14, 16)
         prow.setSpacing(0)
-        self._preview_cells: list[tuple[_MoodPickWidget, NMIcon, QLabel, int]] = []
+        self._preview_cells: list[tuple[_MoodPickWidget, NMMoodEmoji, QLabel, int]] = []
         for n in range(1, 11):
             cell = _MoodPickWidget(n)
             cell.setFixedWidth(40)
@@ -6088,16 +6031,16 @@ class V3MoodSlider(QWidget):
             col.setSpacing(2)
             col.setAlignment(Qt.AlignmentFlag.AlignHCenter)
             is_active = (n == self._level)
-            icon = NMIcon(_MOOD_LEVEL_ICONS[n],
-                          size=(38 if is_active else 32),
-                          color=_mood_gradient_color(n, self._modo))
+            emoji = NMMoodEmoji(level=n,
+                                size=(38 if is_active else 32),
+                                glow=is_active, modo=self._modo)
             num_lbl = QLabel(str(n))
             num_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
             num_lbl.setFont(qfont_mono(9, bold=is_active))
-            col.addWidget(icon, alignment=Qt.AlignmentFlag.AlignHCenter)
+            col.addWidget(emoji, alignment=Qt.AlignmentFlag.AlignHCenter)
             col.addWidget(num_lbl)
             cell.picked.connect(self._on_level_clicked)
-            self._preview_cells.append((cell, icon, num_lbl, n))
+            self._preview_cells.append((cell, emoji, num_lbl, n))
             prow.addWidget(cell)
             if n < 10:
                 prow.addStretch()
@@ -6117,13 +6060,13 @@ class V3MoodSlider(QWidget):
             return
         self._level = lv
         self._track.set_level(lv)
-        self._emoji_big.set_name(_MOOD_LEVEL_ICONS[lv])
-        self._emoji_big.set_color(_mood_gradient_color(lv, self._modo))
+        self._emoji_big.set_level(lv)
         self._name_lbl.setText(get_mood(lv)["name"])
         self._numeric_lbl.setText(f"{lv}/10")
-        for cell, icon, lbl, n in self._preview_cells:
+        for cell, emoji, lbl, n in self._preview_cells:
             active = (n == lv)
-            icon.set_size(38 if active else 32)
+            emoji.set_size(38 if active else 32)
+            emoji.set_glow(active)
         self._refresh_styles()
         self.level_changed.emit(lv)
 
@@ -6134,9 +6077,6 @@ class V3MoodSlider(QWidget):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        self._emoji_big.set_color(_mood_gradient_color(self._level, self._modo))
-        for _cell, icon, _lbl, n in self._preview_cells:
-            icon.set_color(_mood_gradient_color(n, self._modo))
         self._refresh_styles()
 
     def _refresh_styles(self):
@@ -6148,7 +6088,7 @@ class V3MoodSlider(QWidget):
         elev_key = "elevatedSolid" if is_dark else "elevated"
         c_elev = v3c(elev_key, self._modo).name()
         c_border = v3c("borderSoft", self._modo).name()
-        lv_color = _mood_gradient_color(self._level, self._modo)
+        lv_color = get_mood(self._level)["to"]
 
         self._title_lbl.setStyleSheet(
             f"color: {c_text}; background: transparent;")
@@ -6164,12 +6104,12 @@ class V3MoodSlider(QWidget):
             d.setStyleSheet(f"color: {c_text3}; background: transparent;")
         for lbl in self._num_labels:
             active = (lbl._value == self._level)
-            col = (_mood_gradient_color(lbl._value, self._modo) if active else c_text3)
+            col = (get_mood(lbl._value)["to"] if active else c_text3)
             lbl.setFont(qfont_mono(11, bold=active))
             lbl.setStyleSheet(f"color: {col}; background: transparent;")
-        for cell, icon, num_lbl, n in self._preview_cells:
+        for cell, emoji, num_lbl, n in self._preview_cells:
             active = (n == self._level)
-            col = _mood_gradient_color(n, self._modo) if active else c_text4
+            col = get_mood(n)["to"] if active else c_text4
             num_lbl.setFont(qfont_mono(9, bold=active))
             num_lbl.setStyleSheet(f"color: {col}; background: transparent;")
         self._preview_panel.setStyleSheet(
