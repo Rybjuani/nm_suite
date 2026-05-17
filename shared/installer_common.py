@@ -309,10 +309,48 @@ try:
         QApplication, QLabel, QPushButton, QStackedWidget,
     )
     from PyQt6.QtCore import Qt, QTimer
-    from PyQt6.QtGui import QIcon, QPixmap
+    from PyQt6.QtGui import (
+        QIcon, QPixmap, QFont, QFontMetrics,
+        QColor, QPainter, QPainterPath, QLinearGradient,
+    )
     _QT_OK = True
 except ImportError:
     _QT_OK = False
+
+
+if _QT_OK:
+    class GradientTextLabel(QLabel):
+        """QLabel cuyo texto se pinta con gradiente lineal horizontal."""
+        def __init__(self, text="", from_color=None, to_color=None,
+                     font_size=32, bold=True, parent=None):
+            super().__init__(parent)
+            self._text = text
+            self._from = QColor(from_color or GRAD_FROM)
+            self._to = QColor(to_color or GRAD_TO)
+            self._font_size = font_size
+            self._bold = bold
+            font = QFont(FONT_FAMILY, font_size)
+            if bold:
+                font.setWeight(QFont.Weight.Bold)
+            self.setFont(font)
+            self.setText(text)
+            self.setStyleSheet("background: transparent;")
+
+        def paintEvent(self, event):
+            p = QPainter(self)
+            p.setRenderHint(QPainter.RenderHint.Antialiasing)
+            p.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+            font = QFont(FONT_FAMILY, self._font_size)
+            if self._bold:
+                font.setWeight(QFont.Weight.Bold)
+            fm = QFontMetrics(font)
+            path = QPainterPath()
+            path.addText(0, fm.ascent(), font, self._text)
+            grad = QLinearGradient(0, 0, self.width(), 0)
+            grad.setColorAt(0.0, self._from)
+            grad.setColorAt(1.0, self._to)
+            p.fillPath(path, grad)
+            p.end()
 
 
 class InstallerShell(QMainWindow):
@@ -324,6 +362,8 @@ class InstallerShell(QMainWindow):
     WINDOW_SIZE: tuple = (680, 480)
     STEPS: list[str] = []
     WINDOW_ROLE: str = "Instalador"
+    APP_VERSION: str = "1.0.0"
+    BUILD_DATE: str = "2026-05-16"
 
     def __init__(self):
         super().__init__()
@@ -354,10 +394,10 @@ class InstallerShell(QMainWindow):
 
         # Header
         header = QWidget()
-        header.setFixedHeight(50)
+        header.setFixedHeight(54)
         header.setStyleSheet(f"background: {BG_SECONDARY};")
         hl = QHBoxLayout(header)
-        hl.setContentsMargins(16, 0, 16, 0)
+        hl.setContentsMargins(20, 0, 20, 0)
         logo_lbl = QLabel()
         try:
             from PIL import Image as PILImage
@@ -371,29 +411,14 @@ class InstallerShell(QMainWindow):
             logo_lbl.setStyleSheet(f"color: {ACCENT}; font-size: 14px; font-weight: bold; background: transparent;")
         hl.addWidget(logo_lbl)
         hl.addStretch()
-        if self.STEPS:
-            steps_w = QWidget()
-            steps_w.setStyleSheet("background: transparent;")
-            sl = QHBoxLayout(steps_w)
-            sl.setSpacing(4)
-            for i, name in enumerate(self.STEPS):
-                circle = QLabel(f" {i + 1} ")
-                circle.setFixedSize(18, 18)
-                circle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                circle.setStyleSheet(
-                    f"background: {BORDER}; color: {TEXT_TERT}; border-radius: 9px;"
-                    f"font-weight: bold; font-size: 9px;"
-                )
-                lbl = QLabel(name)
-                lbl.setStyleSheet(f"color: {TEXT_TERT}; font-size: 9px; background: transparent;")
-                sl.addWidget(circle)
-                sl.addWidget(lbl)
-                if i < len(self.STEPS) - 1:
-                    sep = QLabel("→")
-                    sep.setStyleSheet(f"color: {TEXT_TERT}; font-size: 10px; background: transparent;")
-                    sl.addWidget(sep)
-                self._step_widgets.append((circle, lbl))
-            hl.addWidget(steps_w)
+        # Badge de versión (spec mockup v3)
+        v_badge = QLabel(f"v{self.APP_VERSION} · build {self.BUILD_DATE}")
+        v_badge.setStyleSheet(
+            f"background: {BG_ELEVATED}; border: 1px solid {BORDER};"
+            f"color: {TEXT_TERT}; font-size: 10px; font-family: Consolas, monospace;"
+            f"border-radius: 999px; padding: 3px 10px;"
+        )
+        hl.addWidget(v_badge)
         root.addWidget(header)
 
         # Separator
@@ -419,35 +444,49 @@ class InstallerShell(QMainWindow):
         self._stack = QStackedWidget()
         root.addWidget(self._stack, stretch=1)
 
-        # Nav footer — premium
+        # Nav footer — v3 spec
         nav = QWidget()
         nav.setFixedHeight(56)
-        nav.setStyleSheet(f"background: {BG_SECONDARY};")
+        nav.setStyleSheet(
+            f"background: {BG_SECONDARY}; border-top: 1px solid {BORDER};"
+        )
         nl = QHBoxLayout(nav)
-        nl.setContentsMargins(24, 10, 24, 10)
+        nl.setContentsMargins(24, 8, 24, 8)
+        nl.setSpacing(8)
 
-        self.btn_ant = QPushButton("← Anterior")
-        self.btn_ant.setFixedSize(120, 38)
+        # Texto mono izquierda (spec mockup)
+        lbl_footer = QLabel(f"{self.APP_NAME} · NeuroMood Suite v{self.APP_VERSION}")
+        lbl_footer.setStyleSheet(
+            f"color: {TEXT_TERT}; font-size: 10px; font-family: Consolas, monospace;"
+            f"background: transparent;"
+        )
+        nl.addWidget(lbl_footer)
+        nl.addStretch()
+
+        # btn_ant ahora va a la derecha (pill, spec v3)
+        self.btn_ant = QPushButton("← Volver")
+        self.btn_ant.setFixedSize(110, 36)
         self.btn_ant.setStyleSheet(
-            f"QPushButton {{ border: 1px solid {BORDER}; border-radius: 10px;"
-            f"background: transparent; color: {TEXT_SEC}; font-size: 11px;"
+            f"QPushButton {{ border: 1px solid {BORDER}; border-radius: 999px;"
+            f"background: transparent; color: {TEXT_SEC}; font-size: 12px;"
             f"font-weight: 500; padding: 6px 16px; }}"
-            f"QPushButton:hover {{ border-color: {ACCENT}; color: {ACCENT}; }}"
+            f"QPushButton:hover {{ border-color: {GRAD_MID}; color: {TEXT_PRIMARY}; }}"
         )
         self.btn_ant.setVisible(False)
         nl.addWidget(self.btn_ant)
-        nl.addStretch()
 
+        # btn_sig — gradient firma v3 teal→violet (pill)
         self.btn_sig = QPushButton("Siguiente →")
-        self.btn_sig.setFixedSize(140, 38)
+        self.btn_sig.setFixedSize(150, 38)
         self.btn_sig.setStyleSheet(
-            f"QPushButton {{ border: none; border-radius: 10px;"
-            f"background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
-            f"stop:0 {ACCENT}, stop:1 {VIOLET});"
-            f"color: #ffffff; font-size: 11px; font-weight: 600;"
-            f"padding: 6px 20px; }}"
-            f"QPushButton:hover {{ background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
-            f"stop:0 {ACCENT_HOVER}, stop:1 {VIOLET_HOVER}); }}"
+            f"QPushButton {{ border: none; border-radius: 999px;"
+            f"background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
+            f"stop:0 {GRAD_FROM}, stop:0.5 {GRAD_MID}, stop:1 {GRAD_TO});"
+            f"color: #0b1220; font-size: 12px; font-weight: 700;"
+            f"padding: 8px 22px; }}"
+            f"QPushButton:hover {{ background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
+            f"stop:0 {GRAD_MID}, stop:0.5 {GRAD_TO}, stop:1 {VIOLET}); }}"
+            f"QPushButton:disabled {{ background: {BORDER}; color: {TEXT_TERT}; }}"
         )
         nl.addWidget(self.btn_sig)
         root.addWidget(nav)

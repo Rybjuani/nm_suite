@@ -438,26 +438,6 @@ class InstaladorPro(InstallerShell):
         self._log_scroll = None
         lay.addStretch()
 
-    def _build_p3(self, page: QWidget):
-        lay = QVBoxLayout(page)
-        lay.setContentsMargins(26, 22, 26, 8)
-        lay.setSpacing(0)
-        title = QLabel("Instalando NeuroMood Hub...")
-        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: bold;")
-        lay.addWidget(title)
-        sub = QLabel("No cierres esta ventana durante el proceso.")
-        sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px;")
-        lay.addWidget(sub)
-        lay.addSpacing(16)
-        self._install_progress = NMInstallProgress(accent_key="violet")
-        self._install_progress.set_progress(0, "Listo para instalar.")
-        lay.addWidget(self._install_progress)
-        self._progress_bar = self._install_progress
-        self._progress_lbl = self._install_progress._label
-        self._log_layout = None
-        self._log_scroll = None
-        lay.addStretch()
-
     def _build_p2(self, page: QWidget):
         lay = QVBoxLayout(page)
         lay.setContentsMargins(26, 22, 26, 8)
@@ -503,11 +483,6 @@ class InstaladorPro(InstallerShell):
         if self._pagina == 0:
             self._ir_a(1)
         elif self._pagina == 1:
-            self._ir_a(2)
-        elif self._pagina == 2:
-            if self._install_dir:
-                self._ir_a(3)
-                return
             self.btn_sig.setEnabled(False); self.btn_sig.setText("Instalando...")
             self.btn_ant.setEnabled(False)
             self._worker = _ProWorker(self._ent_path.text().strip(), self)
@@ -516,7 +491,7 @@ class InstaladorPro(InstallerShell):
             self._worker.done_signal.connect(self._on_done)
             self._worker.error_signal.connect(self._on_error)
             self._worker.start()
-        elif self._pagina == 3:
+        elif self._pagina == 2:
             self._finalizar(); self.close()
 
     def _browse(self):
@@ -544,9 +519,7 @@ class InstaladorPro(InstallerShell):
 
     def _on_done(self, install_dir: str, icon_dest: str):
         self._install_dir = install_dir; self._icon_dest = icon_dest
-        self.btn_sig.setEnabled(True)
-        self.btn_sig.setText("Ver resultado →")
-        self.btn_ant.setVisible(False)
+        self._ir_a(2)
 
     def _on_error(self, tipo: str):
         if tipo == "permission":
@@ -555,7 +528,7 @@ class InstaladorPro(InstallerShell):
             msg = "Ocurrio un error durante la instalacion.\nRevisa el log arriba para mas detalles."
         self._progress_lbl.setStyleSheet(f"color: {ERROR_C}; font-size: 12px; font-weight: bold;")
         self._progress_lbl.setText(msg)
-        self.btn_sig.setEnabled(True); self.btn_sig.setText("Siguiente →")
+        self.btn_sig.setEnabled(True); self.btn_sig.setText("Instalar")
         self.btn_ant.setEnabled(True)
 
     def _finalizar(self):

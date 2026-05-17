@@ -27,20 +27,22 @@ from PyQt6 import sip
 
 try:
     from shared.installer_common import (
-        BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
+        BG_PRIMARY, BG_SECONDARY, BG_SURFACE, BG_ELEVATED, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, TEXT_ON_ACCENT, BORDER, SUCCESS, WARNING_C, ERROR_C,
-        SUCCESS_BG, FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
-        stylesheet_installer, InstallerShell,
+        SUCCESS_BG, FONT_FAMILY, TEAL, VIOLET, GRAD_FROM, GRAD_MID, GRAD_TO,
+        recurso, crear_acceso_directo, aplicar_captionbar_installer,
+        stylesheet_installer, InstallerShell, GradientTextLabel,
     )
 except ImportError:
     _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if _root not in sys.path:
         sys.path.insert(0, _root)
     from shared.installer_common import (
-        BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
+        BG_PRIMARY, BG_SECONDARY, BG_SURFACE, BG_ELEVATED, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, TEXT_ON_ACCENT, BORDER, SUCCESS, WARNING_C, ERROR_C,
-        SUCCESS_BG, FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
-        stylesheet_installer, InstallerShell,
+        SUCCESS_BG, FONT_FAMILY, TEAL, VIOLET, GRAD_FROM, GRAD_MID, GRAD_TO,
+        recurso, crear_acceso_directo, aplicar_captionbar_installer,
+        stylesheet_installer, InstallerShell, GradientTextLabel,
     )
 
 DEFAULT_INSTALL = os.path.join(os.path.expanduser("~"), "NeuroMood")
@@ -471,13 +473,16 @@ class _InstalWorker(QThread):
     error_signal   = pyqtSignal(str)
 
     def __init__(self, install_path: str, email: str, auth_user_id: str,
-                 codigo: str, parent=None):
+                 codigo: str, access_token: str = "", refresh_token: str = "",
+                 parent=None):
         super().__init__(parent)
         self._path = install_path
         self._email = email.strip().lower()
         self._auth_user_id = auth_user_id.strip()
         self._nombre = self._email.split("@", 1)[0] if self._email else "Paciente"
         self._codigo = codigo
+        self._access_token = access_token
+        self._refresh_token = refresh_token
 
     def run(self):
         try:
@@ -666,6 +671,14 @@ class _InstalWorker(QThread):
             url, key = supabase_url(), supabase_key()
             if url and key:
                 sb = create_client(url, key)
+                if self._access_token:
+                    try:
+                        sb.auth.set_session(self._access_token, self._refresh_token)
+                    except Exception:
+                        try:
+                            sb.postgrest.auth(self._access_token)
+                        except Exception:
+                            pass
                 payload_full = {
                     "patient_id": pid, "patient_name": self._nombre,
                     "patient_email": self._email,
@@ -769,43 +782,148 @@ class InstaladorNeuroMood(InstallerShell):
     # ── Página 0: Bienvenida ──────────────────────────────────────────────────
 
     def _build_p0(self, page: QWidget):
+        from PyQt6.QtCore import Qt as _Qt
         lay = QVBoxLayout(page)
-        lay.setContentsMargins(28, 24, 28, 8)
+        lay.setContentsMargins(28, 16, 28, 8)
         lay.setSpacing(0)
-        sub = QLabel("Bienvenido a")
-        sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 14px;")
-        lay.addWidget(sub)
-        title = QLabel("Instalador Suite")
-        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 26px; font-weight: bold;")
-        lay.addWidget(title)
-        line = QFrame()
-        line.setFixedHeight(2)
-        line.setStyleSheet(f"background: {ACCENT};")
-        lay.addSpacing(6)
-        lay.addWidget(line)
-        lay.addSpacing(20)
+
+        # ── Row 2 columnas ────────────────────────────────────────────────────
+        row = QWidget()
+        row.setStyleSheet("background: transparent;")
+        rl = QHBoxLayout(row)
+        rl.setContentsMargins(0, 0, 0, 0)
+        rl.setSpacing(28)
+
+        # ── Columna izquierda ─────────────────────────────────────────────────
+        left = QWidget()
+        left.setStyleSheet("background: transparent;")
+        ll = QVBoxLayout(left)
+        ll.setContentsMargins(0, 16, 0, 0)
+        ll.setSpacing(0)
+
+        eyebrow = QLabel("BIENVENIDA")
+        eyebrow.setStyleSheet(
+            f"color: {VIOLET}; font-size: 11px; font-weight: 700;"
+            f"letter-spacing: 3px; background: transparent;"
+        )
+        ll.addWidget(eyebrow)
+        ll.addSpacing(8)
+
+        title1 = QLabel("Una herramienta para")
+        title1.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; font-size: 30px; font-weight: 700;"
+            f"letter-spacing: -1px; background: transparent;"
+        )
+        ll.addWidget(title1)
+
+        try:
+            t2 = GradientTextLabel("acompañarte", font_size=30)
+            ll.addWidget(t2)
+        except Exception:
+            t2 = QLabel("acompañarte")
+            t2.setStyleSheet(
+                f"color: {TEAL}; font-size: 30px; font-weight: 700; background: transparent;"
+            )
+            ll.addWidget(t2)
+
+        ll.addSpacing(14)
+
         desc = QLabel(
-            "Este instalador configurará en tu computadora\n"
-            "NeuroMood Suite, diseñada para acompañar tu bienestar\n"
-            "emocional y mental.\n\n"
-            "En los siguientes pasos crearás tu perfil y\n"
-            "la app quedará lista para usar."
+            "<b style='color:" + TEXT_PRIMARY + ";'>NeuroMood Suite</b> "
+            "es una herramienta digital complementaria de bienestar emocional. "
+            "En los próximos pasos vas a crear tu cuenta, aceptar el aviso "
+            "legal y configurar la app."
         )
-        desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 13px;")
-        lay.addWidget(desc)
-        lay.addSpacing(24)
-        card = QFrame()
-        card.setStyleSheet(
-            f"background: {BG_SURFACE}; border-radius: 10px;"
-            f"border: 1px solid {BORDER};"
+        desc.setWordWrap(True)
+        desc.setTextFormat(_Qt.TextFormat.RichText)
+        desc.setStyleSheet(
+            f"color: {TEXT_SEC}; font-size: 13px; line-height: 1.6; background: transparent;"
         )
-        cl = QHBoxLayout(card)
-        cl.setContentsMargins(14, 8, 14, 8)
-        info = QLabel("Compatible con Windows 10 y Windows 11.")
-        info.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px; background: transparent; border: none;")
-        cl.addWidget(info)
-        lay.addWidget(card)
-        lay.addStretch()
+        ll.addWidget(desc)
+        ll.addSpacing(20)
+
+        for sym, col, txt in [
+            ("✓", SUCCESS,    "Compatible con Windows 10 y 11"),
+            ("◎", TEAL,       "Datos cifrados localmente y sincronización opcional"),
+            ("⚡", WARNING_C,  "Liviano: ~280 MB de espacio en disco"),
+        ]:
+            feat = QFrame()
+            feat.setStyleSheet(
+                f"QFrame {{ background: {BG_SURFACE}; border-radius: 12px;"
+                f"border: 1px solid {BORDER}; }}"
+            )
+            fr = QHBoxLayout(feat)
+            fr.setContentsMargins(10, 8, 14, 8)
+            fr.setSpacing(10)
+            badge = QLabel(sym)
+            badge.setFixedSize(28, 28)
+            badge.setAlignment(_Qt.AlignmentFlag.AlignCenter)
+            badge.setStyleSheet(
+                f"background: {col}33; color: {col}; border-radius: 8px;"
+                f"font-size: 12px; font-weight: bold; border: none;"
+            )
+            fr.addWidget(badge)
+            txt_lbl = QLabel(txt)
+            txt_lbl.setStyleSheet(
+                f"color: {TEXT_PRIMARY}; font-size: 12px; background: transparent; border: none;"
+            )
+            fr.addWidget(txt_lbl, stretch=1)
+            ll.addWidget(feat)
+            ll.addSpacing(6)
+
+        ll.addStretch()
+        rl.addWidget(left, stretch=55)
+
+        # ── Columna derecha — card con logo ───────────────────────────────────
+        right = QFrame()
+        right.setObjectName("WelcomeLogoCard")
+        right.setStyleSheet(
+            f"QFrame#WelcomeLogoCard {{"
+            f"  background: {BG_SURFACE}; border-radius: 22px; border: 1px solid {BORDER};"
+            f"}}"
+        )
+        rr = QVBoxLayout(right)
+        rr.setContentsMargins(32, 40, 32, 40)
+        rr.setSpacing(0)
+        rr.setAlignment(_Qt.AlignmentFlag.AlignCenter)
+
+        logo_c = QLabel()
+        logo_c.setAlignment(_Qt.AlignmentFlag.AlignCenter)
+        logo_c.setStyleSheet("background: transparent; border: none;")
+        try:
+            from PIL import Image as PILImage
+            from PyQt6.QtGui import QImage
+            img = PILImage.open(recurso("logos-dark.png")).convert("RGBA")
+            img.thumbnail((130, 72), PILImage.LANCZOS)
+            qi = QImage(img.tobytes("raw", "RGBA"), img.width, img.height, QImage.Format.Format_RGBA8888)
+            logo_c.setPixmap(QPixmap.fromImage(qi))
+        except Exception:
+            logo_c.setText("NeuroMood")
+            logo_c.setStyleSheet(
+                f"color: {TEAL}; font-size: 22px; font-weight: bold; background: transparent;"
+            )
+        rr.addWidget(logo_c)
+        rr.addSpacing(20)
+
+        suite_lbl = QLabel("SUITE PARA PACIENTES")
+        suite_lbl.setAlignment(_Qt.AlignmentFlag.AlignCenter)
+        suite_lbl.setStyleSheet(
+            f"color: {TEXT_TERT}; font-size: 11px; font-weight: 700;"
+            f"letter-spacing: 3px; background: transparent; border: none;"
+        )
+        rr.addWidget(suite_lbl)
+        rr.addSpacing(6)
+
+        ver_lbl = QLabel(f"v{self.APP_VERSION} · build {self.BUILD_DATE}")
+        ver_lbl.setAlignment(_Qt.AlignmentFlag.AlignCenter)
+        ver_lbl.setStyleSheet(
+            f"color: {TEXT_TERT}; font-size: 10px; font-family: Consolas, monospace;"
+            f"background: transparent; border: none;"
+        )
+        rr.addWidget(ver_lbl)
+        rl.addWidget(right, stretch=45)
+
+        lay.addWidget(row, stretch=1)
 
     # ── Página 1: Registro ────────────────────────────────────────────────────
 
@@ -881,6 +999,26 @@ class InstaladorNeuroMood(InstallerShell):
         cl.addWidget(sep)
 
         lay.addWidget(card)
+
+        # Dot "Conectado a Supabase" (spec mockup v3)
+        dot_row = QWidget()
+        dot_row.setStyleSheet("background: transparent;")
+        dr = QHBoxLayout(dot_row)
+        dr.setContentsMargins(4, 0, 0, 0)
+        dr.setSpacing(8)
+        self._dot_conn = QLabel()
+        self._dot_conn.setFixedSize(8, 8)
+        self._dot_conn.setStyleSheet(
+            f"background: {TEXT_TERT}; border-radius: 4px;"
+        )
+        dr.addWidget(self._dot_conn)
+        self._lbl_conn = QLabel("Verificando conexión con Supabase…")
+        self._lbl_conn.setStyleSheet(
+            f"color: {TEXT_TERT}; font-size: 11px; background: transparent;"
+        )
+        dr.addWidget(self._lbl_conn)
+        dr.addStretch()
+        lay.addWidget(dot_row)
         lay.addStretch()
 
     def _is_valid_email(self, email: str) -> bool:
@@ -948,6 +1086,15 @@ class InstaladorNeuroMood(InstallerShell):
             self._consent_ok = bool(self._consent_payload)
             self._codigo_instalacion = secrets.token_hex(3).upper()
             self.btn_sig.setEnabled(True)
+            # Actualizar dot de conexión
+            if hasattr(self, "_dot_conn"):
+                self._dot_conn.setStyleSheet(
+                    f"background: {SUCCESS}; border-radius: 4px;"
+                    f"border: none; box-shadow: 0 0 0 4px {SUCCESS}22;"
+                )
+            if hasattr(self, "_lbl_conn"):
+                self._lbl_conn.setText(f"Conectado a Supabase · {email}")
+                self._lbl_conn.setStyleSheet(f"color: {SUCCESS}; font-size: 11px; background: transparent;")
             if self._consent_ok:
                 self._set_auth_status(
                     message + "\nConsentimiento legal vigente registrado para esta versión.",
@@ -1003,10 +1150,10 @@ class InstaladorNeuroMood(InstallerShell):
 
     def _build_p2(self, page: QWidget):
         lay = QVBoxLayout(page)
-        lay.setContentsMargins(28, 20, 28, 8)
+        lay.setContentsMargins(28, 16, 28, 8)
         lay.setSpacing(8)
 
-        title = QLabel("Aviso legal y consentimiento de uso")
+        title = QLabel("Aviso legal y consentimiento")
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: bold;")
         lay.addWidget(title)
 
@@ -1014,47 +1161,139 @@ class InstaladorNeuroMood(InstallerShell):
         sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px;")
         lay.addWidget(sub)
 
+        # Card legal con header v3
         panel = QFrame()
         panel.setObjectName("LegalPanel")
         panel.setStyleSheet(
             f"QFrame#LegalPanel {{background: {BG_SURFACE}; border-radius: 14px; border: 1px solid {BORDER};}}"
         )
         pl = QVBoxLayout(panel)
-        pl.setContentsMargins(14, 12, 14, 12)
-        pl.setSpacing(8)
+        pl.setContentsMargins(0, 0, 0, 0)
+        pl.setSpacing(0)
+
+        # Header de la card legal
+        legal_hdr = QFrame()
+        legal_hdr.setStyleSheet(
+            f"QFrame {{ background: {BG_ELEVATED}; border-radius: 14px 14px 0 0;"
+            f"border-bottom: 1px solid {BORDER}; border-top: none; border-left: none; border-right: none; }}"
+        )
+        hh = QHBoxLayout(legal_hdr)
+        hh.setContentsMargins(14, 10, 14, 10)
+        hh.setSpacing(8)
+        legal_icon = QLabel("📋")
+        legal_icon.setStyleSheet("font-size: 14px; background: transparent;")
+        hh.addWidget(legal_icon)
+        legal_title_lbl = QLabel("Aviso legal · Consentimiento · Tratamiento de datos")
+        legal_title_lbl.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; font-size: 12px; font-weight: 700; background: transparent;"
+        )
+        hh.addWidget(legal_title_lbl, stretch=1)
+        ver_tag = QLabel(f"v.legal-{DISCLAIMER_VERSION.replace('legal-', '')}")
+        ver_tag.setStyleSheet(
+            f"color: {TEXT_TERT}; font-size: 10px; font-family: Consolas, monospace; background: transparent;"
+        )
+        hh.addWidget(ver_tag)
+        pl.addWidget(legal_hdr)
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setMinimumHeight(210)
-        scroll.setStyleSheet(f"QScrollArea {{background: transparent; border: none;}}")
+        scroll.setMinimumHeight(180)
+        scroll.setStyleSheet("QScrollArea {background: transparent; border: none;}")
         content = QLabel(LEGAL_DISCLAIMER_TEXT)
         content.setWordWrap(True)
         content.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         content.setStyleSheet(
-            f"color: {TEXT_SEC}; font-size: 11px; line-height: 1.35; background: transparent; border: none;"
+            f"color: {TEXT_SEC}; font-size: 11px; line-height: 1.4; background: transparent; border: none;"
         )
-        content.setContentsMargins(4, 2, 10, 2)
+        content.setContentsMargins(14, 12, 14, 8)
         scroll.setWidget(content)
         pl.addWidget(scroll)
 
-        meta = QLabel(
-            f"Aviso: {DISCLAIMER_VERSION} · Privacidad: {PRIVACY_VERSION} · Hash: {DISCLAIMER_TEXT_HASH[:16]}..."
+        # Footer de la card con hash + privacidad en mono
+        legal_ftr = QFrame()
+        legal_ftr.setStyleSheet(
+            f"QFrame {{ background: {BG_ELEVATED}; border-radius: 0 0 14px 14px;"
+            f"border-top: 1px solid {BORDER}; border-bottom: none; border-left: none; border-right: none; }}"
         )
-        meta.setStyleSheet(f"color: {TEXT_TERT}; font-size: 10px; background: transparent; border: none;")
-        pl.addWidget(meta)
-
+        fh = QHBoxLayout(legal_ftr)
+        fh.setContentsMargins(14, 8, 14, 8)
+        hash_lbl = QLabel(f"Hash: {DISCLAIMER_TEXT_HASH[:8]}...{DISCLAIMER_TEXT_HASH[-4:]}")
+        hash_lbl.setStyleSheet(
+            f"color: {TEXT_TERT}; font-size: 10px; font-family: Consolas, monospace; background: transparent;"
+        )
+        fh.addWidget(hash_lbl)
+        fh.addStretch()
+        priv_lbl = QLabel(f"Privacidad: {PRIVACY_VERSION}")
+        priv_lbl.setStyleSheet(
+            f"color: {TEXT_TERT}; font-size: 10px; font-family: Consolas, monospace; background: transparent;"
+        )
+        fh.addWidget(priv_lbl)
+        pl.addWidget(legal_ftr)
         lay.addWidget(panel)
 
-        self._chk_legal = QCheckBox("Leí y acepto el aviso legal, el consentimiento de uso y el tratamiento de datos")
+        # Card de aceptación con badges
+        accept_card = QFrame()
+        accept_card.setObjectName("AcceptCard")
+        accept_card.setStyleSheet(
+            f"QFrame#AcceptCard {{background: {BG_SURFACE}; border-radius: 12px; border: 1px solid {BORDER};}}"
+        )
+        ac = QHBoxLayout(accept_card)
+        ac.setContentsMargins(14, 12, 14, 12)
+        ac.setSpacing(12)
+
+        self._chk_legal = QCheckBox()
         self._chk_legal.setCursor(Qt.CursorShape.PointingHandCursor)
         self._chk_legal.setStyleSheet(
-            f"QCheckBox {{color: {TEXT_PRIMARY}; font-size: 12px; spacing: 10px;}}"
-            f"QCheckBox::indicator {{width: 18px; height: 18px; border-radius: 5px; border: 1px solid {BORDER}; background: {BG_SURFACE};}}"
-            f"QCheckBox::indicator:checked {{background: {ACCENT}; border: 1px solid {ACCENT};}}"
+            f"QCheckBox {{spacing: 0px;}}"
+            f"QCheckBox::indicator {{width: 18px; height: 18px; border-radius: 5px;"
+            f"border: 1px solid {BORDER}; background: {BG_SURFACE};}}"
+            f"QCheckBox::indicator:checked {{"
+            f"background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 {GRAD_FROM},stop:1 {GRAD_TO});"
+            f"border-color: {GRAD_MID};}}"
         )
         self._chk_legal.stateChanged.connect(self._on_legal_check_changed)
-        lay.addWidget(self._chk_legal)
+        ac.addWidget(self._chk_legal, alignment=Qt.AlignmentFlag.AlignTop)
+
+        chk_col = QVBoxLayout()
+        chk_col.setSpacing(6)
+        chk_title = QLabel("Leí y acepto el aviso legal, el consentimiento de uso y el tratamiento de datos personales y sensibles")
+        chk_title.setWordWrap(True)
+        chk_title.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; font-size: 12px; font-weight: 600; background: transparent;"
+        )
+        chk_col.addWidget(chk_title)
+        badges_row = QHBoxLayout()
+        badges_row.setSpacing(14)
+        for badge_txt in ["✓ Constancia local en AppData", "✓ Constancia remota auditable"]:
+            bl = QLabel(badge_txt)
+            bl.setStyleSheet(f"color: {SUCCESS}; font-size: 11px; background: transparent;")
+            badges_row.addWidget(bl)
+        badges_row.addStretch()
+        chk_col.addLayout(badges_row)
+        ac.addLayout(chk_col, stretch=1)
+        lay.addWidget(accept_card)
+
+        # Warning card — emergencias
+        warn_card = QFrame()
+        warn_card.setStyleSheet(
+            f"QFrame {{ background: {WARNING_C}18; border-radius: 12px; border: 1px solid {WARNING_C}44; }}"
+        )
+        wc = QHBoxLayout(warn_card)
+        wc.setContentsMargins(14, 11, 14, 11)
+        wc.setSpacing(10)
+        warn_icon = QLabel("⚠")
+        warn_icon.setStyleSheet(f"color: {WARNING_C}; font-size: 16px; background: transparent;")
+        wc.addWidget(warn_icon, alignment=Qt.AlignmentFlag.AlignTop)
+        warn_txt = QLabel(
+            "<b style='color:" + WARNING_C + ";'>NeuroMood Suite no es un servicio de emergencias.</b>"
+            " En caso de crisis, comunicate con un servicio de emergencias o profesional de confianza inmediatamente."
+        )
+        warn_txt.setWordWrap(True)
+        warn_txt.setTextFormat(Qt.TextFormat.RichText)
+        warn_txt.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px; background: transparent;")
+        wc.addWidget(warn_txt, stretch=1)
+        lay.addWidget(warn_card)
 
         self._lbl_legal_status = QLabel(
             "Para continuar se registrará una constancia local y remota auditable."
@@ -1166,61 +1405,164 @@ class InstaladorNeuroMood(InstallerShell):
             lay.addWidget(self._progress_lbl)
         lay.addStretch()
 
-    # ── Página 3: Finalizar ───────────────────────────────────────────────────
+    # ── Página 4: Finalizar ───────────────────────────────────────────────────
 
     def _build_p4(self, page: QWidget):
+        from PyQt6.QtCore import Qt as _Qt
+        from PyQt6.QtWidgets import QGridLayout
         lay = QVBoxLayout(page)
-        lay.setContentsMargins(28, 24, 28, 8)
+        lay.setContentsMargins(28, 12, 28, 8)
         lay.setSpacing(0)
-        ok = QLabel("Archivos instalados")
-        ok.setStyleSheet(f"color: {SUCCESS}; font-size: 20px; font-weight: bold;")
-        lay.addWidget(ok)
+
+        # Círculo check 88px gradient + glow ring
+        circle_row = QWidget()
+        circle_row.setStyleSheet("background: transparent;")
+        crl = QVBoxLayout(circle_row)
+        crl.setContentsMargins(0, 0, 0, 0)
+        crl.setAlignment(_Qt.AlignmentFlag.AlignHCenter)
+
+        check_circle = QFrame()
+        check_circle.setObjectName("CheckCircle")
+        check_circle.setFixedSize(88, 88)
+        check_circle.setStyleSheet(
+            f"QFrame#CheckCircle {{"
+            f"  background: qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            f"    stop:0 {GRAD_FROM}, stop:1 {GRAD_TO});"
+            f"  border-radius: 44px;"
+            f"  border: 4px solid transparent;"
+            f"}}"
+        )
+        from PyQt6.QtWidgets import QGraphicsDropShadowEffect
+        from PyQt6.QtGui import QColor as _QColor
+        glow = QGraphicsDropShadowEffect()
+        glow.setBlurRadius(32)
+        glow.setOffset(0, 8)
+        glow.setColor(_QColor(94, 234, 212, 140))
+        check_circle.setGraphicsEffect(glow)
+
+        check_lbl = QLabel("✓", check_circle)
+        check_lbl.setAlignment(_Qt.AlignmentFlag.AlignCenter)
+        check_lbl.setGeometry(0, 0, 88, 88)
+        check_lbl.setStyleSheet(
+            "color: #ffffff; font-size: 38px; font-weight: 900; background: transparent;"
+        )
+        crl.addWidget(check_circle, alignment=_Qt.AlignmentFlag.AlignHCenter)
+        lay.addWidget(circle_row)
+        lay.addSpacing(14)
+
+        # Eyebrow LISTO + título
+        eyebrow_ok = QLabel("LISTO")
+        eyebrow_ok.setAlignment(_Qt.AlignmentFlag.AlignHCenter)
+        eyebrow_ok.setStyleSheet(
+            f"color: {SUCCESS}; font-size: 11px; font-weight: 700;"
+            f"letter-spacing: 4px; background: transparent;"
+        )
+        lay.addWidget(eyebrow_ok)
+        lay.addSpacing(4)
+
+        title_ok = QLabel("Instalación completada")
+        title_ok.setAlignment(_Qt.AlignmentFlag.AlignHCenter)
+        title_ok.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; font-size: 26px; font-weight: 700;"
+            f"letter-spacing: -1px; background: transparent;"
+        )
+        lay.addWidget(title_ok)
         lay.addSpacing(6)
 
-        desc = QLabel(
-            "NeuroMood Suite ya esta instalado.\n"
-            "Los accesos directos seleccionados se crearan al presionar Finalizar."
+        desc_ok = QLabel(
+            "NeuroMood Suite quedó instalado en tu equipo.\n"
+            "Tu cuenta y consentimiento legal están registrados."
         )
-        desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 13px;")
-        lay.addWidget(desc)
+        desc_ok.setAlignment(_Qt.AlignmentFlag.AlignHCenter)
+        desc_ok.setStyleSheet(f"color: {TEXT_SEC}; font-size: 13px; background: transparent;")
+        lay.addWidget(desc_ok)
+        lay.addSpacing(20)
+
+        # Grid 2×2 de info cards
+        grid_w = QWidget()
+        grid_w.setStyleSheet("background: transparent;")
+        grid = QGridLayout(grid_w)
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setSpacing(10)
+
+        self._info_cards_data = [
+            ("💾", "CARPETA", self._install_dir or DEFAULT_INSTALL, True),
+            ("👤", "CUENTA",  self._auth_email or "—", False),
+            ("📌", "VERSIÓN", f"NeuroMood Suite {self.APP_VERSION}", True),
+            ("✅", "CONSENTIMIENTO", f"Registrado · v.legal-{DISCLAIMER_VERSION.replace('legal-','')}", False),
+        ]
+        for idx, (ic, key, val, mono) in enumerate(self._info_cards_data):
+            card = QFrame()
+            card.setObjectName(f"InfoCard_{idx}")
+            card.setStyleSheet(
+                f"QFrame {{background: {BG_SURFACE}; border-radius: 12px; border: 1px solid {BORDER};}}"
+            )
+            cl = QHBoxLayout(card)
+            cl.setContentsMargins(12, 10, 12, 10)
+            cl.setSpacing(10)
+            icon_badge = QLabel(ic)
+            icon_badge.setFixedSize(36, 36)
+            icon_badge.setAlignment(_Qt.AlignmentFlag.AlignCenter)
+            icon_badge.setStyleSheet(
+                f"background: {TEAL}22; border-radius: 10px; font-size: 16px; border: none;"
+            )
+            cl.addWidget(icon_badge)
+            txt_col = QVBoxLayout()
+            txt_col.setSpacing(2)
+            key_lbl = QLabel(key)
+            key_lbl.setStyleSheet(
+                f"color: {TEXT_TERT}; font-size: 10px; font-weight: 700;"
+                f"letter-spacing: 2px; background: transparent;"
+            )
+            txt_col.addWidget(key_lbl)
+            val_lbl = QLabel(val)
+            val_lbl.setStyleSheet(
+                f"color: {TEXT_PRIMARY}; font-size: 11px; font-weight: 500; background: transparent;"
+                + (f"font-family: Consolas, monospace;" if mono else "")
+            )
+            val_lbl.setWordWrap(False)
+            txt_col.addWidget(val_lbl)
+            cl.addLayout(txt_col, stretch=1)
+            grid.addWidget(card, idx // 2, idx % 2)
+        lay.addWidget(grid_w)
         lay.addSpacing(12)
 
-        btn_abrir = QPushButton("Abrir NeuroMood Suite ahora →")
-        btn_abrir.setObjectName("outline")
-        btn_abrir.setFixedSize(230, 40)
-        btn_abrir.clicked.connect(self._abrir_app)
-        lay.addWidget(btn_abrir)
-        lay.addSpacing(16)
+        # Info card con accesos directos
+        info_card = QFrame()
+        info_card.setStyleSheet(
+            f"QFrame {{ background: {BG_ELEVATED}; border-radius: 12px; border: 1px solid {BORDER}; }}"
+        )
+        ic_lay = QHBoxLayout(info_card)
+        ic_lay.setContentsMargins(14, 10, 14, 10)
+        ic_lay.setSpacing(10)
+        ic_lay.addWidget(QLabel("ℹ"))
 
-        sep = QFrame()
-        sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background: {BORDER};")
-        lay.addWidget(sep)
-        lay.addSpacing(12)
+        shortcuts_col = QVBoxLayout()
+        shortcuts_col.setSpacing(4)
+        info_txt = QLabel(
+            "Se creó un acceso directo en el escritorio. "
+            "Podés desinstalar desde Agregar o quitar programas."
+        )
+        info_txt.setWordWrap(True)
+        info_txt.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px; background: transparent;")
+        shortcuts_col.addWidget(info_txt)
 
+        chk_row = QHBoxLayout()
+        chk_row.setSpacing(16)
         self._chk_escritorio = NMCustomCheck(
-            "Crear acceso directo en el Escritorio",
-            checked=True,
-            strike_on_check=False,
+            "Escritorio", checked=True, strike_on_check=False
         )
         self._chk_escritorio.setChecked(True)
-        lay.addWidget(self._chk_escritorio)
-        lay.addSpacing(10)
-
+        chk_row.addWidget(self._chk_escritorio)
         self._chk_menu = NMCustomCheck(
-            "Crear acceso directo en el Menu de Inicio",
-            checked=False,
-            strike_on_check=False,
+            "Menú inicio", checked=False, strike_on_check=False
         )
         self._chk_menu.setChecked(False)
-        lay.addWidget(self._chk_menu)
-        lay.addSpacing(12)
-
-        btn_carpeta = QPushButton("Abrir carpeta de instalacion")
-        btn_carpeta.setObjectName("outline")
-        btn_carpeta.setFixedSize(230, 32)
-        btn_carpeta.clicked.connect(self._abrir_carpeta)
-        lay.addWidget(btn_carpeta)
+        chk_row.addWidget(self._chk_menu)
+        chk_row.addStretch()
+        shortcuts_col.addLayout(chk_row)
+        ic_lay.addLayout(shortcuts_col, stretch=1)
+        lay.addWidget(info_card)
         lay.addStretch()
 
     # ── Navegación ────────────────────────────────────────────────────────────
@@ -1319,7 +1661,9 @@ class InstaladorNeuroMood(InstallerShell):
             self._auth_email,
             self._auth_user_id,
             self._codigo_instalacion,
-            self,
+            access_token=self._auth_access_token,
+            refresh_token=self._auth_refresh_token,
+            parent=self,
         )
         self._worker.log_signal.connect(self._log)
         self._worker.progress_signal.connect(self._set_progress)

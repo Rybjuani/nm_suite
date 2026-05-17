@@ -1254,6 +1254,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         c = colors(self._modo)
         if self._sb:
             # Verificar conexión real
+            _verify_err = None
             try:
                 res = self._sb.table("patients").select("patient_id", count="exact").execute()
                 if hasattr(res, 'data'):
@@ -1272,10 +1273,11 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
                         self._view_config.set_sync_state("ok")
                     self._cargar_pacientes()
                     return
-            except Exception:
-                pass
+            except Exception as _e:
+                _verify_err = str(_e)[:60]
             self._sb = None
-        self._lbl_status.setText(f"● Sin conexión: {motivo or 'verificación fallida'}")
+        _detail = motivo or _verify_err or 'verificación fallida'
+        self._lbl_status.setText(f"● Sin conexión: {_detail}")
         self._lbl_status.setStyleSheet(
             f"color: {c['error']}; background: transparent;"
         )

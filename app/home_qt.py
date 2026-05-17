@@ -926,6 +926,8 @@ class _FooterQuoteCard(NMCard):
 class HomeView(QWidget):
     """Vista Home v3 — hero, wave chart, KPIs, módulos grid, bottom 3-col, footer."""
 
+    _theme_switch_requested = pyqtSignal(bool)
+
     def __init__(self, modo: str = "dark_hybrid",
                   on_module_open=None, get_status_fn=None,
                   username: str = "", parent=None):
@@ -937,8 +939,6 @@ class HomeView(QWidget):
         self._cards: dict[str, ModuleCard] = {}
         self._grid_cols = 0
         self._session = SessionColor.instance()
-        # Signal to request theme switch from main window (to avoid conflicts)
-        self._theme_switch_requested = pyqtSignal(bool)
         self._setup()
         ThemeManager.instance().theme_changed.connect(self._apply_theme)
 

@@ -343,3 +343,7 @@ def autocompletar_actividad(nombre_parcial: str, on_result, on_error):
     )
     sistema = "Sos un asistente para terapeutas que completa descripciones de actividades conductuales."
     _llamar(prompt, sistema, on_result, on_error)
+
+
+# Probe inicial en background — se ejecuta al importar el módulo
+threading.Thread(target=_pick_best, daemon=True).start()
