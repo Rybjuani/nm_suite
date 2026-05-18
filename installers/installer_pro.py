@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import (
     QLabel, QLineEdit, QPushButton,
     QScrollArea, QFrame, QFileDialog, QSizePolicy, QStackedWidget,
 )
-from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal, QEventLoop
+from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
 from PyQt6.QtGui import QIcon, QPixmap
 
 try:
@@ -52,8 +52,61 @@ except ImportError:
     from shared.components_qt import NMCustomCheck, NMInput, NMInstallProgress
 
 
+# ── Soporte de payload externo (Fase 7) ──────────────────────────────────────
+# Si junto al exe del instalador existe payload_hub.zip, se prefiere ese
+# bundle sobre _MEIPASS. Modo nested (sin zip al lado) sigue funcionando igual.
+
+_EXTERNAL_PAYLOAD_NAME = "payload_hub.zip"
+_EXTERNAL_PAYLOAD_DIR: Path | None = None
+
+
+def _external_payload_root() -> Path | None:
+    """Extrae payload_hub.zip una vez a %TEMP% y devuelve la ruta, o None."""
+    global _EXTERNAL_PAYLOAD_DIR
+    if _EXTERNAL_PAYLOAD_DIR is not None:
+        return _EXTERNAL_PAYLOAD_DIR
+    if not getattr(sys, "frozen", False):
+        return None
+    exe_dir = Path(sys.executable).parent
+    zip_path = exe_dir / _EXTERNAL_PAYLOAD_NAME
+    if not zip_path.exists():
+        return None
+    import tempfile
+    import zipfile as _zf
+    target = Path(tempfile.gettempdir()) / f"NM_payload_{os.getpid()}_{int(time.time())}"
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+        with _zf.ZipFile(zip_path, "r") as zf:
+            zf.extractall(target)
+    except Exception:
+        return None
+    _EXTERNAL_PAYLOAD_DIR = target
+    import atexit
+    atexit.register(_cleanup_external_payload)
+    return _EXTERNAL_PAYLOAD_DIR
+
+
+def _cleanup_external_payload() -> None:
+    global _EXTERNAL_PAYLOAD_DIR
+    if _EXTERNAL_PAYLOAD_DIR and _EXTERNAL_PAYLOAD_DIR.exists():
+        shutil.rmtree(_EXTERNAL_PAYLOAD_DIR, ignore_errors=True)
+    _EXTERNAL_PAYLOAD_DIR = None
+
+
 def ruta_bundled(exe: str) -> str:
-    """Devuelve ruta a un .exe bundleado. Soporta --onedir y --onefile."""
+    """Devuelve ruta a un .exe bundleado. Soporta payload externo, --onedir y --onefile."""
+    # Preferir payload externo si está disponible (Fase 7)
+    ext = _external_payload_root()
+    if ext is not None:
+        ext_folder = ext / exe.replace(".exe", "")
+        ext_onedir = ext_folder / exe
+        if ext_onedir.exists():
+            return str(ext_onedir)
+        ext_direct = ext / exe
+        if ext_direct.exists():
+            return str(ext_direct)
+        # Si el zip externo no contiene este exe, caer a _MEIPASS sin romper.
+
     base = sys._MEIPASS if getattr(sys, "frozen", False) else os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "dist"
     )
@@ -502,12 +555,10 @@ class InstaladorPro(InstallerShell):
     def _log(self, texto: str, color: str):
         if hasattr(self, "_install_progress"):
             self._install_progress.append_line(texto)
-            QApplication.processEvents(QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)
             return
         lbl = QLabel(texto)
         lbl.setStyleSheet(f"color: {color}; font-size: 11px; background: transparent; padding: 1px 2px;")
         self._log_layout.addWidget(lbl)
-        QApplication.processEvents(QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)
         self._log_scroll.verticalScrollBar().setValue(self._log_scroll.verticalScrollBar().maximum())
 
     def _set_progress(self, v: float, t: str):
@@ -515,7 +566,6 @@ class InstaladorPro(InstallerShell):
             self._install_progress.set_progress(int(v * 100), t)
         else:
             self._progress_bar.setValue(int(v * 100)); self._progress_lbl.setText(t)
-        QApplication.processEvents(QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)
 
     def _on_done(self, install_dir: str, icon_dest: str):
         self._install_dir = install_dir; self._icon_dest = icon_dest
