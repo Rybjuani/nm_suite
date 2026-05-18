@@ -55,6 +55,29 @@ except ImportError:
 
 # ── Lógica de negocio (preservada exacta) ─────────────────────────────────────
 
+def _es_ruta_protegida(ruta: str) -> bool:
+    ruta_norm = os.path.normpath(ruta).lower()
+    protegidas = [
+        os.path.normpath(os.environ.get("PROGRAMFILES", r"C:\Program Files")).lower(),
+        os.path.normpath(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")).lower(),
+        os.path.normpath(os.environ.get("WINDIR", r"C:\Windows")).lower(),
+        os.path.normpath(r"C:\ProgramData").lower(),
+    ]
+    return any(ruta_norm.startswith(p) for p in protegidas)
+
+def _es_ruta_neuromood(ruta: str, marcadores=None) -> bool:
+    if marcadores is None:
+        marcadores = [
+            "NeuroMood Suite.exe",
+            "Desinstalador Suite.exe",
+            "install_path.txt",
+            "_nm_install_manifest.json"
+        ]
+    p = Path(ruta)
+    if not p.exists() or not p.is_dir():
+        return False
+    return any((p / m).exists() for m in marcadores)
+
 def detectar_install_dir() -> str:
     if "--install-dir" in sys.argv:
         idx = sys.argv.index("--install-dir")
@@ -154,6 +177,9 @@ def cerrar_explorer_en(carpeta: str):
 
 
 def vaciar_carpeta(carpeta: str):
+    if _es_ruta_protegida(carpeta) or not _es_ruta_neuromood(carpeta):
+        print(f"[ABORT] Ruta no segura: {carpeta}")
+        sys.exit(2)
     if not Path(carpeta).exists():
         return
     subprocess.run(f'del /f /s /q "{carpeta}\\*"', shell=True, capture_output=True, timeout=30)
@@ -166,6 +192,10 @@ def vaciar_carpeta(carpeta: str):
 
 
 def lanzar_bat_limpieza(install_dir: str, appdata_dir: str, eliminar_appdata: bool = True):
+    if _es_ruta_protegida(install_dir) or not _es_ruta_neuromood(install_dir):
+        print(f"[ABORT] Ruta no segura: {install_dir}")
+        sys.exit(2)
+
     temp_dir = os.environ.get("TEMP", os.path.expanduser("~"))
     temp_exe = str(Path(temp_dir) / "_nm_desinstalar.exe")
     bat = Path(temp_dir) / "_nm_cleanup.bat"
