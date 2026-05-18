@@ -940,20 +940,61 @@ class IAAssistantView(ThemeAwareWidgetMixin, QWidget):
         if not text:
             return
         self._input.clear()
+        self._send.setEnabled(False)
         self._add_bubble(text, "right")
         self._typing.show()
         self._typing.start()
-        QTimer.singleShot(180, self._mock_response)
 
-    def _mock_response(self):
+        try:
+            import hub.ia_asistente as ia
+        except Exception:
+            QTimer.singleShot(180, self._ia_unavailable)
+            return
+
+        sistema = (
+            "Sos un asistente clínico para terapeutas de salud mental. "
+            "Ayudás a analizar datos de seguimiento de pacientes: ánimo, respiración, "
+            "checklist, pensamientos TCC. Respondés de forma concisa en lenguaje "
+            "clínico profesional. Nunca hacés diagnósticos ni recomendás medicación. "
+            f"Paciente en contexto: {self._paciente_nombre}."
+        )
+        ia._llamar(
+            text,
+            sistema,
+            on_result=lambda r: QTimer.singleShot(0, lambda: self._on_ia_result(r)),
+            on_error=lambda e: QTimer.singleShot(0, lambda: self._on_ia_error(e)),
+        )
+
+    def _on_ia_result(self, text: str):
         if sip.isdeleted(self):
             return
         self._typing.stop()
         self._typing.hide()
-        self._add_bubble(
-            "Para responder con datos reales, carga primero los registros del paciente. Con contexto disponible, puedo resumir tendencia, adherencia y sugerencias concretas.",
-            "left",
-        )
+        self._send.setEnabled(True)
+        self._add_bubble(text, "left")
+        QTimer.singleShot(50, self._scroll_bottom)
+
+    def _on_ia_error(self, msg: str):
+        if sip.isdeleted(self):
+            return
+        self._typing.stop()
+        self._typing.hide()
+        self._send.setEnabled(True)
+        self._add_bubble(msg, "left")
+
+    def _ia_unavailable(self):
+        if sip.isdeleted(self):
+            return
+        self._typing.stop()
+        self._typing.hide()
+        self._send.setEnabled(True)
+        self._add_bubble("Módulo IA no disponible. Verificá que las dependencias estén instaladas.", "left")
+
+    def _scroll_bottom(self):
+        if sip.isdeleted(self):
+            return
+        sb = self._messages_scroll.verticalScrollBar()
+        sb.setValue(sb.maximum())
 
     def set_patient(self, nombre: str):
         self._paciente_nombre = nombre or "Sin paciente"
