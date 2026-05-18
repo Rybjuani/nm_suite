@@ -1578,32 +1578,32 @@ def paint_shell_background(painter, rect: QRectF, modo: str):
     w, h = rect.width(), rect.height()
     cx, cy = w / 2, h / 2
 
-    # Blob 1: teal, 15%x 12%y — light alphas subidas para que sean visibles
+    # Blob 1: teal, 15%x 12%y — spec v3: dark=0.25, light=0.12
     r1 = max(w, h) * 0.55
     blob1 = QRadialGradient(QPointF(w * 0.15, h * 0.12), r1)
     ac1 = v3c("teal", modo)
-    ac1.setAlphaF(0.25 if is_dark else 0.32)   # light: 0.12 → 0.32
+    ac1.setAlphaF(0.25 if is_dark else 0.12)
     blob1.setColorAt(0.0, ac1)
     blob1.setColorAt(1.0, QColor(0, 0, 0, 0))
     painter.setPen(Qt.PenStyle.NoPen)
     painter.setBrush(QBrush(blob1))
     painter.drawEllipse(QPointF(w * 0.15, h * 0.12), r1, r1)
 
-    # Blob 2: violet, 85%x 18%y
+    # Blob 2: violet, 85%x 18%y — spec v3: dark=0.22, light=0.10
     r2 = max(w, h) * 0.45
     blob2 = QRadialGradient(QPointF(w * 0.85, h * 0.18), r2)
     ac2 = v3c("violet", modo)
-    ac2.setAlphaF(0.22 if is_dark else 0.28)   # light: 0.10 → 0.28
+    ac2.setAlphaF(0.22 if is_dark else 0.10)
     blob2.setColorAt(0.0, ac2)
     blob2.setColorAt(1.0, QColor(0, 0, 0, 0))
     painter.setBrush(QBrush(blob2))
     painter.drawEllipse(QPointF(w * 0.85, h * 0.18), r2, r2)
 
-    # Blob 3: cyan, 50%x 85%y
+    # Blob 3: cyan, 50%x 85%y — spec v3: dark=0.18, light=0.06
     r3 = max(w, h) * 0.30
     blob3 = QRadialGradient(QPointF(w * 0.50, h * 0.85), r3)
     ac3 = v3c("cyan", modo)
-    ac3.setAlphaF(0.18 if is_dark else 0.22)   # light: 0.06 → 0.22
+    ac3.setAlphaF(0.18 if is_dark else 0.06)
     blob3.setColorAt(0.0, ac3)
     blob3.setColorAt(1.0, QColor(0, 0, 0, 0))
     painter.setBrush(QBrush(blob3))

@@ -1520,6 +1520,10 @@ class InstaladorNeuroMood(InstallerShell):
             )
             val_lbl.setWordWrap(False)
             txt_col.addWidget(val_lbl)
+            if key == "CUENTA":
+                self._lbl_cuenta_val = val_lbl
+            elif key == "CARPETA":
+                self._lbl_carpeta_val = val_lbl
             cl.addLayout(txt_col, stretch=1)
             grid.addWidget(card, idx // 2, idx % 2)
         lay.addWidget(grid_w)
@@ -1672,6 +1676,10 @@ class InstaladorNeuroMood(InstallerShell):
     def _on_install_done(self, install_dir: str, icon_dest: str):
         self._install_dir = install_dir
         self._icon_dest = icon_dest
+        if hasattr(self, "_lbl_cuenta_val"):
+            self._lbl_cuenta_val.setText(self._auth_email or "—")
+        if hasattr(self, "_lbl_carpeta_val"):
+            self._lbl_carpeta_val.setText(install_dir or DEFAULT_INSTALL)
         QTimer.singleShot(
             900,
             lambda: self._ir_a(4) if not sip.isdeleted(self) else None,

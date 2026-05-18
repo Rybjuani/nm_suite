@@ -235,6 +235,8 @@ Archivo: `installers/uninstaller_pro.py`
 Tamaño: 760x620 fijo.
 Pasos: Confirmar, Eliminando, Finalizado.
 
+**Nota técnica de rescate (2026-05-18):** Se corrigió un bug crítico de runtime en `uninstaller_pro.py` donde el constructor de `_ProUninstWorker` no aceptaba el parámetro `conservar`, causando un TypeError. La lógica ahora respeta correctamente la opción de "Conservar mis datos", evitando la eliminación de la carpeta de configuración en AppData si el usuario lo solicita.
+
 ## 6. Arquitectura De Carpetas Vigente
 
 ```text

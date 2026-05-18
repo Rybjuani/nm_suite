@@ -45,7 +45,7 @@ try:
         C, colors, norm_modo, qfont, qfont_mono,
         interpolate_color, radial_glow_double,
         gradient_colors, v3c, v3_mode, V3_SP, V3_RD,
-        ThemeAwareWidgetMixin,
+        ThemeAwareWidgetMixin, stylesheet_scrollarea,
         PAD_CONTAINER,
     )
     from shared.theme import TYPOGRAPHY, V3_GRADIENTS
@@ -65,7 +65,7 @@ except ImportError:
         C, colors, norm_modo, qfont, qfont_mono,
         interpolate_color, radial_glow_double,
         gradient_colors, v3c, v3_mode, V3_SP, V3_RD,
-        ThemeAwareWidgetMixin,
+        ThemeAwareWidgetMixin, stylesheet_scrollarea,
         PAD_CONTAINER,
     )
     from shared.theme import TYPOGRAPHY, V3_GRADIENTS
@@ -508,6 +508,7 @@ class ModuloRespiracion(NMModule):
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         outer.addWidget(scroll)
         self._scroll = scroll
 
@@ -685,6 +686,8 @@ class ModuloRespiracion(NMModule):
 
     def _on_theme(self, modo: str) -> None:
         super()._on_theme(modo)
+        if hasattr(self, "_scroll"):
+            self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         if hasattr(self, "_circle"):
             self._circle._apply_theme(self._modo)
         if hasattr(self, "_phase_chip"):

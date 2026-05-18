@@ -360,9 +360,7 @@ class NMCard(QFrame):
                 sc = QColor(0, 0, 0, 115)
             else:
                 self._card_shadow.setBlurRadius(16)
-                self._card_shadow.setOffset(0, 6)
-                # Spec rgba(15,23,42,13) = alpha 13/255 muy sutil;
-                # subimos a 22 para que sea visible sobre fondos claros.
+                self._card_shadow.setOffset(0, 4)
                 sc = QColor(15, 23, 42, 22)
         self._card_shadow.setColor(sc)
         self.setGraphicsEffect(self._card_shadow)
@@ -383,7 +381,7 @@ class NMCard(QFrame):
         if not self._disabled and self.isEnabled() and self._card_shadow is not None:
             shadow = self._card_shadow
             is_dark = "dark" in self._modo
-            shadow.setBlurRadius(30 if is_dark else 12)
+            shadow.setBlurRadius(30 if is_dark else 16)
             shadow.setOffset(0, 10 if is_dark else 4)
         self.update()
         super().leaveEvent(event)
@@ -1216,8 +1214,8 @@ class NMToggle(QAbstractButton):
             grad = v3_linear_gradient(track_rect, self._modo, 0, "signature")
             p.setBrush(QBrush(grad))
         else:
-            # Inactivo: borderSoft sutil
-            track_col = v3c("borderSoft", self._modo) if not is_dark \
+            # Inactivo: text4 en light (#cbd5e1 — spec JSX), borderSolid en dark
+            track_col = v3c("text4", self._modo) if not is_dark \
                 else v3c("borderSolid", self._modo)
             p.setBrush(QBrush(track_col))
         p.setPen(Qt.PenStyle.NoPen)
@@ -1602,8 +1600,11 @@ class NMSidebar(QWidget):
         shadow = QGraphicsDropShadowEffect(logo_lbl)
         shadow.setBlurRadius(8 if is_dark else 4)
         shadow.setOffset(0, 2)
-        col = QColor(C("accent", self._modo))
-        col.setAlpha(115 if is_dark else 30)
+        if is_dark:
+            col = QColor(C("accent", self._modo))
+            col.setAlpha(115)
+        else:
+            col = QColor(15, 23, 42, 26)  # rgba(15,23,42,.10) — spec light logo shadow
         shadow.setColor(col)
         logo_lbl.setGraphicsEffect(shadow)
         self._logo_shadow = shadow
@@ -1667,8 +1668,12 @@ class NMSidebar(QWidget):
         self._theme_labels = alive
         # Actualizar sombra del logo
         if self._logo_shadow is not None:
-            col = QColor(C("accent", self._modo))
-            col.setAlpha(30)
+            if "dark" in self._modo:
+                col = QColor(C("accent", self._modo))
+                col.setAlpha(115)
+            else:
+                col = QColor(15, 23, 42, 26)
+            self._logo_shadow.setBlurRadius(8 if "dark" in self._modo else 4)
             self._logo_shadow.setColor(col)
         # Recolorear logo en light mode
         if self._logo_lbl is not None:
@@ -2087,9 +2092,13 @@ class _LogoLabel(QWidget):
         if old_modo != self._modo:
             self._load_logo()
         is_dark = "dark" in self._modo
-        col = QColor(C("accent", self._modo))
-        col.setAlpha(30)
-        self._shadow.setBlurRadius(8 if is_dark else 4)
+        if is_dark:
+            col = QColor(C("accent", self._modo))
+            col.setAlpha(30)
+            self._shadow.setBlurRadius(8)
+        else:
+            col = QColor(15, 23, 42, 26)  # rgba(15,23,42,.10) — spec light logo shadow
+            self._shadow.setBlurRadius(4)
         self._shadow.setOffset(0, 2)
         self._shadow.setColor(col)
         self.update()
@@ -3584,11 +3593,14 @@ class NMWaveChart(QWidget):
                 line_path.lineTo(pt)
             p.drawPath(line_path)
 
+        is_dark = "dark" in self._modo
         prev_pts = _pts(self._data_previous)
-        _draw_area(prev_pts, violet_hex, alpha_fill=25, alpha_line=90)
+        _draw_area(prev_pts, violet_hex,
+                   alpha_fill=31 if is_dark else 26, alpha_line=90)
 
         curr_pts = _pts(self._data_current)
-        _draw_area(curr_pts, teal_hex,   alpha_fill=55, alpha_line=210)
+        _draw_area(curr_pts, teal_hex,
+                   alpha_fill=64 if is_dark else 46, alpha_line=210)
 
         # Dots
         p.setBrush(QBrush(QColor(teal_hex)))

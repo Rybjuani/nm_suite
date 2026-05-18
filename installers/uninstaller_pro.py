@@ -151,18 +151,37 @@ def vaciar_carpeta(carpeta: str):
         pass
 
 
-def lanzar_bat_limpieza(install_dir: str):
+def lanzar_bat_limpieza(install_dir: str, appdata_dir: str = "", eliminar_appdata: bool = False):
     temp_dir = os.environ.get("TEMP", os.path.expanduser("~"))
     temp_exe = str(Path(temp_dir) / "_nm_pro_desinstalar.exe")
     bat = Path(temp_dir) / "_nm_pro_cleanup.bat"
+
+    install_dir_clean = install_dir.rstrip("\\/")
+    appdata_dir_clean = appdata_dir.rstrip("\\/") if appdata_dir else ""
+
+    self_exe = Path(sys.executable)
+    temp_root_to_delete = None
+    if str(self_exe).startswith(temp_dir) and "_nm_pro_desinstalar_" in str(self_exe):
+        parts = self_exe.parts
+        for i, part in enumerate(parts):
+            if part.startswith("_nm_pro_desinstalar_"):
+                temp_root_to_delete = str(Path(*parts[:i+1])).rstrip("\\/")
+                break
+
     lines = [
         "@echo off",
         f'cd /d "{temp_dir}"',
         "ping 127.0.0.1 -n 5 > nul",
-        f'rd /s /q "{install_dir}" 2>nul',
+        f'rd /s /q "{install_dir_clean}" 2>nul',
+    ]
+    if eliminar_appdata and appdata_dir_clean:
+        lines.append(f'rd /s /q "{appdata_dir_clean}" 2>nul')
+    if temp_root_to_delete:
+        lines.append(f'rd /s /q "{temp_root_to_delete}" 2>nul')
+    lines.extend([
         f'del /f /q "{temp_exe}" 2>nul',
         'del /f /q "%~f0"',
-    ]
+    ])
     try:
         bat.write_text("\r\n".join(lines), encoding="ascii")
         import ctypes
@@ -210,9 +229,10 @@ class _ProUninstWorker(QThread):
     done_signal     = pyqtSignal()
     error_signal    = pyqtSignal(str)
 
-    def __init__(self, install_dir: str, parent=None):
+    def __init__(self, install_dir: str, conservar: bool = True, parent=None):
         super().__init__(parent)
         self._install_dir = install_dir
+        self._conservar = conservar
 
     def run(self):
         try:
@@ -228,11 +248,14 @@ class _ProUninstWorker(QThread):
             time.sleep(0.5)
             self.progress_signal.emit(0.80, "Eliminando archivos...")
             vaciar_carpeta(self._install_dir)
-            self.progress_signal.emit(0.85, "Eliminando datos de configuracion...")
+            
             appdata_pro = str(Path(os.environ.get("APPDATA", "")) / "NeuroMoodHub")
-            vaciar_carpeta(appdata_pro)
+            if not self._conservar:
+                self.progress_signal.emit(0.85, "Eliminando datos de configuracion...")
+                vaciar_carpeta(appdata_pro)
+            
             self.progress_signal.emit(0.90, "Finalizando...")
-            lanzar_bat_limpieza(self._install_dir)
+            lanzar_bat_limpieza(self._install_dir, appdata_pro if not self._conservar else "", not self._conservar)
             self.progress_signal.emit(1.0, "¡Desinstalacion completada!")
             self.done_signal.emit()
         except Exception as e:
@@ -256,6 +279,9 @@ class DesinstaladorPro(InstallerShell):
         self._show_confirm()
 
     def _build_confirm(self, page, layout):
+        from PyQt6.QtWidgets import QCheckBox
+        from PyQt6.QtCore import Qt as _Qt
+
         title = QLabel("Desinstalador Hub")
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
         layout.addWidget(title)
@@ -267,6 +293,37 @@ class DesinstaladorPro(InstallerShell):
         )
         desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px;")
         layout.addWidget(desc)
+        layout.addSpacing(16)
+
+        try:
+            self._preserve_card = NMDataPreserveCard(
+                "Conservar mis datos",
+                "Credenciales locales, registros y configuracion",
+                checked=True,
+            )
+            layout.addWidget(self._preserve_card)
+        except NameError:
+            conservar_card = QFrame()
+            conservar_card.setObjectName("ConservarCard")
+            conservar_card.setStyleSheet(
+                f"QFrame#ConservarCard {{background: {BG_SURFACE}; border: 1px solid {BORDER}; border-radius: 12px;}}"
+            )
+            cv = QHBoxLayout(conservar_card)
+            cv.setContentsMargins(16, 14, 16, 14)
+            cv.setSpacing(14)
+            text_col = QVBoxLayout()
+            tit = QLabel("Conservar mis datos")
+            tit.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 13px; font-weight: 700; background: transparent;")
+            text_col.addWidget(tit)
+            sub = QLabel("Credenciales locales, registros y configuracion")
+            sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px; background: transparent;")
+            text_col.addWidget(sub)
+            cv.addLayout(text_col, stretch=1)
+            self._chk_conservar = QCheckBox()
+            self._chk_conservar.setChecked(True)
+            cv.addWidget(self._chk_conservar, alignment=_Qt.AlignmentFlag.AlignRight)
+            layout.addWidget(conservar_card)
+
         layout.addStretch()
 
     def _show_confirm(self):
@@ -275,12 +332,16 @@ class DesinstaladorPro(InstallerShell):
         self.btn_sig.clicked.connect(self._iniciar)
 
     def _iniciar(self):
+        if hasattr(self, "_preserve_card"):
+            conservar = self._preserve_card.is_checked()
+        else:
+            conservar = self._chk_conservar.isChecked()
         self.btn_sig.setEnabled(False)
         self.btn_sig.setText("Desinstalando...")
         self._add_page(lambda page, lay: self._build_progress(page, lay))
         self._ir_a(self._pagina + 1)
 
-        self._worker = _ProUninstWorker(self._install_dir, self)
+        self._worker = _ProUninstWorker(self._install_dir, conservar, self)
         self._worker.progress_signal.connect(self._set_progress)
         self._worker.done_signal.connect(self._on_done)
         self._worker.error_signal.connect(self._on_error)
@@ -324,28 +385,42 @@ class DesinstaladorPro(InstallerShell):
             pass
         self.btn_sig.clicked.connect(self.close)
         QApplication.instance().processEvents()
-        delay = 5000 if os.environ.get("NM_VISUAL_QA") == "1" else 1500
-        QTimer.singleShot(delay, self.close)
-        QTimer.singleShot(delay + 500, QApplication.instance().quit)
 
     def _build_done(self, page, layout):
+        conservar = self._worker._conservar if self._worker else True
         title = QLabel("Desinstalacion completada")
         title.setStyleSheet(f"color: {SUCCESS}; font-size: 18px; font-weight: bold;")
         layout.addWidget(title)
         layout.addSpacing(8)
-        desc = QLabel(
-            "NeuroMood Hub fue eliminado de este equipo.\n"
-            "La configuracion local se preservo segun la opcion seleccionada."
-        )
+        
+        if conservar:
+            desc_text = (
+                "NeuroMood Hub fue eliminado de este equipo.\n"
+                "La configuracion local se preservo segun la opcion seleccionada."
+            )
+        else:
+            desc_text = (
+                "NeuroMood Hub fue eliminado de este equipo.\n"
+                "Tus datos y configuracion local tambien fueron eliminados."
+            )
+        desc = QLabel(desc_text)
         desc.setWordWrap(True)
         desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px;")
         layout.addWidget(desc)
         layout.addSpacing(10)
-        layout.addWidget(NMDataPreserveCard(
-            "Datos preservados",
-            "Credenciales locales, registros y configuracion",
-            checked=True,
-        ))
+        
+        if conservar:
+            try:
+                layout.addWidget(NMDataPreserveCard(
+                    "Datos preservados",
+                    "Credenciales locales, registros y configuracion",
+                    checked=True,
+                ))
+            except NameError:
+                lbl = QLabel("✓ Datos conservados localmente")
+                lbl.setStyleSheet(f"color: {SUCCESS}; font-weight: bold;")
+                layout.addWidget(lbl)
+        
         layout.addStretch()
 
     def _on_error(self, msg: str):
