@@ -70,6 +70,16 @@ _RETRY_SECS: float = 30
 _lock = threading.Lock()
 _IDIOMA = "Respondé siempre en español rioplatense, sin emojis, de forma concisa."
 
+_picked = False
+_picked_lock = threading.Lock()
+
+def _ensure_provider():
+    global _picked
+    with _picked_lock:
+        if _picked:
+            return
+        _picked = True
+    threading.Thread(target=_pick_best, daemon=True).start()
 
 def _cfg():
     from shared.config import get
@@ -78,6 +88,7 @@ def _cfg():
 
 def is_available() -> bool:
     """True si al menos un proveedor IA esta funcionando."""
+    _ensure_provider()
     with _lock:
         if _all_dead:
             return False
@@ -88,6 +99,7 @@ def is_available() -> bool:
 
 def status_msg() -> str:
     """Mensaje legible sobre el estado actual de la IA."""
+    _ensure_provider()
     with _lock:
         if _all_dead:
             return "IA no disponible momentaneamente"
@@ -252,6 +264,7 @@ def _llamar(prompt: str, sistema: str, on_result, on_error):
 
 def resumir_evolucion(datos: dict, nombre: str, on_result, on_error):
     """Genera un resumen narrativo de la evolucion del paciente."""
+    _ensure_provider()
     animo = datos.get("animo", [])
     resp = datos.get("resp", [])
     pens = datos.get("pens", [])
@@ -289,6 +302,7 @@ def resumir_evolucion(datos: dict, nombre: str, on_result, on_error):
 
 def sugerir_acciones(datos: dict, nombre: str, on_result, on_error):
     """Devuelve lista de sugerencias de accion para el terapeuta."""
+    _ensure_provider()
     animo = datos.get("animo", [])
     check = datos.get("checklist", [])
 
@@ -321,6 +335,7 @@ def sugerir_acciones(datos: dict, nombre: str, on_result, on_error):
 
 def generar_tarea(contexto_paciente: str, on_result, on_error):
     """Genera un borrador de tarea de rutina personalizada."""
+    _ensure_provider()
     prompt = (
         f"Fecha actual: {date.today()}\n"
         f"Contexto del paciente: {contexto_paciente}\n\n"
@@ -334,6 +349,7 @@ def generar_tarea(contexto_paciente: str, on_result, on_error):
 
 def autocompletar_actividad(nombre_parcial: str, on_result, on_error):
     """Sugiere una descripcion corta para una actividad conductual."""
+    _ensure_provider()
     prompt = (
         f"Fecha actual: {date.today()}\n"
         f"Nombre de la actividad: '{nombre_parcial}'.\n"
@@ -343,7 +359,3 @@ def autocompletar_actividad(nombre_parcial: str, on_result, on_error):
     )
     sistema = "Sos un asistente para terapeutas que completa descripciones de actividades conductuales."
     _llamar(prompt, sistema, on_result, on_error)
-
-
-# Probe inicial en background — se ejecuta al importar el módulo
-threading.Thread(target=_pick_best, daemon=True).start()
