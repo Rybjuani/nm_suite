@@ -1,0 +1,82 @@
+{
+  "timestamp": "2026-05-17T16:08:53.068587",
+  "app": "patient",
+  "passed": 13,
+  "failed": 3,
+  "steps": [
+    {
+      "name": "Home capture",
+      "status": "passed"
+    },
+    {
+      "name": "Navigate to animo",
+      "status": "passed"
+    },
+    {
+      "name": "Capture animo",
+      "status": "passed"
+    },
+    {
+      "name": "Go home",
+      "status": "failed"
+    },
+    {
+      "name": "Navigate to respiracion",
+      "status": "passed"
+    },
+    {
+      "name": "Capture respiracion",
+      "status": "passed"
+    },
+    {
+      "name": "Go home",
+      "status": "failed"
+    },
+    {
+      "name": "Navigate to registro",
+      "status": "passed"
+    },
+    {
+      "name": "Capture registro",
+      "status": "passed"
+    },
+    {
+      "name": "Go home",
+      "status": "failed"
+    },
+    {
+      "name": "Resize 800x600",
+      "status": "passed"
+    },
+    {
+      "name": "Capture 800x600",
+      "status": "passed"
+    },
+    {
+      "name": "Resize 1280x720",
+      "status": "passed"
+    },
+    {
+      "name": "Capture 1280x720",
+      "status": "passed"
+    },
+    {
+      "name": "Resize 1366x768",
+      "status": "passed"
+    },
+    {
+      "name": "Capture 1366x768",
+      "status": "passed"
+    }
+  ],
+  "crashes": [],
+  "screenshots": [
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\AI_SCRIPTS\\_test_screens\\smoke\\s01_home.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\AI_SCRIPTS\\_test_screens\\smoke\\s_mod_registro.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\AI_SCRIPTS\\_test_screens\\smoke\\s_mod_registro.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\AI_SCRIPTS\\_test_screens\\smoke\\s_mod_registro.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\AI_SCRIPTS\\_test_screens\\smoke\\s_resize_800x600.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\AI_SCRIPTS\\_test_screens\\smoke\\s_resize_1280x720.png",
+    "C:\\Users\\nosom\\Desktop\\Neuromood V3\\AI_SCRIPTS\\_test_screens\\smoke\\s_resize_1366x768.png"
+  ]
+}

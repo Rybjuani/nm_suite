@@ -1,0 +1,103 @@
+{
+  "title": "Rescate quirurgico Gemini VS Code - NeuroMood V3",
+  "purpose": "Archivo unico para que otro agente continue con el minimo contexto posible y pocos tokens.",
+  "repo_root_windows": "C:\\Users\\nosom\\Desktop\\Neuromood V3",
+  "current_known_state": {
+    "py_compile": "PASO sin errores para los 6 archivos modificados, pero py_compile no detecta el bug runtime de argumentos en _ProUninstWorker.",
+    "git_status_summary": "main diverged with origin/main; cambios no staged en 6 archivos; hay untracked de rescate/chat/debug que no deben entrar al commit.",
+    "modified_files_only": [
+      "app/modules/respiracion_qt.py",
+      "installers/installer.py",
+      "installers/uninstaller.py",
+      "installers/uninstaller_pro.py",
+      "shared/components_qt.py",
+      "shared/theme_qt.py"
+    ],
+    "diffstat": "6 files changed, 221 insertions(+), 100 deletions(-)"
+  },
+  "user_test_results": {
+    "command_py_compile": "python -m py_compile app/modules/respiracion_qt.py installers/installer.py installers/uninstaller.py installers/uninstaller_pro.py shared/components_qt.py shared/theme_qt.py",
+    "py_compile_result": "sin salida = OK",
+    "select_string_result": [
+      "installers/uninstaller_pro.py:227:class _ProUninstWorker(QThread):",
+      "installers/uninstaller_pro.py:232:def __init__(self, install_dir: str, parent=None):",
+      "installers/uninstaller_pro.py:270:def __init__(self):",
+      "installers/uninstaller_pro.py:340:self._worker = _ProUninstWorker(self._install_dir, conservar, self)"
+    ]
+  },
+  "critical_findings": [
+    {
+      "severity": "CRITICAL_RUNTIME_BUG",
+      "file": "installers/uninstaller_pro.py",
+      "problem": "La llamada pasa 3 argumentos posicionales despues de self: (install_dir, conservar, parent), pero _ProUninstWorker.__init__ solo acepta (install_dir, parent=None). Esto puede crashear al iniciar desinstalacion Pro con TypeError. py_compile no lo detecta.",
+      "minimal_fix": [
+        "Cambiar la firma de _ProUninstWorker.__init__ a: def __init__(self, install_dir: str, conservar: bool = True, parent=None):",
+        "Dentro del __init__, preservar todo lo existente y agregar: self._conservar = bool(conservar)",
+        "Si el run() llama a lanzar_bat_limpieza(...), asegurar que eliminar_appdata sea not self._conservar. No inventar rutas nuevas; usar las rutas existentes del archivo.",
+        "Mantener conservar=True como default para que el comportamiento seguro por defecto sea preservar datos."
+      ]
+    },
+    {
+      "severity": "VISUAL_TEXT_BUG_LOW",
+      "file": "installers/installer.py",
+      "problem": "En el diff aparece fallback visual con mojibake: \"ÔÇö\". Mejor reemplazar solo esa nueva ocurrencia por \"-\" o por una raya correcta si el archivo maneja UTF-8 bien.",
+      "minimal_fix": "self._lbl_cuenta_val.setText(self._auth_email or \"-\")"
+    }
+  ],
+  "recommended_keep": {
+    "app/modules/respiracion_qt.py": "Conservar: solo agrega stylesheet_scrollarea al QScrollArea y lo reaplica al cambiar tema.",
+    "installers/installer.py": "Conservar con revision menor: actualiza labels de cuenta/carpeta en pantalla final. Revisar fallback mojibake.",
+    "installers/uninstaller.py": "Conservar: mejoras de UX para mostrar si los datos se conservaron o eliminaron; limpieza BAT mas robusta.",
+    "shared/components_qt.py": "Conservar: cambios visuales superficiales de sombras, toggle, sidebar/logo y wave chart.",
+    "shared/theme_qt.py": "Conservar: restaura alphas de blobs segun spec v3; si light queda muy tenue, ajustar despues visualmente, no ahora.",
+    "installers/uninstaller_pro.py": "Conservar SOLO despues de corregir _ProUninstWorker.__init__ y revisar uso de _conservar."
+  },
+  "do_not_touch": [
+    "hub/",
+    "app/ salvo app/modules/respiracion_qt.py",
+    "shared/db.py",
+    "shared/sync.py",
+    "shared/config.py",
+    "shared/identidad.py",
+    "Supabase/Auth/DB",
+    "README.md",
+    "neuromood/project/design_handoff_neuromood_v3/",
+    "_chatSessions_rescate/",
+    "_chatSessions_rescate_all/",
+    "_vscode_workspaceStorage_rescate/"
+  ],
+  "untracked_to_ignore_or_keep_out_of_commit": [
+    "_rescate.patch",
+    "_estado.txt",
+    "_diffstat.txt",
+    "_RESCATE_GEMINI_VSCODE/",
+    "_chatSessions_rescate/",
+    "_chatSessions_rescate_all/",
+    "_vscode_workspaceStorage_rescate/",
+    "debug_block.txt",
+    "historial_acciones.txt",
+    "installer_style_debug.txt",
+    "instalador suite.png",
+    "AI_SCRIPTS/_test_screens/",
+    "AI_SCRIPTS/patch_stylesheet.py",
+    "AI_SCRIPTS/test_hub_theme.py",
+    "AI_SCRIPTS/test_theme_switch.py"
+  ],
+  "allowed_validation_commands": [
+    "Select-String -Path installers\\uninstaller_pro.py -Pattern \"class _ProUninstWorker\",\"def __init__\",\"_ProUninstWorker\\(\",\"lanzar_bat_limpieza\"",
+    "python -m py_compile app/modules/respiracion_qt.py installers/installer.py installers/uninstaller.py installers/uninstaller_pro.py shared/components_qt.py shared/theme_qt.py",
+    "git diff -- installers/uninstaller_pro.py installers/installer.py",
+    "git diff --stat",
+    "git status --short"
+  ],
+  "forbidden_commands_or_actions": [
+    "No git restore .",
+    "No git pull",
+    "No commit",
+    "No PyInstaller/build pesado",
+    "No refactor global",
+    "No leer carpetas de chatSessions/workspaceStorage salvo que el usuario lo pida",
+    "No tocar Hub ni Suite estructural"
+  ],
+  "minimal_agent_prompt": "Tarea quirurgica y barata en tokens. No leas README, handoff, chatSessions ni workspaceStorage. Solo revisa estos 6 archivos modificados: app/modules/respiracion_qt.py, installers/installer.py, installers/uninstaller.py, installers/uninstaller_pro.py, shared/components_qt.py, shared/theme_qt.py. Objetivo: validar el rescate y corregir solo bugs evidentes. Prioridad 1: en installers/uninstaller_pro.py corregir el mismatch: _ProUninstWorker.__init__ acepta (install_dir, parent=None) pero se llama con (install_dir, conservar, self). Agrega conservar: bool=True y self._conservar = bool(conservar), sin reescribir la clase completa. Si run() usa lanzar_bat_limpieza, aplicar eliminar_appdata = not self._conservar usando rutas existentes. Prioridad 2: en installers/installer.py reemplazar el fallback mojibake \"ÔÇö\" por \"-\" si existe. No tocar Hub. No tocar Suite salvo respiracion_qt.py. No tocar DB/sync/config/auth. Ejecutar solo py_compile de los 6 archivos y mostrar git diff --stat. No hacer commit."
+}

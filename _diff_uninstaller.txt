@@ -1,0 +1,187 @@
+diff --git a/installers/uninstaller.py b/installers/uninstaller.py
+index e07fd88..5675429 100644
+--- a/installers/uninstaller.py
++++ b/installers/uninstaller.py
+@@ -169,14 +169,29 @@ def lanzar_bat_limpieza(install_dir: str, appdata_dir: str, eliminar_appdata: bo
+     temp_dir = os.environ.get("TEMP", os.path.expanduser("~"))
+     temp_exe = str(Path(temp_dir) / "_nm_desinstalar.exe")
+     bat = Path(temp_dir) / "_nm_cleanup.bat"
++    
++    install_dir_clean = install_dir.rstrip("\\/")
++    appdata_dir_clean = appdata_dir.rstrip("\\/")
++
++    self_exe = Path(sys.executable)
++    temp_root_to_delete = None
++    if str(self_exe).startswith(temp_dir) and "_nm_desinstalar_" in str(self_exe):
++        parts = self_exe.parts
++        for i, part in enumerate(parts):
++            if part.startswith("_nm_desinstalar_"):
++                temp_root_to_delete = str(Path(*parts[:i+1])).rstrip("\\/")
++                break
++
+     lines = [
+         "@echo off",
+         f'cd /d "{temp_dir}"',
+         "ping 127.0.0.1 -n 5 > nul",
+-        f'rd /s /q "{install_dir}" 2>nul',
++        f'rd /s /q "{install_dir_clean}" 2>nul',
+     ]
+     if eliminar_appdata:
+-        lines.append(f'rd /s /q "{appdata_dir}" 2>nul')
++        lines.append(f'rd /s /q "{appdata_dir_clean}" 2>nul')
++    if temp_root_to_delete:
++        lines.append(f'rd /s /q "{temp_root_to_delete}" 2>nul')
+     lines += [f'del /f /q "{temp_exe}" 2>nul', 'del /f /q "%~f0"']
+     try:
+         bat.write_text("\r\n".join(lines), encoding="ascii")
+@@ -482,6 +497,8 @@ class DesinstaladorNeuroMood(InstallerShell):
+         from PyQt6.QtWidgets import QGraphicsDropShadowEffect
+         from PyQt6.QtGui import QColor as _QColor
+ 
++        conservar = self._worker._conservar if self._worker else True
++
+         # Círculo check 80px gradient + glow ring
+         check_circle = QFrame()
+         check_circle.setObjectName("UninstCheckCircle")
+@@ -526,72 +543,82 @@ class DesinstaladorNeuroMood(InstallerShell):
+         layout.addWidget(title)
+         layout.addSpacing(8)
+ 
+-        desc = QLabel(
+-            "NeuroMood Suite fue eliminado de este equipo.\n"
+-            "Tus datos personales se conservaron según la opción seleccionada."
+-        )
++        if conservar:
++            desc_text = (
++                "NeuroMood Suite fue eliminado de este equipo.\n"
++                "Tus datos personales se conservaron según la opción seleccionada."
++            )
++        else:
++            desc_text = (
++                "NeuroMood Suite fue eliminado de este equipo.\n"
++                "Tus datos personales también fueron eliminados."
++            )
++
++        desc = QLabel(desc_text)
+         desc.setWordWrap(True)
+         desc.setAlignment(_Qt.AlignmentFlag.AlignHCenter)
+         desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 13px; background: transparent;")
+         layout.addWidget(desc)
+         layout.addSpacing(16)
+ 
+-        # Card datos preservados con badge "preservado"
+-        if _HAS_PRESERVE_CARD:
+-            pres_outer = QFrame()
+-            pres_outer.setStyleSheet(
+-                f"QFrame {{ background: {BG_SURFACE}; border-radius: 14px; border: 1px solid {BORDER}; }}"
+-            )
+-            po = QHBoxLayout(pres_outer)
+-            po.setContentsMargins(16, 14, 16, 14)
+-            po.setSpacing(14)
+-
+-            save_badge = QFrame()
+-            save_badge.setFixedSize(44, 44)
+-            save_badge.setStyleSheet(
+-                f"QFrame {{ background: {TEAL}22; border-radius: 12px; border: none; }}"
+-            )
+-            sb_lbl = QLabel("💾", save_badge)
+-            sb_lbl.setAlignment(_Qt.AlignmentFlag.AlignCenter)
+-            sb_lbl.setGeometry(0, 0, 44, 44)
+-            sb_lbl.setStyleSheet("font-size: 20px; background: transparent;")
+-            po.addWidget(save_badge)
+-
+-            data_col = QVBoxLayout()
+-            data_col.setSpacing(2)
+-            data_title = QLabel("Datos conservados")
+-            data_title.setStyleSheet(
+-                f"color: {TEXT_PRIMARY}; font-size: 13px; font-weight: 700; background: transparent;"
+-            )
+-            data_col.addWidget(data_title)
+-            appdata = os.path.join(os.environ.get("APPDATA", "~"), "NeuroMood", "nm_data.db")
+-            data_path = QLabel(appdata)
+-            data_path.setStyleSheet(
+-                f"color: {TEXT_TERT}; font-size: 10px; font-family: Consolas, monospace; background: transparent;"
+-            )
+-            data_col.addWidget(data_path)
+-            po.addLayout(data_col, stretch=1)
++        if conservar:
++            # Card datos preservados con badge "preservado"
++            if _HAS_PRESERVE_CARD:
++                pres_outer = QFrame()
++                pres_outer.setStyleSheet(
++                    f"QFrame {{ background: {BG_SURFACE}; border-radius: 14px; border: 1px solid {BORDER}; }}"
++                )
++                po = QHBoxLayout(pres_outer)
++                po.setContentsMargins(16, 14, 16, 14)
++                po.setSpacing(14)
++
++                save_badge = QFrame()
++                save_badge.setFixedSize(44, 44)
++                save_badge.setStyleSheet(
++                    f"QFrame {{ background: {TEAL}22; border-radius: 12px; border: none; }}"
++                )
++                sb_lbl = QLabel("💾", save_badge)
++                sb_lbl.setAlignment(_Qt.AlignmentFlag.AlignCenter)
++                sb_lbl.setGeometry(0, 0, 44, 44)
++                sb_lbl.setStyleSheet("font-size: 20px; background: transparent;")
++                po.addWidget(save_badge)
++
++                data_col = QVBoxLayout()
++                data_col.setSpacing(2)
++                data_title = QLabel("Datos conservados")
++                data_title.setStyleSheet(
++                    f"color: {TEXT_PRIMARY}; font-size: 13px; font-weight: 700; background: transparent;"
++                )
++                data_col.addWidget(data_title)
++                appdata = os.path.join(os.environ.get("APPDATA", "~"), "NeuroMood", "nm_data.db")
++                data_path = QLabel(appdata)
++                data_path.setStyleSheet(
++                    f"color: {TEXT_TERT}; font-size: 10px; font-family: Consolas, monospace; background: transparent;"
++                )
++                data_col.addWidget(data_path)
++                po.addLayout(data_col, stretch=1)
++
++                preserved_badge = QLabel("preservado")
++                preserved_badge.setStyleSheet(
++                    f"background: {SUCCESS}22; color: {SUCCESS}; font-size: 11px; font-weight: 700;"
++                    f"border-radius: 999px; padding: 3px 12px; border: none;"
++                )
++                po.addWidget(preserved_badge, alignment=_Qt.AlignmentFlag.AlignVCenter)
++                layout.addWidget(pres_outer)
++            else:
++                layout.addWidget(NMDataPreserveCard(
++                    "Datos preservados",
++                    "Registros, historial y configuración local",
++                    checked=True,
++                ))
++
++            layout.addSpacing(10)
++            hint = QLabel("Si en el futuro reinstalás NeuroMood Suite, podrás recuperar tu historial desde estos datos.")
++            hint.setWordWrap(True)
++            hint.setAlignment(_Qt.AlignmentFlag.AlignHCenter)
++            hint.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px; background: transparent;")
++            layout.addWidget(hint)
+ 
+-            preserved_badge = QLabel("preservado")
+-            preserved_badge.setStyleSheet(
+-                f"background: {SUCCESS}22; color: {SUCCESS}; font-size: 11px; font-weight: 700;"
+-                f"border-radius: 999px; padding: 3px 12px; border: none;"
+-            )
+-            po.addWidget(preserved_badge, alignment=_Qt.AlignmentFlag.AlignVCenter)
+-            layout.addWidget(pres_outer)
+-        else:
+-            layout.addWidget(NMDataPreserveCard(
+-                "Datos preservados",
+-                "Registros, historial y configuración local",
+-                checked=True,
+-            ))
+-
+-        layout.addSpacing(10)
+-        hint = QLabel("Si en el futuro reinstalás NeuroMood Suite, podrás recuperar tu historial desde estos datos.")
+-        hint.setWordWrap(True)
+-        hint.setAlignment(_Qt.AlignmentFlag.AlignHCenter)
+-        hint.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px; background: transparent;")
+-        layout.addWidget(hint)
+         layout.addStretch()
+ 
+     def _on_error(self, msg: str):

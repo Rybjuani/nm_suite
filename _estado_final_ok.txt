@@ -1,0 +1,29 @@
+On branch main
+Your branch and 'origin/main' have diverged,
+and have 3 and 1 different commits each, respectively.
+  (use "git pull" if you want to integrate the remote branch with yours)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   app/modules/respiracion_qt.py
+	modified:   installers/installer.py
+	modified:   installers/uninstaller.py
+	modified:   installers/uninstaller_pro.py
+	modified:   shared/components_qt.py
+	modified:   shared/theme_qt.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	AI_SCRIPTS/_test_screens/
+	AI_SCRIPTS/patch_stylesheet.py
+	AI_SCRIPTS/test_hub_theme.py
+	AI_SCRIPTS/test_theme_switch.py
+	_RESCATE_GEMINI_VSCODE.zip
+	_estado_final_ok.txt
+	_rescate_final_ok.patch
+	instalador suite.png
+	installer_style_debug.txt
+	rescate/
+
+no changes added to commit (use "git add" and/or "git commit -a")
