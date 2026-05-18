@@ -380,6 +380,27 @@ TARGETS = [
 ]
 
 
+# ── Fase 7: mapa de payloads externos por instalador ───────────────────────────
+# Cuando --installer-mode external, estos pares (src, name_dentro_del_zip) se
+# excluyen de add_data y se empacan después de PyInstaller como zip adyacente.
+_INSTALLER_PAYLOAD_MAP: dict[str, tuple[str, list[tuple[str, str]]]] = {
+    "Instalador Suite": (
+        "payload_suite.zip",
+        [
+            ("dist/NeuroMood Suite", "NeuroMood Suite"),
+            ("dist/Desinstalador Suite", "Desinstalador Suite"),
+        ],
+    ),
+    "Instalador Hub": (
+        "payload_hub.zip",
+        [
+            ("dist/NeuroMood Hub", "NeuroMood Hub"),
+            ("dist/Desinstalador Hub", "Desinstalador Hub"),
+        ],
+    ),
+}
+
+
 def validate(target: BuildTarget, planned_outputs: set[str]) -> list[str]:
     missing = []
     for item in target.requires:
@@ -407,6 +428,7 @@ def build_target(
     dry_run: bool,
     planned_outputs: set[str],
     log,
+    installer_mode: str = "nested",
 ) -> None:
     print(f"[{index}/{total}] {target.label}")
     missing = validate(target, planned_outputs if dry_run else set())
@@ -416,6 +438,15 @@ def build_target(
         clean_path(DIST / item)
     clean_path(BUILD / target.name)
     clean_path(ROOT / f"{target.name}.spec")
+
+    # Fase 7: en modo external, excluir del bundle las carpetas que irán al zip
+    effective_add_data = list(target.add_data)
+    if installer_mode == "external" and target.label in _INSTALLER_PAYLOAD_MAP:
+        _, payload_entries = _INSTALLER_PAYLOAD_MAP[target.label]
+        payload_sources = {src for src, _ in payload_entries}
+        effective_add_data = [
+            pair for pair in effective_add_data if pair[0] not in payload_sources
+        ]
 
     args = [
         sys.executable,
@@ -441,7 +472,7 @@ def build_target(
     ]
     if clean:
         args.insert(4, "--clean")
-    for source, dest in target.add_data:
+    for source, dest in effective_add_data:
         args.extend(add_data(source, dest))
     for hidden in sorted(set(target.hidden_imports)):
         args.extend(["--hidden-import", hidden])
@@ -452,6 +483,14 @@ def build_target(
         return
     run_command(args, log)
     print("    OK")
+
+    # Fase 7: si modo external y target es un instalador, generar payload zip
+    if installer_mode == "external" and target.label in _INSTALLER_PAYLOAD_MAP:
+        zip_name, payload_entries = _INSTALLER_PAYLOAD_MAP[target.label]
+        dest_dir = DIST / target.name
+        src_resolved = [(ROOT / src, arc) for src, arc in payload_entries]
+        zip_path = _build_payload_zip(dest_dir, zip_name, src_resolved)
+        print(f"    OK payload externo: {rel(zip_path)}")
 
 
 def cleanup_generated(*, keep_build: bool) -> None:
@@ -471,6 +510,9 @@ def parse_args() -> argparse.Namespace:
                         help="Solo construir estos targets por label (puede repetirse)")
     parser.add_argument("--skip", action="append", default=[], metavar="LABEL",
                         help="No construir estos targets")
+    parser.add_argument("--installer-mode", choices=["nested", "external"], default="nested",
+                        help="nested (default): empaqueta Suite/Hub dentro del instalador via PyInstaller. "
+                             "external: genera un payload_*.zip al lado del instalador (Fase 7).")
     return parser.parse_args()
 
 
@@ -491,6 +533,7 @@ def main() -> int:
         print("Modo: clean-all")
     if args.dry_run:
         print("Modo: dry-run")
+    print(f"Installer mode: {args.installer_mode}")
     print("")
 
     targets_to_build = TARGETS
@@ -516,6 +559,7 @@ def main() -> int:
                     dry_run=args.dry_run,
                     planned_outputs=planned_outputs,
                     log=log,
+                    installer_mode=args.installer_mode,
                 )
         cleanup_generated(keep_build=args.keep_build)
     except Exception as exc:
