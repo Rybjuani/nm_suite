@@ -4,6 +4,7 @@ import argparse
 import shutil
 import subprocess
 import sys
+import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -48,6 +49,45 @@ def clean_path(path: Path) -> None:
 
 def add_data(source: str, target: str) -> list[str]:
     return ["--add-data", f"{ROOT / source};{target}"]
+
+
+def _build_payload_zip(
+    dest_dir: Path,
+    zip_name: str,
+    src_entries: list[tuple[Path, str]],
+) -> Path:
+    """Empaqueta carpetas/archivos en un único zip al lado del instalador.
+
+    dest_dir: carpeta destino (típicamente dist/Instalador X/).
+    zip_name: nombre del archivo zip (ej. "payload_suite.zip").
+    src_entries: lista de pares (src_path, arcname_root). Por cada entrada,
+        si src_path es un directorio se incluye recursivamente con arcname_root
+        como prefijo dentro del zip; si es un archivo se incluye plano bajo
+        arcname_root.
+
+    Devuelve la ruta absoluta del zip creado. Lanza FileNotFoundError si
+    alguna fuente falta — útil para abortar el build temprano.
+    """
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    zip_path = dest_dir / zip_name
+    if zip_path.exists():
+        zip_path.unlink()
+    with zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+        for src, arcname_root in src_entries:
+            src = Path(src)
+            if not src.exists():
+                raise FileNotFoundError(f"Fuente de payload inexistente: {src}")
+            if src.is_dir():
+                for child in src.rglob("*"):
+                    if not child.is_file():
+                        continue
+                    rel = child.relative_to(src).as_posix()
+                    arcname = f"{arcname_root}/{rel}" if arcname_root else rel
+                    zf.write(child, arcname)
+            else:
+                arcname = f"{arcname_root}/{src.name}" if arcname_root else src.name
+                zf.write(src, arcname)
+    return zip_path
 
 
 FINAL_LOGO_ASSETS = [
