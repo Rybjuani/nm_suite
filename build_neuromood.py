@@ -156,11 +156,7 @@ HUB_IMPORTS = [
     "reportlab.platypus",
     "numpy",
     "matplotlib",
-    "scipy",
-    "scipy.interpolate",
     "httpx",
-    "postgrest",
-    "gotrue",
     "shared.theme",
     "shared.theme_qt",
     "shared.components_qt",
@@ -189,9 +185,7 @@ INSTALLER_IMPORTS = COMMON_SHARED_IMPORTS + [
 
 SUITE_INSTALLER_IMPORTS = INSTALLER_IMPORTS + [
     "supabase",
-    "gotrue",
     "httpx",
-    "postgrest",
     "shared.identidad",
     "shared.config",
     "sqlite3",
@@ -433,6 +427,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--clean-all", action="store_true", help="Borrar dist/, build/ y specs antes de compilar todo.")
     parser.add_argument("--dry-run", action="store_true", help="Validar rutas sin compilar.")
     parser.add_argument("--keep-build", action="store_true", help="Conservar build/ para diagnostico.")
+    parser.add_argument("--only", action="append", default=[], metavar="LABEL",
+                        help="Solo construir estos targets por label (puede repetirse)")
+    parser.add_argument("--skip", action="append", default=[], metavar="LABEL",
+                        help="No construir estos targets")
     return parser.parse_args()
 
 
@@ -455,13 +453,24 @@ def main() -> int:
         print("Modo: dry-run")
     print("")
 
+    targets_to_build = TARGETS
+    if args.only:
+        targets_to_build = [t for t in TARGETS if t.label in args.only]
+    if args.skip:
+        targets_to_build = [t for t in targets_to_build if t.label not in args.skip]
+    if not targets_to_build:
+        print("No hay targets para construir.")
+        return 0
+
     try:
         with LOG_FILE.open("a", encoding="utf-8") as log:
-            for index, target in enumerate(TARGETS, start=1):
-                planned_outputs = {provided for prior in TARGETS[: index - 1] for provided in prior.provides}
+            for index, target in enumerate(targets_to_build, start=1):
+                # Calculate planned outputs using the full TARGETS list
+                target_idx = TARGETS.index(target)
+                planned_outputs = {provided for prior in TARGETS[:target_idx] for provided in prior.provides}
                 build_target(
                     index,
-                    len(TARGETS),
+                    len(targets_to_build),
                     target,
                     clean=args.clean,
                     dry_run=args.dry_run,
