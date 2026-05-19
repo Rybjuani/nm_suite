@@ -1,0 +1,144 @@
+NEUROMOOD — DESIGN BRIEF FOR GOOGLE STITCH
+Purpose: generate a new modern UI/UX concept for NeuroMood based on the old and new manuals. Do NOT implement code. Create a high-quality visual redesign direction that can later be implemented in PyQt6.
+
+PROJECT SUMMARY
+NeuroMood is a Windows desktop mental health platform with two connected products:
+
+1) NeuroMood Suite — patient app
+A patient-facing therapeutic companion with short, visual, repeatable tools for daily self-care and therapy follow-up. The app should feel calm, engaging, modern, supportive, and not boring. It must help patients record emotional information with low friction and turn daily moments into useful therapeutic data.
+
+2) NeuroMood Hub — professional app
+A therapist/professional dashboard for reviewing patient progress, adherence, emotional trends, alerts, module usage, consent/legal status, and sync state. It should feel professional, clear, clinically reliable, premium, and not overloaded.
+
+OLD MANUAL SUMMARY
+The older NeuroMood Suite manual describes a Windows 10/11 therapeutic tools suite with these main modules:
+- Installer wizard for selecting apps, choosing installation folder, and creating shortcuts.
+- Emotional Thermometer: mood score from 0 to 10, optional personal note, recent history with color coding from red to green.
+- Evolution Viewer: charts for emotional progress over 7 days, 30 days, 3 months, or full history, with PDF export.
+- Activity Timer: therapeutic activity timer with categories such as Relaxation, Cognitive, Physical, Social, and Self-care. Supports preset/custom durations, pause/resume, system tray/background behavior, and completion history.
+- Breathing Guide: animated 4-7-8 breathing technique with visual circle, phases, completed cycles, and session log.
+- Routine Checklist: daily tasks organized by Morning, Afternoon, Night, with daily/weekly progress and reusable tasks.
+- Wellness Reminders: configurable reminders with time, message, weekdays, silent hours, pause all, and background/start-with-Windows behavior.
+- Thought Record / CBT: guided cognitive restructuring in 4 steps: situation, automatic thought, emotion, balanced alternative thought.
+- Behavioral Activation Assistant: suggests activities based on the patient’s current energy level.
+
+NEW MANUAL SUMMARY
+The newer NeuroMood v3 manual expands the concept into a more unified patient/professional ecosystem:
+- Patient Suite has 7 core modules: Mood, Breathing, CBT Thought Record, Routine, Behavioral Activation, Focus Timer, and Reminders.
+- It is offline-first: patient data can be recorded locally and synchronized when connectivity is available.
+- Dark Hybrid and Light Hybrid themes are required.
+- The Home screen should include a module grid, contextual greeting, activity streak, theme toggle, and quick progress indicators.
+- Mood module should be faster and more visual: mood selector, short note, weekly trend.
+- Breathing module should support 4-7-8, Box 4x4, and Coherent breathing, with a rhythm visual, calm indicator, BPM/cadence display, and progress arc.
+- CBT module should have a guided 4-step stepper, emotional intensity bar, and automatic detection/suggestion of cognitive distortions such as catastrophizing, all-or-nothing thinking, minimization, etc.
+- Routine module should use sections by time of day, progress bars, checkboxes, daily note, and a soft structure that does not feel rigid.
+- Behavioral Activation should suggest activities based on current mood, filtered by categories such as Physical, Pleasure, Mastery, Self-care, and Social, with complete/skip actions.
+- Timer should include focus presets, task name, circular progress, session history, and therapeutic framing.
+- Reminders should have search, daily completion indicators, visual attenuation for completed reminders, and background persistence.
+- Professional Hub includes Patients, Dashboard, AI Assistant, Configuration, Sync status, and clinical overview screens.
+- Hub Patients view should include search, filters, activity/sync indicators, patient rows, adherence rings, and quick access to patient detail.
+- Hub Dashboard should show per-patient mood average, weekly trend, active modules, adherence/progress, recent activity timeline, tags, alerts/risk signals, notes, and reports.
+- Hub AI Assistant helps the professional synthesize context, prepare session questions, and organize patient information, but should visually communicate that it does not replace clinical judgment.
+- Installers are guided wizards with visible steps, Supabase Auth/account validation, legal consent, installation progress, final success, and clean uninstall options with preserve-data choice.
+
+TECHNICAL / DESIGN SYSTEM CONTEXT
+- Real product is a Python 3.12 + PyQt6 desktop app, compiled with PyInstaller.
+- There are shared UI components and tokens: buttons, cards, inputs, toggles, toasts, sidebars, headers, progress bars, empty states, status chips, section cards, patient rows, rings, featured cards, chat bubbles, provider chips, quick actions, sync orb, settings sections, installer stepper, installer progress, and data-preserve cards.
+- Typography currently uses DM Sans for UI, JetBrains Mono for technical/data values, and Segoe UI fallback.
+- Current primary dark background is around #0f172a, with a light mode around #f8fafc.
+- Existing branding uses teal/cyan and violet accents, but the redesign can improve this into a richer, more premium palette.
+- Do not design a generic admin dashboard. Avoid old-looking flat cards, boring tables, and mixed legacy/new UI.
+- Keep the product accessible, readable, emotionally safe, and not childish.
+
+DESIGN GOALS
+Create a complete modern redesign concept that feels:
+- Premium but warm.
+- Therapeutic but not clinical-cold.
+- Engaging and interactive but not gamified in a childish way.
+- Calming for patients.
+- Trustworthy and professional for therapists.
+- Visually unified between Suite and Hub.
+- Strong enough to replace the old mixed design completely.
+
+VISUAL DIRECTION REQUEST
+Generate 3 distinct design directions:
+A) Calm Premium Wellness
+Soft gradients, glassmorphism, breathable spacing, emotional warmth, gentle motion, elegant cards.
+
+B) Futuristic Therapeutic Neon
+Dark immersive UI, subtle neon gradients, animated progress rings, breathing orb, mood energy visuals, premium desktop feel.
+
+C) Professional Clinical Luxury
+Cleaner, lighter, more clinical/professional, strong typography, elegant dashboards, high trust, minimal clutter.
+
+REQUIRED SCREENS TO GENERATE
+Patient Suite:
+1. Patient Home / Dashboard
+2. Mood Check-in / Emotional Thermometer 2.0
+3. Breathing 2.0 with technique selector and animated rhythm center
+4. CBT Thought Record 2.0 with stepper and distortion chips
+5. Routine Planner with Morning/Afternoon/Night sections
+6. Behavioral Activation suggestions
+7. Focus / Therapeutic Timer
+8. Reminders / Alerts
+9. Patient Progress / History
+10. Settings / Theme / Sync status
+
+Professional Hub:
+11. Professional Home / Overview
+12. Patient List with search, filters, sync/adherence indicators
+13. Patient Detail Dashboard
+14. Mood evolution and trend charts
+15. Module adherence overview
+16. Clinical timeline / recent activity
+17. Notes and reports
+18. Alerts / risk signals
+19. AI Assistant panel
+20. Configuration / Supabase / provider settings / legal consent status
+
+Installers:
+21. Patient Suite installer wizard: welcome, account, legal consent, install progress, finish
+22. Hub installer wizard: welcome, professional setup, Supabase validation, install progress, finish
+23. Uninstaller with “preserve clinical data” option
+
+INTERACTION / MICRO-INTERACTION IDEAS
+- Breathing orb that expands/contracts with the current breathing phase.
+- Mood selector with emotional gradient feedback.
+- Progress rings for adherence, streak, calm score, sessions, and module usage.
+- Hover states for module cards.
+- Smooth page transitions.
+- Empty states that are supportive, not cold.
+- Subtle visual celebration after completing a therapeutic action.
+- Professional Hub should use compact clinical data cards, timelines, tags, and charts.
+- Sync status should be visible but not scary.
+- Legal/consent status should be clear and trustworthy.
+
+CONTENT TONE
+For patients:
+- Supportive, simple, warm, low pressure.
+- Examples: “How are you feeling today?”, “Small steps count”, “One useful check-in is enough.”
+
+For professionals:
+- Clear, precise, clinical, organized.
+- Examples: “Weekly mood trend”, “Adherence by module”, “Recent patient activity”, “Consent verified”, “Sync pending”.
+
+WHAT TO AVOID
+- Do not copy the old UI.
+- Do not create a generic SaaS dashboard.
+- Do not make it childish, cartoonish, or too medical-cold.
+- Do not overload the patient screens with clinical metrics.
+- Do not mix old and new visual styles.
+- Do not use emojis as main icons.
+- Do not rely only on flat blue cards.
+
+FINAL OUTPUT EXPECTED FROM STITCH
+Create a polished multi-screen UI concept with:
+- Dark and light versions where possible.
+- Clear component system.
+- Sidebar/topbar navigation.
+- Cards, charts, progress rings, timelines, forms, stepper flows, empty states, modals/toasts.
+- A premium visual identity suitable for both patients and professionals.
+- Enough detail so a developer can later implement it screen-by-screen in a PyQt6 desktop app.
+
+IMPORTANT
+This is for visual redesign and UX direction only. The codebase should not be changed yet. The final design will later be implemented carefully, one screen at a time, without touching sensitive logic such as database, sync, auth, or configuration.

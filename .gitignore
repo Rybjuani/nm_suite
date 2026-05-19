@@ -54,3 +54,12 @@ _dev/
 build.log
 neuromood/
 _qa_output/
+.env
+*.env
+__pycache__/
+*.pyc
+dist/
+build/
+*.spec
+.venv/
+venv/
