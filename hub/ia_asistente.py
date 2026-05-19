@@ -7,10 +7,14 @@ Si ningun proveedor funciona, deshabilita IA con mensaje amigable.
 """
 import threading
 import time
+import logging
 from datetime import date
 
-# ── Registro de proveedores ─────────────────────────────────────────────────────
+# Configurar logger para que salga en hub.log via shared.crash_log
+logger = logging.getLogger(__name__)
 
+# ── Registro de proveedores ─────────────────────────────────────────────────────
+# ... (rest of _PROVIDERS unchanged)
 _PROVIDERS = [
     {
         "name": "Groq",
@@ -82,8 +86,11 @@ def _ensure_provider():
     threading.Thread(target=_pick_best, daemon=True).start()
 
 def _cfg():
-    from shared.config import get
-    return get
+    try:
+        from shared.config import get
+        return get
+    except ImportError:
+        return lambda k, d="": os.environ.get(k, d)
 
 
 def is_available() -> bool:
@@ -141,30 +148,40 @@ def _make_client(pidx: int):
 
 def _do_chat(client, ct: str, model: str, msgs: list) -> str:
     """Ejecuta chat de acuerdo al tipo de cliente."""
-    if ct == "groq":
-        r = client.chat.completions.create(
-            model=model, messages=msgs,
-            temperature=0.4, max_tokens=512, timeout=15)
-        if not r.choices or not r.choices[0].message or not r.choices[0].message.content:
-            raise ValueError(f"Groq returned empty response for model {model}")
-        return r.choices[0].message.content.strip()
-    elif ct == "gemini":
-        _, genai_mod = client
-        system = "; ".join(m["content"] for m in msgs if m["role"] == "system")
-        user = msgs[-1]["content"] if msgs and msgs[-1]["role"] == "user" else ""
-        prompt = f"{system}\n\n{user}" if system else user
-        gm = genai_mod.GenerativeModel(model)
-        r = gm.generate_content(
-            prompt,
-            generation_config={"temperature": 0.4, "max_output_tokens": 512})
-        return r.text.strip()
-    elif ct == "openai":
-        r = client.chat.completions.create(
-            model=model, messages=msgs,
-            temperature=0.4, max_tokens=512, timeout=15)
-        if not r.choices or not r.choices[0].message or not r.choices[0].message.content:
-            raise ValueError(f"OpenAI-compatible returned empty response for model {model}")
-        return r.choices[0].message.content.strip()
+    timeout = 15
+    try:
+        if ct == "groq":
+            r = client.chat.completions.create(
+                model=model, messages=msgs,
+                temperature=0.4, max_tokens=512, timeout=timeout)
+            if not r.choices or not r.choices[0].message or not r.choices[0].message.content:
+                raise ValueError(f"Groq returned empty response for model {model}")
+            return r.choices[0].message.content.strip()
+        elif ct == "gemini":
+            _, genai_mod = client
+            system = "; ".join(m["content"] for m in msgs if m["role"] == "system")
+            user = msgs[-1]["content"] if msgs and msgs[-1]["role"] == "user" else ""
+            prompt = f"{system}\n\n{user}" if system else user
+            gm = genai_mod.GenerativeModel(model)
+            # Gemini no tiene parametro timeout directo en generate_content en algunas versiones, 
+            # pero podemos usar request_options si esta disponible o confiar en el default.
+            # Agregamos manejo de seguridad para evitar bloqueos silenciosos.
+            r = gm.generate_content(
+                prompt,
+                generation_config={"temperature": 0.4, "max_output_tokens": 512})
+            if not r.text:
+                raise ValueError(f"Gemini returned empty response for model {model}")
+            return r.text.strip()
+        elif ct == "openai":
+            r = client.chat.completions.create(
+                model=model, messages=msgs,
+                temperature=0.4, max_tokens=512, timeout=timeout)
+            if not r.choices or not r.choices[0].message or not r.choices[0].message.content:
+                raise ValueError(f"OpenAI-compatible returned empty response for model {model}")
+            return r.choices[0].message.content.strip()
+    except Exception as e:
+        logger.error(f"Error en _do_chat ({ct}/{model}): {str(e)}")
+        raise e
     raise RuntimeError(f"Tipo desconocido: {ct}")
 
 
@@ -172,90 +189,99 @@ def _pick_best() -> None:
     """Busca el mejor proveedor/modelo disponible. Modifica estado global."""
     global _active_pidx, _active_model, _active_client_type, _all_dead, _last_check
 
-    _last_check = time.time()
-
+    # 1. Preparar lista de candidatos fuera del lock
     scored = []
-    for pi, p in enumerate(_PROVIDERS):
-        for mi, (mid, score) in enumerate(p["models"]):
-            if (p["name"], mid) in _failed:
-                continue
-            scored.append((score, pi, mi, mid, p["client_type"]))
+    with _lock:
+        _last_check = time.time()
+        for pi, p in enumerate(_PROVIDERS):
+            for mi, (mid, score) in enumerate(p["models"]):
+                if (p["name"], mid) in _failed:
+                    continue
+                scored.append((score, pi, mi, mid, p["client_type"]))
+    
     scored.sort(key=lambda x: -x[0])
 
+    # 2. Probar candidatos uno a uno (lento, fuera del lock)
     for score, pi, mi, mid, ct in scored:
-        if (_PROVIDERS[pi]["name"], mid) in _failed:
-            continue
         client, err = _make_client(pi)
         if client and not err:
-            _active_pidx = pi
-            _active_model = mid
-            _active_client_type = ct
-            _all_dead = False
+            with _lock:
+                _active_pidx = pi
+                _active_model = mid
+                _active_client_type = ct
+                _all_dead = False
+                logger.info(f"IA seleccionada: {_PROVIDERS[pi]['name']} / {mid}")
             return
         else:
-            # Solo marcar como fallido si NO es error de credenciales
             if err and ("sin API key" not in str(err) and "libreria" not in str(err)):
-                _failed.add((_PROVIDERS[pi]["name"], mid))
-            else:
-                # Error de auth/key: no blacklistear, reintentar luego
-                if _active_pidx < 0:
-                    _last_check = 0  # Forzar reintento rapido
+                with _lock:
+                    _failed.add((_PROVIDERS[pi]["name"], mid))
             continue
 
-    _active_pidx = -1
-    _active_model = ""
-    _active_client_type = ""
-    _all_dead = True
+    # 3. Si llegamos aca, ninguno funciono
+    with _lock:
+        _active_pidx = -1
+        _active_model = ""
+        _active_client_type = ""
+        _all_dead = True
+        logger.warning("No se encontro ningun proveedor IA funcional")
 
 
 def _llamar(prompt: str, sistema: str, on_result, on_error):
     def _run():
         global _all_dead, _last_check, _failed
 
-        msgs = [
-            {"role": "system", "content": sistema + " " + _IDIOMA},
-            {"role": "user", "content": prompt},
-        ]
+        try:
+            msgs = [
+                {"role": "system", "content": sistema + " " + _IDIOMA},
+                {"role": "user", "content": prompt},
+            ]
 
-        for attempt in range(2):
-            with _lock:
-                now = time.time()
-                if _all_dead and (now - _last_check) > _RETRY_SECS:
-                    _failed.clear()
-                    _pick_best()
+            for attempt in range(2):
+                with _lock:
+                    now = time.time()
+                    if _all_dead and (now - _last_check) > _RETRY_SECS:
+                        _failed.clear()
+                        _pick_best()
 
-                if _active_pidx < 0:
-                    _pick_best()
+                    if _active_pidx < 0:
+                        _pick_best()
 
-                if _all_dead or _active_pidx < 0:
-                    on_error("IA no disponible momentaneamente")
-                    return
-
-                pname = _PROVIDERS[_active_pidx]["name"]
-                model = _active_model
-                ct = _active_client_type
-                client, err = _make_client(_active_pidx)
-                if not client:
-                    _failed.add((pname, model))
-                    _pick_best()
-                    if _all_dead:
+                    if _all_dead or _active_pidx < 0:
                         on_error("IA no disponible momentaneamente")
                         return
+
+                    pidx = _active_pidx
+                    pname = _PROVIDERS[pidx]["name"]
+                    model = _active_model
+                    ct = _active_client_type
+                
+                # Crear cliente fuera del lock
+                client, err = _make_client(pidx)
+
+                if not client:
+                    with _lock:
+                        _failed.add((pname, model))
+                        _pick_best()
                     continue
 
-            try:
-                result = _do_chat(client, ct, model, msgs)
-                on_result(result)
-                return
-            except Exception as e:
-                with _lock:
-                    _failed.add((pname, model))
-                    _pick_best()
-                if attempt == 1 or _all_dead:
-                    on_error("IA no disponible momentaneamente")
+                try:
+                    result = _do_chat(client, ct, model, msgs)
+                    on_result(result)
                     return
+                except Exception as e:
+                    logger.error(f"Fallo intento {attempt+1} con {pname}/{model}: {str(e)}")
+                    with _lock:
+                        _failed.add((pname, model))
+                        _pick_best()
+                    if attempt == 1 or _all_dead:
+                        on_error("IA no disponible momentaneamente")
+                        return
 
-        on_error("IA no disponible momentaneamente")
+            on_error("IA no disponible momentaneamente")
+        except Exception as e:
+            logger.error(f"Error critico en hilo IA: {str(e)}")
+            on_error("Error interno en el modulo de IA")
 
     threading.Thread(target=_run, daemon=True).start()
 

@@ -25,7 +25,7 @@ _log = logging.getLogger(__name__)
 
 from PyQt6.QtCore import (
     Qt, QTimer, QPropertyAnimation, QEasingCurve, QRectF, QPointF,
-    pyqtProperty, QAbstractAnimation,
+    pyqtProperty,
 )
 from PyQt6.QtGui import (
     QColor, QPainter, QPen, QBrush, QRadialGradient, QLinearGradient,
@@ -223,7 +223,10 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
 
         # Animar radio
         if self._anim_radius:
-            self._anim_radius.stop()
+            try:
+                self._anim_radius.stop()
+            except RuntimeError:
+                pass
         self._anim_radius = QPropertyAnimation(self, b"circle_radius", self)
         self._anim_radius.setDuration(dur)
         self._anim_radius.setEasingCurve(QEasingCurve.Type.InOutSine)
@@ -236,11 +239,15 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         else:
             self._circle_radius = float(_R_MAX)
         if expanding is not None:
-            self._anim_radius.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
+            self._anim_radius.finished.connect(lambda: setattr(self, "_anim_radius", None))
+            self._anim_radius.start()
 
         # Animar glow
         if self._anim_glow:
-            self._anim_glow.stop()
+            try:
+                self._anim_glow.stop()
+            except RuntimeError:
+                pass
         self._anim_glow = QPropertyAnimation(self, b"glow_alpha", self)
         self._anim_glow.setDuration(dur)
         self._anim_glow.setEasingCurve(QEasingCurve.Type.InOutSine)
@@ -253,24 +260,43 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         else:
             self._glow_alpha = 100
         if expanding is not None:
-            self._anim_glow.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
+            self._anim_glow.finished.connect(lambda: setattr(self, "_anim_glow", None))
+            self._anim_glow.start()
 
     def animate_text_change(self):
         if self._anim_text_fade:
-            self._anim_text_fade.stop()
+            try:
+                self._anim_text_fade.stop()
+            except RuntimeError:
+                pass
         self._anim_text_fade = QPropertyAnimation(self, b"text_opacity", self)
         self._anim_text_fade.setDuration(300)
         self._anim_text_fade.setKeyValueAt(0.0, 1.0)
         self._anim_text_fade.setKeyValueAt(0.4, 0.0)
         self._anim_text_fade.setKeyValueAt(1.0, 1.0)
         self._anim_text_fade.setEasingCurve(QEasingCurve.Type.InOutCubic)
-        self._anim_text_fade.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
+        self._anim_text_fade.finished.connect(lambda: setattr(self, "_anim_text_fade", None))
+        self._anim_text_fade.start()
 
     def reset_idle(self):
         if self._anim_radius:
-            self._anim_radius.stop()
+            try:
+                self._anim_radius.stop()
+            except RuntimeError:
+                pass
+            self._anim_radius = None
         if self._anim_glow:
-            self._anim_glow.stop()
+            try:
+                self._anim_glow.stop()
+            except RuntimeError:
+                pass
+            self._anim_glow = None
+        if self._anim_text_fade:
+            try:
+                self._anim_text_fade.stop()
+            except RuntimeError:
+                pass
+            self._anim_text_fade = None
         self._stop_rendering()
         self._circle_radius = float(_R_MIN)
         self._glow_alpha = 40

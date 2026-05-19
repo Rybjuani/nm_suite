@@ -622,6 +622,8 @@ class ModuloRegistroTCC(NMModule):
         self._data["emocion"] = label
         for tile in self._emotion_tiles:
             tile.set_selected(tile.label_text() == label)
+        if hasattr(self, "_error_lbl"):
+            self._error_lbl.setText("")
         self._resumen.update_data(self._data)
 
     # ── char counters ────────────────────────────────────────────────────────

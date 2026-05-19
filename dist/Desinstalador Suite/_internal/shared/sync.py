@@ -315,7 +315,19 @@ def sync_completo(patient_id: str = None, nombre: str = None) -> bool:
         install_code = leer_config("install_code", "")
         pwd = obtener_password_hash(install_code)
         _upsert_paciente(sb, pid, nombre, pwd, install_code)
-
+        desde = "1900-01-01"
+        _exportar_animo(sb, pid, desde)
+        _exportar_respiracion(sb, pid, desde)
+        _exportar_pensamientos(sb, pid, desde)
+        _exportar_checklist(sb, pid, desde)
+        _exportar_temporizador(sb, pid, desde)
+        _exportar_recordatorios_log(sb, pid, desde)
+        _importar_tareas_asignadas(sb, pid)
+        _importar_recordatorios_asignados(sb, pid)
+        _importar_permisos(sb, pid)
+        _importar_actividades(sb, pid)
+        guardar_config("last_sync_date", datetime.now().strftime("%Y-%m-%d"))
+        return True
     except Exception:
         return False
 

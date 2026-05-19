@@ -3,9 +3,10 @@
 Busca el .env en este orden de prioridad:
   1. APPDATA/NeuroMood/.env    (produccion paciente - copiado por instalador)
   2. APPDATA/NeuroMoodHub/.env (produccion Hub - copiado por instalador pro)
-  3. Carpeta del ejecutable    (produccion alternativa)
-  4. Raiz del proyecto         (modo desarrollo)
-  5. Variables de entorno del sistema (siempre disponibles)
+  3. Bundle PyInstaller        (_MEIPASS / _internal)
+  4. Carpeta del ejecutable    (produccion alternativa)
+  5. Raiz del proyecto         (modo desarrollo)
+  6. Variables de entorno del sistema (siempre disponibles)
 """
 import os
 import sys
@@ -26,16 +27,33 @@ def _env_candidates() -> list:
     # 2. %APPDATA%\NeuroMoodHub\.env — instalacion del Hub
     candidates.append(Path(appdata) / "NeuroMoodHub" / ".env")
 
-    # 3. Carpeta del ejecutable (frozen) o raiz del proyecto (dev)
+    # 3. Bundle PyInstaller. En --onedir los add-data suelen quedar en _internal,
+    # y en --onefile en sys._MEIPASS. El instalador necesita este fallback antes
+    # de copiar .env a AppData.
+    if getattr(sys, "frozen", False):
+        meipass = Path(getattr(sys, "_MEIPASS", ""))
+        if str(meipass):
+            candidates.append(meipass / ".env")
+        exe_dir = Path(sys.executable).parent
+        candidates.append(exe_dir / "_internal" / ".env")
+
+    # 4. Carpeta del ejecutable (frozen) o raiz del proyecto (dev)
     if getattr(sys, "frozen", False):
         candidates.append(Path(sys.executable).parent / ".env")
     else:
         candidates.append(Path(__file__).resolve().parent.parent / ".env")
 
-    # 4. Directorio de trabajo actual
+    # 5. Directorio de trabajo actual
     candidates.append(Path(os.getcwd()) / ".env")
 
-    return candidates
+    seen = set()
+    unique = []
+    for candidate in candidates:
+        key = str(candidate)
+        if key not in seen:
+            seen.add(key)
+            unique.append(candidate)
+    return unique
 
 
 def _load_env():

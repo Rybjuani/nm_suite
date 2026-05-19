@@ -71,12 +71,27 @@ def _es_ruta_neuromood(ruta: str, marcadores=None) -> bool:
             "NeuroMood Suite.exe",
             "Desinstalador Suite.exe",
             "install_path.txt",
-            "_nm_install_manifest.json"
+            "_nm_install_manifest.json",
+            ".neuromood_install_manifest.json",
         ]
     p = Path(ruta)
     if not p.exists() or not p.is_dir():
         return False
     return any((p / m).exists() for m in marcadores)
+
+
+def _es_appdata_neuromood(ruta: str) -> bool:
+    p = Path(ruta)
+    if not p.exists() or not p.is_dir():
+        return False
+    appdata = Path(os.environ.get("APPDATA", "")).resolve()
+    try:
+        p.resolve().relative_to(appdata)
+    except Exception:
+        return False
+    if p.name != "NeuroMood":
+        return False
+    return any((p / marker).exists() for marker in ("nm_data.db", ".env", "legal_consent.json", "logs"))
 
 def detectar_install_dir() -> str:
     if "--install-dir" in sys.argv:
@@ -176,25 +191,31 @@ def cerrar_explorer_en(carpeta: str):
         pass
 
 
-def vaciar_carpeta(carpeta: str):
-    if _es_ruta_protegida(carpeta) or not _es_ruta_neuromood(carpeta):
-        print(f"[ABORT] Ruta no segura: {carpeta}")
-        sys.exit(2)
-    if not Path(carpeta).exists():
+def vaciar_carpeta(carpeta: str, permitir_appdata: bool = False):
+    path = Path(carpeta)
+    if not path.exists():
         return
-    subprocess.run(f'del /f /s /q "{carpeta}\\*"', shell=True, capture_output=True, timeout=30)
-    subprocess.run(f'for /d %x in ("{carpeta}\\*") do @rd /s /q "%x"',
-                   shell=True, capture_output=True, timeout=30)
+    if _es_ruta_protegida(carpeta):
+        raise RuntimeError(f"Ruta protegida: {carpeta}")
+    segura = _es_ruta_neuromood(carpeta) or (permitir_appdata and _es_appdata_neuromood(carpeta))
+    if not segura:
+        raise RuntimeError(f"Ruta no reconocida como NeuroMood: {carpeta}")
     try:
-        Path(carpeta).rmdir()
-    except OSError:
+        shutil.rmtree(path, ignore_errors=True)
+    except Exception:
         pass
 
 
+def _validar_ruta_cleanup(install_dir: str):
+    path = Path(install_dir)
+    if _es_ruta_protegida(install_dir):
+        raise RuntimeError(f"Ruta protegida: {install_dir}")
+    if path.exists() and not _es_ruta_neuromood(install_dir):
+        raise RuntimeError(f"Ruta no reconocida como NeuroMood: {install_dir}")
+
+
 def lanzar_bat_limpieza(install_dir: str, appdata_dir: str, eliminar_appdata: bool = True):
-    if _es_ruta_protegida(install_dir) or not _es_ruta_neuromood(install_dir):
-        print(f"[ABORT] Ruta no segura: {install_dir}")
-        sys.exit(2)
+    _validar_ruta_cleanup(install_dir)
 
     temp_dir = os.environ.get("TEMP", os.path.expanduser("~"))
     temp_exe = str(Path(temp_dir) / "_nm_desinstalar.exe")
@@ -292,7 +313,7 @@ class _UninstWorker(QThread):
             vaciar_carpeta(self._install_dir)
             if not self._conservar:
                 self.progress_signal.emit(0.85, "Eliminando datos de usuario...")
-                vaciar_carpeta(appdata_nm)
+                vaciar_carpeta(appdata_nm, permitir_appdata=True)
             self.progress_signal.emit(0.90, "Finalizando...")
             lanzar_bat_limpieza(self._install_dir, appdata_nm, eliminar_appdata=not self._conservar)
             self.progress_signal.emit(1.0, "¡Desinstalacion completada!")

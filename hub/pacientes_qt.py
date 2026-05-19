@@ -180,8 +180,9 @@ def _build_animo_graph(parent: QWidget, registros: list, modo: str) -> QWidget:
 
     # Eje Y
     plot.setYRange(0, 11, padding=0.05)
-    plot.getAxis("left").setStyle(tickTextSize=9)
-    plot.getAxis("bottom").setStyle(tickTextSize=8)
+    tick_font = qfont("size_caption")
+    plot.getAxis("left").setTickFont(tick_font)
+    plot.getAxis("bottom").setTickFont(tick_font)
 
     # Etiquetas del eje X (fechas)
     x = list(range(len(puntajes)))
@@ -236,7 +237,7 @@ def _build_animo_graph(parent: QWidget, registros: list, modo: str) -> QWidget:
         prom_pen = pg.mkPen(color=teal, width=1, style=Qt.PenStyle.DashLine)
         plot.addLine(y=prom, pen=prom_pen,
                      label=f"prom {prom:.1f}",
-                     labelOpts={"color": teal, "size": "8pt"})
+                     labelOpts={"color": teal})
 
     return plot
 
@@ -244,6 +245,8 @@ def _build_animo_graph(parent: QWidget, registros: list, modo: str) -> QWidget:
 # ── Tab: Registros ────────────────────────────────────────────────────────────
 
 class _TabRegistros(QWidget):
+    _datos_loaded_signal = pyqtSignal(dict)
+
     def __init__(self, modo: str, sb, pid: str, nombre: str, parent=None):
         super().__init__(parent)
         self._modo = norm_modo(modo)
@@ -252,6 +255,7 @@ class _TabRegistros(QWidget):
         self._nombre = nombre
         self._datos_cache: dict = {}
         self._cargando = False
+        self._datos_loaded_signal.connect(self._on_datos_loaded)
         self._setup()
 
     def _setup(self):
@@ -329,13 +333,18 @@ class _TabRegistros(QWidget):
                     datos[clave] = res.data or []
                 except Exception:
                     datos[clave] = []
-            self._datos_ref.cache = datos
-            self._datos_cache = datos
-            self._cargando = False
-            self._datos_ref.changed.emit(datos)
-            QTimer.singleShot(0, lambda d=datos: self._mostrar_registros(d) if not sip.isdeleted(self) else None)
+            self._datos_loaded_signal.emit(datos)
 
         threading.Thread(target=_fetch, daemon=True).start()
+
+    def _on_datos_loaded(self, datos: dict):
+        if sip.isdeleted(self):
+            return
+        self._datos_ref.cache = datos
+        self._datos_cache = datos
+        self._cargando = False
+        self._datos_ref.changed.emit(datos)
+        self._mostrar_registros(datos)
 
     def _mostrar_registros(self, datos: dict):
         while self._list_layout.count():
@@ -1041,10 +1050,12 @@ class DetallePacienteView(QWidget):
     """Panel completo de detalle de paciente con QTabWidget como pills."""
 
     back_requested = pyqtSignal()
+    _legal_loaded_signal = pyqtSignal(object, object)
 
     def __init__(self, modo: str, sb, paciente_id: str, paciente_nombre: str,
                  parent=None):
         super().__init__(parent)
+        self._legal_loaded_signal.connect(self._on_legal_loaded)
         self._modo = norm_modo(modo)
         self._sb = sb
         self._pid = paciente_id
@@ -1156,11 +1167,19 @@ class DetallePacienteView(QWidget):
                        .execute())
                 data = getattr(res, "data", None) or []
                 consent = data[0] if data else None
-                QTimer.singleShot(0, lambda c=consent: self._set_legal_consent(c, None) if not sip.isdeleted(self) else None)
+                self._legal_loaded_signal.emit(consent, None)
             except Exception:
-                QTimer.singleShot(0, lambda: self._set_legal_consent(None, "pendiente") if not sip.isdeleted(self) else None)
+                self._legal_loaded_signal.emit(None, "pendiente")
 
         threading.Thread(target=_fetch, daemon=True).start()
+
+    def _on_legal_loaded(self, consent: object, fallback_status: object):
+        if sip.isdeleted(self):
+            return
+        self._set_legal_consent(
+            consent if isinstance(consent, dict) else None,
+            fallback_status if isinstance(fallback_status, str) else None,
+        )
 
     def _set_legal_consent(self, consent: dict | None, fallback_status: str | None):
         self._legal_consent = consent

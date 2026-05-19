@@ -1,7 +1,0 @@
- app/modules/respiracion_qt.py |   7 +-
- installers/installer.py       |   8 +++
- installers/uninstaller.py     | 149 +++++++++++++++++++++++++-----------------
- installers/uninstaller_pro.py | 115 ++++++++++++++++++++++++++------
- shared/components_qt.py       |  42 +++++++-----
- shared/theme_qt.py            |  12 ++--
- 6 files changed, 229 insertions(+), 104 deletions(-)

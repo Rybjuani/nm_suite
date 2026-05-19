@@ -9,6 +9,7 @@ API pública: HomeView(modo, on_module_open, get_status_fn, username, parent)
 import logging
 import os
 import sys
+from datetime import datetime
 
 _log = logging.getLogger(__name__)
 
@@ -446,6 +447,20 @@ class HomeView(QWidget):
 
     def set_modo(self, modo: str):
         self._apply_theme(modo)
+
+    def _greeting_text(self) -> str:
+        name = (self._username or "Paciente").strip() or "Paciente"
+        hour = datetime.now().hour
+        if 5 <= hour < 12:
+            prefix = "Buen dia"
+        elif 12 <= hour < 20:
+            prefix = "Buenas tardes"
+        else:
+            prefix = "Buenas noches"
+        return f"{prefix}, {name}"
+
+    def _subtitle_text(self) -> str:
+        return "Elegí un módulo para registrar cómo venís y sostener tu rutina."
 
     # ── permisos ──────────────────────────────────────────────────────────────
 

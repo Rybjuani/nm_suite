@@ -31,7 +31,7 @@ from PyQt6.QtWidgets import (
     QLabel, QScrollArea, QGridLayout, QFrame, QSizePolicy,
     QGraphicsDropShadowEffect, QStackedWidget,
 )
-from PyQt6.QtCore import Qt, QTimer, QSize, QPointF, QRectF
+from PyQt6.QtCore import Qt, QTimer, QSize, QPointF, QRectF, pyqtSignal
 from PyQt6.QtGui import QColor, QIcon, QPainter, QPen, QBrush, QRadialGradient
 from PyQt6 import sip
 
@@ -1043,9 +1043,11 @@ class _ShellWidget(QWidget):
 
 
 class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
+    _patients_loaded_signal = pyqtSignal(list)
 
     def __init__(self):
         super().__init__()
+        self._patients_loaded_signal.connect(self._on_pacientes_loaded)
         self._modo = "dark_hybrid"
         self._sb = None
         self._pacientes: list = []
@@ -1347,8 +1349,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
                 pats = res.data or []
             except Exception:
                 pats = []
-            # Volver al hilo principal
-            QTimer.singleShot(0, lambda p=pats: self._on_pacientes_loaded(p) if not sip.isdeleted(self) else None)
+            self._patients_loaded_signal.emit(pats)
 
         threading.Thread(target=_fetch, daemon=True).start()
 

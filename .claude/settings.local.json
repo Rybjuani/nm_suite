@@ -144,7 +144,27 @@
       "Bash(git -C \"C:/Users/nosom/Desktop/Neuromood V3\" diff 8f87c22 HEAD -- app/home_qt.py app/main_qt.py app/motor_activacion.py shared/crash_log.py)",
       "Bash(git -C \"C:/Users/nosom/Desktop/Neuromood V3\" diff 8f87c22 HEAD -- app/modules/avisos_qt.py app/modules/rutina_qt.py app/modules/registro_tcc_qt.py app/modules/respiracion_qt.py app/modules/timer_qt.py app/motor_activacion.py shared/crash_log.py)",
       "Bash(git -C \"C:/Users/nosom/Desktop/Neuromood V3\" add hub/main_qt.py)",
-      "Bash(git -C 'C:/Users/nosom/Desktop/Neuromood V3' commit -m ' *)"
+      "Bash(git -C 'C:/Users/nosom/Desktop/Neuromood V3' commit -m ' *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\nosom\\\\Desktop\\\\Neuromood V3\" -Force | Select-Object Name, @{Name=\"Type\";Expression={if\\($_.PSIsContainer\\){\"DIR\"}else{\"FILE\"}}} | Format-Table -AutoSize)",
+      "Bash(git checkout *)",
+      "Bash(New-Item -ItemType Directory -Force -Path \"C:\\\\Users\\\\nosom\\\\Desktop\\\\Neuromood V3\\\\scripts\\\\qa\")",
+      "Bash(Out-Null)",
+      "Bash(New-Item -ItemType Directory -Force -Path \"C:\\\\Users\\\\nosom\\\\Desktop\\\\Neuromood V3\\\\docs\")",
+      "Bash(Write-Host \"Directorios creados\")",
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"C:\\\\Users\\\\nosom\\\\Desktop\\\\Neuromood V3\\\\scripts\\\\qa\")",
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"C:\\\\Users\\\\nosom\\\\Desktop\\\\Neuromood V3\\\\docs\")",
+      "Bash(python -c \"import ast, pathlib; ast.parse\\(pathlib.Path\\('app/avisos_daemon.py'\\).read_text\\(encoding='utf-8'\\)\\); print\\('OK - sin errores de sintaxis'\\)\")",
+      "Bash(python build_neuromood.py --only \"Suite Paciente\" --dry-run)",
+      "Bash(python build_neuromood.py --skip \"Instalador Hub\" --skip \"Instalador Suite\" --dry-run)",
+      "Bash(grep -vE \"\\(__pycache__|\\\\.pyc$|\\\\.png$|\\\\.exe$|\\\\.dll$|\\\\.pyd$|\\\\.ico$|build\\\\.log|dist/|build/|_test_screens\\)\")",
+      "Bash(git stash *)",
+      "Bash(python -c \"import ast,pathlib; ast.parse\\(pathlib.Path\\('build_neuromood.py'\\).read_text\\(encoding='utf-8'\\)\\); print\\('sintaxis OK'\\)\")",
+      "Bash(python build_neuromood.py --dry-run --only \"Suite Paciente\")",
+      "Bash(python build_neuromood.py --dry-run --only \"Instalador Suite\")",
+      "Bash(python build_neuromood.py --dry-run --only \"Instalador Suite\" --installer-mode external)",
+      "Bash(python -m compileall build_neuromood.py installers/installer.py installers/installer_pro.py shared/installer_common.py)",
+      "Bash(python build_neuromood.py --dry-run)",
+      "Bash(python build_neuromood.py --dry-run --installer-mode external)"
     ]
   }
 }
