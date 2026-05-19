@@ -1,0 +1,45 @@
+{
+  "started_at": "2026-05-18T19:25:21",
+  "finished_at": "2026-05-18T19:25:31",
+  "output_dir": "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_qa_output\\fullscreen_capture\\20260518_full_all",
+  "note": "Source capture only. No EXE rebuild. Install/uninstall workers were not executed.",
+  "installer_light_theme": "forced token preview for screenshots; production installer_common is dark-only unless source theme support is added.",
+  "captures": [
+    {
+      "label": "uninstaller_suite/light/00_confirmar",
+      "path": "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_qa_output\\fullscreen_capture\\20260518_full_all\\uninstallers\\suite\\light\\00_confirmar.png",
+      "width": 1366,
+      "height": 745
+    },
+    {
+      "label": "uninstaller_suite/light/01_eliminando",
+      "path": "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_qa_output\\fullscreen_capture\\20260518_full_all\\uninstallers\\suite\\light\\01_eliminando.png",
+      "width": 1366,
+      "height": 745
+    },
+    {
+      "label": "uninstaller_suite/light/02_finalizado",
+      "path": "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_qa_output\\fullscreen_capture\\20260518_full_all\\uninstallers\\suite\\light\\02_finalizado.png",
+      "width": 1366,
+      "height": 745
+    },
+    {
+      "label": "uninstaller_hub/light/00_confirmar",
+      "path": "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_qa_output\\fullscreen_capture\\20260518_full_all\\uninstallers\\hub\\light\\00_confirmar.png",
+      "width": 1366,
+      "height": 745
+    },
+    {
+      "label": "uninstaller_hub/light/01_eliminando",
+      "path": "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_qa_output\\fullscreen_capture\\20260518_full_all\\uninstallers\\hub\\light\\01_eliminando.png",
+      "width": 1366,
+      "height": 745
+    },
+    {
+      "label": "uninstaller_hub/light/02_finalizado",
+      "path": "C:\\Users\\nosom\\Desktop\\Neuromood V3\\_qa_output\\fullscreen_capture\\20260518_full_all\\uninstallers\\hub\\light\\02_finalizado.png",
+      "width": 1366,
+      "height": 745
+    }
+  ]
+}
