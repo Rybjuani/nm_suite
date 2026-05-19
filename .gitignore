@@ -1,65 +1,37 @@
-# Compilación PyInstaller
-build/
-dist/
-*.spec
-
-# Caché de Python
+﻿# Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
-
-# Bases de datos locales
-*.db
-*.sqlite
-*.sqlite3
-
-# Entornos virtuales
+# Environments
 .venv/
 venv/
 env/
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-
-# Windows
-Thumbs.db
-Desktop.ini
-
-# Sesión Claude Code
-.claude/
-
-# Claves y credenciales locales
+# Secrets
 .env
 .env.*
+!.env.example
 *API*.txt
 *api*.txt
 *groq*.txt
 *secret*.txt
-
-# Archivos residuales / borradores
-PLAN.txt
-README_new.md
-*.pdf
-_doc_screenshots/
-_nm_screenshots.py
-_nm_pdf_gen.py
-capturar_pantallas.py
-create_installer_icon.py
-generar_icono.py
-ejemplos creativos/
-_dev/
-build.log
-neuromood/
-_qa_output/
-.env
-*.env
-__pycache__/
-*.pyc
-dist/
+# PyInstaller / build outputs
 build/
+dist/
 *.spec
-.venv/
-venv/
+build.log
+installer_style_debug.txt
+# IDE / local tools
+.vscode/
+.idea/
+.claude/
+*.swp
+# Windows
+Thumbs.db
+Desktop.ini
+# Local QA / generated outputs
+_qa_output/
+_doc_screenshots/
+*.tmp
+# Redesign backups
+REDESIGN/design_sources/03_current_app/*.zip

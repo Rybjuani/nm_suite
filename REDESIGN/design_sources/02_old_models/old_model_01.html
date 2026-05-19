@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NeuroMood V4 — Premium Clinical Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/*
+  NeuroMood V4 — Premium Clinical Mockup
+  Objetivo: fuente visual de verdad para rediseño final PyQt.
+  Estética: clinical wellness premium, calma, precisión, claridad.
+*/
+:root[data-theme="dark"]{
+  --bg:#07111f;
+  --bg-2:#0c1728;
+  --surface:#111f33;
+  --surface-2:#17283e;
+  --surface-3:#20344f;
+  --line:rgba(255,255,255,.095);
+  --line-2:rgba(255,255,255,.16);
+  --text:#edf6ff;
+  --text-2:#a9b9cc;
+  --muted:#617084;
+  --primary:#67e8f9;
+  --primary-2:#22d3ee;
+  --mint:#5eead4;
+  --violet:#a78bfa;
+  --rose:#fb7185;
+  --amber:#fbbf24;
+  --green:#34d399;
+  --danger:#f87171;
+  --shadow:0 20px 60px rgba(0,0,0,.42);
+  --shadow-soft:0 12px 36px rgba(3,8,18,.32);
+  --glow-cyan:0 0 34px rgba(103,232,249,.22);
+  --glow-violet:0 0 34px rgba(167,139,250,.20);
+  --glass:rgba(255,255,255,.055);
+  --glass-strong:rgba(255,255,255,.085);
+  --home-hero:linear-gradient(135deg,rgba(103,232,249,.20),rgba(94,234,212,.08) 46%,rgba(167,139,250,.17));
+}
+:root[data-theme="light"]{
+  --bg:#f5f8fb;
+  --bg-2:#eef5f8;
+  --surface:#ffffff;
+  --surface-2:#f2f7fa;
+  --surface-3:#e8f0f6;
+  --line:rgba(15,23,42,.095);
+  --line-2:rgba(15,23,42,.16);
+  --text:#0c1828;
+  --text-2:#4c6177;
+  --muted:#8da0b3;
+  --primary:#0891b2;
+  --primary-2:#06b6d4;
+  --mint:#0f766e;
+  --violet:#7c3aed;
+  --rose:#e11d48;
+  --amber:#d97706;
+  --green:#059669;
+  --danger:#dc2626;
+  --shadow:0 20px 54px rgba(26,43,68,.12);
+  --shadow-soft:0 10px 28px rgba(24,39,58,.10);
+  --glow-cyan:0 0 0 rgba(0,0,0,0);
+  --glow-violet:0 0 0 rgba(0,0,0,0);
+  --glass:rgba(255,255,255,.7);
+  --glass-strong:rgba(255,255,255,.92);
+  --home-hero:linear-gradient(135deg,#e0fbff,#f3fffc 52%,#f3edff);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at top left, rgba(103,232,249,.15), transparent 32vw),
+    radial-gradient(circle at top right, rgba(167,139,250,.13), transparent 36vw),
+    linear-gradient(180deg,var(--bg),var(--bg-2));
+  color:var(--text);
+  font-family:'DM Sans',system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:14px;
+  line-height:1.5;
+}
+button,input,textarea,select{font-family:inherit}
+button{border:0;cursor:pointer;color:inherit}
+.app-shell{min-height:100vh;display:grid;grid-template-columns:280px minmax(0,1fr)}
+.sidebar{
+  position:sticky;top:0;height:100vh;padding:22px 18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));
+  border-right:1px solid var(--line);backdrop-filter:blur(18px);
+  display:flex;flex-direction:column;gap:18px;
+}
+.brand{display:flex;align-items:center;gap:12px;padding:8px 8px 18px;border-bottom:1px solid var(--line)}
+.logo-mark{width:42px;height:42px;border-radius:15px;background:linear-gradient(135deg,var(--primary),var(--mint) 45%,var(--violet));box-shadow:var(--glow-cyan);display:grid;place-items:center;color:white;font-weight:800;letter-spacing:-.04em}
+.brand h1{font-size:18px;line-height:1;font-weight:700;letter-spacing:-.03em}
+.brand p{font-size:11px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono'}
+.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);font-weight:800;margin:4px 8px 0}
+.nav{display:flex;flex-direction:column;gap:6px}
+.nav button{width:100%;text-align:left;border-radius:14px;padding:11px 12px;background:transparent;color:var(--text-2);display:flex;align-items:center;gap:10px;font-size:13px;font-weight:650;transition:.18s ease}
+.nav button:hover{background:var(--glass);color:var(--text)}
+.nav button.active{background:linear-gradient(135deg,rgba(103,232,249,.18),rgba(167,139,250,.14));color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.nav-ico{width:26px;height:26px;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;font-size:13px}
+.sidebar-card{margin-top:auto;border:1px solid var(--line);border-radius:22px;padding:16px;background:var(--glass);box-shadow:var(--shadow-soft)}
+.sidebar-card h3{font-size:13px;letter-spacing:-.01em;margin-bottom:6px}.sidebar-card p{font-size:12px;color:var(--text-2)}
+.theme-row{display:flex;gap:8px;margin-top:12px}.pill-btn{border-radius:99px;padding:8px 12px;background:var(--surface-2);border:1px solid var(--line);font-size:12px;font-weight:700}.pill-btn.active{background:linear-gradient(135deg,var(--primary),var(--mint));color:white;border-color:transparent}
+.main{min-width:0;padding:26px 34px 60px}.topbar{height:62px;display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.crumb{font-size:12px;color:var(--muted);font-family:'JetBrains Mono'}.top-actions{display:flex;gap:10px;align-items:center}.search{width:290px;height:40px;border-radius:14px;border:1px solid var(--line);background:var(--glass);padding:0 14px;color:var(--text);outline:none}.cta{height:40px;border-radius:14px;padding:0 16px;background:linear-gradient(135deg,var(--primary),var(--mint));color:white;font-weight:800;box-shadow:var(--glow-cyan)}
+.screen{display:none;animation:fade .28s ease}.screen.visible{display:block}@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.screen-head{display:flex;align-items:flex-start;justify-content:space-between;margin:4px 0 22px}.eyebrow{font-family:'JetBrains Mono';font-size:11px;color:var(--primary);letter-spacing:.11em;text-transform:uppercase;font-weight:800}.title{font-size:32px;letter-spacing:-.055em;line-height:1.05;margin-top:4px}.subtitle{color:var(--text-2);margin-top:8px;max-width:720px}.badge{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--glass);border-radius:99px;padding:7px 11px;color:var(--text-2);font-size:12px;font-weight:750}.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 14px var(--green)}
+.grid{display:grid;gap:18px}.grid-2{grid-template-columns:1.2fr .8fr}.grid-3{grid-template-columns:repeat(3,1fr)}.grid-4{grid-template-columns:repeat(4,1fr)}
+.card{border:1px solid var(--line);border-radius:26px;background:linear-gradient(180deg,var(--glass-strong),var(--glass));box-shadow:var(--shadow-soft);overflow:hidden}.card-pad{padding:22px}.card h3{font-size:16px;letter-spacing:-.02em}.card p{color:var(--text-2)}.muted{color:var(--muted)}.mono{font-family:'JetBrains Mono'}
+.hero{position:relative;border-radius:32px;padding:30px;background:var(--home-hero);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden;min-height:260px}.hero:after{content:'';position:absolute;right:-90px;top:-90px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(103,232,249,.30),transparent 68%)}.hero h2{font-size:36px;max-width:560px;line-height:1.02;letter-spacing:-.06em}.hero p{max-width:560px;margin-top:10px;color:var(--text-2)}.hero-actions{display:flex;gap:10px;margin-top:24px}.ghost{height:40px;border-radius:14px;padding:0 15px;background:var(--surface);border:1px solid var(--line);font-weight:750}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:24px}.metric{border:1px solid var(--line);background:rgba(255,255,255,.06);border-radius:18px;padding:14px}.metric b{font-size:24px;letter-spacing:-.04em}.metric span{display:block;font-size:11px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.08em}.module-card{position:relative;padding:18px;border-radius:24px;border:1px solid var(--line);background:var(--glass);min-height:160px;overflow:hidden}.module-card:after{content:'';position:absolute;right:-38px;top:-42px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,var(--accent,rgba(103,232,249,.26)),transparent 72%)}.module-icon{width:44px;height:44px;border-radius:16px;background:linear-gradient(135deg,var(--primary),var(--violet));display:grid;place-items:center;font-size:20px;color:white;margin-bottom:16px}.module-card h3{font-size:17px}.module-card p{font-size:12px;margin-top:5px}.progress-line{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-top:18px}.progress-line i{display:block;height:100%;width:var(--w,60%);background:linear-gradient(90deg,var(--primary),var(--mint),var(--violet));border-radius:inherit}
+/* Respiracion */
+.breath-wrap{display:grid;grid-template-columns:.9fr 1.1fr;gap:18px;align-items:stretch}.breath-stage{min-height:500px;display:grid;place-items:center;padding:24px}.breath-circle{position:relative;width:300px;height:300px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,rgba(103,232,249,.16),transparent 62%)}.breath-circle svg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 0 18px rgba(103,232,249,.25))}.breath-core{width:176px;height:176px;border-radius:50%;border:1px solid var(--line-2);background:linear-gradient(180deg,var(--surface),var(--surface-2));box-shadow:inset 0 0 60px rgba(103,232,249,.08),var(--shadow-soft);display:grid;place-items:center;text-align:center}.breath-core strong{font-size:42px;letter-spacing:-.06em;font-family:'JetBrains Mono';line-height:1}.phase{font-size:12px;color:var(--primary);font-weight:800;text-transform:uppercase;letter-spacing:.12em}.seg-tabs{display:flex;gap:7px;flex-wrap:wrap}.seg-tabs button{padding:9px 13px;border-radius:999px;border:1px solid var(--line);background:var(--glass);color:var(--text-2);font-weight:750;font-size:12px}.seg-tabs button.active{background:linear-gradient(135deg,var(--primary),var(--mint));color:white;border-color:transparent}.timeline{display:flex;gap:10px;margin-top:18px}.step{flex:1;border:1px solid var(--line);background:var(--glass);border-radius:17px;padding:14px}.step.active{border-color:rgba(103,232,249,.5);box-shadow:var(--glow-cyan)}.step b{font-family:'JetBrains Mono';font-size:22px}.step span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
+/* Mood */
+.mood-row{display:flex;justify-content:space-between;gap:10px}.mood{width:74px;height:74px;border-radius:24px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;font-size:30px;transition:.18s}.mood.active{transform:translateY(-5px) scale(1.04);background:linear-gradient(135deg,rgba(103,232,249,.20),rgba(167,139,250,.16));border-color:rgba(103,232,249,.45);box-shadow:var(--glow-cyan)}.textarea{width:100%;min-height:116px;border-radius:20px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);padding:16px;resize:none;outline:none}.bars{height:170px;display:flex;align-items:flex-end;gap:10px;margin-top:14px}.bar{flex:1;border-radius:12px 12px 6px 6px;background:linear-gradient(180deg,var(--violet),var(--primary));min-height:24px;height:var(--h);position:relative}.bar:after{content:attr(data-day);position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--muted);font-weight:800}.insight{border-left:3px solid var(--primary);background:rgba(103,232,249,.08);padding:14px 15px;border-radius:16px;margin-top:18px}
+/* Routine / Timer */
+.routine-list{display:flex;flex-direction:column;gap:12px}.task{display:flex;gap:12px;align-items:center;border:1px solid var(--line);background:var(--glass);border-radius:18px;padding:14px}.check{width:30px;height:30px;border-radius:11px;background:linear-gradient(135deg,var(--primary),var(--mint));display:grid;place-items:center;color:white;font-weight:900}.task.off .check{background:var(--surface-3);color:var(--muted)}.task-main{flex:1}.task-main b{font-size:14px}.task-main span{display:block;color:var(--muted);font-size:12px}.timer-face{display:grid;place-items:center;min-height:330px}.timer-ring{position:relative;width:240px;height:240px}.timer-ring svg{width:100%;height:100%}.timer-num{position:absolute;inset:0;display:grid;place-items:center;text-align:center}.timer-num b{font-size:48px;font-family:'JetBrains Mono';letter-spacing:-.05em}.timer-num span{display:block;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:800}.chips{display:flex;gap:9px;flex-wrap:wrap}.chip{padding:8px 11px;border-radius:99px;border:1px solid var(--line);background:var(--glass);color:var(--text-2);font-size:12px;font-weight:750}.chip.ok{background:rgba(52,211,153,.13);color:var(--green);border-color:rgba(52,211,153,.22)}.chip.warn{background:rgba(251,191,36,.13);color:var(--amber);border-color:rgba(251,191,36,.25)}
+/* Avisos checklist */
+.reminder-grid{grid-template-columns:repeat(2,1fr)}.reminder{border:1px solid var(--line);background:var(--glass);border-radius:22px;padding:17px;position:relative;overflow:hidden}.reminder:before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--primary),var(--violet))}.reminder.done{opacity:.62}.reminder-time{font-size:30px;font-family:'JetBrains Mono';letter-spacing:-.06em}.reminder-title{color:var(--text-2);font-weight:750}.floating-plus{width:54px;height:54px;border-radius:20px;background:linear-gradient(135deg,var(--primary),var(--violet));box-shadow:var(--glow-violet);display:grid;place-items:center;font-size:26px;color:white;margin-left:auto}.checklist-item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:15px;border:1px solid var(--line);border-radius:18px;background:var(--glass);margin-bottom:10px}.mini-ring{width:42px;height:42px;border-radius:50%;background:conic-gradient(var(--primary) var(--pct),var(--surface-3) 0);display:grid;place-items:center}.mini-ring:after{content:'';width:30px;height:30px;border-radius:50%;background:var(--surface)}
+/* Hub */
+.hub-shell{display:grid;grid-template-columns:220px 1fr;gap:18px;min-height:570px}.hub-nav{border-radius:28px;background:var(--surface);border:1px solid var(--line);padding:15px;display:flex;flex-direction:column;gap:8px}.hub-nav .active{background:linear-gradient(135deg,rgba(103,232,249,.17),rgba(167,139,250,.14));color:var(--text)}.patient-table{width:100%;border-collapse:separate;border-spacing:0 10px}.patient-table td,.patient-table th{text-align:left;padding:13px 14px}.patient-table th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.patient-table tr{background:var(--glass)}.patient-table td:first-child{border-radius:16px 0 0 16px}.patient-table td:last-child{border-radius:0 16px 16px 0}.avatar{width:38px;height:38px;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--violet));display:inline-grid;place-items:center;color:white;font-weight:900;margin-right:10px;vertical-align:middle}.risk{padding:5px 9px;border-radius:99px;font-size:11px;font-weight:850}.risk.low{background:rgba(52,211,153,.13);color:var(--green)}.risk.mid{background:rgba(251,191,36,.14);color:var(--amber)}.risk.high{background:rgba(248,113,113,.14);color:var(--danger)}.patient-hero{display:grid;grid-template-columns:1fr 280px;gap:18px}.profile{display:flex;gap:16px;align-items:center}.big-avatar{width:76px;height:76px;border-radius:25px;background:linear-gradient(135deg,var(--primary),var(--mint),var(--violet));display:grid;place-items:center;color:white;font-size:24px;font-weight:900}.trend-line{height:170px;border-radius:22px;background:linear-gradient(180deg,rgba(103,232,249,.08),rgba(167,139,250,.05));border:1px solid var(--line);display:grid;place-items:center;overflow:hidden}.report-preview{background:white;color:#142033;border-radius:18px;padding:22px;box-shadow:var(--shadow-soft);min-height:420px}.report-preview h3{color:#0c1828}.report-section{border-top:1px solid #e5edf3;margin-top:16px;padding-top:14px}.report-line{height:8px;background:#e5edf3;border-radius:99px;margin:9px 0}.report-line.w{width:70%}.install-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.install-step{border:1px solid var(--line);background:var(--glass);border-radius:22px;padding:18px;min-height:150px}.install-step strong{display:block;font-size:34px;font-family:'JetBrains Mono';color:var(--primary);line-height:1}.install-step b{display:block;margin:10px 0 5px}.token-table{width:100%;border-collapse:collapse;border-radius:22px;overflow:hidden;border:1px solid var(--line);background:var(--surface)}.token-table th,.token-table td{padding:13px 15px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}.token-table th{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);background:var(--surface-2)}.swatch{display:inline-block;width:16px;height:16px;border-radius:5px;margin-right:8px;vertical-align:-3px}.notes{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.note{padding:15px;border-radius:18px;background:var(--glass);border:1px solid var(--line)}.note b{color:var(--primary)}
+@media(max-width:1100px){.app-shell{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.grid-2,.grid-3,.grid-4,.breath-wrap,.hub-shell,.patient-hero,.install-flow,.notes{grid-template-columns:1fr}.search{display:none}.main{padding:20px}.mock-only-hide-mobile{display:none}}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="logo-mark">NM</div><div><h1>NeuroMood V4</h1><p>Premium Clinical UI</p></div></div>
+    <div class="nav-label">Producto paciente</div>
+    <nav class="nav">
+      <button class="active" data-screen="home"><span class="nav-ico">⌂</span>Home paciente</button>
+      <button data-screen="breath"><span class="nav-ico">◌</span>Respiración</button>
+      <button data-screen="mood"><span class="nav-ico">☻</span>Ánimo</button>
+      <button data-screen="routine"><span class="nav-ico">✓</span>Rutina + Timer</button>
+      <button data-screen="alerts"><span class="nav-ico">⏱</span>Avisos + Checklist</button>
+    </nav>
+    <div class="nav-label">Profesional y release</div>
+    <nav class="nav">
+      <button data-screen="hub"><span class="nav-ico">▦</span>Hub profesional</button>
+      <button data-screen="patient"><span class="nav-ico">◎</span>Paciente detalle</button>
+      <button data-screen="report"><span class="nav-ico">PDF</span>Reporte / PDF</button>
+      <button data-screen="installer"><span class="nav-ico">⚙</span>Installer</button>
+      <button data-screen="tokens"><span class="nav-ico">#</span>Tokens</button>
+    </nav>
+    <div class="sidebar-card">
+      <h3>Fuente visual de verdad</h3>
+      <p>Mockup integral para pasar a Claude/Codex antes de implementar en PyQt.</p>
+      <div class="theme-row"><button class="pill-btn active" id="darkBtn">Dark</button><button class="pill-btn" id="lightBtn">Light</button></div>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar"><div class="crumb">NeuroMood / V4 mockup / clinical wellness system</div><div class="top-actions"><input class="search" placeholder="Buscar pantalla, token o componente…"><button class="cta">Exportar guía visual</button></div></div>
+
+    <section id="home" class="screen visible">
+      <div class="screen-head"><div><div class="eyebrow">Paciente · Dashboard principal</div><h2 class="title">Un inicio más claro, calmo y accionable.</h2><p class="subtitle">Home orientada a hábitos diarios: estado emocional, progreso clínico liviano, acciones sugeridas y módulos con jerarquía visual limpia.</p></div><div class="badge"><i class="dot"></i> Sync listo</div></div>
+      <div class="hero">
+        <h2>Hola, Ana. Hoy priorizamos respiración, ánimo y una rutina simple.</h2>
+        <p>La pantalla evita saturar: muestra solo lo necesario para que el paciente sepa qué hacer ahora y qué ya completó.</p>
+        <div class="hero-actions"><button class="cta">Comenzar sesión</button><button class="ghost">Ver progreso</button></div>
+        <div class="metrics"><div class="metric"><span>bienestar</span><b>78%</b></div><div class="metric"><span>racha</span><b>6 días</b></div><div class="metric"><span>pendiente</span><b>2 tareas</b></div></div>
+      </div>
+      <div class="grid grid-4" style="margin-top:18px">
+        <div class="module-card" style="--accent:rgba(103,232,249,.28)"><div class="module-icon">◌</div><h3>Respiración</h3><p>Sesión 4-7-8 recomendada para bajar activación.</p><div class="progress-line"><i style="--w:72%"></i></div></div>
+        <div class="module-card" style="--accent:rgba(167,139,250,.28)"><div class="module-icon">☻</div><h3>Ánimo</h3><p>Registro diario con nota breve y tendencia semanal.</p><div class="progress-line"><i style="--w:55%"></i></div></div>
+        <div class="module-card" style="--accent:rgba(94,234,212,.28)"><div class="module-icon">✓</div><h3>Rutina</h3><p>Hábitos priorizados y checklist clínico simple.</p><div class="progress-line"><i style="--w:64%"></i></div></div>
+        <div class="module-card" style="--accent:rgba(251,191,36,.23)"><div class="module-icon">⏱</div><h3>Avisos</h3><p>Recordatorios del día con estado y prioridad.</p><div class="progress-line"><i style="--w:40%"></i></div></div>
+      </div>
+      <div class="notes" style="margin-top:18px"><div class="note"><b>Implementación PyQt:</b> Home no debería consultar DB módulo por módulo. Conviene un servicio de status agrupado.</div><div class="note"><b>Diseño:</b> Evitar cards viejas de métricas genéricas; priorizar acciones diarias y progreso simple.</div></div>
+    </section>
+
+    <section id="breath" class="screen">
+      <div class="screen-head"><div><div class="eyebrow">Paciente · Respiración</div><h2 class="title">Respiración guiada con foco clínico y visual premium.</h2><p class="subtitle">Círculo central más grande, estados de fase claros, feedback calmado y sin exceso de controles.</p></div><div class="badge"><i class="dot"></i> Técnica 4-7-8</div></div>
+      <div class="breath-wrap">
+        <div class="card breath-stage"><div class="breath-circle"><svg viewBox="0 0 300 300"><defs><linearGradient id="breathGrad" x1="0" y1="0" x2="1" y2="1"><stop stop-color="var(--primary)"/><stop offset=".55" stop-color="var(--mint)"/><stop offset="1" stop-color="var(--violet)"/></linearGradient></defs><circle cx="150" cy="150" r="132" fill="none" stroke="var(--surface-3)" stroke-width="12"/><circle cx="150" cy="150" r="132" fill="none" stroke="url(#breathGrad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="829" stroke-dashoffset="245" transform="rotate(-90 150 150)"/></svg><div class="breath-core"><div><div class="phase">Inhala</div><strong>03</strong><p class="muted">de 4 segundos</p></div></div></div></div>
+        <div class="card card-pad"><h3>Sesión recomendada</h3><p>Diseñada para no sobrecargar al paciente. El terapeuta puede configurar técnica y ciclos desde el Hub.</p><div class="seg-tabs" style="margin-top:18px"><button class="active">4-7-8</button><button>Box 4×4</button><button>Coherente</button><button>Personalizada</button></div><div class="timeline"><div class="step active"><span>fase 1</span><b>4s</b><p>Inhala</p></div><div class="step"><span>fase 2</span><b>7s</b><p>Mantén</p></div><div class="step"><span>fase 3</span><b>8s</b><p>Exhala</p></div></div><div class="grid grid-3" style="margin-top:18px"><div class="metric"><span>ciclos</span><b>3/5</b></div><div class="metric"><span>ritmo</span><b>60</b></div><div class="metric"><span>estado</span><b>calma</b></div></div><div style="display:flex;gap:10px;margin-top:20px"><button class="cta">Pausar</button><button class="ghost">Finalizar</button></div></div>
+      </div>
+    </section>
+
+    <section id="mood" class="screen">
+      <div class="screen-head"><div><div class="eyebrow">Paciente · Registro emocional</div><h2 class="title">Ánimo diario con historial simple y lectura terapéutica.</h2><p class="subtitle">La pantalla combina registro rápido para paciente y datos interpretables para el profesional.</p></div><div class="badge"><i class="dot"></i> Racha 6 días</div></div>
+      <div class="grid grid-2"><div class="card card-pad"><h3>¿Cómo estás hoy?</h3><p>Elegí una emoción y dejá una nota breve.</p><div class="mood-row" style="margin:22px 0"><button class="mood">😞</button><button class="mood">😟</button><button class="mood active">😐</button><button class="mood">🙂</button><button class="mood">😊</button></div><div class="badge">Neutro · 5/10</div><textarea class="textarea" style="margin-top:14px">Día complicado, pero completé respiración y pude ordenar la rutina.</textarea><button class="cta" style="margin-top:14px">Guardar registro</button></div><div class="card card-pad"><h3>Tendencia semanal</h3><p>Visualización simple, sin lectura clínica invasiva.</p><div class="bars"><div class="bar" data-day="L" style="--h:38%"></div><div class="bar" data-day="M" style="--h:58%"></div><div class="bar" data-day="X" style="--h:44%"></div><div class="bar" data-day="J" style="--h:80%"></div><div class="bar" data-day="V" style="--h:50%"></div><div class="bar" data-day="S" style="--h:70%"></div><div class="bar" data-day="D" style="--h:55%"></div></div><div class="insight"><b>Insight suave:</b><p>La tendencia mejora cuando se completa respiración antes del registro de ánimo.</p></div></div></div>
+    </section>
+
+    <section id="routine" class="screen">
+      <div class="screen-head"><div><div class="eyebrow">Paciente · Rutina y timer</div><h2 class="title">Hábitos diarios y foco sin complejidad.</h2><p class="subtitle">Una rutina clara, con timer integrado y progreso que no abruma.</p></div><div class="badge"><i class="dot"></i> 4 de 6 tareas</div></div>
+      <div class="grid grid-2"><div class="card card-pad"><h3>Rutina de hoy</h3><div class="routine-list" style="margin-top:16px"><div class="task"><div class="check">✓</div><div class="task-main"><b>Respiración 4-7-8</b><span>Completado · 5 minutos</span></div><span class="chip ok">hecho</span></div><div class="task"><div class="check">✓</div><div class="task-main"><b>Registro de ánimo</b><span>Completado · nota breve</span></div><span class="chip ok">hecho</span></div><div class="task off"><div class="check">3</div><div class="task-main"><b>Pausa consciente</b><span>Sugerido a las 18:00</span></div><span class="chip warn">pendiente</span></div><div class="task off"><div class="check">4</div><div class="task-main"><b>Checklist nocturno</b><span>Antes de dormir</span></div><span class="chip">opcional</span></div></div></div><div class="card card-pad"><h3>Timer foco clínico</h3><div class="timer-face"><div class="timer-ring"><svg viewBox="0 0 240 240"><circle cx="120" cy="120" r="102" fill="none" stroke="var(--surface-3)" stroke-width="14"/><circle cx="120" cy="120" r="102" fill="none" stroke="var(--primary)" stroke-width="14" stroke-linecap="round" stroke-dasharray="641" stroke-dashoffset="198" transform="rotate(-90 120 120)"/></svg><div class="timer-num"><div><span>foco suave</span><b>18:42</b></div></div></div></div><div class="chips"><span class="chip ok">25 min</span><span class="chip">15 min</span><span class="chip">5 min</span><span class="chip">personalizado</span></div></div></div>
+    </section>
+
+    <section id="alerts" class="screen">
+      <div class="screen-head"><div><div class="eyebrow">Paciente · Avisos y checklist</div><h2 class="title">Recordatorios útiles, no invasivos.</h2><p class="subtitle">Diseño orientado a completar acciones rápido y reducir ansiedad por pendientes.</p></div><div class="badge"><i class="dot"></i> 2 pendientes</div></div>
+      <div class="grid grid-2"><div class="card card-pad"><h3>Avisos de hoy</h3><p>Recordatorios con prioridad visual suave.</p><div class="grid reminder-grid" style="margin-top:16px"><div class="reminder done"><div class="reminder-time">08:00</div><div class="reminder-title">Medicación matutina</div><span class="chip ok">completado</span></div><div class="reminder"><div class="reminder-time">14:00</div><div class="reminder-title">Registrar ánimo</div><span class="chip warn">pendiente</span></div><div class="reminder"><div class="reminder-time">18:00</div><div class="reminder-title">Respiración breve</div><span class="chip">sugerido</span></div><div class="reminder done"><div class="reminder-time">21:30</div><div class="reminder-title">Checklist nocturno</div><span class="chip ok">listo</span></div></div><div class="floating-plus" style="margin-top:16px">+</div></div><div class="card card-pad"><h3>Checklist clínico simple</h3><p>Preguntas rápidas que alimentan el Hub sin sentirse como encuesta pesada.</p><div style="margin-top:16px"><div class="checklist-item"><div class="mini-ring" style="--pct:100%"></div><div><b>Dormí al menos 6 horas</b><p>Sí · calidad media</p></div><span class="chip ok">sí</span></div><div class="checklist-item"><div class="mini-ring" style="--pct:60%"></div><div><b>Tuve ansiedad intensa</b><p>Moderada · 2 episodios</p></div><span class="chip warn">medio</span></div><div class="checklist-item"><div class="mini-ring" style="--pct:20%"></div><div><b>Comí regularmente</b><p>Falta registrar cena</p></div><span class="chip">pendiente</span></div></div></div></div>
+    </section>
+
+    <section id="hub" class="screen">
+      <div class="screen-head"><div><div class="eyebrow">Profesional · Hub</div><h2 class="title">Dashboard terapéutico más claro y accionable.</h2><p class="subtitle">El Hub prioriza seguimiento, riesgo, adherencia y acciones clínicas sin saturar al profesional.</p></div><div class="badge"><i class="dot"></i> 12 pacientes activos</div></div>
+      <div class="hub-shell"><div class="hub-nav"><button class="pill-btn active">Dashboard</button><button class="pill-btn">Pacientes</button><button class="pill-btn">IA Insights</button><button class="pill-btn">Reportes PDF</button><button class="pill-btn">Configuración</button></div><div class="grid"><div class="grid grid-4"><div class="metric"><span>activos</span><b>12</b></div><div class="metric"><span>alertas</span><b>3</b></div><div class="metric"><span>adherencia</span><b>74%</b></div><div class="metric"><span>reportes</span><b>8</b></div></div><div class="card card-pad"><h3>Pacientes recientes</h3><table class="patient-table"><thead><tr><th>Paciente</th><th>Estado</th><th>Adherencia</th><th>Última señal</th></tr></thead><tbody><tr><td><span class="avatar">AM</span>Ana Martínez</td><td><span class="risk mid">Atención</span></td><td>68%</td><td>Ánimo bajo 2 días</td></tr><tr><td><span class="avatar">LR</span>Luis Rojas</td><td><span class="risk low">Estable</span></td><td>82%</td><td>Rutina completa</td></tr><tr><td><span class="avatar">CP</span>Carla Pérez</td><td><span class="risk high">Prioridad</span></td><td>41%</td><td>Sin registro 5 días</td></tr></tbody></table></div></div></div>
+    </section>
+
+    <section id="patient" class="screen">
+      <div class="screen-head"><div><div class="eyebrow">Profesional · Paciente detalle</div><h2 class="title">Vista individual con señales relevantes.</h2><p class="subtitle">Resumen clínico liviano: progreso, adherencia, tendencia emocional y recomendaciones para revisión.</p></div><button class="cta">Exportar PDF</button></div>
+      <div class="patient-hero"><div class="card card-pad"><div class="profile"><div class="big-avatar">AM</div><div><h3>Ana Martínez</h3><p>12 semanas en programa · Última actividad hace 2 horas</p><div class="chips" style="margin-top:10px"><span class="chip warn">ánimo variable</span><span class="chip ok">respiración activa</span><span class="chip">rutina parcial</span></div></div></div><div class="trend-line" style="margin-top:18px"><svg width="92%" height="120" viewBox="0 0 520 120"><path d="M10 82 C70 30 120 72 170 55 S270 20 330 52 S430 90 510 34" fill="none" stroke="var(--primary)" stroke-width="5" stroke-linecap="round"/><path d="M10 92 C70 40 120 82 170 65 S270 30 330 62 S430 100 510 44" fill="none" stroke="var(--violet)" stroke-width="3" stroke-linecap="round" opacity=".7"/></svg></div></div><div class="card card-pad"><h3>Acciones sugeridas</h3><div class="routine-list" style="margin-top:16px"><div class="task"><div class="check">1</div><div class="task-main"><b>Revisar ánimo</b><span>2 días por debajo de línea base</span></div></div><div class="task"><div class="check">2</div><div class="task-main"><b>Ajustar rutina</b><span>Reducir carga de tarde</span></div></div><div class="task off"><div class="check">3</div><div class="task-main"><b>Generar PDF</b><span>Resumen de 7 días</span></div></div></div></div></div>
+    </section>
+
+    <section id="report" class="screen">
+      <div class="screen-head"><div><div class="eyebrow">Profesional · Reporte PDF</div><h2 class="title">PDF limpio, clínico y presentable.</h2><p class="subtitle">Reporte pensado para terapeutas: claro, sin estética recargada, con resumen y señales accionables.</p></div><button class="cta">Generar PDF</button></div>
+      <div class="grid grid-2"><div class="report-preview"><h3>NeuroMood — Reporte semanal</h3><p style="color:#607085">Paciente: Ana Martínez · Semana 12</p><div class="report-section"><b>Resumen ejecutivo</b><div class="report-line"></div><div class="report-line w"></div><div class="report-line" style="width:55%"></div></div><div class="report-section"><b>Tendencia de ánimo</b><svg width="100%" height="110" viewBox="0 0 400 110"><path d="M10 78 C60 35 110 62 155 52 S235 25 280 54 S350 88 390 42" fill="none" stroke="#0891b2" stroke-width="4" stroke-linecap="round"/></svg></div><div class="report-section"><b>Adherencia</b><div class="report-line" style="width:88%;background:#a7f3d0"></div><div class="report-line" style="width:62%;background:#bfdbfe"></div><div class="report-line" style="width:48%;background:#ddd6fe"></div></div></div><div class="card card-pad"><h3>Estructura propuesta</h3><div class="routine-list" style="margin-top:16px"><div class="task"><div class="check">1</div><div class="task-main"><b>Resumen ejecutivo</b><span>Una página con señales principales.</span></div></div><div class="task"><div class="check">2</div><div class="task-main"><b>Métricas por módulo</b><span>Ánimo, rutina, respiración, avisos.</span></div></div><div class="task"><div class="check">3</div><div class="task-main"><b>Notas clínicas</b><span>Espacio para observaciones del terapeuta.</span></div></div></div><div class="notes" style="margin-top:16px"><div class="note"><b>PyQt:</b> reportlab solo debería importarse al generar PDF.</div><div class="note"><b>Build:</b> incluir reportlab solo en Hub, no en uninstallers.</div></div></div></div>
+    </section>
+
+    <section id="installer" class="screen">
+      <div class="screen-head"><div><div class="eyebrow">Release · Installer</div><h2 class="title">Instalación simple, segura y confiable.</h2><p class="subtitle">Mockup de flujo de instalación para evitar pantallas viejas y mejorar confianza del usuario final.</p></div><div class="badge"><i class="dot"></i> Modo seguro</div></div>
+      <div class="card card-pad"><div class="install-flow"><div class="install-step"><strong>01</strong><b>Bienvenida</b><p>Explica qué instala y dónde guarda datos.</p></div><div class="install-step"><strong>02</strong><b>Cuenta</b><p>Login/registro con estado claro de Supabase.</p></div><div class="install-step"><strong>03</strong><b>Consentimiento</b><p>Legal, privacidad y aceptación antes de instalar.</p></div><div class="install-step"><strong>04</strong><b>Instalar</b><p>Progreso real, logs legibles y rollback seguro.</p></div></div></div><div class="notes" style="margin-top:18px"><div class="note"><b>Importante:</b> evitar QApplication.processEvents dentro de slots de QThread.</div><div class="note"><b>Build:</b> evitar empaquetar PyInstaller dentro de PyInstaller si se confirma que hoy ocurre.</div></div>
+    </section>
+
+    <section id="tokens" class="screen">
+      <div class="screen-head"><div><div class="eyebrow">Sistema visual · Tokens</div><h2 class="title">Tokens V4 para llevar a shared/theme_qt.py.</h2><p class="subtitle">Valores base para implementar el rediseño sin hardcodear colores en cada pantalla.</p></div><button class="cta">Copiar tokens</button></div>
+      <table class="token-table"><thead><tr><th>Token</th><th>Dark</th><th>Light</th><th>Uso</th></tr></thead><tbody><tr><td class="mono">bg_base</td><td><span class="swatch" style="background:#07111f"></span>#07111f</td><td><span class="swatch" style="background:#f5f8fb"></span>#f5f8fb</td><td>Fondo general</td></tr><tr><td class="mono">surface</td><td><span class="swatch" style="background:#111f33"></span>#111f33</td><td><span class="swatch" style="background:#ffffff;border:1px solid #ddd"></span>#ffffff</td><td>Cards principales</td></tr><tr><td class="mono">primary</td><td><span class="swatch" style="background:#67e8f9"></span>#67e8f9</td><td><span class="swatch" style="background:#0891b2"></span>#0891b2</td><td>Acción principal / acentos</td></tr><tr><td class="mono">mint</td><td><span class="swatch" style="background:#5eead4"></span>#5eead4</td><td><span class="swatch" style="background:#0f766e"></span>#0f766e</td><td>Bienestar / completado</td></tr><tr><td class="mono">violet</td><td><span class="swatch" style="background:#a78bfa"></span>#a78bfa</td><td><span class="swatch" style="background:#7c3aed"></span>#7c3aed</td><td>Insights / IA / detalle premium</td></tr><tr><td class="mono">radius_card</td><td>26px</td><td>26px</td><td>Cards grandes</td></tr><tr><td class="mono">radius_control</td><td>14px</td><td>14px</td><td>Botones, inputs, chips</td></tr><tr><td class="mono">shadow_soft</td><td>0 12px 36px rgba(3,8,18,.32)</td><td>0 10px 28px rgba(24,39,58,.10)</td><td>Elevación sutil</td></tr></tbody></table>
+      <div class="notes" style="margin-top:18px"><div class="note"><b>Regla:</b> ningún módulo debería definir colores propios si existen tokens.</div><div class="note"><b>Regla:</b> estados vacíos, loaders, errores y badges deben compartir componentes.</div></div>
+    </section>
+  </main>
+</div>
+<script>
+const navButtons = document.querySelectorAll('.nav button[data-screen]');
+const screens = document.querySelectorAll('.screen');
+navButtons.forEach(btn=>btn.addEventListener('click',()=>{
+  navButtons.forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  screens.forEach(s=>s.classList.remove('visible'));
+  document.getElementById(btn.dataset.screen).classList.add('visible');
+  window.scrollTo({top:0,behavior:'smooth'});
+}));
+function setTheme(theme){
+  document.documentElement.setAttribute('data-theme',theme);
+  document.getElementById('darkBtn').classList.toggle('active',theme==='dark');
+  document.getElementById('lightBtn').classList.toggle('active',theme==='light');
+}
+document.getElementById('darkBtn').addEventListener('click',()=>setTheme('dark'));
+document.getElementById('lightBtn').addEventListener('click',()=>setTheme('light'));
+</script>
+</body>
+</html>
