@@ -138,10 +138,10 @@ class _DayPillToggle(QPushButton):
         self._modo = norm_modo(modo)
         self._active = False
         self.setCheckable(False)
-        self.setFixedSize(34, 28)
+        self.setFixedSize(36, 36)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setFont(qfont("size_small",
-                           weight=TYPOGRAPHY["weight_semibold"]))
+                           weight=TYPOGRAPHY["weight_bold"]))
         self.clicked.connect(self._toggle)
         self._refresh()
 
@@ -156,20 +156,21 @@ class _DayPillToggle(QPushButton):
         if self._active:
             grad_from = v3c("gradFrom", self._modo).name()
             grad_to = v3c("gradTo", self._modo).name()
-            color = C("text_on_accent", self._modo)
+            color = v3c("bg", self._modo).name()
             self.setStyleSheet(
                 f"QPushButton {{ background: qlineargradient(x1:0,y1:0,x2:1,y2:0,"
                 f"stop:0 {grad_from}, stop:1 {grad_to}); "
                 f"color: {color}; border: none; "
-                f"border-radius: 14px; }}")
+                f"border-radius: 18px; }}")
         else:
             self.setStyleSheet(
                 f"QPushButton {{ background: transparent; "
                 f"color: {v3c('text2', self._modo).name()}; "
-                f"border: 1px solid {v3c('border', self._modo).name()}; "
-                f"border-radius: 14px; }}"
+                f"border: 1px solid {v3c('borderStrong', self._modo).name()}; "
+                f"border-radius: 18px; }}"
                 f"QPushButton:hover {{ "
-                f"border-color: {v3c('borderStrong', self._modo).name()}; }}")
+                f"border-color: {v3c('teal', self._modo).name()}; "
+                f"color: {v3c('text', self._modo).name()}; }}")
 
 
 # ── _NuevoAvisoPanel (form inline preservado) ───────────────────────────────
@@ -196,9 +197,9 @@ class _NuevoAvisoPanel(QWidget):
             f"QLabel {{ background: transparent; }}")
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(V3_SP["lg"], V3_SP["md"],
-                                   V3_SP["lg"], V3_SP["md"])
-        layout.setSpacing(V3_SP["sm"])
+        layout.setContentsMargins(V3_SP["xl"], V3_SP["lg"],
+                                   V3_SP["xl"], V3_SP["lg"])
+        layout.setSpacing(V3_SP["md"])
 
         title = QLabel("Nuevo aviso")
         title.setFont(qfont("size_h3",
@@ -216,7 +217,7 @@ class _NuevoAvisoPanel(QWidget):
         lbl_hora.setMinimumWidth(55)
         row_hora.addWidget(lbl_hora)
         self._entry_hora = NMInput("HH:MM", modo=self._modo)
-        self._entry_hora.setMinimumWidth(72)
+        self._entry_hora.setMinimumWidth(80)
         row_hora.addWidget(self._entry_hora)
         row_hora.addStretch()
         layout.addLayout(row_hora)
@@ -351,16 +352,17 @@ class _StepPill(QPushButton):
             self.setStyleSheet(
                 f"QPushButton {{ background: qlineargradient(x1:0,y1:0,x2:1,y2:0,"
                 f"stop:0 {gf}, stop:1 {gt}); "
-                f"color: {C('text_on_accent', self._modo)}; "
+                f"color: {v3c('bg', self._modo).name()}; "
                 f"border: none; border-radius: 16px; padding: 0 16px; }}")
         else:
             self.setStyleSheet(
                 f"QPushButton {{ background: transparent; "
                 f"color: {v3c('text2', self._modo).name()}; "
-                f"border: 1px solid {v3c('border', self._modo).name()}; "
+                f"border: 1px solid {v3c('borderStrong', self._modo).name()}; "
                 f"border-radius: 16px; padding: 0 16px; }}"
                 f"QPushButton:hover {{ "
-                f"border-color: {v3c('borderStrong', self._modo).name()}; }}")
+                f"border-color: {v3c('teal', self._modo).name()}; "
+                f"color: {v3c('text', self._modo).name()}; }}")
 
 
 # ── _ReminderCardV3 ─────────────────────────────────────────────────────────
@@ -396,9 +398,9 @@ class _ReminderCardV3(NMCard):
 
     def _build(self):
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
-                                V3_SP["lg"], V3_SP["lg"])
-        lay.setSpacing(V3_SP["sm"])
+        lay.setContentsMargins(V3_SP["xl"], V3_SP["xl"],
+                                V3_SP["xl"], V3_SP["xl"])
+        lay.setSpacing(V3_SP["md"])
 
         # Top: icono grande + delete button
         top = QHBoxLayout()
@@ -430,7 +432,7 @@ class _ReminderCardV3(NMCard):
         self._hora_chip.setContentsMargins(8, 2, 8, 2)
         meta_row.addWidget(self._hora_chip)
         self._freq_lbl = QLabel(_format_frequency(self._dias))
-        self._freq_lbl.setFont(qfont("size_caption"))
+        self._freq_lbl.setFont(qfont("size_small"))
         meta_row.addWidget(self._freq_lbl)
         meta_row.addStretch()
         lay.addLayout(meta_row)
@@ -516,9 +518,9 @@ class _DayProgressCard(NMCard):
 
     def _build(self):
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
-                                V3_SP["lg"], V3_SP["lg"])
-        lay.setSpacing(V3_SP["md"])
+        lay.setContentsMargins(V3_SP["xl"], V3_SP["xl"],
+                                V3_SP["xl"], V3_SP["xl"])
+        lay.setSpacing(V3_SP["xl"])
         col = QVBoxLayout()
         col.setSpacing(4)
         self._eyebrow = QLabel("PROGRESO DEL DÍA")
@@ -604,13 +606,13 @@ class ModuloAvisos(NMModule):
         # 2. Search + filter pills card
         search_card = NMCard(modo=self._modo, clickable=False)
         sc_lay = QVBoxLayout(search_card)
-        sc_lay.setContentsMargins(V3_SP["lg"], V3_SP["md"],
-                                   V3_SP["lg"], V3_SP["md"])
-        sc_lay.setSpacing(V3_SP["sm"])
+        sc_lay.setContentsMargins(V3_SP["xl"], V3_SP["lg"],
+                                   V3_SP["xl"], V3_SP["lg"])
+        sc_lay.setSpacing(V3_SP["md"])
 
         # Search input + filter pills (mismo row)
         search_row = QHBoxLayout()
-        search_row.setSpacing(V3_SP["md"])
+        search_row.setSpacing(V3_SP["lg"])
         self._search_edit = QLineEdit()
         self._search_edit.setPlaceholderText("Buscar aviso por nombre u hora…")
         self._search_edit.setStyleSheet(stylesheet_lineedit(self._modo))
@@ -645,7 +647,7 @@ class ModuloAvisos(NMModule):
         self._list_widget.setStyleSheet("background: transparent;")
         self._list_layout = QGridLayout(self._list_widget)
         self._list_layout.setContentsMargins(0, 0, 0, 0)
-        self._list_layout.setSpacing(V3_SP["md"])
+        self._list_layout.setSpacing(V3_SP["xl"])
         for col in range(3):
             self._list_layout.setColumnStretch(col, 1)
         lay.addWidget(self._list_widget)

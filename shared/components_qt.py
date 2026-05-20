@@ -2975,10 +2975,10 @@ class NMCustomCheck(QWidget):
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(0, 6, 0, 6)
-        lay.setSpacing(10)
+        lay.setContentsMargins(0, 8, 0, 8)
+        lay.setSpacing(12)
         self._box = QLabel()
-        self._box.setFixedSize(18, 18)
+        self._box.setFixedSize(20, 20)
         self._box.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._box.setFont(qfont("size_caption", bold=True))
         lay.addWidget(self._box)
@@ -3017,17 +3017,27 @@ class NMCustomCheck(QWidget):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        c = colors(self._modo)
-        border = C("teal", self._modo) if self._checked else c.get("border_card", c["border"])
-        bg = C("teal", self._modo) if self._checked else "transparent"
+        try:
+            from shared.theme_qt import v3c
+            border = v3c("teal", self._modo).name() if self._checked else v3c("borderStrong", self._modo).name()
+            bg = v3c("teal", self._modo).name() if self._checked else "transparent"
+            text_on = v3c("bg", self._modo).name()
+            text_col = v3c("text3", self._modo).name() if self._checked else v3c("text2", self._modo).name()
+        except ImportError:
+            c = colors(self._modo)
+            border = C("teal", self._modo) if self._checked else c.get("border_card", c["border"])
+            bg = C("teal", self._modo) if self._checked else "transparent"
+            text_on = C("text_on_accent", self._modo)
+            text_col = C("text_secondary", self._modo)
+            
         self._box.setText("\u2713" if self._checked else "")
         self._box.setStyleSheet(
-            f"QLabel {{ background: {bg}; color: {C('text_on_accent', self._modo)}; "
-            f"border: 2px solid {border}; border-radius: 5px; }}"
+            f"QLabel {{ background: {bg}; color: {text_on}; "
+            f"border: 2px solid {border}; border-radius: 6px; }}"
         )
         decoration = "line-through" if self._checked and self._strike_on_check else "none"
         self._label.setStyleSheet(
-            f"color: {C('text_secondary', self._modo)}; background: transparent; "
+            f"color: {text_col}; background: transparent; "
             f"text-decoration: {decoration};"
         )
 
@@ -3250,17 +3260,12 @@ class NMFocusArc(QWidget):
                 p.drawArc(glow_r_rect, int(90 * 16), int(-360.0 * self._pct * 16))
             _paint_v3_arc(p, rect, 90.0, -360.0 * self._pct, pen_w, self._modo)
 
-        # Textos: tiempo (mono) + estado
+        # Textos: tiempo (mono)
         time_pt = max(16, int(w * 0.15))
-        state_pt = max(10, int(w * 0.075))
         p.setPen(v3c("text", self._modo))
-        p.setFont(qfont_mono(time_pt, bold=False))
-        p.drawText(QRectF(0, cy - time_pt, w, time_pt + 8),
+        p.setFont(qfont_mono(time_pt, bold=True))
+        p.drawText(QRectF(0, 0, w, w),
                    Qt.AlignmentFlag.AlignCenter, self._time_text)
-        p.setPen(v3c("text3", self._modo))
-        p.setFont(qfont("size_caption"))
-        p.drawText(QRectF(0, cy + 6, w, state_pt + 10),
-                   Qt.AlignmentFlag.AlignCenter, self._state_text)
         p.end()
 
     def _apply_theme(self, modo: str):

@@ -87,9 +87,9 @@ class _SessionsListCard(NMCard):
 
     def _build(self):
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
-                                V3_SP["lg"], V3_SP["lg"])
-        lay.setSpacing(V3_SP["sm"])
+        lay.setContentsMargins(V3_SP["xl"], V3_SP["xl"],
+                                V3_SP["xl"], V3_SP["xl"])
+        lay.setSpacing(V3_SP["md"])
         self._eyebrow = QLabel("SESIONES DE HOY")
         self._eyebrow.setFont(qfont("size_caption_xs",
                                      weight=TYPOGRAPHY["weight_semibold"]))
@@ -205,25 +205,25 @@ class ModuloTimer(NMModule):
         left_col.setSpacing(V3_SP["lg"])
         left_col.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
-        # BIG ring (340)
-        self._canvas = NMFocusArc(size=340, modo=self._modo)
+        # BIG ring (360)
+        self._canvas = NMFocusArc(size=360, modo=self._modo)
         self._canvas.set_data(0.0, "25:00", "Lista para empezar")
         left_col.addWidget(self._canvas,
                             alignment=Qt.AlignmentFlag.AlignHCenter)
 
         # Chip "Sesión en curso" / estado
         self._state_chip = QLabel("Lista para empezar")
-        self._state_chip.setFont(qfont("size_caption",
+        self._state_chip.setFont(qfont("size_body",
                                         weight=TYPOGRAPHY["weight_semibold"]))
         self._state_chip.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._state_chip.setContentsMargins(V3_SP["md"], 4, V3_SP["md"], 4)
+        self._state_chip.setContentsMargins(V3_SP["lg"], V3_SP["xs"], V3_SP["lg"], V3_SP["xs"])
         left_col.addWidget(self._state_chip,
                             alignment=Qt.AlignmentFlag.AlignHCenter)
 
         # 3 NMPlayButton (refresh / play|pause / skip)
         ctrl_row = QHBoxLayout()
         ctrl_row.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        ctrl_row.setSpacing(V3_SP["md"])
+        ctrl_row.setSpacing(V3_SP["xl"])
 
         self._btn_reset = NMPlayButton(icon_name="refresh", size="md",
                                         modo=self._modo)
@@ -245,15 +245,15 @@ class ModuloTimer(NMModule):
 
         # ── RIGHT rail ───────────────────────────────────────────────────────
         right_rail = QVBoxLayout()
-        right_rail.setSpacing(V3_SP["md"])
+        right_rail.setSpacing(V3_SP["xl"])
         right_rail.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # DETALLES DE SESIÓN card
         details_card = NMCard(modo=self._modo, clickable=False)
         details_lay = QVBoxLayout(details_card)
-        details_lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
-                                        V3_SP["lg"], V3_SP["lg"])
-        details_lay.setSpacing(V3_SP["sm"])
+        details_lay.setContentsMargins(V3_SP["xl"], V3_SP["xl"],
+                                        V3_SP["xl"], V3_SP["xl"])
+        details_lay.setSpacing(V3_SP["md"])
         self._details_eyebrow = QLabel("DETALLES DE SESIÓN")
         self._details_eyebrow.setFont(qfont("size_caption_xs",
                                              weight=TYPOGRAPHY["weight_semibold"]))
@@ -276,12 +276,12 @@ class ModuloTimer(NMModule):
 
         # Preset chips (NMButtonOutline toggleables)
         chips_row = QHBoxLayout()
-        chips_row.setSpacing(V3_SP["xs"] + 2)
+        chips_row.setSpacing(V3_SP["sm"])
         self._chip_btns: list[tuple[NMButtonOutline, int]] = []
         for label, secs in PRESETS:
             btn = NMButtonOutline(label, modo=self._modo,
                                    toggleable=False, size="sm")
-            btn.setFixedSize(70, 30)
+            btn.setFixedSize(76, 32)
             btn.clicked.connect(lambda _, s=secs: self._select_preset(s))
             chips_row.addWidget(btn)
             self._chip_btns.append((btn, secs))
@@ -292,15 +292,15 @@ class ModuloTimer(NMModule):
         self._custom_widget = QWidget()
         self._custom_widget.setVisible(False)
         cw_row = QHBoxLayout(self._custom_widget)
-        cw_row.setContentsMargins(0, V3_SP["xs"], 0, 0)
-        cw_row.setSpacing(6)
+        cw_row.setContentsMargins(0, V3_SP["sm"], 0, 0)
+        cw_row.setSpacing(V3_SP["sm"])
         self._entry_custom = QLineEdit()
         self._entry_custom.setPlaceholderText("minutos")
-        self._entry_custom.setFixedSize(80, 30)
+        self._entry_custom.setFixedSize(90, 32)
         self._entry_custom.setStyleSheet(stylesheet_lineedit(self._modo))
         cw_row.addWidget(self._entry_custom)
         btn_ok = NMButton("OK", modo=self._modo, variant="secondary",
-                          size="sm", width=48)
+                          size="sm", width=54)
         btn_ok.clicked.connect(self._apply_custom)
         cw_row.addWidget(btn_ok)
         details_lay.addWidget(self._custom_widget)
@@ -336,7 +336,7 @@ class ModuloTimer(NMModule):
             qc = QColor(color)
             bg = f"rgba({qc.red()},{qc.green()},{qc.blue()},36)"
             self._state_chip.setStyleSheet(
-                f"color: {color}; background: {bg}; border-radius: 10px;")
+                f"color: {color}; background: {bg}; border-radius: 12px;")
         else:
             color = v3c("text3", self._modo).name()
             self._state_chip.setStyleSheet(
