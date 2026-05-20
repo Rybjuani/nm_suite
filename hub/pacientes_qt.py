@@ -80,29 +80,17 @@ def _v3_elevated(modo: str) -> str:
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _card_frame(modo: str) -> QFrame:
-    """Frame card v3 — superficie + border `borderSoft` + radius lg (14) + sombra."""
-    from PyQt6.QtWidgets import QGraphicsDropShadowEffect
-
+    """Frame card v3 — superficie + border `borderSoft` + radius lg (16)."""
     surface = _v3_surface(modo)
     border = v3c("borderSoft", modo).name()
     f = QFrame()
     f.setStyleSheet(f"""
         QFrame {{
             background: {surface};
-            border-radius: {V3_RD['lg']}px;
+            border-radius: 16px;
             border: 1px solid {border};
         }}
     """)
-    # Sombra v3 — sin esta, las cards en light son indistinguibles del fondo
-    is_dark = "dark" in norm_modo(modo)
-    shadow = QGraphicsDropShadowEffect(f)
-    if is_dark:
-        shadow.setBlurRadius(30); shadow.setOffset(0, 10)
-        shadow.setColor(QColor(0, 0, 0, 115))
-    else:
-        shadow.setBlurRadius(16); shadow.setOffset(0, 6)
-        shadow.setColor(QColor(15, 23, 42, 22))
-    f.setGraphicsEffect(shadow)
     return f
 
 
@@ -171,11 +159,11 @@ def _build_animo_graph(parent: QWidget, registros: list, modo: str) -> QWidget:
         return lbl
 
     # Configurar pyqtgraph con tema
-    pg.setConfigOption("background", C("bg_primary", modo))
-    pg.setConfigOption("foreground", C("text_primary", modo))
+    pg.setConfigOption("background", "transparent")
+    pg.setConfigOption("foreground", v3c("text", modo).name())
 
     plot = pg.PlotWidget()
-    plot.setBackground(C("bg_primary", modo))
+    plot.setBackground("transparent")
     plot.setMinimumHeight(220)
 
     # Eje Y
@@ -362,8 +350,8 @@ class _TabRegistros(QWidget):
             vl.setContentsMargins(PAD_CARD, 10, PAD_CARD, 10)
             vl.setSpacing(4)
             t = QLabel(titulo)
-            t.setFont(qfont("size_small", bold=True))
-            t.setStyleSheet(f"color: {C('accent', self._modo)}; background: transparent;")
+            t.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_bold"]))
+            t.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
             vl.addWidget(t)
             if not filas:
                 e = QLabel("Sin registros.")
@@ -383,8 +371,8 @@ class _TabRegistros(QWidget):
         avl.setContentsMargins(PAD_CARD, 10, PAD_CARD, 10)
         avl.setSpacing(6)
         at = QLabel("Registros de ánimo")
-        at.setFont(qfont("size_small", bold=True))
-        at.setStyleSheet(f"color: {C('accent', self._modo)}; background: transparent;")
+        at.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_bold"]))
+        at.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
         avl.addWidget(at)
         if puntajes:
             prom = round(sum(puntajes) / len(puntajes), 1)
@@ -481,15 +469,15 @@ class _TabAsignar(QWidget):
         vl_r.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
         vl_r.setSpacing(8)
         QLabel_bold = QLabel("Asignar tarea de rutina")
-        QLabel_bold.setFont(qfont("size_body", bold=True))
-        QLabel_bold.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+        QLabel_bold.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_bold"]))
+        QLabel_bold.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
         vl_r.addWidget(QLabel_bold)
         self._entry_tarea = NMInput("Descripción de la tarea…", modo=self._modo)
         vl_r.addWidget(self._entry_tarea)
         row_r = QHBoxLayout()
         lbl_sec = QLabel("Sección:")
         lbl_sec.setFont(qfont("size_small"))
-        lbl_sec.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
+        lbl_sec.setStyleSheet(f"color: {v3c('text2', self._modo).name()}; background: transparent;")
         row_r.addWidget(lbl_sec)
         self._combo_sec = QComboBox()
         self._combo_sec.addItems(["manana", "tarde", "noche"])
@@ -509,15 +497,15 @@ class _TabAsignar(QWidget):
         vl_rec.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
         vl_rec.setSpacing(8)
         lbl_rec = QLabel("Enviar recordatorio remoto")
-        lbl_rec.setFont(qfont("size_body", bold=True))
-        lbl_rec.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+        lbl_rec.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_bold"]))
+        lbl_rec.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
         vl_rec.addWidget(lbl_rec)
         self._entry_rec_msg = NMInput("Mensaje del recordatorio…", modo=self._modo)
         vl_rec.addWidget(self._entry_rec_msg)
         row_rec = QHBoxLayout()
         lbl_hora = QLabel("Hora (HH:MM):")
         lbl_hora.setFont(qfont("size_small"))
-        lbl_hora.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
+        lbl_hora.setStyleSheet(f"color: {v3c('text2', self._modo).name()}; background: transparent;")
         row_rec.addWidget(lbl_hora)
         self._entry_rec_hora = NMInput("22:00", modo=self._modo)
         self._entry_rec_hora.setMinimumWidth(80)
@@ -592,8 +580,8 @@ class _TabBanco(QWidget):
         fl.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
         fl.setSpacing(8)
         t = QLabel("Nueva actividad")
-        t.setFont(qfont("size_body", bold=True))
-        t.setStyleSheet(f"color: {C('accent', self._modo)}; background: transparent;")
+        t.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_bold"]))
+        t.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
         fl.addWidget(t)
         self._ent_nombre = NMInput("Nombre de la actividad…", modo=self._modo)
         fl.addWidget(self._ent_nombre)
@@ -602,7 +590,7 @@ class _TabBanco(QWidget):
         row_form = QHBoxLayout()
         lbl_cat = QLabel("Categoría:")
         lbl_cat.setFont(qfont("size_small"))
-        lbl_cat.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
+        lbl_cat.setStyleSheet(f"color: {v3c('text2', self._modo).name()}; background: transparent;")
         row_form.addWidget(lbl_cat)
         self._cmb_cat = QComboBox()
         self._cmb_cat.addItems(list(CATEGORY_COLORS.keys()))
@@ -611,7 +599,7 @@ class _TabBanco(QWidget):
         row_form.addWidget(self._cmb_cat)
         lbl_animo = QLabel("Ánimo:")
         lbl_animo.setFont(qfont("size_small"))
-        lbl_animo.setStyleSheet(f"color: {c['text_secondary']}; background: transparent;")
+        lbl_animo.setStyleSheet(f"color: {v3c('text2', self._modo).name()}; background: transparent;")
         row_form.addWidget(lbl_animo)
         self._cmb_animo = QComboBox()
         self._cmb_animo.addItems(["1-4 (bajo)", "4-7 (medio)", "7-10 (alto)"])
@@ -701,7 +689,7 @@ class _TabBanco(QWidget):
         if not rows:
             lbl = QLabel("El banco está vacío.")
             lbl.setFont(qfont("size_body"))
-            lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+            lbl.setStyleSheet(f"color: {v3c('text3', self._modo).name()}; background: transparent;")
             self._list_layout.addWidget(lbl)
             return
 
@@ -712,9 +700,9 @@ class _TabBanco(QWidget):
             row_f.setMinimumHeight(36)
             row_f.setStyleSheet(f"""
                 QFrame {{
-                    background: {c['bg_surface']};
+                    background: {v3c('elevated', self._modo).name()};
                     border-radius: {RADIUS_BUTTON}px;
-                    border: 1px solid {c.get('border_card', c['border'])};
+                    border: 1px solid {v3c('borderSoft', self._modo).name()};
                 }}
             """)
             rl = QHBoxLayout(row_f)
@@ -733,7 +721,7 @@ class _TabBanco(QWidget):
                 f"ánimo {r.get('animo_min',0)}–{r.get('animo_max',10)}"
             )
             info.setFont(qfont("size_small"))
-            col = c["text_primary"] if r.get("activa", True) else c["text_tertiary"]
+            col = v3c('text', self._modo).name() if r.get("activa", True) else v3c('text3', self._modo).name()
             info.setStyleSheet(f"color: {col}; background: transparent;")
             rl.addWidget(info, stretch=1)
 
@@ -747,14 +735,14 @@ class _TabBanco(QWidget):
             btn_del.setCursor(Qt.CursorShape.PointingHandCursor)
             btn_del.setStyleSheet(f"""
                 QPushButton {{
-                    color: {c['text_tertiary']};
+                    color: {v3c('text3', self._modo).name()};
                     background: transparent;
                     border: none;
                     border-radius: {RADIUS_PILL}px;
                 }}
                 QPushButton:hover {{
-                    color: {c['text_on_accent']};
-                    background: {c['error']};
+                    color: {v3c('textOnSolid', self._modo).name()};
+                    background: {v3c('danger', self._modo).name()};
                 }}
             """)
             btn_del.clicked.connect(lambda _, _rid=rid: self._eliminar(int(_rid)))
@@ -820,8 +808,8 @@ class _TabIA(QWidget):
         vl_res.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
         vl_res.setSpacing(8)
         lbl_res = QLabel("Resumen de evolución")
-        lbl_res.setFont(qfont("size_body", bold=True))
-        lbl_res.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+        lbl_res.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_bold"]))
+        lbl_res.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
         vl_res.addWidget(lbl_res)
         self._txt_resumen = QTextEdit()
         self._txt_resumen.setMinimumHeight(80)
@@ -855,8 +843,8 @@ class _TabIA(QWidget):
         vl_sug.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
         vl_sug.setSpacing(8)
         lbl_sug = QLabel("Sugerencias de acción")
-        lbl_sug.setFont(qfont("size_body", bold=True))
-        lbl_sug.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+        lbl_sug.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_bold"]))
+        lbl_sug.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
         vl_sug.addWidget(lbl_sug)
         self._frame_sug = QWidget()
         self._frame_sug.setStyleSheet("background: transparent;")
@@ -865,7 +853,7 @@ class _TabIA(QWidget):
         self._sug_layout.setSpacing(4)
         ph = QLabel("Presioná 'Generar sugerencias' para obtener acciones concretas.")
         ph.setFont(qfont("size_small"))
-        ph.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+        ph.setStyleSheet(f"color: {v3c('text3', self._modo).name()}; background: transparent;")
         self._sug_layout.addWidget(ph)
         vl_sug.addWidget(self._frame_sug)
         self._btn_sugerencias = NMButton("Generar sugerencias", modo=self._modo,
@@ -880,8 +868,8 @@ class _TabIA(QWidget):
         vl_t.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
         vl_t.setSpacing(8)
         lbl_t = QLabel("Generar tarea personalizada")
-        lbl_t.setFont(qfont("size_body", bold=True))
-        lbl_t.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+        lbl_t.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_bold"]))
+        lbl_t.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
         vl_t.addWidget(lbl_t)
         self._ent_ctx = NMInput(
             "Ej: paciente con ansiedad leve, mejoró en respiración…",
@@ -991,7 +979,7 @@ class _TabIA(QWidget):
             fila = QFrame()
             fila.setStyleSheet(f"""
                 QFrame {{
-                    background: {c['bg_elevated']};
+                    background: {v3c('elevated', self._modo).name()};
                     border-radius: {RADIUS_BUTTON}px;
                     border: none;
                 }}
@@ -1001,7 +989,7 @@ class _TabIA(QWidget):
             lbl = QLabel(linea)
             lbl.setFont(qfont("size_small"))
             lbl.setWordWrap(True)
-            lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+            lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
             fl.addWidget(lbl, stretch=1)
             btn_ap = NMButton("Aplicar", modo=self._modo, width=70, height=28)
             btn_ap.clicked.connect(

@@ -175,24 +175,12 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
         self._setup()
         self._connect_theme()
 
-    def paintEvent(self, event):
-        """Aura radial dinámica de fondo."""
-        super().paintEvent(event)
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        w, h = self.width(), self.height()
-        sc = SessionColor.instance()
-        grad = QRadialGradient(w * 0.2, h * 0.5, w * 0.85)
-        grad.setColorAt(0, sc.aura_qcolor(self._modo))
-        grad.setColorAt(1, QColor(0, 0, 0, 0))
-        p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(QBrush(grad))
-        p.drawRect(self.rect())
-        p.end()
-
     def _setup(self):
-        c = colors(self._modo)
-        self.setStyleSheet(f"background: {c['bg_primary']};")
+        from shared.theme_qt import v3c
+        from shared.theme import TYPOGRAPHY as _TY
+        self._v3c = v3c
+        self._ty = _TY
+        self.setStyleSheet("background: transparent;")
         self._grid_cols = 0
 
         scroll = QScrollArea(self)
@@ -226,8 +214,8 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
             if visual_qa_enabled()
             else f"Dashboard  —  {n} paciente{'s' if n != 1 else ''}"
         )
-        title.setFont(qfont("size_h2", bold=True))
-        title.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+        title.setFont(qfont("size_h2", weight=self._ty["weight_bold"]))
+        title.setStyleSheet(f"color: {self._v3c('text', self._modo).name()}; background: transparent;")
         layout.addWidget(title)
 
         if self._pacientes:
@@ -264,13 +252,13 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
                 inner.addWidget(NMModuleRing(size=44, pct=pct, modo=self._modo))
                 txt = QVBoxLayout()
                 name = QLabel(label)
-                name.setFont(qfont("size_body", bold=True))
+                name.setFont(qfont("size_body", weight=self._ty["weight_semibold"]))
                 name.setStyleSheet(
-                    f"color: {c['text_primary']}; background: transparent;")
+                    f"color: {self._v3c('text', self._modo).name()}; background: transparent;")
                 meta = QLabel("actividad semanal")
                 meta.setFont(qfont("size_caption"))
                 meta.setStyleSheet(
-                    f"color: {c['text_tertiary']}; background: transparent;")
+                    f"color: {self._v3c('text3', self._modo).name()}; background: transparent;")
                 txt.addWidget(name)
                 txt.addWidget(meta)
                 inner.addLayout(txt, stretch=1)
@@ -280,8 +268,8 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
 
             if visual_qa_enabled():
                 recent = QLabel("Actividad reciente")
-                recent.setFont(qfont("size_body", bold=True))
-                recent.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+                recent.setFont(qfont("size_body", weight=self._ty["weight_bold"]))
+                recent.setStyleSheet(f"color: {self._v3c('text', self._modo).name()}; background: transparent;")
                 layout.addWidget(recent)
                 for text in [
                     "●  Respiración completada — 4-7-8 · 5 ciclos\n    Hoy 10:32",
@@ -290,7 +278,7 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
                 ]:
                     row = QLabel(text)
                     row.setFont(qfont("size_caption"))
-                    row.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+                    row.setStyleSheet(f"color: {self._v3c('text2', self._modo).name()}; background: transparent;")
                     layout.addWidget(row)
                 layout.addStretch()
                 return
@@ -302,7 +290,7 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
             )
             empty.setFont(qfont("size_body"))
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            empty.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+            empty.setStyleSheet(f"color: {self._v3c('text3', self._modo).name()}; background: transparent;")
             layout.addWidget(empty)
             layout.addStretch()
             return
@@ -334,8 +322,8 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
 
             top_row = QHBoxLayout()
             name_lbl = QLabel(nombre)
-            name_lbl.setFont(qfont("size_body", bold=True))
-            name_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
+            name_lbl.setFont(qfont("size_body", weight=self._ty["weight_semibold"]))
+            name_lbl.setStyleSheet(f"color: {self._v3c('text', self._modo).name()}; background: transparent;")
             name_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
             top_row.addWidget(name_lbl)
             top_row.addStretch()
@@ -348,7 +336,7 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
 
             id_lbl = QLabel(f"ID: {pid[:14]}…" if len(pid) > 14 else pid)
             id_lbl.setFont(qfont("size_caption"))
-            id_lbl.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+            id_lbl.setStyleSheet(f"color: {self._v3c('text3', self._modo).name()}; background: transparent;")
             id_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
             inner.addWidget(id_lbl)
             inner.addStretch()
@@ -393,82 +381,11 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
             self._dash_grid.addWidget(card, row, col)
         return
 
-        # Grid de cards 3 columnas
-        grid = QGridLayout()
-        grid.setSpacing(GAP_CARDS)
-        for col in range(3):
-            grid.setColumnStretch(col, 1)
 
-        grad = gradient_colors(self._modo)
-
-        for i, p in enumerate(self._pacientes):
-            nombre = p.get("patient_name") or p.get("patient_id", "—")
-            pid = p.get("patient_id", "")
-            t = (i % 3) / 2
-            card_accent = interpolate_color(grad[0], grad[-1], t)
-
-            card = NMCard(accent_color=card_accent, clickable=True, modo=self._modo)
-            card.setMinimumHeight(120)
-            card.clicked.connect(
-                lambda checked=False, _pid=pid, _n=nombre:
-                    self._on_select(_pid, _n)
-            )
-
-            inner = QVBoxLayout()
-            inner.setContentsMargins(PAD_CARD, 10, PAD_CARD, 10)
-            inner.setSpacing(4)
-
-            # Fila top: nombre + indicador ánimo
-            top_row = QHBoxLayout()
-            name_lbl = QLabel(nombre)
-            name_lbl.setFont(qfont("size_body", bold=True))
-            name_lbl.setStyleSheet(
-                f"color: {c['text_primary']}; background: transparent;"
-            )
-            name_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-            top_row.addWidget(name_lbl)
-            top_row.addStretch()
-
-            # Indicador de animo (ultimo puntaje si existe en los datos)
-            puntaje = p.get("last_mood") if "last_mood" in p else None
-            ind = _AnimoIndicator(puntaje, self._modo)
-            ind.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-            top_row.addWidget(ind)
-            inner.addLayout(top_row)
-
-            # ID truncado
-            id_lbl = QLabel(f"ID: {pid[:14]}…" if len(pid) > 14 else pid)
-            id_lbl.setFont(qfont("size_caption"))
-            id_lbl.setStyleSheet(
-                f"color: {c['text_tertiary']}; background: transparent;"
-            )
-            id_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-            inner.addWidget(id_lbl)
-
-            inner.addStretch()
-
-            btn = NMButton("Ver detalle", modo=self._modo, width=100, height=30)
-            btn.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-            inner.addWidget(btn, alignment=Qt.AlignmentFlag.AlignLeft)
-
-            # Montar inner en card
-            card_inner = QWidget(card)
-            card_inner.setStyleSheet("background: transparent;")
-            card_inner.setLayout(inner)
-            card_inner.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-            card_layout = QVBoxLayout(card)
-            card_layout.setContentsMargins(0, 0, 0, 0)
-            card_layout.addWidget(card_inner)
-
-            grid.addWidget(card, i // 3, i % 3)
-
-        layout.addLayout(grid)
-        layout.addStretch()
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        c = colors(self._modo)
-        self.setStyleSheet(f"background: {c['bg_primary']};")
+        self.setStyleSheet("background: transparent;")
 
 
 # ── PacientesView ─────────────────────────────────────────────────────────────
@@ -501,8 +418,7 @@ class PacientesView(QWidget):
         self._rd = V3_RD
         self._ty = _TY
 
-        self.setStyleSheet(
-            f"background: {v3c('bgAlt' if 'dark' in self._modo else 'bg', self._modo).name()};")
+        self.setStyleSheet("background: transparent;")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(V3_SP["xl"], V3_SP["lg"],
@@ -690,8 +606,7 @@ class ConfigView(QWidget):
         from shared.theme_qt import v3c, V3_SP, V3_RD
         from shared.theme import TYPOGRAPHY as _TY
 
-        self.setStyleSheet(
-            f"background: {v3c('bgAlt' if 'dark' in self._modo else 'bg', self._modo).name()};")
+        self.setStyleSheet("background: transparent;")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(V3_SP["xl"], V3_SP["lg"],
@@ -1017,8 +932,7 @@ class IAAssistantView(ThemeAwareWidgetMixin, QWidget):
         from shared.theme_qt import v3c
         self._modo = norm_modo(modo)
         is_dark = "dark" in self._modo
-        self.setStyleSheet(
-            f"background: {v3c('bgAlt' if is_dark else 'bg', self._modo).name()};")
+        self.setStyleSheet("background: transparent;")
         self._title.setStyleSheet(
             f"color: {v3c('text', self._modo).name()}; "
             f"background: transparent;")
@@ -1038,7 +952,22 @@ class _ShellWidget(QWidget):
 
     def paintEvent(self, event):
         p = QPainter(self)
-        paint_shell_background(p, QRectF(self.rect()), self._modo)
+        rect = QRectF(self.rect())
+        is_dark = "dark" in norm_modo(self._modo)
+        from shared.theme_qt import v3c
+        # Hub background: clinical, calm, structured (no blobs)
+        # Deep navy linear gradient in dark mode, clean warm ivory/stone in light mode
+        grad = QLinearGradient(rect.topLeft(), rect.bottomRight())
+        grad.setCoordinateMode(QLinearGradient.CoordinateMode.ObjectMode)
+        if is_dark:
+            bg_top = v3c("bgAlt", self._modo)       # #121b2d
+            bg_bot = v3c("bg",    self._modo)       # #080c1e
+        else:
+            bg_top = v3c("bgAlt", self._modo)       # #ece5d5
+            bg_bot = v3c("bg", self._modo)          # #f5f1e8
+        grad.setColorAt(0.0, bg_top)
+        grad.setColorAt(1.0, bg_bot)
+        p.fillRect(rect, QBrush(grad))
         p.end()
 
 
@@ -1134,7 +1063,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         self._sync_orb_label.setFont(qfont("size_caption"))
         c = colors(self._modo)
         self._sync_orb_label.setStyleSheet(
-            f"color: {c['text_tertiary']}; background: transparent;"
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;"
         )
         footer_layout.addWidget(self._sync_orb_label, stretch=1)
 
@@ -1168,7 +1097,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         self._lbl_status = QLabel("Conectando…")
         self._lbl_status.setFont(qfont("size_caption"))
         self._lbl_status.setStyleSheet(
-            f"color: {c['text_tertiary']}; background: transparent;"
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;"
         )
         # Insertar en el header layout
         header_layout = self._header.layout()
@@ -1275,7 +1204,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         self._lbl_ia_status.hide()
         self._lbl_status.setText(nombre[:24])
         self._lbl_status.setStyleSheet(
-            f"color: {C('text_primary', self._modo)}; background: transparent;"
+            f"color: {v3c('text', self._modo).name()}; background: transparent;"
         )
 
     def _back_to_dashboard(self):
@@ -1303,14 +1232,14 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
                 if hasattr(res, 'data'):
                     self._lbl_status.setText("● Conectado")
                     self._lbl_status.setStyleSheet(
-                        f"color: {c['success']}; background: transparent;"
+                        f"color: {v3c('success', self._modo).name()}; background: transparent;"
                     )
                     if hasattr(self, "_sync_orb"):
                         self._sync_orb.set_state("ok")
                     if hasattr(self, "_sync_orb_label"):
                         self._sync_orb_label.setText("Conectado")
                         self._sync_orb_label.setStyleSheet(
-                            f"color: {c['success']}; background: transparent;"
+                            f"color: {v3c('success', self._modo).name()}; background: transparent;"
                         )
                     if hasattr(self, "_view_config"):
                         self._view_config.set_sync_state("ok")
@@ -1322,14 +1251,14 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         _detail = motivo or _verify_err or 'verificación fallida'
         self._lbl_status.setText(f"● Sin conexión: {_detail}")
         self._lbl_status.setStyleSheet(
-            f"color: {c['error']}; background: transparent;"
+            f"color: {v3c('error', self._modo).name()}; background: transparent;"
         )
         if hasattr(self, "_sync_orb"):
             self._sync_orb.set_state("error")
         if hasattr(self, "_sync_orb_label"):
             self._sync_orb_label.setText("Sin conexión")
             self._sync_orb_label.setStyleSheet(
-                f"color: {c['error']}; background: transparent;"
+                f"color: {v3c('error', self._modo).name()}; background: transparent;"
             )
         if hasattr(self, "_view_config"):
             self._view_config.set_sync_state("error")
@@ -1368,14 +1297,14 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
             self._sidebar.set_footer("Dr. Garcia")
         self._lbl_status.setText("● Demo visual")
         self._lbl_status.setStyleSheet(
-            f"color: {c['teal']}; background: transparent;"
+            f"color: {v3c('teal', self._modo).name()}; background: transparent;"
         )
         if hasattr(self, "_sync_orb"):
             self._sync_orb.set_state("ok")
         if hasattr(self, "_sync_orb_label"):
             self._sync_orb_label.setText("Demo visual")
             self._sync_orb_label.setStyleSheet(
-                f"color: {c['teal']}; background: transparent;"
+                f"color: {v3c('teal', self._modo).name()}; background: transparent;"
             )
         if hasattr(self, "_view_config"):
             self._view_config.set_sync_state("ok")
@@ -1388,7 +1317,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
             c = colors(self._modo)
             self._lbl_ia_status.setText("IA: demo visual")
             self._lbl_ia_status.setStyleSheet(
-                f"color: {c['teal']}; background: transparent;"
+                f"color: {v3c('teal', self._modo).name()}; background: transparent;"
             )
             return
         try:
@@ -1399,7 +1328,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         c = colors(self._modo)
         ok = "disponible via" in msg
         pending = "verificando" in msg
-        color = c["success"] if ok else (c["warning"] if pending else c["text_tertiary"])
+        color = v3c("success", self._modo).name() if ok else (v3c("warning", self._modo).name() if pending else v3c("text3", self._modo).name())
         self._lbl_ia_status.setText(msg)
         self._lbl_ia_status.setStyleSheet(
             f"color: {color}; background: transparent;"
@@ -1417,7 +1346,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         if hasattr(self, "_sync_orb_label"):
             self._sync_orb_label.setText("Reconectando…")
             self._sync_orb_label.setStyleSheet(
-                f"color: {c['text_tertiary']}; background: transparent;"
+                f"color: {v3c('text3', self._modo).name()}; background: transparent;"
             )
         if self._sb:
             try:
@@ -1425,14 +1354,14 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
                 if hasattr(res, 'data'):
                     self._lbl_status.setText("● Conectado")
                     self._lbl_status.setStyleSheet(
-                        f"color: {c['success']}; background: transparent;"
+                        f"color: {v3c('success', self._modo).name()}; background: transparent;"
                     )
                     if hasattr(self, "_sync_orb"):
                         self._sync_orb.set_state("ok")
                     if hasattr(self, "_sync_orb_label"):
                         self._sync_orb_label.setText("Conectado")
                         self._sync_orb_label.setStyleSheet(
-                            f"color: {c['success']}; background: transparent;"
+                            f"color: {v3c('success', self._modo).name()}; background: transparent;"
                         )
                     if hasattr(self, "_view_config"):
                         self._view_config.set_sync_state("ok")
@@ -1444,14 +1373,14 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
             self._sb = None
         self._lbl_status.setText(f"● Error: {motivo or 'verificación fallida'}")
         self._lbl_status.setStyleSheet(
-            f"color: {c['error']}; background: transparent;"
+            f"color: {v3c('error', self._modo).name()}; background: transparent;"
         )
         if hasattr(self, "_sync_orb"):
             self._sync_orb.set_state("error")
         if hasattr(self, "_sync_orb_label"):
             self._sync_orb_label.setText("Sin conexión")
             self._sync_orb_label.setStyleSheet(
-                f"color: {c['error']}; background: transparent;"
+                f"color: {v3c('error', self._modo).name()}; background: transparent;"
             )
         if hasattr(self, "_view_config"):
             self._view_config.set_sync_state("error")
@@ -1495,14 +1424,14 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         if hasattr(self, "_lbl_status"):
             c = colors(self._modo)
             self._lbl_status.setStyleSheet(
-                f"color: {c['text_tertiary']}; background: transparent;"
+                f"color: {v3c('text3', self._modo).name()}; background: transparent;"
             )
         if hasattr(self, "_lbl_ia_status"):
             self._update_ia_status()
         if hasattr(self, "_sync_orb_label"):
             c = colors(self._modo)
             self._sync_orb_label.setStyleSheet(
-                f"color: {c['text_tertiary']}; background: transparent;"
+                f"color: {v3c('text3', self._modo).name()}; background: transparent;"
             )
         if hasattr(self, "_stack"):
             self._refresh_all_views()

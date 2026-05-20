@@ -28,47 +28,53 @@ funcionando contra los nombres legacy; obtienen los valores v3 sin refactor.
 
 V3_LIGHT = {
     # Backgrounds
-    "bg":              "#eef2f8",
-    "bgAlt":           "#e6ecf5",
-    "bgSidebar":       "#ffffff",
-    "surface":         "#ffffff",
-    "elevated":        "#f5f7fb",
+    "bg":              "#f6f1e8",  # Warm ivory
+    "bgAlt":           "#ece5d5",  # Cream / soft stone (bgSoft)
+    "bgSoft":          "#ece5d5",  # Cream / soft stone
+    "bgSidebar":       "#ffffff",  # White
+    "surface":         "#fcfaf6",  # Warm white card surface (not pure white)
+    "elevated":        "#faf8f5",  # Very light cream/warm surface (surfaceElevated)
+    "surfaceElevated": "#faf8f5",  # Very light cream/warm surface
+    "surfaceGlass":    "rgba(255, 255, 255, 0.7)",  # Glass translucent
 
     # Borders
-    "border":          "#e3e9f1",
-    "borderSoft":      "#eef1f6",
-    "borderStrong":    "#cdd5e2",
+    "border":          "#ddd5bc",  # Slightly deeper warm stone border — better card edge
+    "borderSoft":      "#e8dfc7",  # Soft stone border (was border)
+    "borderStrong":    "#c9bb9e",  # Stronger warm border for hover states
 
     # Text
-    "text":            "#0f172a",
-    "text2":           "#475569",
-    "text3":           "#94a3b8",
-    "text4":           "#cbd5e1",
+    "text":            "#122c25",  # Deep therapeutic green
+    "textMuted":       "#445e56",  # Muted slate/green
+    "text2":           "#445e56",  # For compatibility
+    "text3":           "#7f968e",  # For compatibility
+    "text4":           "#c2d1cb",  # For compatibility
 
-    # Gradiente firma teal → violet
-    "gradFrom":        "#2dd4bf",
-    "gradMid":         "#5eead4",
-    "gradTo":          "#a855f7",
+    # Accent (Muted teal & copper/gold signature gradient)
+    "accent":          "#2c7a7b",  # Muted teal
+    "accentSoft":      "#e4e0d4",  # Warm sand tint — coherent with ivory palette
+    "gradFrom":        "#2c7a7b",  # Muted teal
+    "gradMid":         "#5f9ea0",  # Cadet blue / intermediate
+    "gradTo":          "#b45309",  # Subtle copper/gold accent
 
     # Slashbar emocional (no varía con theme)
-    "moodGradFrom":    "#2dd4bf",
-    "moodGradMid":     "#5eead4",
-    "moodGradTo":      "#a855f7",
+    "moodGradFrom":    "#2c7a7b",
+    "moodGradMid":     "#5f9ea0",
+    "moodGradTo":      "#b45309",
 
     # Tonos
-    "teal":            "#14b8a6",
-    "tealSoft":        "#d3f5ef",
-    "violet":          "#a855f7",
-    "violetSoft":      "#ede5fc",
-    "cyan":            "#06b6d4",
-    "cyanSoft":        "#cef3f9",
+    "teal":            "#2c7a7b",  # Muted teal
+    "tealSoft":        "#e6fffa",  # Soft teal tint
+    "violet":          "#b45309",  # Subtle copper/gold (mapped to violet for compatibility)
+    "violetSoft":      "#fef3c7",  # Mapped for compatibility
+    "cyan":            "#0f766e",  # Deep therapeutic green/teal
+    "cyanSoft":        "#ccfbf1",
 
     # Semánticos
-    "success":         "#10b981",
+    "success":         "#10b981",  # Therapeutic green success
     "successSoft":     "#d1fae5",
-    "warning":         "#f59e0b",
+    "warning":         "#f59e0b",  # Muted amber/gold
     "warningSoft":     "#fef3c7",
-    "danger":          "#ef4444",
+    "danger":          "#ef4444",  # Muted red for danger
     "dangerSoft":      "#fee2e2",
 
     # Streak
@@ -78,51 +84,61 @@ V3_LIGHT = {
 
 V3_DARK = {
     # Backgrounds
-    "bg":              "#060912",
-    "bgAlt":           "#0a0f1f",
-    "bgSidebar":       "#0a0f1f",
-    # Translúcidos (Qt no soporta rgba en todos los QSS): se ofrece la
-    # variante *Solid como fallback para stylesheets.
-    "surface":         "rgba(18, 25, 45, 0.7)",
-    "surfaceSolid":    "#121c2d",
-    "elevated":        "rgba(30, 41, 65, 0.6)",
-    "elevatedSolid":   "#1e2941",
+    "bg":              "#080c1e",  # Blue-black
+    "bgAlt":           "#121b2d",  # Deep navy / graphite (bgSoft)
+    "bgSoft":          "#121b2d",  # Deep navy / graphite
+    "bgSidebar":       "#121b2d",  # Deep navy
+    "surface":         "rgba(18, 25, 45, 0.7)",  # Glass translucent
+    "surfaceSolid":    "#121c2d",  # Solid dark navy surface
+    "elevated":        "rgba(25, 35, 60, 0.6)",  # Elevated translucent (surfaceElevated)
+    "surfaceElevated": "rgba(25, 35, 60, 0.6)",  # Elevated translucent
+    "elevatedSolid":   "#19243d",  # Solid elevated surface
+    "surfaceGlass":    "rgba(18, 25, 45, 0.7)",  # Glass translucent
 
-    "border":          "rgba(94, 234, 212, 0.10)",
-    "borderSoft":      "rgba(255, 255, 255, 0.06)",
-    "borderStrong":    "rgba(94, 234, 212, 0.25)",
-    "borderSolid":     "#23314a",
+    # Borders
+    "border":          "rgba(167, 139, 250, 0.10)",  # Violet undertone soft border
+    "borderSoft":      "rgba(255, 255, 255, 0.06)",  # Minimal border
+    "borderStrong":    "rgba(167, 139, 250, 0.25)",  # Stronger violet undertone border
+    "borderSolid":     "#1f2a44",  # Solid border for fallback
 
-    "text":            "#f1f5f9",
-    "text2":           "#94a3b8",
-    "text3":           "#64748b",
-    "text4":           "#475569",
+    # Text
+    "text":            "#f1f5f9",  # Slate white
+    "textMuted":       "#94a3b8",  # Graphite/slate gray
+    "text2":           "#94a3b8",  # For compatibility
+    "text3":           "#64748b",  # For compatibility
+    "text4":           "#475569",  # For compatibility
 
-    "gradFrom":        "#22d3ee",
-    "gradMid":         "#5eead4",
-    "gradTo":          "#c084fc",
+    # Accent (Soft purple accent & signature gradient)
+    "accent":          "#a78bfa",  # Soft purple accent
+    "accentSoft":      "rgba(167, 139, 250, 0.18)",  # Soft purple tint
+    "gradFrom":        "#7c3aed",  # Violet undertone
+    "gradMid":         "#a78bfa",  # Soft purple
+    "gradTo":          "#c084fc",  # Soft magenta/pink-purple
 
-    "moodGradFrom":    "#22d3ee",
-    "moodGradMid":     "#5eead4",
+    "moodGradFrom":    "#7c3aed",
+    "moodGradMid":     "#a78bfa",
     "moodGradTo":      "#c084fc",
 
-    "teal":            "#5eead4",
-    "tealSoft":        "rgba(20, 184, 166, 0.18)",
-    "tealSoftSolid":   "#103631",
+    # Tonos
+    "teal":            "#a78bfa",  # Mapped to soft purple for compatibility
+    "tealSoft":        "rgba(167, 139, 250, 0.18)",
+    "tealSoftSolid":   "#2a1843",
     "violet":          "#c084fc",
-    "violetSoft":      "rgba(168, 85, 247, 0.20)",
+    "violetSoft":      "rgba(192, 132, 252, 0.20)",
     "violetSoftSolid": "#2a1843",
-    "cyan":            "#22d3ee",
-    "cyanSoft":        "rgba(6, 182, 212, 0.18)",
-    "cyanSoftSolid":   "#0f2e36",
+    "cyan":            "#a78bfa",
+    "cyanSoft":        "rgba(167, 139, 250, 0.18)",
+    "cyanSoftSolid":   "#2a1843",
 
-    "success":         "#34d399",
-    "successSoft":     "rgba(16, 185, 129, 0.20)",
+    # Semánticos
+    "success":         "#10b981",  # Therapeutic green success
+    "successSoft":     "rgba(16, 185, 129, 0.18)",
     "warning":         "#fbbf24",
-    "warningSoft":     "rgba(245, 158, 11, 0.20)",
-    "danger":          "#f87171",
-    "dangerSoft":      "rgba(239, 68, 68, 0.20)",
+    "warningSoft":     "rgba(251, 191, 36, 0.18)",
+    "danger":          "#f87171",  # Muted red for danger
+    "dangerSoft":      "rgba(248, 113, 113, 0.18)",
 
+    # Streak
     "streak":          "#fb923c",
     "streakSoft":      "rgba(249, 115, 22, 0.18)",
 }
@@ -161,20 +177,20 @@ V3_SHADOWS = {
         "sm":   {"blur":  4, "offset": (0, 1),  "color": (15, 23, 42, 10)},
         "md":   {"blur": 16, "offset": (0, 4),  "color": (15, 23, 42, 15)},
         "card": {"blur": 12, "offset": (0, 4),  "color": (15, 23, 42, 13)},
-        "ring": {"blur": 20, "offset": (0, 4),  "color": (20, 184, 166, 76)},
+        "ring": {"blur": 20, "offset": (0, 4),  "color": (44, 122, 123, 76)},  # updated to match accent teal
     },
     "dark": {
         "sm":   {"blur":  8, "offset": (0, 2),  "color": (0, 0, 0, 102)},
         "md":   {"blur": 24, "offset": (0, 8),  "color": (0, 0, 0, 127)},
         "card": {"blur": 30, "offset": (0, 10), "color": (0, 0, 0, 115)},
-        "glow": {"blur": 40, "offset": (0, 0),  "color": (94, 234, 212, 46)},
+        "glow": {"blur": 40, "offset": (0, 0),  "color": (167, 139, 250, 46)},  # updated to match accent soft purple
     },
 }
 
-# Paradas para QLinearGradient (firma teal → violet)
+# Paradas para QLinearGradient (firma teal → violet en dark, teal → copper/gold en light)
 V3_GRADIENTS = {
-    "light": [("#2dd4bf", 0.0), ("#5eead4", 0.5), ("#a855f7", 1.0)],
-    "dark":  [("#22d3ee", 0.0), ("#5eead4", 0.5), ("#c084fc", 1.0)],
+    "light": [("#2c7a7b", 0.0), ("#5f9ea0", 0.5), ("#b45309", 1.0)],
+    "dark":  [("#7c3aed", 0.0), ("#a78bfa", 0.5), ("#c084fc", 1.0)],
 }
 
 
@@ -420,18 +436,18 @@ for _m in ("dark_hybrid", "light_hybrid"):
 
 GRADIENTS = {
     "dark_hybrid": [
-        ("#22d3ee", 0.0),
-        ("#5eead4", 0.5),
+        ("#7c3aed", 0.0),
+        ("#a78bfa", 0.5),
         ("#c084fc", 1.0),
     ],
     "light_hybrid": [
-        ("#2dd4bf", 0.0),
-        ("#5eead4", 0.5),
-        ("#a855f7", 1.0),
+        ("#2c7a7b", 0.0),
+        ("#5f9ea0", 0.5),
+        ("#b45309", 1.0),
     ],
     # Pares (start, end) usados por algunos builders
-    "accent_teal_violet_dark":  ("#22d3ee", "#c084fc"),
-    "accent_teal_violet_light": ("#2dd4bf", "#a855f7"),
+    "accent_teal_violet_dark":  ("#7c3aed", "#c084fc"),
+    "accent_teal_violet_light": ("#2c7a7b", "#b45309"),
 }
 
 
@@ -442,13 +458,13 @@ GRADIENTS = {
 SHADOWS = {
     "dark": {
         "card":       "0 10px 30px rgba(0,0,0,0.45)",
-        "card_hover": "0 16px 40px rgba(0,0,0,0.55), 0 0 1px rgba(94,234,212,0.18)",
-        "glow_teal":  "0 0 40px rgba(94,234,212,0.18), 0 0 16px rgba(94,234,212,0.10)",
+        "card_hover": "0 16px 40px rgba(0,0,0,0.55), 0 0 1px rgba(167,139,250,0.18)",
+        "glow_teal":  "0 0 40px rgba(167,139,250,0.18), 0 0 16px rgba(167,139,250,0.10)",
     },
     "light": {
         "card":       "0 4px 12px rgba(15,23,42,0.05), 0 1px 2px rgba(15,23,42,0.04)",
         "card_hover": "0 12px 28px rgba(15,23,42,0.06), 0 4px 10px rgba(15,23,42,0.04)",
-        "glow_teal":  "0 4px 20px rgba(20,184,166,0.30)",
+        "glow_teal":  "0 4px 20px rgba(44,122,123,0.30)",
     },
 }
 

@@ -329,11 +329,11 @@ class NMCard(QFrame):
     def _apply_card_shadow(self):
         """Crea o refresca QGraphicsDropShadowEffect según modo + glow.
 
-        Spec README V3_SHADOWS:
+        Spec V3_SHADOWS (shared/theme.py):
           light card:  blur 12, offset (0,4), rgba(15,23,42,13)
           dark  card:  blur 30, offset (0,10), rgba(0,0,0,115)
-          light ring:  blur 20, offset (0,4), rgba(20,184,166,76)  (glow=True)
-          dark  glow:  blur 40, offset (0,0),  rgba(94,234,212,46) (glow=True)
+          light ring:  blur 20, offset (0,4), teal alpha 96  (glow=True)
+          dark  glow:  blur 40, offset (0,0),  accent alpha 120 (glow=True)
         """
         if self._disabled:
             return
@@ -341,27 +341,31 @@ class NMCard(QFrame):
             self._card_shadow = QGraphicsDropShadowEffect(self)
         is_dark = "dark" in self._modo
         if self._glow:
-            # Halo teal — "glow" en dark, "ring" en light
+            # Halo accent — reads from V3_SHADOWS ring/glow bucket
             if is_dark:
-                self._card_shadow.setBlurRadius(40)
-                self._card_shadow.setOffset(0, 0)
-                sc = v3c("teal", self._modo)
-                sc.setAlpha(120)
+                s = V3_SHADOWS["dark"]["glow"]
+                self._card_shadow.setBlurRadius(s["blur"])
+                self._card_shadow.setOffset(*s["offset"])
+                sc = v3c("accent", self._modo)
+                sc.setAlpha(s["color"][3])  # 46 from token
             else:
-                self._card_shadow.setBlurRadius(20)
-                self._card_shadow.setOffset(0, 4)
+                s = V3_SHADOWS["light"]["ring"]
+                self._card_shadow.setBlurRadius(s["blur"])
+                self._card_shadow.setOffset(*s["offset"])
                 sc = v3c("teal", self._modo)
-                sc.setAlpha(96)
+                sc.setAlpha(s["color"][3])  # 76 from token
         else:
-            # Sombra estándar de card
+            # Standard card shadow — reads from V3_SHADOWS card bucket
             if is_dark:
-                self._card_shadow.setBlurRadius(30)
-                self._card_shadow.setOffset(0, 10)
-                sc = QColor(0, 0, 0, 115)
+                s = V3_SHADOWS["dark"]["card"]
+                self._card_shadow.setBlurRadius(s["blur"])   # 30
+                self._card_shadow.setOffset(*s["offset"])    # (0, 10)
+                sc = QColor(*s["color"])                     # rgba(0,0,0,115)
             else:
-                self._card_shadow.setBlurRadius(16)
-                self._card_shadow.setOffset(0, 4)
-                sc = QColor(15, 23, 42, 22)
+                s = V3_SHADOWS["light"]["card"]
+                self._card_shadow.setBlurRadius(s["blur"])   # 12
+                self._card_shadow.setOffset(*s["offset"])    # (0, 4)
+                sc = QColor(*s["color"])                     # rgba(15,23,42,13)
         self._card_shadow.setColor(sc)
         self.setGraphicsEffect(self._card_shadow)
 
@@ -444,26 +448,31 @@ class NMCard(QFrame):
                     r + i + 1, r + i + 1,
                 )
 
-        # 2. Superficie — glassmorphism en ambos temas
+        # 2. Superficie — token-based surface colors
         if not self._disabled and self.isEnabled():
             if is_dark:
-                surf_col = QColor(18, 28, 45, 200)  # glass dark
+                # Dark: solid dark navy from token (surfaceSolid = #121c2d)
+                surf_col = v3c("surfaceSolid", self._modo)
+                surf_col.setAlpha(215)
             else:
-                surf_col = QColor(255, 255, 255, 235)  # glass light (sutil translúcido)
+                # Light: warm white from token (surface = #fcfaf6)
+                surf_col = v3c("surface", self._modo)
+                surf_col.setAlpha(245)  # nearly opaque for clean card face
             p.setBrush(QBrush(surf_col))
             p.setPen(Qt.PenStyle.NoPen)
             p.drawRoundedRect(rect, r, r)
 
-            # 2b. Top specular highlight (efecto vidrio — línea reflejada arriba)
-            highlight_h = min(h * 0.5, 60.0)
+            # 2b. Top specular highlight — subtle inner sheen
+            highlight_h = min(h * 0.4, 48.0)
             hg = QLinearGradient(0, 0, 0, highlight_h)
             if is_dark:
-                hg.setColorAt(0.0, QColor(255, 255, 255, 28))
+                # Dark: very soft white shimmer
+                hg.setColorAt(0.0, QColor(255, 255, 255, 22))
                 hg.setColorAt(1.0, QColor(255, 255, 255, 0))
             else:
-                hg.setColorAt(0.0, QColor(255, 255, 255, 180))
+                # Light: gentle warm-white sheen (was 180 — too bright)
+                hg.setColorAt(0.0, QColor(255, 255, 255, 35))
                 hg.setColorAt(1.0, QColor(255, 255, 255, 0))
-            # Clipping al rounded rect para no salirse por el border-radius
             clip_path = QPainterPath()
             clip_path.addRoundedRect(rect, r, r)
             p.save()
@@ -472,7 +481,7 @@ class NMCard(QFrame):
             p.drawRect(QRectF(0, 0, w, highlight_h))
             p.restore()
         else:
-            # Disabled: sin glassmorphism, surface sólida (legibilidad)
+            # Disabled: solid surface for legibility
             surface_key = "surfaceSolid" if is_dark else "surface"
             p.setBrush(QBrush(v3c(surface_key, self._modo)))
             p.setPen(Qt.PenStyle.NoPen)
@@ -488,10 +497,14 @@ class NMCard(QFrame):
             p.drawRoundedRect(rect, r, r)
             p.restore()
 
-        # 4. Border: borderSoft normal, borderStrong en hover
-        border_key = "borderStrong" if (self._hover and self.isEnabled()
-                                        and not self._disabled) else "borderSoft"
-        p.setPen(QPen(v3c(border_key, self._modo), 1))
+        # 4. Border: 'border' at rest → 'borderStrong' on hover
+        #    Using 'border' (not 'borderSoft') so card edges are visible
+        #    in light mode against the warm ivory background.
+        if self._hover and self.isEnabled() and not self._disabled:
+            border_c = v3c("borderStrong", self._modo)
+        else:
+            border_c = v3c("border", self._modo)
+        p.setPen(QPen(border_c, 1))
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawRoundedRect(QRectF(0.5, 0.5, w - 1, h - 1), r, r)
 
@@ -686,12 +699,12 @@ class NMButton(QPushButton):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         h = self.height()
-        # Pill perfecto: cap radius a half-height por si LAYOUT['radius_button']
-        # es 999 (default v3) y el botón es bajo.
         r = min(LAYOUT["radius_button"], h // 2)
+        w = self.width()
         rect = QRectF(self.rect())
         path = QPainterPath()
         path.addRoundedRect(rect, r, r)
+        is_dark = "dark" in self._modo
 
         if not self.isEnabled():
             p.setOpacity(0.4)
@@ -700,40 +713,60 @@ class NMButton(QPushButton):
             grad = v3_linear_gradient(rect, self._modo, 135, "signature")
             p.fillPath(path, QBrush(grad))
 
-            # Glow exterior teal en hover
-            if self._hover and not self._pressed and self.isEnabled():
-                glow = v3c("teal", self._modo)
-                glow.setAlpha(90 if "dark" in self._modo else 64)
-                glow_w = 2
-                p.setPen(QPen(glow, glow_w))
-                p.setBrush(Qt.BrushStyle.NoBrush)
-                inset = glow_w / 2
-                p.drawRoundedRect(rect.adjusted(inset, inset, -inset, -inset), r, r)
+            # Pressed: subtle dark overlay on the gradient
+            if self._pressed and self.isEnabled():
+                p.fillPath(path, QBrush(QColor(0, 0, 0, 35)))
 
-            text_color = QColor(C("text_on_accent", self._modo))
+            # Hover: soft inner highlight ring (no heavy outer glow)
+            if self._hover and not self._pressed and self.isEnabled():
+                ring_c = QColor(255, 255, 255, 55 if is_dark else 70)
+                p.setPen(QPen(ring_c, 1.5))
+                p.setBrush(Qt.BrushStyle.NoBrush)
+                inset = 1.25
+                p.drawRoundedRect(
+                    rect.adjusted(inset, inset, -inset, -inset), r, r)
+
+            # Text: always white — gradient goes teal→violet (dark) or
+            # teal→copper (light); dark navy on any gradient reads poorly.
+            text_color = QColor("#ffffff")
 
         elif self._variant == "secondary":
-            is_dark = "dark" in self._modo
             surf_key = "surfaceSolid" if is_dark else "surface"
-            elev_key = "elevatedSolid" if is_dark else "elevated"
-            bg_col = v3c(elev_key if self._hover else surf_key, self._modo)
-            p.fillPath(path, QBrush(bg_col))
+            elev_key  = "elevatedSolid" if is_dark else "elevated"
+
+            if self._pressed and self.isEnabled():
+                # Press: one step deeper than hover
+                bg_col = v3c(elev_key, self._modo)
+                bg_col.setAlpha(230 if is_dark else 255)
+                p.fillPath(path, QBrush(bg_col))
+            elif self._hover and self.isEnabled():
+                p.fillPath(path, QBrush(v3c(elev_key, self._modo)))
+            else:
+                p.fillPath(path, QBrush(v3c(surf_key, self._modo)))
 
             border_key = "borderStrong" if (self._hover or self._pressed) else "border"
             border_col = v3c(border_key, self._modo)
             p.setPen(QPen(border_col, 1))
             p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawRoundedRect(QRectF(0.5, 0.5, self.width() - 1, h - 1), r, r)
+            p.drawRoundedRect(QRectF(0.5, 0.5, w - 1, h - 1), r, r)
 
             text_color = v3c("text", self._modo)
 
         else:  # ghost
-            if self._hover and not self._pressed and self.isEnabled():
+            if self._pressed and self.isEnabled():
+                # Press: slightly deeper tint than hover
+                bg_c = v3c("border", self._modo)
+                bg_c.setAlpha(90 if is_dark else 100)
+                p.fillPath(path, QBrush(bg_c))
+            elif self._hover and self.isEnabled():
                 bg_col = v3c("borderSoft", self._modo)
                 p.fillPath(path, QBrush(bg_col))
-            text_color = v3c("text2", self._modo)
+            # Text: lift to `text` on hover/press for clear feedback
+            text_color = (v3c("text", self._modo)
+                          if (self._hover or self._pressed) and self.isEnabled()
+                          else v3c("text2", self._modo))
 
-        # Texto
+        # Label
         p.setPen(QPen(text_color))
         p.setFont(self.font())
         p.drawText(rect.toRect(), Qt.AlignmentFlag.AlignCenter, self.text())
@@ -815,21 +848,27 @@ class NMButton(QPushButton):
             self.setGraphicsEffect(self._btn_shadow)
         shadow = self._btn_shadow
         if self._variant == "gradient":
-            # Glow teal pronunciado (CTA primary)
-            shadow.setBlurRadius(30 if is_dark else 20)
-            shadow.setOffset(0, 8 if is_dark else 4)
-            sc = v3c("teal", self._modo)
-            sc.setAlpha(100 if is_dark else 55)
+            # Primary CTA: moderate lift — accent-tinted in dark, warm stone in light
+            # (avoid teal glow in light since bg is warm ivory, not cool white)
+            if is_dark:
+                shadow.setBlurRadius(22)
+                shadow.setOffset(0, 6)
+                sc = v3c("accent", self._modo)  # soft purple in dark
+                sc.setAlpha(65)
+            else:
+                shadow.setBlurRadius(14)
+                shadow.setOffset(0, 4)
+                sc = QColor(0x44, 0x2a, 0x0a, 30)  # warm stone tint — no cold teal on ivory
         elif self._variant == "secondary":
             # Sombra neutra sutil (lift discreto)
             shadow.setBlurRadius(12 if is_dark else 8)
             shadow.setOffset(0, 4 if is_dark else 2)
-            sc = QColor(0, 0, 0, 80 if is_dark else 18)
+            sc = QColor(0, 0, 0, 70 if is_dark else 15)
         else:  # ghost
             # Sombra mínima — apenas perceptible
-            shadow.setBlurRadius(6 if is_dark else 4)
+            shadow.setBlurRadius(6 if is_dark else 3)
             shadow.setOffset(0, 2 if is_dark else 1)
-            sc = QColor(0, 0, 0, 50 if is_dark else 10)
+            sc = QColor(0, 0, 0, 40 if is_dark else 8)
         shadow.setColor(sc)
 
     def play_success(self):
@@ -900,32 +939,44 @@ class NMButtonOutline(QPushButton):
 
         h = self.height()
         r = min(LAYOUT["radius_button"], h // 2)
+        w = self.width()
         rect = QRectF(self.rect())
         path = QPainterPath()
         path.addRoundedRect(rect, r, r)
+        is_dark = "dark" in self._modo
+
+        if not self.isEnabled():
+            p.setOpacity(0.4)
 
         if self._active:
-            # Fill gradient teal→violet (v3 active = primary)
+            # Active: fill with signature gradient, always white label
             grad = v3_linear_gradient(rect, self._modo, 135, "signature")
             p.fillPath(path, QBrush(grad))
-            text_color = QColor(C("text_on_accent", self._modo))
+            # Subtle inner ring to reinforce active state
+            ring_c = QColor(255, 255, 255, 45)
+            p.setPen(QPen(ring_c, 1.0))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawRoundedRect(rect.adjusted(1, 1, -1, -1), r, r)
+            # Text always white — gradient has sufficient contrast in both modes
+            text_color = QColor("#ffffff")
+
         elif self._hover:
-            # secondary hover
-            is_dark = "dark" in self._modo
+            # Hover: elevated surface + strong border
             elev_key = "elevatedSolid" if is_dark else "elevated"
             p.fillPath(path, QBrush(v3c(elev_key, self._modo)))
-            border_col = v3c("borderStrong", self._modo)
-            p.setPen(QPen(border_col, 1))
+            p.setPen(QPen(v3c("borderStrong", self._modo), 1))
             p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawRoundedRect(QRectF(0.5, 0.5, self.width() - 1, h - 1), r, r)
+            p.drawRoundedRect(QRectF(0.5, 0.5, w - 1, h - 1), r, r)
+            # Hover: lift text from text2 → text
             text_color = v3c("text", self._modo)
+
         else:
-            is_dark = "dark" in self._modo
+            # Rest: surface + border
             surf_key = "surfaceSolid" if is_dark else "surface"
             p.fillPath(path, QBrush(v3c(surf_key, self._modo)))
             p.setPen(QPen(v3c("border", self._modo), 1))
             p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawRoundedRect(QRectF(0.5, 0.5, self.width() - 1, h - 1), r, r)
+            p.drawRoundedRect(QRectF(0.5, 0.5, w - 1, h - 1), r, r)
             text_color = v3c("text2", self._modo)
 
         p.setPen(QPen(text_color))
@@ -997,35 +1048,47 @@ class NMInput(QLineEdit):
         _tm().theme_changed.connect(self._apply_theme)
 
     def _apply_base_style(self):
-        c = colors(self._modo)
-        r = RADIUS_INPUT
+        is_dark = "dark" in self._modo
+        # Surface and text via V3 tokens
+        bg_c     = v3c("surface", self._modo)
+        text_c   = v3c("text", self._modo)
+        muted_c  = v3c("textMuted", self._modo)
+        border_c = v3c("border", self._modo)
+        focus_c  = v3c("accent", self._modo)   # teal (light) / purple (dark)
+        acc_c    = v3c("accent", self._modo)
+        r = V3_RD["md"]  # 10px — same as V3 LAYOUT radius_input
         self.setStyleSheet(f"""
             QLineEdit {{
-                background-color: {c['bg_input']};
-                color: {c['text_primary']};
-                border: 1px solid {c.get('border_card', c['border'])};
+                background-color: {bg_c.name()};
+                color: {text_c.name()};
+                border: 1.5px solid rgba({border_c.red()},{border_c.green()},{border_c.blue()},200);
                 border-radius: {r}px;
                 padding: 0 12px;
                 font-size: {TYPOGRAPHY['size_body']}pt;
-                selection-background-color: {c['accent']};
-                selection-color: {c['text_on_accent']};
+                selection-background-color: {acc_c.name()};
+                selection-color: #ffffff;
+            }}
+            QLineEdit::placeholder {{
+                color: rgba({muted_c.red()},{muted_c.green()},{muted_c.blue()},160);
             }}
             QLineEdit:focus {{
-                border: 2px solid {c['border_focus']};
+                border: 1.5px solid {focus_c.name()};
+                background-color: {bg_c.name()};
             }}
             {focus_ring_stylesheet(self._modo)}
         """)
 
     def focusInEvent(self, event):
-        """Enciende glow teal alrededor del input."""
+        """Enciende glow suave alrededor del input en el color del accent."""
         super().focusInEvent(event)
         is_dark = "dark" in self._modo
         if self._focus_glow is None:
             self._focus_glow = QGraphicsDropShadowEffect(self)
-        self._focus_glow.setBlurRadius(16 if is_dark else 12)
+        self._focus_glow.setBlurRadius(14 if is_dark else 10)
         self._focus_glow.setOffset(0, 0)
-        gc = v3c("teal", self._modo)
-        gc.setAlpha(120 if is_dark else 70)
+        gc = v3c("accent", self._modo)
+        # Light: softer warm-tinted glow (55 alpha); dark: stronger purple glow
+        gc.setAlpha(100 if is_dark else 55)
         self._focus_glow.setColor(gc)
         self.setGraphicsEffect(self._focus_glow)
 
@@ -1109,11 +1172,11 @@ class NMProgressBar(QWidget):
         p.setPen(Qt.PenStyle.NoPen)
         p.drawRoundedRect(rect, r, r)
 
-        # Fill gradiente
+        # Fill — V3 signature gradient via helper
         fill_w = w * self._value
         if fill_w > 0:
             fill_rect = QRectF(0, 0, fill_w, h)
-            grad = linear_gradient(fill_rect, self._modo, angle=0)
+            grad = v3_linear_gradient(fill_rect, self._modo, 0, "signature")
             p.setBrush(QBrush(grad))
             p.drawRoundedRect(fill_rect, r, r)
 
@@ -1292,7 +1355,8 @@ class NMToast(QWidget):
         lbl = QLabel(self._message)
         lbl.setFont(qfont("size_body"))
         lbl.setWordWrap(True)
-        lbl.setStyleSheet(f"color: {C('text_on_accent', 'dark_hybrid')}; background: transparent;")
+        # Toast bg is always dark slate — text must always be light
+        lbl.setStyleSheet("color: #f1f5f9; background: transparent;")
         layout.addWidget(lbl)
 
         self.setStyleSheet(f"""
@@ -1443,45 +1507,66 @@ class _SidebarItem(QWidget):
     def paintEvent(self, event: QPaintEvent):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        c = colors(self._modo)
         w, h = self.width(), self.height()
-        r = RADIUS_BUTTON
+        is_dark = "dark" in self._modo
+        r = V3_RD["md"]  # 10px — softer pill than RADIUS_BUTTON
 
-        # Fondo hover/active con glow sutil
+        # ── Active background ──────────────────────────────────────────
         if self._active:
-            bg = QColor(C("accent", self._modo))
-            bg.setAlpha(18)
-        elif self._hover:
-            bg = QColor(c["bg_elevated"])
-            bg.setAlpha(int(120 * self._hover_alpha))
-        else:
-            bg = QColor(0, 0, 0, 0)
-
-        if bg.alpha() > 0:
+            bg = v3c("accent", self._modo)
+            # Light: 12% teal tint on warm cream; Dark: 14% purple tint on navy
+            bg.setAlpha(31 if is_dark else 28)
             path = QPainterPath()
-            path.addRoundedRect(QRectF(4, 2, w - 8, h - 4), r, r)
+            path.addRoundedRect(QRectF(6, 2, w - 12, h - 4), r, r)
             p.fillPath(path, QBrush(bg))
 
+        # ── Hover background ─────────────────────────────────────────
+        elif self._hover_alpha > 0:
+            # Use border token fill — readable in both light and dark
+            hover_bg = v3c("borderSoft", self._modo)
+            hover_bg.setAlpha(int(hover_bg.alpha() * self._hover_alpha)
+                              if hover_bg.alpha() > 0
+                              else int(28 * self._hover_alpha))
+            if is_dark:
+                # Dark: explicit alpha since borderSoft is rgba
+                hover_fill = v3c("border", self._modo)
+                hover_fill.setAlpha(int(40 * self._hover_alpha))
+            else:
+                # Light: warm stone tint, alpha-driven by hover_alpha
+                hover_fill = v3c("border", self._modo)
+                hover_fill.setAlpha(int(55 * self._hover_alpha))
+            path = QPainterPath()
+            path.addRoundedRect(QRectF(6, 2, w - 12, h - 4), r, r)
+            p.fillPath(path, QBrush(hover_fill))
+
+        # ── Focus ring ──────────────────────────────────────────────
         if self.hasFocus():
-            focus_pen = QPen(QColor(C("accent", self._modo)), 2)
-            p.setPen(focus_pen)
+            focus_c = v3c("accent", self._modo)
+            p.setPen(QPen(focus_c, 2))
             p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawRoundedRect(QRectF(5, 3, w - 10, h - 6), r, r)
+            p.drawRoundedRect(QRectF(7, 3, w - 14, h - 6), r, r)
 
-        # Barra izquierda animada (3px)
+        # ── Left active bar (3px, animated) ─────────────────────────────
         if self._bar_anim_val > 0:
-            bar_h = int((h - 8) * self._bar_anim_val)
+            bar_h = int((h - 10) * self._bar_anim_val)
             bar_y = (h - bar_h) // 2
+            bar_c = v3c("accent", self._modo)
             bar_path = QPainterPath()
-            bar_path.addRoundedRect(QRectF(0, bar_y, 3, bar_h), 2, 2)
-            p.fillPath(bar_path, QBrush(QColor(C("accent", self._modo))))
+            bar_path.addRoundedRect(QRectF(0, bar_y, 3, bar_h), 1.5, 1.5)
+            p.fillPath(bar_path, QBrush(bar_c))
 
-        # Icono + texto
-        text_color = QColor(c["text_primary"] if (self._active or self._hover)
-                            else c["text_secondary"])
+        # ── Icon ────────────────────────────────────────────────────
+        # Active: accent color; hover: text; rest: textMuted
+        if self._active:
+            text_color = v3c("accent", self._modo)
+        elif self._hover:
+            text_color = v3c("text", self._modo)
+        else:
+            text_color = v3c("textMuted", self._modo)
         p.setPen(QPen(text_color))
 
-        icon_rect = QRect(14, 0, 28, h)
+        # Icon zone: x=16, width=28 — nudged 2px right from old x=14
+        icon_rect = QRect(16, 0, 28, h)
         if self._icon_pixmap is not None:
             x = icon_rect.x() + (icon_rect.width() - self._icon_pixmap.width()) // 2
             y = icon_rect.y() + (icon_rect.height() - self._icon_pixmap.height()) // 2
@@ -1492,9 +1577,21 @@ class _SidebarItem(QWidget):
             p.setFont(font_icon)
             p.drawText(icon_rect, Qt.AlignmentFlag.AlignCenter, self._icon)
 
-        font_label = qfont("size_small", bold=self._active)
-        p.setFont(font_label)
-        label_rect = QRect(44, 0, w - 48, h)
+        # ── Label ───────────────────────────────────────────────────
+        # Active: text (full contrast); hover: text; rest: textMuted
+        if self._active:
+            label_color = v3c("text", self._modo)
+        elif self._hover:
+            label_color = v3c("text", self._modo)
+        else:
+            label_color = v3c("textMuted", self._modo)
+        p.setPen(QPen(label_color))
+
+        # weight_semibold for active, weight_normal for rest (no bold jump)
+        weight = TYPOGRAPHY["weight_semibold"] if self._active else TYPOGRAPHY["weight_normal"]
+        p.setFont(qfont("size_small", weight=weight))
+        # Label starts at x=46 (was 44) to match nudged icon zone
+        label_rect = QRect(46, 0, w - 50, h)
         p.drawText(label_rect, Qt.AlignmentFlag.AlignVCenter, self._label)
 
         p.end()
@@ -1532,8 +1629,14 @@ class NMSidebar(QWidget):
 
     def paintEvent(self, event):
         p = QPainter(self)
-        c = colors(self._modo)
-        p.fillRect(self.rect(), QColor(c["sidebar_bg"]))
+        is_dark = "dark" in self._modo
+        # Use V3 sidebar bg token: dark navy (#121b2d) / warm cream (#f5f1e8)
+        if is_dark:
+            bg = v3c("bgSidebar", self._modo)  # #121b2d
+        else:
+            # Light sidebar: slightly deeper than card surface for structural separation
+            bg = QColor(0xf2, 0xed, 0xe2, 255)  # #f2ede2 — warm cream sidebar
+        p.fillRect(self.rect(), QBrush(bg))
         p.end()
         super().paintEvent(event)
 
@@ -1625,8 +1728,11 @@ class NMSidebar(QWidget):
     def _add_separator(self):
         sep = QWidget()
         sep.setFixedHeight(1)
-        c = colors(self._modo)
-        sep.setStyleSheet(f"background: {c.get('border_card', c['border'])};")
+        # Use V3 border token — warm stone in light, violet-tinted in dark
+        border_c = v3c("border", self._modo)
+        sep.setStyleSheet(
+            f"background-color: rgba({border_c.red()},{border_c.green()},"
+            f"{border_c.blue()},90);")
         self._layout.addWidget(sep)
 
     def add_spacer(self):
@@ -1698,7 +1804,10 @@ class NMSidebar(QWidget):
         for i in range(self._layout.count()):
             w = self._layout.itemAt(i).widget()
             if w and w.minimumHeight() == 1 and w.maximumHeight() == 1:
-                w.setStyleSheet(f"background: {c.get('border_card', c['border'])};")
+                border_c = v3c("border", self._modo)
+                w.setStyleSheet(
+                    f"background-color: rgba({border_c.red()},{border_c.green()},"
+                    f"{border_c.blue()},90);")
 
 
 # ── NMHeader ──────────────────────────────────────────────────────────────────
@@ -2399,14 +2508,26 @@ class NMStatusChip(QLabel):
         _tm().theme_changed.connect(self._apply_theme)
 
     def _apply_style(self):
-        c = colors(self._modo)
-        color = C(self._color_key, self._modo)
+        color_hex = C(self._color_key, self._modo)
+        is_dark = "dark" in self._modo
+        # Soft semantic bg: use the Soft variant of the color key if available
+        soft_key = self._color_key + "Soft"
+        soft_c = v3c(soft_key, self._modo) if soft_key in (
+            V3_DARK if is_dark else V3_LIGHT) else None
+        if soft_c is not None:
+            bg_css = (f"rgba({soft_c.red()},{soft_c.green()},{soft_c.blue()},"
+                      f"{soft_c.alpha()})")
+        else:
+            # Fallback: 10% of the semantic color
+            fc = QColor(color_hex)
+            fc.setAlpha(26)  # ~10%
+            bg_css = f"rgba({fc.red()},{fc.green()},{fc.blue()},26)"
         self.setStyleSheet(f"""
             NMStatusChip {{
-                color: {color};
-                background-color: transparent;
-                border: 1px solid {color};
-                border-radius: {RADIUS_PILL // 2}px;
+                color: {color_hex};
+                background-color: {bg_css};
+                border: 1px solid {color_hex};
+                border-radius: {V3_RD['pill']}px;
                 padding: 2px 10px;
             }}
         """)
@@ -3018,19 +3139,27 @@ class NMPresetChip(QPushButton):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        c = colors(self._modo)
+        is_dark = "dark" in self._modo
+        accent_hex = C("accent", self._modo)
         if self._active:
-            bg = _rgba(C("teal", self._modo), 0.12)
-            border = _rgba(C("teal", self._modo), 0.30)
-            col = C("teal", self._modo)
+            bg     = _rgba(accent_hex, 0.13 if is_dark else 0.10)
+            border = _rgba(accent_hex, 0.32 if is_dark else 0.28)
+            col    = accent_hex
         else:
-            bg = "transparent"
-            border = c.get("border_card", c["border"])
-            col = c["text_tertiary"]
+            bg     = "transparent"
+            bdr_c  = v3c("border", self._modo)
+            border = (f"rgba({bdr_c.red()},{bdr_c.green()},{bdr_c.blue()},180)")
+            col    = v3c("text2", self._modo).name()  # was text_tertiary — too dim
+        # Hover: elevated surface + full text contrast
+        elev_c = v3c("elevated" if not is_dark else "elevatedSolid", self._modo)
+        hover_bg = (f"rgba({elev_c.red()},{elev_c.green()},{elev_c.blue()},200)"
+                    if not is_dark
+                    else elev_c.name())
+        text_hex = v3c("text", self._modo).name()
         self.setStyleSheet(
             f"QPushButton {{ background: {bg}; color: {col}; border: 1px solid {border}; "
-            f"border-radius: {RADIUS_PILL}px; padding: 6px 16px; }}"
-            f"QPushButton:hover {{ background: {c['bg_elevated']}; color: {c['text_secondary']}; }}"
+            f"border-radius: {V3_RD['pill']}px; padding: 6px 16px; }}"
+            f"QPushButton:hover {{ background: {hover_bg}; color: {text_hex}; }}"
         )
 
 
@@ -3225,12 +3354,15 @@ class NMProgressLine(QWidget):
         w = self.width()
         h = self.height()
         fill_w = int(w * self.pct)
-        track = QColor(C("progress_track", self._modo))
+        # Track: V3 border token — warm stone (light) / dark navy (dark)
+        track = v3c("border", self._modo)
+        track.setAlpha(80)
         p.fillRect(0, 0, w, h, track)
         if fill_w > 0:
+            # Fill: V3 gradFrom → gradTo — teal→copper (light) or violet→pink (dark)
             grad = QLinearGradient(0, 0, fill_w, 0)
-            grad.setColorAt(0.0, QColor(C("teal", self._modo)))
-            grad.setColorAt(1.0, QColor(C("violet", self._modo)))
+            grad.setColorAt(0.0, QColor(C("gradFrom", self._modo)))
+            grad.setColorAt(1.0, QColor(C("gradTo", self._modo)))
             p.fillRect(0, 0, fill_w, h, grad)
         p.end()
 
@@ -3274,17 +3406,26 @@ class NMStreakBadge(QLabel):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        color = C("streak_color", self._modo)
-        bg = C("streak_bg", self._modo)
-        r = RADIUS_PILL
+        is_dark = "dark" in self._modo
+        color = C("streak_color", self._modo)  # orange — same in both modes
+        # Light bg: streakSoft = #ffedd5 (warm peach-orange)
+        # Dark bg: streak_bg from legacy bridge = #2a1a0a
+        if is_dark:
+            bg = C("streak_bg", self._modo)  # #2a1a0a
+        else:
+            bg = C("streakSoft", self._modo)  # #ffedd5
+        border_c = QColor(color)
+        border_c.setAlpha(80)
+        r = V3_RD["pill"]
         self.setStyleSheet(f"""
             QLabel {{
                 color: {color};
                 background-color: {bg};
                 border-radius: {r}px;
+                border: 1px solid rgba({border_c.red()},{border_c.green()},{border_c.blue()},80);
                 padding: 2px 12px;
                 font-size: {TYPOGRAPHY['size_small']}pt;
-                font-weight: bold;
+                font-weight: 600;
             }}
         """)
 
@@ -3552,7 +3693,7 @@ class NMWaveChart(QWidget):
         # Faint grid
         for row in range(1, 5):
             y_grid = mt + ch - (ch * row / 4)
-            gc = QColor(c["border"])
+            gc = QColor(v3c("border", self._modo).name())
             gc.setAlpha(35)
             p.setPen(QPen(gc, 1, Qt.PenStyle.DotLine))
             p.drawLine(ml, int(y_grid), w - mr, int(y_grid))
@@ -3619,17 +3760,17 @@ class NMWaveChart(QWidget):
                 tw, th = 60, 22
                 tx = min(pt.x() - tw / 2, w - mr - tw)
                 ty = max(float(mt), pt.y() - th - 8)
-                tip_bg = QColor(c["bg_elevated"]); tip_bg.setAlpha(220)
+                tip_bg = QColor(v3c("elevated", self._modo).name()); tip_bg.setAlpha(220)
                 tip_r  = QRectF(tx, ty, tw, th)
                 tip_path = QPainterPath()
                 tip_path.addRoundedRect(tip_r, RADIUS_SMALL, RADIUS_SMALL)
                 p.fillPath(tip_path, tip_bg)
-                p.setPen(QColor(c["text_primary"]))
+                p.setPen(QColor(v3c("text", self._modo).name()))
                 p.setFont(qfont("size_small"))
                 p.drawText(tip_r, Qt.AlignmentFlag.AlignCenter, tip_text)
 
         # Day labels
-        p.setPen(QColor(c["text_tertiary"]))
+        p.setPen(QColor(v3c("text3", self._modo).name()))
         p.setFont(qfont("size_caption"))
         n = len(self._labels)
         for i, lbl in enumerate(self._labels):
@@ -3697,7 +3838,7 @@ class NMPhaseChip(QWidget):
             phase_color = C(self._PHASE_COLOR_KEY.get(key, "teal"), self._modo)
             if active:
                 bg     = phase_color
-                col    = C("text_on_accent", self._modo)
+                col    = v3c("textOnSolid", self._modo).name()
                 border = phase_color
             else:
                 # Estado preview: tint suave del color de fase + texto del color
@@ -3791,7 +3932,7 @@ class NMCalmBadge(QWidget):
 
         self._calm_lbl = QLabel("Calm ♥")
         self._calm_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._calm_lbl.setFont(qfont("size_small", bold=True))
+        self._calm_lbl.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_bold"]))
         lay.addWidget(self._calm_lbl)
 
         self._bpm_lbl = QLabel(str(bpm))
@@ -3818,14 +3959,14 @@ class NMCalmBadge(QWidget):
         # (sin esto, cada QLabel hijo se renderizaba con su propio border = chips
         # fragmentados visualmente)
         self.setStyleSheet(
-            f"QWidget#NMCalmBadge {{ background: {C('bg_elevated', self._modo)}; "
+            f"QWidget#NMCalmBadge {{ background: {v3c('elevated', self._modo).name()}; "
             f"border-radius: {RADIUS_CARD}px; "
-            f"border: 1px solid {C('border', self._modo)}; }}"
+            f"border: 1px solid {v3c('borderSoft', self._modo).name()}; }}"
             f"QWidget#NMCalmBadge QLabel {{ background: transparent; border: none; }}"
         )
         self._calm_lbl.setStyleSheet(f"color: {violet};")
         self._bpm_lbl.setStyleSheet(f"color: {violet};")
-        self._unit_lbl.setStyleSheet(label_style(self._modo, "text_tertiary"))
+        self._unit_lbl.setStyleSheet(f"color: {v3c('text3', self._modo).name()}; background: transparent;")
 
     def _on_blink(self):
         if sip.isdeleted(self):
@@ -3899,37 +4040,38 @@ class NMTCCStepper(QWidget):
             # Connector line
             if i > 0:
                 prev_cx = int(step_w * (i - 1) + step_w / 2)
-                lc = QColor(C("success" if i <= self._current else "border", self._modo))
+                col_name = v3c("teal", self._modo) if i <= self._current else v3c("borderSoft", self._modo)
+                lc = QColor(col_name)
                 p.setPen(QPen(lc, 2))
                 p.drawLine(prev_cx + circle_r, cy, cx - circle_r, cy)
 
             # Circle
             circ_rect = QRectF(cx - circle_r, cy - circle_r, circle_r * 2, circle_r * 2)
             if i < self._current:
-                p.setBrush(QBrush(QColor(C("success", self._modo))))
+                p.setBrush(QBrush(QColor(v3c("teal", self._modo))))
                 p.setPen(Qt.PenStyle.NoPen)
                 p.drawEllipse(QPointF(cx, cy), circle_r, circle_r)
-                p.setPen(QPen(QColor(C("text_on_accent", self._modo)), 2))
-                p.setFont(qfont("size_small", bold=True))
+                p.setPen(QPen(QColor(v3c("textOnSolid", self._modo)), 2))
+                p.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_bold"]))
                 p.drawText(circ_rect, Qt.AlignmentFlag.AlignCenter, "✓")
             elif i == self._current:
-                p.setBrush(QBrush(QColor(C("accent", self._modo))))
+                p.setBrush(QBrush(QColor(v3c("accent", self._modo))))
                 p.setPen(Qt.PenStyle.NoPen)
                 p.drawEllipse(QPointF(cx, cy), circle_r, circle_r)
-                p.setPen(QColor(C("text_on_accent", self._modo)))
-                p.setFont(qfont("size_small", bold=True))
+                p.setPen(QColor(v3c("textOnSolid", self._modo)))
+                p.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_bold"]))
                 p.drawText(circ_rect, Qt.AlignmentFlag.AlignCenter, str(i + 1))
             else:
                 p.setBrush(Qt.BrushStyle.NoBrush)
-                p.setPen(QPen(QColor(C("border", self._modo)), 2))
+                p.setPen(QPen(QColor(v3c("borderSoft", self._modo)), 2))
                 p.drawEllipse(QPointF(cx, cy), circle_r, circle_r)
-                p.setPen(QColor(C("text_tertiary", self._modo)))
+                p.setPen(QColor(v3c("text3", self._modo)))
                 p.setFont(qfont("size_small"))
                 p.drawText(circ_rect, Qt.AlignmentFlag.AlignCenter, str(i + 1))
 
             # Label below circle
-            col = "text_primary" if i == self._current else "text_tertiary"
-            p.setPen(QColor(C(col, self._modo)))
+            col_txt = v3c("text", self._modo) if i == self._current else v3c("text3", self._modo)
+            p.setPen(QColor(col_txt))
             p.setFont(qfont("size_caption"))
             p.drawText(
                 QRectF(cx - step_w / 2 + 4, cy + circle_r + 4, step_w - 8, 16),
@@ -4599,12 +4741,12 @@ class NMPatientRow(QFrame):
         self._avatar = QLabel(initials or "".join(part[:1] for part in name.split()[:2]).upper())
         self._avatar.setFixedSize(32, 32)
         self._avatar.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._avatar.setFont(qfont("size_small", bold=True))
+        self._avatar.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_bold"]))
         lay.addWidget(self._avatar)
         text_col = QVBoxLayout()
         text_col.setSpacing(1)
         self._name = QLabel(name)
-        self._name.setFont(qfont("size_small", bold=True))
+        self._name.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_bold"]))
         self._subtitle = QLabel(subtitle)
         self._subtitle.setFont(qfont("size_caption"))
         text_col.addWidget(self._name)
@@ -4627,13 +4769,12 @@ class NMPatientRow(QFrame):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        c = colors(self._modo)
         if self._selected:
-            bg = _rgba(C("teal", self._modo), 0.05)
-            border = _rgba(C("teal", self._modo), 0.30)
+            bg = _rgba(v3c("accent", self._modo).name(), 0.05)
+            border = _rgba(v3c("accent", self._modo).name(), 0.30)
         else:
-            bg = c["bg_surface"] if "light" in self._modo else _rgba("#ffffff", 0.03)
-            border = c.get("border_card", c["border"])
+            bg = v3c("elevated", self._modo).name()
+            border = v3c("borderSoft", self._modo).name()
         self.setStyleSheet(
             f"QFrame#NMPatientRow {{ background: {bg}; border: 1px solid {border}; "
             f"border-radius: 10px; }}"
@@ -4645,8 +4786,8 @@ class NMPatientRow(QFrame):
             f"color: white; border-radius: 16px; "
             f"border: 1px solid {_rgba('#ffffff', 0.18 if 'dark' in self._modo else 0.35)}; }}"
         )
-        self._name.setStyleSheet(label_style(self._modo, "text_primary"))
-        self._subtitle.setStyleSheet(label_style(self._modo, "text_tertiary"))
+        self._name.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
+        self._subtitle.setStyleSheet(f"color: {v3c('text3', self._modo).name()}; background: transparent;")
 
 
 class NMSettingsSection(QFrame):
@@ -4877,7 +5018,7 @@ class NMHubSidebar(QWidget):
         for key, icon, label in items:
             btn = QPushButton(f"  {label}")
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setFixedHeight(32)
+            btn.setFixedHeight(36)  # was 32 — 36px feels more structured for hub
             try:
                 qicon = nm_icon(icon, C("text3", self._modo), size=16)
                 if qicon and not qicon.isNull():
@@ -4909,27 +5050,70 @@ class NMHubSidebar(QWidget):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        c = colors(self._modo)
+        is_dark = "dark" in self._modo
+
+        # ── Sidebar background via QPainter (avoid QSS bleed on child widgets) ──
+        # Use v3c tokens: dark = bgSidebar (#121b2d), light = warm cream (#f2ede2)
+        if is_dark:
+            bg_hex = v3c("bgSidebar", self._modo).name()
+        else:
+            bg_hex = "#f2ede2"
+        border_c = v3c("border", self._modo)
+        border_rgba = (f"rgba({border_c.red()},{border_c.green()},"
+                       f"{border_c.blue()},110)")
         self.setStyleSheet(
-            f"background: {C('sidebar_bg', self._modo)}; "
-            f"border-right: 1px solid {c.get('border_card', c['border'])};"
+            f"NMHubSidebar {{ background-color: {bg_hex}; "
+            f"border-right: 1px solid {border_rgba}; }}"
         )
-        self._logo.set_colors(C("accent", self._modo), C("teal", self._modo))
+
+        # ── Logo gradient: accent + violet (distinct in both modes) ──────────
+        self._logo.set_colors(C("accent", self._modo), C("violet", self._modo))
+
+        # ── Footer ───────────────────────────────────────────────────
+        text3_hex = v3c("text3", self._modo).name()
         self._footer.setStyleSheet(
-            f"color: {c['text_tertiary']}; background: transparent; "
-            f"border-top: 1px solid {c.get('border_card', c['border'])};"
+            f"color: {text3_hex}; background: transparent; "
+            f"border-top: 1px solid {border_rgba};"
         )
+
+        # ── Nav buttons ────────────────────────────────────────────────
+        accent_hex = C("accent", self._modo)
+        text_hex   = v3c("text",      self._modo).name()
+        text2_hex  = v3c("text2",     self._modo).name()  # rest: text2, not text3
+        font_pt    = TYPOGRAPHY["size_small"]
+
+        # Active fill: 14% in dark (purple), 11% in light (teal) — was 8%, too faint
+        accent_c = v3c("accent", self._modo)
+        active_alpha = 0.14 if is_dark else 0.11
+        active_bg  = _rgba(accent_hex, active_alpha)
+
+        # Hover fill: token-based warm fill — was rgba(#fff, 0.05) = invisible in light
+        hover_c = v3c("border", self._modo)
+        hover_bg = (f"rgba({hover_c.red()},{hover_c.green()},{hover_c.blue()},70)"
+                    if is_dark
+                    else f"rgba({hover_c.red()},{hover_c.green()},{hover_c.blue()},80)")
+
         for key, btn in self._buttons.items():
             active = key == self._active
             btn.setStyleSheet(
-                f"QPushButton {{ text-align: left; background: "
-                f"{_rgba(C('teal', self._modo), 0.08) if active else 'transparent'}; "
-                f"color: {c['text_primary'] if active else c['text_tertiary']}; "
-                f"border: none; border-left: {3 if active else 0}px solid {C('teal', self._modo)}; "
-                f"border-radius: 8px; padding: 7px 10px; font-size: {TYPOGRAPHY['size_small']}pt; }}"
-                f"QPushButton:hover {{ background: {_rgba('#ffffff', 0.05)}; color: {c['text_secondary']}; }}"
+                f"QPushButton {{"
+                f"  text-align: left;"
+                f"  background: {active_bg if active else 'transparent'};"
+                f"  color: {text_hex if active else text2_hex};"
+                f"  border: none;"
+                f"  border-left: {3 if active else 0}px solid {accent_hex};"
+                f"  border-radius: 8px;"
+                f"  padding: 8px 12px;"
+                f"  font-size: {font_pt}pt;"
+                f"  font-weight: {'600' if active else '400'};"
+                f"}}"
+                f"QPushButton:hover {{"
+                f"  background: {hover_bg};"
+                f"  color: {text_hex};"
+                f"}}"
             )
-            icon_color = c['text_primary'] if active else c['text_tertiary']
+            # Icon: accent when active, text2 at rest
+            icon_color = accent_hex if active else text2_hex
             for item in self._items_tuple:
                 if item[0] == key:
                     try:

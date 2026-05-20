@@ -754,15 +754,18 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
     sc_handle_end = C("accent", modo)
     sc_hover = C("accent", modo)
     sc_hover_end = C("violet", modo)
+    sc_bg = "rgba(0, 0, 0, 0.05)" if "light" in modo else "rgba(255, 255, 255, 0.05)"
     return f"""
     QWidget {{
         background-color: {c['bg_primary']};
         color: {c['text_primary']};
+        selection-background-color: {c['accent']};
+        selection-color: {c['text_on_accent']};
         font-family: "{_font_family()}";
         font-size: {TYPOGRAPHY['size_body']}pt;
     }}
     QScrollBar:vertical {{
-        background: rgba(255, 255, 255, 0.05);
+        background: {sc_bg};
         width: 6px;
         margin: 0;
         border-radius: 3px;
@@ -787,7 +790,7 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
         height: 0;
     }}
     QScrollBar:horizontal {{
-        background: rgba(255, 255, 255, 0.05);
+        background: {sc_bg};
         height: 6px;
         margin: 0;
         border-radius: 3px;
@@ -828,6 +831,7 @@ def stylesheet_scrollarea(modo: str = "dark_hybrid") -> str:
     sc_handle_end = C("accent", modo)
     sc_hover = C("accent", modo)
     sc_hover_end = C("violet", modo)
+    sc_bg = "rgba(0, 0, 0, 0.05)" if "light" in modo else "rgba(255, 255, 255, 0.05)"
     return f"""
     QScrollArea {{
         background-color: transparent;
@@ -837,7 +841,7 @@ def stylesheet_scrollarea(modo: str = "dark_hybrid") -> str:
         background-color: transparent;
     }}
     QScrollBar:vertical {{
-        background: rgba(255, 255, 255, 0.05);
+        background: {sc_bg};
         width: 6px;
         margin: 0;
         border-radius: 3px;
@@ -862,7 +866,7 @@ def stylesheet_scrollarea(modo: str = "dark_hybrid") -> str:
         height: 0px;
     }}
     QScrollBar:horizontal {{
-        background: rgba(255, 255, 255, 0.05);
+        background: {sc_bg};
         height: 6px;
         margin: 0;
         border-radius: 3px;
@@ -1564,21 +1568,22 @@ def paint_shell_background(painter, rect: QRectF, modo: str):
     """Pinta el fondo de la ventana shell: gradiente diagonal + 3 blobs."""
     is_dark = "dark" in norm_modo(modo)
 
-    # Gradiente diagonal de fondo
+    # Gradiente diagonal de fondo — usando tokens V3 en vez de hex fijos
     grad = QLinearGradient(rect.topLeft(), rect.bottomRight())
     grad.setCoordinateMode(QLinearGradient.CoordinateMode.ObjectMode)
     if is_dark:
-        grad.setColorAt(0.0, QColor("#0a0d1a"))
-        grad.setColorAt(1.0, QColor("#060912"))
+        bg_top = v3c("bgAlt", modo)       # #121b2d
+        bg_bot = v3c("bg",    modo)       # #080c1e
     else:
-        grad.setColorAt(0.0, QColor("#f5f8fc"))
-        grad.setColorAt(1.0, QColor("#e8eef7"))
+        bg_top = v3c("elevated", modo)    # #faf8f5
+        bg_bot = v3c("bgAlt",   modo)     # #ece5d5
+    grad.setColorAt(0.0, bg_top)
+    grad.setColorAt(1.0, bg_bot)
     painter.fillRect(rect, QBrush(grad))
 
     w, h = rect.width(), rect.height()
-    cx, cy = w / 2, h / 2
 
-    # Blob 1: teal, 15%x 12%y — spec v3: dark=0.25, light=0.12
+    # Blob 1: teal/accent, top-left — spec v3: dark=0.25, light=0.12
     r1 = max(w, h) * 0.55
     blob1 = QRadialGradient(QPointF(w * 0.15, h * 0.12), r1)
     ac1 = v3c("teal", modo)
@@ -1589,7 +1594,7 @@ def paint_shell_background(painter, rect: QRectF, modo: str):
     painter.setBrush(QBrush(blob1))
     painter.drawEllipse(QPointF(w * 0.15, h * 0.12), r1, r1)
 
-    # Blob 2: violet, 85%x 18%y — spec v3: dark=0.22, light=0.10
+    # Blob 2: violet, top-right — spec v3: dark=0.22, light=0.10
     r2 = max(w, h) * 0.45
     blob2 = QRadialGradient(QPointF(w * 0.85, h * 0.18), r2)
     ac2 = v3c("violet", modo)
@@ -1599,10 +1604,10 @@ def paint_shell_background(painter, rect: QRectF, modo: str):
     painter.setBrush(QBrush(blob2))
     painter.drawEllipse(QPointF(w * 0.85, h * 0.18), r2, r2)
 
-    # Blob 3: cyan, 50%x 85%y — spec v3: dark=0.18, light=0.06
+    # Blob 3: accent, bottom-center — spec v3: dark=0.18, light=0.06
     r3 = max(w, h) * 0.30
     blob3 = QRadialGradient(QPointF(w * 0.50, h * 0.85), r3)
-    ac3 = v3c("cyan", modo)
+    ac3 = v3c("accent", modo)
     ac3.setAlphaF(0.18 if is_dark else 0.06)
     blob3.setColorAt(0.0, ac3)
     blob3.setColorAt(1.0, QColor(0, 0, 0, 0))
@@ -1612,8 +1617,10 @@ def paint_shell_background(painter, rect: QRectF, modo: str):
 import random as _random
 
 _SESSION_COLORS = {
-    "dark":  {"cyan": "#00f2fe",   "violet": "#7367f0"},
-    "light": {"cyan": "#89f7fe",   "violet": "#e0c3fc"},
+    # dark: use the new soft-purple accent and violet
+    "dark":  {"cyan": "#a78bfa",   "violet": "#c084fc"},
+    # light: use muted teal and copper/gold accent
+    "light": {"cyan": "#2c7a7b",   "violet": "#b45309"},
 }
 
 
