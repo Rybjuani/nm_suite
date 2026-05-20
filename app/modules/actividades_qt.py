@@ -99,6 +99,18 @@ def _intensity_for(name: str) -> int:
     return (abs(hash(name)) % 3) + 1
 
 
+def _cat_color(cat: str, modo: str) -> str:
+    cmap = {
+        "Física": "warning",
+        "Placer": "danger",
+        "Maestría": "violet",
+        "Social": "cyan",
+        "Autocuidado": "success",
+        "Cognitiva": "accent"
+    }
+    return v3c(cmap.get(cat, "teal"), modo).name()
+
+
 # ── _CategoryRingTile ────────────────────────────────────────────────────────
 
 class _CategoryRingTile(QWidget):
@@ -120,7 +132,7 @@ class _CategoryRingTile(QWidget):
         self._modo = norm_modo(modo)
         self._selected = False
         self._hover = False
-        self.setFixedSize(96, 110)
+        self.setFixedSize(96, 116)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
 
@@ -191,8 +203,7 @@ class _CategoryRingTile(QWidget):
 
         # Hover/selected ring outer glow
         if self._selected or self._hover:
-            cat_color = QColor(CATEGORY_COLORS.get(self._category,
-                                                   v3c("teal", self._modo).name()))
+            cat_color = QColor(_cat_color(self._category, self._modo))
             cat_color.setAlpha(110 if self._selected else 70)
             p.setPen(QPen(cat_color, 1))
             p.setBrush(Qt.BrushStyle.NoBrush)
@@ -204,13 +215,13 @@ class _CategoryRingTile(QWidget):
         p.setFont(qfont("size_caption",
                          weight=TYPOGRAPHY["weight_semibold"]
                          if self._selected else TYPOGRAPHY["weight_medium"]))
-        text_rect = QRectF(0, 78, self.width(), 16)
+        text_rect = QRectF(0, 80, self.width(), 16)
         p.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, self._category)
 
         # Count debajo del label
         p.setPen(QPen(v3c("text3", self._modo)))
         p.setFont(qfont_mono(9, bold=False))
-        count_rect = QRectF(0, 94, self.width(), 14)
+        count_rect = QRectF(0, 98, self.width(), 14)
         p.drawText(count_rect, Qt.AlignmentFlag.AlignCenter,
                    f"{self._count} activ.")
         p.end()
@@ -235,7 +246,7 @@ class _CategoryRingTile(QWidget):
             try:
                 self._icon_widget = NMIcon(
                     self._icon_name, size=22,
-                    color=v3c("teal", self._modo).name(),
+                    color=_cat_color(self._category, self._modo),
                     modo=self._modo, parent=self)
                 self._icon_widget.move(
                     int((self.width() - 22) / 2),
@@ -260,9 +271,9 @@ class _CategoriesCard(NMCard):
 
     def _build(self):
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
-                                V3_SP["lg"], V3_SP["lg"])
-        lay.setSpacing(V3_SP["sm"])
+        lay.setContentsMargins(V3_SP["xl"], V3_SP["xl"],
+                                V3_SP["xl"], V3_SP["xl"])
+        lay.setSpacing(V3_SP["md"])
 
         self._eyebrow = QLabel("CATEGORÍAS")
         self._eyebrow.setFont(qfont("size_caption_xs",
@@ -270,7 +281,7 @@ class _CategoriesCard(NMCard):
         lay.addWidget(self._eyebrow)
 
         row = QHBoxLayout()
-        row.setSpacing(V3_SP["sm"])
+        row.setSpacing(V3_SP["lg"])
         row.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         for cat, icon_name in _CATEGORY_ORDER:
             tile = _CategoryRingTile(cat, icon_name,
@@ -330,7 +341,7 @@ class _IntensityDots(QWidget):
         super().__init__(parent)
         self._level = max(0, min(3, level))
         self._modo = norm_modo(modo)
-        self.setFixedSize(36, 12)
+        self.setFixedSize(48, 16)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
 
     def set_level(self, level: int):
@@ -344,10 +355,10 @@ class _IntensityDots(QWidget):
         off_color = v3c("borderSoft", self._modo)
         p.setPen(Qt.PenStyle.NoPen)
         for i in range(3):
-            cx = 4 + i * 12
-            cy = 6
+            cx = 8 + i * 16
+            cy = 8
             p.setBrush(QBrush(on_color if i < self._level else off_color))
-            p.drawEllipse(QPointF(cx, cy), 3, 3)
+            p.drawEllipse(QPointF(cx, cy), 4, 4)
         p.end()
 
 
@@ -367,24 +378,21 @@ class _SuggestedCard(NMCard):
         self._descripcion = self._act.get("descripcion", "")
         self._completed_flag = False
         # Halo color por categoría
-        self.set_accent(CATEGORY_COLORS.get(
-            self._categoria, v3c("teal", self._modo).name()))
+        self.set_accent(_cat_color(self._categoria, self._modo))
         self._build()
 
     def _build(self):
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
-                                V3_SP["lg"], V3_SP["lg"])
-        lay.setSpacing(V3_SP["sm"])
+        lay.setContentsMargins(V3_SP["xl"], V3_SP["xl"],
+                                V3_SP["xl"], V3_SP["xl"])
+        lay.setSpacing(V3_SP["md"])
 
         # Top: icono grande + chip cat
         top = QHBoxLayout()
         top.setSpacing(V3_SP["sm"])
         icon_name = dict(_CATEGORY_ORDER).get(self._categoria, "spark")
         self._icon = NMIcon(icon_name, size=36,
-                             color=CATEGORY_COLORS.get(
-                                 self._categoria,
-                                 v3c("teal", self._modo).name()),
+                             color=_cat_color(self._categoria, self._modo),
                              modo=self._modo)
         top.addWidget(self._icon)
         top.addStretch()
@@ -440,8 +448,7 @@ class _SuggestedCard(NMCard):
         self.set_completed(resultado == "hecha")
 
     def _apply_sug_styles(self):
-        cat_color = CATEGORY_COLORS.get(
-            self._categoria, v3c("teal", self._modo).name())
+        cat_color = _cat_color(self._categoria, self._modo)
         qc = QColor(cat_color)
         bg_rgba = f"rgba({qc.red()},{qc.green()},{qc.blue()},36)"
         self._chip.setStyleSheet(
@@ -483,15 +490,13 @@ class _ActivityRow(QWidget):
 
     def _build(self):
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(V3_SP["sm"], V3_SP["xs"] + 2,
-                                V3_SP["sm"], V3_SP["xs"] + 2)
-        lay.setSpacing(V3_SP["sm"])
+        lay.setContentsMargins(V3_SP["md"], V3_SP["sm"],
+                                V3_SP["md"], V3_SP["sm"])
+        lay.setSpacing(V3_SP["md"])
 
         icon_name = dict(_CATEGORY_ORDER).get(self._categoria, "spark")
         self._icon = NMIcon(icon_name, size=20,
-                             color=CATEGORY_COLORS.get(
-                                 self._categoria,
-                                 v3c("teal", self._modo).name()),
+                             color=_cat_color(self._categoria, self._modo),
                              modo=self._modo)
         lay.addWidget(self._icon)
 
@@ -530,8 +535,7 @@ class _ActivityRow(QWidget):
         self._apply_row_styles()
 
     def _apply_row_styles(self):
-        cat_color = CATEGORY_COLORS.get(
-            self._categoria, v3c("teal", self._modo).name())
+        cat_color = _cat_color(self._categoria, self._modo)
         qc = QColor(cat_color)
         bg_rgba = f"rgba({qc.red()},{qc.green()},{qc.blue()},36)"
         self._cat_lbl.setStyleSheet(
@@ -641,7 +645,7 @@ class ModuloActividades(NMModule):
         from PyQt6.QtWidgets import QGridLayout
         self._grid_layout = QGridLayout(self._grid_container)
         self._grid_layout.setContentsMargins(0, 0, 0, 0)
-        self._grid_layout.setSpacing(V3_SP["md"])
+        self._grid_layout.setSpacing(V3_SP["xl"])
         self._scroll_layout.addWidget(self._grid_container)
 
         # 5. Footer count
