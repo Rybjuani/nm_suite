@@ -29,7 +29,7 @@ set "PYTHON_EXE="
 :: 1. Detectar si hay un entorno virtual activo en la sesion actual
 if defined VIRTUAL_ENV (
     if exist "%VIRTUAL_ENV%\Scripts\python.exe" (
-        set "PYTHON_EXE=%VIRTUAL_ENV%\Scripts\python.exe"
+        set PYTHON_EXE="%VIRTUAL_ENV%\Scripts\python.exe"
         echo [INFO] Usando entorno virtual activo: !VIRTUAL_ENV!
     )
 )
@@ -37,10 +37,10 @@ if defined VIRTUAL_ENV (
 :: 2. Buscar entornos virtuales locales tipicos (.venv o venv)
 if not defined PYTHON_EXE (
     if exist "%ROOT%\.venv\Scripts\python.exe" (
-        set "PYTHON_EXE=%ROOT%\.venv\Scripts\python.exe"
+        set PYTHON_EXE="%ROOT%\.venv\Scripts\python.exe"
         echo [INFO] Usando entorno virtual local: .venv
     ) else if exist "%ROOT%\venv\Scripts\python.exe" (
-        set "PYTHON_EXE=%ROOT%\venv\Scripts\python.exe"
+        set PYTHON_EXE="%ROOT%\venv\Scripts\python.exe"
         echo [INFO] Usando entorno virtual local: venv
     )
 )
@@ -79,6 +79,17 @@ if not defined PYTHON_EXE (
     echo.
     pause
     exit /b 1
+)
+
+echo.
+echo Preparando entorno...
+if not exist "%ROOT%\.env" (
+    if exist "%ROOT%\.env.example" (
+        echo [INFO] Archivo .env no encontrado. Creando a partir de .env.example...
+        copy "%ROOT%\.env.example" "%ROOT%\.env" >nul
+    ) else (
+        echo [ADVERTENCIA] No se encontro .env ni .env.example en la raiz. El build podria fallar.
+    )
 )
 
 echo.
