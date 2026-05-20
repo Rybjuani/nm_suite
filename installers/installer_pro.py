@@ -419,59 +419,77 @@ class InstaladorPro(InstallerShell):
 
     def _build_p0(self, page: QWidget):
         lay = QVBoxLayout(page)
-        lay.setContentsMargins(26, 22, 26, 8)
+        lay.setContentsMargins(28, 22, 28, 8)
         lay.setSpacing(0)
-        t1 = QLabel("Instalador Hub")
-        t1.setStyleSheet(f"color: {ACCENT}; font-size: 24px; font-weight: bold;")
+        
+        eyebrow = QLabel("BIENVENIDA")
+        eyebrow.setStyleSheet(
+            f"color: {ACCENT}; font-size: 11px; font-weight: 700;"
+            f"letter-spacing: 3px; background: transparent;"
+        )
+        lay.addWidget(eyebrow)
+        lay.addSpacing(8)
+
+        t1 = QLabel("NeuroMood Hub")
+        t1.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 28px; font-weight: bold;")
         lay.addWidget(t1)
-        t2 = QLabel("Instalador Hub - instalacion para profesionales")
+
+        t2 = QLabel("Suite de instalación para profesionales de la salud.")
         t2.setStyleSheet(f"color: {TEXT_TERT}; font-size: 13px;")
         lay.addWidget(t2)
         lay.addSpacing(20)
-        line = QFrame(); line.setFixedHeight(2)
-        line.setStyleSheet(f"background: {ACCENT};")
+
+        line = QFrame(); line.setFixedHeight(1)
+        line.setStyleSheet(f"background: {BORDER};")
         lay.addWidget(line)
         lay.addSpacing(20)
+
         desc = QLabel(
-            "Este instalador configurara el NeuroMood Hub\n"
-            "en tu computadora.\n\n"
-            "Desde el Hub podras ver datos de tus pacientes,\n"
-            "asignar tareas y recordatorios en la nube,\n"
-            "y acceder a las herramientas clinicas locales."
+            "Este instalador configurará el NeuroMood Hub en tu computadora.\n\n"
+            "Desde el Hub podrás ver el progreso de tus pacientes de forma remota, "
+            "asignar tareas conductuales, gestionar recordatorios "
+            "y acceder a las herramientas clínicas locales."
         )
-        desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 13px;")
+        desc.setWordWrap(True)
+        desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 13px; line-height: 1.5;")
         lay.addWidget(desc)
         lay.addSpacing(24)
+
         card = QFrame()
         card.setStyleSheet(
-            f"QFrame {{background: {BG_SURFACE}; border-radius: 10px; border: 1px solid {BORDER};}}"
+            f"QFrame {{background: {BG_SURFACE}; border-radius: 12px; border: 1px solid {BORDER};}}"
         )
-        cl = QHBoxLayout(card); cl.setContentsMargins(14, 8, 14, 8)
-        info = QLabel("Requiere conexion a internet para funciones remotas.")
-        info.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px; background: transparent; border: none;")
-        cl.addWidget(info)
+        cl = QHBoxLayout(card)
+        cl.setContentsMargins(14, 10, 14, 10)
+        cl.setSpacing(10)
+        icon_badge = QLabel("🌐")
+        icon_badge.setStyleSheet("font-size: 16px; background: transparent;")
+        cl.addWidget(icon_badge)
+        info = QLabel("Requiere conexión a internet para sincronización y funciones remotas.")
+        info.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px; background: transparent;")
+        cl.addWidget(info, stretch=1)
         lay.addWidget(card)
         lay.addStretch()
 
     def _build_p1(self, page: QWidget):
         lay = QVBoxLayout(page)
-        lay.setContentsMargins(26, 22, 26, 8)
+        lay.setContentsMargins(28, 22, 28, 8)
         lay.setSpacing(0)
-        title = QLabel("Instalando...")
+        title = QLabel("Configuración de Instalación")
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: bold;")
         lay.addWidget(title)
-        lay.addSpacing(12)
+        lay.addSpacing(16)
 
-        path_lbl = QLabel("Carpeta de instalacion:")
-        path_lbl.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px;")
+        path_lbl = QLabel("Carpeta de destino:")
+        path_lbl.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px; font-weight: bold;")
         lay.addWidget(path_lbl)
-        lay.addSpacing(3)
+        lay.addSpacing(6)
 
         path_row = QWidget()
         pr = QHBoxLayout(path_row)
         pr.setContentsMargins(0, 0, 0, 0)
         pr.setSpacing(8)
-        self._ent_path = QLineEdit(DEFAULT_INSTALL)
+        self._ent_path = NMInput()
         self._ent_path.setText(DEFAULT_INSTALL)
         pr.addWidget(self._ent_path, stretch=1)
         btn_browse = QPushButton("Examinar")
@@ -480,10 +498,10 @@ class InstaladorPro(InstallerShell):
         btn_browse.clicked.connect(self._browse)
         pr.addWidget(btn_browse)
         lay.addWidget(path_row)
-        lay.addSpacing(12)
+        lay.addSpacing(20)
 
         self._install_progress = NMInstallProgress(accent_key="violet")
-        self._install_progress.set_progress(0, "Presiona 'Instalar' para continuar.")
+        self._install_progress.set_progress(0, "Revisá la ruta y presioná 'Instalar' para continuar.")
         lay.addWidget(self._install_progress)
         self._progress_bar = self._install_progress
         self._progress_lbl = self._install_progress._label
@@ -493,39 +511,96 @@ class InstaladorPro(InstallerShell):
 
     def _build_p2(self, page: QWidget):
         lay = QVBoxLayout(page)
-        lay.setContentsMargins(26, 22, 26, 8)
+        lay.setContentsMargins(28, 16, 28, 8)
         lay.setSpacing(0)
-        ok = QLabel("Archivos instalados")
-        ok.setStyleSheet(f"color: {SUCCESS}; font-size: 20px; font-weight: bold;")
-        lay.addWidget(ok)
-        lay.addSpacing(8)
-        desc = QLabel(
-            "El NeuroMood Hub ya esta instalado.\n"
-            "Los accesos directos seleccionados se crearan al presionar Finalizar."
+
+        # Círculo check
+        circle_row = QWidget()
+        circle_row.setStyleSheet("background: transparent;")
+        crl = QVBoxLayout(circle_row)
+        crl.setContentsMargins(0, 0, 0, 0)
+        crl.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+
+        check_circle = QFrame()
+        check_circle.setObjectName("CheckCircle")
+        check_circle.setFixedSize(88, 88)
+        check_circle.setStyleSheet(
+            f"QFrame#CheckCircle {{"
+            f"  background: {SUCCESS};"
+            f"  border-radius: 44px;"
+            f"}}"
         )
-        desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 13px;")
-        lay.addWidget(desc)
-        lay.addSpacing(18)
-        sep = QFrame(); sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background: {BORDER};")
-        lay.addWidget(sep); lay.addSpacing(16)
-        self._chk_escritorio = NMCustomCheck(
-            "Crear acceso directo en el Escritorio",
-            checked=True,
-            strike_on_check=False,
+
+        check_lbl = QLabel("✓", check_circle)
+        check_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        check_lbl.setGeometry(0, 0, 88, 88)
+        check_lbl.setStyleSheet(
+            "color: #ffffff; font-size: 38px; font-weight: 900; background: transparent;"
         )
-        self._chk_escritorio.setChecked(True); lay.addWidget(self._chk_escritorio)
-        lay.addSpacing(12)
-        self._chk_menu = NMCustomCheck(
-            "Crear acceso directo en el Menu de Inicio",
-            checked=False,
-            strike_on_check=False,
+        crl.addWidget(check_circle, alignment=Qt.AlignmentFlag.AlignHCenter)
+        lay.addWidget(circle_row)
+        lay.addSpacing(14)
+
+        eyebrow_ok = QLabel("LISTO")
+        eyebrow_ok.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        eyebrow_ok.setStyleSheet(
+            f"color: {SUCCESS}; font-size: 11px; font-weight: 700;"
+            f"letter-spacing: 4px; background: transparent;"
         )
-        self._chk_menu.setChecked(False); lay.addWidget(self._chk_menu)
+        lay.addWidget(eyebrow_ok)
+        lay.addSpacing(4)
+
+        title_ok = QLabel("Instalación completada")
+        title_ok.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        title_ok.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; font-size: 26px; font-weight: 700;"
+            f"letter-spacing: -1px; background: transparent;"
+        )
+        lay.addWidget(title_ok)
+        lay.addSpacing(6)
+
+        desc_ok = QLabel(
+            "NeuroMood Hub está listo para usarse.\n"
+            "Podés iniciar la herramienta desde el menú de inicio."
+        )
+        desc_ok.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        desc_ok.setStyleSheet(f"color: {TEXT_SEC}; font-size: 13px; background: transparent;")
+        lay.addWidget(desc_ok)
+        lay.addSpacing(24)
+
+        # Info card
+        info_card = QFrame()
+        info_card.setStyleSheet(
+            f"QFrame {{ background: {BG_SURFACE}; border-radius: 12px; border: 1px solid {BORDER}; }}"
+        )
+        ic_lay = QHBoxLayout(info_card)
+        ic_lay.setContentsMargins(14, 12, 14, 12)
+        ic_lay.setSpacing(10)
+        ic_lay.addWidget(QLabel("ℹ"), alignment=Qt.AlignmentFlag.AlignTop)
+
+        shortcuts_col = QVBoxLayout()
+        shortcuts_col.setSpacing(10)
+        info_txt = QLabel("Seleccioná dónde querés ubicar los accesos directos:")
+        info_txt.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px; background: transparent;")
+        shortcuts_col.addWidget(info_txt)
+
+        self._chk_escritorio = NMCustomCheck("Escritorio", checked=True, strike_on_check=False)
+        self._chk_escritorio.setChecked(True)
+        shortcuts_col.addWidget(self._chk_escritorio)
+        
+        self._chk_menu = NMCustomCheck("Menú Inicio", checked=True, strike_on_check=False)
+        self._chk_menu.setChecked(True)
+        shortcuts_col.addWidget(self._chk_menu)
+        
+        ic_lay.addLayout(shortcuts_col, stretch=1)
+        lay.addWidget(info_card)
         lay.addSpacing(16)
-        btn_carpeta = QPushButton("Abrir carpeta de instalacion")
-        btn_carpeta.setObjectName("outline"); btn_carpeta.setFixedSize(220, 36)
-        btn_carpeta.clicked.connect(self._abrir_carpeta); lay.addWidget(btn_carpeta)
+
+        btn_carpeta = QPushButton("Abrir carpeta de instalación")
+        btn_carpeta.setObjectName("outline")
+        btn_carpeta.setFixedSize(220, 36)
+        btn_carpeta.clicked.connect(self._abrir_carpeta)
+        lay.addWidget(btn_carpeta, alignment=Qt.AlignmentFlag.AlignHCenter)
         lay.addStretch()
 
     def _anterior(self):

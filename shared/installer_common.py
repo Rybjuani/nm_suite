@@ -11,65 +11,64 @@ except ImportError:
     from theme import COLORS, TYPOGRAPHY, LAYOUT, V3_DARK
 
 # ── Colores para instaladores ──────────────────────────────────────────────
-# Instaladores siempre dark (spec README v3). Tokens v3 desde V3_DARK puro,
-# con fallback al bridge legacy donde no hay equivalente directo.
+# Premium clinical desktop installer — Deep dark theme (calm, safe, trustworthy)
 _C = COLORS["dark_hybrid"]
 _T = TYPOGRAPHY
 
-BG_PRIMARY     = V3_DARK["bg"]
-BG_SECONDARY   = V3_DARK["bgAlt"]
-BG_SURFACE     = V3_DARK["surfaceSolid"]
-BG_ELEVATED    = V3_DARK["elevatedSolid"]
-ACCENT         = V3_DARK["teal"]            # accent dominante v3
-ACCENT_HOVER   = V3_DARK["cyan"]
-TEXT_PRIMARY   = V3_DARK["text"]
-TEXT_SEC       = V3_DARK["text2"]
-TEXT_TERT      = V3_DARK["text3"]
-TEXT_ON_ACCENT = "#0b1220"                  # texto oscuro sobre gradient claro
-BORDER         = V3_DARK["borderSolid"]
-SUCCESS        = V3_DARK["success"]
-WARNING_C      = V3_DARK["warning"]
-ERROR_C        = V3_DARK["danger"]
+BG_PRIMARY     = V3_DARK.get("bg", "#080c1e")
+BG_SECONDARY   = V3_DARK.get("bgAlt", "#121b2d")
+BG_SURFACE     = V3_DARK.get("surfaceSolid", "#121c2d")
+BG_ELEVATED    = V3_DARK.get("elevatedSolid", "#19243d")
+ACCENT         = V3_DARK.get("teal", "#2dd4bf")
+ACCENT_HOVER   = V3_DARK.get("cyan", "#22d3ee")
+TEXT_PRIMARY   = V3_DARK.get("text", "#f8fafc")
+TEXT_SEC       = V3_DARK.get("text2", "#cbd5e1")
+TEXT_TERT      = V3_DARK.get("text3", "#94a3b8")
+TEXT_ON_ACCENT = "#020617"
+BORDER         = V3_DARK.get("borderSolid", "#1e293b")
+SUCCESS        = V3_DARK.get("success", "#10b981")
+WARNING_C      = V3_DARK.get("warning", "#f59e0b")
+ERROR_C        = V3_DARK.get("danger", "#ef4444")
 
-# v3 signature gradient stops (teal → cyan-mid → violet)
-GRAD_FROM = V3_DARK["gradFrom"]   # #22d3ee cyan
-GRAD_MID  = V3_DARK["gradMid"]    # #5eead4 teal claro
-GRAD_TO   = V3_DARK["gradTo"]     # #c084fc violet claro
+# Refined clinical premium gradients (subtle teal depth, no neon)
+GRAD_FROM = ACCENT
+GRAD_MID  = "#14b8a6"
+GRAD_TO   = "#0f766e"
 
-# Danger gradient (rojo → amarillo) para uninstaller — spec README
-DANGER_FROM = V3_DARK["danger"]   # #f87171
-DANGER_TO   = V3_DARK["warning"]  # #fbbf24
+# Danger gradient (soft red to deep red, avoiding yellow neon)
+DANGER_FROM = ERROR_C
+DANGER_TO   = "#b91c1c"
 
-# Tipografía: usa fallback chain (instaladores no cargan fuentes premium)
+# Tipografía
 FONT_FAMILY = (_T.get("font_family_fallback_chain", ["Segoe UI"])[0]
                 if isinstance(_T.get("font_family_fallback_chain"), list)
                 else "Segoe UI")
-# Para inputs no usar pill radius (999) — mantener 10 para legibilidad
-RADIUS_INPUT  = 10
-RADIUS_BUTTON = LAYOUT["radius_button"]    # 999 = pill (v3)
-RADIUS_CARD   = LAYOUT["radius_card"]
+
+# Elegant structural radius (desktop app style, not pills)
+RADIUS_INPUT  = 8
+RADIUS_BUTTON = 8
+RADIUS_CARD   = 12
 
 # Compat: aliases viejos que otras partes del código pueden usar
 _GRAD       = COLORS["dark_hybrid"]
-VIOLET      = V3_DARK["violet"]
-VIOLET_HOVER = V3_DARK["violet"]
-TEAL        = V3_DARK["teal"]
-TEAL_HOVER  = V3_DARK["cyan"]
-SUCCESS_BG  = "#091E10"   # fondo info verde oscuro (preservado)
+VIOLET      = V3_DARK.get("violet", "#a78bfa")
+VIOLET_HOVER = V3_DARK.get("violet", "#a78bfa")
+TEAL        = ACCENT
+TEAL_HOVER  = ACCENT_HOVER
+SUCCESS_BG  = "#091E10"
 
 
 def stylesheet_installer() -> str:
     """
     Stylesheet premium unificado para los 4 instaladores/desinstaladores.
-    Usa el design system dark_hybrid: gradiente teal-violet en botones primarios,
-    sidebar con borde accent, inputs y cards con la paleta exacta de la app.
+    Refinado para una apariencia clínica, calmada y elegante.
     """
     return f"""
 * {{ font-family: "{FONT_FAMILY}", Arial; color: {TEXT_PRIMARY}; }}
 QMainWindow, QWidget {{ background: {BG_PRIMARY}; }}
 QLabel {{ background: transparent; }}
 
-/* ── Inputs (radius v3 lg, no pill para legibilidad) ─────────── */
+/* ── Inputs ─────────── */
 QLineEdit {{
     background: {BG_SURFACE};
     color: {TEXT_PRIMARY};
@@ -78,12 +77,12 @@ QLineEdit {{
     padding: 8px 14px;
     font-size: 13px;
     selection-background-color: {ACCENT};
-    selection-color: #0b1220;
+    selection-color: {TEXT_ON_ACCENT};
 }}
-QLineEdit:focus {{ border-color: {GRAD_MID}; border-width: 2px; }}
+QLineEdit:focus {{ border-color: {GRAD_MID}; border-width: 1px; background: {BG_ELEVATED}; }}
 QLineEdit::placeholder {{ color: {TEXT_TERT}; }}
 
-/* ── Botón primario — gradient firma v3 teal→cyan→violet (pill) ── */
+/* ── Botón primario — gradient clínico ── */
 QPushButton {{
     background: qlineargradient(
         x1:0, y1:0, x2:1, y2:0,
@@ -97,11 +96,7 @@ QPushButton {{
     font-weight: 600;
 }}
 QPushButton:hover {{
-    background: qlineargradient(
-        x1:0, y1:0, x2:1, y2:0,
-        stop:0 {GRAD_FROM}, stop:0.5 {GRAD_MID}, stop:1 {GRAD_TO}
-    );
-    border: 1px solid {GRAD_MID};
+    background: {GRAD_MID};
 }}
 QPushButton:pressed {{
     padding: 10px 22px 8px 22px;
@@ -132,27 +127,25 @@ QPushButton#ghost {{
 }}
 QPushButton#ghost:hover {{
     color: {TEXT_PRIMARY};
+    background: {BG_ELEVATED};
+    border-radius: {RADIUS_BUTTON}px;
 }}
 
-/* ── Botón danger v3 (uninstaller): gradient rojo → amarillo ── */
+/* ── Botón danger (uninstaller) ── */
 QPushButton#danger {{
     background: qlineargradient(
         x1:0, y1:0, x2:1, y2:0,
         stop:0 {DANGER_FROM}, stop:1 {DANGER_TO}
     );
-    color: #0b1220;
+    color: {TEXT_ON_ACCENT};
     border: none;
     font-weight: 600;
 }}
 QPushButton#danger:hover {{
-    background: qlineargradient(
-        x1:0, y1:0, x2:1, y2:0,
-        stop:0 {DANGER_FROM}, stop:1 {DANGER_TO}
-    );
-    border: 1px solid {DANGER_FROM};
+    background: {DANGER_FROM};
 }}
 
-/* ── Checkbox v3 — activo = gradient firma ────────────────── */
+/* ── Checkbox clínico ────────────────── */
 QCheckBox {{
     color: {TEXT_SEC};
     font-size: 12px;
@@ -172,7 +165,7 @@ QCheckBox::indicator:checked {{
     border-color: {GRAD_MID};
 }}
 
-/* ── Progress bar v3 — gradient firma teal→violet ────────── */
+/* ── Progress bar ────────── */
 QProgressBar {{
     background: {BORDER};
     border-radius: 4px;
@@ -187,7 +180,7 @@ QProgressBar::chunk {{
     border-radius: 4px;
 }}
 
-/* ── Progress bar danger (uninstaller): rojo→amarillo ──── */
+/* ── Progress bar danger ──── */
 QProgressBar#danger::chunk {{
     background: qlineargradient(
         x1:0, y1:0, x2:1, y2:0,
@@ -202,50 +195,46 @@ QScrollBar:vertical {{
     background: rgba(255, 255, 255, 0.05); width: 6px; margin: 0; border-radius: 3px;
 }}
 QScrollBar::handle:vertical {{
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {TEAL}, stop:1 {ACCENT});
-    border: 1px solid {TEAL}; border-radius: 3px; min-height: 30px;
+    background: {BORDER}; border-radius: 3px; min-height: 30px;
 }}
 QScrollBar::handle:vertical:hover {{
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {ACCENT}, stop:1 {VIOLET});
-    border: 1px solid {ACCENT};
+    background: {TEXT_TERT};
 }}
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
 QScrollBar:horizontal {{
     background: rgba(255, 255, 255, 0.05); height: 6px; margin: 0; border-radius: 3px;
 }}
 QScrollBar::handle:horizontal {{
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {TEAL}, stop:1 {ACCENT});
-    border: 1px solid {TEAL}; border-radius: 3px; min-width: 30px;
+    background: {BORDER}; border-radius: 3px; min-width: 30px;
 }}
 QScrollBar::handle:horizontal:hover {{
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {ACCENT}, stop:1 {VIOLET});
-    border: 1px solid {ACCENT};
+    background: {TEXT_TERT};
 }}
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0; }}
 
 /* ── Sidebar ────────────────────────────────────────────────── */
 QWidget#Sidebar {{
     background: {BG_SECONDARY};
-    border-right: 1px solid {_GRAD.get("border_card", BORDER)};
+    border-right: 1px solid {BORDER};
 }}
 
 /* ── Nav bar inferior ───────────────────────────────────────── */
 QWidget#NavBar {{
     background: {BG_SECONDARY};
-    border-top: 1px solid {_GRAD.get("border_card", BORDER)};
+    border-top: 1px solid {BORDER};
 }}
 
 /* ── Log area ───────────────────────────────────────────────── */
 QScrollArea#LogArea {{
     background: {BG_SURFACE};
-    border-radius: 10px;
+    border-radius: {RADIUS_CARD}px;
     border: 1px solid {BORDER};
 }}
 
 /* ── Info card verde ────────────────────────────────────────── */
 QFrame#InfoCard {{
     background: {SUCCESS_BG};
-    border-radius: 8px;
+    border-radius: {RADIUS_CARD}px;
     border: 1px solid {SUCCESS};
 }}
 
@@ -463,29 +452,28 @@ class InstallerShell(QMainWindow):
         nl.addWidget(lbl_footer)
         nl.addStretch()
 
-        # btn_ant ahora va a la derecha (pill, spec v3)
+        # btn_ant
         self.btn_ant = QPushButton("← Volver")
         self.btn_ant.setFixedSize(110, 36)
         self.btn_ant.setStyleSheet(
-            f"QPushButton {{ border: 1px solid {BORDER}; border-radius: 999px;"
+            f"QPushButton {{ border: 1px solid {BORDER}; border-radius: {RADIUS_BUTTON}px;"
             f"background: transparent; color: {TEXT_SEC}; font-size: 12px;"
             f"font-weight: 500; padding: 6px 16px; }}"
-            f"QPushButton:hover {{ border-color: {GRAD_MID}; color: {TEXT_PRIMARY}; }}"
+            f"QPushButton:hover {{ border-color: {GRAD_MID}; color: {TEXT_PRIMARY}; background: {BG_ELEVATED}; }}"
         )
         self.btn_ant.setVisible(False)
         nl.addWidget(self.btn_ant)
 
-        # btn_sig — gradient firma v3 teal→violet (pill)
+        # btn_sig
         self.btn_sig = QPushButton("Siguiente →")
         self.btn_sig.setFixedSize(150, 38)
         self.btn_sig.setStyleSheet(
-            f"QPushButton {{ border: none; border-radius: 999px;"
+            f"QPushButton {{ border: none; border-radius: {RADIUS_BUTTON}px;"
             f"background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
             f"stop:0 {GRAD_FROM}, stop:0.5 {GRAD_MID}, stop:1 {GRAD_TO});"
-            f"color: #0b1220; font-size: 12px; font-weight: 700;"
+            f"color: {TEXT_ON_ACCENT}; font-size: 12px; font-weight: 600;"
             f"padding: 8px 22px; }}"
-            f"QPushButton:hover {{ background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
-            f"stop:0 {GRAD_MID}, stop:0.5 {GRAD_TO}, stop:1 {VIOLET}); }}"
+            f"QPushButton:hover {{ background: {GRAD_MID}; }}"
             f"QPushButton:disabled {{ background: {BORDER}; color: {TEXT_TERT}; }}"
         )
         nl.addWidget(self.btn_sig)

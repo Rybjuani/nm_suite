@@ -15,19 +15,24 @@ from PyQt6.QtGui import QIcon, QPixmap
 
 try:
     from shared.installer_common import (
-        BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
-        TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
-        FONT_FAMILY, recurso, aplicar_captionbar_installer, stylesheet_installer,
-        InstallerShell, TEAL, VIOLET,
+        BG_PRIMARY, BG_SECONDARY, BG_SURFACE, BG_ELEVATED, ACCENT, ACCENT_HOVER,
+        TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, TEXT_ON_ACCENT, BORDER, SUCCESS, WARNING_C, ERROR_C,
+        FONT_FAMILY, TEAL, VIOLET, GRAD_FROM, GRAD_MID, GRAD_TO,
+        DANGER_FROM, DANGER_TO,
+        recurso, aplicar_captionbar_installer, stylesheet_installer,
+        InstallerShell,
     )
 except ImportError:
     _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if _root not in sys.path:
         sys.path.insert(0, _root)
     from shared.installer_common import (
-        BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
-        TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
-        FONT_FAMILY, recurso, aplicar_captionbar_installer, stylesheet_installer,
+        BG_PRIMARY, BG_SECONDARY, BG_SURFACE, BG_ELEVATED, ACCENT, ACCENT_HOVER,
+        TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, TEXT_ON_ACCENT, BORDER, SUCCESS, WARNING_C, ERROR_C,
+        FONT_FAMILY, TEAL, VIOLET, GRAD_FROM, GRAD_MID, GRAD_TO,
+        DANGER_FROM, DANGER_TO,
+        recurso, aplicar_captionbar_installer, stylesheet_installer,
+        InstallerShell,
     )
 
 REG_KEY = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\NeuroMoodHub"
@@ -327,54 +332,131 @@ class DesinstaladorPro(InstallerShell):
         self._install_dir = detectar_install_dir()
         self._worker: _ProUninstWorker | None = None
         self._build_shell()
+        self.btn_ant.clicked.connect(self._anterior)
         self._show_confirm()
+
+    def _anterior(self):
+        if self._pagina == 0:
+            self.close()
+
+    def _fade_to(self, n: int):
+        super()._fade_to(n)
+        if n == 0:
+            self.btn_ant.setVisible(True)
+            self.btn_ant.setText("Cancelar")
+            self.btn_sig.setText("Desinstalar")
+            self.btn_sig.setStyleSheet(
+                f"QPushButton {{ border: none; border-radius: 8px;"
+                f"background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
+                f"stop:0 {DANGER_FROM}, stop:1 {DANGER_TO});"
+                f"color: {TEXT_ON_ACCENT}; font-size: 12px; font-weight: 600;"
+                f"padding: 8px 22px; }}"
+                f"QPushButton:hover {{ background: {DANGER_FROM}; }}"
+                f"QPushButton:disabled {{ background: {BORDER}; color: {TEXT_TERT}; }}"
+            )
+        elif n == 1:
+            self.btn_ant.setVisible(False)
+            self.btn_sig.setText("Desinstalando...")
+        elif n == 2:
+            self.btn_ant.setVisible(False)
+            self.btn_sig.setText("Cerrar")
+            self.btn_sig.setStyleSheet(
+                f"QPushButton {{ border: none; border-radius: 8px;"
+                f"background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
+                f"stop:0 {GRAD_FROM}, stop:0.5 {GRAD_MID}, stop:1 {GRAD_TO});"
+                f"color: {TEXT_ON_ACCENT}; font-size: 12px; font-weight: 600;"
+                f"padding: 8px 22px; }}"
+                f"QPushButton:hover {{ background: {GRAD_MID}; }}"
+                f"QPushButton:disabled {{ background: {BORDER}; color: {TEXT_TERT}; }}"
+            )
 
     def _build_confirm(self, page, layout):
         from PyQt6.QtWidgets import QCheckBox
         from PyQt6.QtCore import Qt as _Qt
 
-        title = QLabel("Desinstalador Hub")
-        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
-        layout.addWidget(title)
-        layout.addSpacing(8)
+        # Header con icono warning v3
+        hdr_row = QWidget()
+        hdr_row.setStyleSheet("background: transparent;")
+        hr = QHBoxLayout(hdr_row)
+        hr.setContentsMargins(0, 0, 0, 0)
+        hr.setSpacing(16)
 
-        desc = QLabel(
-            f"Se eliminaran los archivos de instalacion del NeuroMood Hub\n"
-            f"de tu computadora.\n\nCarpeta: {self._install_dir}"
+        warn_badge = QFrame()
+        warn_badge.setFixedSize(52, 52)
+        warn_badge.setStyleSheet(
+            f"QFrame {{ background: {ERROR_C}22; border-radius: 12px; border: none; }}"
         )
-        desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px;")
-        layout.addWidget(desc)
-        layout.addSpacing(16)
+        wb_inner = QLabel("⚠", warn_badge)
+        wb_inner.setAlignment(_Qt.AlignmentFlag.AlignCenter)
+        wb_inner.setGeometry(0, 0, 52, 52)
+        wb_inner.setStyleSheet(f"color: {ERROR_C}; font-size: 24px; background: transparent;")
+        hr.addWidget(warn_badge)
 
-        try:
-            self._preserve_card = NMDataPreserveCard(
-                "Conservar mis datos",
-                "Credenciales locales, registros y configuracion",
-                checked=True,
-            )
-            layout.addWidget(self._preserve_card)
-        except NameError:
-            conservar_card = QFrame()
-            conservar_card.setObjectName("ConservarCard")
-            conservar_card.setStyleSheet(
-                f"QFrame#ConservarCard {{background: {BG_SURFACE}; border: 1px solid {BORDER}; border-radius: 12px;}}"
-            )
-            cv = QHBoxLayout(conservar_card)
-            cv.setContentsMargins(16, 14, 16, 14)
-            cv.setSpacing(14)
-            text_col = QVBoxLayout()
-            tit = QLabel("Conservar mis datos")
-            tit.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 13px; font-weight: 700; background: transparent;")
-            text_col.addWidget(tit)
-            sub = QLabel("Credenciales locales, registros y configuracion")
-            sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px; background: transparent;")
-            text_col.addWidget(sub)
-            cv.addLayout(text_col, stretch=1)
-            self._chk_conservar = QCheckBox()
-            self._chk_conservar.setChecked(True)
-            cv.addWidget(self._chk_conservar, alignment=_Qt.AlignmentFlag.AlignRight)
-            layout.addWidget(conservar_card)
+        titles_col = QVBoxLayout()
+        titles_col.setSpacing(4)
+        eyebrow_d = QLabel("DESINSTALACIÓN")
+        eyebrow_d.setStyleSheet(
+            f"color: {ERROR_C}; font-size: 11px; font-weight: 700; letter-spacing: 3px; background: transparent;"
+        )
+        titles_col.addWidget(eyebrow_d)
+        main_title = QLabel("¿Desinstalar NeuroMood Hub?")
+        main_title.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; font-size: 24px; font-weight: 700; background: transparent;"
+        )
+        titles_col.addWidget(main_title)
+        sub_title = QLabel("Se eliminarán los archivos de instalación de tu computadora.")
+        sub_title.setStyleSheet(f"color: {TEXT_SEC}; font-size: 13px; background: transparent;")
+        titles_col.addWidget(sub_title)
+        hr.addLayout(titles_col, stretch=1)
+        layout.addWidget(hdr_row)
+        layout.addSpacing(14)
 
+        # Card carpeta
+        folder_card = QFrame()
+        folder_card.setStyleSheet(
+            f"QFrame {{ background: {BG_SURFACE}; border-radius: 12px; border: 1px solid {BORDER}; }}"
+        )
+        fc = QVBoxLayout(folder_card)
+        fc.setContentsMargins(14, 10, 14, 10)
+        fc.setSpacing(2)
+        folder_key = QLabel("CARPETA A ELIMINAR")
+        folder_key.setStyleSheet(
+            f"color: {TEXT_TERT}; font-size: 10px; font-weight: 700; letter-spacing: 2px; background: transparent;"
+        )
+        fc.addWidget(folder_key)
+        folder_val = QLabel(self._install_dir)
+        folder_val.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; font-size: 12px; font-family: Consolas, monospace; background: transparent;"
+        )
+        fc.addWidget(folder_val)
+        layout.addWidget(folder_card)
+        layout.addSpacing(10)
+
+        self._preserve_card = NMDataPreserveCard(
+            "Conservar mis datos",
+            "Credenciales locales, registros y configuración",
+            checked=True,
+        )
+        layout.addWidget(self._preserve_card)
+        layout.addSpacing(10)
+
+        # Info card
+        info_card = QFrame()
+        info_card.setStyleSheet(
+            f"QFrame {{ background: {BG_ELEVATED}; border-radius: 12px; border: 1px solid {BORDER}; }}"
+        )
+        ic = QHBoxLayout(info_card)
+        ic.setContentsMargins(14, 10, 14, 10)
+        ic.setSpacing(10)
+        ic.addWidget(QLabel("ℹ"))
+        info_txt = QLabel(
+            "Al continuar se cerrarán todas las ventanas de NeuroMood Hub abiertas. "
+            "Los accesos directos del escritorio y del menú inicio también serán eliminados."
+        )
+        info_txt.setWordWrap(True)
+        info_txt.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px; background: transparent;")
+        ic.addWidget(info_txt, stretch=1)
+        layout.addWidget(info_card)
         layout.addStretch()
 
     def _show_confirm(self):
@@ -400,9 +482,9 @@ class DesinstaladorPro(InstallerShell):
 
     def _build_progress(self, page, layout):
         title = QLabel("Desinstalando NeuroMood Hub...")
-        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
+        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 24px; font-weight: bold;")
         layout.addWidget(title)
-        layout.addSpacing(12)
+        layout.addSpacing(16)
         self._install_progress = NMInstallProgress(accent_key="violet")
         self._install_progress.set_progress(0, "Preparando...")
         self._install_progress.set_lines([
@@ -438,39 +520,113 @@ class DesinstaladorPro(InstallerShell):
         QApplication.instance().processEvents()
 
     def _build_done(self, page, layout):
+        from PyQt6.QtCore import Qt as _Qt
+
         conservar = self._worker._conservar if self._worker else True
-        title = QLabel("Desinstalacion completada")
-        title.setStyleSheet(f"color: {SUCCESS}; font-size: 18px; font-weight: bold;")
+        
+        # Círculo check
+        check_circle = QFrame()
+        check_circle.setObjectName("UninstCheckCircle")
+        check_circle.setFixedSize(88, 88)
+        check_circle.setStyleSheet(
+            f"QFrame#UninstCheckCircle {{"
+            f"  background: {SUCCESS};"
+            f"  border-radius: 44px; border: none;"
+            f"}}"
+        )
+        check_lbl = QLabel("✓", check_circle)
+        check_lbl.setAlignment(_Qt.AlignmentFlag.AlignCenter)
+        check_lbl.setGeometry(0, 0, 88, 88)
+        check_lbl.setStyleSheet(
+            "color: #ffffff; font-size: 38px; font-weight: 900; background: transparent;"
+        )
+        layout.addWidget(check_circle, alignment=_Qt.AlignmentFlag.AlignHCenter)
+        layout.addSpacing(14)
+
+        eyebrow_ok = QLabel("LISTO")
+        eyebrow_ok.setAlignment(_Qt.AlignmentFlag.AlignHCenter)
+        eyebrow_ok.setStyleSheet(
+            f"color: {SUCCESS}; font-size: 11px; font-weight: 700;"
+            f"letter-spacing: 4px; background: transparent;"
+        )
+        layout.addWidget(eyebrow_ok)
+        layout.addSpacing(4)
+
+        title = QLabel("Desinstalación completada")
+        title.setAlignment(_Qt.AlignmentFlag.AlignHCenter)
+        title.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; font-size: 24px; font-weight: 700;"
+            f"letter-spacing: -0.5px; background: transparent;"
+        )
         layout.addWidget(title)
         layout.addSpacing(8)
         
         if conservar:
             desc_text = (
                 "NeuroMood Hub fue eliminado de este equipo.\n"
-                "La configuracion local se preservo segun la opcion seleccionada."
+                "La configuración local se preservó según la opción seleccionada."
             )
         else:
             desc_text = (
                 "NeuroMood Hub fue eliminado de este equipo.\n"
-                "Tus datos y configuracion local tambien fueron eliminados."
+                "Tus datos y configuración local también fueron eliminados."
             )
         desc = QLabel(desc_text)
         desc.setWordWrap(True)
-        desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px;")
+        desc.setAlignment(_Qt.AlignmentFlag.AlignHCenter)
+        desc.setStyleSheet(f"color: {TEXT_SEC}; font-size: 13px; background: transparent;")
         layout.addWidget(desc)
-        layout.addSpacing(10)
+        layout.addSpacing(16)
         
         if conservar:
-            try:
-                layout.addWidget(NMDataPreserveCard(
-                    "Datos preservados",
-                    "Credenciales locales, registros y configuracion",
-                    checked=True,
-                ))
-            except NameError:
-                lbl = QLabel("✓ Datos conservados localmente")
-                lbl.setStyleSheet(f"color: {SUCCESS}; font-weight: bold;")
-                layout.addWidget(lbl)
+            pres_outer = QFrame()
+            pres_outer.setStyleSheet(
+                f"QFrame {{ background: {BG_SURFACE}; border-radius: 12px; border: 1px solid {BORDER}; }}"
+            )
+            po = QHBoxLayout(pres_outer)
+            po.setContentsMargins(16, 14, 16, 14)
+            po.setSpacing(14)
+
+            save_badge = QFrame()
+            save_badge.setFixedSize(44, 44)
+            save_badge.setStyleSheet(
+                f"QFrame {{ background: {TEAL}22; border-radius: 12px; border: none; }}"
+            )
+            sb_lbl = QLabel("💾", save_badge)
+            sb_lbl.setAlignment(_Qt.AlignmentFlag.AlignCenter)
+            sb_lbl.setGeometry(0, 0, 44, 44)
+            sb_lbl.setStyleSheet("font-size: 20px; background: transparent;")
+            po.addWidget(save_badge)
+
+            data_col = QVBoxLayout()
+            data_col.setSpacing(2)
+            data_title = QLabel("Datos conservados")
+            data_title.setStyleSheet(
+                f"color: {TEXT_PRIMARY}; font-size: 13px; font-weight: 700; background: transparent;"
+            )
+            data_col.addWidget(data_title)
+            appdata = os.path.join(os.environ.get("APPDATA", "~"), "NeuroMoodHub", ".env")
+            data_path = QLabel(appdata)
+            data_path.setStyleSheet(
+                f"color: {TEXT_TERT}; font-size: 10px; font-family: Consolas, monospace; background: transparent;"
+            )
+            data_col.addWidget(data_path)
+            po.addLayout(data_col, stretch=1)
+
+            preserved_badge = QLabel("preservado")
+            preserved_badge.setStyleSheet(
+                f"background: {SUCCESS}22; color: {SUCCESS}; font-size: 11px; font-weight: 700;"
+                f"border-radius: 999px; padding: 3px 12px; border: none;"
+            )
+            po.addWidget(preserved_badge, alignment=_Qt.AlignmentFlag.AlignVCenter)
+            layout.addWidget(pres_outer)
+
+            layout.addSpacing(10)
+            hint = QLabel("Si en el futuro reinstalás NeuroMood Hub, podrás recuperar tu sesión desde estos datos.")
+            hint.setWordWrap(True)
+            hint.setAlignment(_Qt.AlignmentFlag.AlignHCenter)
+            hint.setStyleSheet(f"color: {TEXT_TERT}; font-size: 11px; background: transparent;")
+            layout.addWidget(hint)
         
         layout.addStretch()
 

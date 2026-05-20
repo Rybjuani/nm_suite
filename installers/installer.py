@@ -854,7 +854,7 @@ class InstaladorNeuroMood(InstallerShell):
 
         eyebrow = QLabel("BIENVENIDA")
         eyebrow.setStyleSheet(
-            f"color: {VIOLET}; font-size: 11px; font-weight: 700;"
+            f"color: {ACCENT}; font-size: 11px; font-weight: 700;"
             f"letter-spacing: 3px; background: transparent;"
         )
         ll.addWidget(eyebrow)
@@ -862,18 +862,18 @@ class InstaladorNeuroMood(InstallerShell):
 
         title1 = QLabel("Una herramienta para")
         title1.setStyleSheet(
-            f"color: {TEXT_PRIMARY}; font-size: 30px; font-weight: 700;"
+            f"color: {TEXT_PRIMARY}; font-size: 28px; font-weight: 700;"
             f"letter-spacing: -1px; background: transparent;"
         )
         ll.addWidget(title1)
 
         try:
-            t2 = GradientTextLabel("acompañarte", font_size=30)
+            t2 = GradientTextLabel("acompañarte", font_size=28)
             ll.addWidget(t2)
         except Exception:
             t2 = QLabel("acompañarte")
             t2.setStyleSheet(
-                f"color: {TEAL}; font-size: 30px; font-weight: 700; background: transparent;"
+                f"color: {TEAL}; font-size: 28px; font-weight: 700; background: transparent;"
             )
             ll.addWidget(t2)
 
@@ -987,14 +987,14 @@ class InstaladorNeuroMood(InstallerShell):
         title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: bold;")
         lay.addWidget(title)
 
-        sub = QLabel("Inicia sesion o crea tu cuenta con Supabase Auth para continuar.")
+        sub = QLabel("Iniciá sesión o creá tu cuenta con Supabase Auth para continuar.")
         sub.setStyleSheet(f"color: {TEXT_TERT}; font-size: 12px;")
         lay.addWidget(sub)
 
         card = QFrame()
         card.setObjectName("AuthCard")
         card.setStyleSheet(
-            f"QFrame#AuthCard {{background: {BG_SURFACE}; border-radius: 14px; border: 1px solid {BORDER};}}"
+            f"QFrame#AuthCard {{background: {BG_SURFACE}; border-radius: 12px; border: 1px solid {BORDER};}}"
             f"QLabel {{background: transparent; border: none; font-size: 12px; color: {TEXT_SEC};}}"
         )
         cl = QVBoxLayout(card)
@@ -1008,22 +1008,21 @@ class InstaladorNeuroMood(InstallerShell):
         cl.addWidget(self._ent_email)
 
         cl.addWidget(QLabel("Contraseña"))
-        self._ent_pwd = NMInput("Minimo 6 caracteres") if _COMPONENTS_OK else QLineEdit()
+        self._ent_pwd = NMInput("Mínimo 6 caracteres") if _COMPONENTS_OK else QLineEdit()
         if not _COMPONENTS_OK:
-            self._ent_pwd.setPlaceholderText("Minimo 6 caracteres")
+            self._ent_pwd.setPlaceholderText("Mínimo 6 caracteres")
         self._ent_pwd.setEchoMode(QLineEdit.EchoMode.Password)
         cl.addWidget(self._ent_pwd)
         self._ent_email.textEdited.connect(self._invalidate_auth)
         self._ent_pwd.textEdited.connect(self._invalidate_auth)
 
         btn_row = QHBoxLayout()
-        btn_row.setSpacing(8)
+        btn_row.setSpacing(10)
         self._btn_login = QPushButton("Iniciar sesión")
-        self._btn_login.setObjectName("outline")
-        self._btn_signup = QPushButton("Crear cuenta nueva")
+        self._btn_signup = QPushButton("Crear cuenta")
         self._btn_signup.setObjectName("outline")
         for btn in (self._btn_login, self._btn_signup):
-            btn.setFixedHeight(36)
+            btn.setFixedHeight(38)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._btn_login.clicked.connect(lambda: self._start_auth("login"))
         self._btn_signup.clicked.connect(lambda: self._start_auth("signup"))
@@ -1032,7 +1031,7 @@ class InstaladorNeuroMood(InstallerShell):
         cl.addLayout(btn_row)
 
         self._btn_reset = QPushButton("¿Olvidaste tu contraseña?")
-        self._btn_reset.setObjectName("outline")
+        self._btn_reset.setObjectName("ghost")
         self._btn_reset.setCursor(Qt.CursorShape.PointingHandCursor)
         self._btn_reset.clicked.connect(self._reset_password)
         cl.addWidget(self._btn_reset, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -1216,7 +1215,7 @@ class InstaladorNeuroMood(InstallerShell):
         panel = QFrame()
         panel.setObjectName("LegalPanel")
         panel.setStyleSheet(
-            f"QFrame#LegalPanel {{background: {BG_SURFACE}; border-radius: 14px; border: 1px solid {BORDER};}}"
+            f"QFrame#LegalPanel {{background: {BG_SURFACE}; border-radius: 12px; border: 1px solid {BORDER};}}"
         )
         pl = QVBoxLayout(panel)
         pl.setContentsMargins(0, 0, 0, 0)
@@ -1225,7 +1224,7 @@ class InstaladorNeuroMood(InstallerShell):
         # Header de la card legal
         legal_hdr = QFrame()
         legal_hdr.setStyleSheet(
-            f"QFrame {{ background: {BG_ELEVATED}; border-radius: 14px 14px 0 0;"
+            f"QFrame {{ background: {BG_ELEVATED}; border-radius: 12px 12px 0 0;"
             f"border-bottom: 1px solid {BORDER}; border-top: none; border-left: none; border-right: none; }}"
         )
         hh = QHBoxLayout(legal_hdr)
@@ -1255,7 +1254,7 @@ class InstaladorNeuroMood(InstallerShell):
         content.setWordWrap(True)
         content.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         content.setStyleSheet(
-            f"color: {TEXT_SEC}; font-size: 11px; line-height: 1.4; background: transparent; border: none;"
+            f"color: {TEXT_SEC}; font-size: 12px; line-height: 1.6; background: transparent; border: none;"
         )
         content.setContentsMargins(14, 12, 14, 8)
         scroll.setWidget(content)
@@ -1264,7 +1263,7 @@ class InstaladorNeuroMood(InstallerShell):
         # Footer de la card con hash + privacidad en mono
         legal_ftr = QFrame()
         legal_ftr.setStyleSheet(
-            f"QFrame {{ background: {BG_ELEVATED}; border-radius: 0 0 14px 14px;"
+            f"QFrame {{ background: {BG_ELEVATED}; border-radius: 0 0 12px 12px;"
             f"border-top: 1px solid {BORDER}; border-bottom: none; border-left: none; border-right: none; }}"
         )
         fh = QHBoxLayout(legal_ftr)
@@ -1296,12 +1295,7 @@ class InstaladorNeuroMood(InstallerShell):
         self._chk_legal = QCheckBox()
         self._chk_legal.setCursor(Qt.CursorShape.PointingHandCursor)
         self._chk_legal.setStyleSheet(
-            f"QCheckBox {{spacing: 0px;}}"
-            f"QCheckBox::indicator {{width: 18px; height: 18px; border-radius: 5px;"
-            f"border: 1px solid {BORDER}; background: {BG_SURFACE};}}"
-            f"QCheckBox::indicator:checked {{"
-            f"background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 {GRAD_FROM},stop:1 {GRAD_TO});"
-            f"border-color: {GRAD_MID};}}"
+            f"QCheckBox {{spacing: 12px;}}"
         )
         self._chk_legal.stateChanged.connect(self._on_legal_check_changed)
         ac.addWidget(self._chk_legal, alignment=Qt.AlignmentFlag.AlignTop)
@@ -1477,10 +1471,8 @@ class InstaladorNeuroMood(InstallerShell):
         check_circle.setFixedSize(88, 88)
         check_circle.setStyleSheet(
             f"QFrame#CheckCircle {{"
-            f"  background: qlineargradient(x1:0,y1:0,x2:1,y2:1,"
-            f"    stop:0 {GRAD_FROM}, stop:1 {GRAD_TO});"
-            f"  border-radius: 44px;"
-            f"  border: 4px solid transparent;"
+            f"  background: {SUCCESS};"
+            f"  border-radius: 44px; border: none;"
             f"}}"
         )
         from PyQt6.QtWidgets import QGraphicsDropShadowEffect

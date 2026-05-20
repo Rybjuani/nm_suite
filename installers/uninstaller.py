@@ -336,7 +336,43 @@ class DesinstaladorNeuroMood(InstallerShell):
         self._install_dir = detectar_install_dir()
         self._worker: _UninstWorker | None = None
         self._build_shell()
+        self.btn_ant.clicked.connect(self._anterior)
         self._show_confirm()
+        
+    def _anterior(self):
+        if self._pagina == 0:
+            self.close()
+
+    def _fade_to(self, n: int):
+        super()._fade_to(n)
+        if n == 0:
+            self.btn_ant.setVisible(True)
+            self.btn_ant.setText("Cancelar")
+            self.btn_sig.setText("Desinstalar")
+            self.btn_sig.setStyleSheet(
+                f"QPushButton {{ border: none; border-radius: 8px;"
+                f"background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
+                f"stop:0 {DANGER_FROM}, stop:1 {DANGER_TO});"
+                f"color: {TEXT_ON_ACCENT}; font-size: 12px; font-weight: 600;"
+                f"padding: 8px 22px; }}"
+                f"QPushButton:hover {{ background: {DANGER_FROM}; }}"
+                f"QPushButton:disabled {{ background: {BORDER}; color: {TEXT_TERT}; }}"
+            )
+        elif n == 1:
+            self.btn_ant.setVisible(False)
+            self.btn_sig.setText("Desinstalando...")
+        elif n == 2:
+            self.btn_ant.setVisible(False)
+            self.btn_sig.setText("Cerrar")
+            self.btn_sig.setStyleSheet(
+                f"QPushButton {{ border: none; border-radius: 8px;"
+                f"background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
+                f"stop:0 {GRAD_FROM}, stop:0.5 {GRAD_MID}, stop:1 {GRAD_TO});"
+                f"color: {TEXT_ON_ACCENT}; font-size: 12px; font-weight: 600;"
+                f"padding: 8px 22px; }}"
+                f"QPushButton:hover {{ background: {GRAD_MID}; }}"
+                f"QPushButton:disabled {{ background: {BORDER}; color: {TEXT_TERT}; }}"
+            )
 
     def _build_confirm(self, page, layout):
         from PyQt6.QtCore import Qt as _Qt
@@ -351,7 +387,7 @@ class DesinstaladorNeuroMood(InstallerShell):
         warn_badge = QFrame()
         warn_badge.setFixedSize(52, 52)
         warn_badge.setStyleSheet(
-            f"QFrame {{ background: {ERROR_C}22; border-radius: 14px; border: none; }}"
+            f"QFrame {{ background: {ERROR_C}22; border-radius: 12px; border: none; }}"
         )
         wb_inner = QLabel("⚠", warn_badge)
         wb_inner.setAlignment(_Qt.AlignmentFlag.AlignCenter)
@@ -368,7 +404,7 @@ class DesinstaladorNeuroMood(InstallerShell):
         titles_col.addWidget(eyebrow_d)
         main_title = QLabel("¿Desinstalar NeuroMood Suite?")
         main_title.setStyleSheet(
-            f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: 700; background: transparent;"
+            f"color: {TEXT_PRIMARY}; font-size: 24px; font-weight: 700; background: transparent;"
         )
         titles_col.addWidget(main_title)
         sub_title = QLabel("Se eliminarán los archivos de instalación de tu computadora.")
@@ -502,9 +538,9 @@ class DesinstaladorNeuroMood(InstallerShell):
 
     def _build_progress(self, page, layout):
         title = QLabel("Desinstalando...")
-        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
+        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 24px; font-weight: bold;")
         layout.addWidget(title)
-        layout.addSpacing(12)
+        layout.addSpacing(16)
 
         self._install_progress = NMInstallProgress(accent_key="teal")
         self._install_progress.set_progress(0, "Preparando...")
@@ -550,28 +586,22 @@ class DesinstaladorNeuroMood(InstallerShell):
 
         conservar = self._worker._conservar if self._worker else True
 
-        # Círculo check 80px gradient + glow ring
+        # Círculo check
         check_circle = QFrame()
         check_circle.setObjectName("UninstCheckCircle")
-        check_circle.setFixedSize(80, 80)
+        check_circle.setFixedSize(88, 88)
         check_circle.setStyleSheet(
             f"QFrame#UninstCheckCircle {{"
-            f"  background: qlineargradient(x1:0,y1:0,x2:1,y2:1,"
-            f"    stop:0 {GRAD_FROM}, stop:1 {GRAD_TO});"
-            f"  border-radius: 40px; border: none;"
+            f"  background: {SUCCESS};"
+            f"  border-radius: 44px; border: none;"
             f"}}"
         )
-        glow = QGraphicsDropShadowEffect()
-        glow.setBlurRadius(28)
-        glow.setOffset(0, 6)
-        glow.setColor(_QColor(94, 234, 212, 130))
-        check_circle.setGraphicsEffect(glow)
-
+        
         check_lbl = QLabel("✓", check_circle)
         check_lbl.setAlignment(_Qt.AlignmentFlag.AlignCenter)
-        check_lbl.setGeometry(0, 0, 80, 80)
+        check_lbl.setGeometry(0, 0, 88, 88)
         check_lbl.setStyleSheet(
-            "color: #ffffff; font-size: 34px; font-weight: 900; background: transparent;"
+            "color: #ffffff; font-size: 38px; font-weight: 900; background: transparent;"
         )
         layout.addWidget(check_circle, alignment=_Qt.AlignmentFlag.AlignHCenter)
         layout.addSpacing(14)
@@ -617,7 +647,7 @@ class DesinstaladorNeuroMood(InstallerShell):
             if _HAS_PRESERVE_CARD:
                 pres_outer = QFrame()
                 pres_outer.setStyleSheet(
-                    f"QFrame {{ background: {BG_SURFACE}; border-radius: 14px; border: 1px solid {BORDER}; }}"
+                    f"QFrame {{ background: {BG_SURFACE}; border-radius: 12px; border: 1px solid {BORDER}; }}"
                 )
                 po = QHBoxLayout(pres_outer)
                 po.setContentsMargins(16, 14, 16, 14)
