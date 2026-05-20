@@ -91,7 +91,7 @@ echo.
 if errorlevel 1 (
     echo.
     echo ============================================================
-    echo  BUILD FALLIDO (Codigo de salida: !errorlevel!)
+    echo  BUILD FALLIDO [Codigo de salida: !errorlevel!]
     echo ============================================================
     echo Revisa el log completo en: %LOG_FILE%
     echo.
