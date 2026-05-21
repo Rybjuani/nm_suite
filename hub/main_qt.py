@@ -702,6 +702,25 @@ class ConfigView(QWidget):
             now = _datetime.datetime.now().strftime("%H:%M")
             self._sync_time_lbl.setText(f"Última verificación: {now}")
 
+    def _on_sync_global_config(self):
+        """Refresca el cache local de hub_config scope=global (F2.0.D).
+
+        Llama a shared.remote_config.refresh_from_supabase(None) en un hilo
+        daemon para no bloquear la UI durante la query a Supabase. El
+        callback es silencioso: si falla red/credenciales, el log de
+        crash_log captura la advertencia y el cache local queda igual.
+        """
+        import threading
+
+        def _run():
+            try:
+                from shared.remote_config import refresh_from_supabase
+                refresh_from_supabase(None)
+            except Exception:
+                pass
+
+        threading.Thread(target=_run, daemon=True).start()
+
     def _setup(self, on_toggle_theme, on_reconnect):
         from shared.theme_qt import v3c, V3_SP, V3_RD
         from shared.theme import TYPOGRAPHY as _TY
@@ -717,6 +736,35 @@ class ConfigView(QWidget):
         self._section_header = NMSectionHeader(
             "CONFIGURACIÓN", "Ajustes del Hub", modo=self._modo)
         layout.addWidget(self._section_header)
+
+        # 1.A Configurabilidad remota 2 niveles (F2.0.D).
+        # Patrón documentado en AUDITORIA_NEUROMOOD.md §9.4.A.
+        # Los editores específicos por área (textos, plantillas TCC,
+        # presets, etc.) llegan en prompts posteriores (F2.2.B, F2.2.D,
+        # F2.4.A, F2.4.B). Acá solo dejamos los contenedores + el botón
+        # para forzar refresh del cache local de hub_config.
+
+        team_cfg = NMSettingsSection("Configuración del equipo (scope=global)",
+                                       modo=self._modo)
+        team_cfg.add_log(
+            "Aquí van las configuraciones globales del equipo "
+            "(textos, plantillas, presets). "
+            "Próximamente: editores específicos por área."
+        )
+        btn_sync_cfg = NMButton("Sincronizar configuración", variant="secondary",
+                                  size="sm", modo=self._modo, width=200)
+        btn_sync_cfg.clicked.connect(self._on_sync_global_config)
+        team_cfg.add_row("Refrescar cache local", btn_sync_cfg)
+        layout.addWidget(team_cfg)
+
+        patient_cfg = NMSettingsSection("Configuración por paciente "
+                                           "(scope=patient:<id>)",
+                                           modo=self._modo)
+        patient_cfg.add_log(
+            "Para configurar un paciente individual, ir a Pacientes → "
+            "seleccionar paciente → sub-tab Configuración (próximamente)."
+        )
+        layout.addWidget(patient_cfg)
 
         # 2. Sync hero card (orb + status + botón sincronizar)
         sync_card = NMCard(modo=self._modo, clickable=False, glow=True)
