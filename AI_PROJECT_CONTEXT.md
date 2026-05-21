@@ -1,10 +1,17 @@
 # AI_PROJECT_CONTEXT - NeuroMood
 
-Actualizado: 2026-05-17 (rev: glassmorphism + top specular highlight + DM Sans + runtime smoke + builder QtSvg)
+Actualizado: 2026-05-21 (rev: auditoría 2026-05 + prompts Codex + decisiones de producto 2026-05-20/21 + patrón hub_config 2 niveles + 4ª brecha tags semáforo Hub)
 
 Este es el archivo único de contexto y documentación del proyecto para agentes IA, desarrolladores y mantenimiento futuro.
 
-Regla obligatoria para agentes IA: leer este archivo antes de cambios amplios y escribir documentación nueva solamente aquí. No crear `README` alternativos, carpetas `docs/`, planes sueltos, auditorías sueltas ni manuales intermedios en la raíz. Los PDFs finales para distribución pueden vivir en la raíz, pero su fuente de verdad técnica queda resumida en este archivo.
+Regla obligatoria para agentes IA: leer este archivo antes de cambios amplios y escribir documentación nueva solamente aquí. No crear `README` alternativos, carpetas `docs/`, planes sueltos ni manuales intermedios en la raíz. Los PDFs finales para distribución pueden vivir en la raíz, pero su fuente de verdad técnica queda resumida en este archivo.
+
+**Excepciones documentadas a la regla de raíz:** dos artefactos auxiliares de auditoría/planificación viven en raíz por decisión explícita del cliente (2026-05-20/21) y se mantienen sincronizados con este archivo:
+
+- [AUDITORIA_NEUROMOOD.md](AUDITORIA_NEUROMOOD.md) — auditoría completa por lectura del repo (3190 líneas) con las 11 partes del prompt maestro, decisiones de producto 2026-05-20/21, matriz de configurabilidad remota, plan por fases F0-F9, y respuestas directas a las 7 preguntas finales. Fuente de verdad de **qué se decidió y por qué**.
+- [PROMPTS_CODEX_IMPLEMENTACION.md](PROMPTS_CODEX_IMPLEMENTACION.md) — 33 prompts atómicos por fase (F0-F6) listos para copiar/pegar a Codex. Cada prompt = una tarea concreta = un diff revisable, con archivos permitidos/prohibidos, validación y criterios de aceptación. Fuente de verdad de **cómo ejecutar**.
+
+Cualquier cambio en estos archivos debe reflejarse acá (sección 15) y viceversa.
 
 Regla de orden del proyecto: mantener la raíz lo más limpia posible. No generar basura temporal, scripts de prueba, capturas, reportes, logs, specs, builds, zips ni archivos auxiliares sueltos en la raíz. Si un cambio necesita crear archivos nuevos, ubicarlos en una carpeta existente adecuada o crear una subcarpeta clara dentro del proyecto. Para scripts y automatizaciones usar siempre `AI_SCRIPTS/`.
 
@@ -559,9 +566,106 @@ La instalación es guiada:
 
 Cuando trabajes en este proyecto:
 
-- Leé primero este archivo.
+- Leé primero este archivo, después [AUDITORIA_NEUROMOOD.md](AUDITORIA_NEUROMOOD.md) si vas a tocar Suite/Hub/DB.
+- Si vas a implementar una tarea concreta, mirá [PROMPTS_CODEX_IMPLEMENTACION.md](PROMPTS_CODEX_IMPLEMENTACION.md) — puede haber un prompt atómico ya escrito (F0.1.A, F2.0.B, etc.).
 - No crees scripts en raíz; usá `AI_SCRIPTS/`.
 - No revivas `docs/`, `script tests/` ni carpetas duplicadas.
-- No agregues documentación suelta: actualizá este archivo.
+- No agregues documentación suelta: actualizá este archivo (excepción documentada: los 2 docs nuevos auxiliares ya mencionados arriba).
 - No dejes `.spec`, `build/`, `__pycache__` ni outputs temporales.
 - No modifiques áreas sensibles sin necesidad clara.
+
+## 15. Auditoría 2026-05 + Decisiones De Producto 2026-05-20/21
+
+Este bloque resume el estado vigente tras la auditoría completa documentada en [AUDITORIA_NEUROMOOD.md](AUDITORIA_NEUROMOOD.md). Cualquier discrepancia entre los archivos: este resumen manda en alto nivel, el .md de auditoría manda en detalle/citas.
+
+### 15.1 Aviso metodológico
+
+La auditoría 2026-05 se hizo **por lectura del código local** (no por ejecución). Cuando se dice "Implementado en código" significa que existe en el repo con sintaxis válida y lógica coherente, pero **NO que el runtime fue verificado en Windows**. Aspectos como animaciones, glow, daemon de bandeja, notificaciones SO, endpoints IA reales, RLS Supabase real, instaladores empacados, SmartScreen, autostart son `NO VERIFICADO EN EJECUCIÓN` o `NO VERIFICABLE SIN EJECUTAR`. Antes de cualquier piloto clínico hay que correr el plan de QA (Parte 10 del .md de auditoría) con apps reales.
+
+### 15.2 Las 8 decisiones de producto vinculantes
+
+Fijadas por el cliente entre 2026-05-20 y 2026-05-21. Se aplican a Partes 7, 8, 9 y al mega plan F0-F9 de la auditoría:
+
+1. ❌ "Modo familiar/cuidador" → ✅ **"Modo privacidad del paciente"** (PIN al abrir Suite, para PCs compartidas). Reusa PBKDF2 ya implementado en `shared/identidad.py`. Implementación en fase F3 (ver prompt `F3.A`).
+2. ❌ Diario TEC/ketamina — descartado (sensibilidad clínica/legal alta).
+3. ❌ Modo bajo ánimo automático — descartado (sin lógica automática basada en umbrales). Reemplazo: configurabilidad remota en 2 niveles (global del equipo + por paciente).
+4. ❌ IA de redacción TCC para paciente — descartado (ética terapéutica). Reemplazo: plantillas TCC configurables por profesionales desde Hub.
+5. ❌ Editor de consentimiento legal editable desde Hub — descartado (rompe trazabilidad legal). Los consentimientos siguen versionados en código + `db/legal_consents.sql` + instalador.
+6. ❌ Reentrenamiento de prompts IA desde UI — descartado (riesgo legal). Prompts IA quedan versionados en `hub/ia_asistente.py` + tabla `ia_audit_log` para auditoría de outputs (no edición).
+7. ❌ Panel de adherencia poblacional con semáforo — descartado (ausencia de uso ≠ baja adherencia). Reemplazo: panel neutral de actividad reciente, sin etiquetas tipo "riesgo"/"crítico".
+8. 🔄 Card no-cerrable de indicaciones del profesional — ajustada (mala UX). Versión final: indicación destacada minimizable + estado leída/no leída, sin bloquear UI.
+
+### 15.3 NeuroMood Ánimo Loop — aclaración importante
+
+La regla "sin automatismos por umbrales emocionales" (decisión 3) **NO aplica** a las 3 apps que la Propuesta Base pide explícitamente conectadas por la variable ÁNIMO declarada manualmente por el paciente:
+
+- **Termómetro Emocional** (registra 1-10).
+- **Visualizador Evolución Anímica** (gráfica histórica — vive en Hub Tab Registros + mini-stats en Suite + F1 agrega mini-visualizador semanal en Home).
+- **Asistente de Activación Conductual** (propone actividades cuyos rangos `animo_min`/`animo_max` define el profesional desde Hub Tab Banco).
+
+Estas 3 apps SÍ usan la variable ánimo, **declarada conscientemente** por el paciente. No es automatismo oculto — es el corazón explícito del producto. Decisión interpretativa documentada: la Propuesta Base habla de "nivel de energía"; el equipo y el practicante acordaron usar ÁNIMO (no se mide ni registra energía como variable separada).
+
+### 15.4 Las 4 brechas críticas detectadas
+
+1. **Configurabilidad remota desde Hub: casi inexistente.** Todo el contenido clínicamente sensible está hardcoded (textos, plantillas TCC, presets respiración 4-7-8, presets timer, secciones rutina, mensajes apoyo, etiquetas ánimo, distorsiones, categorías). Resolución: F2.0-F2.6 con patrón general `hub_config` 2 niveles (ver §15.6).
+2. **ConfigView del Hub es lectura pura** ([hub/main_qt.py:562-707](hub/main_qt.py)). Botón "+ Nuevo paciente" sin handler ([hub/main_qt.py:453-455](hub/main_qt.py)). Resolución: F2.0.D + F4.A.
+3. **IA sin audit trail clínico.** Multiproveedor funciona pero outputs no persisten. Cero trazabilidad. Resolución: F4.B (tabla `ia_audit_log` + persistencia chat).
+4. **🔴 Tags semáforo en el Hub contradicen decisión 7.** Dashboard "Adherencia alta/Riesgo bajo/Agenda al día" + filtro Pacientes "Atención" (adherence<40%). **BLOQUEANTE de aprobación clínica.** Resolución: F0.1.A + F0.1.B (prompts ya escritos).
+
+### 15.5 Interpretaciones específicas de la Propuesta Base (decisión 2026-05-21)
+
+Estos 3 ajustes alinean el producto con la lectura literal de la Propuesta Base que el cliente confirmó:
+
+- **Timer (ítem 3):** "delimitar actividades terapéuticas por tiempo" → el profesional define presets desde Hub. Hoy el paciente elige libre. **NO cumple esta interpretación.** Acción en F2.2.A/B. El permiso `perm_temporizador_manual` pasa a significar "puede usar custom además de los presets asignados".
+- **Avisos (ítem 2):** "mensajes de apoyo a horarios fijos determinados por el equipo" → biblioteca de mensajes + plantillas remotas. Hoy el paciente crea libre. **Parcial.** Acción en F2.2.C/D. Además, mover autostart Windows del módulo Avisos al Home Suite como ajuste general (F3.B).
+- **Rutina (ítem 6):** opción C — sistema híbrido 3 estados por paciente, configurable desde Hub: `solo_profesional` / `mixto` (default) / `solo_paciente`. Reusa campo `origen` ya implementado en `checklist_tareas`. Acción en F2.3.A/B/C.
+
+### 15.6 Patrón arquitectónico general `hub_config` 2 niveles
+
+**Toda configurabilidad remota** del Hub se piensa con este patrón único (subsección 9.4.A de la auditoría):
+
+```
+Capa 1: scope='global'          → vale para todo el equipo
+        │
+        ▼ override por paciente
+Capa 2: scope='patient:<id>'    → sobrescribe solo para ese paciente
+```
+
+Implementación:
+
+- Tabla única `hub_config (scope, key, value JSONB, updated_at, updated_by, version)` con UNIQUE `(scope, key)`. Schema en `db/hub_config_schema.sql` (a crear en F2.0.A).
+- Util `shared/remote_config.py` con `t(key, default, patient_id=None)` que aplica jerarquía `patient:<id>` → `global` → `default` hardcoded. Cache local en SQLite (`remote_config_cache`).
+- Sync extendido con `_importar_hub_config(patient_id)` siguiendo el patrón existente en `shared/sync.py`.
+- ConfigView del Hub reestructurada en 2 secciones: "Configuración del equipo" (global) + "Configuración por paciente" (sub-tab en Detalle Paciente).
+
+**Scope de `hub_config` — qué SÍ y qué NO va acá:** solo settings/overrides simples (key/value JSONB liviano). NO van: registros clínicos, consentimientos, banco de actividades, mensajes leídos/no leídos, `ia_audit_log`, reportes, ni entidades con lifecycle propio (FK, sync direccional, append-only, plantillas complejas tipo `tcc_templates`/`routine_templates`). Esas viven en tablas dedicadas (`db/feature_schemas.sql`, a crear en F2.0.A/F2.1.A).
+
+### 15.7 Mega plan por fases (resumen)
+
+Detalle completo en Parte 11 de [AUDITORIA_NEUROMOOD.md](AUDITORIA_NEUROMOOD.md). Prompts atómicos en [PROMPTS_CODEX_IMPLEMENTACION.md](PROMPTS_CODEX_IMPLEMENTACION.md).
+
+- **F0.1 🔴 BLOQUEANTE** — Eliminar tags semáforo del Hub (Dashboard + filtro Atención). 1-2 días.
+- **F0.2** — Limpieza repo (REDESIGN/, scripts legacy raíz, `BUILD_NEUROMOOD.bat` consolidado). 2-3 días.
+- **F2.0** — Patrón general `hub_config` + util `remote_config.py` + ConfigView reestructurada. **Base de toda configurabilidad.** 1-2 semanas.
+- **F2.1** — Schemas Supabase para entidades complejas + tablas cache SQLite. 1 semana.
+- **F2.2** — Timer profesional + Avisos plantillas equipo (interpretación Propuesta Base). 1-2 semanas.
+- **F2.3** — Rutina sistema 3 estados (opción C). 1-2 semanas.
+- **F2.4** — Editores Hub: plantillas TCC + text overrides genérico. 2-3 semanas.
+- **F2.5** — Migración progresiva strings hardcoded → `t(key, default)` por módulo (8 sprints A-H).
+- **F2.6** — Constructor de informes paramétrico. 1 semana.
+- **F3** — Modo privacidad paciente + Settings panel en Home (con autostart movido) + mini-visualizador semanal. 1-2 semanas.
+- **F4** — Gestión real de pacientes desde Hub + audit log IA + persistencia chat + panel actividad neutral. 2-3 semanas.
+- **F5** — Sync, permisos y seguridad (RLS audit, logs sin PII, anon key audit). 1-2 semanas.
+- **F6** — QA e instaladores production-ready (smoke tests CI, consent offline, doc firma código). 1 semana.
+- **F7** — Piloto clínico con 3-5 pacientes reales (proceso, no código). 3-4 semanas.
+- **F8** — Ajustes post-feedback (iteración vía Hub sin recompilar — si surge código, agregar prompt al .md de prompts).
+- **F9** — Release 1.0.
+
+Tiempo total estimado: **5-7 meses** al release con margen. Camino agresivo: 4-5 meses.
+
+### 15.8 Áreas críticas no editables sin permiso explícito
+
+- `db/legal_consents.sql` — versionado legal, decisión 5.
+- `installers/installer.py` líneas de consent (`LEGAL_DISCLAIMER_TEXT`, `DISCLAIMER_VERSION`, `PRIVACY_VERSION`) — decisión 5.
+- `hub/ia_asistente.py` prompts del sistema (`_IDIOMA`, sistemas de cada función) — decisión 6. Solo `temperature`, `max_tokens`, `provider_preference` pueden ir a `hub_config`.
+- `.env`, `SUPABASE_KEY`, `service_role` — seguridad inmutable (sección 8).

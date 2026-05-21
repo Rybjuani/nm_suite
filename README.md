@@ -9,25 +9,23 @@ The project contains two main applications:
 
 ## Documentation
 
-This repository keeps the root documentation intentionally short.
+This repository keeps the root documentation intentionally short. The three sources of truth live here:
 
-For the full technical context, architecture notes, module map, build rules, UI conventions, Supabase notes, installer behavior, and AI-agent instructions, read:
+- [AI_PROJECT_CONTEXT.md](./AI_PROJECT_CONTEXT.md) — full technical context, architecture, module map, build rules, UI conventions, Supabase notes, installer behavior, AI-agent instructions, and a summary of the 2026-05 audit and product decisions.
+- [AUDITORIA_NEUROMOOD.md](./AUDITORIA_NEUROMOOD.md) — full audit done by code reading (no runtime). 11 parts following the master prompt, product decisions 2026-05-20/21, remote configurability matrix, F0-F9 phased roadmap, and answers to the 7 closing questions. Read this before touching Suite/Hub/DB.
+- [PROMPTS_CODEX_IMPLEMENTACION.md](./PROMPTS_CODEX_IMPLEMENTACION.md) — 33 atomic prompts (F0 to F6) ready to copy/paste into Codex. One prompt = one concrete task = one reviewable diff, with allowed/forbidden files, validation, and acceptance criteria.
 
-- [AI_PROJECT_CONTEXT.md](./AI_PROJECT_CONTEXT.md)
-
-For redesign references, mockups, screenshots, and visual exploration files, read:
-
-- [REDESIGN/README.md](./REDESIGN/README.md)
+**Methodology note:** the audit is by reading, not by running. "Implemented in code" does **not** mean "verified at runtime on Windows". Before any clinical pilot, run the QA plan from Part 10 of the audit on real apps.
 
 ## Main folders
 
-- app/: patient application.
-- hub/: professional hub.
-- shared/: shared UI, config, database, sync, theme, and utility code.
-- installers/: installer and uninstaller sources.
-- db/: local database assets.
-- assets/: runtime images, icons, branding, and fonts.
-- REDESIGN/: design references, mockups, screenshots, and redesign sources.
+- `app/` — patient application (NeuroMood Suite).
+- `hub/` — professional hub (NeuroMood Hub).
+- `shared/` — shared UI, config, database, sync, theme, and utility code.
+- `installers/` — installer and uninstaller sources.
+- `db/` — Supabase schemas and DB resources.
+- `assets/` — runtime images, icons, branding, and fonts.
+- `AI_SCRIPTS/` — build, QA, capture, audit, and automation scripts.
 
 ## Install dependencies
 
@@ -53,6 +51,4 @@ Or on Windows:
 
 ## Secrets
 
-Do not commit .env.
-
-Use .env.example as a template.
+Do not commit `.env`. Use `.env.example` as a template. See section 8 of [AI_PROJECT_CONTEXT.md](./AI_PROJECT_CONTEXT.md) for the full security rules.
