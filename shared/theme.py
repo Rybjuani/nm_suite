@@ -27,120 +27,138 @@ funcionando contra los nombres legacy; obtienen los valores v3 sin refactor.
 # ============================================================
 
 V3_LIGHT = {
+    # ── Sage Linen — paleta light renovada (2026) ─────────────────────────────
+    # Eje sage clinical + warm terracotta. Las CLAVES legacy se preservan; los
+    # valores se re-mapean (p. ej. "violet" → terracotta cálida, "cyan" → sage
+    # profundo) para no romper los consumidores históricos del bridge.
+
     # Backgrounds
-    "bg":              "#f6f1e8",  # Warm ivory
-    "bgAlt":           "#ece5d5",  # Cream / soft stone (bgSoft)
-    "bgSoft":          "#ece5d5",  # Cream / soft stone
-    "bgSidebar":       "#ffffff",  # White
-    "surface":         "#fcfaf6",  # Warm white card surface (not pure white)
-    "elevated":        "#faf8f5",  # Very light cream/warm surface (surfaceElevated)
-    "surfaceElevated": "#faf8f5",  # Very light cream/warm surface
-    "surfaceGlass":    "rgba(255, 255, 255, 0.7)",  # Glass translucent
+    "bg":              "#f6f3ec",  # Warm linen — fondo principal
+    "bgAlt":           "#ece8dc",  # Soft sand
+    "bgSoft":          "#ece8dc",
+    "bgSidebar":       "#fbf9f3",  # Sidebar diferenciado del card
+    "surface":         "#ffffff",  # Card surface — blanco puro
+    "elevated":        "#fafaf6",  # Elevated subtle warm white
+    "surfaceElevated": "#fafaf6",
+    "surfaceGlass":    "rgba(255, 255, 255, 0.78)",
 
     # Borders
-    "border":          "#ddd5bc",  # Slightly deeper warm stone border — better card edge
-    "borderSoft":      "#e8dfc7",  # Soft stone border (was border)
-    "borderStrong":    "#c9bb9e",  # Stronger warm border for hover states
+    "border":          "#dcd6c6",  # Visible warm stone
+    "borderSoft":      "#e8e2d2",
+    "borderStrong":    "#c7bea8",
 
     # Text
-    "text":            "#122c25",  # Deep therapeutic green
-    "textMuted":       "#445e56",  # Muted slate/green
-    "text2":           "#445e56",  # For compatibility
-    "text3":           "#7f968e",  # For compatibility
-    "text4":           "#c2d1cb",  # For compatibility
+    "text":            "#1c241f",  # Deep forest
+    "textMuted":       "#566159",  # Muted forest
+    "text2":           "#566159",
+    "text3":           "#8a958e",
+    "text4":           "#c5cfc9",
 
-    # Accent (Muted teal & copper/gold signature gradient)
-    "accent":          "#2c7a7b",  # Muted teal
-    "accentSoft":      "#e4e0d4",  # Warm sand tint — coherent with ivory palette
-    "gradFrom":        "#2c7a7b",  # Muted teal
-    "gradMid":         "#5f9ea0",  # Cadet blue / intermediate
-    "gradTo":          "#b45309",  # Subtle copper/gold accent
+    # Accent — Sage clinical (primario) + Terracotta (cálido secundario)
+    "accent":          "#2f6e62",  # Sage clinical
+    "accentSoft":      "#dcebe6",  # Sage soft tint
+    "gradFrom":        "#2f6e62",  # Sage → Soft pine (monocromático)
+    "gradMid":         "#3f8278",
+    "gradTo":          "#4a8a7e",
 
     # Slashbar emocional (no varía con theme)
-    "moodGradFrom":    "#2c7a7b",
+    "moodGradFrom":    "#2f6e62",
     "moodGradMid":     "#5f9ea0",
-    "moodGradTo":      "#b45309",
+    "moodGradTo":      "#b86844",
 
-    # Tonos
-    "teal":            "#2c7a7b",  # Muted teal
-    "tealSoft":        "#e6fffa",  # Soft teal tint
-    "violet":          "#b45309",  # Subtle copper/gold (mapped to violet for compatibility)
-    "violetSoft":      "#fef3c7",  # Mapped for compatibility
-    "cyan":            "#0f766e",  # Deep therapeutic green/teal
-    "cyanSoft":        "#ccfbf1",
+    # Tonos (claves legacy re-mapeadas a la nueva paleta)
+    "teal":            "#2f6e62",  # = accent (sage)
+    "tealSoft":        "#dcebe6",
+    "violet":          "#b86844",  # Terracotta (warm secondary, antes copper)
+    "violetSoft":      "#f3e0d6",  # Terracotta soft
+    "cyan":            "#1e5a52",  # Deeper sage
+    "cyanSoft":        "#cee0d9",
 
     # Semánticos
-    "success":         "#10b981",  # Therapeutic green success
-    "successSoft":     "#d1fae5",
-    "warning":         "#f59e0b",  # Muted amber/gold
-    "warningSoft":     "#fef3c7",
-    "danger":          "#ef4444",  # Muted red for danger
-    "dangerSoft":      "#fee2e2",
+    "success":         "#3a8060",  # Clinical green
+    "successSoft":     "#d1eadd",
+    "warning":         "#c47e2b",  # Muted amber
+    "warningSoft":     "#f3e6d5",
+    "danger":          "#b8423e",  # Brick muted
+    "dangerSoft":      "#f4d7d6",
 
-    # Streak
-    "streak":          "#f97316",
-    "streakSoft":      "#ffedd5",
+    # Streak (re-mapeado a terracotta para coherencia con warm secondary)
+    "streak":          "#b86844",
+    "streakSoft":      "#f3e0d6",
+
+    # Warm secondary (alias explícito del eje cálido)
+    "warm":            "#b86844",
+    "warmSoft":        "#f3e0d6",
 }
 
 V3_DARK = {
+    # ── Indigo Mist — paleta dark renovada (2026) ─────────────────────────────
+    # Eje aqua mist + warm amber. Superficies SÓLIDAS (sin rgba translúcido en
+    # surface) para evitar artefactos de rasterización Qt. Las claves legacy se
+    # preservan; "violet" se re-mapea a amber, "cyan" a un aqua intermedio.
+
     # Backgrounds
-    "bg":              "#080c1e",  # Blue-black
-    "bgAlt":           "#121b2d",  # Deep navy / graphite (bgSoft)
-    "bgSoft":          "#121b2d",  # Deep navy / graphite
-    "bgSidebar":       "#121b2d",  # Deep navy
-    "surface":         "rgba(18, 25, 45, 0.7)",  # Glass translucent
-    "surfaceSolid":    "#121c2d",  # Solid dark navy surface
-    "elevated":        "rgba(25, 35, 60, 0.6)",  # Elevated translucent (surfaceElevated)
-    "surfaceElevated": "rgba(25, 35, 60, 0.6)",  # Elevated translucent
-    "elevatedSolid":   "#19243d",  # Solid elevated surface
-    "surfaceGlass":    "rgba(18, 25, 45, 0.7)",  # Glass translucent
+    "bg":              "#0e1322",  # Indigo profundo
+    "bgAlt":           "#141a2d",  # Capa intermedia
+    "bgSoft":          "#141a2d",
+    "bgSidebar":       "#0b1020",  # Sidebar más profundo
+    "surface":         "#161d33",  # Sólido (antes rgba translúcido)
+    "surfaceSolid":    "#161d33",
+    "elevated":        "#1c2540",
+    "surfaceElevated": "#1c2540",
+    "elevatedSolid":   "#1c2540",
+    "surfaceGlass":    "rgba(22, 29, 51, 0.85)",
 
     # Borders
-    "border":          "rgba(167, 139, 250, 0.10)",  # Violet undertone soft border
-    "borderSoft":      "rgba(255, 255, 255, 0.06)",  # Minimal border
-    "borderStrong":    "rgba(167, 139, 250, 0.25)",  # Stronger violet undertone border
-    "borderSolid":     "#1f2a44",  # Solid border for fallback
+    "border":          "rgba(106, 215, 196, 0.14)",  # Aqua undertone sutil
+    "borderSoft":      "rgba(255, 255, 255, 0.06)",
+    "borderStrong":    "rgba(106, 215, 196, 0.30)",
+    "borderSolid":     "#20294a",
 
     # Text
-    "text":            "#f1f5f9",  # Slate white
-    "textMuted":       "#94a3b8",  # Graphite/slate gray
-    "text2":           "#94a3b8",  # For compatibility
-    "text3":           "#64748b",  # For compatibility
-    "text4":           "#475569",  # For compatibility
+    "text":            "#e8ecf2",  # Warm white
+    "textMuted":       "#9aa3b3",
+    "text2":           "#9aa3b3",
+    "text3":           "#6c7585",
+    "text4":           "#4a5263",
 
-    # Accent (Soft purple accent & signature gradient)
-    "accent":          "#a78bfa",  # Soft purple accent
-    "accentSoft":      "rgba(167, 139, 250, 0.18)",  # Soft purple tint
-    "gradFrom":        "#7c3aed",  # Violet undertone
-    "gradMid":         "#a78bfa",  # Soft purple
-    "gradTo":          "#c084fc",  # Soft magenta/pink-purple
+    # Accent — Aqua mist (primario) + Amber light (cálido secundario)
+    "accent":          "#6ad7c4",  # Aqua mist
+    "accentSoft":      "rgba(106, 215, 196, 0.18)",
+    "gradFrom":        "#6ad7c4",  # Aqua → Mint (monocromático)
+    "gradMid":         "#82e0d0",
+    "gradTo":          "#95e6d7",
 
-    "moodGradFrom":    "#7c3aed",
-    "moodGradMid":     "#a78bfa",
-    "moodGradTo":      "#c084fc",
+    "moodGradFrom":    "#6ad7c4",
+    "moodGradMid":     "#5f9ea0",
+    "moodGradTo":      "#f5b873",
 
-    # Tonos
-    "teal":            "#a78bfa",  # Mapped to soft purple for compatibility
-    "tealSoft":        "rgba(167, 139, 250, 0.18)",
-    "tealSoftSolid":   "#2a1843",
-    "violet":          "#c084fc",
-    "violetSoft":      "rgba(192, 132, 252, 0.20)",
-    "violetSoftSolid": "#2a1843",
-    "cyan":            "#a78bfa",
-    "cyanSoft":        "rgba(167, 139, 250, 0.18)",
-    "cyanSoftSolid":   "#2a1843",
+    # Tonos (claves legacy re-mapeadas a la nueva paleta)
+    "teal":            "#6ad7c4",  # = accent (aqua mist)
+    "tealSoft":        "rgba(106, 215, 196, 0.18)",
+    "tealSoftSolid":   "#1d3a3c",
+    "violet":          "#f5b873",  # Amber light (warm secondary, antes magenta)
+    "violetSoft":      "rgba(245, 184, 115, 0.18)",
+    "violetSoftSolid": "#3a2f1f",
+    "cyan":            "#82e0d0",  # Aqua intermedio
+    "cyanSoft":        "rgba(130, 224, 208, 0.18)",
+    "cyanSoftSolid":   "#1d3a3c",
 
     # Semánticos
-    "success":         "#10b981",  # Therapeutic green success
-    "successSoft":     "rgba(16, 185, 129, 0.18)",
-    "warning":         "#fbbf24",
-    "warningSoft":     "rgba(251, 191, 36, 0.18)",
-    "danger":          "#f87171",  # Muted red for danger
-    "dangerSoft":      "rgba(248, 113, 113, 0.18)",
+    "success":         "#5cbf8d",
+    "successSoft":     "rgba(92, 191, 141, 0.18)",
+    "warning":         "#f5b873",
+    "warningSoft":     "rgba(245, 184, 115, 0.18)",
+    "danger":          "#e07b6e",  # Brick suave
+    "dangerSoft":      "rgba(224, 123, 110, 0.18)",
 
-    # Streak
-    "streak":          "#fb923c",
-    "streakSoft":      "rgba(249, 115, 22, 0.18)",
+    # Streak (re-mapeado a amber para coherencia con warm secondary)
+    "streak":          "#f5b873",
+    "streakSoft":      "rgba(245, 184, 115, 0.18)",
+
+    # Warm secondary (alias explícito del eje cálido)
+    "warm":            "#f5b873",
+    "warmSoft":        "rgba(245, 184, 115, 0.18)",
 }
 
 
@@ -174,23 +192,27 @@ V3_RADIUS = {"sm": 6, "md": 10, "lg": 14, "xl": 18, "xxl": 22, "pill": 999}
 #   blur (px), offset (dx, dy), color (r, g, b, a 0-255)
 V3_SHADOWS = {
     "light": {
-        "sm":   {"blur":  4, "offset": (0, 1),  "color": (15, 23, 42, 10)},
-        "md":   {"blur": 16, "offset": (0, 4),  "color": (15, 23, 42, 15)},
-        "card": {"blur": 12, "offset": (0, 4),  "color": (15, 23, 42, 13)},
-        "ring": {"blur": 20, "offset": (0, 4),  "color": (44, 122, 123, 76)},  # updated to match accent teal
+        "sm":   {"blur":  4, "offset": (0, 1),  "color": (28, 36, 31, 10)},
+        "md":   {"blur": 18, "offset": (0, 6),  "color": (28, 36, 31, 18)},
+        "card": {"blur": 14, "offset": (0, 4),  "color": (28, 36, 31, 14)},
+        "lg":   {"blur": 28, "offset": (0, 10), "color": (28, 36, 31, 22)},
+        "ring": {"blur": 20, "offset": (0, 4),  "color": (47, 110, 98, 76)},   # sage glow
     },
     "dark": {
         "sm":   {"blur":  8, "offset": (0, 2),  "color": (0, 0, 0, 102)},
         "md":   {"blur": 24, "offset": (0, 8),  "color": (0, 0, 0, 127)},
-        "card": {"blur": 30, "offset": (0, 10), "color": (0, 0, 0, 115)},
-        "glow": {"blur": 40, "offset": (0, 0),  "color": (167, 139, 250, 46)},  # updated to match accent soft purple
+        "card": {"blur": 30, "offset": (0, 10), "color": (0, 0, 0, 130)},
+        "lg":   {"blur": 44, "offset": (0, 14), "color": (0, 0, 0, 150)},
+        "glow": {"blur": 40, "offset": (0, 0),  "color": (106, 215, 196, 56)}, # aqua mist glow
     },
 }
 
-# Paradas para QLinearGradient (firma teal → violet en dark, teal → copper/gold en light)
+# Paradas para QLinearGradient — gradiente firma monocromático en ambos temas
+# Light: sage (#2f6e62) → soft pine (#4a8a7e)
+# Dark:  aqua mist (#6ad7c4) → mint (#95e6d7)
 V3_GRADIENTS = {
-    "light": [("#2c7a7b", 0.0), ("#5f9ea0", 0.5), ("#b45309", 1.0)],
-    "dark":  [("#7c3aed", 0.0), ("#a78bfa", 0.5), ("#c084fc", 1.0)],
+    "light": [("#2f6e62", 0.0), ("#3f8278", 0.5), ("#4a8a7e", 1.0)],
+    "dark":  [("#6ad7c4", 0.0), ("#82e0d0", 0.5), ("#95e6d7", 1.0)],
 }
 
 
@@ -206,12 +228,13 @@ TYPOGRAPHY = {
     "font_fallback": "DM Sans",
     "font_mono":     "JetBrains Mono",
 
-    # Escala v3 (px)
+    # Escala v3 renovada (px) — body sube a 14 para accesibilidad clínica;
+    # h1 baja a 22 para una jerarquía más elegante (display sigue siendo 28).
     "size_display":    28,
-    "size_h1":         24,
+    "size_h1":         22,
     "size_h2":         18,
     "size_h3":         15,
-    "size_body":       13,
+    "size_body":       14,
     "size_small":      12,
     "size_caption":    11,
     "size_caption_xs": 10,
@@ -305,53 +328,53 @@ def _bridge_dark():
         "bg_secondary": V3_DARK["bgAlt"],
         "bg_surface":   V3_DARK["surfaceSolid"],
         "bg_elevated":  V3_DARK["elevatedSolid"],
-        "bg_overlay":   "#2a3554",
-        "bg_glass":     V3_DARK["surfaceSolid"] + "bb",
+        "bg_overlay":   "#222b46",        # ajustado al nuevo undertone indigo
+        "bg_glass":     V3_DARK["surfaceSolid"] + "d9",
         "bg_input":     V3_DARK["surfaceSolid"],
 
-        # Acentos legacy (mapeo al tono dominante v3)
-        "accent":       V3_DARK["teal"],
-        "accent_hover": V3_DARK["cyan"],
+        # Acentos legacy (mapeo a la nueva firma aqua + amber)
+        "accent":       V3_DARK["teal"],          # aqua mist
+        "accent_hover": V3_DARK["cyan"],          # aqua intermedio
         "accent_glow":  V3_DARK["tealSoftSolid"],
-        "violet_hover": "#a855f7",
+        "violet_hover": "#f8c989",                # amber hover (alineado al warm secondary)
         "violet_glow":  V3_DARK["violetSoftSolid"],
-        "teal_hover":   "#22d3ee",
+        "teal_hover":   V3_DARK["cyan"],          # = #82e0d0
 
         # Texto legacy
         "text_primary":   V3_DARK["text"],
         "text_secondary": V3_DARK["text2"],
         "text_tertiary":  V3_DARK["text3"],
-        "text_on_accent": "#0b1220",   # texto oscuro sobre gradient claro
+        "text_on_accent": "#0e1322",     # bg color — texto oscuro sobre aqua
 
         # Bordes legacy (sólidos para QSS)
         "border":        V3_DARK["borderSolid"],
-        "border_accent": "#2f4767",
+        "border_accent": "#2d4458",      # aqua undertone solid
         "border_focus":  V3_DARK["teal"],
         "border_card":   V3_DARK["borderSolid"],
 
         # Semánticos legacy
         "error": V3_DARK["danger"],
-        "info":  "#5fa1ff",
+        "info":  "#7db0ff",              # cool blue muted
 
         "progress_track": V3_DARK["surfaceSolid"],
         "progress_fill":  V3_DARK["teal"],
 
         # Tokens v2/v3 ya existentes en el codebase
         "sidebar_bg":             V3_DARK["bgSidebar"],
-        "streak_color":           V3_DARK["streak"],
-        "streak_bg":              "#2a1a0a",
-        "tcc_heat_cold":          "#3b82f6",
-        "tcc_heat_hot":           "#ef4444",
-        "routine_morning_tint":   "#fbbf24",
-        "routine_afternoon_tint": "#f97316",
-        "routine_night_tint":     "#6366f1",
-        "cat_autocuidado_color":  "#22c55e",
-        "cat_social_color":       "#f59e0b",
+        "streak_color":           V3_DARK["streak"],        # amber
+        "streak_bg":              "#2a1f0e",                # amber undertone deep
+        "tcc_heat_cold":          "#5d8acd",                # slate blue muted
+        "tcc_heat_hot":           V3_DARK["danger"],        # brick suave
+        "routine_morning_tint":   "#f5b873",                # amber morning
+        "routine_afternoon_tint": "#e07b6e",                # brick afternoon
+        "routine_night_tint":     "#6ad7c4",                # aqua night
+        "cat_autocuidado_color":  "#5cbf8d",
+        "cat_social_color":       "#f5b873",
         "hub_blob_teal":          V3_DARK["teal"],
-        "hub_blob_violet":        V3_DARK["violet"],
-        "sync_orb_green":         "#22c55e",
+        "hub_blob_violet":        V3_DARK["violet"],        # amber re-mapeado
+        "sync_orb_green":         "#5cbf8d",
         "uninstall_danger":       V3_DARK["danger"],
-        "installer_terminal_bg":  "#060d1a",
+        "installer_terminal_bg":  "#070b18",
     })
     return v
 
@@ -363,16 +386,17 @@ def _bridge_light():
         "bg_secondary": V3_LIGHT["bgAlt"],
         "bg_surface":   V3_LIGHT["surface"],
         "bg_elevated":  V3_LIGHT["elevated"],
-        "bg_overlay":   "#dde4ee",
-        "bg_glass":     "#ffffffcc",
+        "bg_overlay":   "#e3dfd3",         # warm linen overlay
+        "bg_glass":     "#ffffffd9",
         "bg_input":     V3_LIGHT["surface"],
 
-        "accent":       V3_LIGHT["teal"],
-        "accent_hover": "#0d9488",
+        # Acentos legacy alineados al eje sage + terracotta
+        "accent":       V3_LIGHT["teal"],         # sage
+        "accent_hover": "#26615a",                # sage deeper
         "accent_glow":  V3_LIGHT["tealSoft"],
-        "violet_hover": "#9333ea",
+        "violet_hover": "#9c5638",                # terracotta deeper
         "violet_glow":  V3_LIGHT["violetSoft"],
-        "teal_hover":   "#0d9488",
+        "teal_hover":   "#26615a",
 
         "text_primary":   V3_LIGHT["text"],
         "text_secondary": V3_LIGHT["text2"],
@@ -384,30 +408,30 @@ def _bridge_light():
         "border_focus":  V3_LIGHT["teal"],
         "border_card":   V3_LIGHT["border"],
 
-        # Light usa semánticos algo más oscuros para contraste sobre #ffffff
-        "success": "#16a34a",
-        "warning": "#d97706",
-        "error":   "#dc2626",
-        "info":    "#2563eb",
+        # Semánticos light alineados a la nueva paleta
+        "success": V3_LIGHT["success"],
+        "warning": V3_LIGHT["warning"],
+        "error":   V3_LIGHT["danger"],
+        "info":    "#3a6ea0",            # cool blue muted
 
         "progress_track": V3_LIGHT["border"],
         "progress_fill":  V3_LIGHT["teal"],
 
         "sidebar_bg":             V3_LIGHT["bgSidebar"],
-        "streak_color":           V3_LIGHT["streak"],
+        "streak_color":           V3_LIGHT["streak"],       # terracotta
         "streak_bg":              V3_LIGHT["streakSoft"],
-        "tcc_heat_cold":          "#3b82f6",
-        "tcc_heat_hot":           "#ef4444",
-        "routine_morning_tint":   "#fbbf24",
-        "routine_afternoon_tint": "#f97316",
-        "routine_night_tint":     "#4f46e5",
-        "cat_autocuidado_color":  "#16a34a",
-        "cat_social_color":       "#d97706",
+        "tcc_heat_cold":          "#3a6ea0",                # slate blue
+        "tcc_heat_hot":           V3_LIGHT["danger"],
+        "routine_morning_tint":   "#c4862b",                # amber morning
+        "routine_afternoon_tint": "#b86844",                # terracotta afternoon
+        "routine_night_tint":     "#2f6e62",                # sage night
+        "cat_autocuidado_color":  V3_LIGHT["success"],
+        "cat_social_color":       V3_LIGHT["warning"],
         "hub_blob_teal":          V3_LIGHT["teal"],
-        "hub_blob_violet":        V3_LIGHT["violet"],
-        "sync_orb_green":         "#16a34a",
-        "uninstall_danger":       "#dc2626",
-        "installer_terminal_bg":  "#060d1a",
+        "hub_blob_violet":        V3_LIGHT["violet"],       # terracotta re-mapeado
+        "sync_orb_green":         V3_LIGHT["success"],
+        "uninstall_danger":       V3_LIGHT["danger"],
+        "installer_terminal_bg":  "#070b18",
     })
     return v
 
@@ -435,19 +459,21 @@ for _m in ("dark_hybrid", "light_hybrid"):
 # ============================================================
 
 GRADIENTS = {
+    # Gradiente firma renovado — monocromático en cada tema.
+    # Dark: aqua mist → mint. Light: sage → soft pine.
     "dark_hybrid": [
-        ("#7c3aed", 0.0),
-        ("#a78bfa", 0.5),
-        ("#c084fc", 1.0),
+        ("#6ad7c4", 0.0),
+        ("#82e0d0", 0.5),
+        ("#95e6d7", 1.0),
     ],
     "light_hybrid": [
-        ("#2c7a7b", 0.0),
-        ("#5f9ea0", 0.5),
-        ("#b45309", 1.0),
+        ("#2f6e62", 0.0),
+        ("#3f8278", 0.5),
+        ("#4a8a7e", 1.0),
     ],
-    # Pares (start, end) usados por algunos builders
-    "accent_teal_violet_dark":  ("#7c3aed", "#c084fc"),
-    "accent_teal_violet_light": ("#2c7a7b", "#b45309"),
+    # Pares (start, end) — claves legacy preservadas (re-mapeadas a la firma nueva)
+    "accent_teal_violet_dark":  ("#6ad7c4", "#95e6d7"),
+    "accent_teal_violet_light": ("#2f6e62", "#4a8a7e"),
 }
 
 
@@ -457,14 +483,14 @@ GRADIENTS = {
 
 SHADOWS = {
     "dark": {
-        "card":       "0 10px 30px rgba(0,0,0,0.45)",
-        "card_hover": "0 16px 40px rgba(0,0,0,0.55), 0 0 1px rgba(167,139,250,0.18)",
-        "glow_teal":  "0 0 40px rgba(167,139,250,0.18), 0 0 16px rgba(167,139,250,0.10)",
+        "card":       "0 10px 30px rgba(0,0,0,0.50)",
+        "card_hover": "0 18px 44px rgba(0,0,0,0.60), 0 0 1px rgba(106,215,196,0.22)",
+        "glow_teal":  "0 0 40px rgba(106,215,196,0.22), 0 0 16px rgba(106,215,196,0.12)",
     },
     "light": {
-        "card":       "0 4px 12px rgba(15,23,42,0.05), 0 1px 2px rgba(15,23,42,0.04)",
-        "card_hover": "0 12px 28px rgba(15,23,42,0.06), 0 4px 10px rgba(15,23,42,0.04)",
-        "glow_teal":  "0 4px 20px rgba(44,122,123,0.30)",
+        "card":       "0 4px 12px rgba(28,36,31,0.06), 0 1px 2px rgba(28,36,31,0.04)",
+        "card_hover": "0 14px 32px rgba(28,36,31,0.09), 0 4px 12px rgba(28,36,31,0.05)",
+        "glow_teal":  "0 4px 20px rgba(47,110,98,0.30)",
     },
 }
 
@@ -519,10 +545,12 @@ def get_mood(level: int):
 # ============================================================
 
 CATEGORY_COLORS = {
-    "Autocuidado": "#22c55e",  # green  — salud, autocuidado
-    "Física":      "#14b8a6",  # teal   — movimiento, energía
-    "Cognitiva":   "#22d3ee",  # cyan   — mente, claridad
-    "Placer":      "#a855f7",  # violet — disfrute, creatividad
-    "Social":      "#f59e0b",  # amber  — calidez, conexión
-    "Maestría":    "#6366f1",  # indigo — logro, habilidades
+    # Categorías de activación conductual — refrescadas para alinear con
+    # la paleta sage/terracotta sin perder distinción semántica.
+    "Autocuidado": "#3a8060",  # sage clinical    — salud, autocuidado
+    "Física":      "#2f9d95",  # teal cool        — movimiento, energía
+    "Cognitiva":   "#4d8acd",  # slate blue       — mente, claridad
+    "Placer":      "#b86844",  # terracotta       — disfrute, creatividad
+    "Social":      "#c4862b",  # amber muted      — calidez, conexión
+    "Maestría":    "#7b6cc4",  # lavender muted   — logro, habilidades
 }

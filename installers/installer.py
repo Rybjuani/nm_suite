@@ -30,6 +30,7 @@ try:
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, BG_ELEVATED, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, TEXT_ON_ACCENT, BORDER, SUCCESS, WARNING_C, ERROR_C,
         SUCCESS_BG, FONT_FAMILY, TEAL, VIOLET, GRAD_FROM, GRAD_MID, GRAD_TO,
+        WARM_SOFT, _rgba,
         recurso, crear_acceso_directo, aplicar_captionbar_installer,
         stylesheet_installer, InstallerShell, GradientTextLabel,
     )
@@ -41,6 +42,7 @@ except ImportError:
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, BG_ELEVATED, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, TEXT_ON_ACCENT, BORDER, SUCCESS, WARNING_C, ERROR_C,
         SUCCESS_BG, FONT_FAMILY, TEAL, VIOLET, GRAD_FROM, GRAD_MID, GRAD_TO,
+        WARM_SOFT, _rgba,
         recurso, crear_acceso_directo, aplicar_captionbar_installer,
         stylesheet_installer, InstallerShell, GradientTextLabel,
     )
@@ -910,7 +912,7 @@ class InstaladorNeuroMood(InstallerShell):
             badge.setFixedSize(28, 28)
             badge.setAlignment(_Qt.AlignmentFlag.AlignCenter)
             badge.setStyleSheet(
-                f"background: {col}33; color: {col}; border-radius: 8px;"
+                f"background: {_rgba(col, 0.18)}; color: {col}; border-radius: 8px;"
                 f"font-size: 12px; font-weight: bold; border: none;"
             )
             fr.addWidget(badge)
@@ -1140,7 +1142,7 @@ class InstaladorNeuroMood(InstallerShell):
             if hasattr(self, "_dot_conn"):
                 self._dot_conn.setStyleSheet(
                     f"background: {SUCCESS}; border-radius: 4px;"
-                    f"border: none; box-shadow: 0 0 0 4px {SUCCESS}22;"
+                    f"border: none;"
                 )
             if hasattr(self, "_lbl_conn"):
                 self._lbl_conn.setText(f"Conectado a Supabase · {email}")
@@ -1321,8 +1323,10 @@ class InstaladorNeuroMood(InstallerShell):
 
         # Warning card — emergencias
         warn_card = QFrame()
+        warn_card.setObjectName("InstallerWarningCard")
         warn_card.setStyleSheet(
-            f"QFrame {{ background: {WARNING_C}18; border-radius: 12px; border: 1px solid {WARNING_C}44; }}"
+            f"QFrame#InstallerWarningCard {{ background: {WARM_SOFT}; "
+            f"border-radius: 12px; border: 1px solid {_rgba(WARNING_C, 0.34)}; }}"
         )
         wc = QHBoxLayout(warn_card)
         wc.setContentsMargins(14, 11, 14, 11)
@@ -1547,7 +1551,7 @@ class InstaladorNeuroMood(InstallerShell):
             icon_badge.setFixedSize(36, 36)
             icon_badge.setAlignment(_Qt.AlignmentFlag.AlignCenter)
             icon_badge.setStyleSheet(
-                f"background: {TEAL}22; border-radius: 10px; font-size: 16px; border: none;"
+                f"background: {_rgba(TEAL, 0.14)}; border-radius: 10px; font-size: 16px; border: none;"
             )
             cl.addWidget(icon_badge)
             txt_col = QVBoxLayout()

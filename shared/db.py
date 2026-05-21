@@ -252,6 +252,46 @@ def inicializar_tablas():
             fetched_at TEXT NOT NULL,
             PRIMARY KEY (scope, key)
         );
+
+        CREATE TABLE IF NOT EXISTS tcc_templates_cache (
+            id INTEGER PRIMARY KEY,
+            scope TEXT NOT NULL,
+            name TEXT NOT NULL,
+            payload TEXT NOT NULL,
+            version INTEGER DEFAULT 1,
+            fetched_at TEXT NOT NULL,
+            UNIQUE (scope, name)
+        );
+
+        CREATE TABLE IF NOT EXISTS routine_templates_cache (
+            id INTEGER PRIMARY KEY,
+            scope TEXT NOT NULL,
+            payload TEXT NOT NULL,
+            fetched_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS breathing_presets_cache (
+            id INTEGER PRIMARY KEY,
+            scope TEXT NOT NULL,
+            name TEXT NOT NULL,
+            payload TEXT NOT NULL,
+            UNIQUE (scope, name)
+        );
+
+        CREATE TABLE IF NOT EXISTS timer_presets_cache (
+            id INTEGER PRIMARY KEY,
+            scope TEXT NOT NULL,
+            name TEXT NOT NULL,
+            payload TEXT NOT NULL,
+            UNIQUE (scope, name)
+        );
+
+        CREATE TABLE IF NOT EXISTS support_messages_cache (
+            id INTEGER PRIMARY KEY,
+            scope TEXT NOT NULL,
+            categoria TEXT NOT NULL,
+            mensaje TEXT NOT NULL
+        );
     """)
 
     conn.commit()

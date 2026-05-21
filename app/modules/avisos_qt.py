@@ -30,6 +30,7 @@ from PyQt6.QtGui import QColor, QPainter, QPen, QBrush
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel,
     QScrollArea, QFrame, QPushButton, QLineEdit, QSizePolicy,
+    QComboBox,
 )
 
 try:
@@ -45,7 +46,7 @@ try:
         PAD_CONTAINER,
     )
     from shared.theme import TYPOGRAPHY
-    from shared.db import obtener_conexion
+    from shared.db import obtener_conexion, leer_config
     from shared.visual_qa import visual_qa_enabled, reminder_rows
 except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -63,13 +64,17 @@ except ImportError:
         PAD_CONTAINER,
     )
     from shared.theme import TYPOGRAPHY
-    from shared.db import obtener_conexion
+    from shared.db import obtener_conexion, leer_config
     from shared.visual_qa import visual_qa_enabled, reminder_rows
 
 
 # ── Day labels (preservados) ────────────────────────────────────────────────
 
 DIAS_LABELS = ["L", "M", "X", "J", "V", "S", "D"]
+SUPPORT_CATEGORIES = [
+    "Salud", "Hidratación", "Calma", "Actividad", "Comida",
+    "Trabajo", "Descanso", "Terapia", "Recordatorio",
+]
 DIAS_FULL = ["Lunes", "Martes", "Miércoles", "Jueves",
               "Viernes", "Sábado", "Domingo"]
 
@@ -128,6 +133,61 @@ def _is_today(dias: str) -> bool:
     return str(today) in dias.split(",")
 
 
+def _bool_config(key: str, default: bool = True) -> bool:
+    try:
+        value = leer_config(key, "1" if default else "0")
+    except Exception:
+        return default
+    text = str(value).strip().lower()
+    if text in ("0", "false", "no", "off"):
+        return False
+    if text in ("1", "true", "yes", "on"):
+        return True
+    return default
+
+
+def _load_support_messages() -> dict[str, list[str]]:
+    patient_id = ""
+    try:
+        patient_id = leer_config("patient_id", "").strip()
+    except Exception:
+        pass
+    scopes = []
+    if patient_id:
+        scopes.append(f"patient:{patient_id}")
+    scopes.append("global")
+
+    conn = None
+    try:
+        conn = obtener_conexion()
+        for scope in scopes:
+            rows = conn.execute(
+                "SELECT categoria, mensaje FROM support_messages_cache "
+                "WHERE scope = ? ORDER BY categoria, id",
+                (scope,),
+            ).fetchall()
+            grouped: dict[str, list[str]] = {}
+            for row in rows:
+                categoria = row["categoria"] if hasattr(row, "keys") else row[0]
+                mensaje = row["mensaje"] if hasattr(row, "keys") else row[1]
+                if not mensaje:
+                    continue
+                grouped.setdefault(
+                    str(categoria or "Recordatorio"), []
+                ).append(str(mensaje))
+            if grouped:
+                return grouped
+    except Exception:
+        _log.exception("Failed to load support messages cache")
+    finally:
+        try:
+            if conn:
+                conn.close()
+        except Exception:
+            pass
+    return {}
+
+
 # ── _DayPillToggle (preservado para form) ───────────────────────────────────
 
 class _DayPillToggle(QPushButton):
@@ -140,6 +200,7 @@ class _DayPillToggle(QPushButton):
         self.setCheckable(False)
         self.setFixedSize(36, 36)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setAccessibleName(label)
         self.setFont(qfont("size_small",
                            weight=TYPOGRAPHY["weight_bold"]))
         self.clicked.connect(self._toggle)
@@ -185,6 +246,8 @@ class _NuevoAvisoPanel(QWidget):
         super().__init__(parent)
         self._modo = norm_modo(modo)
         self._day_pills: list[_DayPillToggle] = []
+        self._support_messages = _load_support_messages()
+        self._manual_enabled = _bool_config("perm_recordatorios_manual", True)
         self._build_ui()
 
     def _build_ui(self):
@@ -237,14 +300,39 @@ class _NuevoAvisoPanel(QWidget):
         row_dias.addStretch()
         layout.addLayout(row_dias)
 
+        row_cat = QHBoxLayout()
+        row_cat.setSpacing(V3_SP["sm"])
+        lbl_cat = QLabel("Categoría:")
+        lbl_cat.setFont(qfont("size_body"))
+        lbl_cat.setStyleSheet(
+            f"color: {v3c('text2', self._modo).name()};")
+        lbl_cat.setMinimumWidth(80)
+        row_cat.addWidget(lbl_cat)
+        self._combo_categoria = QComboBox()
+        categories = list(self._support_messages.keys()) or SUPPORT_CATEGORIES
+        self._combo_categoria.addItems(categories)
+        self._combo_categoria.setStyleSheet(self._combo_style())
+        self._combo_categoria.currentTextChanged.connect(self._refresh_message_combo)
+        row_cat.addWidget(self._combo_categoria, stretch=1)
+        layout.addLayout(row_cat)
+
         # Mensaje
         lbl_msg = QLabel("Mensaje:")
         lbl_msg.setFont(qfont("size_body"))
         lbl_msg.setStyleSheet(
             f"color: {v3c('text2', self._modo).name()};")
         layout.addWidget(lbl_msg)
-        self._entry_mensaje = NMInput("Ej: Tomar medicación", modo=self._modo)
+        self._entry_mensaje = QComboBox()
+        self._entry_mensaje.setEditable(self._manual_enabled)
+        self._entry_mensaje.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        self._entry_mensaje.setStyleSheet(self._combo_style())
+        if self._entry_mensaje.lineEdit():
+            self._entry_mensaje.lineEdit().setPlaceholderText(
+                "Ej: Tomar medicación" if self._manual_enabled
+                else "Elegir mensaje sugerido"
+            )
         layout.addWidget(self._entry_mensaje)
+        self._refresh_message_combo()
 
         # Buttons
         btn_row = QHBoxLayout()
@@ -261,10 +349,52 @@ class _NuevoAvisoPanel(QWidget):
         self._btn_save = btn_save
         layout.addLayout(btn_row)
 
+    def _combo_style(self) -> str:
+        surface = v3c("elevatedSolid", self._modo).name()
+        popup = v3c("surfaceSolid", self._modo).name()
+        return (
+            "QComboBox {"
+            f"background: {surface};"
+            f"color: {v3c('text', self._modo).name()};"
+            f"border: 1px solid {v3c('borderStrong', self._modo).name()};"
+            "border-radius: 10px; padding: 6px 10px; min-height: 30px;"
+            "}"
+            "QComboBox::drop-down { border: none; width: 28px; }"
+            "QComboBox QAbstractItemView {"
+            f"background: {popup};"
+            f"color: {v3c('text', self._modo).name()};"
+            f"selection-background-color: {v3c('teal', self._modo).name()};"
+            "}"
+        )
+
+    def _refresh_message_combo(self):
+        if not hasattr(self, "_entry_mensaje"):
+            return
+        current_text = self._entry_mensaje.currentText().strip()
+        categoria = self._combo_categoria.currentText() \
+            if hasattr(self, "_combo_categoria") else ""
+        messages = self._support_messages.get(categoria, [])
+        self._entry_mensaje.blockSignals(True)
+        self._entry_mensaje.clear()
+        self._entry_mensaje.addItems(messages)
+        if self._manual_enabled and current_text and current_text not in messages:
+            self._entry_mensaje.setEditText(current_text)
+        elif self._manual_enabled and self._entry_mensaje.lineEdit():
+            self._entry_mensaje.setEditText("")
+        self._entry_mensaje.blockSignals(False)
+
     def _on_save(self):
         try:
             hora = self._entry_hora.text().strip()
-            mensaje = self._entry_mensaje.text().strip()
+            mensaje = self._entry_mensaje.currentText().strip()
+            library_values = {
+                msg for values in self._support_messages.values() for msg in values
+            }
+            if not self._manual_enabled and mensaje not in library_values:
+                NMToast.display(self.window(),
+                    "Elegí un mensaje sugerido.",
+                    variant="warning", duration_ms=3000)
+                return
             if not hora or not mensaje or ":" not in hora:
                 NMToast.display(self.window(),
                     "Completá la hora y el mensaje.",
@@ -333,9 +463,10 @@ class _StepPill(QPushButton):
         super().__init__(label, parent)
         self._modo = norm_modo(modo)
         self._active = active
-        self.setFixedHeight(32)
+        self.setFixedHeight(36)
         self.setMinimumWidth(80)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setAccessibleName(label)
         self.setFont(qfont("size_small",
                            weight=TYPOGRAPHY["weight_semibold"]))
         self._refresh()

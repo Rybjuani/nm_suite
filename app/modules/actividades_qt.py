@@ -27,7 +27,7 @@ from PyQt6.QtCore import Qt, QRectF, QPointF, pyqtSignal
 from PyQt6.QtGui import QColor, QPainter, QPen, QBrush
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea,
-    QFrame, QSizePolicy,
+    QFrame, QSizePolicy, QGridLayout,
 )
 
 try:
@@ -35,6 +35,7 @@ try:
         NMModule, NMButton, NMToast, ThemeManager,
         NMCard, NMIcon, NMPlayButton, NMModuleRing,
         NMMoodContextHeader, NMEmptyState, NMSegmentedChoice,
+        NMTabs, NMSectionHeader, responsive_columns,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qfont_mono,
@@ -55,6 +56,7 @@ except ImportError:
         NMModule, NMButton, NMToast, ThemeManager,
         NMCard, NMIcon, NMPlayButton, NMModuleRing,
         NMMoodContextHeader, NMEmptyState, NMSegmentedChoice,
+        NMTabs, NMSectionHeader, responsive_columns,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qfont_mono,
@@ -587,6 +589,10 @@ class ModuloActividades(NMModule):
         super()._on_theme(modo)
         if hasattr(self, "_scroll"):
             self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        if hasattr(self, "_category_tabs"):
+            self._category_tabs._apply_theme(self._modo)
+        if hasattr(self, "_filter_header"):
+            self._filter_header._apply_theme(self._modo)
         self.update()
 
     # ── load ──────────────────────────────────────────────────────────────────
@@ -633,16 +639,31 @@ class ModuloActividades(NMModule):
             ))
             return
 
-        # 3. Categories card (filtro)
-        self._categories = _CategoriesCard(modo=self._modo)
-        self._categories.update_counts(self._all_activities)
-        self._categories.category_changed.connect(self._on_category_filter)
-        self._scroll_layout.addWidget(self._categories)
+        # 3. Filtros como tabs pill del design system
+        filter_card = NMCard(modo=self._modo, clickable=False, glow=False)
+        filter_lay = QVBoxLayout(filter_card)
+        filter_lay.setContentsMargins(V3_SP["lg"], V3_SP["lg"],
+                                       V3_SP["lg"], V3_SP["lg"])
+        filter_lay.setSpacing(V3_SP["md"])
+        self._filter_header = NMSectionHeader(
+            "CATEGORIAS",
+            "Elegí una familia de actividades",
+            modo=self._modo,
+        )
+        filter_lay.addWidget(self._filter_header)
+        self._category_tabs = NMTabs(
+            ["Todas"] + [cat for cat, _ in _CATEGORY_ORDER],
+            variant="pill",
+            modo=self._modo,
+        )
+        self._category_tabs.changed.connect(self._on_category_tab_changed)
+        filter_lay.addWidget(self._category_tabs)
+        self._scroll_layout.addWidget(filter_card)
+        self._categories_card = filter_card
 
         # 4. Grid unificado de actividades (3 columnas)
         self._grid_container = QWidget()
         self._grid_container.setStyleSheet("background: transparent;")
-        from PyQt6.QtWidgets import QGridLayout
         self._grid_layout = QGridLayout(self._grid_container)
         self._grid_layout.setContentsMargins(0, 0, 0, 0)
         self._grid_layout.setSpacing(V3_SP["xl"])
@@ -662,6 +683,9 @@ class ModuloActividades(NMModule):
     def _on_category_filter(self, cat: str):
         self._current_filter = cat
         self._rebuild_lists(cat)
+
+    def _on_category_tab_changed(self, index: int, label: str):
+        self._on_category_filter("" if index == 0 else label)
 
     def _rebuild_lists(self, cat: str):
         # Limpiar grid unificado
@@ -689,7 +713,9 @@ class ModuloActividades(NMModule):
             return
 
         # Grid unificado 3 columnas — todas las actividades como _SuggestedCard
-        cols = 3
+        cols = self._activity_columns()
+        for col in range(3):
+            self._grid_layout.setColumnStretch(col, 1 if col < cols else 0)
         for i, act in enumerate(activities):
             card = _SuggestedCard(act, modo=self._modo)
             card.completed.connect(
@@ -704,6 +730,18 @@ class ModuloActividades(NMModule):
         n = len(activities)
         self._footer_lbl.setText(
             f"{n} actividad{'es' if n != 1 else ''} sugerida{'s' if n != 1 else ''}")
+
+    def _activity_columns(self) -> int:
+        width = max(
+            360,
+            self._scroll.viewport().width() if hasattr(self, "_scroll") else self.width(),
+        )
+        return responsive_columns(width, min_card_width=320, max_columns=3)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "_grid_layout") and self._all_activities:
+            self._rebuild_lists(self._current_filter)
 
     # ── _register_result (lógica preservada exacta) ──────────────────────────
 

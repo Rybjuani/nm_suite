@@ -16,9 +16,9 @@ from PyQt6.QtGui import QIcon, QPixmap
 try:
     from shared.installer_common import (
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, BG_ELEVATED, ACCENT, ACCENT_HOVER,
-        TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
+        TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, TEXT_ON_ACCENT, BORDER, SUCCESS, WARNING_C, ERROR_C,
         FONT_FAMILY, TEAL, VIOLET, GRAD_FROM, GRAD_MID, GRAD_TO,
-        DANGER_FROM, DANGER_TO,
+        DANGER_FROM, DANGER_TO, DANGER_SOFT, _rgba,
         recurso, aplicar_captionbar_installer, stylesheet_installer,
         InstallerShell,
     )
@@ -28,9 +28,9 @@ except ImportError:
         sys.path.insert(0, _root)
     from shared.installer_common import (
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, BG_ELEVATED, ACCENT, ACCENT_HOVER,
-        TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
+        TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, TEXT_ON_ACCENT, BORDER, SUCCESS, WARNING_C, ERROR_C,
         FONT_FAMILY, TEAL, VIOLET, GRAD_FROM, GRAD_MID, GRAD_TO,
-        DANGER_FROM, DANGER_TO,
+        DANGER_FROM, DANGER_TO, DANGER_SOFT, _rgba,
         recurso, aplicar_captionbar_installer, stylesheet_installer,
         InstallerShell,
     )
@@ -387,7 +387,7 @@ class DesinstaladorNeuroMood(InstallerShell):
         warn_badge = QFrame()
         warn_badge.setFixedSize(52, 52)
         warn_badge.setStyleSheet(
-            f"QFrame {{ background: {ERROR_C}22; border-radius: 12px; border: none; }}"
+            f"QFrame {{ background: {DANGER_SOFT}; border-radius: 12px; border: none; }}"
         )
         wb_inner = QLabel("⚠", warn_badge)
         wb_inner.setAlignment(_Qt.AlignmentFlag.AlignCenter)
@@ -456,7 +456,7 @@ class DesinstaladorNeuroMood(InstallerShell):
             save_badge = QFrame()
             save_badge.setFixedSize(44, 44)
             save_badge.setStyleSheet(
-                f"QFrame {{ background: {TEAL}22; border-radius: 12px; border: none; }}"
+                f"QFrame {{ background: {_rgba(TEAL, 0.14)}; border-radius: 12px; border: none; }}"
             )
             sb_lbl = QLabel("💾", save_badge)
             sb_lbl.setAlignment(_Qt.AlignmentFlag.AlignCenter)
@@ -656,7 +656,7 @@ class DesinstaladorNeuroMood(InstallerShell):
                 save_badge = QFrame()
                 save_badge.setFixedSize(44, 44)
                 save_badge.setStyleSheet(
-                    f"QFrame {{ background: {TEAL}22; border-radius: 12px; border: none; }}"
+                    f"QFrame {{ background: {_rgba(TEAL, 0.14)}; border-radius: 12px; border: none; }}"
                 )
                 sb_lbl = QLabel("💾", save_badge)
                 sb_lbl.setAlignment(_Qt.AlignmentFlag.AlignCenter)
@@ -681,7 +681,7 @@ class DesinstaladorNeuroMood(InstallerShell):
 
                 preserved_badge = QLabel("preservado")
                 preserved_badge.setStyleSheet(
-                    f"background: {SUCCESS}22; color: {SUCCESS}; font-size: 11px; font-weight: 700;"
+                    f"background: {_rgba(SUCCESS, 0.14)}; color: {SUCCESS}; font-size: 11px; font-weight: 700;"
                     f"border-radius: 999px; padding: 3px 12px; border: none;"
                 )
                 po.addWidget(preserved_badge, alignment=_Qt.AlignmentFlag.AlignVCenter)

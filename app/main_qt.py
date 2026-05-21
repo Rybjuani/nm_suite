@@ -155,9 +155,11 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # Header full-width — home_mode usa greeting/strike desde HomeView
-        self._header = NMHeader(central, modo=self._modo, home_mode=True,
-                                greeting="")
+        # Header full-width — modo normal (logo NM + nombre sutil + theme toggle).
+        # El saludo grande va SOLO en la _SidePanel de HomeView; el header queda
+        # limpio para que la sidebar tenga el protagonismo en home.
+        self._header = NMHeader(central, modo=self._modo, home_mode=False,
+                                username=self._nombre)
         self._header.theme_toggle.connect(self._toggle_theme)
         main_layout.addWidget(self._header)
 
@@ -176,11 +178,6 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         self._home._theme_switch_requested.connect(self._toggle_theme)
         self._stack.addWidget(self._home)
         self._navigate_to(self._home)
-        # Greeting inicial desde HomeView
-        self._header.set_home_greeting(
-            self._home._greeting_text(),
-            self._home._subtitle_text(),
-        )
 
     # ── Navegación ────────────────────────────────────────────────────────────
 
@@ -286,11 +283,8 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         self._header.set_back_action(None)
         self._header.set_context_title("")
         self._header.set_context_badge("")
-        # Update home greeting from HomeView
-        self._header.set_home_greeting(
-            self._home._greeting_text(),
-            self._home._subtitle_text(),
-        )
+        # El saludo vive ya en _SidePanel; el header queda en su modo normal
+        # (logo + username + toggle) tras limpiar el context title.
 
     def _back_to_home(self):
         self._go_home()

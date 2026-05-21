@@ -29,7 +29,7 @@ if _base not in sys.path:
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QLabel, QScrollArea, QGridLayout, QFrame, QSizePolicy,
-    QGraphicsDropShadowEffect, QStackedWidget,
+    QGraphicsDropShadowEffect, QStackedWidget, QComboBox,
 )
 from PyQt6.QtCore import Qt, QTimer, QSize, QPointF, QRectF, pyqtSignal
 from PyQt6.QtGui import (QColor, QIcon, QPainter, QPen, QBrush,
@@ -47,7 +47,7 @@ from shared.theme_qt import (
 from shared.components_qt import (
     ThemeManager, NMSidebar, NMHeader, NMFadeWidget,
     NMButton, NMButtonOutline, NMCard, NMInput, NMToast, NMSkeleton, responsive_columns,
-    NMSyncOrb, NMProgressLine, NMFeaturedCard, NMModuleRing,
+    NMToggle, NMSyncOrb, NMProgressLine, NMFeaturedCard, NMModuleRing,
     NMHubSidebar, NMPatientRow, NMSettingsSection,
     NMChatBubble, NMTypingDots, NMProviderChip, NMQuickAction, NMPatientContext,
     # Componentes nuevos del redesign 2026
@@ -672,6 +672,543 @@ class PacientesView(QWidget):
 
 # ── ConfigView ────────────────────────────────────────────────────────────────
 
+class _GlobalTimerPresetsEditor(NMSettingsSection):
+    def __init__(self, modo: str, parent=None):
+        super().__init__("Presets de timer (scope=global)", modo=modo, parent=parent)
+        self._modo = norm_modo(modo)
+        self._sb = None
+        self._editing_id = None
+        self._setup_editor()
+
+    def _client(self):
+        if self._sb is None:
+            self._sb, _ = _get_sb()
+        return self._sb
+
+    def _setup_editor(self):
+        from shared.theme_qt import V3_SP, v3c
+
+        scope = QLabel("Scope: global")
+        scope.setFont(qfont("size_caption"))
+        scope.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;"
+        )
+        scope.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], 0)
+        self._rows.addWidget(scope)
+
+        form = QWidget()
+        form.setStyleSheet("background: transparent;")
+        fl = QHBoxLayout(form)
+        fl.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], V3_SP["sm"])
+        fl.setSpacing(V3_SP["sm"])
+        self._ent_name = NMInput("Nombre", modo=self._modo)
+        self._ent_secs = NMInput("Duracion (seg)", modo=self._modo)
+        self._ent_cat = NMInput("Categoria", modo=self._modo)
+        fl.addWidget(self._ent_name, stretch=2)
+        fl.addWidget(self._ent_secs, stretch=1)
+        fl.addWidget(self._ent_cat, stretch=1)
+        self._btn_save = NMButton("Agregar", modo=self._modo, width=92, height=32)
+        self._btn_save.clicked.connect(self._save_preset)
+        fl.addWidget(self._btn_save)
+        self._btn_cancel = NMButtonOutline("Cancelar", modo=self._modo)
+        self._btn_cancel.setFixedSize(86, 32)
+        self._btn_cancel.clicked.connect(self._cancel_edit)
+        self._btn_cancel.setVisible(False)
+        fl.addWidget(self._btn_cancel)
+        self._rows.addWidget(form)
+
+        self._list = QVBoxLayout()
+        self._list.setContentsMargins(V3_SP["lg"], 0, V3_SP["lg"], V3_SP["sm"])
+        self._list.setSpacing(4)
+        self._rows.addLayout(self._list)
+        self._load_presets()
+
+    def _clear_list(self):
+        while self._list.count():
+            item = self._list.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
+
+    def _empty(self, text: str):
+        from shared.theme_qt import v3c
+
+        lbl = QLabel(text)
+        lbl.setFont(qfont("size_caption"))
+        lbl.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;"
+        )
+        self._list.addWidget(lbl)
+
+    def _load_presets(self):
+        self._clear_list()
+        sb = self._client()
+        if not sb:
+            self._empty("Sin conexion Supabase.")
+            return
+        try:
+            res = (sb.table("timer_presets_remote")
+                   .select("id,scope,name,duracion_seg,categoria,activo")
+                   .eq("scope", "global")
+                   .order("name")
+                   .execute())
+            rows = res.data or []
+        except Exception as e:
+            self._empty(str(e)[:80])
+            return
+        if not rows:
+            self._empty("Sin presets globales.")
+            return
+        for row in rows:
+            self._add_row(row)
+
+    def _add_row(self, row: dict):
+        from shared.theme_qt import v3c
+
+        wrap = QWidget()
+        wrap.setStyleSheet("background: transparent;")
+        rl = QHBoxLayout(wrap)
+        rl.setContentsMargins(0, 4, 0, 4)
+        rl.setSpacing(8)
+        name = row.get("name", "")
+        secs = int(row.get("duracion_seg") or 0)
+        mins = secs // 60 if secs else 0
+        cat = row.get("categoria") or "Timer"
+        active = bool(row.get("activo", True))
+        info = QLabel(f"{name} - {mins} min - {cat}")
+        info.setFont(qfont("size_small"))
+        info.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; background: transparent;"
+        )
+        rl.addWidget(info, stretch=1)
+
+        btn_edit = NMButtonOutline("Editar", modo=self._modo)
+        btn_edit.setFixedSize(70, 28)
+        btn_edit.clicked.connect(lambda _, r=row: self._edit(r))
+        rl.addWidget(btn_edit)
+
+        btn_active = NMButtonOutline("Activo" if active else "Inactivo", modo=self._modo)
+        btn_active.setFixedSize(78, 28)
+        btn_active.clicked.connect(lambda _, r=row: self._toggle_active(r))
+        rl.addWidget(btn_active)
+
+        btn_del = NMButtonOutline("Eliminar", modo=self._modo)
+        btn_del.setFixedSize(78, 28)
+        btn_del.clicked.connect(lambda _, rid=row.get("id"): self._delete(rid))
+        rl.addWidget(btn_del)
+        self._list.addWidget(wrap)
+
+    def _save_preset(self):
+        sb = self._client()
+        if not sb:
+            return
+        name = self._ent_name.text().strip()
+        cat = self._ent_cat.text().strip() or "Timer"
+        try:
+            secs = int(self._ent_secs.text().strip())
+        except ValueError:
+            NMToast.display(self.window(), "Duracion invalida.", variant="warning")
+            return
+        if not name or secs <= 0:
+            return
+        payload = {
+            "scope": "global",
+            "name": name,
+            "duracion_seg": secs,
+            "categoria": cat,
+            "activo": True,
+        }
+        try:
+            if self._editing_id:
+                payload["id"] = self._editing_id
+                sb.table("timer_presets_remote").upsert(payload).execute()
+            else:
+                sb.table("timer_presets_remote").upsert(
+                    payload, on_conflict="scope,name"
+                ).execute()
+            self._cancel_edit()
+            self._load_presets()
+            NMToast.display(self.window(), "Preset guardado.", variant="success")
+        except Exception as e:
+            NMToast.display(self.window(), str(e)[:80], variant="error")
+
+    def _edit(self, row: dict):
+        self._editing_id = row.get("id")
+        self._ent_name.setText(str(row.get("name", "")))
+        self._ent_secs.setText(str(row.get("duracion_seg") or ""))
+        self._ent_cat.setText(str(row.get("categoria") or "Timer"))
+        self._btn_save.setText("Guardar")
+        self._btn_cancel.setVisible(True)
+
+    def _cancel_edit(self):
+        self._editing_id = None
+        self._ent_name.clear()
+        self._ent_secs.clear()
+        self._ent_cat.clear()
+        self._btn_save.setText("Agregar")
+        self._btn_cancel.setVisible(False)
+
+    def _toggle_active(self, row: dict):
+        sb = self._client()
+        rid = row.get("id")
+        if not sb or rid is None:
+            return
+        try:
+            sb.table("timer_presets_remote").update({
+                "activo": not bool(row.get("activo", True)),
+            }).eq("id", rid).execute()
+            self._load_presets()
+        except Exception as e:
+            NMToast.display(self.window(), str(e)[:80], variant="error")
+
+    def _delete(self, rid):
+        sb = self._client()
+        if not sb or rid is None:
+            return
+        try:
+            sb.table("timer_presets_remote").delete().eq("id", rid).execute()
+            self._load_presets()
+            NMToast.display(self.window(), "Preset eliminado.", variant="success")
+        except Exception as e:
+            NMToast.display(self.window(), str(e)[:80], variant="error")
+
+
+SUPPORT_MESSAGE_CATEGORIES = [
+    "Salud", "Hidratación", "Calma", "Actividad", "Comida",
+    "Trabajo", "Descanso", "Terapia", "Recordatorio",
+]
+
+DEFAULT_SUPPORT_MESSAGES = [
+    ("Salud", "Tomar medicación"),
+    ("Hidratación", "Tomar un vaso de agua"),
+    ("Calma", "Hacer una pausa de respiración"),
+    ("Actividad", "Salir a caminar unos minutos"),
+    ("Comida", "Registrar o preparar una comida"),
+    ("Trabajo", "Revisar la próxima tarea importante"),
+    ("Descanso", "Prepararse para dormir"),
+    ("Terapia", "Recordar el turno o ejercicio terapéutico"),
+    ("Recordatorio", "Hacer una pausa y revisar cómo estás"),
+]
+
+
+class _SupportMessagesEditor(NMSettingsSection):
+    PAGE_SIZE = 8
+
+    def __init__(self, modo: str, parent=None):
+        super().__init__("Biblioteca de mensajes de apoyo", modo=modo, parent=parent)
+        self._modo = norm_modo(modo)
+        self._sb = None
+        self._rows_cache: list[dict] = []
+        self._page = 0
+        self._editing_id = None
+        self._setup_editor()
+
+    def _client(self):
+        if self._sb is None:
+            self._sb, _ = _get_sb()
+        return self._sb
+
+    def _combo_style(self) -> str:
+        from shared.theme_qt import v3c
+        return (
+            "QComboBox {"
+            f"background: {v3c('elevatedSolid', self._modo).name()};"
+            f"color: {v3c('text', self._modo).name()};"
+            f"border: 1px solid {v3c('borderStrong', self._modo).name()};"
+            "border-radius: 10px; padding: 6px 10px; min-height: 30px;"
+            "}"
+            "QComboBox::drop-down { border: none; width: 28px; }"
+        )
+
+    def _setup_editor(self):
+        from shared.theme_qt import V3_SP, v3c
+
+        scope_row = QWidget()
+        scope_row.setStyleSheet("background: transparent;")
+        sl = QHBoxLayout(scope_row)
+        sl.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], 0)
+        sl.setSpacing(V3_SP["sm"])
+        lbl_scope = QLabel("Scope global")
+        lbl_scope.setFont(qfont("size_small"))
+        lbl_scope.setStyleSheet(
+            f"color: {v3c('text2', self._modo).name()}; background: transparent;"
+        )
+        sl.addWidget(lbl_scope)
+        self._toggle_patient = NMToggle(modo=self._modo)
+        self._toggle_patient.toggled.connect(self._on_scope_changed)
+        sl.addWidget(self._toggle_patient)
+        self._ent_patient = NMInput("patient_id opcional", modo=self._modo)
+        self._ent_patient.setEnabled(False)
+        self._ent_patient.setMinimumWidth(180)
+        self._ent_patient.textChanged.connect(self._reload)
+        sl.addWidget(self._ent_patient)
+        sl.addStretch()
+        btn_import = NMButton("Importar default", modo=self._modo, width=140, height=32)
+        btn_import.clicked.connect(self._import_defaults)
+        sl.addWidget(btn_import)
+        self._rows.addWidget(scope_row)
+
+        filter_row = QWidget()
+        filter_row.setStyleSheet("background: transparent;")
+        flt = QHBoxLayout(filter_row)
+        flt.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], 0)
+        flt.setSpacing(V3_SP["sm"])
+        flt_lbl = QLabel("Filtro")
+        flt_lbl.setFont(qfont("size_small"))
+        flt_lbl.setStyleSheet(
+            f"color: {v3c('text2', self._modo).name()}; background: transparent;"
+        )
+        flt.addWidget(flt_lbl)
+        self._filter_cat = QComboBox()
+        self._filter_cat.addItems(["Todas", *SUPPORT_MESSAGE_CATEGORIES])
+        self._filter_cat.setStyleSheet(self._combo_style())
+        self._filter_cat.currentTextChanged.connect(self._reload)
+        flt.addWidget(self._filter_cat)
+        flt.addStretch()
+        self._rows.addWidget(filter_row)
+
+        form = QWidget()
+        form.setStyleSheet("background: transparent;")
+        form_lay = QHBoxLayout(form)
+        form_lay.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], V3_SP["sm"])
+        form_lay.setSpacing(V3_SP["sm"])
+        self._cat_combo = QComboBox()
+        self._cat_combo.addItems(SUPPORT_MESSAGE_CATEGORIES)
+        self._cat_combo.setStyleSheet(self._combo_style())
+        form_lay.addWidget(self._cat_combo)
+        self._ent_message = NMInput("Mensaje", modo=self._modo)
+        form_lay.addWidget(self._ent_message, stretch=1)
+        self._btn_save = NMButton("Agregar", modo=self._modo, width=92, height=32)
+        self._btn_save.clicked.connect(self._save_message)
+        form_lay.addWidget(self._btn_save)
+        self._btn_cancel = NMButtonOutline("Cancelar", modo=self._modo)
+        self._btn_cancel.setFixedSize(86, 32)
+        self._btn_cancel.clicked.connect(self._cancel_edit)
+        self._btn_cancel.setVisible(False)
+        form_lay.addWidget(self._btn_cancel)
+        self._rows.addWidget(form)
+
+        self._list = QVBoxLayout()
+        self._list.setContentsMargins(V3_SP["lg"], 0, V3_SP["lg"], 0)
+        self._list.setSpacing(4)
+        self._rows.addLayout(self._list)
+
+        pager = QWidget()
+        pager.setStyleSheet("background: transparent;")
+        pl = QHBoxLayout(pager)
+        pl.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], V3_SP["sm"])
+        self._page_lbl = QLabel("Página 1")
+        self._page_lbl.setFont(qfont("size_caption"))
+        self._page_lbl.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;"
+        )
+        pl.addWidget(self._page_lbl)
+        pl.addStretch()
+        self._btn_prev = NMButtonOutline("Anterior", modo=self._modo)
+        self._btn_prev.setFixedSize(86, 28)
+        self._btn_prev.clicked.connect(lambda: self._move_page(-1))
+        pl.addWidget(self._btn_prev)
+        self._btn_next = NMButtonOutline("Siguiente", modo=self._modo)
+        self._btn_next.setFixedSize(86, 28)
+        self._btn_next.clicked.connect(lambda: self._move_page(1))
+        pl.addWidget(self._btn_next)
+        self._rows.addWidget(pager)
+
+        self._reload()
+
+    def _current_scope(self) -> str:
+        if self._toggle_patient.isChecked():
+            pid = self._ent_patient.text().strip()
+            return f"patient:{pid}" if pid else "global"
+        return "global"
+
+    def _on_scope_changed(self, checked: bool):
+        self._ent_patient.setEnabled(checked)
+        self._page = 0
+        self._reload()
+
+    def _clear_list(self):
+        while self._list.count():
+            item = self._list.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
+
+    def _empty(self, text: str):
+        from shared.theme_qt import v3c
+        lbl = QLabel(text)
+        lbl.setFont(qfont("size_caption"))
+        lbl.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;"
+        )
+        self._list.addWidget(lbl)
+
+    def _reload(self):
+        self._clear_list()
+        sb = self._client()
+        if not sb:
+            self._rows_cache = []
+            self._empty("Sin conexión Supabase.")
+            self._refresh_pager()
+            return
+        scope = self._current_scope()
+        categoria = self._filter_cat.currentText() if hasattr(self, "_filter_cat") else "Todas"
+        try:
+            query = (sb.table("support_messages")
+                     .select("id,scope,categoria,mensaje,activo")
+                     .eq("scope", scope))
+            if categoria != "Todas":
+                query = query.eq("categoria", categoria)
+            res = query.order("categoria").order("id").execute()
+            self._rows_cache = res.data or []
+        except Exception as e:
+            self._rows_cache = []
+            self._empty(str(e)[:80])
+            self._refresh_pager()
+            return
+        self._render_page()
+
+    def _render_page(self):
+        self._clear_list()
+        start = self._page * self.PAGE_SIZE
+        rows = self._rows_cache[start:start + self.PAGE_SIZE]
+        if not rows:
+            self._empty("Sin mensajes para este filtro.")
+        for row in rows:
+            self._add_row(row)
+        self._refresh_pager()
+
+    def _refresh_pager(self):
+        total_pages = max(1, (len(self._rows_cache) + self.PAGE_SIZE - 1) // self.PAGE_SIZE)
+        self._page = max(0, min(self._page, total_pages - 1))
+        self._page_lbl.setText(f"Página {self._page + 1} de {total_pages}")
+        self._btn_prev.setEnabled(self._page > 0)
+        self._btn_next.setEnabled(self._page < total_pages - 1)
+
+    def _move_page(self, delta: int):
+        self._page += delta
+        self._render_page()
+
+    def _add_row(self, row: dict):
+        from shared.theme_qt import v3c
+
+        wrap = QWidget()
+        wrap.setStyleSheet("background: transparent;")
+        rl = QHBoxLayout(wrap)
+        rl.setContentsMargins(0, 4, 0, 4)
+        rl.setSpacing(8)
+        active = bool(row.get("activo", True))
+        info = QLabel(
+            f"{row.get('categoria') or 'Recordatorio'} - "
+            f"{row.get('mensaje') or ''} - "
+            f"{'Activo' if active else 'Inactivo'}"
+        )
+        info.setFont(qfont("size_small"))
+        info.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; background: transparent;"
+        )
+        rl.addWidget(info, stretch=1)
+
+        btn_edit = NMButtonOutline("Editar", modo=self._modo)
+        btn_edit.setFixedSize(70, 28)
+        btn_edit.clicked.connect(lambda _, r=row: self._edit(r))
+        rl.addWidget(btn_edit)
+        btn_active = NMButtonOutline("Activo" if active else "Inactivo", modo=self._modo)
+        btn_active.setFixedSize(78, 28)
+        btn_active.clicked.connect(lambda _, r=row: self._toggle_active(r))
+        rl.addWidget(btn_active)
+        btn_del = NMButtonOutline("Eliminar", modo=self._modo)
+        btn_del.setFixedSize(78, 28)
+        btn_del.clicked.connect(lambda _, rid=row.get("id"): self._delete(rid))
+        rl.addWidget(btn_del)
+        self._list.addWidget(wrap)
+
+    def _save_message(self):
+        sb = self._client()
+        if not sb:
+            return
+        msg = self._ent_message.text().strip()
+        if not msg:
+            return
+        payload = {
+            "scope": self._current_scope(),
+            "categoria": self._cat_combo.currentText(),
+            "mensaje": msg,
+            "activo": True,
+        }
+        try:
+            if self._editing_id:
+                payload["id"] = self._editing_id
+                sb.table("support_messages").upsert(payload).execute()
+            else:
+                sb.table("support_messages").insert(payload).execute()
+            self._cancel_edit()
+            self._reload()
+            NMToast.display(self.window(), "Mensaje guardado.", variant="success")
+        except Exception as e:
+            NMToast.display(self.window(), str(e)[:80], variant="error")
+
+    def _edit(self, row: dict):
+        self._editing_id = row.get("id")
+        cat = row.get("categoria") or "Recordatorio"
+        idx = self._cat_combo.findText(cat)
+        self._cat_combo.setCurrentIndex(max(0, idx))
+        self._ent_message.setText(str(row.get("mensaje") or ""))
+        self._btn_save.setText("Guardar")
+        self._btn_cancel.setVisible(True)
+
+    def _cancel_edit(self):
+        self._editing_id = None
+        self._ent_message.clear()
+        self._btn_save.setText("Agregar")
+        self._btn_cancel.setVisible(False)
+
+    def _toggle_active(self, row: dict):
+        sb = self._client()
+        rid = row.get("id")
+        if not sb or rid is None:
+            return
+        try:
+            sb.table("support_messages").update({
+                "activo": not bool(row.get("activo", True)),
+            }).eq("id", rid).execute()
+            self._reload()
+        except Exception as e:
+            NMToast.display(self.window(), str(e)[:80], variant="error")
+
+    def _delete(self, rid):
+        sb = self._client()
+        if not sb or rid is None:
+            return
+        try:
+            sb.table("support_messages").delete().eq("id", rid).execute()
+            self._reload()
+            NMToast.display(self.window(), "Mensaje eliminado.", variant="success")
+        except Exception as e:
+            NMToast.display(self.window(), str(e)[:80], variant="error")
+
+    def _import_defaults(self):
+        sb = self._client()
+        if not sb:
+            return
+        scope = self._current_scope()
+        rows = [
+            {
+                "scope": scope,
+                "categoria": categoria,
+                "mensaje": mensaje,
+                "activo": True,
+            }
+            for categoria, mensaje in DEFAULT_SUPPORT_MESSAGES
+        ]
+        try:
+            sb.table("support_messages").insert(rows).execute()
+            self._reload()
+            NMToast.display(self.window(), "Mensajes default importados.", variant="success")
+        except Exception as e:
+            NMToast.display(self.window(), str(e)[:80], variant="error")
+
+
 class ConfigView(QWidget):
     def __init__(self, modo: str, on_toggle_theme, on_reconnect, parent=None):
         super().__init__(parent)
@@ -721,6 +1258,19 @@ class ConfigView(QWidget):
 
         threading.Thread(target=_run, daemon=True).start()
 
+    def _open_text_overrides_editor(self):
+        try:
+            from hub.editors.text_overrides_editor import TextOverridesEditor
+            sb, motivo = _get_sb()
+            if not sb:
+                NMToast.display(self.window(), motivo or "Sin conexión Supabase",
+                                variant="error")
+                return
+            self._text_overrides_editor = TextOverridesEditor(sb, modo=self._modo)
+            self._text_overrides_editor.show()
+        except Exception as exc:
+            NMToast.display(self.window(), str(exc)[:80], variant="error")
+
     def _setup(self, on_toggle_theme, on_reconnect):
         from shared.theme_qt import v3c, V3_SP, V3_RD
         from shared.theme import TYPOGRAPHY as _TY
@@ -755,7 +1305,13 @@ class ConfigView(QWidget):
                                   size="sm", modo=self._modo, width=200)
         btn_sync_cfg.clicked.connect(self._on_sync_global_config)
         team_cfg.add_row("Refrescar cache local", btn_sync_cfg)
+        btn_text_cfg = NMButton("Editar textos", variant="secondary",
+                                  size="sm", modo=self._modo, width=140)
+        btn_text_cfg.clicked.connect(self._open_text_overrides_editor)
+        team_cfg.add_row("Text overrides", btn_text_cfg)
         layout.addWidget(team_cfg)
+        layout.addWidget(_GlobalTimerPresetsEditor(self._modo))
+        layout.addWidget(_SupportMessagesEditor(self._modo))
 
         patient_cfg = NMSettingsSection("Configuración por paciente "
                                            "(scope=patient:<id>)",

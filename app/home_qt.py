@@ -29,7 +29,8 @@ from PyQt6.QtGui import (
 )
 from PyQt6.QtWidgets import (
     QWidget, QGridLayout, QVBoxLayout, QHBoxLayout, QFrame,
-    QLabel, QSizePolicy, QGraphicsOpacityEffect, QSpacerItem,
+    QLabel, QSizePolicy, QGraphicsOpacityEffect, QGraphicsDropShadowEffect,
+    QSpacerItem,
 )
 
 try:
@@ -61,6 +62,7 @@ except ImportError:
     )
 
 from shared.visual_qa import visual_qa_enabled
+from shared.remote_config import t
 
 
 # ── Módulos ───────────────────────────────────────────────────────────────────
@@ -156,11 +158,13 @@ class _SidePanel(QWidget):
         wb_lay.setContentsMargins(0, 0, 0, 0)
         wb_lay.setSpacing(V3_SP["xs"])
 
-        self._well_eyebrow = QLabel("BIENESTAR HOY")
+        self._well_eyebrow = QLabel(
+            t("text.home.wellbeing_eyebrow", "BIENESTAR HOY"))
         self._well_eyebrow.setFont(qfont("size_caption_xs",
                                          weight=TYPOGRAPHY["weight_semibold"]))
 
-        self._well_status = QLabel("Registrá tu ánimo\npara comenzar")
+        self._well_status = QLabel(
+            t("text.home.wellbeing_default", "Registrá tu ánimo\npara comenzar"))
         self._well_status.setFont(qfont("size_small"))
         self._well_status.setWordWrap(True)
 
@@ -185,11 +189,13 @@ class _SidePanel(QWidget):
         sb_lay.setContentsMargins(0, 0, 0, 0)
         sb_lay.setSpacing(V3_SP["xs"])
 
-        self._sess_eyebrow = QLabel("PRÓXIMA SESIÓN")
+        self._sess_eyebrow = QLabel(
+            t("text.home.next_session_eyebrow", "PRÓXIMA SESIÓN"))
         self._sess_eyebrow.setFont(qfont("size_caption_xs",
                                          weight=TYPOGRAPHY["weight_semibold"]))
 
-        self._sess_lbl = QLabel("Sin sesión\nprogramada")
+        self._sess_lbl = QLabel(
+            t("text.home.next_session_default", "Sin sesión\nprogramada"))
         self._sess_lbl.setFont(qfont("size_small"))
         self._sess_lbl.setWordWrap(True)
 
@@ -201,7 +207,8 @@ class _SidePanel(QWidget):
         layout.addStretch()
 
         # ── App brand mark at bottom ──────────────────────────────────────────
-        self._brand_lbl = QLabel("NeuroMood Suite")
+        self._brand_lbl = QLabel(
+            t("text.home.brand", "NeuroMood Suite"))
         self._brand_lbl.setFont(qfont("size_caption_xs"))
         layout.addWidget(self._brand_lbl)
 
@@ -216,10 +223,10 @@ class _SidePanel(QWidget):
     def _time_of_day(self) -> str:
         h = datetime.now().hour
         if 5 <= h < 12:
-            return "Buenos días,"
+            return t("text.home.greeting_morning", "Buenos días,")
         if 12 <= h < 20:
-            return "Buenas tardes,"
-        return "Buenas noches,"
+            return t("text.home.greeting_afternoon", "Buenas tardes,")
+        return t("text.home.greeting_evening", "Buenas noches,")
 
     # ── styles ────────────────────────────────────────────────────────────────
 
@@ -273,9 +280,10 @@ class _SidePanel(QWidget):
         if status_text:
             self._well_status.setText(status_text)
         else:
-            self._well_status.setText("Registrá tu ánimo\npara comenzar")
+            self._well_status.setText(
+                t("text.home.wellbeing_default", "Registrá tu ánimo\npara comenzar"))
 
-    # ── paint — glass panel with full-height separator ───────────────────────
+    # ── paint — sidebar visible con separador accent-tinted ──────────────────
 
     def paintEvent(self, event):
         p = QPainter(self)
@@ -283,22 +291,28 @@ class _SidePanel(QWidget):
         is_dark = "dark" in self._modo
         w, h = float(self.width()), float(self.height())
 
-        # Solid fill using token values (no translucency issues in Qt rasterizer)
+        # Surface from token, fully opaque para que la sidebar se distinga
+        # del shell background sin depender de transparencia (que en Qt
+        # produce artefactos).
         if is_dark:
-            # Deep navy: bgAlt token = #121b2d, slightly more opaque for sidebar
-            fill = QColor(14, 22, 38, 230)
+            fill = v3c("bgSidebar", self._modo)   # #0b1020 (más profundo que bg)
         else:
-            # Warm cream: slightly darker than bg to distinguish from content
-            fill = QColor(245, 241, 232, 245)  # #f5f1e8-ish, fully opaque
+            fill = v3c("bgSidebar", self._modo)   # #fbf9f3 (warmer que bg)
         p.fillRect(QRectF(0, 0, w, h), QBrush(fill))
 
-        # Full-height right-edge separator — accent-tinted in dark, stone in light
-        sep_c = v3c("border", self._modo)
-        if is_dark:
-            sep_c.setAlpha(70)
-        else:
-            sep_c.setAlpha(120)
-        p.setPen(QPen(sep_c, 1.0))
+        # Sutil aura horizontal accent en la columna interior (anchor visual)
+        from PyQt6.QtGui import QLinearGradient
+        accent_glow = QLinearGradient(0, 0, w * 0.6, 0)
+        ac = v3c("accent", self._modo)
+        ac.setAlphaF(0.06 if is_dark else 0.04)
+        accent_glow.setColorAt(0.0, ac)
+        accent_glow.setColorAt(1.0, QColor(0, 0, 0, 0))
+        p.fillRect(QRectF(0, 0, w, h), QBrush(accent_glow))
+
+        # Separador derecho — 2px accent-tinted bien visible
+        sep_c = v3c("accent", self._modo)
+        sep_c.setAlpha(95 if is_dark else 70)
+        p.setPen(QPen(sep_c, 2.0))
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawLine(int(w) - 1, 0, int(w) - 1, int(h))
 
@@ -323,18 +337,45 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._disabled = False
         self._disabled_reason = ""
 
-        self.setMinimumHeight(130)
+        self._shadow: QGraphicsDropShadowEffect | None = None
+        self._fade_eff: QGraphicsOpacityEffect | None = None
+
+        self.setMinimumHeight(150)
         self.setSizePolicy(QSizePolicy.Policy.Expanding,
                            QSizePolicy.Policy.Expanding)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
 
-        self._eff = QGraphicsOpacityEffect(self)
-        self._eff.setOpacity(0.0)
-        self.setGraphicsEffect(self._eff)
-
         self._build_ui()
         self._connect_theme()
+        # Aplicar el shadow inicial AL FINAL — se recrea cada vez via
+        # _apply_shadow() para evitar use-after-delete cuando una animación
+        # de fade lo reemplaza temporalmente con un opacity effect.
+        self._apply_shadow(hover=False)
+
+    def _apply_shadow(self, hover: bool):
+        """Crea un nuevo QGraphicsDropShadowEffect y lo asigna.
+
+        Qt elimina el effect previo cuando setGraphicsEffect(otro) es llamado;
+        por eso no podemos guardar y restaurar la referencia. La función crea
+        una instancia fresca, configurada según hover/no-hover y modo actual.
+        """
+        is_dark = "dark" in self._modo
+        eff = QGraphicsDropShadowEffect(self)
+        if hover:
+            eff.setBlurRadius(28 if is_dark else 20)
+            eff.setOffset(0, 10)
+            eff.setColor(QColor(0, 0, 0, 95 if is_dark else 40))
+        else:
+            eff.setBlurRadius(14 if is_dark else 10)
+            eff.setOffset(0, 4)
+            eff.setColor(QColor(0, 0, 0, 55 if is_dark else 25))
+        self._shadow = eff
+        self.setGraphicsEffect(eff)
+
+    def _set_shadow_state(self, hover: bool):
+        """API pública: recrea shadow según estado hover."""
+        self._apply_shadow(hover)
 
     # ── build ─────────────────────────────────────────────────────────────────
 
@@ -374,21 +415,24 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
 
         layout.addStretch()
 
-        # Bottom row: badge + ring
+        # Bottom row: badge + ring (sin % superpuesto — el badge ya lo muestra)
         bottom = QHBoxLayout()
-        bottom.setSpacing(V3_SP["xs"])
+        bottom.setSpacing(V3_SP["sm"])
         self._badge = QLabel("")
         self._badge.setFont(qfont("size_caption",
                                    weight=TYPOGRAPHY["weight_semibold"]))
-        self._badge.setContentsMargins(6, 2, 6, 2)
+        self._badge.setContentsMargins(8, 3, 8, 3)
         bottom.addWidget(self._badge)
         bottom.addStretch()
-        self._ring = NMModuleRing(size=28, pct=0.0, modo=self._modo)
+        # Ring de 36px sin label — más visible, % delegado al badge
+        self._ring = NMModuleRing(size=36, pct=0.0, modo=self._modo,
+                                   show_label=False)
         bottom.addWidget(self._ring)
         layout.addLayout(bottom)
 
         self._apply_styles()
         self._refresh_status()
+        self._set_shadow_state(False)
 
     def _apply_styles(self):
         is_dark = "dark" in self._modo
@@ -485,54 +529,61 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         w, h = float(self.width()), float(self.height())
         rect = QRectF(0, 0, w, h)
 
-        # Surface fill
-        # Light: warm white (#fcfaf6) — slightly warm, distinct from ivory bg
-        # Dark: solid dark navy with alpha
+        # Surface tokens (sólidos en ambos temas — sin alpha tricks que producen
+        # artefactos cuando hay sombra debajo)
         if is_dark:
-            surf = v3c("surfaceSolid", self._modo)  # #121c2d
-            surf.setAlpha(220)
+            surf = v3c("surfaceSolid", self._modo)        # #161d33
         else:
-            surf = QColor(0xfc, 0xfa, 0xf6, 255)  # warm white — #fcfaf6
+            surf = v3c("surface", self._modo)             # #ffffff
         p.setBrush(QBrush(surf))
         p.setPen(Qt.PenStyle.NoPen)
         p.drawRoundedRect(rect, r, r)
 
-        # Hover: full-width accent top bar (4px, solid alpha)
         is_active = self._hover and self.isEnabled() and not self._disabled
+
+        # Hover: barra accent superior (gradient tonal del módulo)
         if is_active:
             accent_c = QColor(self._accent)
-            accent_c.setAlpha(90 if is_dark else 110)
-            p.fillRect(QRectF(0, 0, w, 4.0), QBrush(accent_c))
-            # Clip corners on top bar
-            # (acceptable approximation — no extra path needed at 4px height)
+            accent_c.setAlpha(170 if is_dark else 200)
+            # Pintamos un path con esquinas redondeadas solo arriba para que
+            # la barra respete el border-radius del card.
+            path = QPainterPath()
+            path.addRoundedRect(QRectF(0, 0, w, 4.0), r, r)
+            p.setClipRect(QRectF(0, 0, w, 4.0))
+            p.fillPath(path, QBrush(accent_c))
+            p.setClipping(False)
 
-        # Border — accent-tinted on hover for both modes
+        # Border — más grueso y accent-tinted en hover
         if is_active:
             border_c = QColor(self._accent)
-            border_c.setAlpha(160 if is_dark else 140)
+            border_c.setAlpha(200 if is_dark else 170)
+            border_w = 1.5
         else:
-            border_c = v3c("border", self._modo)
-            if not is_dark:
-                # Light mode border: use borderStrong for more visible card edges
-                border_c = v3c("borderStrong", self._modo)
-        p.setPen(QPen(border_c, 1.0))
+            border_c = (v3c("border", self._modo) if is_dark
+                        else v3c("borderStrong", self._modo))
+            border_w = 1.0
+        inset = border_w / 2.0
+        p.setPen(QPen(border_c, border_w))
         p.setBrush(Qt.BrushStyle.NoBrush)
-        p.drawRoundedRect(QRectF(0.5, 0.5, w - 1, h - 1), r, r)
+        p.drawRoundedRect(
+            QRectF(inset, inset, w - 2 * inset, h - 2 * inset), r, r)
 
         # Disabled overlay
         if self._disabled:
-            p.fillRect(rect, QColor(255, 255, 255, 15 if is_dark else 60))
+            p.fillRect(rect, QColor(255, 255, 255, 22 if is_dark else 80))
         p.end()
 
     # ── eventos ───────────────────────────────────────────────────────────────
 
     def enterEvent(self, event):
         self._hover = True
+        self._set_shadow_state(True)
         self.update()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
         self._hover = False
+        self._set_shadow_state(False)
         self.update()
         super().leaveEvent(event)
 
@@ -549,19 +600,28 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         QTimer.singleShot(delay_ms, self._start_anim)
 
     def _start_anim(self):
-        if self._eff is None:
-            return
-        anim_fade = QPropertyAnimation(self._eff, b"opacity", self)
+        # El shadow actual se reemplaza por un opacity effect mientras dura
+        # la animación de entrada; Qt borra el shadow al cambiar el effect.
+        # Al terminar, RECREAMOS un shadow nuevo en lugar de intentar restaurar
+        # el original (que ya fue destruido).
+        fade_eff = QGraphicsOpacityEffect(self)
+        fade_eff.setOpacity(0.0)
+        self.setGraphicsEffect(fade_eff)
+        self._shadow = None  # shadow original ya destruido
+
+        anim_fade = QPropertyAnimation(fade_eff, b"opacity", self)
         anim_fade.setDuration(300)
         anim_fade.setStartValue(0.0)
         anim_fade.setEndValue(1.0)
         anim_fade.setEasingCurve(QEasingCurve.Type.OutCubic)
 
         def _on_fade_done():
-            if self._eff is not None:
-                self._eff.deleteLater()
-                self._eff = None
-            self.setGraphicsEffect(None)
+            # Recrear shadow para la elevación permanente del card
+            try:
+                self._apply_shadow(self._hover)
+            except RuntimeError:
+                # widget ya eliminado durante la animación
+                pass
 
         anim_fade.finished.connect(_on_fade_done)
         anim_fade.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
@@ -585,11 +645,12 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._apply_styles()
         self._ring._modo = self._modo
         self._ring.update()
-        if self._eff is None or self._eff.opacity() >= 1.0:
-            if self._eff is not None:
-                self._eff.deleteLater()
-                self._eff = None
-            self.setGraphicsEffect(None)
+        # Re-crear shadow para reflejar tonos del nuevo modo (no reusar — el
+        # objeto C++ puede haber sido invalidado por una animación previa)
+        try:
+            self._apply_shadow(self._hover)
+        except RuntimeError:
+            pass
         self._refresh_status()
         self.update()
 
@@ -653,7 +714,8 @@ class HomeView(QWidget):
         # Section eyebrow
         eyebrow_row = QHBoxLayout()
         eyebrow_row.setSpacing(0)
-        self._modules_title = QLabel("TUS MÓDULOS")
+        self._modules_title = QLabel(
+            t("text.home.modules_eyebrow", "TUS MÓDULOS"))
         self._modules_title.setFont(
             qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
         eyebrow_row.addWidget(self._modules_title)
@@ -742,15 +804,18 @@ class HomeView(QWidget):
         name = (self._username or "Paciente").strip() or "Paciente"
         hour = datetime.now().hour
         if 5 <= hour < 12:
-            prefix = "Buen dia"
+            prefix = t("text.home.greeting_morning", "Buenos días,").rstrip(",")
         elif 12 <= hour < 20:
-            prefix = "Buenas tardes"
+            prefix = t("text.home.greeting_afternoon", "Buenas tardes,").rstrip(",")
         else:
-            prefix = "Buenas noches"
+            prefix = t("text.home.greeting_evening", "Buenas noches,").rstrip(",")
         return f"{prefix}, {name}"
 
     def _subtitle_text(self) -> str:
-        return "Elegí un módulo para registrar cómo venís y sostener tu rutina."
+        return t(
+            "text.home.subtitle",
+            "Elegí un módulo para registrar cómo venís y sostener tu rutina.",
+        )
 
     # ── permisos ──────────────────────────────────────────────────────────────
 

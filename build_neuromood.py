@@ -434,6 +434,10 @@ def build_target(
     missing = validate(target, planned_outputs if dry_run else set())
     if missing:
         raise RuntimeError("Faltan archivos requeridos: " + ", ".join(missing))
+    if dry_run:
+        print("    OK preflight")
+        return
+
     for item in target.clean_dist:
         clean_path(DIST / item)
     clean_path(BUILD / target.name)
@@ -478,9 +482,6 @@ def build_target(
         args.extend(["--hidden-import", hidden])
     args.append(str(ROOT / target.entry))
 
-    if dry_run:
-        print("    OK preflight")
-        return
     run_command(args, log)
     print("    OK")
 

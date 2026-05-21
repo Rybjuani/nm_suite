@@ -1,6 +1,6 @@
 # AI_PROJECT_CONTEXT - NeuroMood
 
-Actualizado: 2026-05-21 (rev: auditoría 2026-05 + prompts Codex + decisiones de producto 2026-05-20/21 + patrón hub_config 2 niveles + 4ª brecha tags semáforo Hub)
+Actualizado: 2026-05-21 (rev: auditoría 2026-05 + prompts Codex + decisiones de producto 2026-05-20/21 + patrón hub_config 2 niveles + implementación F2 parcial + constructor PDF paramétrico)
 
 Este es el archivo único de contexto y documentación del proyecto para agentes IA, desarrolladores y mantenimiento futuro.
 
@@ -699,3 +699,19 @@ Tiempo total estimado: **5-7 meses** al release con margen. Camino agresivo: 4-5
 - `installers/installer.py` líneas de consent (`LEGAL_DISCLAIMER_TEXT`, `DISCLAIMER_VERSION`, `PRIVACY_VERSION`) — decisión 5.
 - `hub/ia_asistente.py` prompts del sistema (`_IDIOMA`, sistemas de cada función) — decisión 6. Solo `temperature`, `max_tokens`, `provider_preference` pueden ir a `hub_config`.
 - `.env`, `SUPABASE_KEY`, `service_role` — seguridad inmutable (sección 8).
+
+### 15.9 Estado de implementación F2 al 2026-05-21
+
+Estado documentado por cambios de código, no por QA completo en builds empaquetados. Antes de uso clínico hay que validar Suite/Hub en Windows real con datos Supabase de prueba.
+
+- **F2.1.B**: `shared/db.py` crea caches SQLite locales para `tcc_templates_cache`, `routine_templates_cache`, `breathing_presets_cache`, `timer_presets_cache` y `support_messages_cache` con `IF NOT EXISTS`, manteniendo migración idempotente.
+- **F2.2.A-D**: Timer Suite puede leer presets desde cache local con fallback hardcoded; Hub agrega editores para presets de timer y biblioteca de mensajes; Avisos Suite puede sugerir mensajes desde `support_messages_cache` y respetar permiso manual.
+- **F2.3.A-C**: Rutina Suite respeta `rutina_modo` (`solo_profesional`, `mixto`, `solo_paciente`) y muestra badge para tareas manuales; sync importa modo/plantillas; Hub agrega editor/asignador de plantillas de rutina.
+- **F2.4.A-B**: Hub suma editores en `hub/editors/` para plantillas TCC y overrides de texto `hub_config` (`text.*`), integrados desde ConfigView o Detalle Paciente según corresponda.
+- **F2.5.A**: Home Suite inicia migración de strings UI a `shared.remote_config.t(key, default)` preservando defaults locales.
+- **F2.6**: `hub/exportar.py` acepta `secciones`, rango de fechas y nombre de archivo; `_TabRegistros` abre un modal con checklist de Ánimo, Respiración, TCC, Checklist, Timer y Recordatorios. Sin selección programática (`secciones=None`) preserva el comportamiento histórico de exportar todo.
+
+Validaciones puntuales ejecutadas durante implementación:
+
+- `python -m py_compile hub\exportar.py hub\pacientes_qt.py`
+- Generación de PDF de prueba con solo Ánimo + TCC y extracción de texto con `PyPDF2`, confirmando ausencia de las otras cuatro secciones.

@@ -20,6 +20,7 @@ LÓGICA DE NEGOCIO PRESERVADA EXACTA:
 import os
 import sys
 import logging
+import json
 
 _log = logging.getLogger(__name__)
 
@@ -28,13 +29,13 @@ from PyQt6 import sip
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QSizePolicy, QFrame, QScrollArea,
+    QSizePolicy, QFrame, QScrollArea, QGridLayout,
 )
 
 try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMInput, NMToast, ThemeManager,
-        NMCard, NMIcon, NMPlayButton, NMFocusArc,
+        NMCard, NMIcon, NMPlayButton, NMFocusArc, responsive_columns,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qfont_mono,
@@ -43,7 +44,7 @@ try:
         PAD_CONTAINER,
     )
     from shared.theme import TYPOGRAPHY
-    from shared.db import obtener_conexion
+    from shared.db import obtener_conexion, leer_config
     from shared.utils import fecha_hoy, hora_actual
     from shared.visual_qa import visual_qa_enabled, timer_sessions
 except ImportError:
@@ -52,7 +53,7 @@ except ImportError:
         sys.path.insert(0, _dir)
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMInput, NMToast, ThemeManager,
-        NMCard, NMIcon, NMPlayButton, NMFocusArc,
+        NMCard, NMIcon, NMPlayButton, NMFocusArc, responsive_columns,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qfont_mono,
@@ -61,7 +62,7 @@ except ImportError:
         PAD_CONTAINER,
     )
     from shared.theme import TYPOGRAPHY
-    from shared.db import obtener_conexion
+    from shared.db import obtener_conexion, leer_config
     from shared.utils import fecha_hoy, hora_actual
     from shared.visual_qa import visual_qa_enabled, timer_sessions
 
@@ -74,6 +75,91 @@ PRESETS = [
     ("25 min", 25 * 60),
     ("45 min", 45 * 60),
 ]
+
+
+def _parse_bool_config(value: str, default: bool = True) -> bool:
+    if value is None:
+        return default
+    text = str(value).strip().lower()
+    if text in ("0", "false", "no", "off"):
+        return False
+    if text in ("1", "true", "yes", "on"):
+        return True
+    return default
+
+
+def _preset_from_row(row) -> tuple[str, int] | None:
+    try:
+        name = row["name"] if hasattr(row, "keys") else row[0]
+        payload_raw = row["payload"] if hasattr(row, "keys") else row[1]
+        payload = json.loads(payload_raw or "{}")
+    except Exception:
+        return None
+
+    if isinstance(payload, dict) and payload.get("activo") is False:
+        return None
+    if isinstance(payload, dict) and payload.get("active") is False:
+        return None
+
+    secs = None
+    if isinstance(payload, dict):
+        secs = (
+            payload.get("duracion_seg")
+            or payload.get("duration_sec")
+            or payload.get("seconds")
+        )
+        name = payload.get("name") or payload.get("nombre") or name
+    elif isinstance(payload, (int, float)):
+        secs = payload
+
+    try:
+        secs = int(secs)
+    except (TypeError, ValueError):
+        return None
+    if secs <= 0:
+        return None
+    return str(name or f"{secs // 60} min"), secs
+
+
+def _load_presets() -> list[tuple[str, int]]:
+    patient_id = leer_config("patient_id", "").strip()
+    scopes = []
+    if patient_id:
+        scopes.append(f"patient:{patient_id}")
+    scopes.append("global")
+
+    conn = None
+    try:
+        conn = obtener_conexion()
+        for scope in scopes:
+            rows = conn.execute(
+                "SELECT name, payload FROM timer_presets_cache "
+                "WHERE scope = ? ORDER BY id",
+                (scope,),
+            ).fetchall()
+            presets = []
+            for row in rows:
+                preset = _preset_from_row(row)
+                if preset:
+                    presets.append(preset)
+            if presets:
+                return presets
+    except Exception:
+        _log.exception("Operation failed")
+    finally:
+        try:
+            if conn:
+                conn.close()
+        except Exception:
+            pass
+    return PRESETS
+
+
+def _manual_timer_enabled() -> bool:
+    try:
+        return _parse_bool_config(leer_config("perm_temporizador_manual", "1"))
+    except Exception:
+        return True
 
 
 # ── _SessionsListCard ───────────────────────────────────────────────────────
@@ -163,11 +249,17 @@ class ModuloTimer(NMModule):
         # Estado preservado exacto
         self._running = False
         self._paused = False
-        self._total_sec = 25 * 60
-        self._remaining_sec = 25 * 60
+        self._presets = _load_presets()
+        initial_secs = next(
+            (secs for _, secs in self._presets if secs == 25 * 60),
+            self._presets[0][1],
+        )
+        self._total_sec = initial_secs
+        self._remaining_sec = initial_secs
         self._timer_id: QTimer | None = None
         self._custom_mode = False
         self._last_10s_blink = False
+        self._manual_timer_enabled = _manual_timer_enabled()
 
         outer = QVBoxLayout(self._content)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -196,18 +288,24 @@ class ModuloTimer(NMModule):
                                      weight=TYPOGRAPHY["weight_semibold"]))
         lay.addWidget(self._eyebrow)
 
-        # 2. Main 2-col
-        main_row = QHBoxLayout()
-        main_row.setSpacing(V3_SP["xl"])
+        # 2. Main responsive grid
+        self._main_grid = QGridLayout()
+        self._main_grid.setContentsMargins(0, 0, 0, 0)
+        self._main_grid.setHorizontalSpacing(V3_SP["xl"])
+        self._main_grid.setVerticalSpacing(V3_SP["lg"])
 
         # ── LEFT col ─────────────────────────────────────────────────────────
-        left_col = QVBoxLayout()
+        self._timer_left_panel = QWidget()
+        self._timer_left_panel.setStyleSheet("background: transparent;")
+        left_col = QVBoxLayout(self._timer_left_panel)
         left_col.setSpacing(V3_SP["lg"])
         left_col.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
-        # BIG ring (360)
+        # BIG ring (360) — el state ("Lista para empezar"/"Sesión en curso"/...)
+        # se muestra ÚNICAMENTE en self._state_chip debajo del círculo. El canvas
+        # solo pinta el tiempo. No pasar state_text aquí para evitar duplicación.
         self._canvas = NMFocusArc(size=360, modo=self._modo)
-        self._canvas.set_data(0.0, "25:00", "Lista para empezar")
+        self._canvas.set_data(0.0, self._format_time(self._remaining_sec))
         left_col.addWidget(self._canvas,
                             alignment=Qt.AlignmentFlag.AlignHCenter)
 
@@ -241,10 +339,12 @@ class ModuloTimer(NMModule):
         ctrl_row.addWidget(self._btn_skip)
 
         left_col.addLayout(ctrl_row)
-        main_row.addLayout(left_col, stretch=2)
+        self._main_grid.addWidget(self._timer_left_panel, 0, 0)
 
         # ── RIGHT rail ───────────────────────────────────────────────────────
-        right_rail = QVBoxLayout()
+        self._timer_right_panel = QWidget()
+        self._timer_right_panel.setStyleSheet("background: transparent;")
+        right_rail = QVBoxLayout(self._timer_right_panel)
         right_rail.setSpacing(V3_SP["xl"])
         right_rail.setAlignment(Qt.AlignmentFlag.AlignTop)
 
@@ -278,25 +378,26 @@ class ModuloTimer(NMModule):
         chips_row = QHBoxLayout()
         chips_row.setSpacing(V3_SP["sm"])
         self._chip_btns: list[tuple[NMButtonOutline, int]] = []
-        for label, secs in PRESETS:
+        for label, secs in self._presets:
             btn = NMButtonOutline(label, modo=self._modo,
                                    toggleable=False, size="sm")
-            btn.setFixedSize(76, 32)
+            btn.setFixedSize(max(76, min(140, 18 + len(label) * 8)), 32)
             btn.clicked.connect(lambda _, s=secs: self._select_preset(s))
             chips_row.addWidget(btn)
             self._chip_btns.append((btn, secs))
         details_lay.addLayout(chips_row)
-        self._highlight_preset(25 * 60)
+        self._highlight_preset(self._total_sec)
 
-        # Custom input (hidden by default)
+        # Custom input controlled by perm_temporizador_manual.
         self._custom_widget = QWidget()
-        self._custom_widget.setVisible(False)
+        self._custom_widget.setVisible(self._manual_timer_enabled)
+        self._custom_widget.setEnabled(self._manual_timer_enabled)
         cw_row = QHBoxLayout(self._custom_widget)
         cw_row.setContentsMargins(0, V3_SP["sm"], 0, 0)
         cw_row.setSpacing(V3_SP["sm"])
         self._entry_custom = QLineEdit()
-        self._entry_custom.setPlaceholderText("minutos")
-        self._entry_custom.setFixedSize(90, 32)
+        self._entry_custom.setPlaceholderText("Custom (1-120 min)")
+        self._entry_custom.setFixedSize(150, 32)
         self._entry_custom.setStyleSheet(stylesheet_lineedit(self._modo))
         cw_row.addWidget(self._entry_custom)
         btn_ok = NMButton("OK", modo=self._modo, variant="secondary",
@@ -312,12 +413,38 @@ class ModuloTimer(NMModule):
         right_rail.addWidget(self._sessions_card)
 
         right_rail.addStretch()
-        main_row.addLayout(right_rail, stretch=1)
-        lay.addLayout(main_row)
+        self._main_grid.addWidget(self._timer_right_panel, 0, 1)
+        lay.addLayout(self._main_grid)
+        self._relayout_main_grid()
 
         self._apply_text_styles()
         self._update_canvas()
         self._load_quick_history()
+
+    def _relayout_main_grid(self):
+        if not hasattr(self, "_main_grid"):
+            return
+        self._main_grid.removeWidget(self._timer_left_panel)
+        self._main_grid.removeWidget(self._timer_right_panel)
+        width = max(
+            360,
+            self._scroll.viewport().width() if hasattr(self, "_scroll") else self.width(),
+        )
+        cols = responsive_columns(width, min_card_width=420, max_columns=2)
+        if cols >= 2:
+            self._main_grid.addWidget(self._timer_left_panel, 0, 0)
+            self._main_grid.addWidget(self._timer_right_panel, 0, 1)
+            self._main_grid.setColumnStretch(0, 2)
+            self._main_grid.setColumnStretch(1, 1)
+        else:
+            self._main_grid.addWidget(self._timer_left_panel, 0, 0)
+            self._main_grid.addWidget(self._timer_right_panel, 1, 0)
+            self._main_grid.setColumnStretch(0, 1)
+            self._main_grid.setColumnStretch(1, 0)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._relayout_main_grid()
 
     def _apply_text_styles(self):
         c = v3c("text3", self._modo).name()
@@ -362,7 +489,7 @@ class ModuloTimer(NMModule):
         self._total_sec = secs
         self._remaining_sec = secs
         self._custom_mode = False
-        self._custom_widget.setVisible(False)
+        self._custom_widget.setVisible(self._manual_timer_enabled)
         self._highlight_preset(secs)
         self._update_canvas()
 
@@ -371,15 +498,19 @@ class ModuloTimer(NMModule):
             btn.set_active(secs == selected and not self._custom_mode)
 
     def _apply_custom(self):
+        if not self._manual_timer_enabled:
+            return
         try:
             mins = int(self._entry_custom.text().strip())
             mins = max(1, min(120, mins))
             self._total_sec = mins * 60
             self._remaining_sec = self._total_sec
+            self._custom_mode = True
+            self._highlight_preset(self._total_sec)
             self._update_canvas()
         except ValueError:
             pass
-        self._custom_widget.setVisible(False)
+        self._custom_widget.setVisible(self._manual_timer_enabled)
 
     # ── Display ──────────────────────────────────────────────────────────────
 
@@ -395,9 +526,10 @@ class ModuloTimer(NMModule):
         state = "Sesión en curso" if (self._running and not self._paused) \
             else ("Pausado" if self._paused
                   else "Lista para empezar")
+        # El canvas solo recibe progress y tiempo; el state se renderiza solo
+        # en _state_chip para evitar duplicación visual.
         self._canvas.set_data(progress,
-                               self._format_time(self._remaining_sec),
-                               state)
+                               self._format_time(self._remaining_sec))
         self._state_chip.setText(state)
         self._apply_state_chip_style()
 

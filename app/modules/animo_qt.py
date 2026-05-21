@@ -30,13 +30,14 @@ from PyQt6.QtGui import (
 )
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QTextEdit, QScrollArea, QSizePolicy, QFrame,
+    QTextEdit, QScrollArea, QSizePolicy, QFrame, QGridLayout,
 )
 
 try:
     from shared.components_qt import (
         NMModule, NMButton, NMToast, ThemeManager,
         NMCard, NMWaveChart, NMModuleRing, V3MoodSlider,
+        NMStatCard, NMTextArea, NMDivider, responsive_columns,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qfont_mono,
@@ -55,6 +56,7 @@ except ImportError:
     from shared.components_qt import (
         NMModule, NMButton, NMToast, ThemeManager,
         NMCard, NMWaveChart, NMModuleRing, V3MoodSlider,
+        NMStatCard, NMTextArea, NMDivider, responsive_columns,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qfont_mono,
@@ -264,10 +266,7 @@ class ModuloAnimo(NMModule):
         self._wave_chart.setMaximumHeight(160)
         hist_lay.addWidget(self._wave_chart)
 
-        # Divisor
-        sep = QFrame()
-        sep.setFrameShape(QFrame.Shape.HLine)
-        sep.setFixedHeight(1)
+        sep = NMDivider(alpha=72, modo=self._modo)
         hist_lay.addWidget(sep)
         self._hist_sep = sep
 
@@ -299,7 +298,18 @@ class ModuloAnimo(NMModule):
             col_lay.addWidget(val)
             stats_row.addWidget(col_w, stretch=1)
 
-        hist_lay.addLayout(stats_row)
+        self._stats_grid_widget = QWidget()
+        self._stats_grid_widget.setStyleSheet("background: transparent;")
+        self._stats_grid = QGridLayout(self._stats_grid_widget)
+        self._stats_grid.setContentsMargins(0, 0, 0, 0)
+        self._stats_grid.setHorizontalSpacing(V3_SP["md"])
+        self._stats_grid.setVerticalSpacing(V3_SP["md"])
+        self._stat_avg = NMStatCard("PROMEDIO 7 DIAS", "—", modo=self._modo)
+        self._stat_streak = NMStatCard("RACHA ACTUAL", "0 dias", modo=self._modo)
+        self._stat_prog = NMStatCard("PROGRESO SEMANAL", "—", modo=self._modo)
+        self._stat_cards = [self._stat_avg, self._stat_streak, self._stat_prog]
+        hist_lay.addWidget(self._stats_grid_widget)
+        self._relayout_stats()
         lay.addWidget(hist_card)
         self._hist_card = hist_card
 
@@ -332,11 +342,13 @@ class ModuloAnimo(NMModule):
         note_header.addWidget(self._note_counter)
         note_lay.addLayout(note_header)
 
-        self._txt_nota = QTextEdit()
-        self._txt_nota.setMinimumHeight(96)
-        self._txt_nota.setMaximumHeight(140)
+        self._txt_nota = NMTextArea(
+            "Que influyo en tu estado hoy?",
+            modo=self._modo,
+            min_height=108,
+        )
+        self._txt_nota.setMaximumHeight(152)
         self._txt_nota.setPlaceholderText("¿Qué influyó en tu estado hoy?")
-        self._txt_nota.setStyleSheet(stylesheet_textedit(self._modo))
         self._txt_nota.textChanged.connect(self._on_note_changed)
         note_lay.addWidget(self._txt_nota)
 
@@ -358,6 +370,26 @@ class ModuloAnimo(NMModule):
         # Celebration overlay (partículas mood ≥ 7)
         self._celebration = MoodCelebration(self._content, self._modo)
 
+    def _relayout_stats(self):
+        if not hasattr(self, "_stats_grid"):
+            return
+        while self._stats_grid.count():
+            item = self._stats_grid.takeAt(0)
+            w = item.widget()
+            if w:
+                self._stats_grid.removeWidget(w)
+        width = max(
+            360,
+            self._scroll.viewport().width() if hasattr(self, "_scroll") else self.width(),
+        )
+        cols = responsive_columns(width, min_card_width=220, max_columns=3)
+        for idx, card in enumerate(self._stat_cards):
+            self._stats_grid.addWidget(card, idx // cols, idx % cols)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._relayout_stats()
+
     # ── styles helper ────────────────────────────────────────────────────────
 
     def _apply_text_styles(self):
@@ -378,7 +410,8 @@ class ModuloAnimo(NMModule):
         if hasattr(self, "_scroll"):
             self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         if hasattr(self, "_txt_nota"):
-            self._txt_nota.setStyleSheet(stylesheet_textedit(self._modo))
+            if hasattr(self._txt_nota, "_apply_theme"):
+                self._txt_nota._apply_theme(self._modo)
         if hasattr(self, "_wave_chart"):
             self._wave_chart._apply_theme(self._modo)
         if hasattr(self, "_mood_slider"):
@@ -487,10 +520,17 @@ class ModuloAnimo(NMModule):
         if c_valid:
             avg = sum(c_valid) / len(c_valid)
             self._stat_avg_lbl.setText(f"{avg:.1f}/10")
+            if hasattr(self, "_stat_avg"):
+                self._stat_avg.set_value(f"{avg:.1f}/10")
         else:
             self._stat_avg_lbl.setText("—")
 
+        if hasattr(self, "_stat_avg"):
+            self._stat_avg.set_value(self._stat_avg_lbl.text())
+
         streak = self._load_streak()
+        if hasattr(self, "_stat_streak"):
+            self._stat_streak.set_value("1 dia" if streak == 1 else f"{streak} dias")
         self._stat_streak_lbl.setText("1 día" if streak == 1 else f"{streak} días")
 
         p_valid = [v for v in previous if v is not None]
@@ -498,8 +538,15 @@ class ModuloAnimo(NMModule):
             delta = sum(c_valid) / len(c_valid) - sum(p_valid) / len(p_valid)
             sign = "+" if delta >= 0 else ""
             self._stat_prog_lbl.setText(f"{sign}{delta:.1f}")
+            if hasattr(self, "_stat_prog"):
+                self._stat_prog.set_value(f"{sign}{delta:.1f}")
+                self._stat_prog.set_delta("mejora" if delta >= 0 else "baja",
+                                          positive=delta >= 0)
         else:
             self._stat_prog_lbl.setText("—")
+            if hasattr(self, "_stat_prog"):
+                self._stat_prog.set_value("—")
+                self._stat_prog.set_delta("", positive=None)
 
     # ── registrar (lógica preservada exacta) ─────────────────────────────────
 

@@ -31,9 +31,9 @@ WARNING_C      = V3_DARK.get("warning", "#f59e0b")
 ERROR_C        = V3_DARK.get("danger", "#ef4444")
 
 # Refined clinical premium gradients (subtle teal depth, no neon)
-GRAD_FROM = ACCENT
-GRAD_MID  = "#14b8a6"
-GRAD_TO   = "#0f766e"
+GRAD_FROM = V3_DARK.get("gradFrom", ACCENT)
+GRAD_MID  = V3_DARK.get("gradMid", ACCENT_HOVER)
+GRAD_TO   = V3_DARK.get("gradTo", ACCENT_HOVER)
 
 # Danger gradient (soft red to deep red, avoiding yellow neon)
 DANGER_FROM = ERROR_C
@@ -55,7 +55,27 @@ VIOLET      = V3_DARK.get("violet", "#a78bfa")
 VIOLET_HOVER = V3_DARK.get("violet", "#a78bfa")
 TEAL        = ACCENT
 TEAL_HOVER  = ACCENT_HOVER
-SUCCESS_BG  = "#091E10"
+SUCCESS_BG  = "#10261e"
+
+
+def _rgba(hex_color: str, alpha: float) -> str:
+    """RGBA Qt-friendly desde un hex, con alpha en rango 0..1."""
+    raw = (hex_color or "#000000").strip()
+    if raw.startswith("#") and len(raw) >= 7:
+        try:
+            r = int(raw[1:3], 16)
+            g = int(raw[3:5], 16)
+            b = int(raw[5:7], 16)
+            a = max(0, min(255, int(alpha * 255)))
+            return f"rgba({r}, {g}, {b}, {a})"
+        except Exception:
+            pass
+    return raw
+
+
+ACCENT_SOFT = _rgba(ACCENT, 0.14)
+WARM_SOFT = _rgba(WARNING_C, 0.14)
+DANGER_SOFT = _rgba(ERROR_C, 0.16)
 
 
 def stylesheet_installer() -> str:
@@ -66,6 +86,16 @@ def stylesheet_installer() -> str:
     return f"""
 * {{ font-family: "{FONT_FAMILY}", Arial; color: {TEXT_PRIMARY}; }}
 QMainWindow, QWidget {{ background: {BG_PRIMARY}; }}
+QWidget#InstallerRoot {{ background: {BG_PRIMARY}; }}
+QWidget#InstallerHeader {{
+    background: {BG_SECONDARY};
+    border-bottom: 1px solid {BORDER};
+}}
+QWidget#InstallerPage {{ background: transparent; }}
+QWidget#InstallerNav {{
+    background: {BG_SECONDARY};
+    border-top: 1px solid {BORDER};
+}}
 QLabel {{ background: transparent; }}
 
 /* ── Inputs ─────────── */
@@ -74,8 +104,9 @@ QLineEdit {{
     color: {TEXT_PRIMARY};
     border: 1px solid {BORDER};
     border-radius: {RADIUS_INPUT}px;
-    padding: 8px 14px;
-    font-size: 13px;
+    min-height: 22px;
+    padding: 10px 14px;
+    font-size: 14px;
     selection-background-color: {ACCENT};
     selection-color: {TEXT_ON_ACCENT};
 }}
@@ -91,7 +122,8 @@ QPushButton {{
     color: {TEXT_ON_ACCENT};
     border: none;
     border-radius: {RADIUS_BUTTON}px;
-    padding: 9px 22px;
+    min-height: 26px;
+    padding: 10px 22px;
     font-size: 13px;
     font-weight: 600;
 }}
@@ -105,6 +137,7 @@ QPushButton:disabled {{
     background: {BORDER};
     color: {TEXT_TERT};
 }}
+QPushButton:focus {{ border: 1px solid {GRAD_MID}; }}
 
 /* ── Botón outline (ghost/secondary) ────────────────────────── */
 QPushButton#outline {{
@@ -148,7 +181,7 @@ QPushButton#danger:hover {{
 /* ── Checkbox clínico ────────────────── */
 QCheckBox {{
     color: {TEXT_SEC};
-    font-size: 12px;
+    font-size: 13px;
     spacing: 10px;
 }}
 QCheckBox::indicator {{
@@ -239,10 +272,39 @@ QFrame#InfoCard {{
 }}
 
 /* ── Card de inputs ─────────────────────────────────────────── */
-QFrame#InputCard {{
+QFrame#InputCard,
+QFrame#AuthCard,
+QFrame#LegalPanel,
+QFrame#AcceptCard,
+QFrame#WelcomeLogoCard,
+QFrame#InstallerSurfaceCard {{
     background: {BG_SURFACE};
     border-radius: {RADIUS_CARD}px;
     border: 1px solid {BORDER};
+}}
+
+QFrame#InstallerElevatedCard {{
+    background: {BG_ELEVATED};
+    border-radius: {RADIUS_CARD}px;
+    border: 1px solid {BORDER};
+}}
+
+QFrame#InstallerWarningCard {{
+    background: {WARM_SOFT};
+    border-radius: {RADIUS_CARD}px;
+    border: 1px solid {_rgba(WARNING_C, 0.34)};
+}}
+
+QFrame#InstallerDangerCard {{
+    background: {DANGER_SOFT};
+    border-radius: {RADIUS_CARD}px;
+    border: 1px solid {_rgba(ERROR_C, 0.42)};
+}}
+
+QFrame#InstallerSuccessCard {{
+    background: {SUCCESS_BG};
+    border-radius: {RADIUS_CARD}px;
+    border: 1px solid {_rgba(SUCCESS, 0.50)};
 }}
 """
 
@@ -362,7 +424,8 @@ class InstallerShell(QMainWindow):
 
         self.setWindowTitle(self.APP_NAME if not self.WINDOW_ROLE else f"{self.WINDOW_ROLE} — {self.APP_NAME}")
         w, h = self.WINDOW_SIZE
-        self.setFixedSize(w, h)
+        self.resize(w, h)
+        self.setMinimumSize(min(w, 760), min(h, 560))
         self.setStyleSheet(stylesheet_installer())
         try:
             self.setWindowIcon(QIcon(recurso("installer_icon.ico")))
@@ -376,6 +439,7 @@ class InstallerShell(QMainWindow):
     def _build_shell(self):
         """Construye el layout común: header + steps + stack + footer."""
         central = QWidget()
+        central.setObjectName("InstallerRoot")
         self.setCentralWidget(central)
         root = QVBoxLayout(central)
         root.setContentsMargins(0, 0, 0, 0)
@@ -383,10 +447,11 @@ class InstallerShell(QMainWindow):
 
         # Header
         header = QWidget()
-        header.setFixedHeight(54)
-        header.setStyleSheet(f"background: {BG_SECONDARY};")
+        header.setObjectName("InstallerHeader")
+        header.setFixedHeight(60)
         hl = QHBoxLayout(header)
-        hl.setContentsMargins(20, 0, 20, 0)
+        hl.setContentsMargins(24, 0, 24, 0)
+        hl.setSpacing(14)
         logo_lbl = QLabel()
         try:
             from PIL import Image as PILImage
@@ -431,14 +496,13 @@ class InstallerShell(QMainWindow):
 
         # Content stack
         self._stack = QStackedWidget()
+        self._stack.setStyleSheet("QStackedWidget { background: transparent; }")
         root.addWidget(self._stack, stretch=1)
 
         # Nav footer — v3 spec
         nav = QWidget()
-        nav.setFixedHeight(56)
-        nav.setStyleSheet(
-            f"background: {BG_SECONDARY}; border-top: 1px solid {BORDER};"
-        )
+        nav.setObjectName("InstallerNav")
+        nav.setFixedHeight(62)
         nl = QHBoxLayout(nav)
         nl.setContentsMargins(24, 8, 24, 8)
         nl.setSpacing(8)
@@ -454,11 +518,12 @@ class InstallerShell(QMainWindow):
 
         # btn_ant
         self.btn_ant = QPushButton("← Volver")
-        self.btn_ant.setFixedSize(110, 36)
+        self.btn_ant.setFixedSize(118, 42)
+        self.btn_ant.setAccessibleName("Volver")
         self.btn_ant.setStyleSheet(
             f"QPushButton {{ border: 1px solid {BORDER}; border-radius: {RADIUS_BUTTON}px;"
             f"background: transparent; color: {TEXT_SEC}; font-size: 12px;"
-            f"font-weight: 500; padding: 6px 16px; }}"
+            f"font-weight: 500; padding: 8px 16px; }}"
             f"QPushButton:hover {{ border-color: {GRAD_MID}; color: {TEXT_PRIMARY}; background: {BG_ELEVATED}; }}"
         )
         self.btn_ant.setVisible(False)
@@ -466,13 +531,14 @@ class InstallerShell(QMainWindow):
 
         # btn_sig
         self.btn_sig = QPushButton("Siguiente →")
-        self.btn_sig.setFixedSize(150, 38)
+        self.btn_sig.setFixedSize(158, 42)
+        self.btn_sig.setAccessibleName("Continuar")
         self.btn_sig.setStyleSheet(
             f"QPushButton {{ border: none; border-radius: {RADIUS_BUTTON}px;"
             f"background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
             f"stop:0 {GRAD_FROM}, stop:0.5 {GRAD_MID}, stop:1 {GRAD_TO});"
             f"color: {TEXT_ON_ACCENT}; font-size: 12px; font-weight: 600;"
-            f"padding: 8px 22px; }}"
+            f"padding: 9px 22px; }}"
             f"QPushButton:hover {{ background: {GRAD_MID}; }}"
             f"QPushButton:disabled {{ background: {BORDER}; color: {TEXT_TERT}; }}"
         )
@@ -482,7 +548,8 @@ class InstallerShell(QMainWindow):
     def _add_page(self, builder_fn):
         """Crea una página y la agrega al stack."""
         page = QWidget()
-        page.setStyleSheet(f"background: {BG_PRIMARY};")
+        page.setObjectName("InstallerPage")
+        page.setStyleSheet("QWidget#InstallerPage { background: transparent; }")
         try:
             import inspect
             params = [

@@ -46,13 +46,13 @@ except ImportError:
     )
 
 
-# Escala tipográfica (alineada a v3: h1=24, display=28, weights numéricos)
+# Escala tipográfica (alineada a v3 2026: display=28, h1=22, body=14)
 FONT_SCALE = {
     "display": {"size": 28, "weight": 700, "line_height": 1.2},
-    "h1":      {"size": 24, "weight": 600, "line_height": 1.3},
+    "h1":      {"size": 22, "weight": 600, "line_height": 1.3},
     "h2":      {"size": 18, "weight": 600, "line_height": 1.35},
     "h3":      {"size": 15, "weight": 500, "line_height": 1.4},
-    "body":    {"size": 13, "weight": 400, "line_height": 1.6},
+    "body":    {"size": 14, "weight": 400, "line_height": 1.6},
     "sm":      {"size": 12, "weight": 400, "line_height": 1.5},
     "caption": {"size": 11, "weight": 400, "line_height": 1.4},
 }
@@ -75,14 +75,10 @@ def _resolve_default_family() -> str:
 _DEFAULT_FONT_FAMILY = _resolve_default_family()
 
 
-SPACE = {
-    "xs":  4,
-    "sm":  8,
-    "md":  16,
-    "lg":  24,
-    "xl":  32,
-    "xxl": 48,
-}
+# SPACE es alias de V3_SPACE (theme.py) — fuente canónica única. La escala v3
+# (xs:4 / sm:8 / md:12 / lg:16 / xl:24 / xxl:32 / xxxl:48) corre por aquí para
+# todo consumidor que importe SPACE desde este módulo.
+SPACE = V3_SPACE
 
 
 ANIM = {
@@ -822,6 +818,8 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
         padding: 4px 8px;
         font-size: {TYPOGRAPHY['size_small']}pt;
     }}
+    
+    {focus_ring_stylesheet(modo)}
     """
 
 
@@ -1617,10 +1615,11 @@ def paint_shell_background(painter, rect: QRectF, modo: str):
 import random as _random
 
 _SESSION_COLORS = {
-    # dark: use the new soft-purple accent and violet
-    "dark":  {"cyan": "#a78bfa",   "violet": "#c084fc"},
-    # light: use muted teal and copper/gold accent
-    "light": {"cyan": "#2c7a7b",   "violet": "#b45309"},
+    # Aura/glow de sesión: una opción "fría" (acento primario) y una "cálida"
+    # (acento secundario). Los keys legacy "cyan"/"violet" se mantienen para
+    # compat con consumidores que ya guardan la variante por nombre.
+    "dark":  {"cyan": "#6ad7c4",   "violet": "#f5b873"},   # aqua / amber
+    "light": {"cyan": "#2f6e62",   "violet": "#b86844"},   # sage / terracotta
 }
 
 

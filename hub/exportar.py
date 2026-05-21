@@ -11,12 +11,47 @@ except ImportError:
         return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", nombre)
     _DS_COLORS = None
 
-# Colores de marca para PDF (siempre fijos — independiente del tema de UI)
-_PDF_ACCENT  = (_DS_COLORS["dark_hybrid"]["accent"]          if _DS_COLORS else "#6366f1")
-_PDF_CAPTION = (_DS_COLORS["light_hybrid"]["text_tertiary"]  if _DS_COLORS else "#64748b")
+# Colores de marca para PDF — usamos el acento del modo LIGHT (sage clinical),
+# que en papel blanco impreso es más legible y profesional que el aqua del dark.
+_PDF_ACCENT      = (_DS_COLORS["light_hybrid"]["accent"]        if _DS_COLORS else "#2f6e62")
+_PDF_CAPTION     = (_DS_COLORS["light_hybrid"]["text_tertiary"] if _DS_COLORS else "#8a958e")
+# Tonos warm linen para fondos alternados de tablas (alineados a la paleta light)
+_PDF_ROW_TINT    = "#f6f3ec"   # linen claro
+_PDF_GRID        = "#dcd6c6"   # warm stone (border light)
+
+_SECCIONES_DEFAULT = ("animo", "resp", "pens", "checklist", "timer", "reclog")
+
+def _normalizar_secciones(secciones: list[str] | None) -> set[str]:
+    if secciones is None:
+        return set(_SECCIONES_DEFAULT)
+    return {s for s in secciones if s in _SECCIONES_DEFAULT}
 
 
-def _generar(nombre: str, pid: str, datos: dict) -> str:
+def _filtrar_fechas(filas: list, fecha_desde: str = "", fecha_hasta: str = "") -> list:
+    if not fecha_desde and not fecha_hasta:
+        return filas
+    out = []
+    for row in filas:
+        fecha = (row.get("fecha") or "")[:10]
+        if fecha_desde and fecha < fecha_desde:
+            continue
+        if fecha_hasta and fecha > fecha_hasta:
+            continue
+        out.append(row)
+    return out
+
+
+def _filename_seguro(nombre_archivo: str, fallback: str) -> str:
+    raw = (nombre_archivo or "").strip() or fallback
+    if not raw.lower().endswith(".pdf"):
+        raw = f"{raw}.pdf"
+    safe = "".join(c for c in raw if c.isalnum() or c in " _-.")
+    return safe or fallback
+
+
+def _generar(nombre: str, pid: str, datos: dict, secciones: list[str] | None = None,
+             fecha_desde: str = "", fecha_hasta: str = "",
+             nombre_archivo: str = "") -> str:
     try:
         from reportlab.lib.pagesizes import A4
         from reportlab.lib import colors as rl_colors
@@ -29,7 +64,10 @@ def _generar(nombre: str, pid: str, datos: dict) -> str:
 
     nombre_seg = "".join(c for c in nombre if c.isalnum() or c in " _-")
     fecha_str = datetime.now().strftime("%Y%m%d_%H%M")
-    filename = f"NeuroMood_{nombre_seg}_{fecha_str}.pdf"
+    filename = _filename_seguro(
+        nombre_archivo,
+        f"NeuroMood_{nombre_seg}_{fecha_str}.pdf",
+    )
     downloads = os.path.join(os.path.expanduser("~"), "Downloads")
     if not os.path.exists(downloads):
         downloads = os.path.expanduser("~")
@@ -50,6 +88,11 @@ def _generar(nombre: str, pid: str, datos: dict) -> str:
     story = []
     story.append(Paragraph(f"NeuroMood — Registro de {nombre}", titulo_st))
     story.append(Paragraph(f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", caption_st))
+    if fecha_desde or fecha_hasta:
+        story.append(Paragraph(
+            f"Rango: {fecha_desde or 'inicio'} a {fecha_hasta or 'hoy'}",
+            caption_st,
+        ))
     story.append(HRFlowable(width="100%", thickness=1,
                             color=rl_colors.HexColor(_PDF_ACCENT), spaceAfter=12))
 
@@ -71,8 +114,8 @@ def _generar(nombre: str, pid: str, datos: dict) -> str:
             ("FONTSIZE",      (0, 0), (-1, 0), 9),
             ("FONTSIZE",      (0, 1), (-1, -1), 8),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1),
-             [rl_colors.HexColor("#F4F8FC"), rl_colors.white]),
-            ("GRID",          (0, 0), (-1, -1), 0.4, rl_colors.HexColor("#CCDDEE")),
+             [rl_colors.HexColor(_PDF_ROW_TINT), rl_colors.white]),
+            ("GRID",          (0, 0), (-1, -1), 0.4, rl_colors.HexColor(_PDF_GRID)),
             ("VALIGN",        (0, 0), (-1, -1), "TOP"),
             ("LEFTPADDING",   (0, 0), (-1, -1), 4),
             ("RIGHTPADDING",  (0, 0), (-1, -1), 4),
@@ -82,41 +125,52 @@ def _generar(nombre: str, pid: str, datos: dict) -> str:
         story.append(t)
         story.append(Spacer(1, 12))
 
-    animo = datos.get("animo", [])
+    secciones_set = _normalizar_secciones(secciones)
+
+    def _render(key, titulo, filas, encabezados, row_fn, prom_txt=None):
+        if key not in secciones_set:
+            return
+        _seccion(titulo, filas, encabezados, row_fn, prom_txt)
+
+    animo = _filtrar_fechas(datos.get("animo", []), fecha_desde, fecha_hasta)
     puntajes = [r["puntaje"] for r in animo if r.get("puntaje") is not None]
     prom_txt = (f"Promedio: {round(sum(puntajes)/len(puntajes),1)}/10  |  "
                 f"Total: {len(animo)} registros") if puntajes else None
-    _seccion("Registros de ánimo", animo,
+    _render("animo", "Registros de ánimo", animo,
              ["Fecha", "Hora", "Puntaje", "Nota"],
              lambda r: [r.get("fecha","")[:10], r.get("hora","")[:5],
                         str(r.get("puntaje","")), (r.get("nota") or "")[:60]],
              prom_txt)
-    _seccion("Sesiones de respiración", datos.get("resp", []),
+    _render("resp", "Sesiones de respiración",
+             _filtrar_fechas(datos.get("resp", []), fecha_desde, fecha_hasta),
              ["Fecha", "Hora", "Técnica", "Duración (min)"],
              lambda r: [r.get("fecha","")[:10], r.get("hora","")[:5],
                         r.get("tecnica","?"), str(r.get("duracion_minutos","?"))])
-    _seccion("Registros de pensamientos", datos.get("pens", []),
+    _render("pens", "Registros de pensamientos",
+             _filtrar_fechas(datos.get("pens", []), fecha_desde, fecha_hasta),
              ["Fecha", "Emoción", "Intensidad", "Pensamiento"],
              lambda r: [r.get("fecha","")[:10], r.get("emocion","?"),
                         str(r.get("intensidad","?")), (r.get("pensamiento") or "")[:80]])
-    all_check = datos.get("checklist", [])
-    _seccion("Actividades de activación",
+    all_check = _filtrar_fechas(datos.get("checklist", []), fecha_desde, fecha_hasta)
+    _render("checklist", "Actividades de activación",
              [r for r in all_check if r.get("origen") == "activacion"],
              ["Fecha", "Categoría", "Actividad"],
              lambda r: [r.get("fecha","")[:10], r.get("categoria","?"),
                         (r.get("descripcion") or "")[:80]])
-    _seccion("Checklist completadas",
+    _render("checklist", "Checklist completadas",
              [r for r in all_check if r.get("origen") != "activacion"],
              ["Fecha", "Origen", "Categoría", "Descripción"],
              lambda r: [r.get("fecha","")[:10],
                         "Profesional" if r.get("origen") == "profesional" else "Paciente",
                         r.get("categoria","?"), (r.get("descripcion") or "")[:70]])
-    _seccion("Sesiones de temporizador", datos.get("timer", []),
+    _render("timer", "Sesiones de temporizador",
+             _filtrar_fechas(datos.get("timer", []), fecha_desde, fecha_hasta),
              ["Fecha", "Hora", "Actividad", "Duración (min)"],
              lambda r: [r.get("fecha","")[:10], r.get("hora","")[:5],
                         (r.get("nombre") or "Sin nombre")[:40],
                         str((r.get("duracion_real") or 0) // 60)])
-    _seccion("Recordatorios disparados", datos.get("reclog", []),
+    _render("reclog", "Recordatorios disparados",
+             _filtrar_fechas(datos.get("reclog", []), fecha_desde, fecha_hasta),
              ["Fecha", "Hora", "Mensaje", "Estado"],
              lambda r: [r.get("fecha","")[:10], r.get("hora","")[:5],
                         (r.get("mensaje") or "")[:80],
@@ -147,12 +201,20 @@ def _generar(nombre: str, pid: str, datos: dict) -> str:
 
 
 def exportar_pdf(paciente_nombre: str, paciente_id: str, datos: dict,
-                 on_done=None, on_error=None):
+                 on_done=None, on_error=None, secciones: list[str] | None = None,
+                 fecha_desde: str = "", fecha_hasta: str = "",
+                 nombre_archivo: str = ""):
     """Genera el PDF en hilo daemon. Abre archivo en hilo principal via QTimer."""
     def _run():
         try:
             from PyQt6.QtCore import QTimer
-            ruta = _generar(paciente_nombre, paciente_id, datos)
+            ruta = _generar(
+                paciente_nombre, paciente_id, datos,
+                secciones=secciones,
+                fecha_desde=fecha_desde,
+                fecha_hasta=fecha_hasta,
+                nombre_archivo=nombre_archivo,
+            )
             def _cb():
                 try:
                     os.startfile(ruta)
@@ -221,10 +283,10 @@ def generar_constancia_consentimiento(paciente_nombre: str, paciente_id: str,
     ]
     table = Table(rows, colWidths=[4.4 * cm, 11.2 * cm])
     table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (0, -1), rl_colors.HexColor("#F4F8FC")),
+        ("BACKGROUND", (0, 0), (0, -1), rl_colors.HexColor(_PDF_ROW_TINT)),
         ("TEXTCOLOR", (0, 0), (0, -1), rl_colors.HexColor(_PDF_ACCENT)),
         ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ("GRID", (0, 0), (-1, -1), 0.4, rl_colors.HexColor("#CCDDEE")),
+        ("GRID", (0, 0), (-1, -1), 0.4, rl_colors.HexColor(_PDF_GRID)),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("LEFTPADDING", (0, 0), (-1, -1), 6),
         ("RIGHTPADDING", (0, 0), (-1, -1), 6),

@@ -23,8 +23,9 @@ try:
     from shared.installer_common import (
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
-        FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
-        stylesheet_installer, InstallerShell,
+        FONT_FAMILY, TEAL, VIOLET, ACCENT_SOFT, _rgba,
+        recurso, crear_acceso_directo, aplicar_captionbar_installer,
+        stylesheet_installer, InstallerShell, GradientTextLabel,
     )
 except ImportError:
     _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -33,8 +34,9 @@ except ImportError:
     from shared.installer_common import (
         BG_PRIMARY, BG_SECONDARY, BG_SURFACE, ACCENT, ACCENT_HOVER,
         TEXT_PRIMARY, TEXT_SEC, TEXT_TERT, BORDER, SUCCESS, WARNING_C, ERROR_C,
-        FONT_FAMILY, recurso, crear_acceso_directo, aplicar_captionbar_installer,
-        stylesheet_installer, InstallerShell,
+        FONT_FAMILY, TEAL, VIOLET, ACCENT_SOFT, _rgba,
+        recurso, crear_acceso_directo, aplicar_captionbar_installer,
+        stylesheet_installer, InstallerShell, GradientTextLabel,
     )
 
 DEFAULT_INSTALL = os.path.join(os.path.expanduser("~"), "NeuroMood Hub")
@@ -419,10 +421,10 @@ class InstaladorPro(InstallerShell):
 
     def _build_p0(self, page: QWidget):
         lay = QVBoxLayout(page)
-        lay.setContentsMargins(28, 22, 28, 8)
+        lay.setContentsMargins(28, 18, 28, 8)
         lay.setSpacing(0)
         
-        eyebrow = QLabel("BIENVENIDA")
+        eyebrow = QLabel("HUB PROFESIONAL")
         eyebrow.setStyleSheet(
             f"color: {ACCENT}; font-size: 11px; font-weight: 700;"
             f"letter-spacing: 3px; background: transparent;"
@@ -431,7 +433,10 @@ class InstaladorPro(InstallerShell):
         lay.addSpacing(8)
 
         t1 = QLabel("NeuroMood Hub")
-        t1.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 28px; font-weight: bold;")
+        t1.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; font-size: 32px; font-weight: 700;"
+            f"letter-spacing: -1px; background: transparent;"
+        )
         lay.addWidget(t1)
 
         t2 = QLabel("Suite de instalación para profesionales de la salud.")
@@ -469,6 +474,44 @@ class InstaladorPro(InstallerShell):
         info.setStyleSheet(f"color: {TEXT_SEC}; font-size: 12px; background: transparent;")
         cl.addWidget(info, stretch=1)
         lay.addWidget(card)
+        lay.addSpacing(12)
+
+        feature_row = QWidget()
+        feature_row.setStyleSheet("background: transparent;")
+        fr = QHBoxLayout(feature_row)
+        fr.setContentsMargins(0, 0, 0, 0)
+        fr.setSpacing(10)
+        for sym, col, title, desc_txt in [
+            ("✓", SUCCESS, "Pacientes", "Seguimiento centralizado"),
+            ("◉", ACCENT, "Clinica", "Herramientas de revision"),
+            ("↗", WARNING_C, "Remoto", "Sincronizacion segura"),
+        ]:
+            mini = QFrame()
+            mini.setObjectName("InstallerSurfaceCard")
+            ml = QVBoxLayout(mini)
+            ml.setContentsMargins(12, 10, 12, 10)
+            ml.setSpacing(4)
+            badge = QLabel(sym)
+            badge.setFixedSize(28, 28)
+            badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            badge.setStyleSheet(
+                f"background: {_rgba(col, 0.18)}; color: {col}; "
+                f"border-radius: 8px; font-size: 12px; font-weight: bold; border: none;"
+            )
+            ml.addWidget(badge)
+            title_lbl = QLabel(title)
+            title_lbl.setStyleSheet(
+                f"color: {TEXT_PRIMARY}; font-size: 12px; font-weight: 700; background: transparent;"
+            )
+            ml.addWidget(title_lbl)
+            desc_lbl = QLabel(desc_txt)
+            desc_lbl.setWordWrap(True)
+            desc_lbl.setStyleSheet(
+                f"color: {TEXT_TERT}; font-size: 11px; background: transparent;"
+            )
+            ml.addWidget(desc_lbl)
+            fr.addWidget(mini)
+        lay.addWidget(feature_row)
         lay.addStretch()
 
     def _build_p1(self, page: QWidget):

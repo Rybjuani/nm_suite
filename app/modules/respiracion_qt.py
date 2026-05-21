@@ -32,7 +32,7 @@ from PyQt6.QtGui import (
 )
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSizePolicy, QFrame,
-    QScrollArea,
+    QScrollArea, QGridLayout,
 )
 
 try:
@@ -40,6 +40,7 @@ try:
         NMModule, NMButton, NMButtonOutline, ThemeManager,
         NMCard, NMIcon, NMPlayButton, NMPhaseChip,
         NMCycleRing, NMCalmBadge, NMModuleRing, NMProgressLine,
+        responsive_columns,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qfont_mono,
@@ -60,6 +61,7 @@ except ImportError:
         NMModule, NMButton, NMButtonOutline, ThemeManager,
         NMCard, NMIcon, NMPlayButton, NMPhaseChip,
         NMCycleRing, NMCalmBadge, NMModuleRing, NMProgressLine,
+        responsive_columns,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qfont_mono,
@@ -364,12 +366,16 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawEllipse(QPointF(cx, cy), r, r)
 
-        # 6. Texto central
-        p.setOpacity(self._text_opacity)
+        # 6. Texto central con alpha precalculado por color.
+        text_alpha = max(0, min(255, int(255 * self._text_opacity)))
+        text_color = v3c("text", self._modo)
+        text_color.setAlpha(text_alpha)
+        phase_color = v3c("teal", self._modo)
+        phase_color.setAlpha(text_alpha)
 
         # Número grande (segundos) — tipografía mono v3, escalada a tamaño
         p.setFont(qfont_mono(48, bold=False))
-        p.setPen(QPen(v3c("text", self._modo)))
+        p.setPen(QPen(text_color))
         text_rect_top = QRectF(0, cy - 50, self.width(), 60)
         p.drawText(text_rect_top, Qt.AlignmentFlag.AlignCenter,
                    self._center_text)
@@ -378,7 +384,7 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         if self._phase_text:
             p.setFont(qfont("size_small",
                             weight=TYPOGRAPHY["weight_semibold"]))
-            p.setPen(QPen(v3c("teal", self._modo)))
+            p.setPen(QPen(phase_color))
             text_rect_bot = QRectF(0, cy + 16, self.width(), 24)
             p.drawText(text_rect_bot, Qt.AlignmentFlag.AlignCenter,
                        self._phase_text)
@@ -566,12 +572,16 @@ class ModuloRespiracion(NMModule):
         lay.addLayout(header_row)
         self._highlight_preset(5)
 
-        # 2. Main 2-col: LEFT breath circle + controls, RIGHT rail
-        main_row = QHBoxLayout()
-        main_row.setSpacing(V3_SP["xl"])
+        # 2. Main responsive grid: breath circle + metrics rail
+        self._main_grid = QGridLayout()
+        self._main_grid.setContentsMargins(0, 0, 0, 0)
+        self._main_grid.setHorizontalSpacing(V3_SP["xl"])
+        self._main_grid.setVerticalSpacing(V3_SP["lg"])
 
         # ── LEFT col ─────────────────────────────────────────────────────────
-        left_col = QVBoxLayout()
+        self._breath_left_panel = QWidget()
+        self._breath_left_panel.setStyleSheet("background: transparent;")
+        left_col = QVBoxLayout(self._breath_left_panel)
         left_col.setSpacing(V3_SP["lg"])
         left_col.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
@@ -605,10 +615,12 @@ class ModuloRespiracion(NMModule):
         ctrl_row.addWidget(self._btn_stop)
 
         left_col.addLayout(ctrl_row)
-        main_row.addLayout(left_col, stretch=2)
+        self._main_grid.addWidget(self._breath_left_panel, 0, 0)
 
         # ── RIGHT rail ───────────────────────────────────────────────────────
-        right_rail = QVBoxLayout()
+        self._breath_right_panel = QWidget()
+        self._breath_right_panel.setStyleSheet("background: transparent;")
+        right_rail = QVBoxLayout(self._breath_right_panel)
         right_rail.setSpacing(V3_SP["md"])
         right_rail.setAlignment(Qt.AlignmentFlag.AlignTop)
 
@@ -668,8 +680,9 @@ class ModuloRespiracion(NMModule):
 
         right_rail.addStretch()
 
-        main_row.addLayout(right_rail, stretch=1)
-        lay.addLayout(main_row)
+        self._main_grid.addWidget(self._breath_right_panel, 0, 1)
+        lay.addLayout(self._main_grid)
+        self._relayout_main_grid()
 
         # 3. 3 step cards (Inhala / Mantén / Exhala)
         step_row = QHBoxLayout()
@@ -697,6 +710,31 @@ class ModuloRespiracion(NMModule):
 
         self._cargar_historial()
         self._apply_text_styles()
+
+    def _relayout_main_grid(self):
+        if not hasattr(self, "_main_grid"):
+            return
+        self._main_grid.removeWidget(self._breath_left_panel)
+        self._main_grid.removeWidget(self._breath_right_panel)
+        width = max(
+            360,
+            self._scroll.viewport().width() if hasattr(self, "_scroll") else self.width(),
+        )
+        cols = responsive_columns(width, min_card_width=420, max_columns=2)
+        if cols >= 2:
+            self._main_grid.addWidget(self._breath_left_panel, 0, 0)
+            self._main_grid.addWidget(self._breath_right_panel, 0, 1)
+            self._main_grid.setColumnStretch(0, 2)
+            self._main_grid.setColumnStretch(1, 1)
+        else:
+            self._main_grid.addWidget(self._breath_left_panel, 0, 0)
+            self._main_grid.addWidget(self._breath_right_panel, 1, 0)
+            self._main_grid.setColumnStretch(0, 1)
+            self._main_grid.setColumnStretch(1, 0)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._relayout_main_grid()
 
     def _apply_text_styles(self):
         c = v3c("text3", self._modo).name()

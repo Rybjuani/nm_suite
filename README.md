@@ -17,6 +17,17 @@ This repository keeps the root documentation intentionally short. The three sour
 
 **Methodology note:** the audit is by reading, not by running. "Implemented in code" does **not** mean "verified at runtime on Windows". Before any clinical pilot, run the QA plan from Part 10 of the audit on real apps.
 
+## Current implementation status
+
+As of 2026-05-21, the F2 remote-configuration work is partially implemented in code:
+
+- Local SQLite cache tables for complex clinical content.
+- Timer presets, support-message suggestions, routine modes/templates, TCC template editing, and text override editing.
+- Initial `t(key, default)` migration for Home text.
+- Parametric PDF export from the Hub, with selectable sections, date range, and output filename.
+
+Runtime QA on packaged Windows builds is still pending; validate with the real Suite/Hub flows before clinical use.
+
 ## Main folders
 
 - `app/` — patient application (NeuroMood Suite).

@@ -28,7 +28,7 @@ _log = logging.getLogger(__name__)
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QScrollArea, QFrame, QLineEdit, QSizePolicy,
+    QScrollArea, QFrame, QLineEdit, QSizePolicy, QGridLayout,
 )
 from PyQt6.QtGui import QColor
 
@@ -37,6 +37,7 @@ try:
         NMModule, NMButton, NMToast, ThemeManager,
         NMCard, NMIcon, NMModuleRing, NMDayNote,
         NMCustomCheck, NMEmptyState, NMProgressLine,
+        responsive_columns,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qfont_mono,
@@ -45,7 +46,7 @@ try:
         PAD_CONTAINER,
     )
     from shared.theme import TYPOGRAPHY
-    from shared.db import obtener_conexion
+    from shared.db import obtener_conexion, leer_config
     from shared.utils import fecha_hoy
     from shared.visual_qa import visual_qa_enabled, routine_sections
 except ImportError:
@@ -56,6 +57,7 @@ except ImportError:
         NMModule, NMButton, NMToast, ThemeManager,
         NMCard, NMIcon, NMModuleRing, NMDayNote,
         NMCustomCheck, NMEmptyState, NMProgressLine,
+        responsive_columns,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qfont_mono,
@@ -64,7 +66,7 @@ except ImportError:
         PAD_CONTAINER,
     )
     from shared.theme import TYPOGRAPHY
-    from shared.db import obtener_conexion
+    from shared.db import obtener_conexion, leer_config
     from shared.utils import fecha_hoy
     from shared.visual_qa import visual_qa_enabled, routine_sections
 
@@ -80,6 +82,17 @@ SECCIONES = [
 
 
 # ── _HeroDayCard ─────────────────────────────────────────────────────────────
+
+RUTINA_MODOS = {"solo_profesional", "mixto", "solo_paciente"}
+
+
+def _rutina_modo() -> str:
+    try:
+        modo = leer_config("rutina_modo", "mixto").strip()
+    except Exception:
+        modo = "mixto"
+    return modo if modo in RUTINA_MODOS else "mixto"
+
 
 class _HeroDayCard(NMCard):
     """Hero v3: ring 120 del progreso del día + título + descripción + CTA."""
@@ -140,6 +153,9 @@ class _HeroDayCard(NMCard):
             self._title_lbl.setText("Sin tareas configuradas")
             self._desc_lbl.setText(
                 "Agregá una primera tarea para empezar tu rutina.")
+
+    def set_manual_enabled(self, enabled: bool):
+        self._cta.setVisible(enabled)
 
     def _apply_hero_styles(self):
         self._eyebrow.setStyleSheet(
@@ -237,6 +253,9 @@ class _SectionCard(NMCard):
             self._ring.set_pct(0.0)
             self._count_lbl.setText("0/0")
 
+    def set_manual_enabled(self, enabled: bool):
+        self._add_btn.setVisible(enabled)
+
     def show_add_inline(self, on_save):
         """Inserta una fila inline (input + botón check) al final del body."""
         try:
@@ -311,6 +330,8 @@ class ModuloRutina(NMModule):
     MODULE_ICON  = "rutina"
 
     def build_ui(self):
+        self._rutina_modo = _rutina_modo()
+        self._manual_enabled = self._rutina_modo != "solo_profesional"
         self._task_checks: dict[int, NMCustomCheck] = {}
         self._task_done:   dict[int, bool] = {}
         self._task_section: dict[int, str] = {}
@@ -340,6 +361,7 @@ class ModuloRutina(NMModule):
         # 1. Hero Day Card (Ring grande del día)
         self._hero_card = _HeroDayCard(modo=self._modo)
         self._hero_card.new_task_requested.connect(self._on_new_task_hero)
+        self._hero_card.set_manual_enabled(self._manual_enabled)
         lay.addWidget(self._hero_card)
 
         # 2. Empty state (oculta cuando hay tareas)
@@ -353,21 +375,48 @@ class ModuloRutina(NMModule):
         self._empty_state.hide()
         lay.addWidget(self._empty_state)
 
-        # 4. 3-col grid de _SectionCard
-        sections_row = QHBoxLayout()
-        sections_row.setSpacing(V3_SP["md"])
+        # 4. Grid responsive de _SectionCard
+        self._sections_grid_widget = QWidget()
+        self._sections_grid_widget.setStyleSheet("background: transparent;")
+        self._sections_grid = QGridLayout(self._sections_grid_widget)
+        self._sections_grid.setContentsMargins(0, 0, 0, 0)
+        self._sections_grid.setHorizontalSpacing(V3_SP["md"])
+        self._sections_grid.setVerticalSpacing(V3_SP["md"])
+        self._section_order: list[_SectionCard] = []
         for key, label, icon_name in SECCIONES:
             card = _SectionCard(key, label, icon_name, modo=self._modo)
             card.add_requested.connect(self._on_section_add)
-            sections_row.addWidget(card, stretch=1)
+            card.set_manual_enabled(self._manual_enabled)
             self._section_cards[key] = card
-        lay.addLayout(sections_row)
+            self._section_order.append(card)
+        lay.addWidget(self._sections_grid_widget)
+        self._relayout_sections()
 
         # 5. Nota del día (NMDayNote ya existente)
         self._build_nota_dia(lay)
 
         self._apply_text_styles()
         self._load_tasks()
+
+    def _relayout_sections(self):
+        if not hasattr(self, "_sections_grid"):
+            return
+        while self._sections_grid.count():
+            item = self._sections_grid.takeAt(0)
+            w = item.widget()
+            if w:
+                self._sections_grid.removeWidget(w)
+        width = max(
+            360,
+            self._scroll.viewport().width() if hasattr(self, "_scroll") else self.width(),
+        )
+        cols = responsive_columns(width, min_card_width=330, max_columns=3)
+        for idx, card in enumerate(self._section_order):
+            self._sections_grid.addWidget(card, idx // cols, idx % cols)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._relayout_sections()
 
     def _apply_text_styles(self):
         pass  # Manejado internamente por las cards
@@ -396,6 +445,12 @@ class ModuloRutina(NMModule):
     # ── load tasks (lógica preservada exacta) ────────────────────────────────
 
     def _load_tasks(self):
+        self._rutina_modo = _rutina_modo()
+        self._manual_enabled = self._rutina_modo != "solo_profesional"
+        if hasattr(self, "_hero_card"):
+            self._hero_card.set_manual_enabled(self._manual_enabled)
+        for card in self._section_cards.values():
+            card.set_manual_enabled(self._manual_enabled)
         self._task_checks.clear()
         self._task_done.clear()
         self._task_section.clear()
@@ -418,11 +473,20 @@ class ModuloRutina(NMModule):
             conn = obtener_conexion()
             hoy = fecha_hoy()
             for key, _, _ in SECCIONES:
-                tareas = conn.execute(
-                    "SELECT id, descripcion FROM checklist_tareas "
-                    "WHERE seccion = ? ORDER BY orden",
-                    (key,)
-                ).fetchall()
+                if self._rutina_modo == "solo_profesional":
+                    tareas = conn.execute(
+                        "SELECT id, descripcion, COALESCE(origen, 'manual') AS origen "
+                        "FROM checklist_tareas "
+                        "WHERE seccion = ? AND COALESCE(origen, 'manual') <> 'manual' "
+                        "ORDER BY orden",
+                        (key,)
+                    ).fetchall()
+                else:
+                    tareas = conn.execute(
+                        "SELECT id, descripcion, COALESCE(origen, 'manual') AS origen "
+                        "FROM checklist_tareas WHERE seccion = ? ORDER BY orden",
+                        (key,)
+                    ).fetchall()
 
                 completadas = set()
                 if tareas:
@@ -436,8 +500,12 @@ class ModuloRutina(NMModule):
 
                 card = self._section_cards[key]
                 layout = card.body_layout()
+                seen_ids: set[int] = set()
                 for tarea in tareas:
                     tid = tarea["id"]
+                    if tid in seen_ids:
+                        continue
+                    seen_ids.add(tid)
                     done = tid in completadas
                     self._task_done[tid] = done
                     self._task_section[tid] = key
@@ -446,7 +514,26 @@ class ModuloRutina(NMModule):
                     cb.setEnabled(not done)
                     cb.toggled.connect(
                         lambda state, t=tid, checkbox=cb: self._on_check(t, checkbox))
-                    layout.addWidget(cb)
+                    if tarea["origen"] == "manual":
+                        row = QWidget()
+                        row.setStyleSheet("background: transparent;")
+                        row_lay = QHBoxLayout(row)
+                        row_lay.setContentsMargins(0, 0, 0, 0)
+                        row_lay.setSpacing(V3_SP["xs"])
+                        row_lay.addWidget(cb, stretch=1)
+                        badge = QLabel("Personal")
+                        badge.setFont(qfont("size_caption_xs",
+                                             weight=TYPOGRAPHY["weight_semibold"]))
+                        badge.setContentsMargins(V3_SP["sm"], 2, V3_SP["sm"], 2)
+                        badge.setStyleSheet(
+                            f"color: {v3c('text3', self._modo).name()}; "
+                            f"border: 1px solid {v3c('borderSoft', self._modo).name()}; "
+                            "border-radius: 8px; background: transparent;"
+                        )
+                        row_lay.addWidget(badge)
+                        layout.addWidget(row)
+                    else:
+                        layout.addWidget(cb)
                     self._task_checks[tid] = cb
 
                 done_count = sum(1 for t in tareas if t["id"] in completadas)
@@ -463,13 +550,32 @@ class ModuloRutina(NMModule):
             card.setVisible(has_tasks)
 
     def _load_visual_qa_tasks(self):
+        # Idempotencia defensiva: aunque _load_tasks() ya limpia, este método
+        # puede invocarse desde otros contextos. Garantizamos un estado limpio
+        # antes de poblar para que llamadas repetidas no dupliquen items.
+        self._task_checks.clear()
+        self._task_done.clear()
+        self._task_section.clear()
+        for _key, _card in self._section_cards.items():
+            _layout = _card.body_layout()
+            while _layout.count():
+                _item = _layout.takeAt(0)
+                _w = _item.widget()
+                if _w:
+                    _layout.removeWidget(_w)
+                    _w.deleteLater()
+
         fixtures = routine_sections()
         for key, _, _ in SECCIONES:
             tareas = fixtures.get(key, [])
             card = self._section_cards[key]
             layout = card.body_layout()
+            seen_ids: set[int] = set()
             for tarea in tareas:
                 tid = int(tarea["id"])
+                if tid in seen_ids:  # dedup-by-id por si la fixture trae duplicados
+                    continue
+                seen_ids.add(tid)
                 done = bool(tarea.get("done"))
                 self._task_done[tid] = done
                 self._task_section[tid] = key
@@ -562,9 +668,16 @@ class ModuloRutina(NMModule):
             for key, _, _ in SECCIONES:
                 if key not in self._section_cards:
                     continue
-                tareas = conn.execute(
-                    "SELECT id FROM checklist_tareas WHERE seccion = ?", (key,)
-                ).fetchall()
+                if getattr(self, "_rutina_modo", "mixto") == "solo_profesional":
+                    tareas = conn.execute(
+                        "SELECT id FROM checklist_tareas "
+                        "WHERE seccion = ? AND COALESCE(origen, 'manual') <> 'manual'",
+                        (key,),
+                    ).fetchall()
+                else:
+                    tareas = conn.execute(
+                        "SELECT id FROM checklist_tareas WHERE seccion = ?", (key,)
+                    ).fetchall()
                 total = len(tareas)
                 if total == 0:
                     self._section_cards[key].set_progress(0, 0)
@@ -585,6 +698,8 @@ class ModuloRutina(NMModule):
     def _on_section_add(self, seccion_key: str):
         """Click en '+ Agregar tarea' de una card de sección."""
         try:
+            if not getattr(self, "_manual_enabled", True):
+                return
             card = self._section_cards.get(seccion_key)
             if card is None:
                 return
@@ -596,6 +711,8 @@ class ModuloRutina(NMModule):
 
     def _on_new_task_hero(self):
         """Click en CTA del hero: añadir a la sección horaria actual."""
+        if not getattr(self, "_manual_enabled", True):
+            return
         hour = _dt.datetime.now().hour
         if hour < 12:
             key = "manana"
@@ -609,6 +726,8 @@ class ModuloRutina(NMModule):
         descripcion = descripcion.strip()
         if not descripcion:
             return
+        if not getattr(self, "_manual_enabled", True):
+            return
         if visual_qa_enabled():
             self._load_tasks()
             return
@@ -619,8 +738,8 @@ class ModuloRutina(NMModule):
                 (seccion,)
             ).fetchone()[0]
             conn.execute(
-                "INSERT INTO checklist_tareas (seccion, descripcion, orden) "
-                "VALUES (?, ?, ?)",
+                "INSERT INTO checklist_tareas (seccion, descripcion, orden, origen) "
+                "VALUES (?, ?, ?, 'manual')",
                 (seccion, descripcion, max_orden + 1),
             )
             conn.commit()
@@ -700,13 +819,25 @@ class ModuloRutina(NMModule):
         try:
             conn = obtener_conexion()
             hoy = fecha_hoy()
-            total = conn.execute(
-                "SELECT COUNT(*) FROM checklist_tareas"
-            ).fetchone()[0]
-            done = conn.execute(
-                "SELECT COUNT(*) FROM checklist_completadas WHERE fecha = ?",
-                (hoy,)
-            ).fetchone()[0]
+            if _rutina_modo() == "solo_profesional":
+                total = conn.execute(
+                    "SELECT COUNT(*) FROM checklist_tareas "
+                    "WHERE COALESCE(origen, 'manual') <> 'manual'"
+                ).fetchone()[0]
+                done = conn.execute(
+                    "SELECT COUNT(*) FROM checklist_completadas cc "
+                    "JOIN checklist_tareas ct ON cc.tarea_id = ct.id "
+                    "WHERE cc.fecha = ? AND COALESCE(ct.origen, 'manual') <> 'manual'",
+                    (hoy,)
+                ).fetchone()[0]
+            else:
+                total = conn.execute(
+                    "SELECT COUNT(*) FROM checklist_tareas"
+                ).fetchone()[0]
+                done = conn.execute(
+                    "SELECT COUNT(*) FROM checklist_completadas WHERE fecha = ?",
+                    (hoy,)
+                ).fetchone()[0]
             conn.close()
             if total > 0:
                 return f"{done}/{total}"

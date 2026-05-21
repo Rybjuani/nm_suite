@@ -41,6 +41,7 @@ try:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMToast, ThemeManager,
         NMCard, NMIcon, NMTCCStepper, NMHeatBar,
+        NMTextArea, responsive_columns,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qfont_mono,
@@ -59,6 +60,7 @@ except ImportError:
     from shared.components_qt import (
         NMModule, NMButton, NMButtonOutline, NMToast, ThemeManager,
         NMCard, NMIcon, NMTCCStepper, NMHeatBar,
+        NMTextArea, responsive_columns,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qfont, qfont_mono,
@@ -360,9 +362,11 @@ class ModuloRegistroTCC(NMModule):
         self._stepper = NMTCCStepper(_STEP_NAMES, modo=self._modo)
         lay.addWidget(self._stepper)
 
-        # 2. Main 2-col: LEFT stack + RIGHT resumen
-        main_row = QHBoxLayout()
-        main_row.setSpacing(V3_SP["lg"])
+        # 2. Main responsive grid: LEFT stack + RIGHT resumen
+        self._main_grid = QGridLayout()
+        self._main_grid.setContentsMargins(0, 0, 0, 0)
+        self._main_grid.setHorizontalSpacing(V3_SP["lg"])
+        self._main_grid.setVerticalSpacing(V3_SP["lg"])
 
         # LEFT: stack de pasos en una NMCard
         steps_card = NMCard(modo=self._modo, clickable=False)
@@ -405,15 +409,17 @@ class ModuloRegistroTCC(NMModule):
         nav_layout.addWidget(self._btn_next)
         sc_lay.addLayout(nav_layout)
 
-        main_row.addWidget(steps_card, stretch=2)
+        self._steps_card = steps_card
+        self._main_grid.addWidget(self._steps_card, 0, 0)
 
         # RIGHT: ResumenCard
         self._resumen = _ResumenCard(modo=self._modo)
         self._resumen.setMinimumWidth(260)
         self._resumen.setMaximumWidth(320)
-        main_row.addWidget(self._resumen, stretch=1)
+        self._main_grid.addWidget(self._resumen, 0, 1)
 
-        lay.addLayout(main_row)
+        lay.addLayout(self._main_grid)
+        self._relayout_main_grid()
 
         # 3. Footer: Registros previos
         prev_section_lbl = QLabel("REGISTROS PREVIOS")
@@ -435,6 +441,35 @@ class ModuloRegistroTCC(NMModule):
         self._show_step()
         self._resumen.update_data(self._data)
 
+    def _relayout_main_grid(self):
+        if not hasattr(self, "_main_grid"):
+            return
+        self._main_grid.removeWidget(self._steps_card)
+        self._main_grid.removeWidget(self._resumen)
+        width = max(
+            360,
+            self._scroll.viewport().width() if hasattr(self, "_scroll") else self.width(),
+        )
+        cols = responsive_columns(width, min_card_width=460, max_columns=2)
+        if cols >= 2:
+            self._steps_card.setMinimumWidth(520)
+            self._resumen.setMaximumWidth(320)
+            self._main_grid.addWidget(self._steps_card, 0, 0)
+            self._main_grid.addWidget(self._resumen, 0, 1)
+            self._main_grid.setColumnStretch(0, 2)
+            self._main_grid.setColumnStretch(1, 1)
+        else:
+            self._steps_card.setMinimumWidth(0)
+            self._resumen.setMaximumWidth(16777215)
+            self._main_grid.addWidget(self._steps_card, 0, 0)
+            self._main_grid.addWidget(self._resumen, 1, 0)
+            self._main_grid.setColumnStretch(0, 1)
+            self._main_grid.setColumnStretch(1, 0)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._relayout_main_grid()
+
     def _apply_text_styles(self):
         c = v3c("text3", self._modo).name()
         self._eyebrow.setStyleSheet(
@@ -448,11 +483,11 @@ class ModuloRegistroTCC(NMModule):
     def _on_theme(self, modo: str) -> None:
         super()._on_theme(modo)
         if hasattr(self, "_txt_situacion"):
-            self._txt_situacion.setStyleSheet(stylesheet_textedit(self._modo))
+            self._txt_situacion._apply_theme(self._modo)
         if hasattr(self, "_txt_pensamiento"):
-            self._txt_pensamiento.setStyleSheet(stylesheet_textedit(self._modo))
+            self._txt_pensamiento._apply_theme(self._modo)
         if hasattr(self, "_txt_respuesta"):
-            self._txt_respuesta.setStyleSheet(stylesheet_textedit(self._modo))
+            self._txt_respuesta._apply_theme(self._modo)
         if hasattr(self, "_scroll"):
             self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         if hasattr(self, "_eyebrow"):
@@ -495,9 +530,11 @@ class ModuloRegistroTCC(NMModule):
                 "Describí brevemente la situación que desencadenó el malestar."):
             layout.addWidget(lbl)
 
-        self._txt_situacion = QTextEdit()
-        self._txt_situacion.setMinimumHeight(140)
-        self._txt_situacion.setStyleSheet(stylesheet_textedit(self._modo))
+        self._txt_situacion = NMTextArea(
+            "Describe la situacion",
+            modo=self._modo,
+            min_height=140,
+        )
         self._txt_situacion.textChanged.connect(self._update_situacion_count)
         layout.addWidget(self._txt_situacion)
 
@@ -556,9 +593,11 @@ class ModuloRegistroTCC(NMModule):
                 "¿Qué pensaste en ese momento? Escribilo tal como apareció."):
             layout.addWidget(lbl)
 
-        self._txt_pensamiento = QTextEdit()
-        self._txt_pensamiento.setMinimumHeight(110)
-        self._txt_pensamiento.setStyleSheet(stylesheet_textedit(self._modo))
+        self._txt_pensamiento = NMTextArea(
+            "Escribi el pensamiento automatico",
+            modo=self._modo,
+            min_height=120,
+        )
         self._txt_pensamiento.textChanged.connect(lambda: self._detect_distortions(None))
         self._txt_pensamiento.textChanged.connect(self._update_pensamiento_count)
         layout.addWidget(self._txt_pensamiento)
@@ -608,9 +647,11 @@ class ModuloRegistroTCC(NMModule):
                 "¿Cómo podrías pensar de manera más equilibrada y compasiva?"):
             layout.addWidget(lbl)
 
-        self._txt_respuesta = QTextEdit()
-        self._txt_respuesta.setMinimumHeight(140)
-        self._txt_respuesta.setStyleSheet(stylesheet_textedit(self._modo))
+        self._txt_respuesta = NMTextArea(
+            "Escribi una respuesta alternativa",
+            modo=self._modo,
+            min_height=140,
+        )
         layout.addWidget(self._txt_respuesta)
         layout.addStretch()
         self._stack.addWidget(page)

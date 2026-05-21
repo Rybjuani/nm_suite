@@ -1,5 +1,6 @@
 """sync.py — Sincronización con Supabase (exportación paciente + importación asignaciones)."""
 import threading
+import json
 from datetime import datetime, timedelta
 
 try:
@@ -223,6 +224,163 @@ def _importar_tareas_asignadas(sb, patient_id: str):
     conn.close()
 
 
+def _importar_rutina_modo(sb, patient_id: str):
+    """Descarga patients.rutina_modo y lo guarda en config local."""
+    try:
+        res = (sb.table("patients")
+               .select("rutina_modo")
+               .eq("patient_id", patient_id)
+               .maybe_single()
+               .execute())
+    except Exception:
+        return
+    data = res.data or {}
+    modo = data.get("rutina_modo") or "mixto"
+    if modo not in ("solo_profesional", "mixto", "solo_paciente"):
+        modo = "mixto"
+    try:
+        guardar_config("rutina_modo", modo)
+    except Exception:
+        pass
+
+
+def _template_tasks_from_payload(payload):
+    if payload is None:
+        return []
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except Exception:
+            return []
+    if isinstance(payload, dict):
+        if isinstance(payload.get("tasks"), list):
+            return payload["tasks"]
+        if isinstance(payload.get("tareas"), list):
+            return payload["tareas"]
+        items = []
+        for seccion in ("manana", "tarde", "noche"):
+            section_items = payload.get(seccion) or []
+            for item in section_items:
+                if isinstance(item, dict):
+                    item = {**item, "seccion": item.get("seccion") or seccion}
+                items.append(item)
+        return items
+    if isinstance(payload, list):
+        return payload
+    return []
+
+
+def _normalizar_tarea_template(item, fallback_section="tarde"):
+    if isinstance(item, str):
+        return {
+            "descripcion": item,
+            "seccion": fallback_section,
+            "categoria": "Logro",
+            "dificultad": 1,
+        }
+    if not isinstance(item, dict):
+        return None
+    desc = (
+        item.get("descripcion")
+        or item.get("description")
+        or item.get("text")
+        or item.get("nombre")
+        or ""
+    ).strip()
+    if not desc:
+        return None
+    seccion = item.get("seccion") or item.get("section") or fallback_section
+    if seccion not in ("manana", "tarde", "noche"):
+        seccion = fallback_section
+    return {
+        "descripcion": desc,
+        "seccion": seccion,
+        "categoria": item.get("categoria") or item.get("category") or "Logro",
+        "dificultad": item.get("dificultad") or item.get("difficulty") or 1,
+    }
+
+
+def _importar_routine_template(sb, patient_id: str):
+    """Importa la plantilla de rutina asignada como tareas profesionales."""
+    try:
+        res = (sb.table("patient_routine_template")
+               .select("template_id,routine_templates(*)")
+               .eq("patient_id", patient_id)
+               .execute())
+        assignments = res.data or []
+    except Exception:
+        try:
+            res = (sb.table("patient_routine_template")
+                   .select("template_id")
+                   .eq("patient_id", patient_id)
+                   .execute())
+            assignments = res.data or []
+        except Exception:
+            return
+    if not assignments:
+        return
+
+    templates = []
+    for row in assignments:
+        tmpl = row.get("routine_templates") or row.get("routine_template")
+        if isinstance(tmpl, list):
+            templates.extend(tmpl)
+        elif isinstance(tmpl, dict):
+            templates.append(tmpl)
+        else:
+            template_id = row.get("template_id")
+            if not template_id:
+                continue
+            try:
+                t_res = (sb.table("routine_templates")
+                         .select("*")
+                         .eq("id", template_id)
+                         .maybe_single()
+                         .execute())
+                if t_res.data:
+                    templates.append(t_res.data)
+            except Exception:
+                pass
+    if not templates:
+        return
+
+    conn = obtener_conexion()
+    try:
+        existentes = {
+            r[0] for r in conn.execute(
+                "SELECT descripcion FROM checklist_tareas "
+                "WHERE origen = 'profesional'"
+            ).fetchall()
+        }
+        for tmpl in templates:
+            tasks = _template_tasks_from_payload(
+                tmpl.get("payload") or tmpl.get("tasks") or tmpl.get("tareas")
+            )
+            for index, raw in enumerate(tasks):
+                task = _normalizar_tarea_template(raw)
+                if not task or task["descripcion"] in existentes:
+                    continue
+                max_orden = conn.execute(
+                    "SELECT COALESCE(MAX(orden), 0) FROM checklist_tareas WHERE seccion = ?",
+                    (task["seccion"],)
+                ).fetchone()[0]
+                conn.execute(
+                    "INSERT INTO checklist_tareas "
+                    "(seccion, descripcion, orden, categoria, dificultad, origen) "
+                    "VALUES (?, ?, ?, ?, ?, 'profesional')",
+                    (
+                        task["seccion"], task["descripcion"], max_orden + 1 + index,
+                        task["categoria"], task["dificultad"],
+                    ),
+                )
+                existentes.add(task["descripcion"])
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
+
+
 def _importar_recordatorios_asignados(sb, patient_id: str):
     """Descarga recordatorios asignados por el profesional y los agrega localmente."""
     try:
@@ -322,6 +480,8 @@ def sync_completo(patient_id: str = None, nombre: str = None) -> bool:
         _exportar_checklist(sb, pid, desde)
         _exportar_temporizador(sb, pid, desde)
         _exportar_recordatorios_log(sb, pid, desde)
+        _importar_rutina_modo(sb, pid)
+        _importar_routine_template(sb, pid)
         _importar_tareas_asignadas(sb, pid)
         _importar_recordatorios_asignados(sb, pid)
         _importar_permisos(sb, pid)
@@ -433,6 +593,8 @@ def verificar_asignaciones(patient_id: str = None):
     if not pid:
         return
     try:
+        _importar_rutina_modo(sb, pid)
+        _importar_routine_template(sb, pid)
         _importar_tareas_asignadas(sb, pid)
         _importar_recordatorios_asignados(sb, pid)
         _importar_permisos(sb, pid)

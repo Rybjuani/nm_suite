@@ -13,15 +13,18 @@ Toda la lógica de DB/Supabase preservada exacta de pacientes.py.
 import os
 import sys
 import threading
+import json
 from datetime import datetime, timezone
 
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QRectF, QObject
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QRectF, QObject, QDate
 from PyQt6 import sip
 from PyQt6.QtGui import QColor, QPainter, QPen, QBrush, QLinearGradient
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea,
     QFrame, QTabWidget, QTextEdit, QSizePolicy, QComboBox,
-    QApplication, QPushButton,
+    QApplication, QPushButton, QRadioButton, QButtonGroup,
+    QListWidget, QListWidgetItem, QSpinBox, QDialog, QCheckBox,
+    QDateEdit, QLineEdit,
 )
 
 try:
@@ -29,6 +32,7 @@ try:
         NMModule, NMButton, NMButtonOutline, NMCard, NMInput,
         NMProgressBar, NMToggle, NMToast, NMSkeleton, ThemeManager, h_spacer,
         NMProgressLine, NMFeaturedCard, NMModuleRing, NMTypingDots,
+        NMSectionHeader, NMDivider, NMAvatar,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, qfont_mono, interpolate_color,
@@ -50,6 +54,7 @@ except ImportError:
         NMModule, NMButton, NMButtonOutline, NMCard, NMInput,
         NMProgressBar, NMToggle, NMToast, NMSkeleton, ThemeManager, h_spacer,
         NMProgressLine, NMFeaturedCard, NMModuleRing, NMTypingDots,
+        NMSectionHeader, NMDivider, NMAvatar,
     )
     from shared.theme_qt import (
         C, colors, norm_modo, qcolor, qfont, qfont_mono, interpolate_color,
@@ -234,6 +239,14 @@ def _build_animo_graph(parent: QWidget, registros: list, modo: str) -> QWidget:
 
 class _TabRegistros(QWidget):
     _datos_loaded_signal = pyqtSignal(dict)
+    _PDF_SECCIONES = [
+        ("animo", "Ánimo"),
+        ("resp", "Respiración"),
+        ("pens", "TCC"),
+        ("checklist", "Checklist"),
+        ("timer", "Timer"),
+        ("reclog", "Recordatorios"),
+    ]
 
     def __init__(self, modo: str, sb, pid: str, nombre: str, parent=None):
         super().__init__(parent)
@@ -425,6 +438,112 @@ class _TabRegistros(QWidget):
         if not self._datos_cache:
             NMToast.display(self.window(), "Cargá los datos primero.", variant="info")
             return
+        self._abrir_modal_exportacion()
+
+    def _fechas_disponibles(self) -> list[str]:
+        fechas = []
+        for filas in self._datos_cache.values():
+            if not isinstance(filas, list):
+                continue
+            for row in filas:
+                fecha = (row.get("fecha") or "")[:10]
+                if fecha:
+                    fechas.append(fecha)
+        return sorted(set(fechas))
+
+    def _qdate_from_iso(self, value: str) -> QDate:
+        try:
+            y, m, d = [int(x) for x in value.split("-")]
+            return QDate(y, m, d)
+        except Exception:
+            return QDate.currentDate()
+
+    def _abrir_modal_exportacion(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Exportar informe")
+        dialog.setModal(True)
+        dialog.resize(420, 460)
+        dialog.setStyleSheet(
+            f"QDialog {{ background: {v3c('surfaceSolid', self._modo).name()}; }}"
+            f"QLabel, QCheckBox {{ color: {v3c('text', self._modo).name()}; background: transparent; }}"
+            f"QLineEdit {{ color: {v3c('text', self._modo).name()}; "
+            f"background: {v3c('bg', self._modo).name()}; "
+            f"border: 1px solid {v3c('borderStrong', self._modo).name()}; "
+            "border-radius: 8px; padding: 6px; }}"
+        )
+        lay = QVBoxLayout(dialog)
+        lay.setContentsMargins(PAD_CARD, 14, PAD_CARD, 14)
+        lay.setSpacing(10)
+
+        title = QLabel("Constructor de informe")
+        title.setFont(qfont("size_h3", weight=TYPOGRAPHY["weight_bold"]))
+        lay.addWidget(title)
+
+        sec_lbl = QLabel("Secciones")
+        sec_lbl.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_bold"]))
+        lay.addWidget(sec_lbl)
+        checks: dict[str, QCheckBox] = {}
+        for key, label in self._PDF_SECCIONES:
+            cb = QCheckBox(label)
+            cb.setChecked(True)
+            cb.setFont(qfont("size_small"))
+            checks[key] = cb
+            lay.addWidget(cb)
+
+        fechas = self._fechas_disponibles()
+        min_date = self._qdate_from_iso(fechas[0]) if fechas else QDate.currentDate()
+        max_date = self._qdate_from_iso(fechas[-1]) if fechas else QDate.currentDate()
+        date_row = QHBoxLayout()
+        date_row.setSpacing(8)
+        date_row.addWidget(QLabel("Desde"))
+        desde = QDateEdit()
+        desde.setCalendarPopup(True)
+        desde.setDisplayFormat("yyyy-MM-dd")
+        desde.setDate(min_date)
+        date_row.addWidget(desde)
+        date_row.addWidget(QLabel("Hasta"))
+        hasta = QDateEdit()
+        hasta.setCalendarPopup(True)
+        hasta.setDisplayFormat("yyyy-MM-dd")
+        hasta.setDate(max_date)
+        date_row.addWidget(hasta)
+        lay.addLayout(date_row)
+
+        file_lbl = QLabel("Nombre de archivo")
+        file_lbl.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_bold"]))
+        lay.addWidget(file_lbl)
+        nombre_seg = "".join(c for c in self._nombre if c.isalnum() or c in " _-")
+        filename = QLineEdit(
+            f"NeuroMood_{nombre_seg}_{QDate.currentDate().toString('yyyyMMdd')}.pdf"
+        )
+        lay.addWidget(filename)
+
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        btn_cancel = NMButtonOutline("Cancelar", modo=self._modo)
+        btn_cancel.setFixedSize(90, 32)
+        btn_cancel.clicked.connect(dialog.reject)
+        btn_row.addWidget(btn_cancel)
+        btn_export = NMButton("Exportar", modo=self._modo, width=110, height=32)
+        btn_row.addWidget(btn_export)
+        lay.addLayout(btn_row)
+
+        def _confirmar():
+            secciones = [key for key, cb in checks.items() if cb.isChecked()]
+            self._exportar_pdf_con_opciones(
+                secciones=secciones,
+                fecha_desde=desde.date().toString("yyyy-MM-dd"),
+                fecha_hasta=hasta.date().toString("yyyy-MM-dd"),
+                nombre_archivo=filename.text().strip(),
+            )
+            dialog.accept()
+
+        btn_export.clicked.connect(_confirmar)
+        dialog.exec()
+
+    def _exportar_pdf_con_opciones(self, secciones: list[str],
+                                   fecha_desde: str, fecha_hasta: str,
+                                   nombre_archivo: str):
         self._btn_pdf.setText("Generando…")
         self._btn_pdf.setEnabled(False)
         from hub.exportar import exportar_pdf
@@ -434,6 +553,10 @@ class _TabRegistros(QWidget):
                 0, lambda r=ruta: self._pdf_ok(r) if not sip.isdeleted(self) else None),
             on_error=lambda msg: QTimer.singleShot(
                 0, lambda m=msg: self._pdf_error(m) if not sip.isdeleted(self) else None),
+            secciones=secciones,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            nombre_archivo=nombre_archivo,
         )
 
     def _pdf_ok(self, ruta: str):
@@ -448,6 +571,626 @@ class _TabRegistros(QWidget):
 
 
 # ── Tab: Asignar ──────────────────────────────────────────────────────────────
+
+class _TimerPresetsEditor(NMCard):
+    def __init__(self, modo: str, sb, scope: str, patient_id: str = "", parent=None):
+        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
+        self._modo = norm_modo(modo)
+        self._sb = sb
+        self._scope = scope
+        self._patient_id = patient_id
+        self._editing_id = None
+        self._setup()
+
+    def _setup(self):
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
+        lay.setSpacing(8)
+
+        title = QLabel("Presets de timer (override individual)")
+        title.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_bold"]))
+        title.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; background: transparent;"
+        )
+        lay.addWidget(title)
+
+        scope_lbl = QLabel(f"Scope: {self._scope}")
+        scope_lbl.setFont(qfont("size_caption"))
+        scope_lbl.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;"
+        )
+        lay.addWidget(scope_lbl)
+
+        perm_row = QHBoxLayout()
+        perm_lbl = QLabel("Permitir timer manual")
+        perm_lbl.setFont(qfont("size_small"))
+        perm_lbl.setStyleSheet(
+            f"color: {v3c('text2', self._modo).name()}; background: transparent;"
+        )
+        perm_row.addWidget(perm_lbl)
+        perm_row.addStretch()
+        self._toggle_manual = NMToggle(modo=self._modo)
+        self._toggle_manual.setChecked(self._load_manual_permission())
+        self._toggle_manual.toggled.connect(self._save_manual_permission)
+        perm_row.addWidget(self._toggle_manual)
+        lay.addLayout(perm_row)
+
+        form = QHBoxLayout()
+        form.setSpacing(8)
+        self._ent_name = NMInput("Nombre", modo=self._modo)
+        self._ent_secs = NMInput("Duracion (seg)", modo=self._modo)
+        self._ent_cat = NMInput("Categoria", modo=self._modo)
+        form.addWidget(self._ent_name, stretch=2)
+        form.addWidget(self._ent_secs, stretch=1)
+        form.addWidget(self._ent_cat, stretch=1)
+        self._btn_save = NMButton("Agregar", modo=self._modo, width=92, height=32)
+        self._btn_save.clicked.connect(self._save_preset)
+        form.addWidget(self._btn_save)
+        self._btn_cancel = NMButtonOutline("Cancelar", modo=self._modo)
+        self._btn_cancel.setFixedSize(86, 32)
+        self._btn_cancel.clicked.connect(self._cancel_edit)
+        self._btn_cancel.setVisible(False)
+        form.addWidget(self._btn_cancel)
+        lay.addLayout(form)
+
+        self._list = QVBoxLayout()
+        self._list.setContentsMargins(0, 0, 0, 0)
+        self._list.setSpacing(4)
+        lay.addLayout(self._list)
+        self._load_presets()
+
+    def _load_manual_permission(self) -> bool:
+        if not self._sb or not self._patient_id:
+            return True
+        try:
+            res = (self._sb.table("patients")
+                   .select("perm_temporizador_manual")
+                   .eq("patient_id", self._patient_id)
+                   .maybe_single()
+                   .execute())
+            data = res.data or {}
+            return bool(data.get("perm_temporizador_manual", True))
+        except Exception:
+            return True
+
+    def _save_manual_permission(self, checked: bool):
+        if not self._sb or not self._patient_id:
+            return
+        try:
+            self._sb.table("patients").update({
+                "perm_temporizador_manual": bool(checked),
+            }).eq("patient_id", self._patient_id).execute()
+            NMToast.display(self.window(), "Permiso actualizado.", variant="success")
+        except Exception as e:
+            NMToast.display(self.window(), str(e)[:80], variant="error")
+
+    def _clear_list(self):
+        while self._list.count():
+            item = self._list.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
+
+    def _load_presets(self):
+        self._clear_list()
+        if not self._sb:
+            self._empty("Sin conexion Supabase.")
+            return
+        try:
+            res = (self._sb.table("timer_presets_remote")
+                   .select("id,scope,name,duracion_seg,categoria,activo")
+                   .eq("scope", self._scope)
+                   .order("name")
+                   .execute())
+            rows = res.data or []
+        except Exception as e:
+            self._empty(str(e)[:80])
+            return
+        if not rows:
+            self._empty("Sin presets para este scope.")
+            return
+        for row in rows:
+            self._add_row(row)
+
+    def _empty(self, text: str):
+        lbl = QLabel(text)
+        lbl.setFont(qfont("size_caption"))
+        lbl.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;"
+        )
+        self._list.addWidget(lbl)
+
+    def _add_row(self, row: dict):
+        wrap = QWidget()
+        wrap.setStyleSheet("background: transparent;")
+        rl = QHBoxLayout(wrap)
+        rl.setContentsMargins(0, 4, 0, 4)
+        rl.setSpacing(8)
+
+        name = row.get("name", "")
+        secs = int(row.get("duracion_seg") or 0)
+        mins = secs // 60 if secs else 0
+        cat = row.get("categoria") or "Timer"
+        active = bool(row.get("activo", True))
+        info = QLabel(f"{name} - {mins} min - {cat}")
+        info.setFont(qfont("size_small"))
+        info.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; background: transparent;"
+        )
+        rl.addWidget(info, stretch=1)
+
+        btn_edit = NMButtonOutline("Editar", modo=self._modo)
+        btn_edit.setFixedSize(70, 28)
+        btn_edit.clicked.connect(lambda _, r=row: self._edit(r))
+        rl.addWidget(btn_edit)
+
+        btn_active = NMButtonOutline("Activo" if active else "Inactivo", modo=self._modo)
+        btn_active.setFixedSize(78, 28)
+        btn_active.clicked.connect(lambda _, r=row: self._toggle_active(r))
+        rl.addWidget(btn_active)
+
+        btn_del = NMButtonOutline("Eliminar", modo=self._modo)
+        btn_del.setFixedSize(78, 28)
+        btn_del.clicked.connect(lambda _, rid=row.get("id"): self._delete(rid))
+        rl.addWidget(btn_del)
+
+        self._list.addWidget(wrap)
+
+    def _save_preset(self):
+        if not self._sb:
+            return
+        name = self._ent_name.text().strip()
+        cat = self._ent_cat.text().strip() or "Timer"
+        try:
+            secs = int(self._ent_secs.text().strip())
+        except ValueError:
+            NMToast.display(self.window(), "Duracion invalida.", variant="warning")
+            return
+        if not name or secs <= 0:
+            return
+        payload = {
+            "scope": self._scope,
+            "name": name,
+            "duracion_seg": secs,
+            "categoria": cat,
+            "activo": True,
+        }
+        try:
+            if self._editing_id:
+                payload["id"] = self._editing_id
+                self._sb.table("timer_presets_remote").upsert(payload).execute()
+            else:
+                self._sb.table("timer_presets_remote").upsert(
+                    payload, on_conflict="scope,name"
+                ).execute()
+            self._cancel_edit()
+            self._load_presets()
+            NMToast.display(self.window(), "Preset guardado.", variant="success")
+        except Exception as e:
+            NMToast.display(self.window(), str(e)[:80], variant="error")
+
+    def _edit(self, row: dict):
+        self._editing_id = row.get("id")
+        self._ent_name.setText(str(row.get("name", "")))
+        self._ent_secs.setText(str(row.get("duracion_seg") or ""))
+        self._ent_cat.setText(str(row.get("categoria") or "Timer"))
+        self._btn_save.setText("Guardar")
+        self._btn_cancel.setVisible(True)
+
+    def _cancel_edit(self):
+        self._editing_id = None
+        self._ent_name.clear()
+        self._ent_secs.clear()
+        self._ent_cat.clear()
+        self._btn_save.setText("Agregar")
+        self._btn_cancel.setVisible(False)
+
+    def _toggle_active(self, row: dict):
+        rid = row.get("id")
+        if not self._sb or rid is None:
+            return
+        try:
+            self._sb.table("timer_presets_remote").update({
+                "activo": not bool(row.get("activo", True)),
+            }).eq("id", rid).execute()
+            self._load_presets()
+        except Exception as e:
+            NMToast.display(self.window(), str(e)[:80], variant="error")
+
+    def _delete(self, rid):
+        if not self._sb or rid is None:
+            return
+        try:
+            self._sb.table("timer_presets_remote").delete().eq("id", rid).execute()
+            self._load_presets()
+            NMToast.display(self.window(), "Preset eliminado.", variant="success")
+        except Exception as e:
+            NMToast.display(self.window(), str(e)[:80], variant="error")
+
+
+class _RoutineTemplateEditor(NMCard):
+    SECTIONS = [
+        ("manana", "Mañana"),
+        ("tarde", "Tarde"),
+        ("noche", "Noche"),
+    ]
+    MODES = [
+        ("solo_profesional", "Solo profesional"),
+        ("mixto", "Mixto"),
+        ("solo_paciente", "Solo paciente"),
+    ]
+
+    def __init__(self, modo: str, sb, patient_id: str, parent=None):
+        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
+        self._modo = norm_modo(modo)
+        self._sb = sb
+        self._pid = patient_id
+        self._templates: list[dict] = []
+        self._current_template_id = None
+        self._editing_item: QListWidgetItem | None = None
+        self._section_lists: dict[str, QListWidget] = {}
+        self._setup()
+
+    def _setup(self):
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
+        lay.setSpacing(8)
+
+        title = QLabel("Plantilla de rutina")
+        title.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_bold"]))
+        title.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; background: transparent;"
+        )
+        lay.addWidget(title)
+
+        top = QHBoxLayout()
+        top.setSpacing(8)
+        self._template_combo = QComboBox()
+        self._template_combo.setStyleSheet(stylesheet_combobox(self._modo))
+        self._template_combo.currentIndexChanged.connect(self._select_template)
+        top.addWidget(self._template_combo, stretch=2)
+        self._scope_combo = QComboBox()
+        self._scope_combo.addItems(["global", f"patient:{self._pid}"])
+        self._scope_combo.setStyleSheet(stylesheet_combobox(self._modo))
+        top.addWidget(self._scope_combo)
+        self._name_input = NMInput("Nombre de plantilla", modo=self._modo)
+        top.addWidget(self._name_input, stretch=2)
+        lay.addLayout(top)
+
+        mode_row = QHBoxLayout()
+        mode_lbl = QLabel("Modo:")
+        mode_lbl.setFont(qfont("size_small"))
+        mode_lbl.setStyleSheet(
+            f"color: {v3c('text2', self._modo).name()}; background: transparent;"
+        )
+        mode_row.addWidget(mode_lbl)
+        self._mode_group = QButtonGroup(self)
+        for i, (value, label) in enumerate(self.MODES):
+            rb = QRadioButton(label)
+            rb.setProperty("value", value)
+            rb.setFont(qfont("size_small"))
+            rb.setStyleSheet(
+                f"color: {v3c('text', self._modo).name()}; background: transparent;"
+            )
+            self._mode_group.addButton(rb, i)
+            mode_row.addWidget(rb)
+            if value == "mixto":
+                rb.setChecked(True)
+        mode_row.addStretch()
+        lay.addLayout(mode_row)
+
+        editor_row = QHBoxLayout()
+        editor_row.setSpacing(8)
+        side = QVBoxLayout()
+        side_lbl = QLabel("Plantillas")
+        side_lbl.setFont(qfont("size_caption"))
+        side_lbl.setStyleSheet(
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;"
+        )
+        side.addWidget(side_lbl)
+        self._template_list = QListWidget()
+        self._template_list.setFixedWidth(190)
+        self._template_list.setStyleSheet(self._list_style())
+        self._template_list.currentRowChanged.connect(
+            lambda row: self._template_combo.setCurrentIndex(row)
+            if row >= 0 and row < self._template_combo.count() else None
+        )
+        side.addWidget(self._template_list)
+        editor_row.addLayout(side)
+
+        sections_row = QHBoxLayout()
+        sections_row.setSpacing(8)
+        for key, label in self.SECTIONS:
+            col = QVBoxLayout()
+            lbl = QLabel(label)
+            lbl.setFont(qfont("size_caption"))
+            lbl.setStyleSheet(
+                f"color: {v3c('text2', self._modo).name()}; background: transparent;"
+            )
+            col.addWidget(lbl)
+            lw = QListWidget()
+            lw.setDragDropMode(QListWidget.DragDropMode.DragDrop)
+            lw.setDefaultDropAction(Qt.DropAction.MoveAction)
+            lw.setAcceptDrops(True)
+            lw.setStyleSheet(self._list_style())
+            lw.itemClicked.connect(lambda item, s=key: self._edit_item(item, s))
+            self._section_lists[key] = lw
+            col.addWidget(lw)
+            sections_row.addLayout(col)
+        editor_row.addLayout(sections_row, stretch=1)
+        lay.addLayout(editor_row)
+
+        add_row = QHBoxLayout()
+        add_row.setSpacing(8)
+        self._task_desc = NMInput("Descripción de tarea", modo=self._modo)
+        add_row.addWidget(self._task_desc, stretch=2)
+        self._task_cat = QComboBox()
+        self._task_cat.addItems(list(CATEGORY_COLORS.keys()))
+        self._task_cat.setStyleSheet(stylesheet_combobox(self._modo))
+        add_row.addWidget(self._task_cat)
+        self._task_difficulty = QSpinBox()
+        self._task_difficulty.setRange(1, 3)
+        self._task_difficulty.setValue(1)
+        add_row.addWidget(self._task_difficulty)
+        self._task_section = QComboBox()
+        self._task_section.addItems([label for _, label in self.SECTIONS])
+        self._task_section.setStyleSheet(stylesheet_combobox(self._modo))
+        add_row.addWidget(self._task_section)
+        btn_add = NMButton("Agregar item", modo=self._modo, width=110, height=32)
+        btn_add.clicked.connect(self._add_item)
+        add_row.addWidget(btn_add)
+        btn_update = NMButtonOutline("Actualizar", modo=self._modo)
+        btn_update.setFixedSize(95, 32)
+        btn_update.clicked.connect(self._update_item)
+        add_row.addWidget(btn_update)
+        btn_remove = NMButtonOutline("Quitar", modo=self._modo)
+        btn_remove.setFixedSize(70, 32)
+        btn_remove.clicked.connect(self._remove_item)
+        add_row.addWidget(btn_remove)
+        lay.addLayout(add_row)
+
+        action_row = QHBoxLayout()
+        action_row.addStretch()
+        btn_new = NMButtonOutline("Nueva", modo=self._modo)
+        btn_new.setFixedSize(80, 32)
+        btn_new.clicked.connect(self._new_template)
+        action_row.addWidget(btn_new)
+        btn_save = NMButton("Guardar plantilla", modo=self._modo, width=150, height=32)
+        btn_save.clicked.connect(self._save_template)
+        action_row.addWidget(btn_save)
+        btn_delete = NMButtonOutline("Eliminar", modo=self._modo)
+        btn_delete.setFixedSize(90, 32)
+        btn_delete.clicked.connect(self._delete_template)
+        action_row.addWidget(btn_delete)
+        btn_assign = NMButton("Asignar a este paciente", modo=self._modo, width=190, height=32)
+        btn_assign.clicked.connect(self._assign_template)
+        action_row.addWidget(btn_assign)
+        lay.addLayout(action_row)
+
+        self._load_templates()
+
+    def _list_style(self) -> str:
+        return (
+            f"QListWidget {{ background: {v3c('bg', self._modo).name()}; "
+            f"color: {v3c('text', self._modo).name()}; "
+            f"border: 1px solid {v3c('borderSoft', self._modo).name()}; "
+            "border-radius: 10px; padding: 4px; }}"
+            f"QListWidget::item:selected {{ background: {v3c('teal', self._modo).name()}; }}"
+        )
+
+    def _load_templates(self):
+        self._templates = []
+        self._template_combo.clear()
+        self._template_list.clear()
+        if not self._sb:
+            return
+        try:
+            scopes = ["global", f"patient:{self._pid}"]
+            res = (self._sb.table("routine_templates")
+                   .select("id,scope,name,payload")
+                   .in_("scope", scopes)
+                   .order("scope")
+                   .execute())
+            self._templates = res.data or []
+        except Exception:
+            self._templates = []
+        for tmpl in self._templates:
+            name = tmpl.get("name") or f"Plantilla {tmpl.get('id')}"
+            scope = tmpl.get("scope") or "global"
+            label = f"{name} ({scope})"
+            self._template_combo.addItem(label)
+            self._template_list.addItem(label)
+        if self._templates:
+            self._template_combo.setCurrentIndex(0)
+            self._select_template(0)
+
+    def _payload_tasks(self, payload):
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except Exception:
+                payload = {}
+        if isinstance(payload, dict):
+            return payload.get("tasks") or payload.get("tareas") or []
+        if isinstance(payload, list):
+            return payload
+        return []
+
+    def _select_template(self, index: int):
+        if index < 0 or index >= len(self._templates):
+            return
+        tmpl = self._templates[index]
+        self._current_template_id = tmpl.get("id")
+        self._name_input.setText(tmpl.get("name") or "")
+        scope = tmpl.get("scope") or "global"
+        scope_idx = self._scope_combo.findText(scope)
+        self._scope_combo.setCurrentIndex(max(0, scope_idx))
+        self._clear_items()
+        for task in self._payload_tasks(tmpl.get("payload")):
+            if not isinstance(task, dict):
+                continue
+            self._add_item_to_section(
+                task.get("seccion") or "tarde",
+                task.get("descripcion") or task.get("description") or "",
+                task.get("categoria") or "Logro",
+                int(task.get("dificultad") or 1),
+            )
+        self._template_list.setCurrentRow(index)
+
+    def _clear_items(self):
+        self._editing_item = None
+        for lw in self._section_lists.values():
+            lw.clear()
+
+    def _new_template(self):
+        self._current_template_id = None
+        self._name_input.clear()
+        self._clear_items()
+
+    def _add_item_to_section(self, section: str, desc: str,
+                             categoria: str, dificultad: int):
+        if section not in self._section_lists or not desc:
+            return
+        item = QListWidgetItem(f"{desc} · {categoria} · D{dificultad}")
+        item.setData(Qt.ItemDataRole.UserRole, {
+            "descripcion": desc,
+            "seccion": section,
+            "categoria": categoria,
+            "dificultad": dificultad,
+        })
+        self._section_lists[section].addItem(item)
+
+    def _add_item(self):
+        desc = self._task_desc.text().strip()
+        if not desc:
+            return
+        section = self.SECTIONS[self._task_section.currentIndex()][0]
+        self._add_item_to_section(
+            section,
+            desc,
+            self._task_cat.currentText(),
+            int(self._task_difficulty.value()),
+        )
+        self._task_desc.clear()
+        self._editing_item = None
+
+    def _edit_item(self, item: QListWidgetItem, section: str):
+        data = item.data(Qt.ItemDataRole.UserRole) or {}
+        self._editing_item = item
+        self._task_desc.setText(str(data.get("descripcion") or ""))
+        cat = str(data.get("categoria") or "Logro")
+        cat_idx = self._task_cat.findText(cat)
+        self._task_cat.setCurrentIndex(max(0, cat_idx))
+        self._task_difficulty.setValue(int(data.get("dificultad") or 1))
+        section_idx = [key for key, _ in self.SECTIONS].index(section)
+        self._task_section.setCurrentIndex(section_idx)
+
+    def _update_item(self):
+        if self._editing_item is None:
+            return
+        desc = self._task_desc.text().strip()
+        if not desc:
+            return
+        target_section = self.SECTIONS[self._task_section.currentIndex()][0]
+        data = {
+            "descripcion": desc,
+            "seccion": target_section,
+            "categoria": self._task_cat.currentText(),
+            "dificultad": int(self._task_difficulty.value()),
+        }
+        self._editing_item.setText(
+            f"{data['descripcion']} · {data['categoria']} · D{data['dificultad']}"
+        )
+        self._editing_item.setData(Qt.ItemDataRole.UserRole, data)
+        current_list = self._editing_item.listWidget()
+        if current_list is not self._section_lists[target_section]:
+            row = current_list.row(self._editing_item)
+            item = current_list.takeItem(row)
+            self._section_lists[target_section].addItem(item)
+        self._editing_item = None
+        self._task_desc.clear()
+
+    def _remove_item(self):
+        if self._editing_item is None:
+            return
+        lw = self._editing_item.listWidget()
+        row = lw.row(self._editing_item)
+        lw.takeItem(row)
+        self._editing_item = None
+        self._task_desc.clear()
+
+    def _collect_tasks(self) -> list[dict]:
+        tasks = []
+        for section, lw in self._section_lists.items():
+            for i in range(lw.count()):
+                item = lw.item(i)
+                data = item.data(Qt.ItemDataRole.UserRole) or {}
+                data["seccion"] = section
+                data["orden"] = i
+                tasks.append(data)
+        return tasks
+
+    def _selected_mode(self) -> str:
+        btn = self._mode_group.checkedButton()
+        return btn.property("value") if btn else "mixto"
+
+    def _save_template(self):
+        if not self._sb:
+            return
+        name = self._name_input.text().strip()
+        if not name:
+            return
+        payload = {
+            "scope": self._scope_combo.currentText(),
+            "name": name,
+            "payload": json.dumps({"tasks": self._collect_tasks()}, ensure_ascii=False),
+        }
+        try:
+            if self._current_template_id:
+                payload["id"] = self._current_template_id
+                self._sb.table("routine_templates").upsert(payload).execute()
+            else:
+                res = self._sb.table("routine_templates").insert(payload).execute()
+                rows = res.data or []
+                if rows:
+                    self._current_template_id = rows[0].get("id")
+            self._load_templates()
+            NMToast.display(self.window(), "Plantilla guardada.", variant="success")
+        except Exception as e:
+            NMToast.display(self.window(), str(e)[:80], variant="error")
+
+    def _delete_template(self):
+        if not self._sb or not self._current_template_id:
+            return
+        try:
+            self._sb.table("routine_templates").delete().eq(
+                "id", self._current_template_id
+            ).execute()
+            self._new_template()
+            self._load_templates()
+            NMToast.display(self.window(), "Plantilla eliminada.", variant="success")
+        except Exception as e:
+            NMToast.display(self.window(), str(e)[:80], variant="error")
+
+    def _assign_template(self):
+        if not self._sb:
+            return
+        if not self._current_template_id:
+            self._save_template()
+        if not self._current_template_id:
+            return
+        try:
+            self._sb.table("patient_routine_template").upsert({
+                "patient_id": self._pid,
+                "template_id": self._current_template_id,
+            }, on_conflict="patient_id").execute()
+            self._sb.table("patients").update({
+                "rutina_modo": self._selected_mode(),
+            }).eq("patient_id", self._pid).execute()
+            NMToast.display(self.window(), "Rutina asignada.", variant="success")
+        except Exception as e:
+            NMToast.display(self.window(), str(e)[:80], variant="error")
+
 
 class _TabAsignar(QWidget):
     def __init__(self, modo: str, sb, pid: str, parent=None):
@@ -516,6 +1259,36 @@ class _TabAsignar(QWidget):
         row_rec.addWidget(btn_enviar)
         vl_rec.addLayout(row_rec)
         layout.addWidget(card_rec)
+
+        timer_card = _TimerPresetsEditor(
+            self._modo, self._sb, f"patient:{self._pid}", patient_id=self._pid
+        )
+        layout.addWidget(timer_card)
+        routine_card = _RoutineTemplateEditor(self._modo, self._sb, self._pid)
+        layout.addWidget(routine_card)
+
+        tcc_card = _card_frame(self._modo)
+        tcc_lay = QVBoxLayout(tcc_card)
+        tcc_lay.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
+        tcc_lay.setSpacing(8)
+        tcc_title = QLabel("Plantilla TCC")
+        tcc_title.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_bold"]))
+        tcc_title.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; background: transparent;"
+        )
+        tcc_lay.addWidget(tcc_title)
+        tcc_row = QHBoxLayout()
+        tcc_hint = QLabel("Crear, editar o asignar plantillas TCC para este paciente.")
+        tcc_hint.setFont(qfont("size_small"))
+        tcc_hint.setStyleSheet(
+            f"color: {v3c('text2', self._modo).name()}; background: transparent;"
+        )
+        tcc_row.addWidget(tcc_hint, stretch=1)
+        btn_tcc = NMButton("Editar plantilla TCC", modo=self._modo, width=170, height=32)
+        btn_tcc.clicked.connect(self._open_tcc_editor)
+        tcc_row.addWidget(btn_tcc)
+        tcc_lay.addLayout(tcc_row)
+        layout.addWidget(tcc_card)
         layout.addStretch()
 
     def _asignar_tarea(self):
@@ -555,6 +1328,16 @@ class _TabAsignar(QWidget):
             self._entry_rec_msg.clear()
             self._entry_rec_hora.clear()
             NMToast.display(self.window(), "Recordatorio enviado.", variant="success")
+        except Exception as e:
+            NMToast.display(self.window(), str(e)[:80], variant="error")
+
+    def _open_tcc_editor(self):
+        try:
+            from hub.editors.tcc_template_editor import TCCTemplateEditor
+            self._tcc_editor = TCCTemplateEditor(
+                self._sb, patient_id=self._pid, modo=self._modo
+            )
+            self._tcc_editor.show()
         except Exception as e:
             NMToast.display(self.window(), str(e)[:80], variant="error")
 
@@ -1065,15 +1848,22 @@ class DetallePacienteView(QWidget):
                                              modo=self._modo, parent=self)
         layout.addWidget(self._progress_line)
 
-        # Título
+        # Título — NMSectionHeader con eyebrow "PACIENTE" + avatar a la izquierda
         top = QWidget()
         top.setStyleSheet("background: transparent;")
         tl = QHBoxLayout(top)
-        tl.setContentsMargins(PAD_CONTAINER, 12, PAD_CONTAINER, 8)
-        t = QLabel(self._nombre)
-        t.setFont(qfont("size_h3", bold=True))
-        t.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
-        tl.addWidget(t)
+        tl.setContentsMargins(PAD_CONTAINER, V3_SP["md"],
+                              PAD_CONTAINER, V3_SP["sm"])
+        tl.setSpacing(V3_SP["md"])
+        # Avatar con iniciales del paciente
+        initials = "".join(w[0] for w in (self._nombre or "?").split()[:2]).upper()
+        self._avatar = NMAvatar(initials=initials or "P", size=48,
+                                 color_seed=self._pid or self._nombre,
+                                 modo=self._modo)
+        tl.addWidget(self._avatar, alignment=Qt.AlignmentFlag.AlignVCenter)
+        self._detail_header = NMSectionHeader(
+            "PACIENTE", self._nombre, modo=self._modo)
+        tl.addWidget(self._detail_header, stretch=1)
         layout.addWidget(top)
 
         # ── NMFeaturedCard: mood summary above tabs ───────────────────────────
