@@ -447,6 +447,13 @@ El build debe ejecutarse desde un único BAT oficial:
 BUILD_NEUROMOOD.bat
 ```
 
+Estado vigente desde 2026-05-21 (prompt F0.2.B):
+
+- `BUILD_NEUROMOOD.bat` existe en la raíz y es el launcher oficial. Es un dispatcher delgado: detecta Python (venv activo → `.venv`/`venv` local → `py -3.12` → `py -3` → `python` global) y delega a `build_neuromood.py` raíz pasando todos los flags (`%*`).
+- `BUILDER_NUEVO_RAPIDO.bat` queda como **alias temporal** de `BUILD_NEUROMOOD.bat --installer-mode external`, con un `echo [DEPRECATED]` al inicio. Se removerá en un release futuro.
+- `BUILDER_VIEJO_LENTO.bat` fue eliminado (legacy).
+- `AI_SCRIPTS/build_neuromood.py` fue eliminado (duplicado obsoleto). El único `build_neuromood.py` vigente vive en la raíz del repo.
+
 Salidas esperadas (nombres exactos del build):
 
 ```text
@@ -467,7 +474,7 @@ Reglas:
 - Mantener salida de consola limpia.
 - Compilar EXEs finales/oficiales.
 - No dejar scripts auxiliares en raíz.
-- La lógica de build vive en `AI_SCRIPTS/build_neuromood.py`; el `.bat` solo delega.
+- La lógica de build vive en `build_neuromood.py` (raíz del repo, 20KB); el `.bat` solo delega.
 - Hidden imports criticos agregados: `shared.icons_svg`, `shared.visual_qa`, `PyQt6.QtSvg` (para QSvgRenderer del catálogo SVG y NMMoodEmoji).
 - Add-data para assets: `assets/fonts/` empaquetado en los 6 targets (Suite, Hub, 2 instaladores, 2 desinstaladores) para que las fuentes premium carguen en EXEs compilados.
 - `shared.icons_svg` también en INSTALLER_IMPORTS por consistencia con Suite/Hub (aunque los wizards no usan NMIcon directamente, mantiene el módulo disponible).
