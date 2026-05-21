@@ -1,0 +1,327 @@
+# Plan: Rediseño integral de nm_suite (Hub + Suite + Instaladores)
+
+## Context
+
+El repositorio `nm_suite` es una aplicación PyQt6 de salud mental compuesta por dos productos (Suite paciente y Hub profesional) más sus instaladores/desinstaladores. El sistema de diseño v3 actual (teal/violeta) funciona pero presenta:
+
+- **Dos bugs visuales confirmados en código**: `timer_qt.py:215` duplica el texto "Lista para empezar" (`_state_chip` + `_canvas.set_data` pintan el mismo string), y `rutina_qt.py:469-489` carga tareas sin deduplicación lo que produce items repetidos visualmente.
+- **Inconsistencias de tokens**: `V3_SPACE["md"]=12` (`theme.py`) vs `SPACE["md"]=16` (`theme_qt.py`). Sistemas paralelos `V3_SHADOWS` vs `SHADOWS`, `V3_GRADIENTS` vs `GRADIENTS`.
+- **Componentes faltantes** para un design system maduro: `NMModal`, `NMDialog`, `NMTooltip`, `NMDivider`, `NMAvatar`, `NMErrorState`, `NMSearchInput`, `NMTextArea`, `NMSectionHeader`, `NMTabs`.
+- **Stylesheets globales incompletos**: faltan `QMenu`, `QDialog`, `QListWidget`, `QTableWidget`, `QSpinBox`, etc.
+- **Tema** dual con acentos distintos por modo (teal en light, violet en dark) que confunde la identidad visual.
+- **Tipografía** body a 13px — por debajo del umbral cómodo para una app clínica.
+- **Sidebar Suite invisible** en runtime: `_SidePanel` se confunde con el shell background.
+- **Estados de accesibilidad** (focus rings, accessible names, touch targets) parcialmente implementados.
+
+**Decisiones del usuario (confirmadas)**:
+1. Renovación cromática total — salir del eje teal/violet.
+2. Crear wrappers `NM*` dedicados para los componentes faltantes (no solo stylesheets sobre nativos).
+3. Rediseño visual nuevo, no preservación del sistema actual (refactor de tokens, no solo cambio de hex).
+4. Bug fixes en Fase 0 antes de cualquier cambio visual.
+
+**Outcome esperado**: producto unificado visualmente (Hub + Suite + installers), responsive real, accesible (WCAG AA), con sistema de diseño centralizado y un único acento cromático coherente. Lógica de negocio, datos, sincronización Supabase y proceso de build **intactos**.
+
+---
+
+## Paleta propuesta (renovación cromática total)
+
+Salgo del eje teal/violet hacia un eje **slate-sage** con acento cálido secundario. Esta es la propuesta concreta a aprobar:
+
+### Light — "Sage Linen"
+| Token | Valor | Rol |
+|---|---|---|
+| `bg` | `#f6f3ec` | Arena cálida, fondo principal |
+| `bgAlt` | `#ece8dc` | Fondo alternativo |
+| `surface` | `#ffffff` | Superficie de cards |
+| `bgSidebar` | `#fbf9f3` | Sidebar diferenciado |
+| `text` | `#1c241f` | Deep forest |
+| `textMuted` | `#566159` | Muted forest |
+| `accent` | `#2f6e62` | **Sage clinical** (acento primario) |
+| `accentSoft` | `#dcebe6` | Tinte suave de accent |
+| `warm` | `#b86844` | **Terracotta** (cálido secundario, badges de calor humano) |
+| `warmSoft` | `#f3e0d6` | Tinte suave de warm |
+| `border` | `#dcd6c6` | Borde visible |
+| `success` | `#3a8060` | Verde claro |
+| `warning` | `#c47e2b` | Amber muted |
+| `danger` | `#b8423e` | Brick muted |
+
+### Dark — "Indigo Mist"
+| Token | Valor | Rol |
+|---|---|---|
+| `bg` | `#0e1322` | Indigo profundo |
+| `bgAlt` | `#141a2d` | Capa intermedia |
+| `surface` | `#161d33` | Superficie sólida (sin rgba translúcido) |
+| `bgSidebar` | `#0b1020` | Sidebar más profundo |
+| `text` | `#e8ecf2` | Warm white |
+| `textMuted` | `#9aa3b3` | Muted slate |
+| `accent` | `#6ad7c4` | **Aqua mist** (acento primario) |
+| `accentSoft` | `rgba(106, 215, 196, 0.18)` | Tinte suave |
+| `warm` | `#f5b873` | **Amber light** (cálido secundario) |
+| `warmSoft` | `rgba(245, 184, 115, 0.18)` | Tinte amber |
+| `border` | `rgba(106, 215, 196, 0.14)` | Borde sutil |
+| `success` | `#5cbf8d` | |
+| `warning` | `#e8a455` | |
+| `danger` | `#e07b6e` | |
+
+### Gradientes firma
+- Light: `#2f6e62 → #4a8a7e` (sage → soft pine, monocromático)
+- Dark: `#6ad7c4 → #95e6d7` (aqua → mint, monocromático)
+
+El acento primario es coherente entre temas (verde-azulado en ambos: sage en light, aqua en dark). El acento cálido secundario aporta calidez humana (terracotta/amber). El eje teal/violet se retira por completo.
+
+---
+
+## Plan por fases
+
+### Fase 0 — Bug fixes y baseline (sin cambios visuales)
+**Objetivo**: estado limpio y verificable antes del redesign.
+
+Archivos a modificar:
+- [`app/modules/timer_qt.py`](app/modules/timer_qt.py) — eliminar `_state_chip` duplicado o el texto en `_canvas.set_data`, dejar una sola fuente del string "Lista para empezar"
+- [`app/modules/rutina_qt.py`](app/modules/rutina_qt.py) — agregar deduplicación en `_load_tasks()`; verificar que `_clear_section_items()` corre antes de poblar
+- [`shared/theme.py`](shared/theme.py) — unificar `V3_SPACE` ↔ `SPACE` (canónico: xs:4, sm:8, md:12, lg:16, xl:24, xxl:32, xxxl:48). Actualizar también `theme_qt.py:SPACE` para que sea alias de `V3_SPACE`.
+
+Validación:
+- `python -m py_compile app/modules/timer_qt.py app/modules/rutina_qt.py shared/theme.py shared/theme_qt.py`
+- Smoke test: abrir Suite → Rutina y Timer. Verificar visualmente la corrección de los duplicados.
+
+### Fase 1 — Sistema de diseño (tokens, paletas, tipografía)
+**Objetivo**: instalar la nueva paleta "Sage Linen / Indigo Mist" y unificar tokens.
+
+Archivos a modificar:
+- [`shared/theme.py`](shared/theme.py): reemplazar `V3_LIGHT` y `V3_DARK` con la paleta nueva (manteniendo las mismas claves para no romper consumidores). Actualizar `V3_GRADIENTS`. Re-mapear `_bridge_dark()` y `_bridge_light()`. Subir `TYPOGRAPHY["size_body"]` a 14, `size_h1` a 22. Ajustar `V3_SHADOWS` para coherencia con la nueva paleta. Mantener `MOOD_PALETTE` intacto (colores semánticos del slider de ánimo no varían).
+- [`shared/theme_qt.py`](shared/theme_qt.py): actualizar `_SESSION_COLORS` con los nuevos accents. Revisar `stylesheet_base()`, `stylesheet_scrollarea()`, `stylesheet_slider()`, `stylesheet_combobox()`, `stylesheet_timeedit()`, `stylesheet_lineedit()`, `stylesheet_textedit()`, `stylesheet_tabwidget()` para que reflejen los nuevos tokens. Asegurar `focus_ring_stylesheet()` se aplique vía `stylesheet_base()`.
+
+Validación:
+- Compilación: `python -m py_compile shared/theme.py shared/theme_qt.py`
+- Smoke test: abrir Suite y Hub, alternar light/dark, verificar que no hay regresiones visuales catastróficas (todo se ve con la paleta nueva).
+- `git diff --stat shared/theme.py shared/theme_qt.py`
+
+### Fase 2 — Componentes base nuevos y mejorados
+**Objetivo**: completar la biblioteca con wrappers `NM*` para todo lo faltante.
+
+Archivos a modificar:
+- [`shared/components_qt.py`](shared/components_qt.py): crear las clases nuevas siguiendo el patrón existente (con `apply_theme` y conexión a `ThemeManager`):
+  - `NMModal` / `NMDialog` — wrapper sobre QDialog con header, body, footer estandarizados
+  - `NMTooltip` — tooltip custom con estilo del tema (reemplaza el QToolTip nativo donde haga falta más control)
+  - `NMDivider` — separador horizontal/vertical con grosor y opacidad token-driven
+  - `NMSectionHeader` — encabezado de sección con eyebrow + título + opcional action
+  - `NMErrorState` — estado de error con icono, mensaje, acción reintentar
+  - `NMSearchInput` — input con icono de lupa y clear button
+  - `NMTextArea` — wrapper sobre QTextEdit con focus ring y tema
+  - `NMAvatar` — avatar circular con iniciales o imagen, gradiente background
+  - `NMTabs` — tabs custom con estilo pill o underline, no QTabWidget
+  - `NMStatCard` — card de métrica (label + valor + delta opcional)
+- Mejoras a componentes existentes:
+  - `NMButton`, `NMButtonOutline`: focus ring, disabled visible, loading state con spinner
+  - `NMInput`: label flotante, helper text, error text, leading/trailing icon slots
+  - `NMCard`: hover elevation real (sombra que crece), focus ring si es clickeable
+  - `NMHeader`: diferenciar visualmente home_mode vs module_mode (no solo cambio de texto)
+  - `NMToast`: agregar variantes claras success/warning/error/info con icono
+
+Validación:
+- `python -m py_compile shared/components_qt.py`
+- Script de smoke test que instancia cada componente nuevo en una ventana de prueba y verifica que se renderiza sin excepciones.
+- `git diff --stat shared/components_qt.py`
+
+### Fase 3 — Rediseño Hub
+**Objetivo**: aplicar el sistema nuevo a todas las vistas del Hub.
+
+Archivos a modificar:
+- [`hub/main_qt.py`](hub/main_qt.py): shell, `NMHubSidebar` (mejorar contraste en light, estado activo claro), header Hub (NeuroMood + sync orb + theme toggle), `DashboardView` con grid responsive de `NMStatCard`, `ConfigView` con `NMSectionHeader` + `NMSettingsSection`.
+- [`hub/pacientes_qt.py`](hub/pacientes_qt.py): usar `NMSearchInput`, refactorizar `NMPatientRow` con `NMAvatar`, filtros como `NMTabs`, estados empty/loading/error consistentes.
+- [`hub/ia_asistente.py`](hub/ia_asistente.py): **solo UI**. Chat bubble layout, `NMProviderChip`, `NMQuickAction`, `NMTypingDots`. **NO TOCAR lógica IA** (prompts, calls a Groq/OpenAI/Gemini).
+- [`hub/exportar.py`](hub/exportar.py): **solo UI**. Sección de configuración del export, preview, botón generar. **NO TOCAR lógica ReportLab/PDF**.
+
+Validación:
+- `python -m py_compile hub/main_qt.py hub/pacientes_qt.py hub/ia_asistente.py hub/exportar.py`
+- Smoke test: ejecutar `python hub/main_qt.py`, navegar las 4 vistas, alternar tema.
+- Tomar capturas nuevas y compararlas con código (no con capturas viejas).
+- `git diff --stat hub/`
+
+### Fase 4 — Rediseño Suite (shell y home)
+**Objetivo**: aplicar el sistema nuevo a la shell y home de la Suite.
+
+Archivos a modificar:
+- [`app/main_qt.py`](app/main_qt.py): mínimo — solo si `_ShellWidget` o el header necesitan ajustes. Tocaría `_apply_theme` para asegurar propagación.
+- [`app/home_qt.py`](app/home_qt.py): `_SidePanel` con borde derecho visible (2px accent-tinted) y superficie con suficiente contraste sobre el shell. `ModuleCard` con altura mínima 150px, ring agrandado a 36px sin % superpuesto, hover elevation real, badge con `NMChip` variantes semánticas. Layout del greeting (header vs sidebar) sin redundancia: decidir si el saludo va solo en header (modo actual real) o solo en sidebar.
+
+Validación:
+- `python -m py_compile app/main_qt.py app/home_qt.py`
+- Smoke test: abrir Suite, verificar home con sidebar visible, hover en cards, navegación a módulo y vuelta.
+
+### Fase 5 — Rediseño módulos Suite
+**Objetivo**: rediseñar las 7 vistas modulares preservando lógica.
+
+Archivos a modificar (uno por uno, fase por fase):
+- [`app/modules/animo_qt.py`](app/modules/animo_qt.py): wave chart card sobre `NMCard`, stats como `NMStatCard` (promedio, racha, progreso), slider con `V3MoodSlider`, emoji prominente. Eliminar el problema del fondo `surface` translúcido azul en light.
+- [`app/modules/respiracion_qt.py`](app/modules/respiracion_qt.py): pre-calcular opacidad en paint, no usar `setOpacity` por frame. Layout más limpio: arco central + controles + sesiones guardadas en panel lateral.
+- [`app/modules/registro_tcc_qt.py`](app/modules/registro_tcc_qt.py): `NMTCCStepper` con foco visible en step actual, transición entre pasos suave.
+- [`app/modules/rutina_qt.py`](app/modules/rutina_qt.py): layout 3 columnas (mañana/tarde/noche) responsive (colapsa a 1 col en pantallas chicas), `NMRoutineSection` mejorada, nota del día con `NMTextArea`.
+- [`app/modules/actividades_qt.py`](app/modules/actividades_qt.py): `NMCategoryFilter` como `NMTabs` pill, grid responsive de `NMActivityCard`, empty state cuando no hay sugerencias.
+- [`app/modules/timer_qt.py`](app/modules/timer_qt.py): layout simétrico, círculo + panel derecho con `NMStatCard` o `NMSectionCard`, presets de duración como `NMTabs` o `NMSegmentedChoice`. Estados claros (idle, running, paused, completed).
+- [`app/modules/avisos_qt.py`](app/modules/avisos_qt.py): formulario con `NMTextArea`, lista de avisos con `NMAvisoCard`, empty state con CTA "Crear primer aviso".
+
+Validación por cada módulo:
+- `python -m py_compile app/modules/<archivo>.py`
+- Smoke test: abrir el módulo en Suite, interactuar (slider, input, botones), verificar persistencia (que sigue guardando en DB).
+- `git diff --stat app/modules/<archivo>.py`
+
+### Fase 6 — Rediseño Instaladores y Desinstaladores
+**Objetivo**: unificar visualmente los flujos de instalación.
+
+Archivos a modificar:
+- [`installers/installer.py`](installers/installer.py): pantallas Bienvenida / Cuenta / Consentimiento / Instalación / Finalización. Usar `NMInstallStepper`, `NMInstallProgress`, `NMButton`. **NO TOCAR lógica de auth Supabase ni copia de archivos a APPDATA**.
+- [`installers/installer_pro.py`](installers/installer_pro.py): equivalente Hub.
+- [`installers/uninstaller.py`](installers/uninstaller.py): pantallas Confirmar / Eliminando / Finalizado. Usar `NMDataPreserveCard`. **NO TOCAR lógica de eliminación de archivos**.
+- [`installers/uninstaller_pro.py`](installers/uninstaller_pro.py): equivalente Hub.
+- [`shared/installer_common.py`](shared/installer_common.py): solo si hay helpers visuales compartidos a actualizar. NO tocar la lógica de detección de instalaciones.
+
+Nota: `stylesheet_installer()` en `theme_qt.py` debe mantenerse y solo actualizar tokens. Los instaladores siempre van en dark mode con `installer_terminal_bg`.
+
+Validación:
+- `python -m py_compile installers/*.py shared/installer_common.py`
+- Smoke test en modo dev: `python installers/installer.py` (debe abrir UI sin tocar el filesystem real si está en modo dry-run).
+
+### Fase 7 — Responsive, polish, accesibilidad
+**Objetivo**: garantizar que la app se ve bien en cualquier tamaño y cumple accesibilidad básica.
+
+Archivos a modificar:
+- [`shared/components_qt.py`](shared/components_qt.py): consolidar `responsive_columns` con breakpoints documentados (xs<640, sm<960, md<1280, lg<1600, xl). Asegurar `setAccessibleName` / `setAccessibleDescription` en botones e inputs clave. Verificar `minimumSize` >= 44px en targets táctiles.
+- Todos los archivos de vistas y módulos: agregar `resizeEvent` donde no exista. Verificar que ningún texto se solapa con anchos < 1200px.
+- [`shared/theme_qt.py`](shared/theme_qt.py): garantizar que `focus_ring_stylesheet()` se inyecta en `stylesheet_base()` global.
+
+Validación:
+- Test manual a tres anchos: 1100 (mínimo), 1320 (default), 1920 (full HD).
+- Tab order: navegar con teclado por cada vista. Verificar focus ring visible.
+- Verificar contraste WCAG AA con tool externa (Coolors / Stark / etc.) en pares text/bg críticos.
+
+### Fase 8 — Validación final
+**Objetivo**: confirmar que el redesign está completo y no rompió nada funcional.
+
+Acciones:
+- Tomar capturas frescas de todas las vistas Suite + Hub + installers en ambos temas.
+- Comparar visualmente con el código actual (no con `REDESIGN/03_current_app/` viejo).
+- Ejecutar `python build_neuromood.py` en modo dry-run o test build para verificar que PyInstaller sigue empaquetando sin errores. **NO modificar `build_neuromood.py` ni los `.bat`**.
+- Verificar persistencia: crear un mood record, cerrar app, reabrir, verificar que aparece. (Garantiza que `shared/db.py` y `shared/sync.py` no fueron afectados).
+- Verificar conexión Supabase si hay credenciales en `.env`.
+
+---
+
+## Archivos a tocar (resumen final)
+
+### Tokens y sistema de diseño
+- `shared/theme.py` — paletas, tipografía, tokens
+- `shared/theme_qt.py` — stylesheets, helpers Qt, sessions
+
+### Componentes
+- `shared/components_qt.py` — biblioteca; agregar nuevos NM*, mejorar existentes
+
+### Suite
+- `app/main_qt.py` (mínimo)
+- `app/home_qt.py`
+- `app/modules/animo_qt.py`
+- `app/modules/respiracion_qt.py`
+- `app/modules/registro_tcc_qt.py`
+- `app/modules/rutina_qt.py` (+ fix bug Fase 0)
+- `app/modules/actividades_qt.py`
+- `app/modules/timer_qt.py` (+ fix bug Fase 0)
+- `app/modules/avisos_qt.py`
+
+### Hub
+- `hub/main_qt.py`
+- `hub/pacientes_qt.py`
+- `hub/ia_asistente.py` (solo UI)
+- `hub/exportar.py` (solo UI)
+
+### Installers / Uninstallers
+- `installers/installer.py`
+- `installers/installer_pro.py`
+- `installers/uninstaller.py`
+- `installers/uninstaller_pro.py`
+- `shared/installer_common.py` (solo si hay helpers visuales)
+
+### Iconos (solo agregar, no borrar)
+- `shared/icons_svg.py` — agregar iconos faltantes si los nuevos componentes los necesitan
+
+## Archivos que NO se tocan (lista exhaustiva)
+
+### Lógica de negocio y datos
+- `shared/db.py` (schema SQLite y migraciones)
+- `shared/sync.py` (Supabase bidireccional)
+- `shared/identidad.py` (patient_id, auth)
+- `shared/config.py` (credenciales .env)
+- `shared/crash_log.py` (telemetría)
+- `shared/visual_qa.py` (mocks QA)
+- `shared/utils.py` (helpers fecha/hora — salvo si se necesita helper visual nuevo, en cuyo caso se agrega sin borrar)
+
+### Daemons y motores
+- `app/avisos_daemon.py` (notificaciones background)
+- `app/motor_activacion.py` (sugerencias terapéuticas)
+
+### Lógica IA y reportes
+- Prompts, llamadas a Groq/OpenAI/Gemini en `hub/ia_asistente.py` (la UI sí, los prompts NO)
+- Lógica ReportLab/PDF en `hub/exportar.py` (la UI sí, la generación PDF NO)
+
+### Esquemas y persistencia
+- `db/supabase_schema.sql`
+- `db/legal_consents.sql`
+- `db/fix_supabase_rls.sql`
+
+### Build y distribución
+- `build_neuromood.py`
+- `BUILD_NEUROMOOD.bat`
+- `BUILDER_NUEVO.bat`
+- `requirements.txt`
+- `.env` / `.env.example`
+- `.gitignore`
+
+### Assets
+- `assets/` (no borrar nada; solo se permite agregar si un componente nuevo lo necesita)
+- `REDESIGN/` (material de referencia, no se modifica su estructura)
+
+### Documentación
+- `AI_PROJECT_CONTEXT.md`
+- `README.md`
+- `descripcion y manuales.txt`
+
+---
+
+## Riesgos técnicos y mitigaciones
+
+| Riesgo | Severidad | Mitigación |
+|---|---|---|
+| Cambiar `V3_LIGHT`/`V3_DARK` rompe los 16 consumidores legacy vía bridge | 🔴 ALTO | Mantener las MISMAS CLAVES en V3_LIGHT/V3_DARK (solo cambiar valores hex). Actualizar `_bridge_dark()`/`_bridge_light()` en el mismo commit. Verificar que `COLORS["dark_hybrid"]` y `COLORS["light_hybrid"]` siguen exponiendo todas las claves legacy esperadas. |
+| `ThemeManager` singleton + 52 componentes con conexión manual a `theme_changed` | 🟠 MEDIO | Cualquier componente nuevo DEBE conectarse a `ThemeManager.instance().theme_changed.connect(self._apply_theme)` en `__init__`. Patrón establecido. |
+| Qt6 no acepta `rgba()` en todos los QSS properties | 🟠 MEDIO | Usar `parse_rgba()` + `qcolor_to_rgba_css()` (ya existen en `theme_qt.py:1398, 1262`). No usar rgba() literal en stylesheets. |
+| `paintEvent` custom en 70+ componentes ignora cambios de QSS | 🟠 MEDIO | Para componentes con paint custom (NMCard, NMButton, NMModuleRing, etc.), los tokens nuevos se leen vía `v3c()` / `C()` en cada paint. Verificar manualmente que cada paint custom lee del tema actualizado. |
+| Bug Rutina puede ser causado por `_load_tasks` llamado dos veces y no por duplicación de DB | 🟠 MEDIO | Antes de fixear, instrumentar con log para confirmar si es doble call o duplicación en data source. Solución correcta depende de la causa. |
+| Fix Timer eliminando `_state_chip` puede romper algún caller externo | 🟡 BAJO | Buscar referencias a `_state_chip` antes de eliminar; si hay, usar setter alternativo o redirigir a `_canvas.set_data`. |
+| `installer.py` siempre dark mode con `stylesheet_installer()` | 🟡 BAJO | No aplicar el theme toggle en installers. Mantener `stylesheet_installer()` separado pero usando los nuevos tokens del modo dark. |
+| 6443 líneas en `components_qt.py` — errores de sintaxis colapsan toda la app | 🟡 BAJO | Cada cambio en components_qt.py va seguido de `python -m py_compile shared/components_qt.py` antes de continuar. |
+| `responsive_columns` existe en components_qt.py (no en theme_qt.py como reportó el agente) | 🟢 BAJO | Verificar ubicación antes de mover. Si está en components_qt.py, dejarla ahí o mover a theme_qt.py como parte de Fase 7. |
+| Build PyInstaller puede romperse si imports nuevos no están en `requirements.txt` | 🟢 BAJO | No agregar dependencias nuevas. Todo se hace con PyQt6 + lo que ya está. |
+| Capturas viejas en `REDESIGN/03_current_app/` quedan desactualizadas | 🟢 BAJO | Se acepta y se documenta. Al final de Fase 8, regenerar capturas si el usuario lo pide. |
+
+---
+
+## Proceso obligatorio entre fases
+
+Después de **cada** fase:
+1. **Mostrar archivos modificados** (`git status` + `git diff --stat`).
+2. **Resumen de cambios** en 3-5 líneas.
+3. **Validación de sintaxis**: `python -m py_compile <archivos>`.
+4. **Smoke test**: correr la app afectada (`python app/main_qt.py` o `python hub/main_qt.py`) y verificar que arranca sin excepción.
+5. **Capturas frescas** de las pantallas afectadas (no comparar con `REDESIGN/03_current_app/` viejo).
+6. **Diff resumido** de los cambios significativos.
+7. **Pausa explícita** para que el usuario revise antes de continuar a la siguiente fase.
+
+## Verificación end-to-end (al cierre)
+
+1. `python -m py_compile $(git ls-files '*.py')` — compilación global limpia.
+2. `python app/main_qt.py` — Suite arranca, home se ve, alternar tema, abrir cada módulo, volver a home.
+3. `python hub/main_qt.py` — Hub arranca, sidebar visible, cada vista navegable, alternar tema.
+4. `python installers/installer.py` — Instalador arranca (modo dry-run si está disponible).
+5. Crear un mood record nuevo, cerrar app, reabrir — verifica que `shared/db.py` no fue afectado.
+6. Verificar sync con Supabase si hay credenciales (`shared/sync.py` intacto).
+7. `python build_neuromood.py` (opcional, si se quiere validar el build) — PyInstaller empaqueta OK.
