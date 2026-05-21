@@ -241,6 +241,17 @@ def inicializar_tablas():
             fecha TEXT PRIMARY KEY,
             nota TEXT NOT NULL DEFAULT ''
         );
+
+        -- Cache local de hub_config remoto (F2.0.B).
+        -- Llenada por shared.remote_config.refresh_from_supabase() y por
+        -- shared.sync._importar_hub_config(). Consumida por la util t().
+        CREATE TABLE IF NOT EXISTS remote_config_cache (
+            scope      TEXT NOT NULL,
+            key        TEXT NOT NULL,
+            value      TEXT NOT NULL,
+            fetched_at TEXT NOT NULL,
+            PRIMARY KEY (scope, key)
+        );
     """)
 
     conn.commit()
