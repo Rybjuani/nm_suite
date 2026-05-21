@@ -326,6 +326,7 @@ def sync_completo(patient_id: str = None, nombre: str = None) -> bool:
         _importar_recordatorios_asignados(sb, pid)
         _importar_permisos(sb, pid)
         _importar_actividades(sb, pid)
+        _importar_hub_config(sb, pid)
         guardar_config("last_sync_date", datetime.now().strftime("%Y-%m-%d"))
         return True
     except Exception:
@@ -391,6 +392,37 @@ def _importar_actividades(sb, patient_id: str):
     conn.close()
 
 
+def _importar_hub_config(sb, patient_id: str):
+    """Descarga `hub_config` scope='global' + scope='patient:<id>' y cachea local.
+
+    F2.0.C — alimenta la tabla local `remote_config_cache` que consume
+    `shared.remote_config.t()` para resolver la jerarquía
+    patient:<id> -> global -> default hardcoded.
+
+    Sigue el patrón silencioso del resto de `_importar_*`: cualquier excepción
+    de red, parse JSON o IO queda contenida. No propaga errores al pipeline
+    de sync.
+    """
+    if not patient_id:
+        return
+    scopes = ("global", f"patient:{patient_id}")
+    try:
+        res = (sb.table("hub_config")
+               .select("scope, key, value")
+               .in_("scope", scopes)
+               .execute())
+    except Exception:
+        return
+    rows = res.data or []
+    if not rows:
+        return
+    try:
+        from shared.remote_config import cache_rows
+        cache_rows(rows)
+    except Exception:
+        pass
+
+
 def verificar_asignaciones(patient_id: str = None):
     """Importa tareas, recordatorios y permisos asignados por el profesional.
     Llamar en cada apertura de app, sin restricción de intervalo."""
@@ -405,6 +437,7 @@ def verificar_asignaciones(patient_id: str = None):
         _importar_recordatorios_asignados(sb, pid)
         _importar_permisos(sb, pid)
         _importar_actividades(sb, pid)
+        _importar_hub_config(sb, pid)
     except Exception:
         pass
 
