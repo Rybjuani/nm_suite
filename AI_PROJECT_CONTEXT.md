@@ -270,6 +270,14 @@ db/fix_supabase_rls.sql      Migración de RLS para tablas clínicas (deshabilit
 db/hub_config_schema.sql     Tabla hub_config para configurabilidad remota 2 niveles
                               (F2.0.A — ver §15.6). Una sola tabla con scope
                               'global' o 'patient:<patient_id>'. RLS deshabilitado.
+db/feature_schemas.sql       8 tablas para entidades complejas que NO caben en
+                              hub_config (lifecycle propio / FK / estructura
+                              compleja): tcc_templates, routine_templates,
+                              patient_routine_template, breathing_presets_remote,
+                              timer_presets_remote, support_messages,
+                              ia_audit_log, ia_chat_history. Más ALTER
+                              patients.rutina_modo (opción C, decisión 2026-05-21).
+                              RLS deshabilitado. F2.1.A.
 ```
 
 La raíz debe mantenerse limpia. No crear scripts sueltos, logs, capturas, reportes, zips, specs, builds ni archivos auxiliares temporales en la raíz: usar `AI_SCRIPTS/`, `dist/` o una subcarpeta específica según corresponda.
