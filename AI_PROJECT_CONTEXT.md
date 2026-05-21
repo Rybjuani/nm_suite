@@ -257,6 +257,21 @@ AI_SCRIPTS/   Scripts de build, QA, utilidades y automatización
 dist/         Salida de EXEs oficiales
 ```
 
+Schemas SQL vigentes en `db/`:
+
+```text
+db/supabase_schema.sql       Tablas clínicas (patients, mood_records, breathing_sessions,
+                              thought_records, checklist_completions, timer_sessions,
+                              reminder_logs, assigned_tasks, assigned_reminders,
+                              activity_bank, patient_activities). RLS deshabilitado.
+db/legal_consents.sql        Tabla legal_consents con RLS habilitado y 3 políticas.
+                              Versionado por código (decisión 5 — NO editable desde UI).
+db/fix_supabase_rls.sql      Migración de RLS para tablas clínicas (deshabilitar).
+db/hub_config_schema.sql     Tabla hub_config para configurabilidad remota 2 niveles
+                              (F2.0.A — ver §15.6). Una sola tabla con scope
+                              'global' o 'patient:<patient_id>'. RLS deshabilitado.
+```
+
 La raíz debe mantenerse limpia. No crear scripts sueltos, logs, capturas, reportes, zips, specs, builds ni archivos auxiliares temporales en la raíz: usar `AI_SCRIPTS/`, `dist/` o una subcarpeta específica según corresponda.
 
 Manuales PDF finales vigentes en raíz:
