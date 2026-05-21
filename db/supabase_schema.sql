@@ -122,6 +122,7 @@ ALTER TABLE patients ADD COLUMN IF NOT EXISTS perm_checklist_activacion  BOOLEAN
 ALTER TABLE patients ADD COLUMN IF NOT EXISTS perm_checklist_manual      BOOLEAN DEFAULT FALSE;
 ALTER TABLE patients ADD COLUMN IF NOT EXISTS perm_temporizador_manual   BOOLEAN DEFAULT FALSE;
 ALTER TABLE patients ADD COLUMN IF NOT EXISTS perm_recordatorios_manual  BOOLEAN DEFAULT FALSE;
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS last_sync_date            TIMESTAMPTZ;
 ALTER TABLE assigned_tasks ADD COLUMN IF NOT EXISTS animo_rango TEXT DEFAULT NULL;
 
 -- ── Banco general de actividades (compartido entre todos los pacientes) ────────

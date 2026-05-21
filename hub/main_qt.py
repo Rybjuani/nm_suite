@@ -32,7 +32,8 @@ from PyQt6.QtWidgets import (
     QGraphicsDropShadowEffect, QStackedWidget,
 )
 from PyQt6.QtCore import Qt, QTimer, QSize, QPointF, QRectF, pyqtSignal
-from PyQt6.QtGui import QColor, QIcon, QPainter, QPen, QBrush, QRadialGradient
+from PyQt6.QtGui import (QColor, QIcon, QPainter, QPen, QBrush,
+                         QRadialGradient, QLinearGradient)
 from PyQt6 import sip
 
 from shared.theme_qt import (
@@ -49,6 +50,9 @@ from shared.components_qt import (
     NMSyncOrb, NMProgressLine, NMFeaturedCard, NMModuleRing,
     NMHubSidebar, NMPatientRow, NMSettingsSection,
     NMChatBubble, NMTypingDots, NMProviderChip, NMQuickAction, NMPatientContext,
+    # Componentes nuevos del redesign 2026
+    NMSectionHeader, NMSearchInput, NMTabs, NMDivider, NMAvatar, NMStatCard,
+    NMEmptyState, NMErrorState,
 )
 from shared.visual_qa import visual_qa_enabled, hub_patients, hub_module_metrics
 
@@ -207,16 +211,17 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
                                    PAD_CONTAINER, PAD_CONTAINER)
         layout.setSpacing(GAP_CARDS)
 
-        # Título
+        # Título — NMSectionHeader (eyebrow + título tonalmente coherente)
         n = len(self._pacientes)
-        title = QLabel(
-            "Ana Martínez · Semana 12"
-            if visual_qa_enabled()
-            else f"Dashboard  —  {n} paciente{'s' if n != 1 else ''}"
-        )
-        title.setFont(qfont("size_h2", weight=self._ty["weight_bold"]))
-        title.setStyleSheet(f"color: {self._v3c('text', self._modo).name()}; background: transparent;")
-        layout.addWidget(title)
+        if visual_qa_enabled():
+            self._dash_header = NMSectionHeader(
+                "PANEL CLÍNICO", "Ana Martínez · Semana 12", modo=self._modo)
+        else:
+            self._dash_header = NMSectionHeader(
+                "PANEL CLÍNICO",
+                f"Dashboard · {n} paciente{'s' if n != 1 else ''}",
+                modo=self._modo)
+        layout.addWidget(self._dash_header)
 
         if self._pacientes:
             scores = [p.get("last_mood") for p in self._pacientes if p.get("last_mood") is not None]
@@ -230,11 +235,10 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
                 if visual_qa_enabled()
                 else f"{n} pacientes vinculados · ultima sincronizacion visual"
             )
-            featured.set_tags(
-                [("Ansiedad", "teal"), ("TCC", "accent"), ("Progreso alto", "violet")]
-                if visual_qa_enabled()
-                else [("Adherencia alta", "teal"), ("Riesgo bajo", "accent"), ("Agenda al dia", "violet")]
-            )
+            # Tags neutrales descriptivos (decisión 7 — sin semáforos clínicos).
+            # Reemplaza los antiguos tags interpretativos por 4 KPIs cuantitativos
+            # calculados sobre datos existentes (prompt F0.1.A).
+            featured.set_tags(self._kpis_featured_card())
 
             # Layout 2 columnas: Featured izquierda + Metrics apilados derecha
             two_col = QHBoxLayout()
@@ -267,10 +271,10 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
             layout.addLayout(two_col)
 
             if visual_qa_enabled():
-                recent = QLabel("Actividad reciente")
-                recent.setFont(qfont("size_body", weight=self._ty["weight_bold"]))
-                recent.setStyleSheet(f"color: {self._v3c('text', self._modo).name()}; background: transparent;")
-                layout.addWidget(recent)
+                # NMSectionHeader unifica eyebrow + título para "Actividad reciente"
+                self._recent_header = NMSectionHeader(
+                    "TIMELINE", "Actividad reciente", modo=self._modo)
+                layout.addWidget(self._recent_header)
                 for text in [
                     "●  Respiración completada — 4-7-8 · 5 ciclos\n    Hoy 10:32",
                     "●  Registro de ánimo — 7/10 \"Buen día\"\n    Hoy 09:15",
@@ -278,7 +282,9 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
                 ]:
                     row = QLabel(text)
                     row.setFont(qfont("size_caption"))
-                    row.setStyleSheet(f"color: {self._v3c('text2', self._modo).name()}; background: transparent;")
+                    row.setStyleSheet(
+                        f"color: {self._v3c('text2', self._modo).name()}; "
+                        f"background: transparent;")
                     layout.addWidget(row)
                 layout.addStretch()
                 return
@@ -358,6 +364,91 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
         self._rebuild_dash_grid()
         layout.addStretch()
 
+    def _kpis_featured_card(self) -> list[tuple[str, str]]:
+        """4 KPIs neutrales descriptivos para el featured card del Dashboard.
+
+        Sustituye los antiguos tags interpretativos (etiquetas clínicas tipo
+        semáforo sobre uso de la app) por información cuantitativa sin
+        interpretación clínica (decisión 7 del proyecto + prompt F0.1.A).
+
+        En visual_qa devuelve datos demo. En producción consulta Supabase con
+        try/except: cualquier fallo cae a "—" para no romper el render.
+        """
+        # Color uniforme "teal" para los 4 — un solo color elimina el efecto
+        # semáforo que daban 3 colores distintos.
+        color = "teal"
+
+        if visual_qa_enabled():
+            return [
+                ("Último registro: hace 1 día", color),
+                ("Tareas asignadas: 8 activas", color),
+                ("Recordatorios activos: 12", color),
+                ("Próxima sesión: vie 16:00", color),
+            ]
+
+        ult_reg_txt = "—"
+        n_tareas: int = 0
+        n_recs: int = 0
+        prox_txt = "—"  # placeholder hasta tener tabla de sesiones agendadas
+
+        if self._sb is not None:
+            # Último registro de ánimo de cualquier paciente.
+            try:
+                r = (self._sb.table("mood_records")
+                     .select("fecha")
+                     .order("fecha", desc=True)
+                     .limit(1)
+                     .execute())
+                if r.data:
+                    import datetime as _dt
+                    f = (r.data[0] or {}).get("fecha", "")
+                    try:
+                        d = _dt.datetime.strptime(f, "%Y-%m-%d").date()
+                        delta = (_dt.date.today() - d).days
+                        if delta <= 0:
+                            ult_reg_txt = "hoy"
+                        elif delta == 1:
+                            ult_reg_txt = "ayer"
+                        else:
+                            ult_reg_txt = f"hace {delta} días"
+                    except (ValueError, TypeError):
+                        ult_reg_txt = "—"
+            except Exception:
+                pass
+
+            # Tareas asignadas activas.
+            try:
+                r = (self._sb.table("assigned_tasks")
+                     .select("id", count="exact")
+                     .eq("activa", True)
+                     .execute())
+                if r.count is not None:
+                    n_tareas = int(r.count)
+                else:
+                    n_tareas = len(r.data or [])
+            except Exception:
+                pass
+
+            # Recordatorios asignados activos.
+            try:
+                r = (self._sb.table("assigned_reminders")
+                     .select("id", count="exact")
+                     .eq("activa", True)
+                     .execute())
+                if r.count is not None:
+                    n_recs = int(r.count)
+                else:
+                    n_recs = len(r.data or [])
+            except Exception:
+                pass
+
+        return [
+            (f"Último registro: {ult_reg_txt}", color),
+            (f"Tareas asignadas: {n_tareas} activas", color),
+            (f"Recordatorios activos: {n_recs}", color),
+            (f"Próxima sesión: {prox_txt}", color),
+        ]
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
         new_cols = responsive_columns(self.width(), min_card_width=250)
@@ -395,8 +486,18 @@ class PacientesView(QWidget):
 
     Layout:
       Header: eyebrow "PACIENTES" + título "Pacientes (N)" + CTA "+ Nuevo"
-      Search NMCard: NMInput + 3 filter pills (Todos/Activos/Sin registros/Atención)
+      Search NMCard: NMInput + 4 filter pills (Todos/Activos/Sin registros/
+        Sin sincronización reciente)
       NMCard tabla: NMPatientRow × N con avatar + nombre + adherencia ring
+
+    Filtros — criterios neutrales descriptivos (decisión 7 — sin semáforos
+    clínicos sobre uso de la app):
+      - Todos: sin filtro.
+      - Activos: placeholder (sin campo "activo" canónico todavía).
+      - Sin registros: pacientes sin `last_session`.
+      - Sin sincronización reciente: `last_sync_date` de hace más de 7 días
+        (o nunca sincronizado). Reemplaza al antiguo filtro interpretativo
+        basado en umbral de adherencia (prompt F0.1.B).
     """
 
     def __init__(self, modo: str, pacientes: list, on_select, on_refresh, parent=None):
@@ -408,6 +509,10 @@ class PacientesView(QWidget):
         self._search_query: str = ""
         self._current_filter: str = "todos"
         self._setup()
+
+    _FILTER_KEYS = ("todos", "activos", "sin", "sin_sync")
+    _FILTER_LABELS = ("Todos", "Activos", "Sin registros", "Sin sincronización reciente")
+    _SYNC_STALE_DAYS = 7  # umbral neutral del filtro "Sin sincronización reciente"
 
     def _setup(self):
         from shared.theme_qt import v3c, V3_SP, V3_RD
@@ -425,67 +530,44 @@ class PacientesView(QWidget):
                                     V3_SP["xl"], V3_SP["xl"])
         layout.setSpacing(V3_SP["lg"])
 
-        # 1. Header
+        # 1. Header: NMSectionHeader + acciones (Sincronizar + Nuevo paciente)
         header_row = QHBoxLayout()
-        title_col = QVBoxLayout()
-        title_col.setSpacing(2)
-        self._eyebrow = QLabel("PACIENTES")
-        self._eyebrow.setFont(qfont("size_caption_xs",
-                                     weight=_TY["weight_semibold"]))
-        self._eyebrow.setStyleSheet(
-            f"color: {v3c('text3', self._modo).name()}; background: transparent;")
-        title_col.addWidget(self._eyebrow)
+        header_row.setSpacing(V3_SP["md"])
         n_pacientes = len(self._pacientes)
-        self._title_lbl = QLabel(f"Pacientes vinculados ({n_pacientes})")
-        self._title_lbl.setFont(qfont("size_h1", weight=_TY["weight_bold"]))
-        self._title_lbl.setStyleSheet(
-            f"color: {v3c('text', self._modo).name()}; background: transparent;")
-        title_col.addWidget(self._title_lbl)
-        header_row.addLayout(title_col)
-        header_row.addStretch()
+        self._section_header = NMSectionHeader(
+            "PACIENTES",
+            f"Pacientes vinculados ({n_pacientes})",
+            modo=self._modo,
+        )
+        header_row.addWidget(self._section_header, stretch=1)
 
         btn_sync = NMButton("Sincronizar", variant="ghost", size="sm",
                               modo=self._modo, width=110)
         btn_sync.clicked.connect(self._on_refresh)
-        header_row.addWidget(btn_sync)
+        header_row.addWidget(btn_sync, alignment=Qt.AlignmentFlag.AlignBottom)
         btn_new = NMButton("+ Nuevo paciente", variant="gradient",
                              size="sm", modo=self._modo, width=160)
-        header_row.addWidget(btn_new)
+        header_row.addWidget(btn_new, alignment=Qt.AlignmentFlag.AlignBottom)
         layout.addLayout(header_row)
 
-        # 2. Search + filter pills card
+        # 2. Search + filter tabs en card unificada
         search_card = NMCard(modo=self._modo, clickable=False, glow=False)
         sc_lay = QVBoxLayout(search_card)
         sc_lay.setContentsMargins(V3_SP["lg"], V3_SP["md"],
                                     V3_SP["lg"], V3_SP["md"])
-        sc_lay.setSpacing(V3_SP["sm"])
-        search_row = QHBoxLayout()
-        search_row.setSpacing(V3_SP["md"])
-        from shared.theme_qt import stylesheet_lineedit
-        self._search_edit = QLineEdit() if False else None  # placeholder
-        # Use NMInput for consistency
-        self._search_edit = NMInput("Buscar paciente por nombre o ID…",
-                                      modo=self._modo)
-        self._search_edit.setFixedHeight(36)
-        self._search_edit.textChanged.connect(self._on_search)
-        search_row.addWidget(self._search_edit, stretch=2)
-
-        # 4 filter pills (al estilo step pills del módulo Avisos)
-        self._filter_pills: dict[str, NMButtonOutline] = {}
-        for key, label in (("todos", "Todos"),
-                            ("activos", "Activos"),
-                            ("sin", "Sin registros"),
-                            ("atencion", "Atención")):
-            pill = NMButtonOutline(label, modo=self._modo,
-                                     toggleable=False, size="sm")
-            pill.setFixedSize(100, 30)
-            pill.clicked.connect(
-                lambda _, k=key: self._on_filter(k))
-            self._filter_pills[key] = pill
-            if key == "todos":
-                pill.set_active(True)
-            search_row.addWidget(pill)
-        sc_lay.addLayout(search_row)
+        sc_lay.setSpacing(V3_SP["md"])
+        # SearchInput con icono lupa y clear
+        self._search_input = NMSearchInput(
+            placeholder="Buscar paciente por nombre o ID…",
+            modo=self._modo,
+        )
+        self._search_input.text_changed.connect(self._on_search)
+        sc_lay.addWidget(self._search_input)
+        # Tabs pill como filtros
+        self._filter_tabs = NMTabs(list(self._FILTER_LABELS),
+                                    variant="pill", modo=self._modo)
+        self._filter_tabs.changed.connect(self._on_filter_tab_changed)
+        sc_lay.addWidget(self._filter_tabs)
         layout.addWidget(search_card)
 
         # 3. Tabla NMCard con NMPatientRow × N
@@ -493,7 +575,7 @@ class PacientesView(QWidget):
         tc_lay = QVBoxLayout(table_card)
         tc_lay.setContentsMargins(V3_SP["md"], V3_SP["sm"],
                                     V3_SP["md"], V3_SP["sm"])
-        tc_lay.setSpacing(2)
+        tc_lay.setSpacing(0)
         self._table_card = table_card
         self._table_lay = tc_lay
         layout.addWidget(table_card, stretch=1)
@@ -504,15 +586,15 @@ class PacientesView(QWidget):
         self._search_query = text.lower().strip()
         self._render_rows()
 
-    def _on_filter(self, key: str):
-        self._current_filter = key
-        for k, pill in self._filter_pills.items():
-            pill.set_active(k == key)
+    def _on_filter_tab_changed(self, index: int, _label: str):
+        try:
+            self._current_filter = self._FILTER_KEYS[index]
+        except IndexError:
+            self._current_filter = "todos"
         self._render_rows()
 
     def _render_rows(self):
-        v3c = self._v3c
-        # Clear
+        # Limpiar contenido previo
         while self._table_lay.count():
             item = self._table_lay.takeAt(0)
             w = item.widget()
@@ -525,21 +607,42 @@ class PacientesView(QWidget):
             rows = [p for p in rows
                      if q in (p.get("patient_name") or "").lower()
                      or q in (p.get("patient_id") or "").lower()]
-        if self._current_filter == "atencion":
-            rows = [p for p in rows
-                     if float(p.get("adherence", 1.0)) < 0.40]
+        if self._current_filter == "sin_sync":
+            # Criterio neutral: sin sincronización en los últimos N días, o
+            # nunca sincronizado. No interpreta adherencia clínica (decisión 7).
+            import datetime as _dt
+            cutoff = _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(
+                days=self._SYNC_STALE_DAYS)
+
+            def _is_stale(p: dict) -> bool:
+                raw = p.get("last_sync_date")
+                if not raw:
+                    return True  # nunca sincronizó → cae en el filtro
+                try:
+                    ts = _dt.datetime.fromisoformat(
+                        str(raw).replace("Z", "+00:00"))
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=_dt.timezone.utc)
+                    return ts < cutoff
+                except (ValueError, TypeError):
+                    return True
+
+            rows = [p for p in rows if _is_stale(p)]
         elif self._current_filter == "sin":
             rows = [p for p in rows if not p.get("last_session")]
         # "activos" deja todos por ahora (sin campo "activo" canónico)
 
         if not rows:
-            empty = QLabel("No hay pacientes que coincidan.")
-            empty.setFont(qfont("size_small"))
-            empty.setStyleSheet(
-                f"color: {v3c('text3', self._modo).name()}; "
-                f"background: transparent;")
-            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            empty.setContentsMargins(0, 24, 0, 24)
+            # Estado vacío diferenciado: con o sin búsqueda
+            if self._search_query or self._current_filter != "todos":
+                title = "Sin resultados"
+                msg = ("Probá con otro término o ajustá los filtros para "
+                       "ver más pacientes.")
+            else:
+                title = "Sin pacientes vinculados"
+                msg = ("Cuando un paciente complete el alta desde la Suite, "
+                       "aparecerá acá automáticamente.")
+            empty = NMEmptyState("fa5s.users", title, msg, parent=self._table_card)
             self._table_lay.addWidget(empty)
             return
 
@@ -560,14 +663,11 @@ class PacientesView(QWidget):
             row.clicked.connect(
                 lambda _pid=pid, _n=nombre: self._on_select(_pid, _n))
             self._table_lay.addWidget(row)
-            # Separador entre filas (excepto última)
+            # Divisor entre filas (token-driven, no QFrame inline)
             if i < len(rows) - 1:
-                sep = QFrame()
-                sep.setFrameShape(QFrame.Shape.HLine)
-                sep.setFixedHeight(1)
-                sep.setStyleSheet(
-                    f"background-color: {v3c('borderSoft', self._modo).name()};")
-                self._table_lay.addWidget(sep)
+                self._table_lay.addWidget(
+                    NMDivider(orient="h", alpha=50,
+                              inset=self._sp["sm"], modo=self._modo))
 
 
 # ── ConfigView ────────────────────────────────────────────────────────────────
@@ -613,19 +713,10 @@ class ConfigView(QWidget):
                                     V3_SP["xl"], V3_SP["xl"])
         layout.setSpacing(V3_SP["lg"])
 
-        # 1. Header eyebrow + título
-        self._eyebrow = QLabel("CONFIGURACIÓN")
-        self._eyebrow.setFont(qfont("size_caption_xs",
-                                     weight=_TY["weight_semibold"]))
-        self._eyebrow.setStyleSheet(
-            f"color: {v3c('text3', self._modo).name()}; background: transparent;")
-        layout.addWidget(self._eyebrow)
-
-        title = QLabel("Ajustes del Hub")
-        title.setFont(qfont("size_h1", weight=_TY["weight_bold"]))
-        title.setStyleSheet(
-            f"color: {v3c('text', self._modo).name()}; background: transparent;")
-        layout.addWidget(title)
+        # 1. Header — eyebrow + título unificados en NMSectionHeader
+        self._section_header = NMSectionHeader(
+            "CONFIGURACIÓN", "Ajustes del Hub", modo=self._modo)
+        layout.addWidget(self._section_header)
 
         # 2. Sync hero card (orb + status + botón sincronizar)
         sync_card = NMCard(modo=self._modo, clickable=False, glow=True)
@@ -757,26 +848,19 @@ class IAAssistantView(ThemeAwareWidgetMixin, QWidget):
         chat_l.setSpacing(V3_SP["sm"])
         outer.addWidget(chat, stretch=1)
 
-        # Header v3: eyebrow + título h1 + provider chip
-        header_col = QVBoxLayout()
-        header_col.setSpacing(2)
-        eyebrow = QLabel("ASISTENTE CLÍNICO")
-        eyebrow.setFont(qfont("size_caption_xs",
-                                weight=_TY["weight_semibold"]))
-        eyebrow.setStyleSheet(
-            f"color: {v3c('text3', self._modo).name()}; "
-            f"background: transparent;")
-        header_col.addWidget(eyebrow)
-        title_row = QHBoxLayout()
-        self._title = QLabel("IA Asistente")
-        self._title.setFont(qfont("size_h1",
-                                    weight=_TY["weight_bold"]))
-        title_row.addWidget(self._title)
-        title_row.addStretch()
+        # Header v3 — NMSectionHeader + NMProviderChip en una sola fila
+        header_row = QHBoxLayout()
+        header_row.setSpacing(V3_SP["md"])
+        self._section_header = NMSectionHeader(
+            "ASISTENTE CLÍNICO", "IA Asistente", modo=self._modo)
+        # Mantenemos self._title como alias del label de NMSectionHeader para
+        # backward-compat con _apply_theme externo.
+        self._title = self._section_header._title
+        header_row.addWidget(self._section_header, stretch=1)
         self._provider = NMProviderChip("IA verificando", "syncing", self._modo)
-        title_row.addWidget(self._provider)
-        header_col.addLayout(title_row)
-        chat_l.addLayout(header_col)
+        header_row.addWidget(self._provider,
+                              alignment=Qt.AlignmentFlag.AlignBottom)
+        chat_l.addLayout(header_row)
 
         self._messages_scroll = QScrollArea()
         self._messages_scroll.setWidgetResizable(True)
