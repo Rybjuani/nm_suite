@@ -80,6 +80,8 @@ _LEAF_EXPORT_MODULES = {
     "NMIcon": "shared.components.icons",
     "NMSectionHeader": "shared.components.icons",
     "NMAvatar": "shared.components.icons",
+    "NMBadge": "shared.components.surfaces",
+    "NMChip": "shared.components.surfaces",
 }
 
 

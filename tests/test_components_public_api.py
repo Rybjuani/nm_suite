@@ -23,6 +23,8 @@ MOVED_COMPONENT_MODULES = {
     "NMIcon": "shared.components.icons",
     "NMSectionHeader": "shared.components.icons",
     "NMAvatar": "shared.components.icons",
+    "NMBadge": "shared.components.surfaces",
+    "NMChip": "shared.components.surfaces",
 }
 
 EXPECTED_PUBLIC_COMPONENT_SYMBOLS = {
