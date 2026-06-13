@@ -982,14 +982,14 @@ class _TabRegistros(QWidget):
                         "fecha": "2026-05-22",
                         "hora": "14:30",
                         "emocion": "Tristeza",
-                        "intensidad": 80,
+                        "intensidad": 8,
                         "pensamiento": "Siento que no puedo terminar mis tareas a tiempo y fallaré a todos.",
                     },
                     {
                         "fecha": "2026-05-20",
                         "hora": "18:00",
                         "emocion": "Ansiedad",
-                        "intensidad": 65,
+                        "intensidad": 6,
                         "pensamiento": "Preocupación excesiva por la reunión de evaluación de mañana.",
                     },
                 ],
@@ -1256,7 +1256,7 @@ class _TabRegistros(QWidget):
             )
             top_lay.addWidget(lbl_title)
 
-            badge = QLabel(f"Intensidad: {intensidad}%")
+            badge = QLabel(f"Intensidad: {intensidad}/10")
             badge.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
             color = v3c("accent", self._modo).name()
             _style_mini_pill(badge, color)

@@ -646,6 +646,15 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "detalle-registros"}],
         },
+        "detalle-registros-bottom": {
+            "label": "Detalle > Registros (scroll al final: lista de registros)",
+            "parent": "detalle-registros",
+            "actions": [{"action": "navigate", "view": "detalle"},
+                        {"action": "set_tab", "tab_text": "Registros"},
+                        {"action": "call", "func": "_registros_scroll_bottom"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture", "view": "detalle-registros-bottom"}],
+        },
         "detalle-plan": {
             "label": "Detalle > Plan terapeutico tab (Recordatorios)",
             "parent": "detalle",
@@ -877,6 +886,30 @@ def _ia_scroll_to_asignacion(win, qapp, action):
         bar = scroll.verticalScrollBar()
         bar.setValue(bar.maximum())
         _drain(qapp, cycles=4)
+
+
+@_register_helper
+def _registros_scroll_bottom(win, qapp, action):
+    """Carga datos y scrollea el tab Registros hasta el final.
+
+    La lista de registros (Termómetro/TCC/etc.) vive bajo el chart y queda
+    fuera del viewport 960x600: sin scrollear no hay evidencia del badge de
+    intensidad TCC (/10) ni del contenido recortado señalado en H13."""
+    det = win._stack.currentWidget() if hasattr(win, "_stack") else None
+    reg = getattr(det, "_tab_reg", None)
+    if reg is None:
+        return
+    if hasattr(reg, "_cargar_datos"):
+        reg._cargar_datos()
+    # La carga puede ser asíncrona (señal _datos_loaded_signal): drená amplio y
+    # re-fijá el scroll al máximo varias veces para absorber filas tardías.
+    _drain(qapp, cycles=12)
+    scroll = getattr(reg, "_scroll", None)
+    if scroll is not None:
+        bar = scroll.verticalScrollBar()
+        for _ in range(4):
+            bar.setValue(bar.maximum())
+            _drain(qapp, cycles=3)
 
 
 @_register_helper
