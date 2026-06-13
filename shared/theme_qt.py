@@ -300,7 +300,7 @@ def nm_icon(key: str, color: str, size: int = 20):
 
 
 def _tm():
-    from shared.components_qt import ThemeManager
+    from shared.theme_manager import ThemeManager
 
     return ThemeManager.instance()
 

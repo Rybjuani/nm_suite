@@ -72,6 +72,8 @@ from PyQt6.QtWidgets import (
     QButtonGroup,
 )
 
+from shared.theme_manager import ThemeManager
+
 try:
     from shared.theme_qt import (
         # Compatibility (intacto)
@@ -212,140 +214,6 @@ except ImportError:
         get_mood,
         v3_mode,
     )
-
-
-# ── ThemeManager singleton ────────────────────────────────────────────────────
-
-
-class ThemeManager(QObject):
-    """
-    Singleton que propaga cambios de tema a todos los componentes registrados.
-
-    Uso:
-        ThemeManager.instance().switch_mode("light_hybrid")          # animado
-        ThemeManager.instance().switch_mode("light_hybrid", False)   # instantáneo
-        # En cualquier widget:
-        ThemeManager.instance().theme_changed.connect(self._apply_theme)
-
-    Transición v3 (350ms): por cada ventana top-level visible, toma snapshot del
-    estado actual, lo overlay como QLabel, dispara el switch (que re-pinta todo
-    bajo el overlay con el tema nuevo), y anima la opacidad del overlay de 1.0
-    → 0.0 con OutCubic. Crossfade limpio sin tocar el paint de cada widget.
-    """
-
-    theme_changed = pyqtSignal(str)  # emite el nuevo modo
-
-    # Duración de la transición (spec README v3)
-    TRANSITION_MS = 350
-
-    _inst = None
-
-    @classmethod
-    def instance(cls) -> "ThemeManager":
-        if cls._inst is None or sip.isdeleted(cls._inst):
-            cls._inst = cls()
-        return cls._inst
-
-    def __init__(self):
-        super().__init__()
-        self._modo = "dark_hybrid"
-        self._transitioning = False  # evita re-entradas durante una animación
-
-    @property
-    def modo(self) -> str:
-        return self._modo
-
-    def switch_mode(self, new_modo: str, animate: bool = True):
-        new_modo = norm_modo(new_modo)
-        if new_modo == self._modo or self._transitioning:
-            return
-
-        from shared.visual_qa import visual_qa_enabled
-
-        if not animate or visual_qa_enabled() or QApplication.instance() is None:
-            # Modo instantáneo (initial load, tests, headless)
-            self._modo = new_modo
-            for widget in QApplication.topLevelWidgets() if QApplication.instance() else []:
-                widget.update()
-            self.theme_changed.emit(new_modo)
-            return
-
-        # 1. Snapshot de cada ventana top-level visible (antes del switch)
-        snapshots: list[tuple[QWidget, QPixmap]] = []
-        for win in QApplication.topLevelWidgets():
-            if not win.isVisible():
-                continue
-            if win.isMinimized():
-                continue
-            if win.size().width() <= 0 or win.size().height() <= 0:
-                continue
-            try:
-                snap = win.grab()
-                if not snap.isNull():
-                    snapshots.append((win, snap))
-            except Exception:
-                # No es crítico — seguimos sin overlay para esa ventana
-                pass
-
-        # 2. Overlay snapshot ANTES del switch para que cubra el repaint
-        overlays: list[QLabel] = []
-        for win, snap in snapshots:
-            try:
-                ov = QLabel(win)
-                ov.setPixmap(snap)
-                ov.setGeometry(0, 0, win.width(), win.height())
-                ov.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-                ov.setScaledContents(False)
-                ov.show()
-                ov.raise_()
-                overlays.append(ov)
-            except Exception:
-                pass
-
-        # 3. Procesar eventos para asegurar que overlays están pintados
-        try:
-            QApplication.processEvents()
-        except Exception:
-            pass
-
-        # 4. Switch real (widgets reciben theme_changed y se repintan bajo el overlay)
-        self._modo = new_modo
-        self._transitioning = True
-        try:
-            self.theme_changed.emit(new_modo)
-            for widget in QApplication.topLevelWidgets():
-                widget.update()
-        except Exception:
-            pass
-
-        # 5. Animar cada overlay: fade out 350ms, luego deleteLater
-        for ov in overlays:
-            self._fade_out_overlay(ov)
-
-        # Si no había overlays (caso headless), unlock inmediato
-        if not overlays:
-            self._transitioning = False
-        else:
-            # Unlock cuando termina la última animación
-            QTimer.singleShot(
-                self.TRANSITION_MS + 20, lambda: setattr(self, "_transitioning", False)
-            )
-
-    def _fade_out_overlay(self, overlay: QLabel):
-        """Anima la opacidad del overlay 1.0 → 0.0 en TRANSITION_MS."""
-        try:
-            eff = QGraphicsOpacityEffect(overlay)
-            overlay.setGraphicsEffect(eff)
-            eff.setOpacity(1.0)
-            anim = QPropertyAnimation(eff, b"opacity", overlay)
-            anim.setDuration(self.TRANSITION_MS)
-            anim.setStartValue(1.0)
-            anim.setEndValue(0.0)
-            anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-            anim.finished.connect(overlay.deleteLater)
-            anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
-        except Exception:
-            overlay.deleteLater()
 
 
 def _tm() -> ThemeManager:

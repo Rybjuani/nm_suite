@@ -103,3 +103,28 @@ def test_public_component_symbols_are_reexported_from_both_paths():
     assert EXPECTED_PUBLIC_COMPONENT_SYMBOLS <= set(components.__all__)
     for name in EXPECTED_PUBLIC_COMPONENT_SYMBOLS:
         assert getattr(components, name) is getattr(facade, name)
+
+
+def test_theme_manager_reexports_keep_singleton_identity():
+    components = importlib.import_module("shared.components")
+    facade = importlib.import_module("shared.components_qt")
+    theme_manager = importlib.import_module("shared.theme_manager")
+
+    assert facade.ThemeManager is theme_manager.ThemeManager
+    assert components.ThemeManager is theme_manager.ThemeManager
+    assert facade.ThemeManager.instance() is theme_manager.ThemeManager.instance()
+
+
+def test_theme_manager_has_no_component_or_qt_adapter_dependencies():
+    path = ROOT / "shared" / "theme_manager.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    forbidden = {"shared.theme_qt", "shared.components", "shared.components_qt"}
+    imported_modules: set[str] = set()
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            imported_modules.add(node.module)
+        elif isinstance(node, ast.Import):
+            imported_modules.update(alias.name for alias in node.names)
+
+    assert not (imported_modules & forbidden)
