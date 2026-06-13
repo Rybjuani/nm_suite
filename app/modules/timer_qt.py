@@ -497,8 +497,11 @@ class ModuloTimer(NMModule):
         self._entry_custom.setStyleSheet(self._pill_input_style())
         cw_row.addWidget(self._entry_custom)
 
-        btn_ok = NMButton("OK", modo=self._modo, variant="gradient", size="sm", width=36)
-        btn_ok.setFixedSize(36, 28)
+        # Ancho 56 (era 36): a 36px el OK era mucho más angosto que cualquier
+        # otro botón y rompía el target de clic (S11). Mantiene el alto 28 de la
+        # fila compacta y queda alineado con el input "min" (64) contiguo.
+        btn_ok = NMButton("OK", modo=self._modo, variant="gradient", size="sm", width=56)
+        btn_ok.setFixedSize(56, 28)
         btn_ok.clicked.connect(self._apply_custom)
         cw_row.addWidget(btn_ok)
 
