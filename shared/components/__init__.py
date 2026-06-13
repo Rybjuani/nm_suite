@@ -77,6 +77,9 @@ _LEAF_EXPORT_MODULES = {
     "NMToast": "shared.components.feedback",
     "NMTypingDots": "shared.components.feedback",
     "NMToggle": "shared.components.inputs",
+    "NMIcon": "shared.components.icons",
+    "NMSectionHeader": "shared.components.icons",
+    "NMAvatar": "shared.components.icons",
 }
 
 
