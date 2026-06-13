@@ -7,11 +7,14 @@ from PyQt6.QtCore import (
     QAbstractAnimation,
     QEasingCurve,
     QEvent,
+    QPointF,
+    QPropertyAnimation,
     QRect,
     QRectF,
     Qt,
     QTimer,
     QVariantAnimation,
+    pyqtProperty,
 )
 from PyQt6.QtGui import (
     QBrush,
@@ -26,7 +29,7 @@ from PyQt6.QtGui import (
 from PyQt6.QtWidgets import QWidget
 
 from shared.theme_manager import ThemeManager
-from shared.theme_qt import colors, norm_modo, qfont, v3c
+from shared.theme_qt import ANIM, colors, norm_modo, qfont, v3c
 
 
 def _tm() -> ThemeManager:
@@ -79,6 +82,110 @@ class NMSkeleton(QWidget):
     def _apply_theme(self, modo):
         self._modo = norm_modo(modo)
         self.update()
+
+
+class NMRingPulse(QWidget):
+    """Anillo único que se expande desde el centro y se desvanece — 500 ms, 1 pulso.
+
+    Uso:
+        self._ring_pulse = NMRingPulse(self._content, modo=self._modo)
+        # Al finalizar sesión:
+        self._ring_pulse.launch()
+
+    El anillo cubre todo el widget padre (overlay transparente a eventos).
+    Dos capas concéntricas: teal principal + violet secundario al 88 % del radio.
+    """
+
+    def __init__(self, parent: QWidget, modo: str = "dark_hybrid"):
+        super().__init__(parent)
+        self._modo = norm_modo(modo)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self._t = 0.0          # 0→1: controla radio + alpha simultáneamente
+        self._max_r = 1.0      # se calcula en launch() según tamaño del padre
+        self._anim: QPropertyAnimation | None = None
+        self.hide()
+        parent.installEventFilter(self)
+
+    # ── resize tracking ───────────────────────────────────────────────────────
+
+    def eventFilter(self, obj, event):
+        if obj is self.parent() and event.type().name in ("Resize", "Move"):
+            self.setGeometry(self.parent().rect())
+        return super().eventFilter(obj, event)
+
+    # ── pyqtProperty animable ─────────────────────────────────────────────────
+
+    def _get_t(self) -> float:
+        return self._t
+
+    def _set_t(self, v: float) -> None:
+        self._t = max(0.0, min(1.0, v))
+        self.update()
+
+    pulse_t = pyqtProperty(float, _get_t, _set_t)
+
+    # ── API ───────────────────────────────────────────────────────────────────
+
+    def launch(self) -> None:
+        """Dispara el pulso. Idempotente: cancela pulso previo si existía."""
+        par = self.parent()
+        if par is None:
+            return
+        self.setGeometry(par.rect())
+        w, h = float(par.width()), float(par.height())
+        self._max_r = (w ** 2 + h ** 2) ** 0.5 / 2.0
+        self._t = 0.0
+        self.raise_()
+        self.show()
+
+        if self._anim:
+            try:
+                self._anim.stop()
+            except RuntimeError:
+                pass
+        self._anim = QPropertyAnimation(self, b"pulse_t", self)
+        self._anim.setDuration(ANIM["ring"])
+        self._anim.setStartValue(0.0)
+        self._anim.setEndValue(1.0)
+        self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._anim.finished.connect(self.hide)
+        self._anim.start()
+
+    # ── render ────────────────────────────────────────────────────────────────
+
+    def paintEvent(self, event) -> None:
+        if self._t <= 0 or self._max_r <= 0:
+            return
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        cx, cy = self.width() / 2.0, self.height() / 2.0
+        center = QPointF(cx, cy)
+
+        is_dark = "dark" in self._modo
+        r = self._t * self._max_r
+        # Alpha máximo y grosor de trazo difieren por tema:
+        # dark → más dramático sobre bg oscuro; light → más sutil sobre bg claro
+        a_max = 210 if is_dark else 155
+        a = int(a_max * (1.0 - self._t) ** 1.5)
+        stroke_main = 2.5 if is_dark else 2.0
+        stroke_sec  = 1.5 if is_dark else 1.0
+
+        # Anillo principal — teal
+        teal = QColor(v3c("teal", self._modo))
+        teal.setAlpha(a)
+        p.setPen(QPen(teal, stroke_main))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawEllipse(center, r, r)
+
+        # Anillo secundario — violet, al 88 % del radio
+        violet = QColor(v3c("violet", self._modo))
+        sec_mult = 0.55 if is_dark else 0.45
+        violet.setAlpha(int(a * sec_mult))
+        p.setPen(QPen(violet, stroke_sec))
+        p.drawEllipse(center, r * 0.88, r * 0.88)
+
+        p.end()
 
 
 class NMToast(QWidget):

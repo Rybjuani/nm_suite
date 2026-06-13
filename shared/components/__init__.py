@@ -68,6 +68,7 @@ __all__ = [
 _LAYOUT_EXPORTS = {"h_spacer", "responsive_columns"}
 _LEAF_EXPORT_MODULES = {
     "NMElidedLabel": "shared.components.data",
+    "NMRingPulse": "shared.components.feedback",
     "NMSkeleton": "shared.components.feedback",
     "NMToast": "shared.components.feedback",
     "NMToggle": "shared.components.inputs",
