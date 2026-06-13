@@ -2470,21 +2470,23 @@ class DetallePacienteView(QWidget):
         # paciente se leía como una línea que separaba la titlebar de la ventana
         # principal — pedido owner.)
 
-        # Patient hero shell
+        # Patient hero shell — alto reducido: el header lo paga TODA tab y el
+        # contenido se recortaba abajo (H12/H21). Menos padding/avatar libera
+        # ~18px de viewport para resumen/registros/ia/plan sin perder jerarquía.
         top = NMCard(modo=self._modo, clickable=False, glow=False)
-        top.setMinimumHeight(80)
+        top.setMinimumHeight(64)
         tl = QHBoxLayout(top)
-        tl.setContentsMargins(18, 12, 18, 12)
+        tl.setContentsMargins(18, 10, 18, 10)
         tl.setSpacing(14)
 
         self._btn_back = NMButton("Volver", variant="ghost", size="sm", modo=self._modo, width=92)
-        self._btn_back.setFixedHeight(34)
+        self._btn_back.setFixedHeight(32)
         self._btn_back.clicked.connect(self.back_requested.emit)
         tl.addWidget(self._btn_back, alignment=Qt.AlignmentFlag.AlignTop)
 
         initials = "".join(w[0] for w in (self._nombre or "?").split()[:2]).upper()
         self._avatar = NMAvatar(
-            initials=initials or "P", size=44, color_seed=self._pid or self._nombre, modo=self._modo
+            initials=initials or "P", size=40, color_seed=self._pid or self._nombre, modo=self._modo
         )
         tl.addWidget(self._avatar, alignment=Qt.AlignmentFlag.AlignTop)
 
@@ -2543,7 +2545,7 @@ class DetallePacienteView(QWidget):
         top_wrap = QWidget()
         top_wrap.setStyleSheet("background: transparent;")
         top_lay = QVBoxLayout(top_wrap)
-        top_lay.setContentsMargins(16, 8, 16, 2)
+        top_lay.setContentsMargins(16, 6, 16, 2)
         top_lay.setSpacing(0)
         top_lay.addWidget(top)
         layout.addWidget(top_wrap)
