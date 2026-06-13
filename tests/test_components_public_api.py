@@ -128,3 +128,35 @@ def test_theme_manager_has_no_component_or_qt_adapter_dependencies():
             imported_modules.update(alias.name for alias in node.names)
 
     assert not (imported_modules & forbidden)
+
+
+def test_layout_helpers_are_leaf_exports_with_compatible_identity():
+    components = importlib.import_module("shared.components")
+    facade = importlib.import_module("shared.components_qt")
+    layout = importlib.import_module("shared.components.layout")
+
+    assert facade.h_spacer is layout.h_spacer
+    assert components.h_spacer is layout.h_spacer
+    assert facade.responsive_columns is layout.responsive_columns
+    assert components.responsive_columns is layout.responsive_columns
+    assert facade.responsive_breakpoint is layout.responsive_breakpoint
+
+
+def test_layout_module_does_not_import_component_facades_or_theme_adapters():
+    path = ROOT / "shared" / "components" / "layout.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    forbidden = {
+        "shared.components",
+        "shared.components_qt",
+        "shared.theme_qt",
+        "shared.theme_manager",
+    }
+    imported_modules: set[str] = set()
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            imported_modules.add(node.module)
+        elif isinstance(node, ast.Import):
+            imported_modules.update(alias.name for alias in node.names)
+
+    assert not (imported_modules & forbidden)

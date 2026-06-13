@@ -1,227 +1,78 @@
-"""
-shared/components/__init__.py
-=============================
-Import point for NeuroMood PyQt6 UI components.
+"""Public import point for NeuroMood PyQt6 UI components."""
 
-Re-exports all public components from ``shared.components_qt`` for
-backwards compatibility.  Code can import from this package::
+from __future__ import annotations
 
-    from shared.components import NMCard, NMButton, NMInput
-
-The direct runtime module remains available::
-
-    from shared.components_qt import NMCard, NMButton
-
-"""
-
-from shared.components_qt import (
-    # ── Core ──────────────────────────────────────────────────────────────
-    ThemeManager,
-    # ── Cards & Surfaces ──────────────────────────────────────────────────
-    NMCard,
-    NMCardSecondary,
-    NMEmptyState,
-    NMSectionCard,
-    NMActivityCard,
-    NMFeaturedCard,
-    NMStatCard,
-    NMMetricCard,
-    NMChartPanel,
-    NMFormPanel,
-    NMErrorState,
-    NMRingPulse,
-    NMDataPreserveCard,
-    # ── Buttons ────────────────────────────────────────────────────────────
-    NMButton,
-    NMIconButton,
-    NMButtonOutline,
-    NMPlayButton,
-    NMQuickAction,
-    NMDivider,
-    NMSectionHeader,
-    # ── Inputs ─────────────────────────────────────────────────────────────
-    NMInput,
-    NMSearchInput,
-    NMTextArea,
-    NMSelect,
-    NMFormField,
-    NMFormRow,
-    NMToggle,
-    NMCustomCheck,
-    NMSegmentedChoice,
-    # ── Navigation ─────────────────────────────────────────────────────────
-    NMSidebar,
-    NMHeader,
-    NMPageHeader,
-    NMTabs,
-    NMWindowChrome,
-    NMRow,
-    # ── Feedback ───────────────────────────────────────────────────────────
-    NMToast,
-    NMTooltip,
-    NMChip,
-    NMBadge,
-    NMAIDisclaimer,
-    NMStatusDot,
-    NMStatusBanner,
-    NMStatusChip,
-    NMWelcomeBar,
-    # ── Data / Charts ──────────────────────────────────────────────────────
-    NMSparkline,
-    NMWaveChart,
-    NMProgressBar,
-    NMProgressLine,
-    NMFocusArc,
-    NMHeatBar,
-    NMCycleRing,
-    NMStreakBadge,
-    NMRoutineSection,
-    NMDayNote,
-    NMModuleRing,
-    # ── Mood ───────────────────────────────────────────────────────────────
-    NMMoodEmoji,
-    V3MoodSlider,
-    NMEmojiPicker,
-    NMCalmBadge,
-    NMPhaseChip,
-    NMTCCStepper,
-    NMStepper,
-    NMMoodContextHeader,
-    NMCategoryFilter,
-    _MoodPickWidget,
-    _MoodPickLabel,
-    _MoodTrackBar,
-    # ── Session ────────────────────────────────────────────────────────────
-    NMSessionHistory,
-    NMSkeleton,
-    NMFadeWidget,
-    NMModule,
-    NMSyncOrb,
-    NMInstallStepper,
-    # ── Misc / Utility ─────────────────────────────────────────────────────
-    NMIcon,
-    NMElidedLabel,
-    NMAvatar,
-    NMPresetChip,
-    NMProviderChip,
-    NMHubSidebar,
-    NMAvisoCard,
-    NMPatientRow,
-    NMPatientRowPremium,
-    NMPatientContext,
-    NMSettingsSection,
-    NMPanel,
-    NMListRow,
-    NMChatBubble,
-    NMTypingDots,
-    NMDialogScaffold,
-    h_spacer,
-    responsive_columns,
-    nm_confirm,
-)
+from shared.components.layout import h_spacer, responsive_columns
 
 __all__ = [
-    # Core
-    "ThemeManager",
-    # Cards & Surfaces
-    "NMCard",
-    "NMCardSecondary",
-    "NMEmptyState",
-    "NMSectionCard",
-    "NMActivityCard",
-    "NMFeaturedCard",
-    "NMStatCard",
-    "NMMetricCard",
-    "NMChartPanel",
-    "NMFormPanel",
-    "NMErrorState",
-    "NMRingPulse",
-    "NMDataPreserveCard",
-    # Buttons
-    "NMButton",
-    "NMIconButton",
-    "NMButtonOutline",
-    "NMPlayButton",
-    "NMQuickAction",
-    "NMDivider",
-    "NMSectionHeader",
-    # Inputs
-    "NMInput",
-    "NMSearchInput",
-    "NMTextArea",
-    "NMSelect",
-    "NMFormField",
-    "NMFormRow",
-    "NMToggle",
-    "NMCustomCheck",
-    "NMSegmentedChoice",
-    # Navigation
-    "NMSidebar",
-    "NMHeader",
-    "NMPageHeader",
-    "NMTabs",
-    "NMWindowChrome",
-    "NMRow",
-    # Feedback
-    "NMToast",
-    "NMTooltip",
-    "NMChip",
-    "NMBadge",
     "NMAIDisclaimer",
-    "NMStatusDot",
-    "NMStatusBanner",
-    "NMStatusChip",
-    "NMWelcomeBar",
-    # Data / Charts
-    "NMSparkline",
-    "NMWaveChart",
+    "NMAvatar",
+    "NMBadge",
+    "NMButton",
+    "NMButtonOutline",
+    "NMCalmBadge",
+    "NMCard",
+    "NMChartPanel",
+    "NMChip",
+    "NMCustomCheck",
+    "NMCycleRing",
+    "NMDayNote",
+    "NMDialogScaffold",
+    "NMDivider",
+    "NMElidedLabel",
+    "NMEmptyState",
+    "NMFadeWidget",
+    "NMFeaturedCard",
+    "NMFocusArc",
+    "NMFormPanel",
+    "NMFormRow",
+    "NMHeatBar",
+    "NMHubSidebar",
+    "NMIcon",
+    "NMInput",
+    "NMListRow",
+    "NMMetricCard",
+    "NMModule",
+    "NMModuleRing",
+    "NMPageHeader",
+    "NMPanel",
+    "NMPatientRowPremium",
+    "NMPhaseChip",
+    "NMPlayButton",
     "NMProgressBar",
     "NMProgressLine",
-    "NMFocusArc",
-    "NMHeatBar",
-    "NMCycleRing",
-    "NMStreakBadge",
-    "NMRoutineSection",
-    "NMDayNote",
-    "NMModuleRing",
-    # Mood
-    "NMMoodEmoji",
-    "V3MoodSlider",
-    "NMEmojiPicker",
-    "NMCalmBadge",
-    "NMPhaseChip",
-    "NMTCCStepper",
-    "NMStepper",
-    "NMMoodContextHeader",
-    "NMCategoryFilter",
-    "_MoodPickWidget",
-    "_MoodPickLabel",
-    "_MoodTrackBar",
-    # Session
-    "NMSessionHistory",
-    "NMSkeleton",
-    "NMFadeWidget",
-    "NMModule",
-    "NMSyncOrb",
-    "NMInstallStepper",
-    # Misc / Utility
-    "NMIcon",
-    "NMElidedLabel",
-    "NMAvatar",
-    "NMPresetChip",
-    "NMProviderChip",
-    "NMHubSidebar",
-    "NMAvisoCard",
-    "NMPatientRow",
-    "NMPatientRowPremium",
-    "NMPatientContext",
+    "NMRingPulse",
+    "NMSearchInput",
+    "NMSectionHeader",
+    "NMSegmentedChoice",
     "NMSettingsSection",
-    "NMPanel",
-    "NMListRow",
-    "NMChatBubble",
+    "NMSkeleton",
+    "NMStepper",
+    "NMSyncOrb",
+    "NMTabs",
+    "NMTextArea",
+    "NMToast",
+    "NMToggle",
     "NMTypingDots",
-    "NMDialogScaffold",
+    "NMWaveChart",
+    "NMWindowChrome",
+    "ThemeManager",
+    "V3MoodSlider",
     "h_spacer",
-    "responsive_columns",
     "nm_confirm",
+    "responsive_columns",
 ]
+
+_LAYOUT_EXPORTS = {"h_spacer", "responsive_columns"}
+
+
+def __getattr__(name: str):
+    if name in _LAYOUT_EXPORTS:
+        return globals()[name]
+    if name in __all__:
+        from shared import components_qt
+
+        value = getattr(components_qt, name)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module 'shared.components' has no attribute {name!r}")
