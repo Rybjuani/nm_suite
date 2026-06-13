@@ -1,0 +1,389 @@
+"""Arc and ring progress components with shared v3 gradient helpers."""
+
+from __future__ import annotations
+
+from PyQt6.QtCore import QEasingCurve, QPointF, QPropertyAnimation, QRectF, Qt, QTimer, pyqtProperty
+from PyQt6.QtGui import QBrush, QColor, QPainter, QPen, QRadialGradient
+from PyQt6.QtWidgets import QWidget
+
+from shared.theme import TYPOGRAPHY, V3_GRADIENTS, v3_mode
+from shared.theme_manager import ThemeManager
+from shared.theme_qt import ANIM, interpolate_color, norm_modo, qfont_mono, v3c
+
+
+def _tm() -> ThemeManager:
+    return ThemeManager.instance()
+
+
+# ── Private helpers shared by all ring components ─────────────────────────────
+
+
+def _ring_stroke(size: int) -> int:
+    """Stroke proporcional al tamaño (README v3).
+
+    ≤ 40       → 3-4
+    60-100     → 5-8
+    ≥ 100      → 10-14   (340 → 14)
+    """
+    if size <= 40:
+        return max(3, round(size * 0.085))
+    if size <= 60:
+        return 5
+    if size <= 80:
+        return 6
+    if size <= 100:
+        return 8
+    if size <= 140:
+        return 10
+    if size <= 200:
+        return 12
+    return 14
+
+
+def _color_at_t(stops, t: float) -> QColor:
+    """Interpola entre stops ``[(hex, t_pos), …]`` ordenados por t_pos."""
+    t = max(0.0, min(1.0, t))
+    for i in range(len(stops) - 1):
+        h0, t0 = stops[i]
+        h1, t1 = stops[i + 1]
+        if t0 <= t <= t1:
+            local = (t - t0) / max(1e-9, t1 - t0)
+            return QColor(interpolate_color(h0, h1, local))
+    return QColor(stops[-1][0])
+
+
+def _paint_v3_arc(
+    p: QPainter,
+    rect: QRectF,
+    start_angle_deg: float,
+    span_deg: float,
+    pen_width: int,
+    modo: str,
+    segments: int = 64,
+):
+    """Pinta un arco con el gradient firma v3 fluyendo a lo largo del arco.
+
+    Implementación segmento-a-segmento con FlatCap (sin spokes intermedios) y
+    círculos sólidos en los extremos para simular RoundCap. Funciona en
+    cualquier dirección (CW o CCW) sin los líos de QConicalGradient.
+    """
+    import math
+
+    if abs(span_deg) < 0.1:
+        return
+    stops = V3_GRADIENTS[v3_mode(modo)]
+    direction = 1 if span_deg > 0 else -1
+    abs_span = abs(span_deg)
+
+    p.setBrush(Qt.BrushStyle.NoBrush)
+    for i in range(segments):
+        t0 = i / segments
+        t1 = (i + 1) / segments
+        mid_t = (t0 + t1) / 2
+        col = _color_at_t(stops, mid_t)
+        pen = QPen(col, pen_width, Qt.PenStyle.SolidLine, Qt.PenCapStyle.FlatCap)
+        p.setPen(pen)
+        a0 = start_angle_deg + direction * abs_span * t0
+        a1 = start_angle_deg + direction * abs_span * t1
+        p.drawArc(rect, int(a0 * 16), int((a1 - a0) * 16))
+
+    # Round caps manuales en los extremos del arco
+    cx, cy = rect.center().x(), rect.center().y()
+    rx, ry = rect.width() / 2, rect.height() / 2
+    cap_r = pen_width / 2
+    for endpoint_t, color_t in ((0.0, 0.0), (1.0, 1.0)):
+        angle = math.radians(start_angle_deg + direction * abs_span * endpoint_t)
+        # Qt: y aumenta hacia abajo, ángulo positivo es CCW desde +x
+        px = cx + rx * math.cos(angle)
+        py = cy - ry * math.sin(angle)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(_color_at_t(stops, color_t)))
+        p.drawEllipse(QPointF(px, py), cap_r, cap_r)
+
+
+class NMFocusArc(QWidget):
+    """Arco circular de foco con aura, texto central, pulse y blink."""
+
+    def __init__(self, size: int = 160, modo: str = None, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._pct = 0.0
+        self._time_text = "25:00"
+        self._state_text = "listo"
+        # Efectos animados
+        self._pulse_intensity = 0.0   # 0..1 — modula aura y glow mientras corre
+        self._blink_on = True          # False = frame apagado en los últimos 10s
+        self._anim_pulse: QPropertyAnimation | None = None
+        self._blink_timer: QTimer | None = None
+        self.setFixedSize(size, size)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    # ── pyqtProperty animable ─────────────────────────────────────────────────
+
+    def _get_pulse_intensity(self) -> float:
+        return self._pulse_intensity
+
+    def _set_pulse_intensity(self, v: float) -> None:
+        self._pulse_intensity = max(0.0, min(1.0, v))
+        self.update()
+
+    pulse_intensity = pyqtProperty(float, _get_pulse_intensity, _set_pulse_intensity)
+
+    # ── API de datos ──────────────────────────────────────────────────────────
+
+    def set_data(self, pct: float, time_text: str, state_text: str | None = None):
+        self._pct = max(0.0, min(1.0, pct))
+        self._time_text = time_text
+        self.update()
+
+    def update_data(self, progress: float, time_text: str):
+        self.set_data(progress, time_text, self._state_text)
+
+    # ── Animaciones de estado ─────────────────────────────────────────────────
+
+    def start_pulse(self):
+        """Aura que respira lentamente mientras el timer corre (loop infinito)."""
+        self._state_text = "en curso"
+        self._blink_on = True
+        if self._anim_pulse is not None:
+            return
+        a = QPropertyAnimation(self, b"pulse_intensity", self)
+        a.setDuration(ANIM["pulse"])
+        a.setLoopCount(-1)
+        a.setKeyValueAt(0.0, 0.15)
+        a.setKeyValueAt(0.5, 1.0)
+        a.setKeyValueAt(1.0, 0.15)
+        a.setEasingCurve(QEasingCurve.Type.InOutSine)
+        self._anim_pulse = a
+        a.start()
+
+    def stop_pulse(self):
+        """Pausa el timer — congela el pulso en base."""
+        self._state_text = "pausado"
+        self._stop_pulse_anim()
+        self.update()
+
+    def start_blink(self):
+        """Parpadeo urgente para los últimos 10 s (coexiste con el pulse)."""
+        if self._blink_timer is not None:
+            return
+        t = QTimer(self)
+        t.setInterval(ANIM["blink"])
+        t.timeout.connect(self._on_blink_tick)
+        self._blink_timer = t
+        t.start()
+
+    def stop_blink(self):
+        if self._blink_timer is not None:
+            self._blink_timer.stop()
+            self._blink_timer = None
+        self._blink_on = True
+        self.update()
+
+    def _on_blink_tick(self) -> None:
+        self._blink_on = not self._blink_on
+        self.update()
+
+    def show_finish(self):
+        self._stop_all_anims()
+        self.set_data(1.0, "00:00", "terminado")
+
+    def reset(self):
+        self._stop_all_anims()
+        self.set_data(0.0, self._time_text, "listo")
+
+    def _stop_pulse_anim(self) -> None:
+        if self._anim_pulse is not None:
+            try:
+                self._anim_pulse.stop()
+            except RuntimeError:
+                pass
+            self._anim_pulse = None
+        self._pulse_intensity = 0.0
+
+    def _stop_all_anims(self) -> None:
+        self._stop_pulse_anim()
+        self.stop_blink()
+
+    # ── paintEvent ────────────────────────────────────────────────────────────
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w = self.width()
+        cx = cy = w / 2
+        is_dark = "dark" in self._modo
+
+        # ── Sección arc+aura: opacidad en blink-off (más alto en light para visibilidad)
+        p.setOpacity(0.22 if not self._blink_on else 1.0)
+
+        # Aura radial — radio y alpha adaptativos al tema
+        base_alpha = 0.18 if is_dark else 0.11
+        pulse_boost = 0.10 if is_dark else 0.07   # boost más sutil en light
+        aura_alpha = min(1.0, base_alpha + self._pulse_intensity * pulse_boost)
+        aura_r = w * (0.42 + self._pulse_intensity * 0.03)
+        aura = QRadialGradient(QPointF(cx, cy), aura_r)
+        ac = QColor(v3c("teal", self._modo))
+        ac.setAlphaF(aura_alpha)
+        aura.setColorAt(0.0, ac)
+        aura.setColorAt(1.0, QColor(0, 0, 0, 0))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(aura)
+        p.drawEllipse(QPointF(cx, cy), aura_r, aura_r)
+
+        # Track sutil
+        pen_w = _ring_stroke(w)
+        r = w / 2 - pen_w - 1
+        rect = QRectF(cx - r, cy - r, r * 2, r * 2)
+        track_col = v3c("borderSoft", self._modo)
+        p.setPen(QPen(track_col, pen_w, Qt.PenStyle.SolidLine, Qt.PenCapStyle.FlatCap))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawEllipse(QPointF(cx, cy), r, r)
+
+        # Arco progreso con glow — glow se intensifica con pulse
+        if self._pct > 0.001:
+            glow_w = pen_w + 6
+            glow_rect = QRectF(cx - r, cy - r, r * 2, r * 2)
+            base_glow = 40 if is_dark else 22
+            pulse_glow = 40 if is_dark else 22   # amplitud del pulso también más sutil en light
+            glow_col = QColor(v3c("teal", self._modo))
+            glow_col.setAlpha(int(base_glow + self._pulse_intensity * pulse_glow))
+            p.setPen(QPen(glow_col, glow_w, Qt.PenStyle.SolidLine, Qt.PenCapStyle.FlatCap))
+            p.drawArc(glow_rect, int(90 * 16), int(-360.0 * self._pct * 16))
+            if is_dark:
+                glow_col2 = QColor(v3c("violet", self._modo))
+                glow_col2.setAlpha(int(25 + self._pulse_intensity * 25))
+                p.setPen(QPen(glow_col2, glow_w - 2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.FlatCap))
+                p.drawArc(glow_rect, int(90 * 16), int(-360.0 * self._pct * 16))
+            _paint_v3_arc(p, rect, 90.0, -360.0 * self._pct, pen_w, self._modo)
+
+        # ── Tiempo central: siempre 100% opacidad para ser legible ───────────
+        p.setOpacity(1.0)
+        time_pt = max(16, int(w * 0.15))
+        p.setPen(v3c("text", self._modo))
+        try:
+            from shared.theme_qt import v3_font as _v3_font
+            p.setFont(_v3_font(time_pt, weight=TYPOGRAPHY["weight_medium"], serif=True))
+        except ImportError:
+            p.setFont(qfont_mono(time_pt, bold=True))
+        p.drawText(QRectF(0, 0, w, w), Qt.AlignmentFlag.AlignCenter, self._time_text)
+        p.end()
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self.update()
+
+
+class NMCycleRing(QWidget):
+    """Anillo de trazo pequeño con contador de ciclos de respiración.
+
+    Columna izquierda del módulo Respiración.
+    """
+
+    def __init__(self, size: int = 56, modo: str = None, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._cycles = 0
+        self._size = size
+        self.setFixedSize(size, size)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def set_cycles(self, n: int):
+        self._cycles = n
+        self.update()
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.save()
+        s = self._size
+        cx, cy = s / 2, s / 2
+        pen_w = _ring_stroke(s)
+        r_out = s / 2 - pen_w - 1
+        rect = QRectF(cx - r_out, cy - r_out, r_out * 2, r_out * 2)
+
+        # Contorno completo con gradient firma v3 (no es progreso — siempre 360°)
+        _paint_v3_arc(p, rect, 90.0, -359.99, pen_w, self._modo, segments=80)
+
+        p.setPen(v3c("text", self._modo))
+        p.setFont(qfont_mono(max(10, int(s * 0.22)), bold=False))
+        # Peso semibold sin usar bold flag: usar v3_font sería ideal pero qfont_mono no
+        # acepta weight; pintamos directo con la familia mono y dejamos bold=False
+        p.drawText(QRectF(0, 0, s, s), Qt.AlignmentFlag.AlignCenter, str(self._cycles))
+        p.restore()
+        p.end()
+
+
+class NMModuleRing(QWidget):
+    """Arco circular de progreso para cards de módulo del Hub.
+
+    Color semántico: ≥80%→teal, 50-79%→accent, <50%→violet (via ring_color()).
+
+    ``show_label``: si True (default), pinta "NN%" centrado. En tamaños pequeños
+    (<32px) el label es ilegible — usar show_label=False y delegar el % a una
+    chip/badge externa.
+    """
+
+    def __init__(
+        self,
+        size: int = 56,
+        pct: float = 0.0,
+        modo: str = None,
+        show_label: bool = True,
+        parent=None,
+    ):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._pct = max(0.0, min(1.0, pct))
+        self._size = size
+        self._show_label = bool(show_label)
+        self.setFixedSize(size, size)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def set_pct(self, pct: float):
+        self._pct = max(0.0, min(1.0, pct))
+        self.update()
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.save()
+
+        s = self._size
+        cx, cy = s / 2, s / 2
+        pen_w = _ring_stroke(s)
+        r_arc = s / 2 - pen_w - 1
+        arc_rect = QRectF(cx - r_arc, cy - r_arc, r_arc * 2, r_arc * 2)
+
+        # (F2 runtime: el glow radial teal detrás del arco fue eliminado —
+        # el anillo se sostiene solo con track + arco firma, sin halo.)
+
+        # Track sutil (borderSoft v3 — TODOS los rings usan el mismo lenguaje)
+        track_c = v3c("borderSoft", self._modo)
+        p.setPen(QPen(track_c, pen_w, Qt.PenStyle.SolidLine, Qt.PenCapStyle.FlatCap))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawEllipse(QPointF(cx, cy), r_arc, r_arc)
+
+        # Arco progreso con gradient firma v3 (uniforme entre rings)
+        if self._pct > 0.001:
+            _paint_v3_arc(p, arc_rect, 90.0, -360.0 * self._pct, pen_w, self._modo)
+
+        # Texto centrado (solo si show_label=True; tamaños chicos no lo pintan)
+        if self._show_label:
+            p.setPen(v3c("text", self._modo))
+            p.setFont(qfont_mono(max(9, int(s * 0.20)), bold=False))
+            p.drawText(QRectF(0, 0, s, s), Qt.AlignmentFlag.AlignCenter, f"{int(self._pct * 100)}%")
+
+        p.restore()
+        p.end()

@@ -25,6 +25,9 @@ MOVED_COMPONENT_MODULES = {
     "NMAvatar": "shared.components.icons",
     "NMBadge": "shared.components.surfaces",
     "NMChip": "shared.components.surfaces",
+    "NMFocusArc": "shared.components.rings",
+    "NMCycleRing": "shared.components.rings",
+    "NMModuleRing": "shared.components.rings",
 }
 
 EXPECTED_PUBLIC_COMPONENT_SYMBOLS = {

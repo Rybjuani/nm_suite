@@ -82,6 +82,9 @@ _LEAF_EXPORT_MODULES = {
     "NMAvatar": "shared.components.icons",
     "NMBadge": "shared.components.surfaces",
     "NMChip": "shared.components.surfaces",
+    "NMFocusArc": "shared.components.rings",
+    "NMCycleRing": "shared.components.rings",
+    "NMModuleRing": "shared.components.rings",
 }
 
 
