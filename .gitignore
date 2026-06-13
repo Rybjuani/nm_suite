@@ -48,13 +48,10 @@ AI_SCRIPTS/_qa_output/
 _test_screens/
 _doc_screenshots/
 qa/_captures/
-graphify-out/
 *.tmp
 *.log
 docs/QA_FINAL_*.md
 
-# Visual handoff exports / generated screenshots
-design_handoff_nm_suite_full_ui/
 # Manuales PDF generados (regenerables con AI_SCRIPTS/generate_neuromood_manuals.py)
 Manual_Usuario_Profesional_NeuroMood.pdf
 Manual_Tecnico_Descriptivo_NeuroMood.pdf

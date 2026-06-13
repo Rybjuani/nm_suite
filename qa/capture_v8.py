@@ -1,10 +1,10 @@
 """qa/capture_v8.py — Exhaustive PyQt6 offscreen capture harness.
 
-Descubre dinamicamente TODAS las superficies navegables de Suite y Hub
-inspeccionando las fuentes canonicas via AST. Ejecuta recetas de interaccion
+Descubre dinamicamente las superficies navegables de Suite y Hub
+inspeccionando el codigo via AST. Ejecuta recetas de interaccion
 intra-vista (clicks, texto, toggles, tabs) para capturar sub-estados, popups,
 dialogos hijos y pantallas emergentes. Cubre estados vacio, demo, carga alta,
-y todo lo navegable. Autorizado por el owner (2026-06-05).
+y todo lo navegable.
 
 CREDENCIALES DE TEST (documentadas, via env vars con defaults):
     NM_TEST_NAME     = "Juan Cruz"
@@ -13,9 +13,9 @@ CREDENCIALES DE TEST (documentadas, via env vars con defaults):
     NM_TEST_PIN      = "123456"
 
 USO:
-    .venv\\Scripts\\python.exe qa\\capture_v8.py --all
     .venv\\Scripts\\python.exe qa\\capture_v8.py --list
     .venv\\Scripts\\python.exe qa\\capture_v8.py --app suite --view animo-emotion-chips --theme dark
+    .venv\\Scripts\\python.exe qa\\capture_v8.py --all   # regresion final completa
 
 SALIDA: qa/_captures_v8/{app}-{view}-{theme}-{w}x{h}.png + CAPTURE_MANIFEST.json
 """
@@ -138,7 +138,7 @@ _RECIPE_EVIDENCE_FLAGS: dict[tuple[str, str], dict[str, list[str]]] = {
         "notes": ["Standalone editor capture does not prove Hub-launched chrome or close lifecycle."],
     },
     # editor-tcc-template ELIMINADA: el editor de plantilla TCC fue demolido
-    # (reorganización owner v1.0 — el Plan terapéutico asigna solo 4 módulos).
+    # (reorganización user feedback — el Plan terapéutico asigna solo 4 módulos).
 }
 
 
@@ -700,7 +700,7 @@ _RECIPES: dict[str, dict[str, dict]] = {
         },
 
         # NOTA: no existen recetas "ia*" — IAAssistantView fue eliminada en la
-        # reestructura v1.0; la IA canónica vive en el tab IA del detalle de
+        # reestructura v1.0; la IA runtime vive en el tab IA del detalle de
         # paciente y la cubre la receta detalle-ia.
 
         "personalizacion": {
@@ -734,7 +734,7 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "editor-text-overrides"}],
         },
-        # editor-tcc-template ELIMINADA (editor demolido, owner v1.0).
+        # editor-tcc-template ELIMINADA (editor demolido, user feedback).
     },
 }
 
@@ -2420,7 +2420,7 @@ def main() -> int:
     p.add_argument("--view", default="")
     p.add_argument("--theme", choices=["light", "dark", "both"], default="both")
     p.add_argument("--res", action="append", default=[])
-    p.add_argument("--all", action="store_true", help="Capturar TODAS las recetas de Suite+Hub")
+    p.add_argument("--all", action="store_true", help="Regresion final completa: captura todas las recetas de Suite+Hub")
     p.add_argument("--list", action="store_true", help="Listar recetas registradas")
     p.add_argument(
         "--clean",
@@ -2466,7 +2466,7 @@ def main() -> int:
         return 1
 
     if not targets:
-        print("[ERROR] Sin vistas. Usa --all o --view.")
+        print("[ERROR] Sin vistas. Usa --view para una modificacion puntual o --all para regresion final completa.")
         return 1
 
     # Clean

@@ -18,7 +18,7 @@ import logging
 
 # qtawesome se importa de forma perezosa dentro de ``nm_icon`` (ver allí): su
 # import eager cuesta ~200 ms en cada arranque y hoy solo se usa como fallback
-# legacy cuando el catálogo SVG v3 no tiene el icono (caso casi inexistente).
+# compatibility cuando el catálogo SVG v3 no tiene el icono (caso casi inexistente).
 
 _log = logging.getLogger(__name__)
 
@@ -78,11 +78,11 @@ except ImportError:
     )
 
 
-# Escala tipográfica compact desktop — visual rescue (display=22, h1=17, body=13)
+# Escala tipográfica compact desktop — visual compact (display=22, h1=17, body=13)
 FONT_SCALE = {
     # Display (Serif) — títulos principales, números de bienestar
-    "display_xl": {"size": 40, "weight": 700, "line_height": 1.2, "serif": True},  # displayXL (ADN Claude, era 56)
-    "display_l": {"size": 30, "weight": 700, "line_height": 1.2, "serif": True},  # displayL (ADN Claude, era 38)
+    "display_xl": {"size": 40, "weight": 700, "line_height": 1.2, "serif": True},  # displayXL (runtime, era 56)
+    "display_l": {"size": 30, "weight": 700, "line_height": 1.2, "serif": True},  # displayL (runtime, era 38)
     "display_m": {"size": 26, "weight": 500, "line_height": 1.2, "serif": True},  # displayM
     # Heading (Sans) — UI headers
     "heading_l": {"size": 20, "weight": 600, "line_height": 1.3, "serif": False},  # headingL
@@ -116,8 +116,8 @@ def _resolve_default_family() -> str:
 _DEFAULT_FONT_FAMILY = _resolve_default_family()
 
 
-# SPACE es alias de V3_SPACE (theme.py) — fuente canónica única. La escala v3
-# premium (xs:4 / sm:8 / md:12 / lg:16 / xl:20 / xxl:24 / xxxl:32) corre por aquí para
+# SPACE es alias de V3_SPACE (theme.py) — fuente runtime única. La escala v3
+# UI (xs:4 / sm:8 / md:12 / lg:16 / xl:20 / xxl:24 / xxxl:32) corre por aquí para
 # todo consumidor que importe SPACE desde este módulo.
 SPACE = V3_SPACE
 
@@ -156,7 +156,7 @@ EFFECTS = {
 # Botones y listas NO: el QPushButton:focus anterior pintaba un borde accent
 # en cualquier botón clickeado — en headers full-width (p.ej. "REGISTROS
 # PREVIOS" del TCC) quedaba un resplandor verde gigante persistente (informe
-# owner v1.0). El outline:none elimina además los recuadros punteados de
+# user feedback). El outline:none elimina además los recuadros punteados de
 # foco del estilo nativo en botones/tabs/textos seleccionables.
 FOCUS_RING_STYLE = """
     * {{
@@ -173,7 +173,7 @@ FOCUS_RING_STYLE = """
     }}
 """
 
-# WCAG AA ratios (texto sobre canvas, tokens ADN):
+# WCAG AA ratios (texto sobre canvas, tokens runtime):
 # dark:  tinta #ECECFB sobre canvas #07091A — contraste alto, OK
 # dark:  lavanda #A99CFF sobre canvas #07091A — AA OK para texto grande/CTA
 # light: tinta #1C2218 sobre canvas #F4EFE5 — contraste alto, OK
@@ -198,7 +198,7 @@ _ICON_FALLBACKS = {
     "fa5s.list-check": "fa5s.tasks",
 }
 
-# v3 — mapeo de claves legacy (módulos/hub) → nombres SVG del catálogo v3
+# v3 — mapeo de claves compatibility (módulos/hub) → nombres SVG del catálogo v3
 _MODULE_KEY_V3 = {
     "animo": "mood",
     "respiracion": "breath",
@@ -256,13 +256,13 @@ def apply_chart_theme(modo: str):
 
 
 def nm_icon(key: str, color: str, size: int = 20):
-    """QIcon desde catálogo SVG v3 → fallback QtAwesome (legacy).
+    """QIcon desde catálogo SVG v3 → fallback QtAwesome (compatibility).
 
-    1. Mapea ``key`` legacy ('animo', 'pacientes', …) a nombre v3
+    1. Mapea ``key`` compatibility ('animo', 'pacientes', …) a nombre v3
        ('mood', 'users', …) si aplica.
     2. Si el nombre existe en ``shared.icons_svg``, renderiza SVG con
        stroke proporcional y lo envuelve en QIcon.
-    3. Si no, cae a QtAwesome con el mapping legacy MODULE_ICONS/HUB_ICONS.
+    3. Si no, cae a QtAwesome con el mapping compatibility MODULE_ICONS/HUB_ICONS.
     """
     # Aceptar QColor además de str: icons_svg espera un hex string ('#rrggbb').
     if hasattr(color, "name"):
@@ -322,7 +322,7 @@ class ThemeAwareWidgetMixin:
         raise NotImplementedError
 
 
-def _ensure_premium_font():
+def _ensure_ui_font():
     try:
         from shared.fonts import load_fonts
 
@@ -332,21 +332,21 @@ def _ensure_premium_font():
 
 
 def _font_family() -> str:
-    _ensure_premium_font()
+    _ensure_ui_font()
     from shared.fonts import FONT_SANS
 
     return FONT_SANS
 
 
 def _serif_family() -> str:
-    _ensure_premium_font()
+    _ensure_ui_font()
     from shared.fonts import FONT_SERIF
 
     return FONT_SERIF
 
 
 def _mono_family() -> str:
-    _ensure_premium_font()
+    _ensure_ui_font()
     from shared.fonts import FONT_MONO
 
     return FONT_MONO
@@ -392,7 +392,7 @@ def norm_modo(modo: str) -> str:
 
 
 def _design_token(key: str, modo: str) -> str | None:
-    """Resuelve una clave contra los tokens canónicos V6 (shared.design_tokens).
+    """Resuelve una clave contra los tokens runtime V6 (shared.design_tokens).
 
     Vocabulario V6: ``bg_canvas``, ``bg_sidebar``, ``ink_primary``,
     ``primary``, ``accent``, ``teal``, ``cat_*``, etc. Devuelve None si la
@@ -412,9 +412,9 @@ def _design_token(key: str, modo: str) -> str | None:
 def C(key: str, modo: str = "dark_hybrid") -> str:
     """Devuelve el valor hex del token de color. Shorthand legible.
 
-    Resuelve primero contra ``COLORS`` (paletas V3 + bridge legacy de
+    Resuelve primero contra ``COLORS`` (paletas V3 + bridge compatibility de
     ``shared.theme``). Si la clave no existe ahí, hace fallback al vocabulario
-    canónico V6 de ``shared.design_tokens`` (``bg_canvas``, ``ink_primary``,
+    runtime V6 de ``shared.design_tokens`` (``bg_canvas``, ``ink_primary``,
     ``primary``…), de modo que el código nuevo pueda usar cualquiera de los dos
     vocabularios a través del mismo helper sin romper consumidores existentes.
     """
@@ -532,8 +532,8 @@ def qfont(
 
     Args:
         size_key: Key de TYPOGRAPHY (ej: 'size_h1', 'size_body') o int directo.
-        bold:     Si True, peso DemiBold 600 (legacy; ADN "poco bold". Ignorado si `weight`).
-        family:   Override de familia; None → fuente premium cargada o default v3.
+        bold:     Si True, peso DemiBold 600 (compatibility; runtime "poco bold". Ignorado si `weight`).
+        family:   Override de familia; None → fuente UI cargada o default v3.
         weight:   Peso numérico v3 (400/500/600/700). Si se pasa, tiene prioridad
                   sobre `bold`. Para tokens v3 usar TYPOGRAPHY['weight_medium'] etc.
 
@@ -585,7 +585,7 @@ def qfont(
         except (ValueError, TypeError):
             f.setWeight(QFont.Weight.Bold if w >= 600 else QFont.Weight.Normal)
     else:
-        # ADN actual: el camino legacy bold=True no debe convertir controles y
+        # runtime actual: el camino compatibility bold=True no debe convertir controles y
         # labels en negritas. Los títulos usan weight explícito cuando aplica.
         f.setWeight(QFont.Weight.Medium if bold else QFont.Weight.Normal)
     if size_key in (
@@ -774,7 +774,7 @@ def linear_gradient(
 
 def rich_gradient(rect: QRectF, modo: str = "dark_hybrid", angle: float = 135) -> QLinearGradient:
     """
-    Gradiente premium de 3 paradas (indigo -> teal -> violet).
+    Gradiente UI de 3 paradas (indigo -> teal -> violet).
     Usa la estructura GRADIENTS nueva de theme.py.
     """
     modo = norm_modo(modo)
@@ -916,14 +916,14 @@ def _clinical_scrollbar_qss(modo: str = "dark_hybrid") -> str:
     """Scrollbars del cockpit clínico: discretas pero presentes.
 
     10px (antes 6px): a 6px el handle se leía como "línea técnica rota"
-    (informe owner v1.0, frente 4 — revisar scrollbars en todo Hub/Suite).
+    (informe user feedback, frente 4 — revisar scrollbars en todo Hub/Suite).
     """
     modo = norm_modo(modo)
     c = colors(modo)
     handle = c.get("line_strong", c.get("border_strong", c.get("borderStrong", c.get("border", "#808080"))))
     # Hover NEUTRO (no primary/lavanda): el scrollbar clínico debe quedar
     # discreto en TODOS sus estados. El hover de color lo teñía de lavanda y se
-    # leía como "scrollbar de color" fuera del canon ADN (scrollbars neutras).
+    # leía como "scrollbar de color" fuera del canon runtime (scrollbars neutras).
     hover = "rgba(255,255,255,0.30)" if "dark" in modo else "rgba(28,34,24,0.34)"
     return f"""
     QScrollBar:vertical {{
@@ -979,19 +979,19 @@ def stylesheet_hidden_scrollbar(modo: str = "dark_hybrid") -> str:
     return _clinical_scrollbar_qss(modo)
 
 
-_ADN_CONTROL_HEIGHT = 36
-_ADN_CONTROL_COMPACT_HEIGHT = 32
-_ADN_CONTROL_INNER_HEIGHT = 24
-_ADN_CONTROL_PAD_X = 12
-_ADN_CONTROL_PAD_Y = 5
-_ADN_CONTROL_RADIUS = LAYOUT["radius_input"]
-_ADN_CONTROL_FONT = TYPOGRAPHY["size_body"]
+_NM_CONTROL_HEIGHT = 36
+_NM_CONTROL_COMPACT_HEIGHT = 32
+_NM_CONTROL_INNER_HEIGHT = 24
+_NM_CONTROL_PAD_X = 12
+_NM_CONTROL_PAD_Y = 5
+_NM_CONTROL_RADIUS = LAYOUT["radius_input"]
+_NM_CONTROL_FONT = TYPOGRAPHY["size_body"]
 # Botones (QPushButton global) en negrita: semibold 600 para que el texto de
-# todos los botones se lea en negrita (pedido owner), no medium 500.
-_ADN_CONTROL_WEIGHT = TYPOGRAPHY["weight_semibold"]
-_ADN_TAB_HEIGHT = 32
-_ADN_TAB_RADIUS = 16
-_ADN_TAB_FONT = TYPOGRAPHY["size_caption"]
+# todos los botones se lea en negrita (pedido user feedback), no medium 500.
+_NM_CONTROL_WEIGHT = TYPOGRAPHY["weight_semibold"]
+_NM_TAB_HEIGHT = 32
+_NM_TAB_RADIUS = 16
+_NM_TAB_FONT = TYPOGRAPHY["size_caption"]
 
 
 def stylesheet_base(modo: str = "dark_hybrid") -> str:
@@ -1023,10 +1023,10 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
         background-color: {c["bg_surface"]};
         color: {c["text_primary"]};
         border: 1px solid {c.get("border_card", c["border"])};
-        border-radius: {_ADN_CONTROL_HEIGHT // 2}px;
+        border-radius: {_NM_CONTROL_HEIGHT // 2}px;
         padding: 0 14px;
-        min-height: {_ADN_CONTROL_HEIGHT}px;
-        font-weight: {_ADN_CONTROL_WEIGHT};
+        min-height: {_NM_CONTROL_HEIGHT}px;
+        font-weight: {_NM_CONTROL_WEIGHT};
     }}
     QPushButton:hover {{
         background-color: {c["primary_soft"]};
@@ -1041,8 +1041,8 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
         border-color: {c.get("border_card", c["border"])};
     }}
     QPushButton[variant="compact"] {{
-        min-height: {_ADN_CONTROL_COMPACT_HEIGHT}px;
-        border-radius: {_ADN_CONTROL_COMPACT_HEIGHT // 2}px;
+        min-height: {_NM_CONTROL_COMPACT_HEIGHT}px;
+        border-radius: {_NM_CONTROL_COMPACT_HEIGHT // 2}px;
         padding: 0 12px;
     }}
     QTableView, QTableWidget, QListWidget {{
@@ -1063,7 +1063,7 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
         border-bottom: 1px solid {c.get("border_card", c["border"])};
         padding: 10px 12px;
         font-size: {TYPOGRAPHY["size_eyebrow"]}px;
-        font-weight: {_ADN_CONTROL_WEIGHT};
+        font-weight: {_NM_CONTROL_WEIGHT};
     }}
     QTableView::item, QTableWidget::item {{
         padding: 12px;
@@ -1102,7 +1102,7 @@ def stylesheet_scrollarea(modo: str = "dark_hybrid") -> str:
 
 
 def stylesheet_slider(modo: str = "dark_hybrid") -> str:
-    """QSlider horizontal plano (ADN Claude): recorrido `primary` sólido sobre
+    """QSlider horizontal plano (runtime): recorrido `primary` sólido sobre
     track neutro, handle blanco. El groove-gradiente firma anterior leía técnico."""
     modo = norm_modo(modo)
     c = colors(modo)
@@ -1140,17 +1140,17 @@ def stylesheet_slider(modo: str = "dark_hybrid") -> str:
 
 
 def stylesheet_tabwidget(modo: str = "dark_hybrid") -> str:
-    """QTabWidget segmentado compacto según ADN/05."""
+    """QTabWidget segmentado compacto según runtime/05."""
     return stylesheet_tabwidget_segmented(modo)
 
 
 def stylesheet_tabwidget_underline(modo: str = "dark_hybrid") -> str:
-    """Compat: las tabs underline se renderizan con el mismo patrón ADN."""
+    """Compat: las tabs underline se renderizan con el mismo patrón runtime."""
     return stylesheet_tabwidget_segmented(modo)
 
 
 def stylesheet_tabwidget_segmented(modo: str = "dark_hybrid") -> str:
-    """QTabWidget estilo "segmento" (tablero ADN 05 — Tabs & Segmentos).
+    """QTabWidget estilo "segmento" (tablero runtime 05 — Tabs & Segmentos).
 
     Para subniveles que viven DEBAJO de tabs underline: diferencia la
     jerarquía con un segmento de fondo en vez de repetir el subrayado
@@ -1169,24 +1169,24 @@ def stylesheet_tabwidget_segmented(modo: str = "dark_hybrid") -> str:
     }}
     QTabBar {{
         background: {seg_bg};
-        border-radius: {_ADN_TAB_RADIUS}px;
+        border-radius: {_NM_TAB_RADIUS}px;
         qproperty-drawBase: 0;
     }}
     QTabBar::tab {{
         background: transparent;
         color: {c["text_secondary"]};
-        min-height: {_ADN_TAB_HEIGHT - 8}px;
+        min-height: {_NM_TAB_HEIGHT - 8}px;
         padding: 4px 14px;
         margin: 3px 2px;
         border: none;
-        border-radius: {_ADN_TAB_RADIUS - 3}px;
-        font-size: {_ADN_TAB_FONT}px;
-        font-weight: {_ADN_CONTROL_WEIGHT};
+        border-radius: {_NM_TAB_RADIUS - 3}px;
+        font-size: {_NM_TAB_FONT}px;
+        font-weight: {_NM_CONTROL_WEIGHT};
     }}
     QTabBar::tab:selected {{
         background: {primary};
         color: {primary_ink};
-        font-weight: {_ADN_CONTROL_WEIGHT};
+        font-weight: {_NM_CONTROL_WEIGHT};
     }}
     QTabBar::tab:hover:!selected {{
         color: {c["text_primary"]};
@@ -1203,10 +1203,10 @@ def stylesheet_lineedit(modo: str = "dark_hybrid") -> str:
         background-color: {c["bg_input"]};
         color: {c["text_primary"]};
         border: 1px solid {c.get("border_card", c["border"])};
-        border-radius: {_ADN_CONTROL_RADIUS}px;
-        padding: {_ADN_CONTROL_PAD_Y}px {_ADN_CONTROL_PAD_X}px;
-        min-height: {_ADN_CONTROL_INNER_HEIGHT}px;
-        font-size: {_ADN_CONTROL_FONT}px;
+        border-radius: {_NM_CONTROL_RADIUS}px;
+        padding: {_NM_CONTROL_PAD_Y}px {_NM_CONTROL_PAD_X}px;
+        min-height: {_NM_CONTROL_INNER_HEIGHT}px;
+        font-size: {_NM_CONTROL_FONT}px;
         selection-background-color: {c["accent"]};
         selection-color: {c["text_on_accent"]};
     }}
@@ -1228,9 +1228,9 @@ def stylesheet_textedit(modo: str = "dark_hybrid") -> str:
         background-color: {c["bg_input"]};
         color: {c["text_primary"]};
         border: 1px solid {c.get("border_card", c["border"])};
-        border-radius: {_ADN_CONTROL_RADIUS}px;
-        padding: {_ADN_CONTROL_PAD_Y}px {_ADN_CONTROL_PAD_X}px;
-        font-size: {_ADN_CONTROL_FONT}px;
+        border-radius: {_NM_CONTROL_RADIUS}px;
+        padding: {_NM_CONTROL_PAD_Y}px {_NM_CONTROL_PAD_X}px;
+        font-size: {_NM_CONTROL_FONT}px;
         selection-background-color: {c["accent"]};
         selection-color: {c["text_on_accent"]};
     }}
@@ -1248,7 +1248,7 @@ def _qss_chevron_url(color_hex: str, direction: str = "down") -> str:
 
     El truco de triángulo-por-borde (``image: none`` + borders) renderiza como
     un CUADRADO sólido en Qt6 — el artefacto "▪" junto a los combos (informe
-    owner v1.0). Un SVG real dibuja el chevron fino y temable.
+    user feedback). Un SVG real dibuja el chevron fino y temable.
     """
     import tempfile
 
@@ -1277,10 +1277,10 @@ def stylesheet_combobox(modo: str = "dark_hybrid") -> str:
         background-color: {c["bg_input"]};
         color: {c["text_primary"]};
         border: 1px solid {c.get("border_card", c["border"])};
-        border-radius: {_ADN_CONTROL_RADIUS}px;
-        padding: {_ADN_CONTROL_PAD_Y}px {_ADN_CONTROL_PAD_X}px;
-        font-size: {_ADN_CONTROL_FONT}px;
-        min-height: {_ADN_CONTROL_INNER_HEIGHT}px;
+        border-radius: {_NM_CONTROL_RADIUS}px;
+        padding: {_NM_CONTROL_PAD_Y}px {_NM_CONTROL_PAD_X}px;
+        font-size: {_NM_CONTROL_FONT}px;
+        min-height: {_NM_CONTROL_INNER_HEIGHT}px;
     }}
     QComboBox:focus {{
         border-color: {c["border_focus"]};
@@ -1315,10 +1315,10 @@ def stylesheet_timeedit(modo: str = "dark_hybrid") -> str:
         background-color: {c["bg_input"]};
         color: {c["text_primary"]};
         border: 1px solid {c.get("border_card", c["border"])};
-        border-radius: {_ADN_CONTROL_RADIUS}px;
-        padding: {_ADN_CONTROL_PAD_Y}px {_ADN_CONTROL_PAD_X}px;
-        font-size: {_ADN_CONTROL_FONT}px;
-        min-height: {_ADN_CONTROL_INNER_HEIGHT}px;
+        border-radius: {_NM_CONTROL_RADIUS}px;
+        padding: {_NM_CONTROL_PAD_Y}px {_NM_CONTROL_PAD_X}px;
+        font-size: {_NM_CONTROL_FONT}px;
+        min-height: {_NM_CONTROL_INNER_HEIGHT}px;
     }}
     QTimeEdit:focus {{
         border-color: {c["border_focus"]};
@@ -1338,10 +1338,10 @@ def stylesheet_dateedit(modo: str = "dark_hybrid") -> str:
         background-color: {c["bg_input"]};
         color: {c["text_primary"]};
         border: 1px solid {c.get("border_card", c["border"])};
-        border-radius: {_ADN_CONTROL_RADIUS}px;
-        padding: {_ADN_CONTROL_PAD_Y}px {_ADN_CONTROL_PAD_X}px;
-        font-size: {_ADN_CONTROL_FONT}px;
-        min-height: {_ADN_CONTROL_INNER_HEIGHT}px;
+        border-radius: {_NM_CONTROL_RADIUS}px;
+        padding: {_NM_CONTROL_PAD_Y}px {_NM_CONTROL_PAD_X}px;
+        font-size: {_NM_CONTROL_FONT}px;
+        min-height: {_NM_CONTROL_INNER_HEIGHT}px;
     }}
     QDateEdit:focus {{
         border-color: {c["border_focus"]};
@@ -1375,10 +1375,10 @@ def stylesheet_spinbox(modo: str = "dark_hybrid") -> str:
         background-color: {c["bg_input"]};
         color: {c["text_primary"]};
         border: 1px solid {c.get("border_card", c["border"])};
-        border-radius: {_ADN_CONTROL_RADIUS}px;
-        padding: {_ADN_CONTROL_PAD_Y}px {_ADN_CONTROL_PAD_X}px;
-        font-size: {_ADN_CONTROL_FONT}px;
-        min-height: {_ADN_CONTROL_INNER_HEIGHT}px;
+        border-radius: {_NM_CONTROL_RADIUS}px;
+        padding: {_NM_CONTROL_PAD_Y}px {_NM_CONTROL_PAD_X}px;
+        font-size: {_NM_CONTROL_FONT}px;
+        min-height: {_NM_CONTROL_INNER_HEIGHT}px;
     }}
     QSpinBox:focus {{
         border-color: {c["border_focus"]};
@@ -1522,7 +1522,7 @@ def aplicar_captionbar_qt(window, modo: str):
     Usa window.winId() en vez de window.winfo_id() (tkinter).
     Compatible con QMainWindow y QWidget.
     """
-    _ensure_premium_font()
+    _ensure_ui_font()
     modo = norm_modo(modo)
     bg = C("bg_secondary", modo)
     try:
@@ -1552,7 +1552,7 @@ def aplicar_captionbar_qt(window, modo: str):
 
 
 def recolorear_logo_light(img):
-    """Invierte píxeles blancos del logo a tinta ADN para el tema claro (PIL Image)."""
+    """Invierte píxeles blancos del logo a tinta runtime para el tema claro (PIL Image)."""
     img = img.convert("RGBA")
     ink = QColor(V3_LIGHT["text"])
     tinta = (ink.red(), ink.green(), ink.blue())
@@ -1610,7 +1610,7 @@ SIZE_TIME_TIMER = TYPOGRAPHY.get("size_time_timer", 18)  # pt — NMFocusArc MM:
 # ── Opacidades de aura y blob ──────────────────────────────────────────────────
 AURA_OPACITY_DARK = LAYOUT.get("aura_opacity_dark", 0.18)
 AURA_OPACITY_LIGHT = LAYOUT.get("aura_opacity_light", 0.10)
-# ADN Claude (F2 índigo-calmado): el wash plano de NMFeaturedCard usa estas
+# runtime (F2 índigo-calmado): el wash plano de NMFeaturedCard usa estas
 # opacidades — antes 0.22/0.18 alimentaban blobs radiales que leían "manchas".
 BLOB_OPACITY_DARK = LAYOUT.get("blob_opacity_dark", 0.06)
 BLOB_OPACITY_LIGHT = LAYOUT.get("blob_opacity_light", 0.04)
@@ -1729,7 +1729,7 @@ def stylesheet_installer(modo: str = "dark_hybrid") -> str:
 #
 # Estos helpers consumen la superficie nueva de tokens (V3_LIGHT/V3_DARK,
 # V3_SHADOWS, V3_GRADIENTS, MOOD_PALETTE) y serán usados por la próxima
-# refactorización de components_qt.py. Los helpers legacy de arriba siguen
+# refactorización de components_qt.py. Los helpers compatibility de arriba siguen
 # operando contra el bridge COLORS y obtienen los mismos colores v3.
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -1766,7 +1766,7 @@ def v3c(key: str, modo: str = "dark", alpha: int | None = None) -> QColor:
     Args:
         key:   Clave v3 (``"bg"``, ``"surface"``, ``"text"``, ``"text2"``,
                ``"teal"``, ``"violet"``, ``"gradFrom"``, ``"borderStrong"``…).
-        modo:  ``"light"`` / ``"dark"`` (o cualquier alias legacy: se normaliza).
+        modo:  ``"light"`` / ``"dark"`` (o cualquier alias compatibility: se normaliza).
         alpha: Override 0-255. Si ``None``, respeta el alpha del rgba() original.
 
     Soporta los keys translúcidos de dark (``rgba(…)``) gracias a parse_rgba.
@@ -1774,7 +1774,7 @@ def v3c(key: str, modo: str = "dark", alpha: int | None = None) -> QColor:
     pal = get_v3_palette(modo)
     raw = pal.get(key)
     if raw is None:
-        # Fallback razonable: buscar en bridge legacy
+        # Fallback razonable: buscar en bridge compatibility
         raw = C(key, modo)
     c = parse_rgba(raw)
     if alpha is not None:
@@ -1788,7 +1788,7 @@ def v3_shadow(name: str = "card", modo: str = "dark", parent=None) -> QGraphicsD
     Args:
         name:  ``"sm"`` / ``"md"`` / ``"card"`` / ``"ring"`` (light)
                o ``"sm"`` / ``"md"`` / ``"card"`` / ``"glow"`` (dark).
-        modo:  ``"light"`` / ``"dark"`` (o alias legacy).
+        modo:  ``"light"`` / ``"dark"`` (o alias compatibility).
         parent: QObject padre opcional.
     """
     bucket = V3_SHADOWS[v3_mode(modo)]
@@ -1803,17 +1803,17 @@ def v3_shadow(name: str = "card", modo: str = "dark", parent=None) -> QGraphicsD
 
 
 def shadow_1(modo: str = "dark", parent=None) -> QGraphicsDropShadowEffect:
-    """Card rest state — 1-2 px (visual rescue §2.5)."""
+    """Card rest state — 1-2 px (visual compact §2.5)."""
     return v3_shadow("shadow_1", modo, parent)
 
 
 def shadow_2(modo: str = "dark", parent=None) -> QGraphicsDropShadowEffect:
-    """Card hover state — shadow-2 (visual rescue §2.5)."""
+    """Card hover state — shadow-2 (visual compact §2.5)."""
     return v3_shadow("shadow_2", modo, parent)
 
 
 def shadow_3(modo: str = "dark", parent=None) -> QGraphicsDropShadowEffect:
-    """Modal/dialog — shadow-3 (visual rescue §2.5)."""
+    """Modal/dialog — shadow-3 (visual compact §2.5)."""
     return v3_shadow("shadow_3", modo, parent)
 
 
@@ -1821,7 +1821,7 @@ def row_hover_stylesheet(modo: str, object_name: str, radius: int = 10) -> str:
     """Stylesheet de hover para filas de lista (fondo sutil + borde teal).
 
     Uso:
-        widget.setStyleSheet(row_hover_stylesheet(self._modo, "NMPatientRowPremium"))
+        widget.setStyleSheet(row_hover_stylesheet(self._modo, "NMPatientRowUI"))
     """
     is_dark = "dark" in v3_mode(modo)
     col = get_v3_palette(modo)
@@ -1859,7 +1859,7 @@ def v3_linear_gradient(
 
     Args:
         rect:  área del widget.
-        modo:  ``"light"`` / ``"dark"`` (o alias legacy).
+        modo:  ``"light"`` / ``"dark"`` (o alias compatibility).
         angle: grados (0=horizontal derecha, 90=vertical abajo, 135=diagonal).
         kind:  ``"signature"`` (teal → violet, V3_GRADIENTS) o ``"mood"`` para
                la slashbar emocional (que NO varía con theme).
@@ -1901,7 +1901,7 @@ def v3_font(
 
     Args:
         size_token: clave de TYPOGRAPHY (``size_display`` … ``size_caption_xs``,
-                    handoff: ``size_display_xl`` / ``_l`` / ``_m`` / ``size_heading_l`` /
+                    runtime spec: ``size_display_xl`` / ``_l`` / ``_m`` / ``size_heading_l`` /
                     ``size_heading_m`` / ``size_eyebrow`` / ``size_mono``)
                     o int directo en pt.
         weight:     clave de TYPOGRAPHY (``weight_regular`` / ``weight_medium``
@@ -1909,7 +1909,7 @@ def v3_font(
         mono:       True → familia JetBrains Mono (timers, IDs, log installer).
         serif:      True → familia Newsreader (display, hero, números bienestar).
                     Si ``serif=True``, ``mono`` se ignora.
-        italic:     True → estilo italic (handoff usa serif italic para personalización).
+        italic:     True → estilo italic (runtime spec usa serif italic para personalización).
     """
     px = (
         size_token
@@ -1995,9 +1995,9 @@ import random as _random
 
 _SESSION_COLORS = {
     # Aura/glow de sesión: una opción "fría" (acento primario) y una "cálida"
-    # (acento secundario). Los keys legacy "cyan"/"violet" se mantienen para
+    # (acento secundario). Los keys compatibility "cyan"/"violet" se mantienen para
     # compat con consumidores que ya guardan la variante por nombre.
-    # Valores SIEMPRE desde tokens ADN — nunca hex aproximados.
+    # Valores SIEMPRE desde tokens runtime — nunca hex aproximados.
     "dark": {"cyan": V3_DARK["accent"], "violet": V3_DARK["amber"]},  # aqua / oro
     "light": {"cyan": V3_LIGHT["primary"], "violet": V3_LIGHT["accent"]},  # sage / terracota
 }
@@ -2048,8 +2048,8 @@ class SessionColor:
         return self.hex_for(modo)
 
 
-# ── Densidad Hub (handoff §3 / tokens.css `.nm-dense`) ───────────────────────
-# El handoff propone una variante de densidad reducida sólo para el Hub:
+# ── Densidad Hub (runtime spec §3 / tokens.css `.nm-dense`) ───────────────────────
+# El runtime spec propone una variante de densidad reducida sólo para el Hub:
 # sidebar 232 px, botones 36/28 px, inputs más finos. Se aplica como QSS
 # *scoped* al QMainWindow del Hub (selector por objectName "HubMain") —
 # nunca a QApplication, para no impactar la Suite ni romper estilos
@@ -2098,7 +2098,7 @@ def apply_hub_density(main_window, object_name: str = HUB_DENSITY_OBJECT_NAME) -
         _log.debug("apply_hub_density: no aplicado (best-effort)")
 
 
-# ── Helpers convenientes del handoff §2.5 ────────────────────────────────────
+# ── Helpers convenientes del runtime spec §2.5 ────────────────────────────────────
 # Aplican QGraphicsDropShadowEffect directamente sobre un widget.
 # No retornan nada — efectos secundarios intencionales.
 

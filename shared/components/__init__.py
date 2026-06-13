@@ -1,17 +1,14 @@
 """
 shared/components/__init__.py
 =============================
-Canonical import point for NeuroMood PyQt6 UI components.
+Import point for NeuroMood PyQt6 UI components.
 
 Re-exports all public components from ``shared.components_qt`` for
-backwards compatibility.  New code should import directly from this
-package::
+backwards compatibility.  Code can import from this package::
 
     from shared.components import NMCard, NMButton, NMInput
 
-Components are also discoverable via ``shared.components.registry``.
-
-Legacy import path (still works)::
+The direct runtime module remains available::
 
     from shared.components_qt import NMCard, NMButton
 

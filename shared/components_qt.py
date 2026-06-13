@@ -74,7 +74,7 @@ from PyQt6.QtWidgets import (
 
 try:
     from shared.theme_qt import (
-        # Legacy (intacto)
+        # Compatibility (intacto)
         qcolor,
         qfont,
         qfont_mono,
@@ -357,7 +357,7 @@ def _tm() -> ThemeManager:
 
 
 class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
-    """Widget de estado vacío con icono, título y subtítulo (handoff §2.11).
+    """Widget de estado vacío con icono, título y subtítulo (runtime spec §2.11).
 
     Icono 48px dentro de chip PRIMARY_SOFT 64×64 r18.
     Título en display-m serif. Subtítulo body MUTE.
@@ -578,7 +578,7 @@ class NMCard(QFrame):
     # ── hover (solo cambia el color del border, sin escalado) ─────────────────
 
     def enterEvent(self, event: QEnterEvent):
-        # F2 ADN Claude: hover NO agranda la sombra (la card no "se levanta");
+        # F2 runtime: hover NO agranda la sombra (la card no "se levanta");
         # el feedback es el borde (border → borderStrong en paintEvent).
         self._hover = True
         self.update()
@@ -642,7 +642,7 @@ class NMCard(QFrame):
         r = (
             self._radius_override
             if getattr(self, "_radius_override", None) is not None
-            else V3_RD["card"]  # 18px — premium Hub card radius
+            else V3_RD["card"]  # 18px — UI Hub card radius
         )
         w, h = self.width(), self.height()
         rect = QRectF(0, 0, w, h)
@@ -867,14 +867,14 @@ class NMIconButton(QToolButton):
 
 # ── NMButton ──────────────────────────────────────────────────────────────────
 
-# Controles ADN: compacto/sobrio, sin variante grande por defecto.
+# Controles runtime: compacto/sobrio, sin variante grande por defecto.
 _NM_CONTROL_HEIGHT = 36
 _NM_CONTROL_COMPACT_HEIGHT = 32
 _NM_CONTROL_RADIUS = LAYOUT["radius_input"]
 _NM_CONTROL_PILL_RADIUS = _NM_CONTROL_HEIGHT // 2
 _NM_CONTROL_FONT = "size_body"
-# Texto de botones en negrita (semibold 600, el peso "fuerte" canónico del
-# de-negritado): el owner pidió confirmar que TODOS los botones se lean en
+# Texto de botones en negrita (semibold 600, el peso "fuerte" runtime del
+# de-negritado): el user feedback pidió confirmar que TODOS los botones se lean en
 # negrita; a 500 (medium) quedaban demasiado livianos.
 _NM_CONTROL_WEIGHT = TYPOGRAPHY["weight_semibold"]
 _NM_TAB_HEIGHT = 32
@@ -891,7 +891,7 @@ _NM_BUTTON_FONT = {"sm": "size_caption", "md": _NM_CONTROL_FONT, "lg": _NM_CONTR
 class NMButton(QPushButton):
     """
     Botón v3 — pill, 3 variantes (``gradient`` / ``secondary`` / ``ghost``),
-    con ``lg`` normalizado a la escala media ADN para evitar gigantismo.
+    con ``lg`` normalizado a la escala media runtime para evitar gigantismo.
 
     Comportamiento:
       - Press: scale 0.97 por 100 ms (spec README v3 para botones).
@@ -903,7 +903,7 @@ class NMButton(QPushButton):
         text:    label
         parent:  QWidget parent
         modo:    override de tema; ``None`` = sigue ThemeManager
-        width:   minWidth (legacy, default 180)
+        width:   minWidth (compatibility, default 180)
         height:  fixedHeight; ``None`` = derivado de ``size``
         variant: ``"gradient"`` (primary teal→violet) | ``"secondary"``
                  (surface + border) | ``"ghost"`` (transparente)
@@ -991,7 +991,7 @@ class NMButton(QPushButton):
             primary = v3c("primary", self._modo)
             p.fillPath(path, QBrush(primary))
 
-            # Pressed: tinte plano (ADN Claude — el ripple radial fue eliminado;
+            # Pressed: tinte plano (runtime — el ripple radial fue eliminado;
             # alpha 45 compensa el feedback que aportaba la onda).
             if self._pressed and self.isEnabled():
                 p.fillPath(path, QBrush(QColor(0, 0, 0, 45)))
@@ -1141,7 +1141,7 @@ class NMButton(QPushButton):
             self.setGraphicsEffect(self._btn_shadow)
         shadow = self._btn_shadow
         if self._variant == "gradient":
-            # Primary CTA: lift discreto. ADN §7.3: en dark la elevación es por
+            # Primary CTA: lift discreto. runtime §7.3: en dark la elevación es por
             # contraste sutil — sombra neutra, nunca halo tintado con el acento.
             if is_dark:
                 shadow.setBlurRadius(12)
@@ -1269,7 +1269,7 @@ class NMButtonOutline(QPushButton):
             p.setOpacity(0.4)
 
         if self._active:
-            # Active: primary SÓLIDO + tinta token (F5 ADN Claude — antes
+            # Active: primary SÓLIDO + tinta token (F5 runtime — antes
             # gradiente firma 135° con texto #ffffff duro y ring interno).
             p.fillPath(path, QBrush(v3c("primary", self._modo)))
             text_color = v3c("primary_ink", self._modo)
@@ -1386,7 +1386,7 @@ class NMInput(QLineEdit):
         faint_c = v3c("faint", self._modo)
         border_c = v3c("border", self._modo)
         # Foco suave: accent con alpha (no a plena intensidad) — borde fino
-        # y calmo, alineado al patrón de Recordatorios (owner v1.0).
+        # y calmo, alineado al patrón de Recordatorios (user feedback).
         focus_c = v3c("accent", self._modo)  # teal (light) / purple (dark)
         focus_c.setAlpha(160)
         acc_c = v3c("accent", self._modo)
@@ -1425,8 +1425,8 @@ class NMInput(QLineEdit):
         self._focus_glow.setBlurRadius(12 if is_dark else 10)
         self._focus_glow.setOffset(0, 0)
         gc = v3c("accent", self._modo)
-        # Glow contenido en ambos temas (owner v1.0: el resplandor fuerte se
-        # leía duro, no premium).
+        # Glow contenido en ambos temas (user feedback: el resplandor fuerte se
+        # leía duro, no UI).
         gc.setAlpha(70 if is_dark else 50)
         self._focus_glow.setColor(gc)
         self.setGraphicsEffect(self._focus_glow)
@@ -1506,10 +1506,10 @@ class NMProgressBar(QWidget):
         p.setPen(Qt.PenStyle.NoPen)
         p.drawRoundedRect(rect, r, r)
 
-        # Fill — barra sólida continua con caps redondeados (ADN Claude).
+        # Fill — barra sólida continua con caps redondeados (runtime).
         # El dithering de puntitos anterior se leía "técnico/punteado" — el
-        # owner lo marcó como random design en el informe v1.0 final.
-        # F5 ADN Claude: fill `primary` SÓLIDO sobre track neutro (lo lineal
+        # user feedback lo marcó como random design en el informe v1.0 final.
+        # F5 runtime: fill `primary` SÓLIDO sobre track neutro (lo lineal
         # va plano; el gradiente firma queda solo en lo circular/identitario).
         # (El shimmer fue eliminado en F2.)
         fill_w = w * self._value
@@ -1583,7 +1583,7 @@ class NMToggle(QAbstractButton):
 
         # Track
         if self.isChecked():
-            # F5 ADN Claude: track `primary` SÓLIDO, sin halo (antes gradiente
+            # F5 runtime: track `primary` SÓLIDO, sin halo (antes gradiente
             # firma + glow teal alrededor).
             p.setBrush(QBrush(v3c("primary", self._modo)))
         else:
@@ -1619,7 +1619,7 @@ class NMToast(QWidget):
     Es un child overlay con parent real, SIN window flags: nunca crea una
     ventana top-level. (Antes era una ventana Qt.ToolTip|StaysOnTop y el
     lector de pantalla la resaltaba como "mini ventana titilante" fuera de
-    la app — informe owner v1.0, frente 2.) El fade usa painter.setOpacity,
+    la app — informe user feedback, frente 2.) El fade usa painter.setOpacity,
     no QGraphicsOpacityEffect: ahora vive bajo ancestros que pueden tener
     drop-shadows y Qt no soporta efectos anidados.
     """
@@ -1683,7 +1683,7 @@ class NMToast(QWidget):
         accent = QColor(self._color)
 
         # Fondo y wash adaptativos al tema. Superficie 100% OPACA en ambos
-        # temas (feedback owner v1.0: cualquier traslucidez se lee "barata" y
+        # temas (feedback user feedback: cualquier traslucidez se lee "barata" y
         # el aviso se confunde con el fondo); el color queda en la barra de
         # acento + wash mínimo.
         is_dark = "dark" in self._modo
@@ -1696,7 +1696,7 @@ class NMToast(QWidget):
         base_bg.setAlpha(255)
         # El wash va ENCIMA del fondo opaco, nunca en su lugar: si el gradiente
         # arranca en el wash solo (alpha ~12), el borde izquierdo del toast
-        # queda translúcido y se ve el contenido de atrás (feedback owner).
+        # queda translúcido y se ve el contenido de atrás (feedback user feedback).
         wash_grad = QLinearGradient(0, 0, w, 0)
         wash_grad.setColorAt(0.0, wash)
         wash_transparent = QColor(wash)
@@ -2082,7 +2082,7 @@ class NMSidebar(QWidget):
         self._add_separator()
 
     def add_logo(self, logo_path: str = ""):
-        """Inserta logo premium con sombra al tope del sidebar.
+        """Inserta logo UI con sombra al tope del sidebar.
         Usa logos-icon-{light,dark}.png segun tema."""
         from PyQt6.QtGui import QPixmap
 
@@ -2204,7 +2204,7 @@ class NMSidebar(QWidget):
                 col = QColor(15, 23, 42, 26)
             self._logo_shadow.setBlurRadius(8 if "dark" in self._modo else 4)
             self._logo_shadow.setColor(col)
-        # Recolorear logo en light mode o cargar logos canónicos directos
+        # Recolorear logo en light mode o cargar logos runtime directos
         if self._logo_lbl is not None:
             try:
                 from shared.assets import obtener_ruta_asset, LOGO_LIGHT, LOGO_DARK
@@ -2609,7 +2609,7 @@ class NMHeader(QWidget):
 
     def paintEvent(self, event):
         p = QPainter(self)
-        # Handoff: top command hud uses bg_canvas background
+        # Runtime spec: top command hud uses bg_canvas background
         p.fillRect(self.rect(), v3c("bg", self._modo))
         # Subtle glass border at bottom
         p.setPen(QPen(v3c("border", self._modo), 1))
@@ -2769,7 +2769,7 @@ class NMHeader(QWidget):
 
 
 class _LogoLabel(QWidget):
-    """Logo NeuroMood desde assets/LOGO.png con glow animado + sombra premium."""
+    """Logo NeuroMood desde assets/LOGO.png con glow animado + sombra UI."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -2923,7 +2923,7 @@ class NMFadeWidget(QStackedWidget):
     del tema que se desvanece en ~160ms. El cross-blend anterior (snapshot de
     la vista vieja desvaneciéndose SOBRE la nueva) mostraba AMBAS vistas
     superpuestas durante toda la animación — el "titileo fantasma" que el
-    owner grabó en video (informe v1.0 final). Con el velo nunca conviven dos
+    user feedback grabó en video (informe v1.0 final). Con el velo nunca conviven dos
     contenidos: la vista nueva emerge del fondo, calma y sin doble exposición.
     """
 
@@ -3074,10 +3074,10 @@ class NMModule(ThemeAwareWidgetMixin, QWidget):
             self._header.set_back_callback(self.back_requested.emit)
             self._root_layout.addWidget(self._header)
 
-        # Contenido del modulo (build_ui lo llena) con centrado premium
+        # Contenido del modulo (build_ui lo llena) con centrado UI
         self._content = QWidget()
         self._content.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        # Handoff §2: opaque background para que el stacked widget no
+        # Runtime spec §2: opaque background para que el stacked widget no
         # muestre contenido anterior a través del módulo activo.
         self._content.setAutoFillBackground(True)
         _surf = v3c("surface", self._modo)
@@ -3515,7 +3515,7 @@ class NMIcon(QLabel):
         if _nm_svg_pixmap is not None and _has_v3_icon(self._name):
             pix = _nm_svg_pixmap(self._name, col, self._size)
         if pix is None or pix.isNull():
-            # Fallback QtAwesome via nm_icon legacy
+            # Fallback QtAwesome via nm_icon compatibility
             icon = nm_icon(self._name, col, self._size)
             pix = icon.pixmap(self._size, self._size)
         self.setPixmap(pix)
@@ -4284,7 +4284,7 @@ class NMProgressLine(QWidget):
         track.setAlpha(80)
         p.fillRect(0, 0, w, h, track)
         if fill_w > 0:
-            # F5 ADN Claude: fill `primary` sólido (lo lineal va plano).
+            # F5 runtime: fill `primary` sólido (lo lineal va plano).
             p.fillRect(0, 0, fill_w, h, v3c("primary", self._modo))
         p.end()
 
@@ -4633,7 +4633,7 @@ class NMWaveChart(QWidget):
         teal_hex = C("teal", self._modo)
         violet_hex = C(self._secondary_color_key, self._modo)
 
-        # Faint grid — incluye la línea de base 0 (feedback owner: sin ella la
+        # Faint grid — incluye la línea de base 0 (feedback user feedback: sin ella la
         # escala quedaba asimétrica respecto de 5 y 10).
         for row in range(0, 5):
             y_grid = mt + ch - (ch * row / 4)
@@ -4750,7 +4750,7 @@ class NMWaveChart(QWidget):
                 p.setFont(qfont("size_small"))
                 p.drawText(tip_r, Qt.AlignmentFlag.AlignCenter, tip_text)
 
-        # Y-axis labels — escala completa 10/5/0 (feedback owner v1.0: sin el
+        # Y-axis labels — escala completa 10/5/0 (feedback user feedback: sin el
         # 0 la escala quedaba coja en todos los diagramas).
         p.setFont(qfont("size_caption_xs"))
         p.setPen(QColor(v3c("ink_secondary", self._modo).name()))
@@ -5122,7 +5122,7 @@ class NMTCCStepper(QWidget):
         for i, label in enumerate(self._steps):
             cx = int(step_w * i + step_w / 2)
 
-            # Connector line — F3+F5 ADN Claude: tramo completado en `primary`
+            # Connector line — F3+F5 runtime: tramo completado en `primary`
             # SÓLIDO vía token (el gradiente lavanda→ámbar anterior tenía los
             # 6 hex duros acá y "lo lineal va plano"; gradiente queda solo en
             # lo circular/identitario).
@@ -5210,7 +5210,7 @@ class NMHeatBar(QWidget):
         self.update()
 
     def _ramp(self) -> tuple[str, str, str]:
-        """Rampa frío→tibio→caliente desde TOKENS por modo (F3 ADN: los hex
+        """Rampa frío→tibio→caliente desde TOKENS por modo (runtime: los hex
         web genéricos #3b82f6/#8b5cf6/#ef4444 estaban fuera de la paleta)."""
         cold = C("tcc_heat_cold", self._modo)
         hot = C("tcc_heat_hot", self._modo)
@@ -5497,7 +5497,7 @@ class NMDayNote(QWidget):
         self._textarea.setFixedHeight(90)
         # note_changed se emite al TERMINAR de editar (focus out), NO por
         # tecla: emitir en textChanged hacía que el consumidor guardara y
-        # bloqueara la nota con el PRIMER caracter (feedback owner v1.0).
+        # bloqueara la nota con el PRIMER caracter (feedback user feedback).
         self._textarea.installEventFilter(self)
         lay.addWidget(self._textarea)
 
@@ -5515,7 +5515,7 @@ class NMDayNote(QWidget):
             ):
                 # Enter CONFIRMA la nota (cierra la edición → FocusOut →
                 # guardado); Shift+Enter inserta salto de línea. Antes Enter
-                # dejaba la nota en modo edición permanente (informe owner).
+                # dejaba la nota en modo edición permanente (informe user feedback).
                 if not (ev.modifiers() & Qt.KeyboardModifier.ShiftModifier):
                     self._textarea.clearFocus()
                     return True
@@ -5544,7 +5544,7 @@ class NMDayNote(QWidget):
     def set_saved_today(self, text: str):
         """Estado 'nota del día guardada': lectura hasta mañana.
 
-        La nota del día no es un block de notas eterno (decisión owner v1.0):
+        La nota del día no es un block de notas eterno (decisión user feedback):
         al guardarse queda visible pero cerrada; al día siguiente el módulo
         la reabre vacía (la nota se persiste por fecha).
         """
@@ -6343,7 +6343,7 @@ class NMPatientRowPremium(QFrame):
         _ring_wl.addWidget(self._ring, 0, Qt.AlignmentFlag.AlignCenter)
         lay.addWidget(_ring_wrap, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        # X discreta para quitar al paciente del Hub (decisión owner v1.0:
+        # X discreta para quitar al paciente del Hub (decisión user feedback:
         # pacientes que dejan el tratamiento no deben acumularse en la lista).
         # Botón hijo: consume su propio click, no dispara el clicked de la fila.
         self._btn_unlink = None
@@ -6358,7 +6358,7 @@ class NMPatientRowPremium(QFrame):
             self._btn_unlink.clicked.connect(on_unlink)
             lay.addWidget(self._btn_unlink, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        # Legacy widgets created but hidden to avoid crashes
+        # Compatibility widgets created but hidden to avoid crashes
         self._pid = QLabel(patient_id)
         self._subtitle = QLabel(subtitle)
         self._sync = QLabel("Sync")
@@ -7458,7 +7458,7 @@ class NMHubSidebar(QWidget):
         bg = v3c("bg_sidebar", self._modo)
         bg_css = bg.name()
         border_c = v3c("border", self._modo)
-        # BL-08/BL-10: divisor vertical más sutil (antes 180/140 = duro). El
+        # Runtime: divisor vertical más sutil (antes 180/140 = duro). El
         # contraste bg_sidebar vs fondo ya separa; el borde solo lo acompaña.
         border_alpha = 110 if is_dark else 85
         border_rgba = f"rgba({border_c.red()},{border_c.green()},{border_c.blue()},{border_alpha})"
@@ -7852,7 +7852,7 @@ class NMModuleRing(QWidget):
         r_arc = s / 2 - pen_w - 1
         arc_rect = QRectF(cx - r_arc, cy - r_arc, r_arc * 2, r_arc * 2)
 
-        # (F2 ADN Claude: el glow radial teal detrás del arco fue eliminado —
+        # (F2 runtime: el glow radial teal detrás del arco fue eliminado —
         # el anillo se sostiene solo con track + arco firma, sin halo.)
 
         # Track sutil (borderSoft v3 — TODOS los rings usan el mismo lenguaje)
@@ -8531,7 +8531,7 @@ class _MoodNumRow(QWidget):
 
     Usa la misma fórmula que ``_MoodTrackBar._slot_positions`` (margen 16 +
     i/10 del ancho útil). Con el layout anterior de stretches, el centro de
-    cada número quedaba ~10px corrido del dot real del slider (informe owner
+    cada número quedaba ~10px corrido del dot real del slider (informe user feedback
     v1.0, módulo Ánimo).
     """
 
@@ -8576,7 +8576,7 @@ class _MoodTrackBar(QWidget):
     def __init__(self, level: int = 5, parent=None, unset: bool = False):
         super().__init__(parent)
         self._level = max(1, min(10, int(level)))
-        # Muesca 0 (feedback owner v1.0): el thumb arranca ESTACIONADO en un
+        # Muesca 0 (feedback user feedback): el thumb arranca ESTACIONADO en un
         # 0 visual que NO es un valor registrable — al primer click/drag se
         # mueve a 1-10 y deja de estar unset. El 0 no responde a clicks.
         self._unset = bool(unset)
@@ -8635,7 +8635,7 @@ class _MoodTrackBar(QWidget):
 
         # Muesca 0 (estacionamiento): anillo neutro sutil; el thumb descansa
         # acá mientras el paciente no eligió valor. Theme-aware: en light el
-        # anillo blanco-sobre-card-clara era INVISIBLE (informe owner v1.0) —
+        # anillo blanco-sobre-card-clara era INVISIBLE (informe user feedback) —
         # se delinea con slate oscuro.
         _is_dark = "dark" in norm_modo(_tm().modo)
         slot0_x = self._slot_positions()[0]
@@ -8800,7 +8800,7 @@ class V3MoodSlider(QWidget):
         root.addWidget(self._track)
 
         # ── Fila de números 0-10 (el 0 es la muesca de estacionamiento; no
-        # registra valor — feedback owner v1.0). _MoodNumRow los posiciona
+        # registra valor — feedback user feedback). _MoodNumRow los posiciona
         # con la MISMA fórmula del track: cada número queda centrado bajo su
         # dot real (antes el layout de stretches los corría ~10px).
         self._num_labels: list[_MoodPickLabel] = []
@@ -9086,7 +9086,7 @@ class NMPlayButton(QPushButton):
 # NMDivider, NMSectionHeader, NMAvatar, NMStatCard, NMSearchInput, NMTextArea,
 # NMTabs, NMTooltip, NMErrorState, NMDialog/NMModal.
 #
-# Todos siguen el patrón canónico: aceptan `modo`, registran un slot al
+# Todos siguen el patrón runtime: aceptan `modo`, registran un slot al
 # ThemeManager via _tm().theme_changed, y exponen `_apply_theme(modo)`.
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -9436,7 +9436,7 @@ class NMStatCard(QWidget):
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        r = float(V3_RD["card"])  # premium Hub radius 18px
+        r = float(V3_RD["card"])  # UI Hub radius 18px
         rect = QRectF(0.5, 0.5, self.width() - 1, self.height() - 1)
         is_dark = "dark" in self._modo
         surf = v3c("surfaceSolid" if is_dark else "surface", self._modo)
@@ -9608,7 +9608,7 @@ class NMTextArea(QTextEdit):
         self._modo = norm_modo(modo or _tm().modo)
         self._max_length = max_length
         # font_key configurable: el contenido generado por IA usa "size_small"
-        # (más compacto, pedido owner) sin afectar el resto de los text areas.
+        # (más compacto, pedido user feedback) sin afectar el resto de los text areas.
         self._font_key = font_key if font_key in TYPOGRAPHY else _NM_CONTROL_FONT
         self.setPlaceholderText(placeholder or "")
         self.setAccessibleName(placeholder or "Text area")
@@ -9648,13 +9648,13 @@ class NMTextArea(QTextEdit):
         focus_col = v3c("accent", self._modo).name()
         sel_text = v3c("primary_ink", self._modo).name()
         # Foco fino y suave (1px, accent con alpha) — el 1.5px a plena
-        # intensidad se leía duro/grueso (informe owner v1.0: alinear al
+        # intensidad se leía duro/grueso (informe user feedback: alinear al
         # borde verde suave de Recordatorios).
         _focus_soft = QColor(v3c("accent", self._modo))
         _focus_soft.setAlpha(150)
         # Scrollbar canónica (clínica, neutra): un QTextEdit con stylesheet
         # propio pierde el QScrollBar global y caía al nativo de Qt (las "muchas
-        # scrollbars que violan el ADN" en el tab IA). La apendamos al QSS.
+        # scrollbars que violan el runtime" en el tab IA). La apendamos al QSS.
         from shared.theme_qt import _clinical_scrollbar_qss
 
         self.setStyleSheet(
@@ -9808,7 +9808,7 @@ class NMTooltip(QWidget):
     def __init__(self, text: str = "", modo: str = None, parent=None):
         # Child overlay con parent real, sin window flags: un tooltip con
         # Qt.ToolTip era una ventana top-level que el lector de pantalla
-        # resaltaba como mini ventana (informe owner v1.0, frente 2).
+        # resaltaba como mini ventana (informe user feedback, frente 2).
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._opacity = 1.0
@@ -10245,10 +10245,10 @@ def nm_confirm(
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# Handoff Full UI Pass — Mayo 2026
+# Runtime spec Full UI Pass — Mayo 2026
 # Extensiones MÍNIMAS al catálogo para alinear con
-# design_handoff_nm_suite_full_ui/. Sólo se incluyen los componentes que el
-# plan declara imprescindibles para Fase 1 y que no existían como tales.
+# design_runtime spec_nm_suite_full_ui/. Sólo se incluyen los componentes que el
+# plan declara imprescindibles para the runtime migration y que no existían como tales.
 # El resto (NMRing, NMSparkline, NMMoodBars, NMModal, NMToast, NMTabs,
 # NMAvatar, NMSwitch, NMProgress) ya está en el catálogo arriba y se reusan
 # desde las pantallas — se repintan automáticamente al cambiar la paleta V3.
@@ -10256,7 +10256,7 @@ def nm_confirm(
 
 
 # ── NMBadge ──────────────────────────────────────────────────────────────────
-# Handoff §4.4: pill 4×10, radius 999, font 12/600, tonos neutral/info/
+# Runtime spec §4.4: pill 4×10, radius 999, font 12/600, tonos neutral/info/
 # positive/warn/danger, icono opcional a la izquierda.
 # Implementación: subclase de QLabel themed, mapeando tono → token semántico.
 
@@ -10425,7 +10425,7 @@ class NMElidedLabel(QLabel):
 
 
 class NMBadge(QLabel):
-    """Pill semántica del handoff §4.4.
+    """Pill semántica del runtime spec §4.4.
 
     Args:
         text:   Etiqueta. Puede incluir un símbolo unicode a la izquierda.
@@ -10435,7 +10435,7 @@ class NMBadge(QLabel):
         parent: parent widget.
 
     Para añadir ícono SVG real, usar ``NMIcon`` en un layout horizontal y
-    poner el ``NMBadge`` al lado — el handoff acepta rich text via QLabel
+    poner el ``NMBadge`` al lado — el runtime spec acepta rich text via QLabel
     pero la composición externa es más mantenible.
     """
 
@@ -10463,7 +10463,7 @@ class NMBadge(QLabel):
     def _apply_style(self):
         key = _BADGE_TONE_TO_KEY[self._tone]
         color_hex = C(key, self._modo)
-        # Soft bg: rgba a 14% del color semántico (consistente con handoff §4.4).
+        # Soft bg: rgba a 14% del color semántico (consistente con runtime spec §4.4).
         fc = QColor(color_hex)
         fc.setAlpha(36)  # ~14%
         bg_css = f"rgba({fc.red()},{fc.green()},{fc.blue()},{fc.alpha()})"
@@ -10514,12 +10514,12 @@ class NMBadge(QLabel):
 
 
 # ── NMCardSecondary ──────────────────────────────────────────────────────────
-# Handoff §4.2: variante "nm-card-2" — surface-2, sin sombra, radius 14.
+# Runtime spec §4.2: variante "nm-card-2" — surface-2, sin sombra, radius 14.
 # Se usa para cards anidadas o secundarias (insets dentro de cards primarias).
 
 
 class NMCardSecondary(NMCard):
-    """Card secundaria del handoff §4.2 (``nm-card-2``).
+    """Card secundaria del runtime spec §4.2 (``nm-card-2``).
 
     Apaga la sombra de la card primaria y conmuta el background a
     ``surface-2`` con radius 14. Mantiene la API de NMCard.
@@ -10527,7 +10527,7 @@ class NMCardSecondary(NMCard):
 
     def __init__(self, parent=None, modo: str | None = None, clickable: bool = False):
         super().__init__(parent=parent, modo=modo, clickable=clickable, glow=False)
-        # Apagar sombra heredada (handoff §4.2: "sin sombra")
+        # Apagar sombra heredada (runtime spec §4.2: "sin sombra")
         try:
             self.setGraphicsEffect(None)
         except Exception:
@@ -10562,14 +10562,14 @@ class NMCardSecondary(NMCard):
 
 
 # ── NMSelect ─────────────────────────────────────────────────────────────────
-# Handoff §4.3: QComboBox themed (surface-2 bg, border line, radius 14,
+# Runtime spec §4.3: QComboBox themed (surface-2 bg, border line, radius 14,
 # focus = primary). El catálogo previo no exponía un select consistente.
 
 try:
     from PyQt6.QtWidgets import QComboBox as _QComboBox
 
     class NMSelect(_QComboBox):
-        """QComboBox themed según handoff §4.3.
+        """QComboBox themed según runtime spec §4.3.
 
         Lee tokens del tema vía ``stylesheet_combobox`` (theme_qt). Se conecta
         al ThemeManager para repintar al conmutar light/dark.
@@ -10596,9 +10596,9 @@ except ImportError:
 
 
 # ── NMStatusDot ──────────────────────────────────────────────────────────────
-# Handoff §3 / tokens.css `.nm-status-dot`: punto de estado 8 px con halo
+# Runtime spec §3 / tokens.css `.nm-status-dot`: punto de estado 8 px con halo
 # suave (positive/warn/danger). Sirve para footer de sidebar y barras de
-# estado interno. Cubre los tres tonos del handoff usando los keys semánticos
+# estado interno. Cubre los tres tonos del runtime spec usando los keys semánticos
 # del tema existente — NO introduce paleta nueva.
 
 _STATUS_DOT_TONE_TO_KEY = {
@@ -10612,7 +10612,7 @@ _STATUS_DOT_TONE_TO_KEY = {
 
 
 class NMStatusDot(QWidget):
-    """Punto de estado con halo suave (handoff §3 + tokens `.nm-status-dot`).
+    """Punto de estado con halo suave (runtime spec §3 + tokens `.nm-status-dot`).
 
     El punto sólido es de 8 px; el widget total es 16 px para hospedar el
     halo radial al estilo del CSS original. Tonos soportados:
@@ -10663,7 +10663,7 @@ class NMStatusDot(QWidget):
 
 
 # ── NMWindowChrome ────────────────────────────────────────────────────────────
-# Handoff §3 / components.jsx `WindowChrome`:
+# Runtime spec §3 / components.jsx `WindowChrome`:
 #   Barra de título custom de 36 px que reemplaza el título nativo del SO.
 #   Background bg-1, border-bottom 1px line.
 #   Izquierda: logo mark 16×16 (gradiente primary→accent→amber) + título
@@ -10735,7 +10735,7 @@ class _ChromeWinBtn(QPushButton):
         # render por defecto del QPushButton, por lo que el `background` del
         # stylesheet nunca llegaba a dibujarse. En light eso dejaba la X en
         # primary_ink (casi blanco) sobre la superficie clara del chrome → la X
-        # "desaparecía" al hover (bug owner). Pintar el fondo restaura el patrón
+        # "desaparecía" al hover (bug user feedback). Pintar el fondo restaura el patrón
         # Windows (rojo en close, sutil en min/max) y devuelve el contraste.
         if hovered or pressed:
             if self._kind == "close":
@@ -10812,7 +10812,7 @@ class _ChromeLogoMark(QLabel):
 
 
 class NMWindowChrome(QWidget):
-    """Barra de título custom 36 px (handoff WindowChrome).
+    """Barra de título custom 36 px (runtime spec WindowChrome).
 
     - Drag a mover: mantiene lógica mousePressEvent/mouseMoveEvent.
     - Doble clic → maximizar/restaurar.
@@ -10881,7 +10881,7 @@ class NMWindowChrome(QWidget):
         self._title_wrap = title_wrap
         lay.addWidget(title_wrap, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        # ── Contexto de módulo (Suite, BL-07) ────────────────────────────────
+        # ── Contexto de módulo (Suite, Runtime) ────────────────────────────────
         # Cuando hay un módulo abierto, el back + icono + título viven aquí, en la
         # titlebar, en vez de una banda de 56px aparte. Oculto hasta abrir módulo.
         ctx_wrap = QWidget(self)
@@ -11068,7 +11068,7 @@ class NMWindowChrome(QWidget):
         self._mark._apply_theme(modo)
 
         # Sin borde en los botones de la titlebar (Volver/Ajustes/Tema): el
-        # feedback es solo el hover, según pedido del owner. Aplica en todos los
+        # feedback es solo el hover, según pedido del user feedback. Aplica en todos los
         # módulos, Home, Hub, ventanas y subventanas que usan NMWindowChrome.
         tool_btn_style = (
             f"QPushButton {{ border: none; "
@@ -11093,7 +11093,7 @@ class NMWindowChrome(QWidget):
 
         self.update()
 
-    # ── Contexto de módulo (Suite, BL-07) ──────────────────────────────────────
+    # ── Contexto de módulo (Suite, Runtime) ──────────────────────────────────────
 
     def _on_ctx_back(self):
         cb = getattr(self, "_ctx_back_cb", None)
@@ -11164,14 +11164,14 @@ class NMWindowChrome(QWidget):
 
 
 # ── NMRow ─────────────────────────────────────────────────────────────────────
-# Handoff §2.7: fila genérica de lista con hover/selected/focus-visible.
+# Runtime spec §2.7: fila genérica de lista con hover/selected/focus-visible.
 # - hover:    bg surface_2
 # - selected: bg primary_soft + barra vertical 3×18 primary
 # - bottom border: 1px LINE (omitida en la última fila usando hide_divider)
 
 
 class NMRow(QFrame):
-    """Fila genérica de lista (handoff §2.7).
+    """Fila genérica de lista (runtime spec §2.7).
 
     Señales:
         clicked           — clic sobre la fila
@@ -11322,7 +11322,7 @@ class NMPageHeader(ThemeAwareWidgetMixin, QWidget):
 
         # OJO: SIEMPRE con parent y visibilidad DESPUÉS de addWidget.
         # setVisible(True) sobre un QLabel sin padre lo muestra un instante
-        # como ventana top-level — ERA la "mini ventana titilante" del owner
+        # como ventana top-level — ERA la "mini ventana titilante" del user feedback
         # (se recreaba en cada _refresh_all_views del Hub).
         self._eyebrow_lbl = QLabel(eyebrow or "", self)
         self._eyebrow_lbl.setFont(eyebrow_font())
@@ -11573,7 +11573,7 @@ class NMMetricCard(NMCard):
         card.set_tone("primary")
     """
 
-    # M3 premium: altura para que entren eyebrow + número serif (size_display_m=26)
+    # M3 UI: altura para que entren eyebrow + número serif (size_display_m=26)
     # + badge SIN cortarse, con aire interno (lectura calma, no "admin denso").
     FIXED_H = 96
 
@@ -11662,7 +11662,7 @@ class NMMetricCard(NMCard):
 
 
 class NMListRow(ThemeAwareWidgetMixin, QWidget):
-    """Fila premium para listas internas: icono, título, subtítulo, trailing widget.
+    """Fila UI para listas internas: icono, título, subtítulo, trailing widget.
 
     Hover highlight, divider inferior opcional, click signal.
     Consolida patrones de fila dispares en Avisos, Pacientes y Registro.

@@ -1,39 +1,23 @@
-"""
-NeuroMood Design System — v3 (Mayo 2026)
+"""Runtime visual token catalog for NeuroMood.
 
-Fuente canónica: design_handoff_neuromood_v3/README.md
-
-Esta versión expone DOS superficies en paralelo:
-
-  • v3 (canónica, nueva)
-        V3_LIGHT / V3_DARK ........... paletas con gradiente firma teal → violet
-        MOOD_PALETTE ................. 10 niveles emocionales (NMMoodEmoji, V3MoodSlider)
-        V3_SPACE / V3_RADIUS ......... escala estructural
-        V3_SHADOWS ................... params para QGraphicsDropShadowEffect
-        V3_GRADIENTS ................. paradas para QLinearGradient
-        get_v3_palette() / get_mood() / v3_mode() / icon_stroke_width()
-
-  • Legacy (compat — no tocar aún)
-        COLORS["dark_hybrid"|"light_hybrid"|"dark"|"light"]   re-mapeada a v3
-        TYPOGRAPHY / LAYOUT / GRADIENTS / SHADOWS / CATEGORY_COLORS
-        norm_modo() / get_colors() / get_gradient()
-
-Los 16 consumidores actuales (theme_qt.py, components_qt.py, pantallas) siguen
-funcionando contra los nombres legacy; obtienen los valores v3 sin refactor.
+This module owns the token data used by the PyQt runtime.  Compatibility
+surfaces such as ``COLORS`` and ``shared.design_tokens`` are derived from these
+runtime dictionaries so older import paths keep working without a second
+palette.
 """
 
 # ============================================================
-# V3 · Paletas canónicas
+# Runtime palettes
 # ============================================================
 
 V3_LIGHT = {
-    # ── Linen + Sage — paleta light handoff Claude Design (Mayo 2026) ─────────
+    # ── Linen + Sage ─────────────────────────────────────────────────────────
     # Backgrounds
     "bg": "#F4EFE5",  # canvas linen
     "bgAlt": "#ECE5D4",  # sidebar
     "bgSoft": "#ECE5D4",
     "bgSidebar": "#ECE5D4",
-    "surface": "#FBF8F1",  # card surface ADN
+    "surface": "#FBF8F1",  # card surface
     "surface2": "#ECE5D4",  # inputs bg
     "surface_hover": "rgba(48, 90, 72, 0.04)",
     "elevated": "#FBF8F1",
@@ -122,31 +106,31 @@ V3_LIGHT = {
 }
 
 V3_DARK = {
-    # ── Indigo Profundo — paleta dark handoff Claude Design (Mayo 2026) ───────
-    # Backgrounds (handoff bg-0/bg-1/surface/surface-2/surface-elev)
+    # ── Indigo Profundo ──────────────────────────────────────────────────────
+    # Backgrounds
     "bg": "#07091A",  # canvas indigo profundo (bg-0)
     "bgAlt": "#0E132B",  # sidebar (bg-1)
     "bgSoft": "#0E132B",
     "bgSidebar": "#0E132B",
     "surface": "#141A38",  # card surface
     "surfaceSolid": "#141A38",
-    "surface2": "#0E132B",  # campos/anidados: tono sidebar, no canvas (campos negros = rechazo owner)
+    "surface2": "#0E132B",  # campos/anidados: tono sidebar, no canvas (campos negros = rechazo user feedback)
     "elevated": "#141A38",
     "surfaceElevated": "#141A38",
     "elevatedSolid": "#141A38",
     "surfaceGlass": "rgba(20, 26, 56, 0.85)",
-    # Borders (handoff line / line-strong)
+    # Borders
     "border": "rgba(255,255,255,0.06)",
     "borderSoft": "rgba(255,255,255,0.04)",
     "borderStrong": "rgba(255,255,255,0.12)",
     "borderSolid": "#232740",
-    # Text (handoff ink / ink-2 / mute / faint)
+    # Text
     "text": "#ECECFB",  # ink
     "textMuted": "#8285A8",  # mute
     "text2": "#C7C9E5",  # ink-2
     "text3": "#8285A8",  # mute
     "text4": "#6A6F93",  # faint
-    # Accent — handoff primary = lavender, accent = aqua
+    # Accent: primary = lavender, accent = aqua
     "primary": "#A99CFF",  # lavender primary
     "primary_soft": "rgba(169,156,255,0.10)",
     "primary_ink": "#0E132B",
@@ -159,7 +143,7 @@ V3_DARK = {
     "moodGradFrom": "#A99CFF",
     "moodGradMid": "#C8A89B",
     "moodGradTo": "#5EE0C7",
-    # Tonos (claves legacy re-mapeadas al handoff)
+    # Tonos (claves compatibility re-mapeadas al runtime spec)
     "teal": "#5EE0C7",  # aqua
     "tealSoft": "rgba(94,224,199,0.14)",
     "tealSoftSolid": "#123336",
@@ -170,11 +154,11 @@ V3_DARK = {
     "cyanSoft": "rgba(94,224,199,0.14)",
     "cyanSoftSolid": "#123336",
     "green": "#60B89A",
-    # Amber (handoff — progreso, energía)
+    # Amber (runtime spec — progreso, energía)
     "amber": "#E8B86A",
     "amberSoft": "rgba(232,184,106,0.16)",
     "amberSoftSolid": "#2F2722",
-    # Semánticos handoff
+    # Semánticos runtime spec
     "success": "#60B89A",
     "successSoft": "rgba(96,184,154,0.16)",
     "successSoftSolid": "#18261A",
@@ -203,7 +187,7 @@ V3_DARK = {
     # Semantic Helpers V5 mapping
     "background": "#07091A",
     "primarySoft": "rgba(169,156,255,0.10)",
-    # ── Alias handoff con nombres CSS directos (snake_case) ───────────────────
+    # ── Alias runtime spec con nombres CSS directos (snake_case) ───────────────────
     "bg_0": "#07091A",
     "bg_1": "#0E132B",
     "surface_card": "#141A38",
@@ -214,7 +198,7 @@ V3_DARK = {
     "ink_2": "#C7C9E5",
     "mute": "#8285A8",
     "faint": "#6A6F93",
-    "terracotta": "#5EE0C7",  # en dark el "accent" ADN es aqua
+    "terracotta": "#5EE0C7",  # en dark el "accent" runtime es aqua
     "terracotta_soft": "rgba(94,224,199,0.14)",
     "aqua_soft": "rgba(94,224,199,0.14)",
 }
@@ -260,7 +244,7 @@ V3_RADIUS = {"sm": 8, "md": 12, "lg": 16, "xl": 16, "xxl": 22, "pill": 999, "car
 # Shadows en formato consumible por QGraphicsDropShadowEffect:
 #   blur (px), offset (dx, dy), color (r, g, b, a 0-255)
 V3_SHADOWS = {
-    # Light sombras del handoff (§2.3): tono ink (28,34,24) con opacidades muy
+    # Light sombras del runtime spec (§2.3): tono ink (28,34,24) con opacidades muy
     # bajas para mantener el "nada brilla, la calma es el default".
     # 6.1: opacidades levemente subidas para que el light se lea con el mismo
     # "peso" que dark — antes las cards en light parecían planas.
@@ -275,31 +259,31 @@ V3_SHADOWS = {
         "lg": {"blur": 64, "offset": (0, 24), "color": (28, 34, 24, 34)},
         # ring glow sage (NMRing, anillos)
         "ring": {"blur": 20, "offset": (0, 4), "color": (61, 90, 72, 80)},
-        # rescue §2.5 — desktop compact shadows (más sutiles que sm/md/lg)
+        # compact §2.5 — desktop compact shadows (más sutiles que sm/md/lg)
         "shadow_1": {"blur": 2, "offset": (0, 1), "color": (28, 34, 24, 12)},
         "shadow_2": {"blur": 12, "offset": (0, 4), "color": (28, 34, 24, 20)},
         "shadow_3": {"blur": 24, "offset": (0, 8), "color": (28, 34, 24, 32)},
     },
-    # Dark: opacidades 0.25–0.45 según handoff §2.3.
+    # Dark: opacidades 0.25–0.45 según runtime spec §2.3.
     "dark": {
         "sm": {"blur": 12, "offset": (0, 4), "color": (0, 0, 0, 76)},
         "md": {"blur": 40, "offset": (0, 16), "color": (0, 0, 0, 102)},
         "card": {"blur": 30, "offset": (0, 10), "color": (0, 0, 0, 90)},
         "lg": {"blur": 80, "offset": (0, 32), "color": (0, 0, 0, 130)},
-        # glow lavender (anillos en dark) — F2 ADN Claude: calmado (antes
+        # glow lavender (anillos en dark) — F2 runtime: calmado (antes
         # blur 40/alpha 56 y alpha 64: halos que "brillaban" contra la regla
         # "nada brilla, la calma es el default").
         "glow": {"blur": 24, "offset": (0, 0), "color": (169, 156, 255, 24)},
         "ring": {"blur": 20, "offset": (0, 4), "color": (169, 156, 255, 32)},
-        # rescue §2.5 — desktop compact shadows
+        # compact §2.5 — desktop compact shadows
         "shadow_1": {"blur": 2, "offset": (0, 1), "color": (0, 0, 0, 89)},
         "shadow_2": {"blur": 4, "offset": (0, 2), "color": (0, 0, 0, 115)},
         "shadow_3": {"blur": 24, "offset": (0, 8), "color": (0, 0, 0, 140)},
     },
 }
 
-# Paradas para QLinearGradient — gradiente firma del handoff.
-# Handoff §4.7: progress fill = linear primary → amber.
+# Paradas para QLinearGradient — gradiente firma del runtime spec.
+# Runtime spec §4.7: progress fill = linear primary → amber.
 #   Light: sage (#305A48) → amber (#C68A2E)
 #   Dark:  lavender (#A99CFF) → amber (#E8B86A)
 V3_GRADIENTS = {
@@ -313,7 +297,7 @@ V3_GRADIENTS = {
 # ============================================================
 
 TYPOGRAPHY = {
-    # Familias canónicas del handoff (§3): Newsreader serif (display), Manrope
+    # Familias runtime del runtime spec (§3): Newsreader serif (display), Manrope
     # sans (UI), JetBrains Mono (timestamps). Fallbacks de sistema para
     # entornos donde los .ttf de assets/fonts/ no estén disponibles.
     "font_family": "Manrope, Manrope ExtraLight, Segoe UI, system-ui, sans-serif",
@@ -335,24 +319,24 @@ TYPOGRAPHY = {
         "Georgia",
         "serif",
     ],
-    # Escala tipográfica del handoff §3 — píxeles convertidos a puntos donde
-    # corresponde. Las claves legacy (size_h1/h2/h3) se preservan; las
+    # Escala tipográfica del runtime spec §3 — píxeles convertidos a puntos donde
+    # corresponde. Las claves compatibility (size_h1/h2/h3) se preservan; las
     # display-xl/display-l/display-m/heading-l/heading-m/eyebrow son nuevas.
-    "size_display": 28,  # legacy — no cambiar (compat con consumidores históricos)
-    "size_display_xl": 40,  # hero onboarding contenido (ADN Claude, era 56)
+    "size_display": 28,  # compatibility — no cambiar (compat con consumidores históricos)
+    "size_display_xl": 40,  # hero onboarding contenido (runtime, era 56)
     "size_display_l": 30,  # saludo/score del Home contenidos (era 38)
-    "size_display_m": 26,  # rescue desktop: card headings (era 26)
-    "size_h1": 20,  # rescue: alineado a heading_l
-    "size_h2": 16,  # rescue: alineado a heading_m
-    "size_h3": 14,  # rescue: alineado a body
-    "size_heading_l": 20,  # rescue desktop: sección (era 20)
-    "size_heading_m": 16,  # rescue desktop: subtítulo card (era 16)
-    "size_body": 14,  # rescue desktop: body text (era 14)
+    "size_display_m": 26,  # compact desktop: card headings (era 26)
+    "size_h1": 20,  # compact: alineado a heading_l
+    "size_h2": 16,  # compact: alineado a heading_m
+    "size_h3": 14,  # compact: alineado a body
+    "size_heading_l": 20,  # compact desktop: sección (era 20)
+    "size_heading_m": 16,  # compact desktop: subtítulo card (era 16)
+    "size_body": 14,  # compact desktop: body text (era 14)
     "size_small": 12,
     "size_caption": 12,  # mantener
     "size_caption_xs": 11,
-    "size_eyebrow": 11,  # rescue: eyebrow uppercase (era 11)
-    "size_mono": 12,  # rescue: mono timestamps (era 12)
+    "size_eyebrow": 11,  # compact: eyebrow uppercase (era 11)
+    "size_mono": 12,  # compact: mono timestamps (era 12)
     # V5 Typography Scale camelCase and short aliases
     "displayXL": 56,
     "displayL": 38,
@@ -368,12 +352,12 @@ TYPOGRAPHY = {
     "size_emoji_sm": 22,
     "size_time_large": 20,
     "size_time_timer": 18,
-    # Pesos numéricos (handoff §3)
+    # Pesos numéricos (runtime spec §3)
     "weight_regular": 400,
     "weight_medium": 500,
     "weight_semibold": 600,
     "weight_bold": 700,
-    # Letter spacing (handoff §3 — eyebrow .14em uppercase)
+    # Letter spacing (runtime spec §3 — eyebrow .14em uppercase)
     "tracking_tight": "-.02em",
     "tracking_normal": "0",
     "tracking_eyebrow": ".14em",
@@ -435,10 +419,10 @@ def icon_stroke_width(size: int) -> float:
 
 
 # ============================================================
-# COLORS · bridge legacy → v3
+# COLORS · bridge compatibility → v3
 # Cada modo expone las claves v3 + las claves v2 históricas re-mapeadas.
 # Para QSS (que no soporta rgba en todos los properties), las claves
-# legacy apuntan a las variantes …Solid donde existe.
+# compatibility apuntan a las variantes …Solid donde existe.
 # ============================================================
 
 
@@ -446,37 +430,37 @@ def _bridge_dark():
     v = dict(V3_DARK)
     v.update(
         {
-            # Backgrounds legacy
+            # Backgrounds compatibility
             "bg_primary": V3_DARK["bg"],
             "bg_secondary": V3_DARK["bgAlt"],
             "bg_surface": V3_DARK["surfaceSolid"],
             "bg_elevated": V3_DARK["elevatedSolid"],
-            "bg_overlay": V3_DARK["surface2"],  # surface-2 handoff
+            "bg_overlay": V3_DARK["surface2"],  # surface-2 runtime spec
             "bg_glass": V3_DARK["surfaceSolid"] + "d9",
-            "bg_input": V3_DARK["surface2"],  # inputs sobre surface-2 (handoff §4.3)
-            # Acentos legacy (mapeo al handoff: primary lavender, accent aqua)
-            "accent": "#A99CFF",  # lavender primary for legacy compatibility
+            "bg_input": V3_DARK["surface2"],  # inputs sobre surface-2 (runtime spec §4.3)
+            # Acentos compatibility (mapeo al runtime spec: primary lavender, accent aqua)
+            "accent": "#A99CFF",  # lavender primary for compatibility compatibility
             "accent_hover": "#BFB4FF",  # lavender brighter
             "accent_glow": V3_DARK["accentSoftSolid"],
             "violet_hover": "#7CE6D0",  # aqua hover
             "violet_glow": V3_DARK["violetSoftSolid"],
             "teal_hover": "#7CE6D0",
-            # Texto legacy
+            # Texto compatibility
             "text_primary": V3_DARK["text"],
             "text_secondary": V3_DARK["text2"],
             "text_tertiary": V3_DARK["text3"],
             "text_on_accent": V3_DARK["primary_ink"],  # bg-1 — texto oscuro sobre lavender
-            # Bordes legacy (sólidos para QSS)
+            # Bordes compatibility (sólidos para QSS)
             "border": V3_DARK["borderSolid"],
             "border_accent": "#2A2F58",  # lavender undertone solid
             "border_focus": "#A99CFF",  # lavender
             "border_card": V3_DARK["borderSolid"],
-            # Semánticos legacy
+            # Semánticos compatibility
             "error": V3_DARK["danger"],
             "info": "#7FA8E8",  # cool blue muted
             "progress_track": V3_DARK["surface2"],
             "progress_fill": V3_DARK["primary"],
-            # Tokens v2/v3 ya existentes en el codebase (re-mapeados al handoff dark)
+            # Tokens v2/v3 ya existentes en el codebase (re-mapeados al runtime spec dark)
             "sidebar_bg": V3_DARK["bgSidebar"],
             "streak_color": V3_DARK["amber"],
             "streak_bg": V3_DARK["amberSoftSolid"],
@@ -491,7 +475,7 @@ def _bridge_dark():
             "hub_blob_violet": V3_DARK["accent"],  # lavender primary
             "sync_orb_green": V3_DARK["success"],
             "uninstall_danger": V3_DARK["danger"],
-            "installer_terminal_bg": V3_DARK["bg"],  # indigo profundo handoff
+            "installer_terminal_bg": V3_DARK["bg"],  # indigo profundo runtime spec
         }
     )
     return v
@@ -505,11 +489,11 @@ def _bridge_light():
             "bg_secondary": V3_LIGHT["bgAlt"],
             "bg_surface": V3_LIGHT["surface"],
             "bg_elevated": V3_LIGHT["elevated"],
-            "bg_overlay": V3_LIGHT["bgAlt"],  # bg-1 handoff
+            "bg_overlay": V3_LIGHT["bgAlt"],  # bg-1 runtime spec
             "bg_glass": "#FBF8F1d9",  # surface translúcido
-            "bg_input": V3_LIGHT["surface2"],  # inputs sobre surface-2 (handoff §4.3)
-            # Acentos legacy alineados al handoff: primary sage, accent terracotta
-            "accent": "#305A48",  # sage primary for legacy compatibility
+            "bg_input": V3_LIGHT["surface2"],  # inputs sobre surface-2 (runtime spec §4.3)
+            # Acentos compatibility alineados al runtime spec: primary sage, accent terracotta
+            "accent": "#305A48",  # sage primary for compatibility compatibility
             "accent_hover": "#345040",  # sage deeper
             "accent_glow": V3_LIGHT["accentSoftSolid"],
             "violet_hover": "#9C5530",  # terracotta deeper
@@ -523,7 +507,7 @@ def _bridge_light():
             "border_accent": "#C8C0AD",  # line-strong sólido
             "border_focus": "#305A48",  # sage focus
             "border_card": V3_LIGHT["borderSolid"],
-            # Semánticos light alineados al handoff
+            # Semánticos light alineados al runtime spec
             "success": V3_LIGHT["success"],
             "warning": V3_LIGHT["warning"],
             "error": V3_LIGHT["danger"],
@@ -544,7 +528,7 @@ def _bridge_light():
             "hub_blob_violet": V3_LIGHT["violet"],
             "sync_orb_green": V3_LIGHT["success"],
             "uninstall_danger": V3_LIGHT["danger"],
-            "installer_terminal_bg": V3_DARK["bg"],  # indigo profundo handoff dark
+            "installer_terminal_bg": V3_DARK["bg"],  # indigo profundo runtime spec dark
         }
     )
     return v
@@ -573,7 +557,7 @@ for _m in ("dark_hybrid", "light_hybrid"):
 # ============================================================
 
 GRADIENTS = {
-    # Gradiente firma del handoff — primary → amber en cada tema.
+    # Gradiente firma del runtime spec — primary → amber en cada tema.
     "dark_hybrid": [
         ("#A99CFF", 0.0),
         ("#C8A89B", 0.5),
@@ -584,7 +568,7 @@ GRADIENTS = {
         ("#7B7140", 0.5),
         ("#C68A2E", 1.0),
     ],
-    # Pares (start, end) — claves legacy preservadas (re-mapeadas al handoff)
+    # Pares (start, end) — claves compatibility preservadas (re-mapeadas al runtime spec)
     "accent_teal_violet_dark": ("#A99CFF", "#E8B86A"),
     "accent_teal_violet_light": ("#305A48", "#C68A2E"),
 }
@@ -595,8 +579,8 @@ GRADIENTS = {
 # ============================================================
 
 SHADOWS = {
-    # Strings CSS-like preservados (consumidores legacy). Valores re-mapeados al
-    # handoff §2.3: tono ink en light, negro en dark con opacidades 0.25–0.45.
+    # Strings CSS-like preservados (consumidores compatibility). Valores re-mapeados al
+    # runtime spec §2.3: tono ink en light, negro en dark con opacidades 0.25–0.45.
     "dark": {
         "card": "0 10px 30px rgba(0,0,0,0.35)",
         "card_hover": "0 18px 44px rgba(0,0,0,0.45), 0 0 1px rgba(169,156,255,0.22)",
@@ -623,7 +607,7 @@ TRANSITIONS = {
 
 
 def norm_modo(modo: str = "dark_hybrid") -> str:
-    """Normaliza alias legacy de modo."""
+    """Normaliza alias compatibility de modo."""
     if modo == "dark":
         return "dark_hybrid"
     if modo == "light":
@@ -637,7 +621,7 @@ def v3_mode(modo: str = "dark_hybrid") -> str:
 
 
 def get_colors(modo: str = "dark_hybrid"):
-    """Devuelve el diccionario de colores según el modo (incluye claves v3 + legacy)."""
+    """Devuelve el diccionario de colores según el modo (incluye claves v3 + compatibility)."""
     return COLORS[norm_modo(modo)]
 
 
@@ -661,12 +645,12 @@ def get_mood(level: int):
 # ============================================================
 
 CATEGORY_COLORS = {
-    # Categorías de activación conductual — alineadas a la paleta del handoff
+    # Categorías de activación conductual — alineadas a la paleta del runtime spec
     # (linen+sage / indigo profundo) sin perder distinción semántica.
-    "Autocuidado": "#4D7A52",  # handoff success  — salud, autocuidado
-    "Física": "#2F7E73",  # handoff teal     — movimiento, energía
+    "Autocuidado": "#4D7A52",  # runtime spec success  — salud, autocuidado
+    "Física": "#2F7E73",  # runtime spec teal     — movimiento, energía
     "Cognitiva": "#305A48",  # primary — mente, claridad
-    "Placer": "#B8633B",  # handoff accent   — disfrute, creatividad
-    "Social": "#C68A2E",  # handoff warning  — calidez, conexión
+    "Placer": "#B8633B",  # runtime spec accent   — disfrute, creatividad
+    "Social": "#C68A2E",  # runtime spec warning  — calidez, conexión
     "Maestría": "#A99CFF",  # dark primary — logro, habilidades
 }

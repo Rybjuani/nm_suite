@@ -1,4 +1,4 @@
-"""qa/runtime_live_probe.py — BL-00R: reliable read-only runtime evidence probe.
+"""qa/runtime_live_probe.py — read-only runtime evidence probe.
 
 Distinta de `qa/capture_v8.py` (matriz offscreen in-process). Esta sonda LANZA la
 ventana de la app en un SUBPROCESO CONTROLADO (PID real, ciclo de vida real),
@@ -7,7 +7,8 @@ exponer defectos de runtime que un grab offscreen in-process NO puede ver:
 ventanas top-level fantasma, ventanas que no cierran, procesos huérfanos y
 (onscreen) flicker real del WM.
 
-NO reemplaza a `capture_v8.py`. Sirve para destrabar BL-04 (runtime real).
+NO reemplaza a `capture_v8.py`. Complementa la matriz offscreen con evidencia
+de ciclo de vida real de ventanas.
 
 SEGURO / READ-ONLY:
   - Corre bajo NM_VISUAL_QA=1 (datos demo, sb=None): sin Supabase, sin DB real,
@@ -15,12 +16,12 @@ SEGURO / READ-ONLY:
   - Nunca limpia AppData. Nunca toca .env / installers / build / qa/e2e /
     qa/capture_v8.py / qa/_captures_v8.
   - Cierra SOLO los subprocesos que ella lanzó. Nunca mata procesos preexistentes.
-  - NO aprueba calidad visual (AGENTS.md §10.0).
+  - Solo aporta evidencia runtime; no aprueba calidad visual.
 
 USO (parent):
     .venv\\Scripts\\python.exe qa\\runtime_live_probe.py --all
     .venv\\Scripts\\python.exe qa\\runtime_live_probe.py --app hub --view dashboard --theme both
-    .venv\\Scripts\\python.exe qa\\runtime_live_probe.py --all --mode onscreen   # intrusivo, BL-04
+    .venv\\Scripts\\python.exe qa\\runtime_live_probe.py --all --mode onscreen   # intrusivo, WM real
     .venv\\Scripts\\python.exe qa\\runtime_live_probe.py --list
 
 SALIDA: qa/_runtime_probe/{app}-{view}-{theme}-960x600.png + PROBE_MANIFEST.json
@@ -49,7 +50,7 @@ _RES = os.environ.get("NM_PROBE_RES", "960x600")
 _THEME_MAP = {"light": "light_hybrid", "dark": "dark_hybrid"}
 
 # Vistas runtime-críticas (la matriz exhaustiva es trabajo de capture_v8.py).
-# Hub post-reestructura v1.0: nav canónica de 4 lugares (Inicio/Pacientes/
+# Hub post-reestructura v1.0: nav runtime de 4 lugares (Inicio/Pacientes/
 # Personalización global/Ajustes) + detalle con tabs Plan terapéutico e IA
 # (las ex-vistas top-level presets/textos/ia ya no existen).
 _VIEWS = {
@@ -325,7 +326,7 @@ def _targets(args) -> list[tuple[str, str]]:
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description="BL-00R runtime live probe (read-only)")
+    p = argparse.ArgumentParser(description="Runtime live probe (read-only)")
     p.add_argument("--app", choices=["suite", "hub"])
     p.add_argument("--view", default="")
     p.add_argument("--theme", choices=["light", "dark", "both"], default="both")
@@ -358,7 +359,7 @@ def main() -> int:
     themes = ["light_hybrid", "dark_hybrid"] if args.theme == "both" else [_THEME_MAP[args.theme]]
 
     print("=" * 60)
-    print("BL-00R RUNTIME LIVE PROBE (read-only)")
+    print("RUNTIME LIVE PROBE (read-only)")
     print(f"mode={args.mode} | targets={len(targets)} | themes={len(themes)} | out={out_dir}")
     print("=" * 60)
 
@@ -391,7 +392,7 @@ def main() -> int:
 
     manifest = {
         "tool": "qa/runtime_live_probe.py",
-        "purpose": "BL-00R runtime evidence (read-only). NO aprueba calidad visual.",
+        "purpose": "Runtime evidence (read-only). No aprueba calidad visual.",
         "commit_head": _git_head(),
         "generated_at": datetime.datetime.now().isoformat(),
         "mode": args.mode,
