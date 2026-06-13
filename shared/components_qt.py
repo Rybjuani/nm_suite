@@ -74,7 +74,7 @@ from PyQt6.QtWidgets import (
 
 from shared.components.layout import h_spacer, responsive_breakpoint, responsive_columns
 from shared.components.data import NMElidedLabel
-from shared.components.feedback import NMToast
+from shared.components.feedback import NMSkeleton, NMToast
 from shared.theme_manager import ThemeManager
 
 try:
@@ -2637,53 +2637,6 @@ class NMFadeWidget(QStackedWidget):
 
 
 # ── NMModule (base class Qt) ──────────────────────────────────────────────────
-
-
-class NMSkeleton(QWidget):
-    """
-    Rectangulo de carga animado con gradiente deslizante.
-    Uso: skeleton = NMSkeleton(parent, width=200, height=16, radius=8)
-    """
-
-    def __init__(self, parent=None, width=200, height=16, radius=8, modo=None):
-        super().__init__(parent)
-        self._modo = norm_modo(modo or _tm().modo)
-        self._radius = radius
-        self._pos = 0.0
-        self.setFixedSize(width, height)
-        self._timer = QTimer(self)
-        self._timer.setInterval(16)
-        self._timer.timeout.connect(self._tick)
-        self._timer.start()
-        _tm().theme_changed.connect(self._apply_theme)
-
-    def _tick(self):
-        self._pos = (self._pos + 0.012) % 1.4
-        self.update()
-
-    def paintEvent(self, event):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        c = colors(self._modo)
-        r = QRectF(self.rect())
-
-        p.setBrush(QColor(c["bg_elevated"]))
-        p.setPen(Qt.PenStyle.NoPen)
-        p.drawRoundedRect(r, self._radius, self._radius)
-
-        sx = (self._pos - 0.3) * self.width()
-        sw = self.width() * 0.4
-        sg = QLinearGradient(sx, 0, sx + sw, 0)
-        sg.setColorAt(0.0, QColor(255, 255, 255, 0))
-        sg.setColorAt(0.5, QColor(255, 255, 255, 18))
-        sg.setColorAt(1.0, QColor(255, 255, 255, 0))
-        p.setBrush(QBrush(sg))
-        p.drawRoundedRect(r, self._radius, self._radius)
-        p.end()
-
-    def _apply_theme(self, modo):
-        self._modo = norm_modo(modo)
-        self.update()
 
 
 class NMModule(ThemeAwareWidgetMixin, QWidget):
