@@ -67,6 +67,7 @@ __all__ = [
 
 _LAYOUT_EXPORTS = {"h_spacer", "responsive_columns"}
 _LEAF_EXPORT_MODULES = {
+    "NMFadeWidget": "shared.components.core",
     "NMElidedLabel": "shared.components.data",
     "NMDivider": "shared.components.surfaces",
     "NMProgressBar": "shared.components.feedback",

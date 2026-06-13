@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CONSUMER_ROOTS = (ROOT / "app", ROOT / "hub", ROOT / "qa", ROOT / "build_neuromood.py")
 COMPONENT_MODULES = {"shared.components", "shared.components_qt"}
 MOVED_COMPONENT_MODULES = {
+    "NMFadeWidget": "shared.components.core",
     "NMElidedLabel": "shared.components.data",
     "NMDivider": "shared.components.surfaces",
     "NMProgressBar": "shared.components.feedback",
