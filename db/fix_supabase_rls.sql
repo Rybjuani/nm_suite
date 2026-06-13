@@ -1,0 +1,11 @@
+-- fix_supabase_rls.sql
+-- Ejecutar este archivo COMPLETO en:
+--   Supabase Dashboard -> SQL Editor -> New query -> Paste -> Run
+--
+-- Antes este archivo deshabilitaba RLS para permitir acceso con anon key.
+-- Eso expone datos clinicos. Desde 2026-05-21 este wrapper delega al
+-- hardening seguro. Mantener este nombre evita que alguien use una receta
+-- vieja e insegura.
+--
+-- Abrir y ejecutar:
+--   db/secure_rls_hardening.sql

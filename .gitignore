@@ -1,0 +1,112 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Environments
+.venv/
+venv/
+env/
+node_modules/
+.worktrees/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*API*.txt
+*api*.txt
+*groq*.txt
+*secret*.txt
+
+# PyInstaller / build outputs
+build/
+dist/
+*.spec
+build.log
+installer_style_debug.txt
+
+# IDE / local tools
+.vscode/
+.idea/
+.claude/
+.mavis/
+*.swp
+
+# Windows & OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Local QA / generated outputs
+_qa_output/
+AI_SCRIPTS/_qa_output/
+_test_screens/
+_doc_screenshots/
+qa/_captures/
+graphify-out/
+*.tmp
+*.log
+docs/QA_FINAL_*.md
+
+# Visual handoff exports / generated screenshots
+design_handoff_nm_suite_full_ui/
+# Manuales PDF generados (regenerables con AI_SCRIPTS/generate_neuromood_manuals.py)
+Manual_Usuario_Profesional_NeuroMood.pdf
+Manual_Tecnico_Descriptivo_NeuroMood.pdf
+# NotebookLM pack — documentación local no versionada
+docs/_notebooklm_pack/
+# Redesign backups
+REDESIGN/design_sources/03_current_app/*.zip
+# Inno Setup compiler output
+installers/inno/Output/
+installers/nsis/Output/
+
+# Local tower scratch artifacts
+_scratch_trash/
+.harness/
+pr_body*.md
+
+# Local agent scratch artifacts, quarantines, reports and temporary captures
+scratch/
+
+qa/evidence/
+qa/_captures/
+_scratch_trash/
+
+# qa/e2e runtime — efímero / con secretos (tokens, .env, PHI). NUNCA versionar.
+# El CÓDIGO y DOCS de qa/e2e SÍ se versionan; solo se ignora lo de abajo:
+qa/e2e/shots/
+qa/e2e/trees/
+qa/e2e/logs/
+qa/e2e/*venv*/
+qa/e2e/.venv-e2e/
+qa/e2e/*backup*/
+qa/e2e/appdata_backup*/
+qa/e2e/.shot_counter
+qa/e2e/.app_pids
+qa/e2e/.last_backup_path
+qa/e2e/.preexisting_suffix
+qa/_captures*/
+qa/_db_host.txt
+qa/_ghost_stack_probe.log
+qa/_runtime_probe/
+qa/_probe_single/
+qa/_probe_wide/
+qa/_probe_wide2/
+qa/_probe_wide3/
+qa/_probe_onscreen/
+qa/_verify_*/
+qa/_build*.txt
+qa/_final_*/
+qa/_final_*.txt
+qa/_g2.txt
+qa/_hub_probe.txt
+qa/_suite_probe.txt
+qa/_pos.txt
+qa/_re.txt
+qa/_baseline_f0_indigo/

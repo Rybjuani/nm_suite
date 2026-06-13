@@ -1,0 +1,62 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = [
+    ".venv",
+    ".venv-e2e",
+    "dist",
+    "build",
+    "__pycache__"
+]
+
+# ── Baseline temporal: deuda de lint detectada al iniciar el proyecto ──────
+# Estos ignores son temporales. No agregar nuevos casos.
+# Reducir esta lista progresivamente.
+[tool.ruff.lint]
+select = ["E", "F"]
+ignore = [
+    "F401", # unused imports (133 restantes en except-fallback blocks — legítimos)
+    "E402", # module import not at top of file (intencional: sys.path antes de shared.*)
+    "E701", # multiple statements on one line (colon)
+    "F821", # undefined name
+    "E501", # line too long
+    # Reglas resueltas (retiradas del baseline):
+    # E702 (semicolons), E741 (ambiguous var), F541 (f-string sin {}),
+    # F841 (unused var), F601 (dict keys dup), E401 (multi-import), E722 (bare except), F811 (redef)
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
+
+[tool.coverage.run]
+source = ["app", "hub", "shared"]
+omit = [
+    "**/tests/**",
+    "**/.venv/**"
+]
+
+[tool.pyright]
+pythonVersion = "3.12"
+include = ["app", "hub", "shared"]
+exclude = [
+    "**/.venv",
+    "**/dist",
+    "**/build"
+]
+typeCheckingMode = "basic"
+
+# Baseline temporal: PyQt6 usa patrones dinamicos que generan falsos positivos.
+# Silenciados temporalmente. Revertir gradualmente cuando se agreguen:
+#   - type narrowing explicito en widgets opcionales
+#   - atributos declarados en __init__
+#   - stubs de tipos para dependencias faltantes
+reportOptionalMemberAccess = "none"
+reportArgumentType = "none"
+reportAttributeAccessIssue = "none"
+reportOptionalCall = "none"
+reportMissingImports = "none"
+reportAssignmentType = "none"
+reportCallIssue = "none"
+reportGeneralTypeIssues = "none"
+reportPrivateImportUsage = "none"

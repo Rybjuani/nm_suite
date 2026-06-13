@@ -1,0 +1,450 @@
+"""exportar.py — Exportación de registros del paciente a PDF."""
+
+import os
+import threading
+from datetime import datetime
+
+try:
+    from shared.theme_qt import obtener_ruta_recurso
+    from shared.theme import COLORS as _DS_COLORS
+except ImportError:
+
+    def obtener_ruta_recurso(nombre: str) -> str:
+        return os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", nombre
+        )
+
+    _DS_COLORS = None
+
+# Colores de marca para PDF — usamos el acento del modo LIGHT (sage accent),
+# que en papel blanco impreso es más legible y profesional que el aqua del dark.
+_PDF_ACCENT = _DS_COLORS["light_hybrid"]["accent"] if _DS_COLORS else "#2f6e62"
+_PDF_CAPTION = _DS_COLORS["light_hybrid"]["text_tertiary"] if _DS_COLORS else "#8a958e"
+# Excepción documentada al canon ADN: estos dos tonos existen SOLO para PDF
+# impreso sobre papel blanco. El surface ADN (#FBF8F1) no contrasta en papel;
+# se usa un linen apenas más profundo derivado del canvas light (#F4EFE5).
+# No usar en UI Qt — para pantalla, tokens de shared/design_tokens.py.
+_PDF_ROW_TINT = "#f6f3ec"  # linen claro print-only
+_PDF_GRID = "#dcd6c6"  # warm stone print-only
+
+_SECCIONES_DEFAULT = ("animo", "resp", "pens", "checklist", "timer", "reclog")
+
+
+def _normalizar_secciones(secciones: list[str] | None) -> set[str]:
+    if secciones is None:
+        return set(_SECCIONES_DEFAULT)
+    return {s for s in secciones if s in _SECCIONES_DEFAULT}
+
+
+def _filtrar_fechas(filas: list, fecha_desde: str = "", fecha_hasta: str = "") -> list:
+    if not fecha_desde and not fecha_hasta:
+        return filas
+    out = []
+    for row in filas:
+        fecha = (row.get("fecha") or "")[:10]
+        if fecha_desde and fecha < fecha_desde:
+            continue
+        if fecha_hasta and fecha > fecha_hasta:
+            continue
+        out.append(row)
+    return out
+
+
+def _filename_seguro(nombre_archivo: str, fallback: str) -> str:
+    raw = (nombre_archivo or "").strip() or fallback
+    if not raw.lower().endswith(".pdf"):
+        raw = f"{raw}.pdf"
+    safe = "".join(c for c in raw if c.isalnum() or c in " _-.")
+    return safe or fallback
+
+
+def _generar(
+    nombre: str,
+    pid: str,
+    datos: dict,
+    secciones: list[str] | None = None,
+    fecha_desde: str = "",
+    fecha_hasta: str = "",
+    nombre_archivo: str = "",
+) -> str:
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib import colors as rl_colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import cm
+        from reportlab.platypus import (
+            SimpleDocTemplate,
+            Paragraph,
+            Spacer,
+            Table,
+            TableStyle,
+            HRFlowable,
+        )
+    except ImportError:
+        raise RuntimeError("reportlab no está instalado.")
+
+    nombre_seg = "".join(c for c in nombre if c.isalnum() or c in " _-")
+    fecha_str = datetime.now().strftime("%Y%m%d_%H%M")
+    filename = _filename_seguro(
+        nombre_archivo,
+        f"NeuroMood_{nombre_seg}_{fecha_str}.pdf",
+    )
+    downloads = os.path.join(os.path.expanduser("~"), "Downloads")
+    if not os.path.exists(downloads):
+        downloads = os.path.expanduser("~")
+    filepath = os.path.join(downloads, filename)
+
+    doc = SimpleDocTemplate(
+        filepath,
+        pagesize=A4,
+        leftMargin=2 * cm,
+        rightMargin=2 * cm,
+        topMargin=2 * cm,
+        bottomMargin=2 * cm,
+    )
+    styles = getSampleStyleSheet()
+    titulo_st = ParagraphStyle(
+        "titulo", parent=styles["Title"], fontSize=18, textColor=rl_colors.HexColor(_PDF_ACCENT)
+    )
+    h2_st = ParagraphStyle(
+        "h2",
+        parent=styles["Heading2"],
+        fontSize=12,
+        textColor=rl_colors.HexColor(_PDF_ACCENT),
+        spaceAfter=4,
+    )
+    normal_st = styles["Normal"]
+    caption_st = ParagraphStyle(
+        "cap", parent=styles["Normal"], fontSize=8, textColor=rl_colors.HexColor(_PDF_CAPTION)
+    )
+
+    story = []
+    story.append(Paragraph(f"NeuroMood — Registro de {nombre}", titulo_st))
+    story.append(Paragraph(f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", caption_st))
+    if fecha_desde or fecha_hasta:
+        story.append(
+            Paragraph(
+                f"Rango: {fecha_desde or 'inicio'} a {fecha_hasta or 'hoy'}",
+                caption_st,
+            )
+        )
+    story.append(
+        HRFlowable(width="100%", thickness=1, color=rl_colors.HexColor(_PDF_ACCENT), spaceAfter=12)
+    )
+
+    def _seccion(titulo, filas, encabezados, row_fn, prom_txt=None):
+        story.append(Paragraph(titulo, h2_st))
+        if prom_txt:
+            story.append(Paragraph(prom_txt, normal_st))
+            story.append(Spacer(1, 4))
+        if not filas:
+            story.append(Paragraph("Sin registros.", caption_st))
+            story.append(Spacer(1, 10))
+            return
+        tabla_data = [encabezados] + [row_fn(r) for r in filas]
+        col_w = (A4[0] - 4 * cm) / len(encabezados)
+        t = Table(tabla_data, colWidths=[col_w] * len(encabezados), repeatRows=1)
+        t.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), rl_colors.HexColor(_PDF_ACCENT)),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), rl_colors.white),
+                    ("FONTSIZE", (0, 0), (-1, 0), 9),
+                    ("FONTSIZE", (0, 1), (-1, -1), 8),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -1),
+                        [rl_colors.HexColor(_PDF_ROW_TINT), rl_colors.white],
+                    ),
+                    ("GRID", (0, 0), (-1, -1), 0.4, rl_colors.HexColor(_PDF_GRID)),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                    ("TOPPADDING", (0, 0), (-1, -1), 3),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                ]
+            )
+        )
+        story.append(t)
+        story.append(Spacer(1, 12))
+
+    secciones_set = _normalizar_secciones(secciones)
+
+    def _render(key, titulo, filas, encabezados, row_fn, prom_txt=None):
+        if key not in secciones_set:
+            return
+        _seccion(titulo, filas, encabezados, row_fn, prom_txt)
+
+    animo = _filtrar_fechas(datos.get("animo", []), fecha_desde, fecha_hasta)
+    puntajes = [r["puntaje"] for r in animo if r.get("puntaje") is not None]
+    prom_txt = (
+        (
+            f"Promedio: {round(sum(puntajes) / len(puntajes), 1)}/10  |  "
+            f"Total: {len(animo)} registros"
+        )
+        if puntajes
+        else None
+    )
+    _render(
+        "animo",
+        "Registros de ánimo",
+        animo,
+        ["Fecha", "Hora", "Puntaje", "Nota"],
+        lambda r: [
+            r.get("fecha", "")[:10],
+            r.get("hora", "")[:5],
+            str(r.get("puntaje", "")),
+            (r.get("nota") or "")[:60],
+        ],
+        prom_txt,
+    )
+    _render(
+        "resp",
+        "Sesiones de respiración",
+        _filtrar_fechas(datos.get("resp", []), fecha_desde, fecha_hasta),
+        ["Fecha", "Hora", "Técnica", "Duración (min)"],
+        lambda r: [
+            r.get("fecha", "")[:10],
+            r.get("hora", "")[:5],
+            r.get("tecnica", "?"),
+            str(r.get("duracion_minutos", "?")),
+        ],
+    )
+    _render(
+        "pens",
+        "Registros de pensamientos",
+        _filtrar_fechas(datos.get("pens", []), fecha_desde, fecha_hasta),
+        ["Fecha", "Emoción", "Intensidad", "Pensamiento"],
+        lambda r: [
+            r.get("fecha", "")[:10],
+            r.get("emocion", "?"),
+            str(r.get("intensidad", "?")),
+            (r.get("pensamiento") or "")[:80],
+        ],
+    )
+    all_check = _filtrar_fechas(datos.get("checklist", []), fecha_desde, fecha_hasta)
+    _render(
+        "checklist",
+        "Actividades de activación",
+        [r for r in all_check if r.get("origen") == "activacion"],
+        ["Fecha", "Categoría", "Actividad"],
+        lambda r: [
+            r.get("fecha", "")[:10],
+            r.get("categoria", "?"),
+            (r.get("descripcion") or "")[:80],
+        ],
+    )
+    _render(
+        "checklist",
+        "Checklist completadas",
+        [r for r in all_check if r.get("origen") != "activacion"],
+        ["Fecha", "Origen", "Categoría", "Descripción"],
+        lambda r: [
+            r.get("fecha", "")[:10],
+            "Profesional" if str(r.get("origen") or "").startswith("profesional") else "Paciente",
+            r.get("categoria", "?"),
+            (r.get("descripcion") or "")[:70],
+        ],
+    )
+    _render(
+        "timer",
+        "Sesiones de temporizador",
+        _filtrar_fechas(datos.get("timer", []), fecha_desde, fecha_hasta),
+        ["Fecha", "Hora", "Actividad", "Duración (min)"],
+        lambda r: [
+            r.get("fecha", "")[:10],
+            r.get("hora", "")[:5],
+            (r.get("nombre") or "Sin nombre")[:40],
+            str((r.get("duracion_real") or 0) // 60),
+        ],
+    )
+    _render(
+        "reclog",
+        "Recordatorios disparados",
+        _filtrar_fechas(datos.get("reclog", []), fecha_desde, fecha_hasta),
+        ["Fecha", "Hora", "Mensaje", "Estado"],
+        lambda r: [
+            r.get("fecha", "")[:10],
+            r.get("hora", "")[:5],
+            (r.get("mensaje") or "")[:80],
+            "Cerrado" if r.get("cerrado") else "Pendiente",
+        ],
+    )
+
+    try:
+        from shared.assets import obtener_ruta_asset, LOGO_LIGHT
+
+        logo_path = obtener_ruta_asset(LOGO_LIGHT)
+    except ImportError:
+        logo_path = obtener_ruta_recurso("LOGO.png")
+
+    def _header(canvas, doc_obj):
+        canvas.saveState()
+        if os.path.exists(logo_path):
+            canvas.drawImage(
+                logo_path,
+                doc_obj.leftMargin,
+                A4[1] - 1.35 * cm,
+                width=2.6 * cm,
+                height=0.7 * cm,
+                preserveAspectRatio=True,
+                mask="auto",
+            )
+        canvas.setStrokeColor(rl_colors.HexColor(_PDF_ACCENT))
+        canvas.setLineWidth(0.6)
+        canvas.line(
+            doc_obj.leftMargin, A4[1] - 1.55 * cm, A4[0] - doc_obj.rightMargin, A4[1] - 1.55 * cm
+        )
+        canvas.restoreState()
+
+    doc.build(story, onFirstPage=_header, onLaterPages=_header)
+    return filepath
+
+
+def exportar_pdf(
+    paciente_nombre: str,
+    paciente_id: str,
+    datos: dict,
+    on_done=None,
+    on_error=None,
+    secciones: list[str] | None = None,
+    fecha_desde: str = "",
+    fecha_hasta: str = "",
+    nombre_archivo: str = "",
+):
+    """Genera el PDF en hilo daemon. Abre archivo en hilo principal via QTimer."""
+
+    def _run():
+        try:
+            from shared.qt_thread import run_on_gui
+
+            ruta = _generar(
+                paciente_nombre,
+                paciente_id,
+                datos,
+                secciones=secciones,
+                fecha_desde=fecha_desde,
+                fecha_hasta=fecha_hasta,
+                nombre_archivo=nombre_archivo,
+            )
+
+            def _cb():
+                try:
+                    os.startfile(ruta)
+                except Exception:
+                    pass
+                if on_done:
+                    on_done(ruta)
+
+            run_on_gui(_cb)
+        except Exception as e:
+            if on_error:
+                _err = str(e)
+                run_on_gui(lambda msg=_err: on_error(msg))
+
+    threading.Thread(target=_run, daemon=True).start()
+
+
+def generar_constancia_consentimiento(
+    paciente_nombre: str, paciente_id: str, consentimiento: dict
+) -> str:
+    """Genera una constancia legal separada del PDF profesional/de evolución."""
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib import colors as rl_colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import cm
+        from reportlab.platypus import (
+            SimpleDocTemplate,
+            Paragraph,
+            Spacer,
+            Table,
+            TableStyle,
+            HRFlowable,
+        )
+    except ImportError:
+        raise RuntimeError("reportlab no esta instalado.")
+
+    nombre_seg = "".join(c for c in paciente_nombre if c.isalnum() or c in " _-") or "paciente"
+    fecha_str = datetime.now().strftime("%Y%m%d_%H%M")
+    filename = f"NeuroMood_constancia_consentimiento_{nombre_seg}_{fecha_str}.pdf"
+    downloads = os.path.join(os.path.expanduser("~"), "Downloads")
+    if not os.path.exists(downloads):
+        downloads = os.path.expanduser("~")
+    filepath = os.path.join(downloads, filename)
+
+    doc = SimpleDocTemplate(
+        filepath,
+        pagesize=A4,
+        leftMargin=2 * cm,
+        rightMargin=2 * cm,
+        topMargin=2 * cm,
+        bottomMargin=2 * cm,
+    )
+    styles = getSampleStyleSheet()
+    title_st = ParagraphStyle(
+        "legal_title",
+        parent=styles["Title"],
+        fontSize=18,
+        textColor=rl_colors.HexColor(_PDF_ACCENT),
+    )
+    h2_st = ParagraphStyle(
+        "legal_h2",
+        parent=styles["Heading2"],
+        fontSize=11,
+        textColor=rl_colors.HexColor(_PDF_ACCENT),
+        spaceAfter=4,
+    )
+    normal_st = styles["Normal"]
+    caption_st = ParagraphStyle(
+        "legal_cap", parent=styles["Normal"], fontSize=8, textColor=rl_colors.HexColor(_PDF_CAPTION)
+    )
+
+    rows = [
+        ("Paciente", paciente_nombre),
+        ("Patient ID", paciente_id),
+        ("Estado", consentimiento.get("status", "pendiente")),
+        ("Aceptado UTC", consentimiento.get("accepted_at_utc", "—")),
+        ("Producto", consentimiento.get("product_name", "NeuroMood Suite")),
+        ("Version NeuroMood Suite", consentimiento.get("neuromood_suite_version", "—")),
+        ("Version Instalador Suite", consentimiento.get("instalador_suite_version", "—")),
+        ("Version aviso legal", consentimiento.get("disclaimer_version", "—")),
+        ("Version privacidad", consentimiento.get("privacy_version", "—")),
+        ("Hash aviso legal", consentimiento.get("disclaimer_text_hash", "—")),
+        ("Hash privacidad", consentimiento.get("privacy_text_hash", "—")),
+        ("Alcance", consentimiento.get("consent_scope", "—")),
+    ]
+    table = Table(rows, colWidths=[4.4 * cm, 11.2 * cm])
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (0, -1), rl_colors.HexColor(_PDF_ROW_TINT)),
+                ("TEXTCOLOR", (0, 0), (0, -1), rl_colors.HexColor(_PDF_ACCENT)),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("GRID", (0, 0), (-1, -1), 0.4, rl_colors.HexColor(_PDF_GRID)),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ]
+        )
+    )
+
+    story = [
+        Paragraph("Constancia de consentimiento digital", title_st),
+        Paragraph("NeuroMood Suite para pacientes", caption_st),
+        Spacer(1, 8),
+        HRFlowable(width="100%", thickness=1, color=rl_colors.HexColor(_PDF_ACCENT), spaceAfter=12),
+        Paragraph("Detalle auditable", h2_st),
+        table,
+        Spacer(1, 12),
+        Paragraph(
+            "Esta constancia acredita el estado tecnico del consentimiento registrado para uso complementario "
+            "de NeuroMood Suite. No es un informe profesional ni contiene evolucion terapeutica.",
+            normal_st,
+        ),
+    ]
+    doc.build(story)
+    return filepath
