@@ -80,6 +80,7 @@ from shared.components.feedback import (
     NMProgressBar,
     NMProgressLine,
     NMToast,
+    NMTypingDots,
 )
 from shared.components.inputs import NMToggle
 from shared.components.surfaces import NMDivider
@@ -7255,89 +7256,6 @@ class NMChatBubble(QWidget):
                 f"QLabel {{ background: {bg_css}; color: {text_col}; "
                 f"border: 1px solid {border_color}; {radii} {pad} {fsize} }}"
             )
-
-
-# ── NMTypingDots ──────────────────────────────────────────────────────────────
-
-
-class NMTypingDots(QWidget):
-    """Indicador animado de 'IA escribiendo...' (3 puntos secuenciales).
-
-    Llamar a start()/stop() para controlar la animación.
-    """
-
-    # Spec README v3: "3 dots con animación translateY(-4px) escalonada
-    # (delay 0/0.15/0.3s)" — implementado con phase continuous + sin wave.
-    _PERIOD_MS = 1200  # ciclo completo
-    _STAGGER_MS = 150  # 0.15s entre dots
-    _BOUNCE_PX = 4  # translateY -4px en el pico
-
-    def __init__(self, modo: str = None, parent=None):
-        super().__init__(parent)
-        self._modo = norm_modo(modo or _tm().modo)
-        self._t_ms = 0
-        self._timer = QTimer(self)
-        self._timer.setInterval(33)  # ~30 fps (suave para anim continua)
-        self._timer.timeout.connect(self._tick)
-        self._running = False
-        self.setFixedSize(48, 24)
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
-        _tm().theme_changed.connect(self._apply_theme)
-
-    def start(self):
-        self._running = True
-        self._t_ms = 0
-        self._timer.start()
-
-    def stop(self):
-        self._running = False
-        self._timer.stop()
-        self.update()
-
-    def _tick(self):
-        if sip.isdeleted(self):
-            self._timer.stop()
-            return
-        self._t_ms = (self._t_ms + 33) % self._PERIOD_MS
-        self.update()
-
-    def _apply_theme(self, modo: str):
-        self._modo = norm_modo(modo)
-        self.update()
-
-    def paintEvent(self, event):
-        import math
-
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        p.save()
-        dot_r = 4
-        gap = 12
-        y_c = self.height() / 2
-        x_start = dot_r + 2
-        base_c = QColor(C("teal", self._modo))
-        for i in range(3):
-            # Phase shift por dot — 0.15s stagger
-            if self._running:
-                phase = ((self._t_ms - i * self._STAGGER_MS) % self._PERIOD_MS) / self._PERIOD_MS
-                # bounce: pico arriba en phase 0.5, queda abajo en 0/1
-                # Usamos curva senoidal solo en la primera mitad del ciclo
-                if 0 <= phase < 0.5:
-                    bounce = math.sin(phase * math.pi)  # 0→1→0
-                else:
-                    bounce = 0.0
-                offset_y = -self._BOUNCE_PX * bounce
-                alpha = 0.4 + 0.6 * bounce  # 0.4 idle, 1.0 peak
-            else:
-                offset_y = 0.0
-                alpha = 0.3
-            dc = QColor(base_c)
-            dc.setAlphaF(alpha)
-            p.setBrush(QBrush(dc))
-            p.setPen(Qt.PenStyle.NoPen)
-            p.drawEllipse(QPointF(x_start + i * gap, y_c + offset_y), dot_r, dot_r)
-        p.restore()
-        p.end()
 
 
 # ── NMSyncOrb ─────────────────────────────────────────────────────────────────

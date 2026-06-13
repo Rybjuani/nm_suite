@@ -74,6 +74,7 @@ _LEAF_EXPORT_MODULES = {
     "NMRingPulse": "shared.components.feedback",
     "NMSkeleton": "shared.components.feedback",
     "NMToast": "shared.components.feedback",
+    "NMTypingDots": "shared.components.feedback",
     "NMToggle": "shared.components.inputs",
 }
 
