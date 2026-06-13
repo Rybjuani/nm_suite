@@ -25,6 +25,9 @@ from shared.components_qt import (
     NMActivityCard,
     NMFeaturedCard,
     NMStatCard,
+    NMMetricCard,
+    NMChartPanel,
+    NMFormPanel,
     NMErrorState,
     NMRingPulse,
     NMDataPreserveCard,
@@ -49,6 +52,7 @@ from shared.components_qt import (
     # ── Navigation ─────────────────────────────────────────────────────────
     NMSidebar,
     NMHeader,
+    NMPageHeader,
     NMTabs,
     NMWindowChrome,
     NMRow,
@@ -57,6 +61,7 @@ from shared.components_qt import (
     NMTooltip,
     NMChip,
     NMBadge,
+    NMAIDisclaimer,
     NMStatusDot,
     NMStatusBanner,
     NMStatusChip,
@@ -95,6 +100,7 @@ from shared.components_qt import (
     NMInstallStepper,
     # ── Misc / Utility ─────────────────────────────────────────────────────
     NMIcon,
+    NMElidedLabel,
     NMAvatar,
     NMPresetChip,
     NMProviderChip,
@@ -105,8 +111,13 @@ from shared.components_qt import (
     NMPatientContext,
     NMSettingsSection,
     NMPanel,
+    NMListRow,
     NMChatBubble,
     NMTypingDots,
+    NMDialogScaffold,
+    h_spacer,
+    responsive_columns,
+    nm_confirm,
 )
 
 __all__ = [
@@ -120,6 +131,9 @@ __all__ = [
     "NMActivityCard",
     "NMFeaturedCard",
     "NMStatCard",
+    "NMMetricCard",
+    "NMChartPanel",
+    "NMFormPanel",
     "NMErrorState",
     "NMRingPulse",
     "NMDataPreserveCard",
@@ -144,6 +158,7 @@ __all__ = [
     # Navigation
     "NMSidebar",
     "NMHeader",
+    "NMPageHeader",
     "NMTabs",
     "NMWindowChrome",
     "NMRow",
@@ -152,6 +167,7 @@ __all__ = [
     "NMTooltip",
     "NMChip",
     "NMBadge",
+    "NMAIDisclaimer",
     "NMStatusDot",
     "NMStatusBanner",
     "NMStatusChip",
@@ -190,6 +206,7 @@ __all__ = [
     "NMInstallStepper",
     # Misc / Utility
     "NMIcon",
+    "NMElidedLabel",
     "NMAvatar",
     "NMPresetChip",
     "NMProviderChip",
@@ -200,6 +217,11 @@ __all__ = [
     "NMPatientContext",
     "NMSettingsSection",
     "NMPanel",
+    "NMListRow",
     "NMChatBubble",
     "NMTypingDots",
+    "NMDialogScaffold",
+    "h_spacer",
+    "responsive_columns",
+    "nm_confirm",
 ]
