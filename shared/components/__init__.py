@@ -70,6 +70,7 @@ _LEAF_EXPORT_MODULES = {
     "NMElidedLabel": "shared.components.data",
     "NMSkeleton": "shared.components.feedback",
     "NMToast": "shared.components.feedback",
+    "NMToggle": "shared.components.inputs",
 }
 
 

@@ -13,6 +13,7 @@ MOVED_COMPONENT_MODULES = {
     "NMElidedLabel": "shared.components.data",
     "NMSkeleton": "shared.components.feedback",
     "NMToast": "shared.components.feedback",
+    "NMToggle": "shared.components.inputs",
 }
 
 EXPECTED_PUBLIC_COMPONENT_SYMBOLS = {
