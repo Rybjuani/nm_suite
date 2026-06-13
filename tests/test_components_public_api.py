@@ -11,6 +11,7 @@ CONSUMER_ROOTS = (ROOT / "app", ROOT / "hub", ROOT / "qa", ROOT / "build_neuromo
 COMPONENT_MODULES = {"shared.components", "shared.components_qt"}
 MOVED_COMPONENT_MODULES = {
     "NMElidedLabel": "shared.components.data",
+    "NMDivider": "shared.components.surfaces",
     "NMProgressBar": "shared.components.feedback",
     "NMProgressLine": "shared.components.feedback",
     "NMRingPulse": "shared.components.feedback",
