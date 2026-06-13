@@ -12,6 +12,7 @@ COMPONENT_MODULES = {"shared.components", "shared.components_qt"}
 MOVED_COMPONENT_MODULES = {
     "NMElidedLabel": "shared.components.data",
     "NMProgressBar": "shared.components.feedback",
+    "NMProgressLine": "shared.components.feedback",
     "NMRingPulse": "shared.components.feedback",
     "NMSkeleton": "shared.components.feedback",
     "NMToast": "shared.components.feedback",

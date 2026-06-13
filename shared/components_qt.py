@@ -74,7 +74,13 @@ from PyQt6.QtWidgets import (
 
 from shared.components.layout import h_spacer, responsive_breakpoint, responsive_columns
 from shared.components.data import NMElidedLabel
-from shared.components.feedback import NMRingPulse, NMSkeleton, NMProgressBar, NMToast
+from shared.components.feedback import (
+    NMRingPulse,
+    NMSkeleton,
+    NMProgressBar,
+    NMProgressLine,
+    NMToast,
+)
 from shared.components.inputs import NMToggle
 from shared.theme_manager import ThemeManager
 
@@ -3648,55 +3654,6 @@ class NMSessionHistory(QWidget):
 
 # COMPONENTES V3 — Design System Mayo 2026
 # ═══════════════════════════════════════════════════════════════════════════════
-
-# ── NMProgressLine ────────────────────────────────────────────────────────────
-
-
-class NMProgressLine(QWidget):
-    """Línea de progreso ultra-fina (2 px, full-width) con gradiente teal→violet.
-
-    Uso: colocar en borde superior del área de contenido de módulos y Hub.
-    """
-
-    def __init__(self, total: int = 1, current: int = 0, modo: str = None, parent=None):
-        super().__init__(parent)
-        self._total = max(1, total)
-        self._current = current
-        self._modo = norm_modo(modo or _tm().modo)
-        self.setFixedHeight(2)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
-        _tm().theme_changed.connect(self._apply_theme)
-
-    def set_progress(self, current: int, total: int = None):
-        if total is not None:
-            self._total = max(1, total)
-        self._current = current
-        self.update()
-
-    @property
-    def pct(self) -> float:
-        return min(1.0, max(0.0, self._current / self._total))
-
-    def paintEvent(self, event):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        w = self.width()
-        h = self.height()
-        fill_w = int(w * self.pct)
-        # Track: V3 border token — warm stone (light) / dark navy (dark)
-        track = v3c("border", self._modo)
-        track.setAlpha(80)
-        p.fillRect(0, 0, w, h, track)
-        if fill_w > 0:
-            # F5 runtime: fill `primary` sólido (lo lineal va plano).
-            p.fillRect(0, 0, fill_w, h, v3c("primary", self._modo))
-        p.end()
-
-    def _apply_theme(self, modo: str):
-        self._modo = norm_modo(modo)
-        self.update()
-
 
 # ── NMStreakBadge ─────────────────────────────────────────────────────────────
 
