@@ -74,7 +74,7 @@ from PyQt6.QtWidgets import (
 
 from shared.components.layout import h_spacer, responsive_breakpoint, responsive_columns
 from shared.components.data import NMElidedLabel
-from shared.components.feedback import NMRingPulse, NMSkeleton, NMToast
+from shared.components.feedback import NMRingPulse, NMSkeleton, NMProgressBar, NMToast
 from shared.components.inputs import NMToggle
 from shared.theme_manager import ThemeManager
 
@@ -1323,79 +1323,6 @@ class NMInput(QLineEdit):
         self._error_message = ""
         self.setToolTip("")
         self._apply_base_style()
-
-
-# ── NMProgressBar ─────────────────────────────────────────────────────────────
-
-
-class NMProgressBar(QWidget):
-    """
-    Barra de progreso custom con fill gradiente teal→violet.
-    Propiedad animable: value (0.0–1.0).
-    """
-
-    def __init__(self, parent=None, height: int = 6, modo: str = None):
-        super().__init__(parent)
-        self._modo = norm_modo(modo or _tm().modo)
-        self._value = 0.0
-        self._bar_h = height
-        self.setFixedHeight(height)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        _tm().theme_changed.connect(self._apply_theme)
-
-    # value como pyqtProperty para QPropertyAnimation
-    def _get_value(self) -> float:
-        return self._value
-
-    def _set_value(self, v: float):
-        self._value = max(0.0, min(1.0, v))
-        self.update()
-
-    value = pyqtProperty(float, _get_value, _set_value)
-
-    def animate_to(self, target: float, duration: int = 400):
-        a = QPropertyAnimation(self, b"value", self)
-        a.setDuration(duration)
-        a.setEasingCurve(QEasingCurve.Type.OutCubic)
-        a.setEndValue(target)
-        a.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
-
-    def set_progress(self, frac: float) -> None:
-        """API compatible con NMProgressLine para reemplazos drop-in."""
-        self._set_value(frac)
-
-    def paintEvent(self, event: QPaintEvent):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        c = colors(self._modo)
-        r = self._bar_h // 2
-        w = self.width()
-        h = self.height()
-        rect = QRectF(0, 0, w, h)
-
-        # Track
-        p.setBrush(QBrush(QColor(c["progress_track"])))
-        p.setPen(Qt.PenStyle.NoPen)
-        p.drawRoundedRect(rect, r, r)
-
-        # Fill — barra sólida continua con caps redondeados (runtime).
-        # El dithering de puntitos anterior se leía "técnico/punteado" — el
-        # user feedback lo marcó como random design en el informe v1.0 final.
-        # F5 runtime: fill `primary` SÓLIDO sobre track neutro (lo lineal
-        # va plano; el gradiente firma queda solo en lo circular/identitario).
-        # (El shimmer fue eliminado en F2.)
-        fill_w = w * self._value
-        if fill_w > 0:
-            fill_rect = QRectF(0, 0, fill_w, h)
-            p.setBrush(QBrush(v3c("primary", self._modo)))
-            p.setPen(Qt.PenStyle.NoPen)
-            p.drawRoundedRect(fill_rect, r, r)
-
-        p.end()
-
-    def _apply_theme(self, modo: str):
-        self._modo = norm_modo(modo)
-        self.update()
 
 
 # ── NMSidebar ─────────────────────────────────────────────────────────────────
