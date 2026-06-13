@@ -803,11 +803,12 @@ class ModuloRegistroTCC(NMModule):
         self._txt_situacion = NMTextArea(
             "Escribí lo que pasó…",
             modo=self._modo,
-            min_height=78,
+            min_height=120,
         )
-        self._txt_situacion.setFixedHeight(78)
         self._txt_situacion.textChanged.connect(self._update_situacion_count)
-        layout.addWidget(self._txt_situacion)
+        # La textarea absorbe el alto disponible de la card (stretch=1): fija en
+        # 78px + addStretch abría un vacío enorme sobre la navegación (S05/S08).
+        layout.addWidget(self._txt_situacion, stretch=1)
 
         self._situacion_count_lbl = QLabel("0 / 500")
         self._situacion_count_lbl.setFont(qfont("size_caption_xs"))
@@ -816,7 +817,6 @@ class ModuloRegistroTCC(NMModule):
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
         )
         layout.addWidget(self._situacion_count_lbl)
-        layout.addStretch()
         self._pages.append(page)
 
     def _build_page_emocion(self):
@@ -885,11 +885,12 @@ class ModuloRegistroTCC(NMModule):
         self._txt_pensamiento = NMTextArea(
             "Escribi el pensamiento automatico",
             modo=self._modo,
-            min_height=72,
+            min_height=96,
         )
-        self._txt_pensamiento.setFixedHeight(72)
         self._txt_pensamiento.textChanged.connect(self._on_pensamiento_changed)
-        layout.addWidget(self._txt_pensamiento)
+        # Expandible: deja que la textarea tome el alto sobrante y ancla las
+        # columnas (contador/distorsiones + tip) debajo, sin área muerta (S07).
+        layout.addWidget(self._txt_pensamiento, stretch=1)
 
         # QHBoxLayout for 2 columns below the textarea
         two_cols = QHBoxLayout()
@@ -944,7 +945,6 @@ class ModuloRegistroTCC(NMModule):
 
         two_cols.addLayout(right_col, stretch=1)
         layout.addLayout(two_cols)
-        layout.addStretch()
 
         self._detect_distortions(None)
         self._pages.append(page)
@@ -961,11 +961,9 @@ class ModuloRegistroTCC(NMModule):
         self._txt_respuesta = NMTextArea(
             "Escribi una respuesta alternativa",
             modo=self._modo,
-            min_height=78,
+            min_height=120,
         )
-        self._txt_respuesta.setFixedHeight(78)
-        layout.addWidget(self._txt_respuesta)
-        layout.addStretch()
+        layout.addWidget(self._txt_respuesta, stretch=1)
         self._pages.append(page)
 
     # ── emotion tile picker ──────────────────────────────────────────────────
