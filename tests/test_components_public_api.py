@@ -99,7 +99,9 @@ def test_public_component_symbols_are_reexported_from_both_paths():
     components = importlib.import_module("shared.components")
     facade = importlib.import_module("shared.components_qt")
 
+    assert len(EXPECTED_PUBLIC_COMPONENT_SYMBOLS) == 56
     assert set(facade.__all__) == EXPECTED_PUBLIC_COMPONENT_SYMBOLS
+    assert set(components.__all__) == EXPECTED_PUBLIC_COMPONENT_SYMBOLS
     assert EXPECTED_PUBLIC_COMPONENT_SYMBOLS <= set(components.__all__)
     for name in EXPECTED_PUBLIC_COMPONENT_SYMBOLS:
         assert getattr(components, name) is getattr(facade, name)
@@ -160,3 +162,41 @@ def test_layout_module_does_not_import_component_facades_or_theme_adapters():
             imported_modules.update(alias.name for alias in node.names)
 
     assert not (imported_modules & forbidden)
+
+
+def test_elided_label_leaf_export_keeps_identity_from_all_paths():
+    components = importlib.import_module("shared.components")
+    facade = importlib.import_module("shared.components_qt")
+    data = importlib.import_module("shared.components.data")
+
+    assert facade.NMElidedLabel is data.NMElidedLabel
+    assert components.NMElidedLabel is data.NMElidedLabel
+    assert components.NMElidedLabel is facade.NMElidedLabel
+
+
+def test_data_module_does_not_import_component_facades_theme_or_upper_layers():
+    path = ROOT / "shared" / "components" / "data.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    forbidden_prefixes = (
+        "app",
+        "hub",
+        "qa",
+        "shared.components",
+        "shared.components_qt",
+        "shared.theme",
+        "shared.theme_manager",
+        "shared.theme_qt",
+    )
+    imported_modules: set[str] = set()
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            imported_modules.add(node.module)
+        elif isinstance(node, ast.Import):
+            imported_modules.update(alias.name for alias in node.names)
+
+    assert not any(
+        module == prefix or module.startswith(f"{prefix}.")
+        for module in imported_modules
+        for prefix in forbidden_prefixes
+    )

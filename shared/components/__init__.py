@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from importlib import import_module
+
 from shared.components.layout import h_spacer, responsive_columns
 
 __all__ = [
@@ -64,11 +66,19 @@ __all__ = [
 ]
 
 _LAYOUT_EXPORTS = {"h_spacer", "responsive_columns"}
+_LEAF_EXPORT_MODULES = {
+    "NMElidedLabel": "shared.components.data",
+}
 
 
 def __getattr__(name: str):
     if name in _LAYOUT_EXPORTS:
         return globals()[name]
+    if name in _LEAF_EXPORT_MODULES:
+        module = import_module(_LEAF_EXPORT_MODULES[name])
+        value = getattr(module, name)
+        globals()[name] = value
+        return value
     if name in __all__:
         from shared import components_qt
 
