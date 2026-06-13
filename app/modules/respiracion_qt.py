@@ -762,7 +762,11 @@ class ModuloRespiracion(NMModule):
 
         # QHBoxLayout as top-level body layout: left is main content, right is collapsible history drawer
         main_page_layout = QHBoxLayout(body)
-        main_page_layout.setContentsMargins(0, 0, 0, 0)
+        # Márgenes del row a nivel body: el historial (ahora card redondeada)
+        # necesita aire arriba/derecha/abajo para no pegarse al borde de la
+        # ventana. El top/bottom se mueve acá desde `lay` para no duplicarlo en
+        # la columna izquierda (queda visualmente idéntica).
+        main_page_layout.setContentsMargins(0, V3_SP["sm"], V3_SP["lg"], V3_SP["md"])
         main_page_layout.setSpacing(0)
 
         main_panel = QWidget()
@@ -770,9 +774,9 @@ class ModuloRespiracion(NMModule):
         main_page_layout.addWidget(main_panel, stretch=1)
 
         lay = QVBoxLayout(main_panel)
-        # Aire inferior md: con sm las stat cards (PATRÓN/CRONO/BPM) quedaban
-        # pegadas al borde de la ventana ("no respira").
-        lay.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], V3_SP["md"])
+        # Top/bottom ahora los aporta main_page_layout (aire compartido con el
+        # historial); acá solo el inset horizontal de la columna izquierda.
+        lay.setContentsMargins(V3_SP["lg"], 0, V3_SP["lg"], 0)
         lay.setSpacing(V3_SP["sm"])
 
         # Eyebrow del módulo vive en la titlebar (BL-07): se conserva el label
@@ -941,9 +945,11 @@ class ModuloRespiracion(NMModule):
         # Card de historial ESTÁTICA (decisión owner #3): reemplaza el drawer
         # colapsable feo. Siempre visible a la derecha; aprovecha el espacio libre
         # del módulo. El scroll interno acota la lista para que no rompa el layout.
-        # Bordes rectos (feedback owner v1.0): el panel lateral redondeado
-        # leía desprolijo contra el borde de la ventana.
-        self._history_card = NMCard(modo=self._modo, clickable=False, glow=False, radius=0)
+        # Card redondeada coherente con el resto del producto (S04): el motivo
+        # original del radius=0 era que pegada al borde de la ventana "leía
+        # desprolijo" — se resuelve con el margen de main_page_layout, no
+        # aplanando la card (que partía la pantalla en dos lenguajes visuales).
+        self._history_card = NMCard(modo=self._modo, clickable=False, glow=False)
         self._history_card.setFixedWidth(236)
         _hist_outer = QVBoxLayout(self._history_card)
         _hist_outer.setContentsMargins(V3_SP["md"], V3_SP["md"], V3_SP["md"], V3_SP["md"])
