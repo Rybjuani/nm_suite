@@ -110,6 +110,7 @@ _LEAF_EXPORT_MODULES = {
     "NMChartPanel": "shared.components.cards",
     "NMFormPanel": "shared.components.cards",
     "NMMetricCard": "shared.components.cards",
+    "V3MoodSlider": "shared.components.mood",
 }
 
 
