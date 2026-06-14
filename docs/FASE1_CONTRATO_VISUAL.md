@@ -2,11 +2,35 @@
 
 ## Baseline De Comparacion
 - Baseline Fase 0: `qa/_baseline_f0_phase01` (132 PNGs — directorio canónico, gitignored).
-- Manifest activo: `qa/_captures_v8/CAPTURE_MANIFEST.json` — generado 2026-06-14T18:57:00, 132 capturas, 0 fallos, 0 duplicados, unique_hash_count=132.
+- Manifest activo: `qa/_captures_v8/CAPTURE_MANIFEST.json` — generado 2026-06-14T19:23:30, 132 capturas, 0 fallos, 0 duplicados, unique_hash_count=132.
 - Regenerar con: `python qa/capture_v8.py --all --no-clean`
 - Matriz versionable: `docs/QA_V8_BASELINE_MATRIX.md`.
 - Capturas post-Fase-2: 132/132, 0 fallos, state_valid=106, REQUIRES_DATA_STATE=16, REQUIRES_RUNTIME=8, WRONG_VIEW=2.
 - Estado global visual: parcial — 14 filas inspeccionadas; 118 pendientes de revision visual PNG.
+
+## Comparacion F0 Baseline vs F1+F2
+
+Hash diff (MD5) entre `qa/_baseline_f0_phase01/` (132 PNGs) y `qa/_captures_v8/`
+(132 PNGs, run 2026-06-14T19:23:30, Suite=38px, Hub=32px):
+
+- **57/132 cambiados** — capturas Hub afectadas por densidad compacta (Fase 1) y
+  chrome 32px + sidebar compacta (Fase 2).
+- **75/132 sin cambio** — capturas Suite (densidad `suite_comfortable` codifica
+  valores ya presentes en el stylesheet base; headless no detecta diferencia visual)
+  + archivos REQUIRES_RUNTIME/WRONG_VIEW que producen output identico en ambas runs.
+
+Capturas Hub vs Suite: Hub tiene ~55 capturas efectivas; todos los Hub excepto
+`hub-editor-text-overrides` (REQUIRES_RUNTIME) aparecen en el grupo cambiado.
+Suite tiene ~77 capturas; ninguna registra cambio visible en headless post-Fase-1.
+
+Nota: un run previo con Suite regresada a 32px (bug chrome global) habia mostrado
+125 cambiados. Ese dato era invalido; 57 es el valor correcto post-fix.
+
+Comandos para reproducir:
+```
+python qa/capture_v8.py --all --no-clean
+# Luego comparar con _baseline_f0_phase01/ via hash MD5
+```
 
 ## Densidades
 - Suite: `suite_comfortable`.
@@ -31,6 +55,7 @@
 - Estados disabled y focus.
 
 ## Deuda Pendiente
-- La matriz baseline mantiene `inspeccion_manual=pendiente` para todas las filas.
-- Hay filas `parcial` por estados que requieren datos reales o runtime vivo.
-- Hay filas `bloqueado` en `home-settings-open` porque el overlay transitorio no queda probado por captura main-window estatica.
+- 118 filas con `inspeccion_manual=pendiente` requieren revisión visual PNG (post-Fase-2).
+- 16 filas `REQUIRES_DATA_STATE` solo verificables con Supabase real (dashboard, pacientes y variantes).
+- 8 filas `REQUIRES_RUNTIME` no capturables en headless (privacy-lock, pin-setup, settings-overlay, editor-text-overrides).
+- 2 filas `bloqueado` en `home-settings-open`: overlay transitorio no capturado desde la main-window estática.

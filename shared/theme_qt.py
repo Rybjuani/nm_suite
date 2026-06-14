@@ -2082,7 +2082,6 @@ def hub_density_qss(object_name: str = HUB_DENSITY_OBJECT_NAME) -> str:
         f"padding: {d['pad_y']}px {d['pad_x']}px; border-radius: {radius}px; }}\n"
         f'{sel} QPushButton[variant="compact"] {{ min-height: {d["button_compact_height"]}px; '
         f"padding: 2px {d['pad_x']}px; border-radius: {compact_radius}px; }}\n"
-        f"{sel} QPushButton:disabled {{ opacity: {d['disabled_opacity']}; }}\n"
         f"{sel} QLineEdit, {sel} QComboBox {{ min-height: {d['input_height']}px; "
         f"padding: {d['pad_y']}px {d['pad_x']}px; border-radius: {radius}px; }}\n"
         f"{sel} QTextEdit, {sel} QPlainTextEdit {{ min-height: {d['textarea_min_height']}px; "

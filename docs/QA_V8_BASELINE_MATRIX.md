@@ -3,9 +3,9 @@
 - Generada: 2026-06-14T16:17:16
 - Manifest regenerado: 2026-06-14T18:57:00 (132 capturas, 0 duplicados, 0 fallos)
 - Filas: 132
-- Resultados: bloqueado=2, parcial=28, pendiente=102
-- Inspeccion manual: 14 filas inspeccionadas (bloqueado=2, parcial=4, revisado_f2=8); 118 requieren revision visual PNG.
-- Fase 2 inspeccionada 2026-06-14: dashboard×2, pacientes×2, detalle×2, sidebar-collapsed×2.
+- Resultado (columna): bloqueado=2, parcial=28, revisado=4, pendiente=98
+- Inspeccion manual (columna): bloqueado=2, parcial=4, revisado_f2=8, pendiente=118
+- Fase 2 inspeccionada 2026-06-14: dashboard×2 parcial, pacientes×2 parcial, detalle×2 revisado, sidebar-collapsed×2 revisado.
 
 | producto | vista | estado | tema | resolucion | receta | captura | inspeccion manual | resultado | deuda pendiente |
 |---|---|---|---|---|---|---|---|---|---|

@@ -43,11 +43,11 @@ def _tm() -> ThemeManager:
 class _ChromeWinBtn(QPushButton):
     """Botón de control de ventana (min / max / close) para NMWindowChrome."""
 
-    def __init__(self, kind: str, modo: str, parent=None):
+    def __init__(self, kind: str, modo: str, height: int = 38, parent=None):
         super().__init__(parent)
         self._kind = kind  # "min" | "max" | "close"
         self._modo = norm_modo(modo)
-        self.setFixedSize(46, 32)
+        self.setFixedSize(46, max(28, int(height)))
         self.setFlat(True)
         self.setCursor(Qt.CursorShape.ArrowCursor)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -158,7 +158,7 @@ class _ChromeWinBtn(QPushButton):
 
 
 class NMWindowChrome(QWidget):
-    """Barra de título custom 36 px (runtime spec WindowChrome).
+    """Barra de título custom (runtime spec WindowChrome). Altura por defecto 38 px (Suite); Hub pasa height=32.
 
     - Drag a mover: mantiene lógica mousePressEvent/mouseMoveEvent.
     - Doble clic → maximizar/restaurar.
@@ -179,6 +179,7 @@ class NMWindowChrome(QWidget):
         show_settings_btn: bool = False,
         show_maximize: bool = True,
         modo: str = "dark_hybrid",
+        height: int = 38,
         parent=None,
     ):
         super().__init__(parent)
@@ -193,9 +194,10 @@ class NMWindowChrome(QWidget):
         # solo "—" minimizar y "✕" cerrar. Maximizar rompería el layout
         # fit-first y no aporta en una card centrada.
         self._show_maximize = show_maximize
+        self._chrome_height = max(28, int(height))
         self._drag_pos = None
 
-        self.setFixedHeight(32)
+        self.setFixedHeight(self._chrome_height)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
         self.setMouseTracking(True)
 
@@ -311,9 +313,9 @@ class NMWindowChrome(QWidget):
         win_controls_l.setContentsMargins(0, 0, 0, 0)
         win_controls_l.setSpacing(0)
 
-        self._btn_min = _ChromeWinBtn("min", self._modo, self)
-        self._btn_max = _ChromeWinBtn("max", self._modo, self) if self._show_maximize else None
-        self._btn_close = _ChromeWinBtn("close", self._modo, self)
+        self._btn_min = _ChromeWinBtn("min", self._modo, self._chrome_height, self)
+        self._btn_max = _ChromeWinBtn("max", self._modo, self._chrome_height, self) if self._show_maximize else None
+        self._btn_close = _ChromeWinBtn("close", self._modo, self._chrome_height, self)
 
         self._btn_min.clicked.connect(lambda: self.window().showMinimized())
         if self._btn_max is not None:
