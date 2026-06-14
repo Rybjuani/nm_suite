@@ -384,17 +384,22 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
         n_pacientes = len(self._pacientes)
         usage_avg = self._module_usage_average()
         usage_txt = f"{int(round(usage_avg * 100))}%" if usage_avg is not None else "—"
+        # Badge contextual en ambas KPI cards → jerarquía consistente y sin
+        # hueco inferior (la card de Pacientes ya no queda con el número suelto
+        # sobre vacío). Hub compact: altura 90 (Suite mantiene 96 por defecto).
         cards_data = [
-            ("Pacientes", str(n_pacientes), "", "primary"),
+            ("Pacientes", str(n_pacientes), "vinculados", "primary"),
             ("Uso módulos", usage_txt, "promedio 7 módulos" if usage_avg is not None else "", "violet"),
         ]
 
         self._stat_cards = []
         for label, value, delta, tone in cards_data:
-            card = NMMetricCard(label, value, modo=self._modo)
+            card = NMMetricCard(label, value, modo=self._modo, height=90)
             card.set_tone(tone)
             if delta:
-                card.set_badge(delta, tone)
+                # Badge neutro en las dos cards (el color de jerarquía vive en el
+                # número, no en el sub-rótulo) → lectura calma y consistente.
+                card.set_badge(delta, "default")
             self._stat_cards.append(card)
         self._stats_grid = stats_grid
         self._layout_stat_cards(len(self._stat_cards))
@@ -415,9 +420,13 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
             self._build_assignment_summary_card(self._dashboard_assignment_summary())
         )
 
+        # La card de uso por módulo dimensiona a su contenido (7 barras) en vez de
+        # estirarse a todo el alto: antes quedaba un hueco vacío grande dentro de
+        # la card (se veía "rota"). El espacio sobrante baja como un respiro al pie.
         activity_card = self._build_actividad_por_modulo_card()
         activity_card.setMinimumHeight(190)
-        layout.addWidget(activity_card, stretch=1)
+        activity_card.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        layout.addWidget(activity_card)
         layout.addStretch()
 
     def _dashboard_count(self, table: str, *, active_col: str | None = None) -> int:
@@ -547,7 +556,6 @@ class DashboardView(ThemeAwareWidgetMixin, QWidget):
 
             lay.addLayout(row)
 
-        lay.addStretch()
         return card
 
     def resizeEvent(self, event):

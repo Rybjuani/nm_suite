@@ -494,9 +494,11 @@ class NMPatientRowPremium(QFrame):
             lay.addSpacing(64)
 
         # Adherence ring — en columna fija de 56px para alinear con el header
-        # "USO" y dejar aire respecto del borde derecho. 30px: con 26 el
-        # porcentaje interior quedaba comprimido contra el anillo.
-        self._ring = NMModuleRing(size=30, pct=pct, modo=self._modo)
+        # "USO" y dejar aire respecto del borde derecho. 36px: a 30 el "NN%"
+        # interior quedaba comprimido contra el arco (el propio componente avisa
+        # que <32px el label es ilegible); 36 da aire al porcentaje sin romper
+        # la altura de fila (58px, área útil 44px).
+        self._ring = NMModuleRing(size=36, pct=pct, modo=self._modo)
         _ring_wrap = QWidget()
         _ring_wrap.setFixedWidth(56)
         _ring_wl = QHBoxLayout(_ring_wrap)
@@ -637,14 +639,18 @@ class NMPatientRowPremium(QFrame):
 
         if self._btn_unlink is not None:
             from shared.theme_qt import nm_icon
-            _ink = v3c("ink_secondary", self._modo).name()
-            self._btn_unlink.setIcon(nm_icon("close", _ink, size=13))
+            # Acción destructiva legible: el icono lleva el tono danger en reposo
+            # (no un gris neutro que se leía como "cerrar") y el hover refuerza
+            # con un fondo danger translúcido. Quitar un paciente es irreversible
+            # → debe verse como tal sin gritar (alpha bajo en el fondo).
+            _danger = v3c("danger", self._modo).name()
+            self._btn_unlink.setIcon(nm_icon("close", _danger, size=13))
             self._btn_unlink.setIconSize(QSize(13, 13))
             self._btn_unlink.setStyleSheet(
                 "QToolButton#NMRowUnlink { background: transparent; border: none; "
                 "border-radius: 13px; }"
                 f"QToolButton#NMRowUnlink:hover {{ "
-                f"background: {_rgba(C('danger', self._modo), 0.14)}; }}"
+                f"background: {_rgba(C('danger', self._modo), 0.18)}; }}"
             )
 
         # Status dot color based on sync state

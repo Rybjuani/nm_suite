@@ -981,11 +981,20 @@ class NMMetricCard(NMCard):
     # + badge SIN cortarse, con aire interno (lectura calma, no "admin denso").
     FIXED_H = 96
 
-    def __init__(self, label: str = "", value: str = "—", modo: str = None, parent=None):
+    def __init__(
+        self,
+        label: str = "",
+        value: str = "—",
+        modo: str = None,
+        height: int | None = None,
+        parent=None,
+    ):
         super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
         self._modo = norm_modo(modo or _tm().modo)
         self._tone = None
-        self.setFixedHeight(self.FIXED_H)
+        # height: override compacto (Hub professional compact). Default = FIXED_H
+        # (Suite comfortable) → el Suite/Respiración no cambian.
+        self.setFixedHeight(int(height) if height else self.FIXED_H)
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(16, 12, 16, 12)

@@ -227,21 +227,22 @@ class TextOverridesEditor(QWidget):
         self._global.textChanged.connect(self._on_global_text_changed)
         lay.addWidget(self._global)
 
-        # Guardar arriba, Restablecer debajo: en columna angosta (la sección
-        # Textos convive con sub-nav + biblioteca) los dos en fila se recortaban.
+        # Acciones alineadas en una sola fila al pie del formulario: Restablecer
+        # (secundario, izquierda) y Guardar cambios (primario, derecha). En
+        # Personalización el preview va oculto → la columna del editor es ancha y
+        # la fila entra cómoda; antes los botones iban apilados a la derecha y
+        # "flotaban" sobre el vacío. Alturas igualadas (32) para una base limpia.
         btn_lay = QHBoxLayout()
+        btn_lay.setSpacing(V3_SP["sm"])
+        self._reset_btn = NMButtonOutline("Restablecer por defecto", modo=self._modo, size="sm")
+        self._reset_btn.setFixedHeight(32)
+        self._reset_btn.clicked.connect(self._ask_reset)
+        btn_lay.addWidget(self._reset_btn)
         btn_lay.addStretch()
         self._save_btn = NMButton("Guardar cambios", modo=self._modo, width=150, height=32)
         self._save_btn.clicked.connect(self._save_changes)
         btn_lay.addWidget(self._save_btn)
         lay.addLayout(btn_lay)
-        reset_lay = QHBoxLayout()
-        reset_lay.addStretch()
-        self._reset_btn = NMButtonOutline("Restablecer por defecto", modo=self._modo, size="sm")
-        self._reset_btn.setFixedHeight(28)
-        self._reset_btn.clicked.connect(self._ask_reset)
-        reset_lay.addWidget(self._reset_btn)
-        lay.addLayout(reset_lay)
         lay.addStretch()
 
         self._splitter.addWidget(self._editor_card)
