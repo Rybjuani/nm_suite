@@ -556,12 +556,9 @@ def qfont(
         "display_xl",
         "display_l",
         "display_m",
-        "size_h1",
-        "size_h2",
-        "size_h3",
-        "size_heading_l",
-        "size_heading_m",
     }:
+        # Serif (Newsreader) solo para roles Display (40/30/26 px).
+        # Roles heading (size_h1/h2/h3, size_heading_l/m) son sans per FONT_SCALE.
         fam = _serif_family()
     elif isinstance(size_key, str) and size_key in {"size_mono", "mono"}:
         fam = _mono_family()
@@ -589,8 +586,6 @@ def qfont(
         # labels en negritas. Los títulos usan weight explícito cuando aplica.
         f.setWeight(QFont.Weight.Medium if bold else QFont.Weight.Normal)
     if size_key in (
-        "size_h1",
-        "size_h2",
         "size_display",
         "size_display_xl",
         "size_display_l",

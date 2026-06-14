@@ -70,9 +70,9 @@ _NM_TAB_HEIGHT = 32
 _NM_TAB_RADIUS = 16
 _NM_TAB_FONT = "size_caption"
 _NM_BUTTON_HEIGHT = {
-    "sm": _NM_CONTROL_COMPACT_HEIGHT,
-    "md": _NM_CONTROL_HEIGHT,
-    "lg": _NM_CONTROL_HEIGHT,
+    "sm": _NM_CONTROL_COMPACT_HEIGHT,   # 32 px
+    "md": _NM_CONTROL_HEIGHT,           # 36 px
+    "lg": LAYOUT["min_touch_target"],   # 44 px — escala visualmente distinta
 }
 _NM_BUTTON_FONT = {"sm": "size_caption", "md": _NM_CONTROL_FONT, "lg": _NM_CONTROL_FONT}
 
