@@ -64,7 +64,7 @@ from PyQt6 import sip
 
 from shared.db import guardar_config, leer_config
 from shared.identidad import _hash_pwd, _verify_pwd, obtener_nombre_paciente
-from shared.components_qt import NMInput, NMButton, NMDialogScaffold, ThemeManager
+from shared.components import NMInput, NMButton, NMDialogScaffold, ThemeManager
 try:
     from shared.icons_svg import nm_svg_pixmap as _nm_svg_pixmap
 except ImportError:

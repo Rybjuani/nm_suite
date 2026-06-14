@@ -72,7 +72,7 @@ try:
         eyebrow_font,
     )
     from shared.theme import TYPOGRAPHY, V3_RADIUS, V3_SHADOWS
-    from shared.components_qt import (
+    from shared.components import (
         ThemeManager,
         NMIcon,
         NMModuleRing,
@@ -105,7 +105,7 @@ except ImportError:
         eyebrow_font,
     )
     from shared.theme import TYPOGRAPHY
-    from shared.components_qt import (
+    from shared.components import (
         ThemeManager,
         NMIcon,
         NMModuleRing,
@@ -1137,7 +1137,7 @@ class _HeroBienestar(QFrame):
         top.addStretch()
         # Lazy import para evitar circular dependency en arranque
         try:
-            from shared.components_qt import NMBadge
+            from shared.components import NMBadge
 
             self._badge = NMBadge("Sin registro hoy", tone="neutral", modo=self._modo)
         except Exception:

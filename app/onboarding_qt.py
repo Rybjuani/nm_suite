@@ -34,7 +34,7 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
 )
 
-from shared.components_qt import NMButton, NMInput
+from shared.components import NMButton, NMInput
 from shared.adaptive_layout_qt import configure_adaptive_window
 from shared.config import supabase_key, supabase_url
 from shared.legal_contract import (

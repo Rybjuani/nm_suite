@@ -79,7 +79,7 @@ from shared.theme_qt import (
     norm_modo,
 )
 from shared.adaptive_layout_qt import configure_adaptive_window, install_transient_qt_window_guard
-from shared.components_qt import (
+from shared.components import (
     ThemeManager,
     NMFadeWidget,
     NMToast,
