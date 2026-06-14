@@ -1506,8 +1506,8 @@ class _TabRegistros(QWidget):
             f"border: 1.5px solid {qcolor_to_rgba_css(v3c('borderStrong', self._modo))}; "
             f"border-radius: 5px; background: {v3c('bg', self._modo).name()}; }}"
             f"QCheckBox::indicator:checked {{ "
-            f"background: {v3c('primary', self._modo).name()}; "
-            f"border-color: {v3c('primary', self._modo).name()}; }}"
+            f"background: {v3c('teal', self._modo).name()}; "
+            f"border-color: {v3c('teal', self._modo).name()}; }}"
         )
 
         root_lay = QVBoxLayout(dialog)
