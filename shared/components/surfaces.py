@@ -2,13 +2,36 @@
 
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor, QFontMetrics, QPainter, QPen
-from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy, QWidget
+from PyQt6 import sip
+from PyQt6.QtCore import QRectF, Qt, QTimer, pyqtSignal
+from PyQt6.QtGui import QBrush, QColor, QFontMetrics, QPainter, QPen, QRadialGradient
+from PyQt6.QtWidgets import (
+    QFrame,
+    QGraphicsDropShadowEffect,
+    QHBoxLayout,
+    QLabel,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
 from shared.theme import TYPOGRAPHY
 from shared.theme_manager import ThemeManager
-from shared.theme_qt import C, nm_icon, norm_modo, pill_radius, v3_font, v3c
+from shared.theme_qt import (
+    C,
+    ThemeAwareWidgetMixin,
+    V3_RD,
+    V3_SP,
+    eyebrow_font,
+    nm_icon,
+    norm_modo,
+    pill_radius,
+    qcolor_to_rgba_css,
+    qfont,
+    qfont_mono,
+    v3_font,
+    v3c,
+)
 
 
 def _tm() -> ThemeManager:
@@ -258,3 +281,580 @@ class NMBadge(QLabel):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         self._apply_style()
+
+
+class NMSettingsSection(QFrame):
+    """Sección de configuración v3 (NMConfigRow del README).
+
+    - Surface card con radius ``V3_RD["lg"]`` (14).
+    - Header eyebrow (caption semibold) con separador ``borderSoft``.
+    - Filas key-value separadas con line ``borderSoft``.
+    - Right slot acepta QWidget arbitrario (NMToggle, NMStatusChip, valor).
+    """
+
+    def __init__(self, title: str, modo: str = None, compact: bool = False, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._compact = compact
+        self.setObjectName("NMSettingsSection")
+        self._sec_shadow: QGraphicsDropShadowEffect | None = None
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(0)
+        self._header = QLabel(title)
+        self._header.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
+        if self._compact:
+            self._header.setContentsMargins(V3_SP["md"], V3_SP["sm"], V3_SP["md"], V3_SP["sm"])
+        else:
+            self._header.setContentsMargins(V3_SP["lg"], V3_SP["md"], V3_SP["lg"], V3_SP["md"])
+        lay.addWidget(self._header)
+        self._rows = QVBoxLayout()
+        self._rows.setContentsMargins(0, 0, 0, 0)
+        self._rows.setSpacing(0)
+        lay.addLayout(self._rows)
+        self._apply_theme(self._modo)
+        self._apply_section_shadow()
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def _apply_section_shadow(self):
+        """Sombra v3 (idem NMCard) — sin esta queda plana sobre fondo claro."""
+        if self._sec_shadow is None:
+            self._sec_shadow = QGraphicsDropShadowEffect(self)
+        is_dark = "dark" in self._modo
+        if is_dark:
+            self._sec_shadow.setBlurRadius(32)
+            self._sec_shadow.setOffset(0, 10)
+            self._sec_shadow.setColor(QColor(0, 0, 0, 120))
+        else:
+            self._sec_shadow.setBlurRadius(32)
+            self._sec_shadow.setOffset(0, 12)
+            self._sec_shadow.setColor(QColor(28, 34, 24, 18))
+        self.setGraphicsEffect(self._sec_shadow)
+
+    def paintEvent(self, event):
+        """La sección usa superficie sólida QSS; sin brillo decorativo."""
+        super().paintEvent(event)
+
+    def add_row(self, label: str, value):
+        row = QWidget()
+        row.setObjectName("NMSettingsRow")
+        lay = QHBoxLayout(row)
+        if getattr(self, "_compact", False):
+            lay.setContentsMargins(V3_SP["md"], V3_SP["xs"] + 2, V3_SP["md"], V3_SP["xs"] + 2)
+        else:
+            lay.setContentsMargins(V3_SP["lg"], V3_SP["sm"] + 2, V3_SP["lg"], V3_SP["sm"] + 2)
+        left = QLabel(label)
+        left.setFont(qfont("size_small"))
+        lay.addWidget(left)
+        lay.addStretch()
+        if isinstance(value, QWidget):
+            lay.addWidget(value)
+        else:
+            right = QLabel(str(value))
+            sval = str(value)
+            right.setFont(
+                qfont_mono(9) if "http" in sval or "..." in sval else qfont("size_caption")
+            )
+            lay.addWidget(right)
+        self._rows.addWidget(row)
+        self._apply_theme(self._modo)
+        return row
+
+    def add_log(self, html: str):
+        log = QLabel(html)
+        log.setTextFormat(Qt.TextFormat.RichText)
+        log.setFont(qfont_mono(9))
+        log.setWordWrap(True)
+        if getattr(self, "_compact", False):
+            log.setContentsMargins(V3_SP["md"], V3_SP["xs"], V3_SP["md"], V3_SP["xs"])
+        else:
+            log.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], V3_SP["sm"])
+        self._rows.addWidget(log)
+        self._apply_theme(self._modo)
+        return log
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        is_dark = "dark" in self._modo
+        surf_key = "surfaceSolid" if is_dark else "surface"
+        bg = v3c(surf_key, self._modo).name()
+        border = qcolor_to_rgba_css(v3c("borderSoft", self._modo))
+        text_eyebrow = v3c("ink_secondary", self._modo).name()
+        text_body = v3c("text2", self._modo).name()
+        radius = V3_RD["lg"]
+        self.setStyleSheet(
+            f"QFrame#NMSettingsSection {{ background: {bg}; "
+            f"border: 1px solid {border}; border-radius: {radius}px; }}"
+            f"QWidget#NMSettingsRow {{ background: transparent; "
+            f"border-top: 1px solid {border}; }}"
+        )
+        self._header.setStyleSheet(f"color: {text_eyebrow}; background: transparent; ")
+        for lbl in self.findChildren(QLabel):
+            if lbl is not self._header:
+                lbl.setStyleSheet(f"color: {text_body}; background: transparent;")
+        # Re-aplicar sombra al cambiar tema
+        if getattr(self, "_sec_shadow", None) is not None:
+            self._apply_section_shadow()
+
+
+class NMPanel(QFrame):
+    """Panel de configuracion compacto con header y superficie v3."""
+
+    def __init__(
+        self, title: str, subtitle: str = "", modo: str = None, compact: bool = False, parent=None
+    ):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._compact = compact
+        self.setObjectName("NMPanel")
+        self._panel_shadow: QGraphicsDropShadowEffect | None = None
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+
+        header = QWidget(self)
+        header.setStyleSheet("background: transparent;")
+        header_lay = QVBoxLayout(header)
+        if self._compact:
+            header_lay.setContentsMargins(12, 10, 12, 6)
+        else:
+            header_lay.setContentsMargins(V3_SP["lg"], V3_SP["md"], V3_SP["lg"], V3_SP["sm"])
+        header_lay.setSpacing(2)
+
+        self._title = QLabel(title)
+        self._title.setFont(
+            qfont("size_h3" if self._compact else "size_h2", weight=TYPOGRAPHY["weight_semibold"])
+        )
+        header_lay.addWidget(self._title)
+        self._subtitle = QLabel(subtitle)
+        self._subtitle.setWordWrap(True)
+        self._subtitle.setFont(qfont("size_caption"))
+        if subtitle:
+            header_lay.addWidget(self._subtitle)
+        root.addWidget(header)
+
+        self._body = QVBoxLayout()
+        if self._compact:
+            self._body.setContentsMargins(12, 0, 12, 12)
+            self._body.setSpacing(8)
+        else:
+            self._body.setContentsMargins(V3_SP["lg"], 0, V3_SP["lg"], V3_SP["md"])
+            self._body.setSpacing(V3_SP["sm"])
+        root.addLayout(self._body)
+
+        self._apply_theme(self._modo)
+        self._apply_panel_shadow()
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def body_layout(self) -> QVBoxLayout:
+        return self._body
+
+    def add_widget(self, widget: QWidget):
+        self._body.addWidget(widget)
+        return widget
+
+    def _apply_panel_shadow(self):
+        if self._panel_shadow is None:
+            self._panel_shadow = QGraphicsDropShadowEffect(self)
+        is_dark = "dark" in self._modo
+        if is_dark:
+            self._panel_shadow.setBlurRadius(32)
+            self._panel_shadow.setOffset(0, 10)
+            self._panel_shadow.setColor(QColor(0, 0, 0, 120))
+        else:
+            self._panel_shadow.setBlurRadius(32)
+            self._panel_shadow.setOffset(0, 12)
+            self._panel_shadow.setColor(QColor(28, 34, 24, 18))
+        self.setGraphicsEffect(self._panel_shadow)
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        is_dark = "dark" in self._modo
+        bg = v3c("surfaceSolid" if is_dark else "surface", self._modo).name()
+        border = qcolor_to_rgba_css(v3c("borderSoft", self._modo))
+        self.setStyleSheet(
+            f"QFrame#NMPanel {{ background: {bg}; border: 1px solid {border}; "
+            f"border-radius: {V3_RD['lg']}px; }}"
+        )
+        self._title.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; background: transparent;"
+        )
+        self._subtitle.setStyleSheet(
+            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
+        )
+        if self._panel_shadow is not None:
+            self._apply_panel_shadow()
+
+
+class NMFormRow(QWidget):
+    """Fila label/control para formularios de configuracion."""
+
+    def __init__(
+        self,
+        label: str,
+        value,
+        hint: str = "",
+        modo: str = None,
+        compact: bool = False,
+        parent=None,
+    ):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._compact = compact
+        self.setObjectName("NMFormRow")
+
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(V3_SP["sm"] if self._compact else V3_SP["md"])
+
+        text_col = QVBoxLayout()
+        text_col.setSpacing(1)
+        self._label = QLabel(label)
+        self._label.setFont(
+            qfont(
+                "size_caption" if self._compact else "size_small",
+                weight=TYPOGRAPHY["weight_semibold"],
+            )
+        )
+        text_col.addWidget(self._label)
+        self._hint = QLabel(hint)
+        self._hint.setWordWrap(True)
+        self._hint.setFont(qfont("size_caption"))
+        if hint:
+            text_col.addWidget(self._hint)
+        lay.addLayout(text_col, stretch=1)
+
+        if isinstance(value, QWidget):
+            self._value = value
+            lay.addWidget(
+                value, alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+            )
+        else:
+            self._value = QLabel(str(value))
+            self._value.setFont(qfont_mono(9) if "http" in str(value) else qfont("size_caption"))
+            self._value.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            lay.addWidget(self._value)
+
+        self._apply_theme(self._modo)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self.setStyleSheet("QWidget#NMFormRow { background: transparent; }")
+        self._label.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; background: transparent;"
+        )
+        self._hint.setStyleSheet(
+            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
+        )
+        if isinstance(self._value, QLabel):
+            self._value.setStyleSheet(
+                f"color: {v3c('text2', self._modo).name()}; background: transparent;"
+            )
+
+
+class NMSyncOrb(QWidget):
+    """Orb circular de estado de sincronización con animación de pulso.
+
+    state: 'ok' (verde) | 'error' (rojo) | 'syncing' (ámbar, pulsa).
+    """
+
+    def __init__(self, state: str = "ok", size: int = 12, modo: str = None, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._state = state
+        self._anim_alpha = 255
+        self._fade_dir = -1
+        self._timer = QTimer(self)
+        self._timer.setInterval(80)
+        self._timer.timeout.connect(self._pulse)
+        self.setFixedSize(size, size)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        self.set_state(state)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def set_state(self, state: str):
+        self._state = state
+        if state == "syncing":
+            self._timer.start()
+        else:
+            self._timer.stop()
+            self._anim_alpha = 255
+        self.update()
+
+    def _pulse(self):
+        if sip.isdeleted(self):
+            self._timer.stop()
+            return
+        self._anim_alpha += self._fade_dir * 14
+        if self._anim_alpha <= 70:
+            self._fade_dir = 1
+        elif self._anim_alpha >= 255:
+            self._fade_dir = -1
+        self.update()
+
+    def _color(self) -> QColor:
+        key = {"ok": "sync_orb_green", "error": "error"}.get(self._state, "warning")
+        return QColor(C(key, self._modo))
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.save()
+        w, h = self.width(), self.height()
+        cx, cy = w / 2, h / 2
+        c = self._color()
+
+        # Glow halo radial — alpha modulado por pulso (max 100)
+        glow = QRadialGradient(cx, cy, cx)
+        glow_c = QColor(c)
+        glow_c.setAlpha(int(self._anim_alpha * 0.39))  # ~100 en estado estático
+        transparent = QColor(c)
+        transparent.setAlpha(0)
+        glow.setColorAt(0.3, glow_c)
+        glow.setColorAt(1.0, transparent)
+        p.setBrush(QBrush(glow))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawEllipse(QRectF(0, 0, w, h))
+
+        # Círculo sólido centrado
+        c.setAlpha(self._anim_alpha)
+        p.setBrush(QBrush(c))
+        m = max(1, w // 4)
+        p.drawEllipse(QRectF(m, m, w - m * 2, h - m * 2))
+
+        p.restore()
+        p.end()
+
+
+# ── NMPageHeader ──────────────────────────────────────────────────────────────
+
+
+class NMPageHeader(ThemeAwareWidgetMixin, QWidget):
+    """Header estándar para vistas/páginas del Hub.
+
+    Eyebrow (CAPS secundario) + título serif h2, con slot de acciones
+    a la derecha. Consolida el patrón NMSectionHeader + v3_font + action_row.
+
+    Uso::
+        hdr = NMPageHeader("Pacientes", "5 vinculados", modo=modo)
+        hdr.add_action(btn_sync)
+        layout.addWidget(hdr)
+    """
+
+    def __init__(self, eyebrow: str = "", title: str = "", modo: str = None, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self.setObjectName("NMPageHeader")
+        self.setStyleSheet("background: transparent;")
+
+        self._root = QHBoxLayout(self)
+        self._root.setContentsMargins(0, 0, 0, 0)
+        self._root.setSpacing(V3_SP["md"])
+
+        text_col = QVBoxLayout()
+        text_col.setSpacing(V3_SP["xs"])
+        text_col.setContentsMargins(0, 0, 0, 0)
+
+        # OJO: SIEMPRE con parent y visibilidad DESPUÉS de addWidget.
+        # setVisible(True) sobre un QLabel sin padre lo muestra un instante
+        # como ventana top-level — ERA la "mini ventana titilante" del user feedback
+        # (se recreaba en cada _refresh_all_views del Hub).
+        self._eyebrow_lbl = QLabel(eyebrow or "", self)
+        self._eyebrow_lbl.setFont(eyebrow_font())
+
+        self._title_lbl = QLabel(title or "", self)
+        try:
+            from shared.theme_qt import v3_font as _v3f
+            self._title_lbl.setFont(_v3f("size_h2", weight=600, serif=True))
+        except Exception:
+            self._title_lbl.setFont(qfont("size_h2", weight=TYPOGRAPHY["weight_semibold"]))
+
+        text_col.addWidget(self._eyebrow_lbl)
+        text_col.addWidget(self._title_lbl)
+        self._eyebrow_lbl.setVisible(bool(eyebrow))
+        self._root.addLayout(text_col, stretch=1)
+
+        self._action_row = QHBoxLayout()
+        self._action_row.setSpacing(V3_SP["sm"])
+        self._action_row.setContentsMargins(0, 0, 0, 0)
+        self._action_row.setAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
+        self._root.addLayout(self._action_row)
+
+        self._connect_theme()
+        self._apply_theme(self._modo)
+
+    def set_eyebrow(self, text: str) -> None:
+        self._eyebrow_lbl.setText(text or "")
+        self._eyebrow_lbl.setVisible(bool(text))
+
+    def set_title(self, text: str) -> None:
+        self._title_lbl.setText(text or "")
+
+    def add_action(self, widget: QWidget) -> None:
+        self._action_row.addWidget(widget, alignment=Qt.AlignmentFlag.AlignVCenter)
+
+    def clear_actions(self) -> None:
+        while self._action_row.count():
+            item = self._action_row.takeAt(0)
+            if item.widget():
+                item.widget().setParent(None)
+
+    def _apply_theme(self, modo: str) -> None:
+        self._modo = norm_modo(modo)
+        ink2 = v3c("ink_secondary", self._modo).name()
+        ink1 = v3c("ink_primary", self._modo).name()
+        self._eyebrow_lbl.setStyleSheet(f"color: {ink2}; background: transparent;")
+        self._title_lbl.setStyleSheet(f"color: {ink1}; background: transparent;")
+
+
+# ── NMListRow ─────────────────────────────────────────────────────────────────
+
+
+class NMListRow(ThemeAwareWidgetMixin, QWidget):
+    """Fila UI para listas internas: icono, título, subtítulo, trailing widget.
+
+    Hover highlight, divider inferior opcional, click signal.
+    Consolida patrones de fila dispares en Avisos, Pacientes y Registro.
+
+    Uso::
+        row = NMListRow("bell", "Medicación", "Salud · 08:00", modo=modo)
+        row.set_trailing(NMBadge("Completado", modo=modo))
+        row.clicked.connect(callback)
+    """
+
+    clicked = pyqtSignal()
+
+    def __init__(
+        self,
+        icon: str = "",
+        title: str = "",
+        subtitle: str = "",
+        modo: str = None,
+        parent=None,
+        divider: bool = True,
+        clickable: bool = True,
+    ):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._divider = divider
+        self._clickable = clickable
+        self._hover = False
+        self.setFixedHeight(56)
+        if clickable:
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        root = QHBoxLayout(self)
+        root.setContentsMargins(V3_SP["lg"], 0, V3_SP["lg"], 0)
+        root.setSpacing(V3_SP["md"])
+
+        # Parent explícito + visibilidad post-addWidget: setVisible(True) en
+        # un widget sin padre lo muestra un instante como top-level.
+        self._icon_lbl = QLabel(self)
+        self._icon_lbl.setFixedSize(20, 20)
+        self._icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._icon_lbl.setStyleSheet("background: transparent;")
+        self._icon_name = icon
+        if icon:
+            try:
+                # nm_icon devuelve QIcon — pedir el pixmap explícito (pasarlo
+                # directo a setPixmap tiraba TypeError y caía a la letra).
+                self._icon_lbl.setPixmap(
+                    nm_icon(icon, v3c("ink_secondary", self._modo), size=16).pixmap(16, 16)
+                )
+            except Exception:
+                self._icon_lbl.setText(icon[:1].upper())
+        root.addWidget(self._icon_lbl)
+        self._icon_lbl.setVisible(bool(icon))
+
+        txt = QVBoxLayout()
+        txt.setSpacing(1)
+        txt.setContentsMargins(0, 0, 0, 0)
+        self._title_lbl = QLabel(title or "", self)
+        self._title_lbl.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_semibold"]))
+        self._subtitle_lbl = QLabel(subtitle or "", self)
+        self._subtitle_lbl.setFont(qfont("size_caption_xs"))
+        txt.addWidget(self._title_lbl)
+        txt.addWidget(self._subtitle_lbl)
+        self._subtitle_lbl.setVisible(bool(subtitle))
+        root.addLayout(txt, stretch=1)
+
+        self._trailing_slot = QHBoxLayout()
+        self._trailing_slot.setContentsMargins(0, 0, 0, 0)
+        self._trailing_slot.setSpacing(V3_SP["xs"])
+        root.addLayout(self._trailing_slot)
+
+        self._connect_theme()
+        self._apply_theme(self._modo)
+
+    def set_title(self, text: str) -> None:
+        self._title_lbl.setText(text or "")
+
+    def set_subtitle(self, text: str) -> None:
+        self._subtitle_lbl.setText(text or "")
+        self._subtitle_lbl.setVisible(bool(text))
+
+    def set_trailing(self, widget: QWidget) -> None:
+        while self._trailing_slot.count():
+            item = self._trailing_slot.takeAt(0)
+            if item.widget():
+                item.widget().setParent(None)
+        self._trailing_slot.addWidget(widget)
+
+    def set_divider(self, show: bool) -> None:
+        self._divider = show
+        self.update()
+
+    def enterEvent(self, event):
+        self._hover = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._hover = False
+        self.update()
+        super().leaveEvent(event)
+
+    def mousePressEvent(self, event):
+        if self._clickable and event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+        super().mousePressEvent(event)
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w, h = self.width(), self.height()
+        if self._hover and self._clickable:
+            bg = QColor(v3c("surface2", self._modo))
+            bg.setAlpha(120)
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(bg)
+            p.drawRect(0, 0, w, h)
+        if self._divider:
+            div_c = QColor(v3c("border", self._modo))
+            div_c.setAlpha(60)
+            p.setPen(QPen(div_c, 1))
+            p.drawLine(V3_SP["lg"], h - 1, w - V3_SP["lg"], h - 1)
+        p.end()
+
+    def _apply_theme(self, modo: str) -> None:
+        self._modo = norm_modo(modo)
+        ink1 = v3c("ink_primary", self._modo).name()
+        ink2 = v3c("ink_secondary", self._modo).name()
+        self._title_lbl.setStyleSheet(f"color: {ink1}; background: transparent;")
+        self._subtitle_lbl.setStyleSheet(f"color: {ink2}; background: transparent;")
+        if self._icon_name and self._icon_lbl.isVisible():
+            try:
+                self._icon_lbl.setPixmap(
+                    nm_icon(self._icon_name, v3c("ink_secondary", self._modo), size=16)
+                )
+            except Exception:
+                pass
+        self.update()
