@@ -113,6 +113,7 @@ _LEAF_EXPORT_MODULES = {
     "V3MoodSlider": "shared.components.mood",
     "NMPatientRowPremium": "shared.components.patient",
     "NMModule": "shared.components.navigation",
+    "NMWindowChrome": "shared.components.chrome",
 }
 
 
