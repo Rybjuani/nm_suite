@@ -67,6 +67,7 @@ __all__ = [
 
 _LAYOUT_EXPORTS = {"h_spacer", "responsive_columns"}
 _LEAF_EXPORT_MODULES = {
+    "NMEmptyState": "shared.components.overlays",
     "NMCustomCheck": "shared.components.session",
     "NMButton": "shared.components.buttons",
     "NMButtonOutline": "shared.components.buttons",
