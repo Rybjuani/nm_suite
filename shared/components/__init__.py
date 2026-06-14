@@ -67,6 +67,13 @@ __all__ = [
 
 _LAYOUT_EXPORTS = {"h_spacer", "responsive_columns"}
 _LEAF_EXPORT_MODULES = {
+    "NMButton": "shared.components.buttons",
+    "NMButtonOutline": "shared.components.buttons",
+    "NMInput": "shared.components.buttons",
+    "NMSearchInput": "shared.components.buttons",
+    "NMSegmentedChoice": "shared.components.buttons",
+    "NMTabs": "shared.components.buttons",
+    "NMTextArea": "shared.components.buttons",
     "NMFadeWidget": "shared.components.core",
     "NMElidedLabel": "shared.components.data",
     "NMDivider": "shared.components.surfaces",
