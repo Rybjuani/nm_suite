@@ -4,7 +4,17 @@ from __future__ import annotations
 
 from PyQt6 import sip
 from PyQt6.QtCore import QRectF, Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QBrush, QColor, QFontMetrics, QPainter, QPen, QRadialGradient
+from PyQt6.QtGui import (
+    QBrush,
+    QColor,
+    QEnterEvent,
+    QFontMetrics,
+    QMouseEvent,
+    QPaintEvent,
+    QPainter,
+    QPen,
+    QRadialGradient,
+)
 from PyQt6.QtWidgets import (
     QFrame,
     QGraphicsDropShadowEffect,
@@ -857,4 +867,132 @@ class NMListRow(ThemeAwareWidgetMixin, QWidget):
                 )
             except Exception:
                 pass
+        self.update()
+
+
+# ── NMRow ─────────────────────────────────────────────────────────────────────
+# Runtime spec §2.7: fila genérica de lista con hover/selected/focus-visible.
+# - hover:    bg surface_2
+# - selected: bg primary_soft + barra vertical 3×18 primary
+# - bottom border: 1px LINE (omitida en la última fila usando hide_divider)
+
+
+class NMRow(QFrame):
+    """Fila genérica de lista (runtime spec §2.7).
+
+    Señales:
+        clicked           — clic sobre la fila
+        selected_changed  — cambio de estado selected (bool)
+
+    Args:
+        row_height:   Altura fija en px (default 56 Suite / 48 Hub).
+        selectable:   Si True, clic marca la fila como selected.
+        hide_divider: Si True, no dibuja el borde inferior (útil para la última fila).
+    """
+
+    clicked = pyqtSignal()
+    selected_changed = pyqtSignal(bool)
+
+    def __init__(
+        self,
+        parent=None,
+        modo: str | None = None,
+        row_height: int = 56,
+        selectable: bool = True,
+        hide_divider: bool = False,
+    ):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self._selected = False
+        self._hover = False
+        self._selectable = selectable
+        self._hide_divider = hide_divider
+
+        self.setFixedHeight(row_height)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setCursor(
+            Qt.CursorShape.PointingHandCursor if selectable else Qt.CursorShape.ArrowCursor
+        )
+        _tm().theme_changed.connect(self._apply_theme)
+
+    # ── API pública ────────────────────────────────────────────────────────────
+
+    @property
+    def selected(self) -> bool:
+        return self._selected
+
+    def set_selected(self, value: bool):
+        if self._selected != value:
+            self._selected = value
+            self.update()
+            self.selected_changed.emit(value)
+
+    def set_hide_divider(self, hide: bool):
+        self._hide_divider = hide
+        self.update()
+
+    # ── Interacción ───────────────────────────────────────────────────────────
+
+    def enterEvent(self, event: QEnterEvent):
+        self._hover = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._hover = False
+        self.update()
+        super().leaveEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.pos()):
+            self.clicked.emit()
+            if self._selectable:
+                self.set_selected(True)
+        super().mouseReleaseEvent(event)
+
+    # ── Paint ─────────────────────────────────────────────────────────────────
+
+    def paintEvent(self, event: QPaintEvent):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w, h = float(self.width()), float(self.height())
+        rect = QRectF(0, 0, w, h)
+
+        if self._selected:
+            bg = v3c("primary_soft", self._modo)
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QBrush(bg))
+            p.drawRect(rect)
+            # Barra vertical 3×18 PRIMARY a la izquierda
+            bar_col = v3c("primary", self._modo)
+            bar_y = (h - 18.0) / 2.0
+            bar = QRectF(0, bar_y, 3, 18)
+            p.setBrush(QBrush(bar_col))
+            p.drawRoundedRect(bar, 1.5, 1.5)
+        elif self._hover:
+            bg = v3c("surface_2", self._modo)
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QBrush(bg))
+            p.drawRect(rect)
+
+        # Focus ring (2px PRIMARY outline)
+        if self.hasFocus():
+            acc = v3c("primary", self._modo)
+            acc.setAlpha(180)
+            p.setPen(QPen(acc, 2))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawRect(QRectF(1, 1, w - 2, h - 2))
+
+        # Divider inferior (1px LINE)
+        if not self._hide_divider:
+            border_c = v3c("line", self._modo)
+            p.setPen(QPen(border_c, 1))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawLine(0, int(h) - 1, int(w), int(h) - 1)
+
+        p.end()
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
         self.update()
