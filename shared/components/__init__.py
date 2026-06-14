@@ -111,6 +111,7 @@ _LEAF_EXPORT_MODULES = {
     "NMFormPanel": "shared.components.cards",
     "NMMetricCard": "shared.components.cards",
     "V3MoodSlider": "shared.components.mood",
+    "NMPatientRowPremium": "shared.components.patient",
 }
 
 
