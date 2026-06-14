@@ -106,6 +106,10 @@ _LEAF_EXPORT_MODULES = {
     "NMFocusArc": "shared.components.rings",
     "NMCycleRing": "shared.components.rings",
     "NMModuleRing": "shared.components.rings",
+    "NMCard": "shared.components.cards",
+    "NMChartPanel": "shared.components.cards",
+    "NMFormPanel": "shared.components.cards",
+    "NMMetricCard": "shared.components.cards",
 }
 
 
