@@ -57,6 +57,7 @@ def test_design_tokens_structural_scales_reuse_runtime_tokens():
     assert dt.SPACING is theme.V3_SPACE
     assert dt.RADIUS is theme.V3_RADIUS
     assert dt.SHADOWS is theme.V3_SHADOWS
+    assert dt.VISUAL_DENSITIES is theme.VISUAL_DENSITIES
     assert dt.MOOD_PALETTE is theme.MOOD_PALETTE
     assert dt.TYPOGRAPHY is theme.TYPOGRAPHY
 
@@ -79,3 +80,29 @@ def test_theme_qt_reexports_runtime_token_objects():
     assert theme_qt.V3_DARK is theme.V3_DARK
     assert theme_qt.V3_SHADOWS is theme.V3_SHADOWS
     assert theme_qt.V3_GRADIENTS is theme.V3_GRADIENTS
+
+
+def test_visual_density_contract_keeps_hub_compact_and_scoped():
+    from shared import theme_qt
+
+    suite = theme.VISUAL_DENSITIES["suite_comfortable"]
+    hub = theme.VISUAL_DENSITIES["hub_professional_compact"]
+    for key in (
+        "button_height",
+        "button_compact_height",
+        "input_height",
+        "textarea_min_height",
+        "tab_height",
+        "subtab_height",
+        "filter_height",
+        "badge_height",
+        "chip_height",
+        "scrollbar_width",
+    ):
+        assert hub[key] <= suite[key]
+
+    qss = theme_qt.hub_density_qss("HubMain")
+    assert "#HubMain" in qss
+    assert "QApplication" not in qss
+    assert f"min-height: {hub['button_height']}px" in qss
+    assert f"width: {hub['scrollbar_width']}px" in qss

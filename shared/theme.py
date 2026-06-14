@@ -403,6 +403,60 @@ LAYOUT = {
 }
 
 
+# ============================================================
+# Densidades visuales por producto
+# ============================================================
+
+VISUAL_DENSITIES = {
+    "suite_comfortable": {
+        "id": "suite_comfortable",
+        "product": "suite",
+        "control_height": 36,
+        "control_compact_height": 32,
+        "button_height": 36,
+        "button_compact_height": 32,
+        "input_height": 36,
+        "textarea_min_height": 96,
+        "tab_height": 32,
+        "subtab_height": 32,
+        "filter_height": 32,
+        "badge_height": 22,
+        "chip_height": 24,
+        "scrollbar_width": 8,
+        "row_padding_y": 6,
+        "focus_border_width": 1,
+        "disabled_opacity": 0.45,
+        "pad_x": 12,
+        "pad_y": 5,
+        "tab_pad_x": 14,
+        "badge_pad_x": 10,
+    },
+    "hub_professional_compact": {
+        "id": "hub_professional_compact",
+        "product": "hub",
+        "control_height": 32,
+        "control_compact_height": 28,
+        "button_height": 32,
+        "button_compact_height": 28,
+        "input_height": 32,
+        "textarea_min_height": 72,
+        "tab_height": 28,
+        "subtab_height": 28,
+        "filter_height": 28,
+        "badge_height": 20,
+        "chip_height": 22,
+        "scrollbar_width": 6,
+        "row_padding_y": 5,
+        "focus_border_width": 1,
+        "disabled_opacity": 0.45,
+        "pad_x": 10,
+        "pad_y": 4,
+        "tab_pad_x": 10,
+        "badge_pad_x": 8,
+    },
+}
+
+
 def icon_stroke_width(size: int) -> float:
     """Grosor de stroke para NMIcon SVG según tamaño (README v3)."""
     if size <= 14:

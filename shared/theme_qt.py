@@ -52,6 +52,7 @@ try:
         V3_RADIUS,
         V3_SHADOWS,
         V3_GRADIENTS,
+        VISUAL_DENSITIES,
         MOOD_PALETTE,
         get_v3_palette,
         get_mood,
@@ -72,6 +73,7 @@ except ImportError:
         V3_RADIUS,
         V3_SHADOWS,
         V3_GRADIENTS,
+        VISUAL_DENSITIES,
         get_v3_palette,
         get_mood,
         v3_mode,
@@ -2045,25 +2047,66 @@ class SessionColor:
         return self.hex_for(modo)
 
 
-# ── Densidad Hub (runtime spec §3 / tokens.css `.nm-dense`) ───────────────────────
-# El runtime spec propone una variante de densidad reducida sólo para el Hub:
-# sidebar 232 px, botones 36/28 px, inputs más finos. Se aplica como QSS
-# *scoped* al QMainWindow del Hub (selector por objectName "HubMain") —
-# nunca a QApplication, para no impactar la Suite ni romper estilos
-# existentes. La función es **aditiva** y no toca tokens, paleta ni fuentes.
+# ── Densidades por producto ─────────────────────────────────────────────────────
+# Suite usa la escala comfortable como default de componentes. Hub suma una
+# variante professional compact sólo sobre su QMainWindow, sin tocar QApplication
+# ni agrandar controles compartidos.
 
 HUB_DENSITY_OBJECT_NAME = "HubMain"
+SUITE_DENSITY_ID = "suite_comfortable"
+HUB_DENSITY_ID = "hub_professional_compact"
+
+
+def visual_density_tokens(density_id: str) -> dict:
+    """Devuelve una copia de la densidad visual declarada en shared.theme."""
+    fallback = VISUAL_DENSITIES[SUITE_DENSITY_ID]
+    return dict(VISUAL_DENSITIES.get(density_id, fallback))
+
+
+def product_density_tokens(product: str) -> dict:
+    """Densidad por producto: Suite comfortable, Hub professional compact."""
+    key = HUB_DENSITY_ID if str(product).lower() == "hub" else SUITE_DENSITY_ID
+    return visual_density_tokens(key)
 
 
 def hub_density_qss(object_name: str = HUB_DENSITY_OBJECT_NAME) -> str:
-    """QSS de densidad reducida para el Hub."""
+    """QSS de densidad reducida para el Hub, scoped al QMainWindow."""
+    d = product_density_tokens("hub")
     sel = f"#{object_name}"
+    radius = max(4, int(d["control_height"]) // 2)
+    compact_radius = max(4, int(d["control_compact_height"]) // 2)
+    badge_radius = max(4, int(d["badge_height"]) // 2)
+    chip_radius = max(4, int(d["chip_height"]) // 2)
     return (
-        f"{sel} QPushButton {{ min-height: 36px; padding: 4px 12px; }}\n"
-        f'{sel} QPushButton[variant="compact"] {{ min-height: 28px; padding: 2px 10px; }}\n'
-        f"{sel} QLineEdit {{ min-height: 36px; padding: 6px 12px; }}\n"
-        f"{sel} QComboBox {{ min-height: 36px; padding: 4px 12px; }}\n"
-        f"{sel} QListView::item, {sel} QListWidget::item {{ padding: 6px 10px; }}\n"
+        f"{sel} QPushButton {{ min-height: {d['button_height']}px; "
+        f"padding: {d['pad_y']}px {d['pad_x']}px; border-radius: {radius}px; }}\n"
+        f'{sel} QPushButton[variant="compact"] {{ min-height: {d["button_compact_height"]}px; '
+        f"padding: 2px {d['pad_x']}px; border-radius: {compact_radius}px; }}\n"
+        f"{sel} QPushButton:disabled {{ opacity: {d['disabled_opacity']}; }}\n"
+        f"{sel} QLineEdit, {sel} QComboBox {{ min-height: {d['input_height']}px; "
+        f"padding: {d['pad_y']}px {d['pad_x']}px; border-radius: {radius}px; }}\n"
+        f"{sel} QTextEdit, {sel} QPlainTextEdit {{ min-height: {d['textarea_min_height']}px; "
+        f"padding: {d['pad_y'] + 2}px {d['pad_x']}px; border-radius: {radius}px; }}\n"
+        f"{sel} QLineEdit:focus, {sel} QTextEdit:focus, {sel} QPlainTextEdit:focus, "
+        f"{sel} QComboBox:focus {{ border-width: {d['focus_border_width']}px; }}\n"
+        f"{sel} QTabBar::tab {{ min-height: {d['tab_height']}px; "
+        f"padding: 2px {d['tab_pad_x']}px; }}\n"
+        f'{sel} QPushButton[role="subtab"], {sel} QPushButton[variant="subtab"] {{ '
+        f"min-height: {d['subtab_height']}px; padding: 2px {d['tab_pad_x']}px; "
+        f"border-radius: {compact_radius}px; }}\n"
+        f'{sel} QPushButton[role="filter"], {sel} QPushButton[variant="filter"] {{ '
+        f"min-height: {d['filter_height']}px; padding: 2px {d['tab_pad_x']}px; "
+        f"border-radius: {compact_radius}px; }}\n"
+        f'{sel} QLabel[role="badge"], {sel} QLabel[variant="badge"] {{ '
+        f"min-height: {d['badge_height']}px; padding: 0 {d['badge_pad_x']}px; "
+        f"border-radius: {badge_radius}px; }}\n"
+        f'{sel} QLabel[role="chip"], {sel} QLabel[variant="chip"] {{ '
+        f"min-height: {d['chip_height']}px; padding: 0 {d['badge_pad_x']}px; "
+        f"border-radius: {chip_radius}px; }}\n"
+        f"{sel} QListView::item, {sel} QListWidget::item {{ "
+        f"padding: {d['row_padding_y']}px {d['pad_x']}px; }}\n"
+        f"{sel} QScrollBar:vertical {{ width: {d['scrollbar_width']}px; }}\n"
+        f"{sel} QScrollBar:horizontal {{ height: {d['scrollbar_width']}px; }}\n"
     )
 
 
