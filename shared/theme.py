@@ -403,43 +403,6 @@ LAYOUT = {
 }
 
 
-# ============================================================
-# 5 roles tipográficos canónicos (Plan Coherencia Visual Fase 1)
-# Mapean a las claves de FONT_SCALE en theme_qt.py y a los tamaños de TYPOGRAPHY.
-# Los consumidores deben usar estas claves, NO inventar tamaños intermedios locales.
-# ============================================================
-
-TYPOGRAPHY_ROLES = {
-    "display":    "display_l",   # Newsreader serif 30 — hero, score, cifras bienestar
-    "page_title": "heading_l",   # Manrope semibold 20 — encabezado de módulo/página
-    "card_title": "heading_m",   # Manrope semibold 16 — encabezado de card/panel
-    "body":       "body",        # Manrope regular 14 — texto principal, labels
-    "caption":    "caption",     # Manrope regular 12 — metadatos, contadores, timestamps
-}
-
-# ============================================================
-# Densidades deliberadas (Plan Coherencia Visual Fase 1)
-# Suite: "comfortable" (paciente/usuario) — espaciado generoso, sans fatiga.
-# Hub:   "compact" (profesional)          — denso, orientado a eficiencia.
-# Los valores apuntan a V3_SPACE / LAYOUT para que no se inventen tokens.
-# ============================================================
-
-NM_DENSITY = {
-    "comfortable": {  # Suite — paciente, usuario
-        "padding_page":  24,  # V3_SPACE["3xl"]
-        "padding_card":  20,  # LAYOUT["padding_card"]
-        "gap_cards":     16,  # V3_SPACE["xl"]
-        "gap_elements":  10,  # V3_SPACE["md"]
-    },
-    "compact": {  # Hub — profesional
-        "padding_page":  16,  # V3_SPACE["xl"]
-        "padding_card":  16,  # V3_SPACE["xl"]
-        "gap_cards":     10,  # V3_SPACE["md"]
-        "gap_elements":   6,  # V3_SPACE["sm"]
-    },
-}
-
-
 def icon_stroke_width(size: int) -> float:
     """Grosor de stroke para NMIcon SVG según tamaño (README v3)."""
     if size <= 14:

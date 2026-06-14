@@ -70,9 +70,9 @@ _NM_TAB_HEIGHT = 32
 _NM_TAB_RADIUS = 16
 _NM_TAB_FONT = "size_caption"
 _NM_BUTTON_HEIGHT = {
-    "sm": _NM_CONTROL_COMPACT_HEIGHT,  # 32
-    "md": _NM_CONTROL_HEIGHT,          # 36
-    "lg": 44,                           # min_touch_target — distinto de md
+    "sm": _NM_CONTROL_COMPACT_HEIGHT,
+    "md": _NM_CONTROL_HEIGHT,
+    "lg": _NM_CONTROL_HEIGHT,
 }
 _NM_BUTTON_FONT = {"sm": "size_caption", "md": _NM_CONTROL_FONT, "lg": _NM_CONTROL_FONT}
 
@@ -921,7 +921,7 @@ class NMTabs(QWidget):
     ):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
-        self._variant = variant if variant in ("pill", "underline") else "pill"
+        self._variant = "pill"
         self._labels = list(labels or [])
         self._current = 0
         self._btns: list[QPushButton] = []
@@ -984,34 +984,19 @@ class NMTabs(QWidget):
             b.setMinimumHeight(_NM_TAB_HEIGHT)
             b.setFont(qfont(_NM_TAB_FONT, weight=_NM_CONTROL_WEIGHT))
             checked = i == self._current
-            if self._variant == "underline":
-                if checked:
-                    b.setStyleSheet(
-                        f"QPushButton {{ background: transparent; color: {primary}; "
-                        f"border: none; border-bottom: 2px solid {primary}; "
-                        f"padding: 4px 14px 2px 14px; border-radius: 0; }}"
-                    )
-                else:
-                    b.setStyleSheet(
-                        f"QPushButton {{ background: transparent; color: {text_muted}; "
-                        f"border: none; border-bottom: 2px solid transparent; "
-                        f"padding: 4px 14px 2px 14px; border-radius: 0; }}"
-                        f"QPushButton:hover {{ color: {text}; }}"
-                    )
-            else:  # pill (default)
-                if checked:
-                    b.setStyleSheet(
-                        f"QPushButton {{ background: {primary}; color: {primary_ink}; "
-                        f"border: none; padding: 4px 14px; "
-                        f"border-radius: {_NM_TAB_RADIUS - 3}px; }}"
-                    )
-                else:
-                    b.setStyleSheet(
-                        f"QPushButton {{ background: {surface_2}; color: {text_muted}; "
-                        f"border: 1px solid {soft_css}; padding: 4px 14px; "
-                        f"border-radius: {_NM_TAB_RADIUS - 3}px; }}"
-                        f"QPushButton:hover {{ color: {text}; }}"
-                    )
+            if checked:
+                b.setStyleSheet(
+                    f"QPushButton {{ background: {primary}; color: {primary_ink}; "
+                    f"border: none; padding: 4px 14px; "
+                    f"border-radius: {_NM_TAB_RADIUS - 3}px; }}"
+                )
+            else:
+                b.setStyleSheet(
+                    f"QPushButton {{ background: {surface_2}; color: {text_muted}; "
+                    f"border: 1px solid {soft_css}; padding: 4px 14px; "
+                    f"border-radius: {_NM_TAB_RADIUS - 3}px; }}"
+                    f"QPushButton:hover {{ color: {text}; }}"
+                )
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)

@@ -18,11 +18,9 @@ V3_GRADIENTS = _theme.V3_GRADIENTS
 
 MOOD_PALETTE = _theme.MOOD_PALETTE
 TYPOGRAPHY = _theme.TYPOGRAPHY
-TYPOGRAPHY_ROLES = _theme.TYPOGRAPHY_ROLES
 SPACING = V3_SPACE
 RADIUS = V3_RADIUS
 SHADOWS = V3_SHADOWS
-NM_DENSITY = _theme.NM_DENSITY
 
 
 def _compat_palette(palette: dict[str, str], *, dark: bool) -> dict[str, str]:
