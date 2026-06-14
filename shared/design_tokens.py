@@ -87,6 +87,8 @@ def _compat_palette(palette: dict[str, str], *, dark: bool) -> dict[str, str]:
 LIGHT = _compat_palette(V3_LIGHT, dark=False)
 DARK = _compat_palette(V3_DARK, dark=True)
 
+SPACING_ROLES = _theme.V3_SPACE_ROLES
+
 LAYOUT = {
     **_theme.LAYOUT,
     "card_gap": _theme.LAYOUT["gap_cards"],
