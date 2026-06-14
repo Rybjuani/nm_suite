@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import csv
 import datetime
 import hashlib
 import importlib
@@ -267,6 +268,14 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "onboarding-error"}],
         },
+        "recuperar-acceso": {
+            "label": "Recuperar acceso - email requerido",
+            "parent": "onboarding",
+            "actions": [{"action": "call", "func": "_build_onboarding"},
+                        {"action": "call", "func": "_onboarding_recovery_prompt"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture", "view": "recuperar-acceso"}],
+        },
         # NOTA: no existe receta "onboarding-login" — el onboarding del
         # producto es UN solo form con dos CTAs (Crear cuenta / Iniciar
         # sesión); no hay vista/modo login separado que capturar.
@@ -332,6 +341,14 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "call", "func": "_evolucion_force_sparse"},
                         {"action": "drain", "cycles": 4},
                         {"action": "capture", "view": "evolucion-sparse"}],
+        },
+        "evolucion-monthly": {
+            "label": "Evolucion mensual",
+            "parent": "evolucion",
+            "actions": [{"action": "navigate", "view": "evolucion"},
+                        {"action": "call", "func": "_evolucion_select_monthly"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture", "view": "evolucion-monthly"}],
         },
 
         "respiracion": {
@@ -479,6 +496,14 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "actividades-filtered"}],
         },
+        "actividades-empty": {
+            "label": "Actividades empty state deterministico",
+            "parent": "actividades",
+            "actions": [{"action": "navigate", "view": "actividades"},
+                        {"action": "call", "func": "_actividades_force_empty"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture", "view": "actividades-empty"}],
+        },
 
         "timer": {
             "label": "Timer idle",
@@ -554,6 +579,14 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "call", "func": "_avisos_complete_first"},
                         {"action": "drain", "cycles": 8},
                         {"action": "capture", "view": "avisos-completed"}],
+        },
+        "avisos-empty": {
+            "label": "Avisos empty state deterministico",
+            "parent": "avisos",
+            "actions": [{"action": "navigate", "view": "avisos"},
+                        {"action": "call", "func": "_avisos_force_empty"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture", "view": "avisos-empty"}],
         },
 
         # ── Dialogos standalone ───────────────────────────────────────────
@@ -822,6 +855,22 @@ def _build_onboarding(win, qapp, action):
     dlg.show()
     _drain(qapp, cycles=6)
     globals()['_CURRENT_STANDALONE'] = dlg
+
+
+@_register_helper
+def _onboarding_recovery_prompt(win, qapp, action):
+    """Muestra el estado de recuperar acceso sin tocar Supabase."""
+    dlg = globals().get("_CURRENT_STANDALONE")
+    if dlg is None:
+        return
+    try:
+        if hasattr(dlg, "_email"):
+            dlg._email.setText("")
+        if hasattr(dlg, "_on_forgot_password"):
+            dlg._on_forgot_password()
+    except Exception:
+        pass
+    _drain(qapp, cycles=6)
 
 
 @_register_helper
@@ -1271,6 +1320,21 @@ def _evolucion_force_sparse(win, qapp, action):
 
 
 @_register_helper
+def _evolucion_select_monthly(win, qapp, action):
+    """Selecciona la vista mensual de Evolucion."""
+    target = _module_target(win)
+    tabs = getattr(target, "_tabs", None)
+    try:
+        if tabs is not None and hasattr(tabs, "set_current"):
+            tabs.set_current(1)
+        elif hasattr(target, "_load_tab_data"):
+            target._load_tab_data(1)
+    except Exception:
+        pass
+    _drain(qapp, cycles=6)
+
+
+@_register_helper
 def _actividades_filter_category(win, qapp, action):
     """Aplica un filtro de categoria con resultado esperado en Actividades."""
     target = _module_target(win)
@@ -1299,6 +1363,25 @@ def _actividades_filter_fisica(win, qapp, action):
     action = dict(action)
     action.setdefault("category", "Placer")
     _actividades_filter_category(win, qapp, action)
+
+
+@_register_helper
+def _actividades_force_empty(win, qapp, action):
+    """Fuerza el empty state real de Actividades usando fixture QA vacia."""
+    target = _module_target(win)
+    try:
+        import app.modules.actividades_qt as _aq
+
+        _orig_activity_suggestions = _aq.activity_suggestions
+        _aq.activity_suggestions = lambda: []
+        try:
+            if hasattr(target, "_load_suggestions"):
+                target._load_suggestions()
+        finally:
+            _aq.activity_suggestions = _orig_activity_suggestions
+    except Exception:
+        pass
+    _drain(qapp, cycles=6)
 
 
 @_register_helper
@@ -1374,6 +1457,25 @@ def _avisos_complete_first(win, qapp, action):
         if hasattr(target, '_render_reminders'):
             target._render_reminders()
     _drain(qapp, cycles=8)
+
+
+@_register_helper
+def _avisos_force_empty(win, qapp, action):
+    """Fuerza el empty state real de Avisos usando fixture QA vacia."""
+    target = _module_target(win)
+    try:
+        import app.modules.avisos_qt as _av
+
+        _orig_reminder_rows = _av.reminder_rows
+        _av.reminder_rows = lambda: []
+        try:
+            if hasattr(target, "_load_reminders"):
+                target._load_reminders()
+        finally:
+            _av.reminder_rows = _orig_reminder_rows
+    except Exception:
+        pass
+    _drain(qapp, cycles=6)
 
 
 @_register_helper
@@ -1700,7 +1802,7 @@ def _classify_initial_result(result: dict) -> None:
             result,
             "Diagnostic scaled capture only; this scale does not satisfy the current QA gate without an expressly authorized contract.",
         )
-    else:
+    elif contract not in {"main_base", "main_scale125", "natural_dialog", "main_scaled_other"}:
         _append_note(
             result,
             f"Unsupported capture contract '{contract}' is inspectable but does not satisfy the current QA gate.",
@@ -1924,6 +2026,153 @@ def _finalize_evidence(results: list[dict], out_dir: Path) -> dict[str, Any]:
             if _STATUS_BLANK_OR_FLAT in result.get("evidence_flags", [])
         ],
     }
+
+
+def _recipe_action_summary(app_key: str, view_id: str) -> str:
+    recipe = _RECIPES.get(app_key, {}).get(view_id, {})
+    parts = []
+    for action in recipe.get("actions", []):
+        name = action.get("action", "")
+        if name == "navigate":
+            parts.append(f"navigate:{action.get('view', '')}")
+        elif name == "call":
+            parts.append(f"call:{action.get('func', '')}")
+        elif name == "capture":
+            parts.append(f"capture:{action.get('view', '')}")
+        elif name == "drain":
+            parts.append(f"drain:{action.get('cycles', '')}")
+        else:
+            parts.append(name)
+    return " > ".join(p for p in parts if p)
+
+
+def _matrix_review_result(result: dict) -> str:
+    status = result.get("capture_status", _STATUS_CAPTURE_FAILED)
+    if status == _STATUS_CAPTURED_VALID:
+        return "pendiente"
+    if status in {
+        _STATUS_REQUIRES_DATA_STATE,
+        _STATUS_REQUIRES_RUNTIME,
+        _STATUS_DUPLICATE_SUSPECT,
+        _STATUS_FALLBACK,
+    }:
+        return "parcial"
+    if status in {
+        _STATUS_CAPTURE_FAILED,
+        _STATUS_BLANK_OR_FLAT,
+        _STATUS_MAIN_CAPTURE_CONTRACT_MISMATCH,
+        _STATUS_WRONG_VIEW,
+    }:
+        return "bloqueado"
+    return "parcial"
+
+
+def _matrix_rows(results: list[dict]) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for result in sorted(
+        results,
+        key=lambda r: (
+            str(r.get("app", "")),
+            str(r.get("view", "")),
+            str(r.get("theme", "")),
+            str(r.get("requested_resolution", "")),
+        ),
+    ):
+        app_key = str(result.get("app", ""))
+        view_id = str(result.get("view", ""))
+        recipe = _RECIPES.get(app_key, {}).get(view_id, {})
+        flags = result.get("evidence_flags") or []
+        notes = result.get("evidence_notes") or []
+        debt_parts = []
+        if flags:
+            debt_parts.append("flags=" + ",".join(flags))
+        if notes:
+            debt_parts.append("notes=" + " | ".join(str(n) for n in notes))
+        if result.get("error"):
+            debt_parts.append("error=" + str(result.get("error")))
+        if not debt_parts and result.get("capture_status") == _STATUS_CAPTURED_VALID:
+            debt_parts.append("requiere inspeccion manual")
+        rows.append({
+            "producto": app_key,
+            "vista": view_id,
+            "estado": str(recipe.get("label") or view_id),
+            "tema": str(result.get("theme", "")),
+            "resolucion": str(result.get("requested_logical_resolution") or result.get("requested_resolution") or ""),
+            "receta": _recipe_action_summary(app_key, view_id),
+            "captura": str(result.get("file") or ""),
+            "inspeccion_manual": "pendiente",
+            "resultado": _matrix_review_result(result),
+            "deuda_pendiente": " ; ".join(debt_parts),
+        })
+    return rows
+
+
+def _write_capture_matrix(results: list[dict], out_dir: Path, matrix_doc: Path | None = None) -> dict[str, str]:
+    rows = _matrix_rows(results)
+    headers = [
+        "producto",
+        "vista",
+        "estado",
+        "tema",
+        "resolucion",
+        "receta",
+        "captura",
+        "inspeccion_manual",
+        "resultado",
+        "deuda_pendiente",
+    ]
+    out_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = out_dir / "CAPTURE_MATRIX.csv"
+    with csv_path.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=headers)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    md_path = out_dir / "CAPTURE_MATRIX.md"
+    _write_capture_matrix_markdown(rows, md_path)
+    written = {"csv": str(csv_path), "markdown": str(md_path)}
+    if matrix_doc is not None:
+        _write_capture_matrix_markdown(rows, matrix_doc)
+        written["matrix_doc"] = str(matrix_doc)
+    return written
+
+
+def _write_capture_matrix_markdown(rows: list[dict[str, str]], path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    counts: dict[str, int] = {}
+    for row in rows:
+        counts[row["resultado"]] = counts.get(row["resultado"], 0) + 1
+    generated = datetime.datetime.now().isoformat(timespec="seconds")
+    lines = [
+        "# Matriz Baseline V8",
+        "",
+        f"- Generada: {generated}",
+        f"- Filas: {len(rows)}",
+        f"- Resultados: {', '.join(f'{k}={v}' for k, v in sorted(counts.items())) or 'sin filas'}",
+        "- Inspeccion manual: pendiente hasta revisar captura por captura.",
+        "",
+        "| producto | vista | estado | tema | resolucion | receta | captura | inspeccion manual | resultado | deuda pendiente |",
+        "|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    keys = (
+        "producto",
+        "vista",
+        "estado",
+        "tema",
+        "resolucion",
+        "receta",
+        "captura",
+        "inspeccion_manual",
+        "resultado",
+        "deuda_pendiente",
+    )
+    for row in rows:
+        lines.append("| " + " | ".join(_md_cell(row[key]) for key in keys) + " |")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _md_cell(value: str) -> str:
+    return str(value).replace("|", "\\|").replace("\n", " ").strip()
 
 
 def _drain(app, cycles: int = 10, pause: float = 0.04) -> None:
@@ -2481,6 +2730,7 @@ def main() -> int:
     )
     p.add_argument("--no-clean", action="store_true", help="No limpiar antes de capturar")
     p.add_argument("--out-dir", default=str(_DEFAULT_OUT))
+    p.add_argument("--matrix-doc", default="", help="Ruta opcional para escribir una matriz Markdown versionable")
     p.add_argument("--scale", type=_parse_scale, default=1.0, help="Qt scale factor for capture subprocesses (for example: 1.25)")
     p.add_argument("--_child-single", action="store_true", help=argparse.SUPPRESS)
     args = p.parse_args()
@@ -2583,6 +2833,12 @@ def main() -> int:
     print(f"  Time:                 {elapsed:.1f}s")
     print(f"{'='*60}")
 
+    matrix_paths = _write_capture_matrix(
+        results,
+        out_dir,
+        Path(args.matrix_doc) if args.matrix_doc else None,
+    )
+
     manifest = {
         "harness": "capture_v8.py",
         "generated_at": datetime.datetime.now().isoformat(),
@@ -2600,12 +2856,16 @@ def main() -> int:
         "resolutions": resolutions,
         "requested_scale_factor": scale,
         "output_dir": str(out_dir),
+        "matrix_paths": matrix_paths,
         "evidence_summary": evidence_summary,
         "results": results,
     }
     manifest_path = out_dir / "CAPTURE_MANIFEST.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\nManifest: {manifest_path}")
+    print(f"Matrix:   {matrix_paths.get('markdown')}")
+    if matrix_paths.get("matrix_doc"):
+        print(f"Doc:      {matrix_paths['matrix_doc']}")
 
     print("\n" + "=" * 60)
     print("TECHNICAL_CAPTURE_ONLY")

@@ -116,3 +116,45 @@ def test_capture_v8_clean_with_all_still_captures(monkeypatch, tmp_path):
 
     assert capture_v8.main() == 0
     assert calls == [("clean", str(tmp_path)), ("capture", "")]
+
+
+def test_phase0_required_recipes_are_registered():
+    suite = capture_v8._RECIPES["suite"]
+    for view_id in (
+        "actividades-empty",
+        "avisos-empty",
+        "recuperar-acceso",
+        "evolucion-monthly",
+        "registro-success",
+    ):
+        assert view_id in suite
+        assert any(action.get("action") == "capture" for action in suite[view_id]["actions"])
+
+
+def test_capture_matrix_rows_include_phase0_columns():
+    result = {
+        "success": True,
+        "app": "suite",
+        "view": "actividades-empty",
+        "theme": "dark",
+        "requested_resolution": "960x600",
+        "capture_status": capture_v8._STATUS_CAPTURED_VALID,
+        "file": "suite-actividades-empty-dark-960x600.png",
+        "evidence_flags": [],
+        "evidence_notes": [],
+    }
+
+    rows = capture_v8._matrix_rows([result])
+
+    assert rows == [{
+        "producto": "suite",
+        "vista": "actividades-empty",
+        "estado": "Actividades empty state deterministico",
+        "tema": "dark",
+        "resolucion": "960x600",
+        "receta": "navigate:actividades > call:_actividades_force_empty > drain:6 > capture:actividades-empty",
+        "captura": "suite-actividades-empty-dark-960x600.png",
+        "inspeccion_manual": "pendiente",
+        "resultado": "pendiente",
+        "deuda_pendiente": "requiere inspeccion manual",
+    }]

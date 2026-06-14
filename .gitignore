@@ -107,3 +107,4 @@ qa/_suite_probe.txt
 qa/_pos.txt
 qa/_re.txt
 qa/_baseline_f0_indigo/
+qa/_baseline_*/
