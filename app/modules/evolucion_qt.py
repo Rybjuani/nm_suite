@@ -468,7 +468,16 @@ class ModuloEvolucion(NMModule):
             self._sparse_overlay.setVisible(sparse)
             if hasattr(self, "_wave_chart"):
                 self._wave_chart.setVisible(not sparse)
-            self._chart_panel.setMinimumHeight(160 if sparse else 220)
+            # Fase 7: sparse compacto. setMinimumHeight solo no alcanzaba — sin
+            # tope la card se estiraba a todo el alto y el mensaje quedaba en una
+            # card enorme. En sparse capamos el máximo (~176) → card compacta; con
+            # datos liberamos el tope para que el chart vuelva a crecer.
+            if sparse:
+                self._chart_panel.setMinimumHeight(140)
+                self._chart_panel.setMaximumHeight(176)
+            else:
+                self._chart_panel.setMinimumHeight(220)
+                self._chart_panel.setMaximumHeight(16777215)  # QWIDGETSIZE_MAX
 
         if valid_vals:
             avg_val = sum(valid_vals) / len(valid_vals)

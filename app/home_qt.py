@@ -1104,7 +1104,12 @@ class _HeroBienestar(QFrame):
         self._modo = norm_modo(modo)
         self._get_status = get_status_fn or (lambda mid: "")
         self._on_registrar_click = on_registrar_click
-        self._username = (username or "Paciente").split()[0]
+        # Nombre capitalizado (Fase 7): el saludo "Hola, juan" salía en minúscula
+        # cuando el nombre venía así de la cuenta. Tomamos el primer nombre y
+        # capitalizamos para un saludo prolijo ("Hola, Juan"). Guarda anti-split
+        # vacío (nombre sólo-espacios → "Paciente").
+        _parts = (username or "Paciente").split()
+        self._username = _parts[0].capitalize() if _parts else "Paciente"
         self.setObjectName("NMCard")
         # Sin altura fija: el sizeHint del contenido manda (con el score "10"
         # lleno necesita ~142px; fijarlo en 112 recortaba el número grande).
