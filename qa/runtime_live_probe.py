@@ -57,7 +57,7 @@ _VIEWS = {
     "suite": ["home", "animo", "respiracion", "timer", "avisos",
               "registro", "rutina", "actividades", "evolucion"],
     "hub": ["dashboard", "pacientes", "detalle", "detalle_plan", "detalle_ia",
-            "personalizacion", "config"],
+            "personalizacion"],
 }
 _SPEC = {
     "suite": ("app.main_qt", "NeuroMoodApp", "Suite"),

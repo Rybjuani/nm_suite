@@ -989,11 +989,13 @@ class ModuloRegistroTCC(NMModule):
         if hasattr(self, "_error_lbl"):
             self._error_lbl.setText("")
         self._resumen.update_data(self._data)
+        self._refresh_nav_state()
 
     def _on_custom_emotion_changed(self, text: str):
         cleaned = text.strip()
         self._data["emocion"] = cleaned if cleaned else "Otro"
         self._resumen.update_data(self._data)
+        self._refresh_nav_state()
 
     # ── char counters ────────────────────────────────────────────────────────
 
@@ -1015,6 +1017,7 @@ class ModuloRegistroTCC(NMModule):
         )
         self._situacion_count_lbl.setText(f"{n} / 500")
         self._situacion_count_lbl.setStyleSheet(f"color: {col}; background: transparent;")
+        self._refresh_nav_state()
 
     def _update_pensamiento_count(self):
         try:
@@ -1030,6 +1033,7 @@ class ModuloRegistroTCC(NMModule):
         )
         self._pensamiento_count_lbl.setText(f"{n} / 500")
         self._pensamiento_count_lbl.setStyleSheet(f"color: {col}; background: transparent;")
+        self._refresh_nav_state()
 
     # ── distortion detection (lógica preservada exacta) ──────────────────────
 
@@ -1171,11 +1175,40 @@ class ModuloRegistroTCC(NMModule):
                 self._btn_next.setText("Guardar")
             else:
                 self._btn_next.setText("Siguiente")
+            self._refresh_nav_state()
         except Exception as e:
             _log.error(redact(f"Error in _show_step: {e}"))
             import traceback
 
             traceback.print_exc()
+
+    def _current_required_value(self) -> str:
+        if self._step == 0:
+            try:
+                return self._txt_situacion.toPlainText().strip()
+            except Exception:
+                return self._data.get("situacion", "").strip()
+        if self._step == 1:
+            return self._data.get("emocion", "").strip()
+        if self._step == 2:
+            try:
+                return self._txt_pensamiento.toPlainText().strip()
+            except Exception:
+                return self._data.get("pensamiento", "").strip()
+        return "ok"
+
+    def _can_advance(self) -> bool:
+        if self._step in (0, 1, 2):
+            return bool(self._current_required_value())
+        return True
+
+    def _refresh_nav_state(self) -> None:
+        if not hasattr(self, "_btn_next"):
+            return
+        if self._success_page is not None and self._stack.currentWidget() is self._success_page:
+            self._btn_next.setEnabled(False)
+            return
+        self._btn_next.setEnabled(self._can_advance())
 
     def _on_header_clicked(self, step_idx: int):
         if not isinstance(step_idx, int) or step_idx < 0 or step_idx >= len(self._pages):

@@ -325,6 +325,14 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 8},
                         {"action": "capture", "view": "evolucion"}],
         },
+        "evolucion-sparse": {
+            "label": "Evolucion sparse state (< 2 puntos — evidencia S13)",
+            "parent": "evolucion",
+            "actions": [{"action": "navigate", "view": "evolucion"},
+                        {"action": "call", "func": "_evolucion_force_sparse"},
+                        {"action": "drain", "cycles": 4},
+                        {"action": "capture", "view": "evolucion-sparse"}],
+        },
 
         "respiracion": {
             "label": "Respiracion idle",
@@ -438,6 +446,14 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "call", "func": "_rutina_open_add_task"},
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "rutina-add-task"}],
+        },
+        "rutina-empty": {
+            "label": "Rutina sin tareas asignadas — NMEmptyState (evidencia S09)",
+            "parent": None,
+            "actions": [{"action": "navigate", "view": "rutina"},
+                        {"action": "call", "func": "_rutina_force_empty"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture", "view": "rutina-empty"}],
         },
 
         "actividades": {
@@ -764,8 +780,16 @@ def _force_no_score(win, qapp, action):
     direct_home = getattr(win, '_home', None)
     if direct_home is not None and direct_home not in homes:
         homes.append(direct_home)
+    def _empty_status(module_id):
+        return ""
+
     for home in homes:
-        home._get_status = lambda module_id: ""
+        home._get_status = _empty_status
+        # ModuleCards capturan get_status_fn por referencia en su __init__; hay
+        # que parchearlos directamente o refresh_statuses sigue devolviendo QA data.
+        if hasattr(home, '_cards'):
+            for card in home._cards.values():
+                card._get_status = _empty_status
         if hasattr(home, 'refresh_statuses'):
             home.refresh_statuses()
         if hasattr(home, '_hero'):
@@ -1216,6 +1240,34 @@ def _rutina_open_add_task(win, qapp, action):
     elif hasattr(target, '_on_section_add'):
         target._on_section_add("manana")
     _drain(qapp, cycles=6)
+
+
+@_register_helper
+def _rutina_force_empty(win, qapp, action):
+    """Fuerza rutina a estado vacío (sin tareas) — evidencia visual S09."""
+    import app.modules.rutina_qt as _rq
+    target = _module_target(win)
+    _orig = _rq.routine_sections
+    _rq.routine_sections = lambda: {}
+    try:
+        target._load_visual_qa_tasks()
+    finally:
+        _rq.routine_sections = _orig
+    _drain(qapp, cycles=6)
+
+
+@_register_helper
+def _evolucion_force_sparse(win, qapp, action):
+    """Fuerza evolucion a sparse state (0 puntos válidos) — evidencia visual S13."""
+    import shared.utils as _su
+    target = _module_target(win)
+    _orig = _su.get_valence_series
+    _su.get_valence_series = lambda days: ([], [])
+    try:
+        target._load_tab_data(0)
+    finally:
+        _su.get_valence_series = _orig
+    _drain(qapp, cycles=4)
 
 
 @_register_helper

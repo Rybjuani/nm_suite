@@ -716,7 +716,7 @@ class PacientesView(QWidget):
         self._search_input.text_changed.connect(self._on_search)
         sc_lay.addWidget(self._search_input)
         # Filter tabs: pills con active state fill gradient lavender (NMTabs pill style)
-        self._filter_tabs = NMTabs(list(self._FILTER_LABELS), variant="pill", modo=self._modo)
+        self._filter_tabs = NMTabs(list(self._FILTER_LABELS), variant="filter", modo=self._modo)
         self._filter_tabs.changed.connect(self._on_filter_tab_changed)
         sc_lay.addWidget(self._filter_tabs)
         layout.addWidget(search_card)

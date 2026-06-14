@@ -374,7 +374,7 @@ class _ReminderCardV3(QFrame):
 
         # Completar button
         self._btn_done = NMButton(
-            "Completar", variant="ghost", size="sm", modo=self._modo, width=88
+            "Completar", variant="secondary", size="sm", modo=self._modo, width=98
         )
         self._btn_done.setFixedHeight(28)
         self._btn_done.clicked.connect(lambda: self.completed.emit(self._id))

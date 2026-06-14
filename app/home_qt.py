@@ -674,14 +674,14 @@ class _PINSetupDialog(QDialog):
         self._pin_input = NMInput("PIN nuevo", modo=self._modo)
         self._pin_input.setEchoMode(NMInput.EchoMode.Password)
         self._pin_input.setMaxLength(6)
-        self._pin_input.setMaximumWidth(200)
-        lay.addWidget(self._pin_input, alignment=Qt.AlignmentFlag.AlignLeft)
+        self._pin_input.textChanged.connect(self._refresh_submit_state)
+        lay.addWidget(self._pin_input)
 
         self._confirm_input = NMInput("Confirmar PIN", modo=self._modo)
         self._confirm_input.setEchoMode(NMInput.EchoMode.Password)
         self._confirm_input.setMaxLength(6)
-        self._confirm_input.setMaximumWidth(200)
-        lay.addWidget(self._confirm_input, alignment=Qt.AlignmentFlag.AlignLeft)
+        self._confirm_input.textChanged.connect(self._refresh_submit_state)
+        lay.addWidget(self._confirm_input)
 
         self._err_lbl = QLabel("")
         self._err_lbl.setFont(qfont("size_small"))
@@ -692,14 +692,22 @@ class _PINSetupDialog(QDialog):
         lay.addWidget(self._err_lbl)
 
         btn_row = QHBoxLayout()
-        btn_cancel = NMButton("Cancelar", variant="ghost", size="md", modo=self._modo, width=110)
+        btn_cancel = NMButton("Cancelar", variant="secondary", size="md", modo=self._modo, width=110)
         btn_cancel.clicked.connect(self.reject)
         btn_row.addWidget(btn_cancel)
         btn_row.addStretch()
-        btn_ok = NMButton("Guardar PIN", variant="gradient", size="md", modo=self._modo, width=152)
-        btn_ok.clicked.connect(self._on_accept)
-        btn_row.addWidget(btn_ok)
+        self._btn_ok = NMButton("Guardar PIN", variant="primary", size="md", modo=self._modo, width=152)
+        self._btn_ok.clicked.connect(self._on_accept)
+        self._btn_ok.setEnabled(False)
+        btn_row.addWidget(self._btn_ok)
         lay.addLayout(btn_row)
+
+    def _refresh_submit_state(self):
+        p1 = self._pin_input.text().strip()
+        p2 = self._confirm_input.text().strip()
+        self._btn_ok.setEnabled(bool(p1 and p2 and len(p1) >= 4))
+        if self._err_lbl.text():
+            self._err_lbl.setText("")
 
     def _on_accept(self):
         p1 = self._pin_input.text().strip()

@@ -468,6 +468,7 @@ class ModuloEvolucion(NMModule):
             self._sparse_overlay.setVisible(sparse)
             if hasattr(self, "_wave_chart"):
                 self._wave_chart.setVisible(not sparse)
+            self._chart_panel.setMinimumHeight(160 if sparse else 220)
 
         if valid_vals:
             avg_val = sum(valid_vals) / len(valid_vals)

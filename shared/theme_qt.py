@@ -915,28 +915,25 @@ def conical_arc_gradient(
 def _clinical_scrollbar_qss(modo: str = "dark_hybrid") -> str:
     """Scrollbars del cockpit clínico: discretas pero presentes.
 
-    10px (antes 6px): a 6px el handle se leía como "línea técnica rota"
-    (informe user feedback, frente 4 — revisar scrollbars en todo Hub/Suite).
+    Barra neutra y de bajo contraste: debe indicar overflow sin competir con el
+    contenido clínico ni parecer un control de estado.
     """
     modo = norm_modo(modo)
     c = colors(modo)
-    handle = c.get("line_strong", c.get("border_strong", c.get("borderStrong", c.get("border", "#808080"))))
-    # Hover NEUTRO (no primary/lavanda): el scrollbar clínico debe quedar
-    # discreto en TODOS sus estados. El hover de color lo teñía de lavanda y se
-    # leía como "scrollbar de color" fuera del canon runtime (scrollbars neutras).
-    hover = "rgba(255,255,255,0.30)" if "dark" in modo else "rgba(28,34,24,0.34)"
+    handle = c.get("line", c.get("border", "#808080"))
+    hover = "rgba(255,255,255,0.22)" if "dark" in modo else "rgba(28,34,24,0.24)"
     return f"""
     QScrollBar:vertical {{
         background: transparent;
-        width: 10px;
-        margin: 0;
+        width: 8px;
+        margin: 4px 2px 4px 2px;
         border: none;
     }}
     QScrollBar::handle:vertical {{
         background: {handle};
         border: none;
-        border-radius: 5px;
-        min-height: 36px;
+        border-radius: 4px;
+        min-height: 44px;
     }}
     QScrollBar::handle:vertical:hover {{
         background: {hover};
@@ -948,15 +945,15 @@ def _clinical_scrollbar_qss(modo: str = "dark_hybrid") -> str:
     }}
     QScrollBar:horizontal {{
         background: transparent;
-        height: 10px;
-        margin: 0;
+        height: 8px;
+        margin: 2px 4px 2px 4px;
         border: none;
     }}
     QScrollBar::handle:horizontal {{
         background: {handle};
         border: none;
-        border-radius: 5px;
-        min-width: 36px;
+        border-radius: 4px;
+        min-width: 44px;
     }}
     QScrollBar::handle:horizontal:hover {{
         background: {hover};

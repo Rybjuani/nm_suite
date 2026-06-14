@@ -130,9 +130,10 @@ def _make_preview_card(modo: str, hint: str = ""):
     representación de cómo se verá el preset en el módulo del Suite del paciente.
     """
     card = NMCard(modo=modo, clickable=False)
+    card.setMaximumHeight(148)
     lay = QVBoxLayout(card)
-    lay.setContentsMargins(12, 10, 12, 10)
-    lay.setSpacing(6)
+    lay.setContentsMargins(10, 8, 10, 8)
+    lay.setSpacing(4)
     eb = QLabel("Vista previa en Suite")
     eb.setFont(eyebrow_font())
     eb.setStyleSheet(
@@ -148,9 +149,10 @@ def _make_preview_card(modo: str, hint: str = ""):
         f"border: 1px solid {qcolor_to_rgba_css(v3c('borderSoft', modo))}; "
         "border-radius: 8px; padding: 10px;"
     )
-    # 58 (no 54): el QLabel wordwrap subestima la altura con borde+padding
-    # QSS y la 2da línea del estado vacío se cortaba contra el hint.
+    # El QLabel wordwrap subestima la altura con borde+padding; estos límites
+    # mantienen la vista compacta sin cortar la segunda línea del preview.
     body.setMinimumHeight(58)
+    body.setMaximumHeight(78)
     body.setAlignment(Qt.AlignmentFlag.AlignTop)
     lay.addWidget(body)
     if hint:
@@ -158,6 +160,7 @@ def _make_preview_card(modo: str, hint: str = ""):
         h.setWordWrap(True)
         h.setFont(qfont("size_caption_xs"))
         h.setStyleSheet(f"color: {v3c('ink_secondary', modo).name()}; background: transparent;")
+        h.setMaximumHeight(30)
         lay.addWidget(h)
     return card, body
 
@@ -186,7 +189,7 @@ class PlanTerapeuticoTab(QWidget):
         # fila a 960 sin scroll ni tabs cortadas (ADN).
         self._tabs.setStyleSheet(
             stylesheet_tabwidget_segmented(self._modo)
-            + "QTabBar::tab { padding: 4px 9px; font-size: 11px; }"
+            + "QTabBar::tab { padding: 3px 7px; font-size: 10px; }"
         )
         self._tabs.setDocumentMode(True)
 
@@ -222,7 +225,7 @@ class PlanTerapeuticoTab(QWidget):
         # fila a 960 sin scroll ni tabs cortadas (ADN).
         self._tabs.setStyleSheet(
             stylesheet_tabwidget_segmented(self._modo)
-            + "QTabBar::tab { padding: 4px 9px; font-size: 11px; }"
+            + "QTabBar::tab { padding: 3px 7px; font-size: 10px; }"
         )
         for i in range(self._tabs.count()):
             w = self._tabs.widget(i)
@@ -246,15 +249,15 @@ class _PresetTimerTab(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
         body = QWidget()
         lay = QHBoxLayout(body)
-        lay.setContentsMargins(0, 16, 0, 12)
-        lay.setSpacing(16)
+        lay.setContentsMargins(0, 8, 0, 8)
+        lay.setSpacing(12)
         outer.addWidget(_tab_scroll_wrap(body, self._modo))
 
         # Form (Left)
         form_card = NMCard(modo=self._modo, clickable=False)
         form_lay = QVBoxLayout(form_card)
-        form_lay.setContentsMargins(14, 14, 14, 14)
-        form_lay.setSpacing(12)
+        form_lay.setContentsMargins(12, 12, 12, 12)
+        form_lay.setSpacing(8)
 
         # Sin jerga de developer ("preset") cara al profesional.
         form_lay.addWidget(_section_title("Agregar o editar temporizador", self._modo))
@@ -300,7 +303,7 @@ class _PresetTimerTab(QWidget):
         # List (Right)
         list_card = NMCard(modo=self._modo, clickable=False)
         list_lay = QVBoxLayout(list_card)
-        list_lay.setContentsMargins(12, 12, 12, 12)
+        list_lay.setContentsMargins(10, 10, 10, 10)
 
         list_lay.addLayout(_section_header_row(
             "Temporizadores del paciente",
@@ -528,15 +531,15 @@ class _PresetRecordatoriosTab(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
         body = QWidget()
         lay = QHBoxLayout(body)
-        lay.setContentsMargins(0, 16, 0, 12)
-        lay.setSpacing(16)
+        lay.setContentsMargins(0, 8, 0, 8)
+        lay.setSpacing(12)
         outer.addWidget(_tab_scroll_wrap(body, self._modo))
 
         # Messages Panel (Left)
         msg_card = NMCard(modo=self._modo, clickable=False)
         msg_lay = QVBoxLayout(msg_card)
-        msg_lay.setContentsMargins(14, 14, 14, 14)
-        msg_lay.setSpacing(12)
+        msg_lay.setContentsMargins(12, 12, 12, 12)
+        msg_lay.setSpacing(8)
 
         msg_lay.addLayout(_section_header_row(
             "Mensajes de apoyo",
@@ -599,8 +602,8 @@ class _PresetRecordatoriosTab(QWidget):
         # Schedules Panel (Right)
         sched_card = NMCard(modo=self._modo, clickable=False)
         sched_lay = QVBoxLayout(sched_card)
-        sched_lay.setContentsMargins(14, 14, 14, 14)
-        sched_lay.setSpacing(12)
+        sched_lay.setContentsMargins(12, 12, 12, 12)
+        sched_lay.setSpacing(8)
 
         sched_lay.addLayout(_section_header_row(
             "Horarios de aviso",
@@ -846,15 +849,15 @@ class _PresetRutinaTab(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
         body = QWidget()
         lay = QHBoxLayout(body)
-        lay.setContentsMargins(0, 16, 0, 12)
-        lay.setSpacing(16)
+        lay.setContentsMargins(0, 8, 0, 8)
+        lay.setSpacing(12)
         outer.addWidget(_tab_scroll_wrap(body, self._modo))
 
         # Form (Left)
         form_card = NMCard(modo=self._modo, clickable=False)
         form_lay = QVBoxLayout(form_card)
-        form_lay.setContentsMargins(14, 14, 14, 14)
-        form_lay.setSpacing(12)
+        form_lay.setContentsMargins(12, 12, 12, 12)
+        form_lay.setSpacing(8)
 
         form_lay.addWidget(_section_title("Asignar tarea de rutina", self._modo))
 
@@ -886,7 +889,7 @@ class _PresetRutinaTab(QWidget):
         # List (Right)
         list_card = NMCard(modo=self._modo, clickable=False)
         list_lay = QVBoxLayout(list_card)
-        list_lay.setContentsMargins(12, 12, 12, 12)
+        list_lay.setContentsMargins(10, 10, 10, 10)
 
         list_lay.addLayout(_section_header_row(
             "Tareas asignadas",
@@ -1036,15 +1039,15 @@ class _PresetActivacionTab(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
         body = QWidget()
         lay = QHBoxLayout(body)
-        lay.setContentsMargins(0, 16, 0, 12)
-        lay.setSpacing(16)
+        lay.setContentsMargins(0, 8, 0, 8)
+        lay.setSpacing(12)
         outer.addWidget(_tab_scroll_wrap(body, self._modo))
 
         # Form (Left)
         form_card = NMCard(modo=self._modo, clickable=False)
         form_lay = QVBoxLayout(form_card)
-        form_lay.setContentsMargins(14, 14, 14, 14)
-        form_lay.setSpacing(12)
+        form_lay.setContentsMargins(12, 12, 12, 12)
+        form_lay.setSpacing(8)
 
         form_lay.addWidget(_section_title("Nueva actividad", self._modo))
 
@@ -1084,6 +1087,12 @@ class _PresetActivacionTab(QWidget):
         form_lay.addWidget(range_lbl)
         form_lay.addLayout(range_lay)
 
+        self._save_btn = NMButton(
+            "Agregar actividad", modo=self._modo, width=150, height=32, size="sm"
+        )
+        self._save_btn.clicked.connect(self._save_activity)
+        form_lay.addWidget(self._save_btn, alignment=Qt.AlignmentFlag.AlignLeft)
+
         # IA Assist Button
         ia_row = QHBoxLayout()
         self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm")
@@ -1092,12 +1101,6 @@ class _PresetActivacionTab(QWidget):
         ia_row.addWidget(self._ia_btn)
         ia_row.addStretch()
         form_lay.addLayout(ia_row)
-
-        self._save_btn = NMButton(
-            "Agregar actividad", modo=self._modo, width=150, height=32, size="sm"
-        )
-        self._save_btn.clicked.connect(self._save_activity)
-        form_lay.addWidget(self._save_btn, alignment=Qt.AlignmentFlag.AlignLeft)
 
         self._preview_card, self._preview_body = _make_preview_card(
             self._modo, "Sugerida en el Asistente de Activación Conductual según el ánimo."
@@ -1115,7 +1118,7 @@ class _PresetActivacionTab(QWidget):
         # List (Right)
         list_card = NMCard(modo=self._modo, clickable=False)
         list_lay = QVBoxLayout(list_card)
-        list_lay.setContentsMargins(12, 12, 12, 12)
+        list_lay.setContentsMargins(10, 10, 10, 10)
 
         list_lay.addLayout(_section_header_row(
             "Actividades del paciente",

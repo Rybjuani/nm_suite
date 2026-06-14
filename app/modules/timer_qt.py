@@ -482,9 +482,9 @@ class ModuloTimer(NMModule):
         self._custom_widget = QWidget()
         self._custom_widget.setVisible(self._manual_timer_enabled)
         self._custom_widget.setEnabled(self._manual_timer_enabled)
-        # Altura fija = chips (28): sin esto el QWidget se estiraba vertical y el
-        # campo "min" quedaba más alto que los presets/OK (desalineado).
-        self._custom_widget.setFixedHeight(28)
+        # Un poco más alto que los chips para que el botón compacto conserve su
+        # borde/sombra sin quedar recortado a 960x600.
+        self._custom_widget.setFixedHeight(32)
         cw_row = QHBoxLayout(self._custom_widget)
         cw_row.setContentsMargins(0, 0, 0, 0)
         cw_row.setSpacing(4)
@@ -497,11 +497,10 @@ class ModuloTimer(NMModule):
         self._entry_custom.setStyleSheet(self._pill_input_style())
         cw_row.addWidget(self._entry_custom)
 
-        # Ancho 56 (era 36): a 36px el OK era mucho más angosto que cualquier
-        # otro botón y rompía el target de clic (S11). Mantiene el alto 28 de la
-        # fila compacta y queda alineado con el input "min" (64) contiguo.
-        btn_ok = NMButton("OK", modo=self._modo, variant="gradient", size="sm", width=56)
-        btn_ok.setFixedSize(56, 28)
+        # Ancho 64: evita el micro-botón de una palabra y mantiene el target
+        # comparable al input "min" contiguo.
+        btn_ok = NMButton("OK", modo=self._modo, variant="primary", size="sm", width=64)
+        btn_ok.setFixedSize(64, 32)
         btn_ok.clicked.connect(self._apply_custom)
         cw_row.addWidget(btn_ok)
 

@@ -75,6 +75,12 @@ _NM_BUTTON_HEIGHT = {
     "lg": _NM_CONTROL_HEIGHT,
 }
 _NM_BUTTON_FONT = {"sm": "size_caption", "md": _NM_CONTROL_FONT, "lg": _NM_CONTROL_FONT}
+_NM_BUTTON_VARIANT_ALIASES = {
+    "primary": "gradient",
+    "filled": "gradient",
+    "outline": "secondary",
+    "destructive": "danger",
+}
 
 
 class NMButton(QPushButton):
@@ -111,11 +117,9 @@ class NMButton(QPushButton):
     ):
         super().__init__(text, parent)
         self._modo = norm_modo(modo or _tm().modo)
-        self._variant = (
-            variant
-            if variant in ("gradient", "secondary", "ghost", "danger", "destructive")
-            else "gradient"
-        )
+        self._variant = _NM_BUTTON_VARIANT_ALIASES.get(variant, variant)
+        if self._variant not in ("gradient", "secondary", "ghost", "danger"):
+            self._variant = "gradient"
         self._size = size if size in ("sm", "md", "lg") else "md"
         self._hover = False
         self._pressed = False
@@ -143,8 +147,9 @@ class NMButton(QPushButton):
     # ── API v3 ────────────────────────────────────────────────────────────────
 
     def set_variant(self, variant: str):
-        if variant in ("gradient", "secondary", "ghost", "danger", "destructive"):
-            self._variant = variant
+        canonical = _NM_BUTTON_VARIANT_ALIASES.get(variant, variant)
+        if canonical in ("gradient", "secondary", "ghost", "danger"):
+            self._variant = canonical
             self.setObjectName(f"NMButton_{self._variant}")
             self._apply_btn_shadow()
             self.update()
@@ -322,6 +327,7 @@ class NMButton(QPushButton):
 
     def _apply_btn_shadow(self):
         if not self.isEnabled():
+            self.setGraphicsEffect(None)
             self._btn_shadow = None
             return
         is_dark = "dark" in self._modo
@@ -345,17 +351,16 @@ class NMButton(QPushButton):
             shadow.setBlurRadius(8 if is_dark else 6)
             shadow.setOffset(0, 2 if is_dark else 1)
             sc = QColor(0, 0, 0, 54 if is_dark else 10)
-        elif self._variant in ("danger", "destructive"):
+        elif self._variant == "danger":
             # Subtle danger soft shadow
             shadow.setBlurRadius(8 if is_dark else 5)
             shadow.setOffset(0, 2 if is_dark else 1)
             sc = v3c("danger", self._modo)
             sc.setAlpha(40 if is_dark else 15)
         else:  # ghost
-            # Sombra mínima — apenas perceptible
-            shadow.setBlurRadius(4 if is_dark else 2)
-            shadow.setOffset(0, 1)
-            sc = QColor(0, 0, 0, 40 if is_dark else 8)
+            self.setGraphicsEffect(None)
+            self._btn_shadow = None
+            return
         shadow.setColor(sc)
 
     def play_success(self):
@@ -921,7 +926,7 @@ class NMTabs(QWidget):
     ):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
-        self._variant = "pill"
+        self._variant = variant if variant in ("pill", "filter", "underline") else "pill"
         self._labels = list(labels or [])
         self._current = 0
         self._btns: list[QPushButton] = []
@@ -976,26 +981,46 @@ class NMTabs(QWidget):
         text_muted = v3c("text2", self._modo).name()
         surface_2 = v3c("surface_2", self._modo).name()
         border = v3c("border", self._modo)
+        border_strong = v3c("borderStrong", self._modo)
         soft_css = (
             f"rgba({border.red()},{border.green()},"
             f"{border.blue()},{max(border.alpha(), 24)})"
+        )
+        strong_css = (
+            f"rgba({border_strong.red()},{border_strong.green()},"
+            f"{border_strong.blue()},{max(border_strong.alpha(), 48)})"
         )
         for i, b in enumerate(self._btns):
             b.setMinimumHeight(_NM_TAB_HEIGHT)
             b.setFont(qfont(_NM_TAB_FONT, weight=_NM_CONTROL_WEIGHT))
             checked = i == self._current
-            if checked:
+            if self._variant == "underline":
+                if checked:
+                    b.setStyleSheet(
+                        f"QPushButton {{ background: transparent; color: {primary}; "
+                        f"border: none; border-bottom: 2px solid {primary}; "
+                        "padding: 4px 10px; border-radius: 0px; }}"
+                    )
+                else:
+                    b.setStyleSheet(
+                        f"QPushButton {{ background: transparent; color: {text_muted}; "
+                        "border: none; border-bottom: 2px solid transparent; "
+                        "padding: 4px 10px; border-radius: 0px; }}"
+                        f"QPushButton:hover {{ color: {text}; }}"
+                    )
+            elif checked:
                 b.setStyleSheet(
                     f"QPushButton {{ background: {primary}; color: {primary_ink}; "
                     f"border: none; padding: 4px 14px; "
                     f"border-radius: {_NM_TAB_RADIUS - 3}px; }}"
                 )
             else:
+                bg = "transparent" if self._variant == "filter" else surface_2
                 b.setStyleSheet(
-                    f"QPushButton {{ background: {surface_2}; color: {text_muted}; "
+                    f"QPushButton {{ background: {bg}; color: {text_muted}; "
                     f"border: 1px solid {soft_css}; padding: 4px 14px; "
                     f"border-radius: {_NM_TAB_RADIUS - 3}px; }}"
-                    f"QPushButton:hover {{ color: {text}; }}"
+                    f"QPushButton:hover {{ color: {text}; border-color: {strong_css}; }}"
                 )
 
     def _apply_theme(self, modo: str):

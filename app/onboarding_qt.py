@@ -398,7 +398,7 @@ class OnboardingDialog(QDialog):
         cc_body = QScrollArea()
         cc_body.setWidgetResizable(True)
         cc_body.setFrameShape(QFrame.Shape.NoFrame)
-        cc_body.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        cc_body.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         # Scrollbar canónico (clínico, neutro, 10px) en vez del handle lavanda
         # brillante de 6px que violaba el ADN.
@@ -411,7 +411,7 @@ class OnboardingDialog(QDialog):
         # Fuente vía QFont (no font-size CSS): el alto del visor se calcula con
         # fontMetrics y deben coincidir para no cortar líneas a la mitad.
         _cfont = consent_txt.font()
-        _cfont.setPixelSize(12)
+        _cfont.setPixelSize(11 if is_compact else 12)
         consent_txt.setFont(_cfont)
         if self._has_theme:
             consent_txt.setStyleSheet(

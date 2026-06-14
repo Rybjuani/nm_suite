@@ -37,6 +37,7 @@ from shared.theme_qt import (
     qfont_mono,
     qcolor_to_rgba_css,
     stylesheet_combobox,
+    _clinical_scrollbar_qss,
     v3c,
     V3_SP,
     v3_font,
@@ -305,6 +306,7 @@ class TextOverridesEditor(QWidget):
             f"QListWidget::item:hover {{ background: {hover_bg}; }}"
             f"QListWidget::item:selected {{ background: {sel_bg}; "
             f"color: {v3c('text', self._modo).name()}; }}"
+            + _clinical_scrollbar_qss(self._modo)
         )
 
     def _filter_keys(self):

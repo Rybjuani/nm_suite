@@ -318,8 +318,8 @@ def _build_animo_graph(
         # Antes capeado a 124: en el Resumen la card daba ~200px y el chart
         # quedaba "colapsado" con espacio muerto debajo. Lo dejamos crecer para
         # llenar la card (expandido y redistribuido — pedido owner).
-        plot.setMinimumHeight(150)
-        plot.setMaximumHeight(196)
+        plot.setMinimumHeight(132)
+        plot.setMaximumHeight(172)
     else:
         plot.setMinimumHeight(156)
         plot.setMaximumHeight(176)
@@ -487,7 +487,7 @@ class _TabResumen(QWidget):
 
         # 1. Chart Card
         self._chart_card = NMCard(modo=self._modo, clickable=False)
-        self._chart_card.setMinimumHeight(224)
+        self._chart_card.setMinimumHeight(204)
         cc_lay = QVBoxLayout(self._chart_card)
         cc_lay.setContentsMargins(self._sp["md"], self._sp["xs"], self._sp["md"], self._sp["xs"])
         cc_lay.setSpacing(0)
@@ -495,7 +495,7 @@ class _TabResumen(QWidget):
         cc_lay.itemAt(0).widget()._title.setFont(v3_font("size_h2", weight=600, serif=True))
 
         self._chart_placeholder = QWidget()
-        self._chart_placeholder.setMinimumHeight(176)
+        self._chart_placeholder.setMinimumHeight(152)
         self._chart_placeholder.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
@@ -523,7 +523,7 @@ class _TabResumen(QWidget):
         self._lbl_note = QLabel(note_text)
         self._lbl_note.setWordWrap(True)
         # Newsreader / Serif para notas clínicas premium
-        self._lbl_note.setFont(qfont("size_h3", family="Newsreader"))
+        self._lbl_note.setFont(qfont("size_body"))
         self._lbl_note.setStyleSheet(
             f"color: {v3c('text', self._modo).name()}; background: transparent; line-height: 1.5;"
         )
@@ -884,7 +884,7 @@ class _TabRegistros(QWidget):
 
         # Botones top
         top = QHBoxLayout()
-        btn_load = NMButtonOutline("Actualizar datos", modo=self._modo, size="sm")
+        btn_load = NMButton("Actualizar datos", modo=self._modo, variant="primary", size="sm", width=132)
         btn_load.setFixedHeight(32)
         btn_load.setMinimumWidth(130)
         btn_load.clicked.connect(self._cargar_datos)
@@ -892,7 +892,7 @@ class _TabRegistros(QWidget):
         top.addStretch()
         # Acción secundaria (outline, no gradient): exportar no es el gesto
         # principal de la pestaña (informe owner v1.0, Registros).
-        self._btn_pdf = NMButtonOutline("Exportar PDF", modo=self._modo, size="sm")
+        self._btn_pdf = NMButton("Exportar PDF", modo=self._modo, variant="secondary", size="sm", width=130)
         self._btn_pdf.setFixedHeight(32)
         self._btn_pdf.setMinimumWidth(130)
         self._btn_pdf.clicked.connect(self._exportar_pdf)
@@ -1707,8 +1707,8 @@ class _TabIA(QWidget):
 
         colors(self._modo)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(PAD_CONTAINER, 10, PAD_CONTAINER, 10)
-        layout.setSpacing(V3_SP["sm"])
+        layout.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], V3_SP["sm"])
+        layout.setSpacing(V3_SP["xs"])
 
         # Disclaimer clínico permanente (HANDOFF §6) — fuera del scroll, siempre
         # visible: la IA solo genera borradores que requieren validación.
@@ -1721,7 +1721,7 @@ class _TabIA(QWidget):
         # mínimo y el botón "Generar resumen" quedaba pintado SOBRE el área
         # de texto (botones solapados en la captura del tab IA).
         card_res = NMCard(modo=self._modo, clickable=False)
-        card_res.setMinimumHeight(190)
+        card_res.setMinimumHeight(168)
         vl_res = QVBoxLayout(card_res)
         vl_res.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
         vl_res.setSpacing(8)
@@ -1738,7 +1738,7 @@ class _TabIA(QWidget):
         self._meta_resumen = self._mk_ia_meta()
         head_res.addWidget(self._meta_resumen)
         vl_res.addLayout(head_res)
-        self._txt_resumen = NMTextArea(placeholder="El resumen aparecerá aquí…", modo=self._modo, min_height=80, font_key="size_small")
+        self._txt_resumen = NMTextArea(placeholder="El resumen aparecerá aquí…", modo=self._modo, min_height=64, font_key="size_small")
         self._txt_resumen.setReadOnly(True)
         vl_res.addWidget(self._txt_resumen)
         row_res = QHBoxLayout()
@@ -1777,7 +1777,7 @@ class _TabIA(QWidget):
 
         # ── Sugerencias ───────────────────────────────────────────────────────
         card_sug = NMCard(modo=self._modo, clickable=False)
-        card_sug.setMinimumHeight(190)
+        card_sug.setMinimumHeight(168)
         vl_sug = QVBoxLayout(card_sug)
         vl_sug.setContentsMargins(PAD_CARD, 12, PAD_CARD, 12)
         vl_sug.setSpacing(8)
@@ -1799,7 +1799,7 @@ class _TabIA(QWidget):
         self._txt_sug = NMTextArea(
             placeholder="Presioná 'Generar sugerencias' para obtener acciones concretas.",
             modo=self._modo,
-            min_height=80,
+            min_height=64,
             font_key="size_small",
         )
         self._txt_sug.setReadOnly(True)
@@ -1926,7 +1926,7 @@ class _TabIA(QWidget):
             placeholder="Elegí un módulo y generá un borrador. Lo revisás, lo editás "
             "si hace falta, y recién al aprobarlo se asigna al paciente.",
             modo=self._modo,
-            min_height=64,
+            min_height=54,
             font_key="size_small",
         )
         self._txt_asig.setReadOnly(True)

@@ -371,7 +371,8 @@ class _PINRecoveryDialog(QDialog):
         self._attempts = 0
         self.setWindowTitle("Recuperar acceso")
         self.setModal(True)
-        self.setMinimumWidth(360)
+        self.setMinimumWidth(380)
+        self.setMinimumHeight(280)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -407,8 +408,8 @@ class _PINRecoveryDialog(QDialog):
         body = QWidget()
         body.setStyleSheet("background: transparent;")
         blay = QVBoxLayout(body)
-        blay.setContentsMargins(0, 0, 0, 0)
-        blay.setSpacing(V3_SP["sm"])
+        blay.setContentsMargins(0, V3_SP["sm"], 0, 0)
+        blay.setSpacing(V3_SP["lg"])
 
         info = QLabel(
             "El PIN se guarda localmente y no puede recuperarse por email.\n"
@@ -671,6 +672,14 @@ class PrivacyLockDialog(QDialog):
         pin_layout.addWidget(self._dots, alignment=Qt.AlignmentFlag.AlignCenter)
         pin_layout.addSpacing(2)
 
+        self._pin_hint = QLabel("PIN de 4 a 6 dígitos")
+        self._pin_hint.setFont(nm_font("sm"))
+        self._pin_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._pin_hint.setStyleSheet(
+            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
+        )
+        pin_layout.addWidget(self._pin_hint, alignment=Qt.AlignmentFlag.AlignCenter)
+
         # Input PIN (oculto visualmente pero funcional)
         self._pin_input = NMInput("Ingresá tu PIN", parent=self._pin_page, modo=self._modo)
         self._pin_input.setEchoMode(NMInput.EchoMode.Password)
@@ -714,6 +723,7 @@ class PrivacyLockDialog(QDialog):
         # (si lo roba, el tecleo posterior no entra y los puntos no se pintan).
         self._unlock_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._unlock_btn.clicked.connect(self._on_unlock_clicked)
+        self._unlock_btn.setEnabled(False)
         pin_layout.addWidget(self._unlock_btn, alignment=Qt.AlignmentFlag.AlignCenter)
 
         pin_layout.addSpacing(14)
@@ -806,6 +816,7 @@ class PrivacyLockDialog(QDialog):
 
     def _on_pin_changed(self, text: str):
         self._dots.set_filled(len(text))
+        self._unlock_btn.setEnabled(bool(text.strip()))
         if self._error_lbl.text():
             self._error_lbl.setText("")
             self._dots.set_filled(len(text), error=False)
@@ -860,6 +871,7 @@ class PrivacyLockDialog(QDialog):
         self._pin_input.blockSignals(True)
         self._pin_input.clear()
         self._pin_input.blockSignals(False)
+        self._unlock_btn.setEnabled(False)
         self._error_lbl.setText(msg)
         self._dots.set_filled(typed, error=True)
         # Shake del card
@@ -921,6 +933,10 @@ class PrivacyLockDialog(QDialog):
     def _on_theme(self, modo: str):
         self._modo = norm_modo(modo)
         self._dots.set_modo(self._modo)
+        if hasattr(self, "_pin_hint"):
+            self._pin_hint.setStyleSheet(
+                f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
+            )
         self._refresh_forgot_link()
         self._apply_global_style()
 

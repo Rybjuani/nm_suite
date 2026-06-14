@@ -534,10 +534,10 @@ class _SuggestedCard(NMCard):
         self._intensity = _IntensityDots(_intensity_for(self._nombre), modo=self._modo)
         footer.addWidget(self._intensity)
         footer.addStretch()
-        self._btn_no = NMButton("No pude", variant="ghost", size="sm", modo=self._modo, width=82)
+        self._btn_no = NMButton("No pude", variant="secondary", size="sm", modo=self._modo, width=78)
         self._btn_no.clicked.connect(lambda: self.skipped.emit(self._nombre))
         footer.addWidget(self._btn_no)
-        self._btn_yes = NMButton("Hice", variant="gradient", size="sm", modo=self._modo, width=60)
+        self._btn_yes = NMButton("Hice", variant="primary", size="sm", modo=self._modo, width=78)
         self._btn_yes.clicked.connect(lambda: self.completed.emit(self._nombre))
         footer.addWidget(self._btn_yes)
         lay.addLayout(footer)
@@ -787,7 +787,7 @@ class ModuloActividades(NMModule):
         self._category_tabs = NMTabs(
             [t("text.module.actividades.filter_all", "Todas")]
             + [_category_label(cat) for cat, _ in _CATEGORY_ORDER],
-            variant="pill",
+            variant="filter",
             modo=self._modo,
         )
         self._category_tabs.changed.connect(self._on_category_tab_changed)

@@ -2438,17 +2438,17 @@ class NMAIDisclaimer(QFrame):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(V3_SP["md"], V3_SP["sm"], V3_SP["md"], V3_SP["sm"])
+        lay.setContentsMargins(V3_SP["sm"], V3_SP["xs"], V3_SP["sm"], V3_SP["xs"])
         lay.setSpacing(V3_SP["sm"])
 
         self._icon = QLabel()
-        self._icon.setFixedSize(18, 18)
+        self._icon.setFixedSize(16, 16)
         self._icon.setScaledContents(True)
         lay.addWidget(self._icon, alignment=Qt.AlignmentFlag.AlignTop)
 
         self._lbl = QLabel(self._TEXT)
         self._lbl.setWordWrap(True)
-        self._lbl.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
+        self._lbl.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
         lay.addWidget(self._lbl, stretch=1)
 
         self._apply_theme(self._modo)
@@ -2457,20 +2457,22 @@ class NMAIDisclaimer(QFrame):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         bg_color = C("warning_bg", self._modo)
-        primary_color = C("primary", self._modo)
+        warning_color = v3c("warning", self._modo)
+        warning_color.setAlpha(130 if "dark" in self._modo else 110)
+        border_color = qcolor_to_rgba_css(warning_color)
+        icon_color = v3c("warning", self._modo).name()
         ink_color = C("warning_ink", self._modo)
         self.setStyleSheet(
             f"QFrame#NMAIDisclaimer {{ "
             f"background-color: {bg_color}; "
-            f"border: 1px solid {primary_color}; "
-            f"border-left: 1px solid {primary_color}; "
+            f"border: 1px solid {border_color}; "
             f"border-radius: {V3_RD['lg']}px; }}"
         )
         try:
-            self._icon.setPixmap(nm_icon("shield", primary_color, size=18).pixmap(18, 18))
+            self._icon.setPixmap(nm_icon("shield", icon_color, size=16).pixmap(16, 16))
         except Exception:
             self._icon.setText("!")
-            self._icon.setStyleSheet(f"color: {primary_color}; background: transparent;")
+            self._icon.setStyleSheet(f"color: {icon_color}; background: transparent;")
         self._lbl.setStyleSheet(f"color: {ink_color}; background: transparent;")
 
 
@@ -2922,14 +2924,17 @@ class NMHubSidebar(QWidget):
         )
 
         # ── Nav buttons ────────────────────────────────────────────────
-        primary_hex = v3c("primary", self._modo).name()
-        primary_ink = v3c("primary_ink", self._modo).name()
+        primary_col = v3c("primary", self._modo)
+        primary_hex = primary_col.name()
         text_hex = v3c("text", self._modo).name()
         text2_hex = v3c("text2", self._modo).name()
+        active_bg = (
+            f"rgba({primary_col.red()},{primary_col.green()},"
+            f"{primary_col.blue()},{58 if is_dark else 34})"
+        )
         primary_soft = (
-            f"rgba({v3c('primary', self._modo).red()},"
-            f"{v3c('primary', self._modo).green()},"
-            f"{v3c('primary', self._modo).blue()}, 25)"
+            f"rgba({primary_col.red()},{primary_col.green()},"
+            f"{primary_col.blue()}, {25 if is_dark else 22})"
         )
         font_pt = TYPOGRAPHY["size_small"]
 
@@ -2942,9 +2947,10 @@ class NMHubSidebar(QWidget):
             btn.setStyleSheet(
                 f"QPushButton {{"
                 f"  text-align: {align};"
-                f"  background: {primary_hex if active else 'transparent'};"
-                f"  color: {primary_ink if active else text2_hex};"
+                f"  background: {active_bg if active else 'transparent'};"
+                f"  color: {primary_hex if active else text2_hex};"
                 f"  border: none;"
+                f"  border-left: {3 if active and not self._collapsed else 0}px solid {primary_hex};"
                 f"  border-radius: {radius}px;"
                 # 10px: con la sidebar angosta (172) el padding 12 cortaba
                 # "Personalización" (el label más largo).
@@ -2953,12 +2959,12 @@ class NMHubSidebar(QWidget):
                 f"  font-weight: 500;"
                 f"}}"
                 f"QPushButton:hover {{"
-                f"  background: {primary_hex if active else primary_soft};"
-                f"  color: {primary_ink if active else text_hex};"
+                f"  background: {active_bg if active else primary_soft};"
+                f"  color: {primary_hex if active else text_hex};"
                 f"}}"
             )
             # Icon: primary_ink when active, text2 at rest
-            icon_color = primary_ink if active else text2_hex
+            icon_color = primary_hex if active else text2_hex
             for item in self._items_tuple:
                 if item[0] == key:
                     try:
@@ -3667,17 +3673,17 @@ class _MoodTrackBar(QWidget):
         center_y = h / 2
         if self._unset:
             if _is_dark:
-                ring = QColor(255, 255, 255, 200)
-                halo = QColor(255, 255, 255, 40)
+                ring = QColor(255, 255, 255, 120)
+                halo = QColor(255, 255, 255, 18)
             else:
-                ring = QColor(71, 85, 105, 230)
-                halo = QColor(71, 85, 105, 36)
+                ring = QColor(71, 85, 105, 150)
+                halo = QColor(71, 85, 105, 18)
             p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(QBrush(halo))
-            p.drawEllipse(QPointF(slot0_x, center_y), 12, 12)
+            p.drawEllipse(QPointF(slot0_x, center_y), 9, 9)
             p.setBrush(QBrush(QColor("#ffffff")))
             p.setPen(QPen(ring, 2))
-            p.drawEllipse(QPointF(slot0_x, center_y), 7, 7)
+            p.drawEllipse(QPointF(slot0_x, center_y), 5.5, 5.5)
         else:
             _parked = (
                 QColor(255, 255, 255, 110) if _is_dark else QColor(71, 85, 105, 110)
@@ -4920,7 +4926,13 @@ class NMDialogScaffold(QWidget):
         self._body_slot.addWidget(widget)
 
     def add_action(self, label: str, role: str = "secondary", callback=None) -> QPushButton:
-        btn = QPushButton(label)
+        variant = {
+            "primary": "primary",
+            "secondary": "secondary",
+            "ghost": "ghost",
+            "danger": "danger",
+        }.get(role, "secondary")
+        btn = NMButton(label, variant=variant, size="md", modo=self._modo, width=90)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
         btn.setMinimumHeight(_NM_CONTROL_HEIGHT)
         btn.setMinimumWidth(90)
@@ -4946,6 +4958,18 @@ class NMDialogScaffold(QWidget):
         for btn in self._action_buttons:
             role = btn.property("nm_role") or "secondary"
             btn.setFont(qfont(_NM_CONTROL_FONT, weight=_NM_CONTROL_WEIGHT))
+            if isinstance(btn, NMButton):
+                btn.set_variant(
+                    "primary"
+                    if role == "primary"
+                    else "danger"
+                    if role == "danger"
+                    else "ghost"
+                    if role == "ghost"
+                    else "secondary"
+                )
+                btn._apply_theme(self._modo)
+                continue
             if role == "primary":
                 text_on_acc = v3c("text_on_accent", self._modo).name()
                 btn.setStyleSheet(

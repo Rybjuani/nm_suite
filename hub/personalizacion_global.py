@@ -23,6 +23,7 @@ from PyQt6.QtWidgets import (
 
 from shared.components_qt import (
     NMButtonOutline,
+    NMBadge,
     NMCard,
     NMListRow,
 )
@@ -111,6 +112,7 @@ class PersonalizacionGlobalView(QWidget):
                 clickable=True,
             )
             row.clicked.connect(lambda _mid=mid: self._open_editor(_mid))
+            row.set_trailing(NMBadge("Editar", tone="info", modo=self._modo))
             cl.addWidget(row)
             self._rows.append(row)
         lp.addWidget(card)

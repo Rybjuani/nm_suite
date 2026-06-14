@@ -268,9 +268,9 @@ class _SectionCard(NMCard):
         self._body_scroll.setWidget(self._body)
         lay.addWidget(self._body_scroll, stretch=1)
 
-        # Footer: botón ghost "+ Agregar tarea"
+        # Footer: secondary visible para descubribilidad en columnas vacías
         self._add_btn = NMButton(
-            "+ Agregar tarea", variant="ghost", size="sm", modo=self._modo, width=0
+            "+ Agregar tarea", variant="secondary", size="sm", modo=self._modo, width=0
         )
         self._add_btn.clicked.connect(lambda: self.add_requested.emit(self._key))
         lay.addWidget(self._add_btn, alignment=Qt.AlignmentFlag.AlignBottom)
@@ -590,6 +590,7 @@ class ModuloRutina(NMModule):
 
         self._refresh_hero()
         has_tasks = bool(self._task_checks)
+        self._hero_card.setVisible(has_tasks)
         self._empty_state.setVisible(not has_tasks)
         for card in self._section_cards.values():
             card.setVisible(has_tasks)
@@ -641,6 +642,7 @@ class ModuloRutina(NMModule):
             card.set_progress(done_count, total)
         self._refresh_hero()
         has_tasks = bool(self._task_checks)
+        self._hero_card.setVisible(has_tasks)
         self._empty_state.setVisible(not has_tasks)
         for card in self._section_cards.values():
             card.setVisible(has_tasks)

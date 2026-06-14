@@ -224,9 +224,9 @@ class NMBadge(QLabel):
         self._modo = norm_modo(modo or _tm().modo)
         self._tone = tone if tone in _BADGE_TONE_TO_KEY else "neutral"
         self.setObjectName("NMBadge")
-        self.setFont(v3_font("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
+        self.setFont(v3_font("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.setMinimumHeight(24)
+        self.setMinimumHeight(22)
         self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         self.setContentsMargins(0, 0, 0, 0)
         self._apply_style()
@@ -243,46 +243,44 @@ class NMBadge(QLabel):
     def _apply_style(self):
         key = _BADGE_TONE_TO_KEY[self._tone]
         color_hex = C(key, self._modo)
-        # Soft bg: rgba a 14% del color semántico (consistente con runtime spec §4.4).
+        # Badge informativo: más rectangular y quieto que tabs/filtros/chips.
+        # Esto evita que estados clínicos parezcan navegación pulsable.
         fc = QColor(color_hex)
-        fc.setAlpha(36)  # ~14%
+        fc.setAlpha(28 if "dark" in self._modo else 24)
         bg_css = f"rgba({fc.red()},{fc.green()},{fc.blue()},{fc.alpha()})"
         border_alpha = QColor(color_hex)
-        border_alpha.setAlpha(60)
+        border_alpha.setAlpha(46 if "dark" in self._modo else 38)
         border_css = (
             f"rgba({border_alpha.red()},{border_alpha.green()},"
             f"{border_alpha.blue()},{border_alpha.alpha()})"
         )
-        self._pill_r_applied = pill_radius(self, fallback=26)
+        self._pill_r_applied = 7
         self.setStyleSheet(f"""
             NMBadge {{
                 color: {color_hex};
                 background-color: {bg_css};
                 border: 1px solid {border_css};
                 border-radius: {self._pill_r_applied}px;
-                padding: 4px 12px;
-                min-height: 24px;
+                padding: 3px 9px;
+                min-height: 22px;
             }}
         """)
-        # Una pill nunca debe renderizar texto recortado ni pisarse con su
+        # Un badge nunca debe renderizar texto recortado ni pisarse con su
         # vecina. Medir con QFontMetrics y NO con sizeHint(): el sizeHint del
         # QLabel depende de que el QSS esté "polished", y cuando la pill se
         # re-estila después del primer layout (theme apply) el mínimo crecía
         # tarde — el widget se ensanchaba sin que el QHBoxLayout reposicionara
         # a los hermanos → pills superpuestas (bug real: "Sin alerta activa"
         # pisada por "Progreso 5d" en el hero del detalle del Hub).
-        # 26 = padding QSS 12+12 + borde 1+1.
         self._sync_min_width()
 
     def _sync_min_width(self):
         fm = QFontMetrics(self.font())
-        self.setMinimumWidth(fm.horizontalAdvance(self.text()) + 26)
+        self.setMinimumWidth(fm.horizontalAdvance(self.text()) + 20)
         self.updateGeometry()
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        if pill_radius(self, fallback=26) != getattr(self, "_pill_r_applied", None):
-            self._apply_style()
 
     def setText(self, text: str):  # noqa: N802 — override de QLabel
         super().setText(text)
