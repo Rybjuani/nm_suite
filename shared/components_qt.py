@@ -84,7 +84,7 @@ from shared.components.feedback import (
     NMTypingDots,
 )
 from shared.components.icons import NMAvatar, NMIcon, NMSectionHeader
-from shared.components.inputs import NMToggle
+from shared.components.inputs import NMPlayButton, NMToggle
 from shared.components.rings import NMCycleRing, NMFocusArc, NMModuleRing
 from shared.components.surfaces import NMBadge, NMChip, NMDivider
 from shared.theme_manager import ThemeManager
@@ -7566,136 +7566,6 @@ class V3MoodSlider(QWidget):
             f"border: 1px solid {c_border}; border-radius: {V3_RD['lg']}px; }}"
         )
 
-
-# ── NMPlayButton ─────────────────────────────────────────────────────────────
-
-
-class NMPlayButton(QPushButton):
-    """Botón circular minimal para controles de player (play/pause/stop/skip/refresh).
-
-    Spec README v3:
-      - Tamaños sm/md/lg → diámetro 40/48/56.
-      - Background ``surface`` (neutro), border ``borderSoft`` sutil,
-        sombra suave ``v3_shadow("sm")``.
-      - **Sin gradient**, **sin texto**. Solo icono SVG centrado.
-      - Hover: fondo ``elevated`` + border ``borderStrong``.
-
-    Args:
-        icon_name: nombre del icono SVG v3 ("play"/"pause"/"stop"/"skip"/"refresh").
-        size:      "sm" / "md" / "lg".
-        modo:      override de tema.
-    """
-
-    _SIZE_MAP = {"sm": 40, "md": 48, "lg": 56}
-
-    def __init__(self, icon_name: str = "play", size: str = "md", modo: str = None, parent=None):
-        super().__init__(parent)
-        self._modo = norm_modo(modo or _tm().modo)
-        self._icon_name = icon_name
-        self._size_key = size if size in self._SIZE_MAP else "md"
-        self._hover = False
-        diameter = self._SIZE_MAP[self._size_key]
-        self.setFixedSize(diameter, diameter)
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.setFlat(True)
-        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
-        self._disabled = False
-        self._card_shadow = None
-        self._apply_shadow()
-        _tm().theme_changed.connect(self._apply_theme)
-
-    # ── API ──────────────────────────────────────────────────────────────────
-
-    def set_icon(self, name: str):
-        if name != self._icon_name:
-            self._icon_name = name
-            self.update()
-
-    def icon_name(self) -> str:
-        return self._icon_name
-
-    def set_size(self, size: str):
-        if size in self._SIZE_MAP and size != self._size_key:
-            self._size_key = size
-            d = self._SIZE_MAP[size]
-            self.setFixedSize(d, d)
-            self.update()
-
-    # ── eventos ──────────────────────────────────────────────────────────────
-
-    def enterEvent(self, event):
-        self._hover = True
-        self.update()
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):
-        self._hover = False
-        self.update()
-        super().leaveEvent(event)
-
-    # ── paint ────────────────────────────────────────────────────────────────
-
-    def paintEvent(self, event: QPaintEvent):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        is_dark = "dark" in self._modo
-        d = self.width()
-        rect = QRectF(1, 1, d - 2, d - 2)
-
-        # Background surface (elevated en hover)
-        surf_key = (
-            "elevatedSolid"
-            if (self._hover and is_dark)
-            else "elevated"
-            if self._hover
-            else "surfaceSolid"
-            if is_dark
-            else "surface"
-        )
-        bg = v3c(surf_key, self._modo)
-        p.setBrush(QBrush(bg))
-        p.setPen(Qt.PenStyle.NoPen)
-        p.drawEllipse(rect)
-
-        # Border sutil
-        border_key = "borderStrong" if self._hover else "borderSoft"
-        p.setPen(QPen(v3c(border_key, self._modo), 1))
-        p.setBrush(Qt.BrushStyle.NoBrush)
-        p.drawEllipse(QRectF(0.5, 0.5, d - 1, d - 1))
-
-        # Icono SVG centrado
-        if _nm_svg_pixmap is not None and _has_v3_icon(self._icon_name):
-            icon_size = max(14, int(d * 0.45))
-            color = v3c("text", self._modo).name()
-            pix = _nm_svg_pixmap(self._icon_name, color, icon_size)
-            if pix is not None and not pix.isNull():
-                px = (d - icon_size) // 2
-                p.drawPixmap(px, px, pix)
-        p.end()
-
-    # ── theme ────────────────────────────────────────────────────────────────
-
-    def _apply_shadow(self):
-        eff = v3_shadow("sm", self._modo, parent=self)
-        self.setGraphicsEffect(eff)
-
-    def _apply_theme(self, modo: str):
-        self._modo = norm_modo(modo)
-        self.setStyleSheet(focus_ring_stylesheet(self._modo))
-        if not self._disabled and self.isEnabled():
-            if self._card_shadow is None:
-                self._card_shadow = QGraphicsDropShadowEffect(self)
-            is_dark = "dark" in self._modo
-            self._card_shadow.setBlurRadius(30 if is_dark else 12)
-            self._card_shadow.setOffset(0, 10 if is_dark else 4)
-            sc = v3c("teal", self._modo) if is_dark else QColor(15, 23, 42, 13)
-            if is_dark:
-                sc.setAlpha(115)
-            self._card_shadow.setColor(sc)
-            self.setGraphicsEffect(self._card_shadow)
-        self.update()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
