@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from PyQt6.QtCore import QEasingCurve, QPointF, QPropertyAnimation, QRectF, Qt, pyqtProperty
 from PyQt6.QtGui import QBrush, QColor, QPaintEvent, QPainter, QPen
-from PyQt6.QtWidgets import QAbstractButton, QGraphicsDropShadowEffect, QPushButton
+from PyQt6.QtWidgets import QAbstractButton, QComboBox, QGraphicsDropShadowEffect, QPushButton
 
 from shared.theme_manager import ThemeManager
-from shared.theme_qt import focus_ring_stylesheet, norm_modo, v3_shadow, v3c
+from shared.theme_qt import focus_ring_stylesheet, norm_modo, qfont, stylesheet_combobox, v3_shadow, v3c
 
 try:
     from shared.icons_svg import has_icon as _has_v3_icon, nm_svg_pixmap as _nm_svg_pixmap
@@ -22,6 +22,22 @@ except ImportError:
 def _tm() -> ThemeManager:
     """Shorthand interno."""
     return ThemeManager.instance()
+
+
+class NMSelect(QComboBox):
+    """QComboBox themed según runtime spec §4.3."""
+
+    def __init__(self, parent=None, modo: str | None = None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo or _tm().modo)
+        self.setMinimumHeight(36)
+        self.setFont(qfont("size_body"))
+        self._apply_theme(self._modo)
+        _tm().theme_changed.connect(self._apply_theme)
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self.setStyleSheet(stylesheet_combobox(self._modo))
 
 
 class NMToggle(QAbstractButton):

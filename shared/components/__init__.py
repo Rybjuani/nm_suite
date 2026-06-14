@@ -119,6 +119,8 @@ _LEAF_EXPORT_MODULES = {
     "NMHubSidebar": "shared.components.surfaces",
     "NMFeaturedCard": "shared.components.cards",
     "NMAIDisclaimer": "shared.components.session",
+    "NMDayNote": "shared.components.session",
+    "ThemeManager": "shared.theme_manager",
 }
 
 
@@ -128,12 +130,6 @@ def __getattr__(name: str):
     if name in _LEAF_EXPORT_MODULES:
         module = import_module(_LEAF_EXPORT_MODULES[name])
         value = getattr(module, name)
-        globals()[name] = value
-        return value
-    if name in __all__:
-        from shared import components_qt
-
-        value = getattr(components_qt, name)
         globals()[name] = value
         return value
     raise AttributeError(f"module 'shared.components' has no attribute {name!r}")

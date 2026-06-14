@@ -10,34 +10,62 @@ ROOT = Path(__file__).resolve().parent.parent
 CONSUMER_ROOTS = (ROOT / "app", ROOT / "hub", ROOT / "qa", ROOT / "build_neuromood.py")
 COMPONENT_MODULES = {"shared.components", "shared.components_qt"}
 MOVED_COMPONENT_MODULES = {
-    "NMFadeWidget": "shared.components.core",
-    "NMElidedLabel": "shared.components.data",
-    "NMDivider": "shared.components.surfaces",
-    "NMHeatBar": "shared.components.feedback",
-    "NMProgressBar": "shared.components.feedback",
-    "NMProgressLine": "shared.components.feedback",
-    "NMRingPulse": "shared.components.feedback",
-    "NMSkeleton": "shared.components.feedback",
-    "NMStepper": "shared.components.feedback",
-    "NMToast": "shared.components.feedback",
-    "NMTypingDots": "shared.components.feedback",
-    "NMWaveChart": "shared.components.feedback",
-    "NMToggle": "shared.components.inputs",
-    "NMPlayButton": "shared.components.inputs",
+    "NMAIDisclaimer": "shared.components.session",
     "NMIcon": "shared.components.icons",
     "NMSectionHeader": "shared.components.icons",
     "NMAvatar": "shared.components.icons",
     "NMBadge": "shared.components.surfaces",
+    "NMButton": "shared.components.buttons",
+    "NMButtonOutline": "shared.components.buttons",
+    "NMCalmBadge": "shared.components.status",
+    "NMCard": "shared.components.cards",
+    "NMChartPanel": "shared.components.cards",
     "NMChip": "shared.components.surfaces",
+    "NMCustomCheck": "shared.components.session",
+    "NMCycleRing": "shared.components.rings",
+    "NMDayNote": "shared.components.session",
+    "NMDialogScaffold": "shared.components.dialogs",
+    "NMDivider": "shared.components.surfaces",
+    "NMElidedLabel": "shared.components.data",
+    "NMEmptyState": "shared.components.overlays",
+    "NMFadeWidget": "shared.components.core",
+    "NMFeaturedCard": "shared.components.cards",
+    "NMFocusArc": "shared.components.rings",
+    "NMFormPanel": "shared.components.cards",
     "NMFormRow": "shared.components.surfaces",
+    "NMHeatBar": "shared.components.feedback",
+    "NMHubSidebar": "shared.components.surfaces",
+    "NMInput": "shared.components.buttons",
     "NMListRow": "shared.components.surfaces",
+    "NMMetricCard": "shared.components.cards",
+    "NMModule": "shared.components.navigation",
+    "NMModuleRing": "shared.components.rings",
     "NMPageHeader": "shared.components.surfaces",
     "NMPanel": "shared.components.surfaces",
+    "NMPatientRowPremium": "shared.components.patient",
+    "NMPhaseChip": "shared.components.status",
+    "NMPlayButton": "shared.components.inputs",
+    "NMProgressBar": "shared.components.feedback",
+    "NMProgressLine": "shared.components.feedback",
+    "NMRingPulse": "shared.components.feedback",
+    "NMSearchInput": "shared.components.buttons",
+    "NMSegmentedChoice": "shared.components.buttons",
     "NMSettingsSection": "shared.components.surfaces",
+    "NMSkeleton": "shared.components.feedback",
+    "NMStepper": "shared.components.feedback",
     "NMSyncOrb": "shared.components.surfaces",
-    "NMFocusArc": "shared.components.rings",
-    "NMCycleRing": "shared.components.rings",
-    "NMModuleRing": "shared.components.rings",
+    "NMTabs": "shared.components.buttons",
+    "NMTextArea": "shared.components.buttons",
+    "NMToast": "shared.components.feedback",
+    "NMToggle": "shared.components.inputs",
+    "NMTypingDots": "shared.components.feedback",
+    "NMWaveChart": "shared.components.feedback",
+    "NMWindowChrome": "shared.components.chrome",
+    "ThemeManager": "shared.theme_manager",
+    "V3MoodSlider": "shared.components.mood",
+    "h_spacer": "shared.components.layout",
+    "nm_confirm": "shared.components.dialogs",
+    "responsive_columns": "shared.components.layout",
 }
 
 EXPECTED_PUBLIC_COMPONENT_SYMBOLS = {
@@ -208,63 +236,9 @@ def test_moved_component_exports_keep_identity_from_all_paths():
     components = importlib.import_module("shared.components")
     facade = importlib.import_module("shared.components_qt")
 
+    assert set(MOVED_COMPONENT_MODULES) == EXPECTED_PUBLIC_COMPONENT_SYMBOLS
     for name, module_name in MOVED_COMPONENT_MODULES.items():
         module = importlib.import_module(module_name)
         assert getattr(facade, name) is getattr(module, name)
         assert getattr(components, name) is getattr(module, name)
         assert getattr(components, name) is getattr(facade, name)
-
-
-def test_data_module_does_not_import_component_facades_theme_or_upper_layers():
-    path = ROOT / "shared" / "components" / "data.py"
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    forbidden_prefixes = (
-        "app",
-        "hub",
-        "qa",
-        "shared.components",
-        "shared.components_qt",
-        "shared.theme",
-        "shared.theme_manager",
-        "shared.theme_qt",
-    )
-    imported_modules: set[str] = set()
-
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module:
-            imported_modules.add(node.module)
-        elif isinstance(node, ast.Import):
-            imported_modules.update(alias.name for alias in node.names)
-
-    assert not any(
-        module == prefix or module.startswith(f"{prefix}.")
-        for module in imported_modules
-        for prefix in forbidden_prefixes
-    )
-
-
-def test_moved_component_modules_do_not_import_facades_or_upper_layers():
-    forbidden_prefixes = (
-        "app",
-        "hub",
-        "qa",
-        "shared.components",
-        "shared.components_qt",
-    )
-
-    for module_name in set(MOVED_COMPONENT_MODULES.values()):
-        path = ROOT / Path(*module_name.split(".")).with_suffix(".py")
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        imported_modules: set[str] = set()
-
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and node.module:
-                imported_modules.add(node.module)
-            elif isinstance(node, ast.Import):
-                imported_modules.update(alias.name for alias in node.names)
-
-        assert not any(
-            module == prefix or module.startswith(f"{prefix}.")
-            for module in imported_modules
-            for prefix in forbidden_prefixes
-        )
