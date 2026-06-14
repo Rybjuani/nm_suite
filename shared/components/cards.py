@@ -1244,10 +1244,13 @@ class NMFeaturedCard(QFrame):
         self._slash_lbl.setStyleSheet("background: transparent;")
         score_row.addWidget(self._slash_lbl)
 
-        self._emoji_lbl = QLabel("\U0001f610")
-        self._emoji_lbl.setFont(qfont("size_h2"))
-        self._emoji_lbl.setStyleSheet("background: transparent;")
-        score_row.addWidget(self._emoji_lbl)
+        # Punto de valencia (color por banda de score). NO es un emoji: la fuente
+        # del app no trae glifos de color, así que 😊/😐/😞 salía como □ (tofu)
+        # junto al "6.4 / 10". El punto usa tokens del tema y siempre renderiza.
+        self._score_val: float | None = None
+        self._mood_dot = QLabel()
+        self._mood_dot.setFixedSize(12, 12)
+        score_row.addWidget(self._mood_dot, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self._delta_lbl = QLabel()
         self._delta_lbl.setFont(qfont("size_caption", bold=True))
@@ -1289,9 +1292,30 @@ class NMFeaturedCard(QFrame):
         self._apply_theme(self._modo)
         _tm().theme_changed.connect(self._apply_theme)
 
+    @staticmethod
+    def _mood_token(score: float) -> str:
+        """Banda de valencia → token de color (calmo, sin rojo pleno en bajo)."""
+        if score < 4:
+            return "warning"
+        if score < 7:
+            return "accent"
+        return "teal"
+
+    def _paint_mood_dot(self) -> None:
+        if self._score_val is None:
+            self._mood_dot.setStyleSheet("background: transparent;")
+            return
+        col = C(self._mood_token(self._score_val), self._modo)
+        self._mood_dot.setStyleSheet(
+            f"background: {col}; border-radius: 6px;"
+        )
+
     def set_score(self, score: float, emoji: str = "\U0001f610"):
+        # `emoji` se mantiene por compatibilidad de API pero ya no se renderiza
+        # como glifo (tofu): la valencia se muestra con un punto de color.
+        self._score_val = float(score)
         self._score_lbl.setText(f"{score:.1f}")
-        self._emoji_lbl.setText(emoji)
+        self._paint_mood_dot()
         self.update()
 
     def set_delta(self, delta):
@@ -1391,7 +1415,7 @@ class NMFeaturedCard(QFrame):
             f"color: {C('text_primary', self._modo)}; background: transparent;"
         )
         self._slash_lbl.setStyleSheet(label_style(self._modo, "text_tertiary"))
-        self._emoji_lbl.setStyleSheet("background: transparent;")
+        self._paint_mood_dot()
         if self._sub_lbl.isVisible():
             self._sub_lbl.setStyleSheet(label_style(self._modo, "text_tertiary"))
         # Re-aplicar delta con los nuevos colores de tema

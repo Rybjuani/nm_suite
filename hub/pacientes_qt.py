@@ -321,8 +321,11 @@ def _build_animo_graph(
         plot.setMinimumHeight(132)
         plot.setMaximumHeight(172)
     else:
-        plot.setMinimumHeight(156)
-        plot.setMaximumHeight(176)
+        # Registros (Fase 4): gráfico menos dominante para que la lista de
+        # registros quede visible sin scroll inicial. Antes 156-176px empujaba
+        # las filas fuera del viewport 960×600.
+        plot.setMinimumHeight(132)
+        plot.setMaximumHeight(148)
 
     # Eje Y — padding inferior y altura del eje X suficientes para que la
     # etiqueta "0" no se recorte (feedback owner v1.0: en la mayoría de los
@@ -1421,8 +1424,23 @@ class _TabRegistros(QWidget):
 
             distinct_days = len({r.get("fecha", "")[:10] for r in animo if r.get("fecha")})
             adherence_pct = min(1.0, distinct_days / 7)
-            ring = NMModuleRing(size=48, pct=adherence_pct, modo=self._modo, parent=animo_frame)
-            stats_row.addWidget(ring, alignment=Qt.AlignmentFlag.AlignRight)
+            # Ring de adherencia explicado (Fase 4): antes el "71%" flotaba sin
+            # contexto. Ahora lleva caption "Adherencia 7d" y tooltip con el
+            # detalle (N de 7 días con registro).
+            ring_wrap = QWidget()
+            ring_wrap.setStyleSheet("background: transparent;")
+            rwl = QVBoxLayout(ring_wrap)
+            rwl.setContentsMargins(0, 0, 0, 0)
+            rwl.setSpacing(2)
+            ring = NMModuleRing(size=44, pct=adherence_pct, modo=self._modo, parent=ring_wrap)
+            rwl.addWidget(ring, alignment=Qt.AlignmentFlag.AlignHCenter)
+            ring_cap = QLabel("Adherencia 7d")
+            ring_cap.setFont(qfont("size_caption_xs"))
+            ring_cap.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+            ring_cap.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+            ring_cap.setToolTip(f"{distinct_days} de 7 días con registro")
+            rwl.addWidget(ring_cap)
+            stats_row.addWidget(ring_wrap, alignment=Qt.AlignmentFlag.AlignRight)
             avl.addLayout(stats_row)
 
             # Gráfico pyqtgraph
