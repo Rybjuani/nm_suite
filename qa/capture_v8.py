@@ -1218,7 +1218,7 @@ def _rutina_complete_all(win, qapp, action):
         except Exception:
             pass
     try:
-        from shared.components_qt import NMCustomCheck
+        from shared.components import NMCustomCheck
         custom_checks = [
             w for w in target.findChildren(NMCustomCheck)
             if w.isVisible()
@@ -1394,7 +1394,7 @@ def _clear_hub_patients(win, qapp, action):
 @_register_helper
 def _pacientes_search(win, qapp, action):
     """Escribe busqueda en Pacientes."""
-    from shared.components_qt import NMSearchInput
+    from shared.components import NMSearchInput
     for search_widget in win.findChildren(NMSearchInput):
         if search_widget.isVisible():
             search_widget.set_text("Ana")
@@ -1988,7 +1988,7 @@ def _execute_actions(win, actions: list[dict], qapp, app_key: str,
                         tb.setCurrentIndex(i)
                         break
             # Tambien buscar NMTabs (custom)
-            from shared.components_qt import NMTabs
+            from shared.components import NMTabs
             for child in target_win.findChildren(NMTabs):
                 if hasattr(child, 'set_current') and hasattr(child, '_labels'):
                     for i, label in enumerate(child._labels):

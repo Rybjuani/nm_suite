@@ -237,7 +237,7 @@ def apply_child_window_chrome(
     El import de `NMWindowChrome` es local para evitar un ciclo de import entre
     `shared.components_qt` y este módulo. No se hardcodean colores: el chrome usa tokens.
     """
-    from shared.components_qt import NMWindowChrome  # import local: evita ciclo
+    from shared.components import NMWindowChrome  # import local: evita ciclo
 
     window.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Window)
     chrome = NMWindowChrome(
