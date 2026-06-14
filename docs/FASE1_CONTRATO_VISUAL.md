@@ -2,12 +2,11 @@
 
 ## Baseline De Comparacion
 - Baseline Fase 0: `qa/_baseline_f0_phase01` (132 PNGs — directorio canónico, gitignored).
-- Manifest baseline: no generado en `_baseline_f0_phase01/`; el manifest disponible es `qa/_captures_v8/CAPTURE_MANIFEST.json` (124 capturas, generado antes de añadir las 4 recetas nuevas — pendiente re-run `--all` para sincronizar a 132).
+- Manifest activo: `qa/_captures_v8/CAPTURE_MANIFEST.json` — generado 2026-06-14T18:57:00, 132 capturas, 0 fallos, 0 duplicados, unique_hash_count=132.
+- Regenerar con: `python qa/capture_v8.py --all --no-clean`
 - Matriz versionable: `docs/QA_V8_BASELINE_MATRIX.md`.
-- Capturas baseline: 132/132 en `_baseline_f0_phase01/`, 0 fallas tecnicas.
-- Evidencia tecnica valida antes de inspeccion manual: 102.
-- Estado global visual: parcial — 6 filas pre-inspeccionadas por flags; 126 requieren revision visual PNG.
-- Comparacion post-Fase-1: pendiente — ejecutar `python qa/capture_v8.py --all --out-dir qa/_captures_f1_post` y comparar contra baseline.
+- Capturas post-Fase-2: 132/132, 0 fallos, state_valid=106, REQUIRES_DATA_STATE=16, REQUIRES_RUNTIME=8, WRONG_VIEW=2.
+- Estado global visual: parcial — 14 filas inspeccionadas; 118 pendientes de revision visual PNG.
 
 ## Densidades
 - Suite: `suite_comfortable`.

@@ -47,7 +47,18 @@
 - `#HubMain` presente en QSS (test parity).
 - 85/85 tests OK. Ruff 0 errores. py_compile OK.
 
-## Cierre Pendiente
-- Sin commit aún (esperando que el owner limpie la rama).
-- Capturas evidencia: pendiente — ejecutar `python qa/capture_v8.py --all` para dashboard, pacientes, detalle y sidebar colapsada light+dark.
-- Luego commit Fase 2 conjunto con Fase 0+1.
+## Capturas Evidencia (inspeccionadas 2026-06-14)
+
+| Vista | Dark | Light | Resultado |
+|---|---|---|---|
+| Dashboard | hub-dashboard-dark-960x600.png | hub-dashboard-light-960x600.png | parcial (REQUIRES_DATA_STATE; chrome/sidebar OK) |
+| Pacientes | hub-pacientes-dark-960x600.png | hub-pacientes-light-960x600.png | parcial (REQUIRES_DATA_STATE; chrome/sidebar OK) |
+| Detalle | hub-detalle-dark-960x600.png | hub-detalle-light-960x600.png | revisado — viewport recovery efectivo, Estado legal visible sin scroll |
+| Sidebar colapsada | hub-sidebar-collapsed-dark-960x600.png | hub-sidebar-collapsed-light-960x600.png | revisado — iconos legibles, footer limpio |
+
+Deuda identificada (fuera de alcance Fase 2, registrada para Fase 4): glifo □ junto a "6.4 /10" en detalle resumen.
+
+## Estado
+- **CERRADA** — implementación `748c909b` + capturas inspeccionadas + matriz actualizada.
+- Fase 3 (Hub Dashboard, Pacientes y Personalización) es el siguiente paso.
+- No iniciar Fase 3 hasta commit de cierre de este doc.
