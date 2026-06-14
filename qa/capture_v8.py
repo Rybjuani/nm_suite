@@ -139,6 +139,18 @@ _RECIPE_EVIDENCE_FLAGS: dict[tuple[str, str], dict[str, list[str]]] = {
     },
     # editor-tcc-template ELIMINADA: el editor de plantilla TCC fue demolido
     # (reorganización user feedback — el Plan terapéutico asigna solo 4 módulos).
+    ("suite", "pin-recovery"): {
+        "flags": [_STATUS_REQUIRES_RUNTIME],
+        "notes": ["Standalone PIN recovery does not prove the live forgot-PIN route or password-verify lifecycle."],
+    },
+    ("hub", "detalle-exportar"): {
+        "flags": [_STATUS_REQUIRES_RUNTIME],
+        "notes": ["Standalone export modal does not prove the live PDF generation workflow or file-save lifecycle."],
+    },
+    ("hub", "pacientes-unlink-confirm"): {
+        "flags": [_STATUS_REQUIRES_RUNTIME],
+        "notes": ["Standalone unlink confirmation does not prove the live unlink route or data-hide lifecycle."],
+    },
 }
 
 
@@ -551,6 +563,13 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "pin-setup"}],
         },
+        "pin-recovery": {
+            "label": "Recuperar acceso (verificar contraseña)",
+            "parent": "privacy-lock",
+            "actions": [{"action": "call", "func": "_build_pin_recovery"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture", "view": "pin-recovery"}],
+        },
     },
 
     # ═══════════════════════════════════════════════════════════════════════
@@ -735,6 +754,25 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "capture", "view": "editor-text-overrides"}],
         },
         # editor-tcc-template ELIMINADA (editor demolido, user feedback).
+
+        "detalle-exportar": {
+            "label": "Detalle > Exportar informe (modal)",
+            "parent": "detalle",
+            "actions": [{"action": "navigate", "view": "detalle"},
+                        {"action": "drain", "cycles": 8},
+                        {"action": "call", "func": "_open_export_modal"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture", "view": "detalle-exportar"}],
+        },
+        "pacientes-unlink-confirm": {
+            "label": "Pacientes > Confirmar quitar paciente",
+            "parent": "pacientes",
+            "actions": [{"action": "navigate", "view": "pacientes"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "call", "func": "_open_unlink_confirm"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture", "view": "pacientes-unlink-confirm"}],
+        },
     },
 }
 
@@ -1003,8 +1041,6 @@ def _respiracion_pause(win, qapp, action):
 def _respiracion_toggle_history(win, qapp, action):
     """Abre/cierra historial de respiracion."""
     target = getattr(win, '_current_module', None) or win
-    if hasattr(target, '_btn_hist_toggle') and target._btn_hist_toggle is not None:
-        target._btn_hist_toggle.setChecked(True)
     if hasattr(target, '_toggle_history'):
         target._toggle_history()
     _drain(qapp, cycles=6)
@@ -1194,7 +1230,7 @@ def _rutina_complete_all(win, qapp, action):
         except Exception:
             pass
     try:
-        from shared.components_qt import NMCustomCheck
+        from shared.components import NMCustomCheck
         custom_checks = [
             w for w in target.findChildren(NMCustomCheck)
             if w.isVisible()
@@ -1211,9 +1247,7 @@ def _rutina_complete_all(win, qapp, action):
 def _rutina_open_add_task(win, qapp, action):
     """Abre el formulario inline para agregar tarea en Rutina."""
     target = _module_target(win)
-    if hasattr(target, '_on_new_task_hero'):
-        target._on_new_task_hero()
-    elif hasattr(target, '_on_section_add'):
+    if hasattr(target, '_on_section_add'):
         target._on_section_add("manana")
     _drain(qapp, cycles=6)
 
@@ -1342,7 +1376,7 @@ def _clear_hub_patients(win, qapp, action):
 @_register_helper
 def _pacientes_search(win, qapp, action):
     """Escribe busqueda en Pacientes."""
-    from shared.components_qt import NMSearchInput
+    from shared.components import NMSearchInput
     for search_widget in win.findChildren(NMSearchInput):
         if search_widget.isVisible():
             search_widget.set_text("Ana")
@@ -1374,6 +1408,99 @@ def _sidebar_collapse(win, qapp, action):
     if hasattr(win, 'set_sidebar_collapsed'):
         win.set_sidebar_collapsed(True)
     _drain(qapp, cycles=6)
+
+
+@_register_helper
+def _build_pin_recovery(win, qapp, action):
+    """Construye _PINRecoveryDialog standalone para captura visual."""
+    from app.privacy_lock_qt import _PINRecoveryDialog
+    from PyQt6.QtWidgets import QApplication
+    from shared.theme_qt import stylesheet_base
+    modo = getattr(win, '_modo', 'dark_hybrid') if win else 'dark_hybrid'
+    qa = QApplication.instance()
+    if qa:
+        qa.setStyleSheet(stylesheet_base(modo))
+    dlg = _PINRecoveryDialog(parent=None, modo=modo)
+    dlg.show()
+    _drain(qapp, cycles=6)
+    globals()['_CURRENT_STANDALONE'] = dlg
+
+
+@_register_helper
+def _open_export_modal(win, qapp, action):
+    """Abre el modal 'Exportar informe' desde el Resumen del detalle.
+
+    Parchea QDialog.exec → show() temporalmente para que el modal no bloquee
+    el event loop en modo offscreen.
+    """
+    from PyQt6.QtWidgets import QDialog, QApplication
+
+    det = win._stack.currentWidget() if hasattr(win, "_stack") else None
+    tab_resumen = getattr(det, "_tab_resumen", None)
+    if tab_resumen is None or not hasattr(tab_resumen, "_abrir_modal_exportacion"):
+        return
+
+    _patched = False
+    try:
+        QDialog.exec = lambda self: self.show() or 0  # type: ignore[attr-defined]
+        _patched = True
+    except Exception:
+        pass
+
+    try:
+        tab_resumen._abrir_modal_exportacion()
+    finally:
+        if _patched:
+            try:
+                del QDialog.exec  # type: ignore[attr-defined]
+            except AttributeError:
+                pass
+
+    _drain(qapp, cycles=6)
+    for tl in QApplication.topLevelWidgets():
+        if isinstance(tl, QDialog) and tl.isVisible() and tl is not win:
+            globals()['_CURRENT_STANDALONE'] = tl
+            break
+
+
+@_register_helper
+def _open_unlink_confirm(win, qapp, action):
+    """Abre el diálogo de confirmación 'Quitar paciente' en el Hub."""
+    from PyQt6.QtWidgets import QDialog, QApplication
+
+    if not hasattr(win, "_confirm_unlink"):
+        return
+
+    _patched = False
+    try:
+        QDialog.exec = lambda self: self.show() or 0  # type: ignore[attr-defined]
+        _patched = True
+    except Exception:
+        pass
+
+    try:
+        pacientes = list(getattr(win, "_pacientes", []) or [])
+        if pacientes:
+            p = pacientes[0]
+            win._confirm_unlink(
+                p.get("patient_id", "demo-pid"),
+                p.get("patient_name", "Demo Paciente"),
+                p.get("patient_email", "demo@example.com"),
+            )
+        else:
+            win._confirm_unlink("demo-pid", "Demo Paciente", "demo@example.com")
+    finally:
+        if _patched:
+            try:
+                del QDialog.exec  # type: ignore[attr-defined]
+            except AttributeError:
+                pass
+
+    _drain(qapp, cycles=6)
+    for tl in QApplication.topLevelWidgets():
+        if isinstance(tl, QDialog) and tl.isVisible() and tl is not win:
+            globals()['_CURRENT_STANDALONE'] = tl
+            break
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1936,7 +2063,7 @@ def _execute_actions(win, actions: list[dict], qapp, app_key: str,
                         tb.setCurrentIndex(i)
                         break
             # Tambien buscar NMTabs (custom)
-            from shared.components_qt import NMTabs
+            from shared.components import NMTabs
             for child in target_win.findChildren(NMTabs):
                 if hasattr(child, 'set_current') and hasattr(child, '_labels'):
                     for i, label in enumerate(child._labels):
