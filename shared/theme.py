@@ -239,6 +239,20 @@ V3_SPACE = {
     "xxl": 20,
     "xxxl": 24,
 }
+
+# Roles semánticos de spacing — apuntan a claves V3_SPACE sin redefinir valores.
+# Presupuestos canónicos: 16 px (gaps/card-padding-compact),
+# 24 px (content-padding/main-gaps), 32 px (section separation).
+# Consúmelos en lugar de literales cuando el rol sea claro.
+V3_SPACE_ROLES = {
+    "content_padding": V3_SPACE["3xl"],     # 24 — padding de áreas de contenido
+    "card_padding": V3_SPACE["2xl"],        # 20 — padding interior de card
+    "gap_cards": V3_SPACE["xl"],            # 16 — separación entre cards
+    "section_spacing": V3_SPACE["4xl"],     # 32 — separación entre secciones mayores
+    "gap_elements": V3_SPACE["md"],         # 10 — gap entre elementos inline
+    "gap_dense": V3_SPACE["sm"],            # 6  — gap denso (Hub compact)
+}
+
 V3_RADIUS = {"sm": 8, "md": 12, "lg": 16, "xl": 16, "xxl": 22, "pill": 999, "card": 16, "input": 12}
 
 # Shadows en formato consumible por QGraphicsDropShadowEffect:
