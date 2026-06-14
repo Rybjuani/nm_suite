@@ -114,6 +114,8 @@ _LEAF_EXPORT_MODULES = {
     "NMPatientRowPremium": "shared.components.patient",
     "NMModule": "shared.components.navigation",
     "NMWindowChrome": "shared.components.chrome",
+    "NMDialogScaffold": "shared.components.dialogs",
+    "nm_confirm": "shared.components.dialogs",
 }
 
 
