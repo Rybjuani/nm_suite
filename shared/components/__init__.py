@@ -112,6 +112,7 @@ _LEAF_EXPORT_MODULES = {
     "NMMetricCard": "shared.components.cards",
     "V3MoodSlider": "shared.components.mood",
     "NMPatientRowPremium": "shared.components.patient",
+    "NMModule": "shared.components.navigation",
 }
 
 
