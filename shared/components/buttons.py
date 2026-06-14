@@ -904,11 +904,6 @@ class NMTextArea(QTextEdit):
 class NMTabs(QWidget):
     """Tabs custom (pill o underline). API minimal independiente de QTabWidget.
 
-    variant="pill"      → pills con fondo relleno (para filtros de lista y navegación
-                          de alto contraste como las tabs principales del Hub).
-    variant="underline" → indicador de subrayado 2px sin fondo (para tabs de sección
-                          dentro de cards o paneles; visualmente distinto de filtros).
-
     Uso:
         t = NMTabs(["Todos", "Activos", "Sin registros"])
         t.changed.connect(self._on_tab)
@@ -926,7 +921,7 @@ class NMTabs(QWidget):
     ):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
-        self._variant = variant if variant in ("pill", "underline") else "pill"
+        self._variant = "pill"
         self._labels = list(labels or [])
         self._current = 0
         self._btns: list[QPushButton] = []
@@ -934,7 +929,7 @@ class NMTabs(QWidget):
 
         self._lay = QHBoxLayout(self)
         self._lay.setContentsMargins(0, 0, 0, 0)
-        self._lay.setSpacing(V3_SP["xs"] if self._variant == "pill" else 0)
+        self._lay.setSpacing(V3_SP["xs"])
         self._build_buttons()
         _tm().theme_changed.connect(self._apply_theme)
         self._apply_theme(self._modo)
@@ -986,43 +981,22 @@ class NMTabs(QWidget):
             f"{border.blue()},{max(border.alpha(), 24)})"
         )
         for i, b in enumerate(self._btns):
+            b.setMinimumHeight(_NM_TAB_HEIGHT)
+            b.setFont(qfont(_NM_TAB_FONT, weight=_NM_CONTROL_WEIGHT))
             checked = i == self._current
-            if self._variant == "underline":
-                # Underline: sin fondo ni radio — solo indicador 2px abajo.
-                # Visualmente distinto de filtros pill; para tabs de sección.
-                b.setMinimumHeight(_NM_TAB_HEIGHT + 4)
-                b.setFont(qfont(_NM_TAB_FONT, weight=_NM_CONTROL_WEIGHT))
-                if checked:
-                    b.setStyleSheet(
-                        f"QPushButton {{ background: transparent; color: {primary}; "
-                        f"border: none; border-bottom: 2px solid {primary}; "
-                        f"padding: 4px 16px 2px 16px; border-radius: 0px; }}"
-                    )
-                else:
-                    b.setStyleSheet(
-                        f"QPushButton {{ background: transparent; color: {text_muted}; "
-                        f"border: none; border-bottom: 2px solid transparent; "
-                        f"padding: 4px 16px 2px 16px; border-radius: 0px; }}"
-                        f"QPushButton:hover {{ color: {text}; "
-                        f"border-bottom: 2px solid {soft_css}; }}"
-                    )
+            if checked:
+                b.setStyleSheet(
+                    f"QPushButton {{ background: {primary}; color: {primary_ink}; "
+                    f"border: none; padding: 4px 14px; "
+                    f"border-radius: {_NM_TAB_RADIUS - 3}px; }}"
+                )
             else:
-                # Pill (default): fondo relleno con radio
-                b.setMinimumHeight(_NM_TAB_HEIGHT)
-                b.setFont(qfont(_NM_TAB_FONT, weight=_NM_CONTROL_WEIGHT))
-                if checked:
-                    b.setStyleSheet(
-                        f"QPushButton {{ background: {primary}; color: {primary_ink}; "
-                        f"border: none; padding: 4px 14px; "
-                        f"border-radius: {_NM_TAB_RADIUS - 3}px; }}"
-                    )
-                else:
-                    b.setStyleSheet(
-                        f"QPushButton {{ background: {surface_2}; color: {text_muted}; "
-                        f"border: 1px solid {soft_css}; padding: 4px 14px; "
-                        f"border-radius: {_NM_TAB_RADIUS - 3}px; }}"
-                        f"QPushButton:hover {{ color: {text}; }}"
-                    )
+                b.setStyleSheet(
+                    f"QPushButton {{ background: {surface_2}; color: {text_muted}; "
+                    f"border: 1px solid {soft_css}; padding: 4px 14px; "
+                    f"border-radius: {_NM_TAB_RADIUS - 3}px; }}"
+                    f"QPushButton:hover {{ color: {text}; }}"
+                )
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
