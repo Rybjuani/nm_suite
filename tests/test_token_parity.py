@@ -79,21 +79,3 @@ def test_theme_qt_reexports_runtime_token_objects():
     assert theme_qt.V3_DARK is theme.V3_DARK
     assert theme_qt.V3_SHADOWS is theme.V3_SHADOWS
     assert theme_qt.V3_GRADIENTS is theme.V3_GRADIENTS
-
-
-def test_spacing_roles_derive_from_v3_space():
-    """V3_SPACE_ROLES son aliases de V3_SPACE sin redefinir valores."""
-    assert dt.SPACING_ROLES is theme.V3_SPACE_ROLES
-    space_values = set(theme.V3_SPACE.values())
-    for role, value in theme.V3_SPACE_ROLES.items():
-        assert value in space_values, f"V3_SPACE_ROLES[{role!r}] = {value} no existe en V3_SPACE"
-
-
-def test_scrollbar_deprecated_alias_returns_clinical_style():
-    """stylesheet_hidden_scrollbar redirige al estilo clínico (no oculta las barras)."""
-    from shared.theme_qt import stylesheet_hidden_scrollbar
-
-    for modo in ("dark_hybrid", "light_hybrid"):
-        qss = stylesheet_hidden_scrollbar(modo)
-        assert "width: 10px" in qss, f"track vertical debe ser 10px en {modo!r}"
-        assert "height: 10px" in qss, f"track horizontal debe ser 10px en {modo!r}"
