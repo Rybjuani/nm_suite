@@ -48,6 +48,41 @@ BP_STACK = 720      # < BP_STACK  → apilar columnas verticalmente
 BP_AUX_PANEL = 1040  # < BP_AUX_PANEL → ocultar panel auxiliar (preview) o mandarlo a tab/colapso
 
 
+# ── Perfiles de densidad UI ────────────────────────────────────────────────────
+# Dos perfiles derivados del MISMO sistema de tokens: solo varían spacing,
+# padding, alturas y distribución. No crean paleta, tipografía ni componentes
+# propios. Consúmelos con `density_profile("suite")` o `density_profile("hub")`.
+#
+# Los valores usan las claves canónicas V3_SPACE (xl=16, 2xl=20, 3xl=24, 4xl=32)
+# como presupuestos recomendados — no reemplazan los tokens sino que eligen cuáles
+# usar según el rol de la aplicación.
+
+DENSITY_PATIENT_COMFORTABLE: dict[str, int | str] = {
+    # Suite — cómodo, respirado; para pacientes con baja carga cognitiva.
+    "content_padding": 24,   # V3_SPACE["3xl"]
+    "card_padding": 20,      # LAYOUT["padding_card"]
+    "gap_cards": 16,         # V3_SPACE["xl"]
+    "section_spacing": 32,   # V3_SPACE["4xl"]
+    "input_height": 36,      # altura canónica control
+    "button_default_size": "md",
+}
+
+DENSITY_PROFESSIONAL_COMPACT: dict[str, int | str] = {
+    # Hub — compacto, eficiente; para profesionales con alta densidad de info.
+    "content_padding": 16,   # V3_SPACE["xl"]
+    "card_padding": 14,      # V3_SPACE["lg"]
+    "gap_cards": 10,         # V3_SPACE["md"]
+    "section_spacing": 24,   # V3_SPACE["3xl"]
+    "input_height": 32,      # altura compacta control
+    "button_default_size": "sm",
+}
+
+
+def density_profile(app_role: str = "suite") -> dict[str, int | str]:
+    """Devuelve el perfil de densidad para 'suite' (patient_comfortable) o 'hub' (professional_compact)."""
+    return DENSITY_PROFESSIONAL_COMPACT if app_role == "hub" else DENSITY_PATIENT_COMFORTABLE
+
+
 def surface_width_class(width: int) -> str:
     """Clasifica el ancho de una superficie en 'stack' | 'compact' | 'wide'.
 
