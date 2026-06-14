@@ -2006,8 +2006,12 @@ class _TabIA(QWidget):
             self._qa_seed_draft()
 
     def _mk_ia_meta(self) -> QLabel:
-        """Metadata canon del bloque IA (tablero 06): 'generado · editable'."""
-        lbl = QLabel("generado · editable")
+        """Meta de bloque IA — VACÍA (Fase 6: reducir ruido borrador/generado/
+        editable). El aviso de borrador vive una sola vez en el banner superior y
+        cada bloque ya conserva su chip 'Borrador' + botón 'Editar'; el mono
+        'generado · editable' repetido ×4 era redundante. Se mantiene el QLabel
+        (vacío, 0px) para no tocar los ~9 call sites que togglean su visibilidad."""
+        lbl = QLabel("")
         lbl.setFont(qfont_mono(TYPOGRAPHY["size_caption"]))
         lbl.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"

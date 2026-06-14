@@ -1253,12 +1253,13 @@ class NMAIDisclaimer(QFrame):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        bg_color = C("warning_bg", self._modo)
-        warning_color = v3c("warning", self._modo)
-        warning_color.setAlpha(130 if "dark" in self._modo else 110)
-        border_color = qcolor_to_rgba_css(warning_color)
-        icon_color = v3c("warning", self._modo).name()
-        ink_color = C("warning_ink", self._modo)
+        # Aviso NEUTRAL (Fase 6): antes era una caja amber/warning dominante que
+        # competía con el contenido. Ahora superficie+borde calmos y texto/icono
+        # secundarios — sigue presente y legible, pero como nota, no alarma.
+        bg_color = v3c("surface2", self._modo).name()
+        border_color = qcolor_to_rgba_css(v3c("borderSoft", self._modo))
+        icon_color = v3c("ink_secondary", self._modo).name()
+        ink_color = v3c("ink_secondary", self._modo).name()
         self.setStyleSheet(
             f"QFrame#NMAIDisclaimer {{ "
             f"background-color: {bg_color}; "
