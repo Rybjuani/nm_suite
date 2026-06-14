@@ -52,7 +52,7 @@ from PyQt6.QtWidgets import (
 )
 
 try:
-    from shared.components_qt import (
+    from shared.components import (
         NMModule,
         NMButton,
         NMButtonOutline,
@@ -96,7 +96,7 @@ except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
-    from shared.components_qt import (
+    from shared.components import (
         NMModule,
         NMButton,
         NMButtonOutline,
