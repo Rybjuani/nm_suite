@@ -71,7 +71,7 @@ from shared.adaptive_layout_qt import (
     window_edge_radius,
 )
 from shared.qt_thread import init_gui_invoker
-from shared.components_qt import (
+from shared.components import (
     ThemeManager,
     NMFadeWidget,
     NMButton,
@@ -970,7 +970,7 @@ class PacientesView(QWidget):
         la Suite del paciente detecta el flag y deja de sincronizar (queda
         offline-only). Si el paciente retoma, crea una cuenta nueva.
         """
-        from shared.components_qt import NMButtonOutline, NMDialogScaffold
+        from shared.components import NMButtonOutline, NMDialogScaffold
 
         dialog = QDialog(self.window())
         dialog.setWindowTitle("Quitar paciente")

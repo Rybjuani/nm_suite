@@ -21,7 +21,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
 )
 
-from shared.components_qt import (
+from shared.components import (
     NMButtonOutline,
     NMBadge,
     NMCard,
