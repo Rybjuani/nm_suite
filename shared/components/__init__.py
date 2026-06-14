@@ -118,6 +118,7 @@ _LEAF_EXPORT_MODULES = {
     "nm_confirm": "shared.components.dialogs",
     "NMHubSidebar": "shared.components.surfaces",
     "NMFeaturedCard": "shared.components.cards",
+    "NMAIDisclaimer": "shared.components.session",
 }
 
 
