@@ -2090,7 +2090,7 @@ def hub_density_qss(object_name: str = HUB_DENSITY_OBJECT_NAME) -> str:
         f"{sel} QLineEdit:focus, {sel} QTextEdit:focus, {sel} QPlainTextEdit:focus, "
         f"{sel} QComboBox:focus {{ border-width: {d['focus_border_width']}px; }}\n"
         f"{sel} QTabBar::tab {{ min-height: {d['tab_height']}px; "
-        f"padding: 2px {d['tab_pad_x']}px; }}\n"
+        f"padding: 2px {d['tab_pad_x']}px; margin: 2px 2px; }}\n"
         f'{sel} QPushButton[role="subtab"], {sel} QPushButton[variant="subtab"] {{ '
         f"min-height: {d['subtab_height']}px; padding: 2px {d['tab_pad_x']}px; "
         f"border-radius: {compact_radius}px; }}\n"

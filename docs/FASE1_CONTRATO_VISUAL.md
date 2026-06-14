@@ -1,13 +1,13 @@
 # Fase 1 - Contrato Visual Y Densidades
 
 ## Baseline De Comparacion
-- Baseline Fase 0: `qa/_baseline_f0_phase01`.
-- Manifest: `qa/_baseline_f0_phase01/CAPTURE_MANIFEST.json`.
+- Baseline Fase 0: `qa/_baseline_f0_phase01` (132 PNGs — directorio canónico, gitignored).
+- Manifest baseline: no generado en `_baseline_f0_phase01/`; el manifest disponible es `qa/_captures_v8/CAPTURE_MANIFEST.json` (124 capturas, generado antes de añadir las 4 recetas nuevas — pendiente re-run `--all` para sincronizar a 132).
 - Matriz versionable: `docs/QA_V8_BASELINE_MATRIX.md`.
-- Capturas: 132/132 generadas, 0 fallas tecnicas.
-- Evidencia tecnica valida: 132.
-- Evidencia de estado valida antes de inspeccion manual: 102.
-- Estado global visual: parcial hasta completar inspeccion manual fila por fila.
+- Capturas baseline: 132/132 en `_baseline_f0_phase01/`, 0 fallas tecnicas.
+- Evidencia tecnica valida antes de inspeccion manual: 102.
+- Estado global visual: parcial — 6 filas pre-inspeccionadas por flags; 126 requieren revision visual PNG.
+- Comparacion post-Fase-1: pendiente — ejecutar `python qa/capture_v8.py --all --out-dir qa/_captures_f1_post` y comparar contra baseline.
 
 ## Densidades
 - Suite: `suite_comfortable`.

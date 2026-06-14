@@ -393,7 +393,7 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "capture", "view": "respiracion-paused"}],
         },
         "respiracion-historial": {
-            "label": "Respiracion + historial",
+            "label": "Respiracion historial vacio (card sin sesiones previas)",
             "parent": None,
             "actions": [{"action": "navigate", "view": "respiracion"},
                         {"action": "call", "func": "_respiracion_toggle_history"},
@@ -1074,12 +1074,21 @@ def _respiracion_pause(win, qapp, action):
 
 @_register_helper
 def _respiracion_toggle_history(win, qapp, action):
-    """Abre/cierra historial de respiracion."""
+    """Muestra historial vacío en Respiracion.
+
+    La card de historial es estática (siempre visible). En QA mode `visual_qa_enabled()`
+    `_load_recent_sessions` devuelve 4 sesiones demo, por lo que la captura base
+    ya tiene historial poblado. Esta receta la parchea para mostrar el empty-state
+    ("Sin sesiones."), dando contraste real respecto a `respiracion` default.
+    """
     target = getattr(win, '_current_module', None) or win
-    if hasattr(target, '_btn_hist_toggle') and target._btn_hist_toggle is not None:
-        target._btn_hist_toggle.setChecked(True)
-    if hasattr(target, '_toggle_history'):
-        target._toggle_history()
+    if hasattr(target, '_cargar_historial') and hasattr(target, '_load_recent_sessions'):
+        _orig = target._load_recent_sessions
+        target._load_recent_sessions = lambda limit=4: []
+        try:
+            target._cargar_historial()
+        finally:
+            target._load_recent_sessions = _orig
     _drain(qapp, cycles=6)
 
 

@@ -1069,17 +1069,17 @@ class NMHubSidebar(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         lay = QVBoxLayout(self)
         self._layout = lay
-        lay.setContentsMargins(8, 10, 8, 10)
+        lay.setContentsMargins(8, 6, 8, 6)
         lay.setSpacing(4)
         self._logo_icon = QLabel()
         self._logo_icon.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        self._logo_icon.setContentsMargins(12, 10, 12, 10)
+        self._logo_icon.setContentsMargins(12, 6, 12, 6)
         self._logo_icon.setStyleSheet("background: transparent;")
         self._section_title = QLabel(
             "Herramientas" if product.lower() == "suite" else "Panel Profesional"
         )
         self._section_title.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
-        self._section_title.setContentsMargins(12, 0, 12, 10)
+        self._section_title.setContentsMargins(12, 0, 12, 6)
         self._section_title.setStyleSheet("background: transparent;")
         if self._product == "suite":
             self._logo_icon.hide()
@@ -1111,7 +1111,7 @@ class NMHubSidebar(QWidget):
             self._footer.setFont(v3_font("size_caption", "weight_semibold", serif=True))
         except Exception:
             self._footer.setFont(qfont("size_caption"))
-        self._footer.setContentsMargins(10, 10, 10, 4)
+        self._footer.setContentsMargins(10, 6, 10, 4)
         self._footer.setWordWrap(True)
         lay.addWidget(self._footer)
         self._apply_theme(self._modo)
@@ -1155,10 +1155,10 @@ class NMHubSidebar(QWidget):
                     from shared.assets import nm_logo_pixmap
 
                     self._logo_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                    self._logo_icon.setContentsMargins(0, 10, 0, 10)
-                    self._logo_icon.setFixedHeight(48)
+                    self._logo_icon.setContentsMargins(0, 6, 0, 6)
+                    self._logo_icon.setFixedHeight(40)
                     self._logo_icon.setPixmap(
-                        nm_logo_pixmap(self._modo, tipo="icon", width=30, height=30)
+                        nm_logo_pixmap(self._modo, tipo="icon", width=28, height=28)
                     )
                     self._logo_icon.show()
                     self._section_title.hide()
@@ -1170,8 +1170,8 @@ class NMHubSidebar(QWidget):
                     self._logo_icon.setAlignment(
                         Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
                     )
-                    self._logo_icon.setContentsMargins(12, 10, 12, 10)
-                    self._logo_icon.setFixedHeight(56)
+                    self._logo_icon.setContentsMargins(12, 6, 12, 6)
+                    self._logo_icon.setFixedHeight(44)
                     if os.path.exists(logo_path):
                         pm = QPixmap(logo_path)
                         self._logo_icon.setPixmap(
@@ -1229,9 +1229,9 @@ class NMHubSidebar(QWidget):
 
         for key, btn in self._buttons.items():
             active = key == self._active
-            btn.setFixedHeight(38)
+            btn.setFixedHeight(34)
             align = "center" if self._collapsed else "left"
-            padding = "8px 0px" if self._collapsed else "8px 10px"
+            padding = "6px 0px" if self._collapsed else "6px 10px"
             radius = 12 if self._collapsed else 8
             btn.setStyleSheet(
                 f"QPushButton {{"

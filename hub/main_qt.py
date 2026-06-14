@@ -1322,7 +1322,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         footer = QWidget()
         footer.setStyleSheet("background: transparent;")
         footer_layout = QHBoxLayout(footer)
-        footer_layout.setContentsMargins(12, 8, 12, 12)
+        footer_layout.setContentsMargins(10, 6, 10, 8)
         footer_layout.setSpacing(8)
 
         self._sync_orb = NMSyncOrb(state="syncing", size=12, modo=self._modo, parent=footer)
@@ -1376,9 +1376,9 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         self._lbl_status = QLabel("", self)
         self._lbl_status.hide()
 
-        # Stack. M3 premium: aire uniforme inferior/derecho para que ninguna vista
+        # Stack. M3 premium: aire inferior/derecho para que ninguna vista
         # quede pegada al borde de la ventana (respiración global, Hub-only).
-        rl.setContentsMargins(0, 0, 12, 12)
+        rl.setContentsMargins(0, 0, 12, 8)
         self._stack = NMFadeWidget(right)
         rl.addWidget(self._stack)
 

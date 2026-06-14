@@ -47,7 +47,7 @@ class _ChromeWinBtn(QPushButton):
         super().__init__(parent)
         self._kind = kind  # "min" | "max" | "close"
         self._modo = norm_modo(modo)
-        self.setFixedSize(46, 38)
+        self.setFixedSize(46, 32)
         self.setFlat(True)
         self.setCursor(Qt.CursorShape.ArrowCursor)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -195,7 +195,7 @@ class NMWindowChrome(QWidget):
         self._show_maximize = show_maximize
         self._drag_pos = None
 
-        self.setFixedHeight(38)
+        self.setFixedHeight(32)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
         self.setMouseTracking(True)
 
