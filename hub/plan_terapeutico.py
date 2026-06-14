@@ -25,7 +25,7 @@ from PyQt6.QtWidgets import (
     QScrollArea,
 )
 
-from shared.components_qt import NMButton, NMButtonOutline, NMCard, NMInput, NMToast, nm_confirm
+from shared.components import NMButton, NMButtonOutline, NMCard, NMInput, NMToast, nm_confirm
 from shared.theme_qt import (
     norm_modo,
     qfont,

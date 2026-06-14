@@ -55,7 +55,7 @@ from shared.adaptive_layout_qt import (
 from shared.qt_thread import run_on_gui
 
 try:
-    from shared.components_qt import (
+    from shared.components import (
         NMModule,
         NMButton,
         NMButtonOutline,
@@ -118,7 +118,7 @@ except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
-    from shared.components_qt import (
+    from shared.components import (
         NMButton,
         NMButtonOutline,
         NMCard,
@@ -572,7 +572,7 @@ class _TabResumen(QWidget):
 
         tags_lay = QHBoxLayout()
         tags_lay.setSpacing(6)
-        from shared.components_qt import NMBadge
+        from shared.components import NMBadge
 
         if visual_qa_enabled():
             tags_lay.addWidget(NMBadge("Depresión", modo=self._modo))
@@ -1514,7 +1514,7 @@ class _TabRegistros(QWidget):
         root_lay.setContentsMargins(0, 0, 0, 0)
         root_lay.setSpacing(0)
 
-        from shared.components_qt import NMDialogScaffold
+        from shared.components import NMDialogScaffold
 
         scaffold = NMDialogScaffold(
             title="Exportar informe",
@@ -1703,7 +1703,7 @@ class _TabIA(QWidget):
         pass  # IA reads datos_ref.cache on demand
 
     def _setup(self):
-        from shared.components_qt import NMAIDisclaimer, NMBadge
+        from shared.components import NMAIDisclaimer, NMBadge
 
         colors(self._modo)
         layout = QVBoxLayout(self)

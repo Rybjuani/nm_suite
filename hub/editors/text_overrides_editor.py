@@ -20,7 +20,7 @@ from PyQt6.QtWidgets import (
 )
 
 from shared.adaptive_layout_qt import BP_AUX_PANEL
-from shared.components_qt import (
+from shared.components import (
     NMButton,
     NMButtonOutline,
     NMCard,
