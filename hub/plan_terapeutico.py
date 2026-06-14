@@ -79,15 +79,32 @@ def _make_reset_button(owner: QWidget, modo: str, mensaje: str, on_confirm) -> N
     return btn
 
 
-def _empty_hint_label(text: str, modo: str) -> QLabel:
-    """Estado vacío calmo (texto secundario con wrap), no un QLabel crudo."""
+def _empty_hint_label(text: str, modo: str) -> QWidget:
+    """Estado vacío calmo y CENTRADO para los paneles del Plan.
+
+    Antes: un QLabel suelto arriba-izquierda dejaba el panel viéndose "roto"/
+    vacío (paneles enormes vacíos). Ahora el texto secundario se centra (h+v)
+    dentro de un bloque con presencia vertical, leyéndose como estado vacío
+    intencional. Wrap en QWidget → se centra incluso bajo list_lay AlignTop.
+    """
+    modo = norm_modo(modo)
+    wrap = QWidget()
+    wrap.setStyleSheet("background: transparent;")
+    wrap.setMinimumHeight(220)
+    wl = QVBoxLayout(wrap)
+    wl.setContentsMargins(V3_SP["lg"], V3_SP["lg"], V3_SP["lg"], V3_SP["lg"])
+    wl.setSpacing(0)
+    wl.addStretch()
     lbl = QLabel(text)
     lbl.setWordWrap(True)
     lbl.setFont(qfont("size_small"))
+    lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
     lbl.setStyleSheet(
-        f"color: {v3c('ink_secondary', norm_modo(modo)).name()}; background: transparent;"
+        f"color: {v3c('ink_secondary', modo).name()}; background: transparent;"
     )
-    return lbl
+    wl.addWidget(lbl)
+    wl.addStretch()
+    return wrap
 
 
 def _tab_scroll_wrap(body: QWidget, modo: str) -> QScrollArea:
@@ -345,7 +362,7 @@ class _PresetTimerTab(QWidget):
             return
         self._preview_body.setText(f"{name}\n{secs} min · {cat}")
 
-    def _empty_hint(self, text: str) -> QLabel:
+    def _empty_hint(self, text: str) -> QWidget:
         return _empty_hint_label(text, self._modo)
 
     def _load_presets(self):
