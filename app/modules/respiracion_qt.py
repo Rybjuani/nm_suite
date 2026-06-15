@@ -908,20 +908,24 @@ class ModuloRespiracion(NMModule):
         chr_lay.addWidget(self._session_lbl)
         stats_layout.addWidget(self._chrono_card, stretch=1)
 
-        self._bpm_card = NMCard(modo=self._modo, clickable=False)
-        self._bpm_card.setFixedHeight(72)
-        bpm_lay = QVBoxLayout(self._bpm_card)
-        bpm_lay.setContentsMargins(14, 12, 14, 12)
-        bpm_lay.setSpacing(2)
-        self._bpm_eyebrow = QLabel("BPM")
-        self._bpm_eyebrow.setFont(eyebrow_font())
-        self._bpm_value_lbl = QLabel("—")
-        self._bpm_value_lbl.setFont(val_font)
-        bpm_lay.addWidget(self._bpm_eyebrow)
-        bpm_lay.addWidget(self._bpm_value_lbl)
-        stats_layout.addWidget(self._bpm_card, stretch=1)
-        # Keep NMCalmBadge dormant for theme-compat; hidden, not shown.
-        self._calm_badge = NMCalmBadge(bpm=60, modo=self._modo, parent=self._bpm_card)
+        # Tercera card: "Ciclos" (conteo real de ciclos 4-7-8 completados).
+        # Antes era "BPM" mostrando un pulso cardíaco SIMULADO (RSA con ruido
+        # aleatorio): parecía una lectura biométrica real sin serlo (la app no
+        # mide pulso). Fase 9 lo reemplaza por una métrica honesta y verificable.
+        self._ciclos_card = NMCard(modo=self._modo, clickable=False)
+        self._ciclos_card.setFixedHeight(72)
+        ciclos_lay = QVBoxLayout(self._ciclos_card)
+        ciclos_lay.setContentsMargins(14, 12, 14, 12)
+        ciclos_lay.setSpacing(2)
+        self._ciclos_eyebrow = QLabel("Ciclos")
+        self._ciclos_eyebrow.setFont(eyebrow_font())
+        self._ciclos_value_lbl = QLabel("—")
+        self._ciclos_value_lbl.setFont(val_font)
+        ciclos_lay.addWidget(self._ciclos_eyebrow)
+        ciclos_lay.addWidget(self._ciclos_value_lbl)
+        stats_layout.addWidget(self._ciclos_card, stretch=1)
+        # NMCalmBadge (badge de pulso) permanece oculto/dormido por theme-compat.
+        self._calm_badge = NMCalmBadge(bpm=60, modo=self._modo, parent=self._ciclos_card)
         self._calm_badge.setVisible(False)
 
         # P2.E: card "Calma" removida — duplicaba info de BPM/calma que ya muestra
@@ -995,7 +999,7 @@ class ModuloRespiracion(NMModule):
         for lbl in (
             self._range_lbl,
             self._chrono_eyebrow,
-            self._bpm_eyebrow,
+            self._ciclos_eyebrow,
             self._calm_eyebrow,
             self._pattern_eyebrow,
             self._bio_guide_lbl,
@@ -1104,8 +1108,8 @@ class ModuloRespiracion(NMModule):
         self._circle.reset_idle()
         self._session_lbl.setText("00:00")
         self._chrono_meta.setText("Listo para comenzar")
-        if hasattr(self, "_bpm_value_lbl"):
-            self._bpm_value_lbl.setText("—")
+        if hasattr(self, "_ciclos_value_lbl"):
+            self._ciclos_value_lbl.setText("—")
         if hasattr(self, "_calm_pct_lbl"):
             self._calm_pct_lbl.setText("—")
         self._update_phase_chips(None)
@@ -1169,20 +1173,10 @@ class ModuloRespiracion(NMModule):
             if hasattr(self, "_calm_pct_lbl"):
                 calm_target = 0.45 + session_progress * 0.5
                 self._calm_pct_lbl.setText(f"{int(min(calm_target, 0.95) * 100)}%")
-            if hasattr(self, "_bpm_value_lbl"):
-                # Simular arritmia sinusal respiratoria (RSA) de forma orgánica:
-                # El ritmo sube al inhalar y baja al exhalar/mantener, relajándose con el tiempo.
-                import random
-                base = 68.0 - (session_progress * 6.0)
-                phase_progress_f = self._phase_ms / (phase_dur * 1000.0)
-                if phase_name == "Inhala":
-                    val = (base - 3.0) + (11.0 * phase_progress_f)
-                elif phase_name == "Mantiene":
-                    val = (base + 8.0) - (5.0 * phase_progress_f)
-                else:  # "Exhala"
-                    val = (base + 3.0) - (11.0 * phase_progress_f)
-                val += random.uniform(-0.6, 0.6)
-                self._bpm_value_lbl.setText(str(int(round(val))))
+            if hasattr(self, "_ciclos_value_lbl"):
+                # Conteo real de ciclos 4-7-8 completados en la sesión (no una
+                # métrica biométrica simulada): honesto, determinista y verificable.
+                self._ciclos_value_lbl.setText(str(self._ciclos))
 
             self._session_ms += interval
             s_total = self._session_ms // 1000
@@ -1305,9 +1299,14 @@ class ModuloRespiracion(NMModule):
         if not sessions:
             empty = QLabel(t("text.module.respiracion.empty_state", "Sin sesiones."))
             empty.setFont(qfont("size_small"))
+            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty.setStyleSheet(
                 f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
             )
+            # Centrar (h+v) el estado vacío: antes el label quedaba suelto
+            # arriba-izquierda en un panel alto (se veía "roto"). Stretch
+            # arriba/abajo + AlignCenter → estado vacío intencional.
+            self._hist_row.addStretch()
             self._hist_row.addWidget(empty)
             self._hist_row.addStretch()
             return
