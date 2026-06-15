@@ -32,14 +32,15 @@
 - `pytest tests/` → **85 passed**
 
 ## Capturas evidencia (inspeccionadas 2026-06-14, light + dark)
-| Vista | Resultado |
-|---|---|
-| `hub-dashboard-{dark,light}` | revisado — KPIs compactos + badges, card módulos sin hueco |
-| `hub-pacientes-{dark,light}` | revisado — ring 36px legible, X danger, filas escaneables |
-| `hub-personalizacion-{dark,light}` | revisado — lista alineada, botones consistentes |
-| `hub-personalizacion-textos-{dark,light}` | revisado — acciones en fila alineada |
+| Vista | Inspección | Resultado matriz |
+|---|---|---|
+| `hub-dashboard-{dark,light}` | revisado_f3 — KPIs compactos + badges, card módulos sin hueco | **parcial** (conserva REQUIRES_DATA_STATE) |
+| `hub-pacientes-{dark,light}` | revisado_f3 — ring 36px legible, X danger, filas escaneables | **parcial** (conserva REQUIRES_DATA_STATE) |
+| `hub-personalizacion-{dark,light}` | revisado_f3 — lista alineada, botones consistentes | revisado |
+| `hub-personalizacion-textos-{dark,light}` | revisado_f3 — acciones en fila alineada | revisado |
 
 ## Deuda pendiente exacta
+- `dashboard` y `pacientes` (vistas default): la inspección visual de los cambios de Fase 3 quedó OK (`revisado_f3`), pero el **resultado de matriz se mantiene `parcial`** porque conservan el flag `REQUIRES_DATA_STATE` — el estado de datos real (no el mock QA) no queda probado. Corrección aplicada 2026-06-14.
 - Estados *data-dependent* siguen `parcial` por diseño (no es deuda de Fase 3): `dashboard-empty`, `pacientes-empty`, `pacientes-filter-*`, `pacientes-search` → requieren ausencia/composición real de datos, no mock QA.
 - `editor-text-overrides` (variante standalone navegable, QA-only) sigue `parcial` (REQUIRES_RUNTIME): no prueba chrome ni ciclo de vida lanzado desde el Hub. La ruta real (`personalizacion-textos`) sí quedó revisada.
 

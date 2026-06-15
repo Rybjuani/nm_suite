@@ -23,6 +23,7 @@ from PyQt6.QtWidgets import (
     QTabWidget,
     QFrame,
     QScrollArea,
+    QSizePolicy,
 )
 
 from shared.components import NMButton, NMButtonOutline, NMCard, NMInput, NMToast, nm_confirm
@@ -80,19 +81,26 @@ def _make_reset_button(owner: QWidget, modo: str, mensaje: str, on_confirm) -> N
 
 
 def _empty_hint_label(text: str, modo: str) -> QWidget:
-    """Estado vacío calmo y CENTRADO para los paneles del Plan.
+    """Estado vacío calmo del Plan: compacto y anclado bajo el encabezado.
 
-    Antes: un QLabel suelto arriba-izquierda dejaba el panel viéndose "roto"/
-    vacío (paneles enormes vacíos). Ahora el texto secundario se centra (h+v)
-    dentro de un bloque con presencia vertical, leyéndose como estado vacío
-    intencional. Wrap en QWidget → se centra incluso bajo list_lay AlignTop.
+    Antes (v0): un QLabel suelto arriba-izquierda dejaba el panel viéndose
+    "roto". Fase 5 lo centró (h+v) con minHeight 220 — pero a 960×600 el panel
+    derecho hereda la altura del formulario (muy alto) y el mensaje quedaba
+    flotando en el centro de un panel enorme y vacío. Ahora es una banda
+    compacta (≤132px, vertical=Maximum para no estirarse a todo el panel)
+    centrada en horizontal y anclada arriba (la lista usa AlignTop): se lee como
+    "lista vacía" sin reservar un vacío gigante.
     """
     modo = norm_modo(modo)
     wrap = QWidget()
     wrap.setStyleSheet("background: transparent;")
-    wrap.setMinimumHeight(220)
+    # Expanding horizontal → el texto centra sobre todo el ancho del panel.
+    # Maximum vertical + maxHeight → no se estira para llenar el panel alto.
+    wrap.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+    wrap.setMinimumHeight(96)
+    wrap.setMaximumHeight(132)
     wl = QVBoxLayout(wrap)
-    wl.setContentsMargins(V3_SP["lg"], V3_SP["lg"], V3_SP["lg"], V3_SP["lg"])
+    wl.setContentsMargins(V3_SP["lg"], V3_SP["xl"], V3_SP["lg"], V3_SP["lg"])
     wl.setSpacing(0)
     wl.addStretch()
     lbl = QLabel(text)
