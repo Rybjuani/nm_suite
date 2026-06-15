@@ -12,8 +12,8 @@ Estructura según design_handoff_neuromood_v3 (Suite > TCC):
                                        distorsiones detectadas + tip glow)
                        4. Respuesta  (textarea)
                 RIGHT: _ResumenCard con datos acumulados
-  Nav           NMButtonOutline ghost "Anterior" + NMButton gradient
-                "Siguiente"/"Guardar"
+  Nav           NMButton secondary "Anterior" (botón real, no texto suelto) +
+                NMButton gradient "Siguiente"/"Guardar" (CTA final distinguible)
   Footer        _RegistrosPreviosTable con últimos 5 registros
 
 LÓGICA DE NEGOCIO PRESERVADA EXACTA:
@@ -620,11 +620,15 @@ class ModuloRegistroTCC(NMModule):
         self._error_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         sc_lay.addWidget(self._error_lbl)
 
-        # Nav (Anterior ghost + Siguiente/Guardar gradient)
+        # Nav (Anterior secondary real + Siguiente/Guardar gradient).
+        # Antes "Anterior" era variant="ghost": sin borde ni fondo se leía como
+        # texto suelto, no como botón (Fase 8). Ahora secondary → borde visible
+        # y jerarquía clara frente al CTA primario de la derecha.
         nav_layout = QHBoxLayout()
         nav_layout.setSpacing(V3_SP["sm"])
         self._btn_prev = NMButton(
-            "Anterior", parent=self._content, modo=self._modo, variant="ghost", size="md", width=120
+            "Anterior", parent=self._content, modo=self._modo, variant="secondary", size="md",
+            width=120,
         )
         self._btn_prev.clicked.connect(self._prev_step)
         nav_layout.addWidget(self._btn_prev)
@@ -1310,6 +1314,18 @@ class ModuloRegistroTCC(NMModule):
         # heatbar queda None y el INSERT fallaba. El control arranca en 5/10, así
         # que ese es el valor por defecto cuando no se declaró intensidad.
         intensidad = d["intensidad"] if d.get("intensidad") is not None else 5
+
+        # Éxito determinista en modo QA visual (Fase 8): la evidencia de la
+        # página de éxito no debe depender de un INSERT real (que ante un fallo
+        # dispararía el toast de error y arruinaría la captura) ni ensuciar la DB
+        # con registros de captura. Producción conserva el INSERT + toast ante un
+        # fallo genuino de guardado.
+        if visual_qa_enabled():
+            self._show_success_page()
+            self._cargar_registros_previos()
+            QTimer.singleShot(3000, lambda: self._reset() if not sip.isdeleted(self) else None)
+            return
+
         try:
             with conexion() as conn:
                 conn.execute(
