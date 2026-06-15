@@ -537,7 +537,12 @@ class _SuggestedCard(NMCard):
         self._btn_no = NMButton("No pude", variant="secondary", size="sm", modo=self._modo, width=78)
         self._btn_no.clicked.connect(lambda: self.skipped.emit(self._nombre))
         footer.addWidget(self._btn_no)
-        self._btn_yes = NMButton("Hice", variant="primary", size="sm", modo=self._modo, width=78)
+        # "Hice" y "No pude" con jerarquía EQUIVALENTE (Fase 10): antes "Hice"
+        # era variant="primary" (gradient dominante) y empujaba al usuario hacia
+        # el "éxito". En activación conductual ambas respuestas son válidas y
+        # honestas → ambos botones secondary, mismo peso visual, se distinguen
+        # por la etiqueta.
+        self._btn_yes = NMButton("Hice", variant="secondary", size="sm", modo=self._modo, width=78)
         self._btn_yes.clicked.connect(lambda: self.completed.emit(self._nombre))
         footer.addWidget(self._btn_yes)
         lay.addLayout(footer)

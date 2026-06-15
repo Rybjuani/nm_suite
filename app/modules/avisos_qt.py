@@ -377,6 +377,11 @@ class _ReminderCardV3(QFrame):
             "Completar", variant="secondary", size="sm", modo=self._modo, width=98
         )
         self._btn_done.setFixedHeight(28)
+        # Conserva el ancho aunque se oculte (filas completadas): mantiene la
+        # columna de badges alineada con las filas pendientes (ver _apply_card_styles).
+        _sp = self._btn_done.sizePolicy()
+        _sp.setRetainSizeWhenHidden(True)
+        self._btn_done.setSizePolicy(_sp)
         self._btn_done.clicked.connect(lambda: self.completed.emit(self._id))
         lay.addWidget(self._btn_done)
 
@@ -424,9 +429,12 @@ class _ReminderCardV3(QFrame):
             f"color: {stat_color}; background: {bg_stat}; border-radius: 11px;"
         )
         if self._done:
-            self._btn_done.setText("Hecho")
-            self._btn_done.setEnabled(False)
+            # Sin duplicación visual Completado/Hecho (Fase 10): el estado ya lo
+            # comunica el badge "Completado"; se oculta el botón "Hecho"
+            # redundante (no hay acción posible sobre un aviso ya completado).
+            self._btn_done.setVisible(False)
         else:
+            self._btn_done.setVisible(True)
             self._btn_done.setText("Completar")
             self._btn_done.setEnabled(self._activo)
 
