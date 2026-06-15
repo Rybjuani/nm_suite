@@ -536,6 +536,36 @@ class _TipCard(NMCard):
         self._apply_tip_styles()
 
 
+def _persistir_pensamiento(d: dict, intensidad: int) -> None:
+    """Persiste un registro TCC en la tabla ``pensamientos`` (guardado REAL).
+
+    Seam testeable extraído de ``_guardar`` (Fase 11). El modo QA visual salta
+    deliberadamente este INSERT (sólo muestra la página de éxito), así que el
+    guardado real quedaba sin cubrir por la evidencia. Tenerlo como función a
+    nivel de módulo permite verificar persistencia, constraints (intensidad
+    BETWEEN 0 AND 10) y manejo de errores con una SQLite temporal y QA
+    desactivado, sin instanciar la UI ni tocar ``nm_data.db``. Cualquier
+    excepción se propaga al caller (``_guardar`` la traduce en toast de error).
+    """
+    with conexion() as conn:
+        conn.execute(
+            "INSERT INTO pensamientos "
+            "(fecha, hora, situacion, emocion, intensidad, pensamiento, "
+            "respuesta_alternativa, distorsiones) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                fecha_hoy(),
+                hora_actual(),
+                d["situacion"],
+                d["emocion"],
+                intensidad,
+                d["pensamiento"],
+                d["respuesta"],
+                d["distorsiones"],
+            ),
+        )
+
+
 # ── ModuloRegistroTCC v3 ────────────────────────────────────────────────────
 
 
@@ -1327,23 +1357,7 @@ class ModuloRegistroTCC(NMModule):
             return
 
         try:
-            with conexion() as conn:
-                conn.execute(
-                    "INSERT INTO pensamientos "
-                    "(fecha, hora, situacion, emocion, intensidad, pensamiento, "
-                    "respuesta_alternativa, distorsiones) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    (
-                        fecha_hoy(),
-                        hora_actual(),
-                        d["situacion"],
-                        d["emocion"],
-                        intensidad,
-                        d["pensamiento"],
-                        d["respuesta"],
-                        d["distorsiones"],
-                    ),
-                )
+            _persistir_pensamiento(d, intensidad)
         except Exception:
             _log.exception("Error guardando registro TCC")
             NMToast.display(self.window(), "Error al guardar el registro", variant="error")
