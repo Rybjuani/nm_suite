@@ -55,7 +55,7 @@ _THEME_MAP = {"light": "light_hybrid", "dark": "dark_hybrid"}
 # (las ex-vistas top-level presets/textos/ia ya no existen).
 _VIEWS = {
     "suite": ["home", "animo", "respiracion", "timer", "avisos",
-              "registro", "rutina", "actividades", "evolucion"],
+              "registro", "rutina", "actividades", "dbt"],
     "hub": ["dashboard", "pacientes", "detalle", "detalle_plan", "detalle_ia",
             "personalizacion"],
 }
@@ -337,6 +337,26 @@ def main() -> int:
     # internas (subproceso child)
     p.add_argument("--_child", action="store_true", help=argparse.SUPPRESS)
     args = p.parse_args()
+
+    if not args.list and not os.environ.get("NEUROMOOD_TEST_DB"):
+        import tempfile
+        import atexit
+        temp_db_dir = tempfile.mkdtemp(prefix="nm_qa_db_")
+        db_file = Path(temp_db_dir) / "test_nm_data.db"
+        os.environ["NEUROMOOD_TEST_DB"] = str(db_file)
+
+        from shared.db import inicializar_tablas
+        try:
+            inicializar_tablas()
+        except Exception as e:
+            print(f"[QA SETUP WARNING] Failed to initialize tables: {e}", file=sys.stderr)
+
+        def cleanup_temp_db():
+            if os.path.exists(temp_db_dir):
+                import shutil
+                shutil.rmtree(temp_db_dir, ignore_errors=True)
+        atexit.register(cleanup_temp_db)
+        print(f"[QA] Using isolated database: {db_file}")
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

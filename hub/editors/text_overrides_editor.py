@@ -87,9 +87,10 @@ TEXT_KEYS = [
     
     ("text.module.avisos.eyebrow", "Recordatorios", "Etiqueta de recordatorios", 20, "Recordatorios de Bienestar"),
     
-    ("text.module.evolucion.eyebrow", "Evolución anímica", "Etiqueta de evolución", 20, "Evolución Anímica"),
-    ("text.module.evolucion.weekly_title", "Variación del Humor Semanal", "Título de vista semanal", 40, "Evolución Anímica"),
-    ("text.module.evolucion.monthly_title", "Variación del Humor Mensual (30 Días)", "Título de vista mensual", 40, "Evolución Anímica"),
+    ("text.module.dbt.eyebrow", "Práctica de habilidades", "Etiqueta de habilidades", 30, "Habilidades DBT"),
+    ("text.module.dbt.now_prompt", "¿Qué necesitás en este momento?", "Pregunta inicial", 50, "Habilidades DBT"),
+    ("text.module.dbt.empty_history", "Todavía no guardaste prácticas.", "Texto de historial vacío", 50, "Habilidades DBT"),
+    ("text.module.dbt.safety_note", "Esta es una herramienta educativa para la práctica de habilidades. No reemplaza la atención profesional ni de emergencia.", "Leyenda de seguridad clínica", 150, "Habilidades DBT"),
 ]
 
 

@@ -376,6 +376,46 @@ def _exportar_activacion(sb, patient_id: str, desde: str):
         _log.debug("_exportar_activacion: tabla remota ausente o error (pendiente de crear)")
 
 
+def _exportar_dbt_practicas(sb, patient_id: str, desde: str):
+    """Exporta los registros locales de dbt_practicas a la tabla remota dbt_practice_records.
+    No bloquea todo el sync si la tabla remota todavía no fue desplegada, pero registra
+    el error de forma visible en los logs.
+    """
+    try:
+        conn = obtener_conexion()
+        rows = conn.execute(
+            "SELECT record_id, fecha, hora, skill_id, skill_version, familia, necesidad, "
+            "malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at "
+            "FROM dbt_practicas WHERE created_at >= ? ORDER BY created_at",
+            (desde,),
+        ).fetchall()
+        conn.close()
+        if not rows:
+            return
+        payload = [
+            {
+                "record_id": r["record_id"],
+                "patient_id": patient_id,
+                "fecha": r["fecha"],
+                "hora": r["hora"],
+                "skill_id": r["skill_id"],
+                "skill_version": r["skill_version"],
+                "familia": r["familia"],
+                "necesidad": r["necesidad"] or "",
+                "malestar_antes": r["malestar_antes"],
+                "malestar_despues": r["malestar_despues"],
+                "resultado": r["resultado"],
+                "duracion_seg": r["duracion_seg"],
+                "nota": r["nota"] or "",
+                "created_at": r["created_at"],
+            }
+            for r in rows
+        ]
+        sb.table("dbt_practice_records").upsert(payload, on_conflict="record_id").execute()
+    except Exception as e:
+        _log.error("Fallo la exportacion de dbt_practicas a la tabla remota dbt_practice_records: %s", e)
+
+
 # ── Importación (nube → paciente) ─────────────────────────────────────────────
 
 
@@ -960,6 +1000,7 @@ def sync_completo(patient_id: str = None, nombre: str = None) -> bool:
         _exportar_temporizador(sb, pid, desde)
         _exportar_recordatorios_log(sb, pid, desde)
         _exportar_activacion(sb, pid, desde)
+        _exportar_dbt_practicas(sb, pid, desde)
         _importar_rutina_modo(sb, pid)
         _importar_routine_template(sb, pid)
         _importar_tcc_templates(sb, pid)
@@ -1184,6 +1225,7 @@ def sync_inmediato():
         _exportar_temporizador(sb, pid, desde)
         _exportar_recordatorios_log(sb, pid, desde)
         _exportar_activacion(sb, pid, desde)
+        _exportar_dbt_practicas(sb, pid, desde)
     except Exception as e:
         _log.error("Fallo al ejecutar sync_inmediato: %s", e)
 

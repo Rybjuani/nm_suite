@@ -46,7 +46,7 @@ _MODULOS_TEXTOS = [
     ("registro", "Registro de Pensamientos (TCC)", "Registro TCC", "brain"),
     ("respiracion", "Guía de Respiración Animada", "Guía de Respiración", "leaf"),
     ("rutina", "Checklist de Rutina Diaria", "Checklist de Rutina", "routine"),
-    ("evolucion", "Visualizador de Evolución Anímica", "Evolución Anímica", "chart"),
+    ("dbt", "Habilidades DBT", "Habilidades DBT", "spark"),
     ("actividades", "Asistente de Activación Conductual", "Activación Conductual", "run"),
 ]
 

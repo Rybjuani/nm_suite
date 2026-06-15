@@ -27,7 +27,7 @@ _PDF_CAPTION = _DS_COLORS["light_hybrid"]["text_tertiary"] if _DS_COLORS else "#
 _PDF_ROW_TINT = "#f6f3ec"  # linen claro print-only
 _PDF_GRID = "#dcd6c6"  # warm stone print-only
 
-_SECCIONES_DEFAULT = ("animo", "resp", "pens", "checklist", "timer", "reclog")
+_SECCIONES_DEFAULT = ("animo", "resp", "pens", "checklist", "timer", "reclog", "dbt")
 
 
 def _normalizar_secciones(secciones: list[str] | None) -> set[str]:
@@ -270,6 +270,61 @@ def _generar(
             (r.get("mensaje") or "")[:80],
             "Cerrado" if r.get("cerrado") else "Pendiente",
         ],
+    )
+
+    DBT_SKILLS_TITLES = {
+        "mind_observe": "Observar y describir",
+        "mind_wise": "Mente sabia",
+        "distress_stop": "STOP",
+        "distress_senses": "Autocalma con los sentidos",
+        "emotion_facts": "Verificar los hechos",
+        "emotion_opposite": "Acción opuesta",
+        "interpersonal_dearman": "DEAR MAN",
+        "interpersonal_givefast": "GIVE / FAST",
+    }
+    DBT_FAMILY_TITLES = {
+        "mindfulness": "Mindfulness",
+        "distress_tolerance": "Tolerancia",
+        "emotion_regulation": "Regulación",
+        "interpersonal_effectiveness": "Efectividad",
+    }
+    DBT_RESULT_LABELS = {
+        "ayudo": "Me ayudó",
+        "parcial": "Un poco",
+        "no_esta_vez": "No esta vez",
+        "sin_evaluar": "Sin evaluar",
+    }
+
+    dbt_records = _filtrar_fechas(datos.get("dbt", []), fecha_desde, fecha_hasta)
+    dbt_diffs = []
+    for r in dbt_records:
+        antes = r.get("malestar_antes")
+        despues = r.get("malestar_despues")
+        if antes is not None and despues is not None:
+            dbt_diffs.append(antes - despues)
+
+    dbt_prom_txt = None
+    if dbt_diffs:
+        avg_diff = round(sum(dbt_diffs) / len(dbt_diffs), 1)
+        sign = "+" if avg_diff > 0 else ""
+        dbt_prom_txt = f"Reducción promedio de malestar (Autoinforme): {sign}{avg_diff} pts ({len(dbt_diffs)} pares completos) | Total: {len(dbt_records)} prácticas"
+    elif dbt_records:
+        dbt_prom_txt = f"Total: {len(dbt_records)} prácticas (Sin suficientes datos de malestar)"
+
+    _render(
+        "dbt",
+        "Prácticas de habilidades DBT",
+        dbt_records,
+        ["Fecha", "Hora", "Habilidad", "Familia", "Resultado", "Nota"],
+        lambda r: [
+            r.get("fecha", "")[:10],
+            r.get("hora", "")[:5],
+            DBT_SKILLS_TITLES.get(r.get("skill_id"), r.get("skill_id", "")),
+            DBT_FAMILY_TITLES.get(r.get("familia"), r.get("familia", "")),
+            DBT_RESULT_LABELS.get(r.get("resultado"), r.get("resultado", "")),
+            (r.get("nota") or "")[:60],
+        ],
+        dbt_prom_txt,
     )
 
     try:

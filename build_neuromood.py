@@ -731,7 +731,7 @@ APP_SUITE_IMPORTS = [
     "app.modules.actividades_qt",
     "app.modules.timer_qt",
     "app.modules.avisos_qt",
-    "app.modules.evolucion_qt",  # módulo #7 — cargado dinámicamente vía importlib
+    "app.modules.dbt_qt",  # módulo #7 — cargado dinámicamente vía importlib
 ]
 
 
