@@ -74,7 +74,7 @@ try:
     )
     from shared.theme import TYPOGRAPHY
     from shared.db import obtener_conexion, conexion
-    from shared.utils import fecha_hoy, hora_actual
+    from shared.utils import fecha_hoy, hora_actual, get_valence_series
     from shared.visual_qa import visual_qa_enabled
 except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -410,9 +410,16 @@ class ModuloAnimo(NMModule):
         right_lay.setSpacing(8)
 
         # 1. NMChartPanel con wave chart — zona reservada (Plan 2 NMChartPanel)
-        self._hist_card = NMChartPanel("Últimos 7 días", modo=self._modo)
+        self._hist_card = NMChartPanel("Últimos días", modo=self._modo)
         self._hist_card.setMinimumHeight(182)
         self._range_lbl = None  # ya manejado internamente por NMChartPanel
+        # Selector 7D/30D — el chart muestra el promedio DIARIO de los
+        # registros (varios registros en el mismo día se promedian a un solo
+        # punto). El usuario puede alternar entre la vista semanal y mensual.
+        self._chart_range_days = 7
+        self._hist_card.set_header_tabs(
+            ["7 días", "30 días"], self._on_chart_range_changed
+        )
 
         # Serie positiva (teal) y negativa (danger) en paralelo, con leyenda:
         # "tristeza 10" se ve como negativo fuerte, no como positivo.
@@ -630,10 +637,23 @@ class ModuloAnimo(NMModule):
     # ── data fetchers (lectura) ──────────────────────────────────────────────
 
     def _get_valence_series(self) -> tuple[list, list]:
-        """(positiva, negativa) — intensidad cruda promedio por día, 7+7."""
-        from shared.utils import get_weekly_valence_series
+        """(positiva, negativa) — intensidad cruda promedio por día.
 
-        return get_weekly_valence_series()
+        Respeta ``self._chart_range_days`` (7D o 30D). Cada punto es el
+        PROMEDIO de los registros del día (varios registros en el mismo
+        día se promedian), de modo que la curva refleja el ánimo diario
+        real del paciente sin inflar el conteo.
+        """
+        return get_valence_series(self._chart_range_days)
+
+    def _on_chart_range_changed(self, label: str) -> None:
+        """Handler de los tabs 7D/30D del header del chart."""
+        days_map = {"7 días": 7, "30 días": 30}
+        self._chart_range_days = days_map.get(label, 7)
+        try:
+            self._cargar_grafico()
+        except Exception:
+            _log.exception("Error actualizando rango del chart de ánimo")
 
     def _cargar_grafico(self):
         """Carga datos en el NMWaveChart: línea principal = registros positivos,

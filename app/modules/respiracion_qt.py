@@ -718,9 +718,6 @@ class ModuloRespiracion(NMModule):
 
         header_l = QHBoxLayout()
         header_l.setSpacing(V3_SP["sm"])
-        self._bio_guide_lbl = QLabel(t("text.module.respiracion.guide_title", "Bio-guía"))
-        self._bio_guide_lbl.setFont(eyebrow_font())
-        header_l.addWidget(self._bio_guide_lbl)
         header_l.addStretch()
 
         # Pills de preset integradas en el header de la card.
@@ -893,7 +890,6 @@ class ModuloRespiracion(NMModule):
             self._ciclos_eyebrow,
             self._calm_eyebrow,
             self._pattern_eyebrow,
-            self._bio_guide_lbl,
         ):
             if hasattr(self, lbl.objectName()) or True:
                 lbl.setStyleSheet(f"color: {c}; background: transparent;")

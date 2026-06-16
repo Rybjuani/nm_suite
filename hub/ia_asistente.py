@@ -588,7 +588,7 @@ ASIGNACION_SPECS = {
     "actividades": (
         "UNA actividad de activacion conductual (modulo Asistente de Activacion Conductual)",
         "nombre: <maximo 50 caracteres>\ndescripcion: <maximo 120 caracteres>\n"
-        "categoria: <Autocuidado|Social|Físico|Productivo>",
+        "categoria: <Autocuidado|Física|Cognitiva|Placer|Social|Maestría>",
     ),
 }
 

@@ -815,9 +815,14 @@ class ModuloRegistroTCC(NMModule):
         for lbl in self._make_title(self._step_prompt(1, "¿Qué sentiste?")):
             layout.addWidget(lbl)
 
-        # Grid 4×2 de _EmotionTile
+        # Grid 4×2 de _EmotionTile. La celda de "Otro" usa un QStackedWidget
+        # para que el campo de texto se "abra sobre" el tile (misma geometría
+        # exacta, sin huecos) cuando el paciente selecciona esa emoción. La pila
+        # tiene dos páginas: [0] tile, [1] input; al elegir "Otro" se hace raise
+        # al input, que ocupa la celda del tile sin moverse a una fila aparte.
         grid = QGridLayout()
         grid.setSpacing(V3_SP["sm"])
+        self._otro_stack = None
         for i, emotion in enumerate(self._emotion_defs):
             label = emotion["label"]
             icon_name = emotion.get("icon") or "dots"
@@ -825,16 +830,31 @@ class ModuloRegistroTCC(NMModule):
             tile = _EmotionTile(label, icon_name, color_token, modo=self._modo)
             tile.clicked.connect(lambda lbl=label: self._on_emotion_picked(lbl))
             r, c = divmod(i, 4)
-            grid.addWidget(tile, r, c)
+            if label == "Otro":
+                # Pila con tile (página 0) + input overlay (página 1) que
+                # aparece al seleccionar "Otro" ocupando exactamente la celda
+                # del tile. Mismo width/height → no hay hueco entre el resto
+                # de la grilla y la fila de "Otro".
+                stack = QStackedWidget()
+                stack.setObjectName("OtroTileStack")
+                stack.setStyleSheet("background: transparent;")
+                stack.addWidget(tile)  # index 0: tile visible por defecto
+                # Ancho máximo del input limitado a la celda para que el texto
+                # no se extienda más allá del botón. maxLength=12 es la cota
+                # práctica que entra cómodo con size_caption sin hacer scroll.
+                self._custom_emotion_input = NMInput("¿Cuál?", modo=self._modo)
+                self._custom_emotion_input.setMaxLength(12)
+                self._custom_emotion_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                self._custom_emotion_input.textChanged.connect(
+                    self._on_custom_emotion_changed
+                )
+                stack.addWidget(self._custom_emotion_input)  # index 1: input
+                grid.addWidget(stack, r, c)
+                self._otro_stack = stack
+            else:
+                grid.addWidget(tile, r, c)
             self._emotion_tiles.append(tile)
         layout.addLayout(grid)
-
-        # Input personalizado para cuando se elige "Otro"
-        self._custom_emotion_input = NMInput("¿Qué otra emoción sentís?", modo=self._modo)
-        self._custom_emotion_input.setMaxLength(25)
-        self._custom_emotion_input.setVisible(False)
-        self._custom_emotion_input.textChanged.connect(self._on_custom_emotion_changed)
-        layout.addWidget(self._custom_emotion_input)
 
         # Intensidad: header + NMHeatBar.
         # El heatbar arranca en el medio (5/10) y ese mismo 5 es el valor que se
@@ -964,8 +984,13 @@ class ModuloRegistroTCC(NMModule):
             tile.set_selected(tile.label_text() == label)
         
         is_otro = (label == "Otro")
+        # "Otro" se "abre sobre" el tile: la celda de la grilla es un
+        # QStackedWidget con la tile y el input. Cambiar la página activa
+        # muestra el input exactamente en la misma posición que el tile.
+        otro_stack = getattr(self, "_otro_stack", None)
+        if otro_stack is not None:
+            otro_stack.setCurrentIndex(1 if is_otro else 0)
         if hasattr(self, "_custom_emotion_input"):
-            self._custom_emotion_input.setVisible(is_otro)
             if is_otro:
                 custom_text = self._custom_emotion_input.text().strip()
                 if custom_text:

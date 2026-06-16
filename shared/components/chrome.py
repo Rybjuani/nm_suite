@@ -167,7 +167,6 @@ class NMWindowChrome(QWidget):
     """
 
     theme_toggle = pyqtSignal()
-    settings_clicked = pyqtSignal()
 
     def __init__(
         self,
@@ -176,7 +175,6 @@ class NMWindowChrome(QWidget):
         status: str = None,
         status_label: str = None,
         show_theme_toggle: bool = False,
-        show_settings_btn: bool = False,
         show_maximize: bool = True,
         modo: str = "dark_hybrid",
         height: int = 38,
@@ -189,7 +187,6 @@ class NMWindowChrome(QWidget):
         self._status = status  # "ok" | "warn" | "danger" | None
         self._status_label = status_label
         self._show_theme_toggle = show_theme_toggle
-        self._show_settings_btn = show_settings_btn
         # Ventanas de tamaño fijo (onboarding, diálogos) no deben maximizar:
         # solo "—" minimizar y "✕" cerrar. Maximizar rompería el layout
         # fit-first y no aporta en una card centrada.
@@ -266,25 +263,6 @@ class NMWindowChrome(QWidget):
             self._lbl_status_txt = QLabel(self._status_label or "")
             lay.addWidget(self._lbl_status_txt, 0, Qt.AlignmentFlag.AlignVCenter)
             lay.addSpacing(12)
-
-        if self._show_settings_btn:
-            self._btn_settings = QPushButton(self)
-            self._btn_settings.setCursor(Qt.CursorShape.PointingHandCursor)
-            self._btn_settings.setStyleSheet(
-                f"QPushButton {{ border: none; "
-                "background: transparent; border-radius: 12px; padding: 0px; } "
-                f"QPushButton:hover {{ background: {C('bg_hover', self._modo)}; }}"
-            )
-            self._btn_settings.setFixedSize(30, 30)
-            self._btn_settings.setToolTip("Ajustes")
-            self._btn_settings.setAccessibleName("Ajustes")
-            # P2.C: usar el engranaje "cog" en vez de "settings" para que no se
-            # confunda con el icono de tema (sun/moon) en la titlebar.
-            self._btn_settings.setIcon(nm_icon("cog", C("ink_secondary", self._modo), size=14))
-            self._btn_settings.setIconSize(QSize(14, 14))
-            self._btn_settings.clicked.connect(self.settings_clicked.emit)
-            lay.addWidget(self._btn_settings, 0, Qt.AlignmentFlag.AlignVCenter)
-            lay.addSpacing(6)
 
         if self._show_theme_toggle:
             self._btn_theme = QPushButton(self)
@@ -423,12 +401,6 @@ class NMWindowChrome(QWidget):
             "background: transparent; border-radius: 12px; padding: 0px; } "
             f"QPushButton:hover {{ background: {C('bg_hover', self._modo)}; }}"
         )
-
-        if hasattr(self, "_btn_settings"):
-            self._btn_settings.setStyleSheet(tool_btn_style)
-            self._btn_settings.setIcon(
-                nm_icon("cog", v3c("ink_secondary", self._modo), size=14)
-            )
 
         if hasattr(self, "_btn_theme"):
             self._btn_theme.setStyleSheet(tool_btn_style)

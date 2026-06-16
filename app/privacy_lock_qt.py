@@ -904,29 +904,6 @@ class PrivacyLockDialog(QDialog):
         anim.finished.connect(on_finished)
         anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
-    # ── recovery ──────────────────────────────────────────────────────────────
-
-    def _on_forgot_pin(self):
-        """Muestra diálogo de recuperación: verifica contraseña Supabase → limpia PIN."""
-        if self._recovery_in_progress:
-            return
-        dlg = _PINRecoveryDialog(self, self._modo)
-        if dlg.exec() == QDialog.DialogCode.Accepted:
-            # La verificación fue exitosa → limpiar lock y cerrar
-            guardar_config(_CONFIG_HASH, "")
-            set_lock_enabled(False)
-            self.accept()
-        else:
-            # Volver al form con el input enfocado: sin esto el tecleo
-            # posterior no entraba (foco perdido en el link/diálogo).
-            self._show_pin_form()
-
-    def _recovery_failed(self, reason: str):
-        short = reason if len(reason) < 80 else reason[:77] + "..."
-        self._forgot_btn.setText(
-            f'<span style="color:{v3c("danger", self._modo).name()};">Error: {short}</span>'
-        )
-        self._recovery_in_progress = False
 
     # ── tema ──────────────────────────────────────────────────────────────────
 
@@ -937,14 +914,7 @@ class PrivacyLockDialog(QDialog):
             self._pin_hint.setStyleSheet(
                 f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
             )
-        self._refresh_forgot_link()
         self._apply_global_style()
-
-    def _refresh_forgot_link(self):
-        color = v3c("aqua", self._modo).name()
-        self._forgot_btn.setText(
-            f'<a href="#" style="color:{color}; text-decoration:none;">Olvidé mi PIN</a>'
-        )
 
     def _apply_global_style(self):
         app = QApplication.instance()

@@ -329,30 +329,9 @@ def iniciar_bandeja(stop_event: threading.Event, on_abrir_app=None, on_salir=Non
             except Exception:
                 _log.debug("tray _salir: on_salir callback falló")
 
-    def _toggle_inicio(icon, item):
-        _set_autostart(not _get_autostart())
-        # P2.I: marca "seteado por usuario" para que ensure_autostart_default
-        # no vuelva a forzar el default en próximos arranques.
-        try:
-            with conexion() as conn:
-                conn.execute(
-                    "INSERT INTO config (clave, valor) VALUES (?, '1') "
-                    "ON CONFLICT(clave) DO UPDATE SET valor=excluded.valor",
-                    (_AUTOSTART_INITIALIZED_KEY,),
-                )
-        except Exception:
-            _log.debug("tray toggle: no se pudo persistir marca de usuario")
-
     menu_items = []
     if on_abrir_app:
         menu_items.append(pystray.MenuItem("Abrir NeuroMood", _abrir, default=True))
-    menu_items.append(
-        pystray.MenuItem(
-            "Iniciar con Windows",
-            _toggle_inicio,
-            checked=lambda item: _get_autostart(),
-        )
-    )
     menu_items.append(pystray.Menu.SEPARATOR)
     menu_items.append(pystray.MenuItem("Salir", _salir))
 
@@ -378,84 +357,6 @@ def detener_bandeja():
         _tray_icon = None
 
 
-# ── Arranque con Windows ──────────────────────────────────────────────────────
-
-
-def _get_autostart() -> bool:
-    try:
-        import winreg
-
-        key = winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER,
-            r"Software\Microsoft\Windows\CurrentVersion\Run",
-        )
-        winreg.QueryValueEx(key, "NeuroMood")
-        winreg.CloseKey(key)
-        return True
-    except Exception:
-        return False
-
-
-def _set_autostart(activar: bool):
-    try:
-        import winreg
-
-        key = winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER,
-            r"Software\Microsoft\Windows\CurrentVersion\Run",
-            0,
-            winreg.KEY_SET_VALUE,
-        )
-        if activar:
-            exe = sys.executable if getattr(sys, "frozen", False) else sys.argv[0]
-            winreg.SetValueEx(key, "NeuroMood", 0, winreg.REG_SZ, f'"{exe}"')
-        else:
-            try:
-                winreg.DeleteValue(key, "NeuroMood")
-            except FileNotFoundError:
-                pass
-        winreg.CloseKey(key)
-    except Exception:
-        _log.exception("set_autostart falló")
-
-
-# P2.I: en el primer arranque, autostart se enciende por defecto (para que el
-# paciente no se olvide de las alarmas). Una vez que el usuario toca el toggle
-# (en bandeja o Ajustes del Home), el estado queda persistido y NO se vuelve
-# a forzar. La marca de "ya configurado por el usuario" vive en config.
-_AUTOSTART_INITIALIZED_KEY = "nm_autostart_user_set"
-
-
-def ensure_autostart_default() -> None:
-    """En el primer arranque activa autostart si el usuario no lo tocó antes.
-
-    - Si la clave ``nm_autostart_user_set`` ya está en ``config``, no hace nada.
-    - Si NO está, fuerza autostart=ON y persiste la marca.
-    """
-    try:
-        conn = obtener_conexion()
-        row = conn.execute(
-            "SELECT valor FROM config WHERE clave = ?", (_AUTOSTART_INITIALIZED_KEY,)
-        ).fetchone()
-        if row:
-            conn.close()
-            return
-        conn.close()
-    except Exception:
-        _log.debug("ensure_autostart_default: no se pudo leer config")
-    try:
-        if not _get_autostart():
-            _set_autostart(True)
-        with conexion() as conn:
-            conn.execute(
-                "INSERT INTO config (clave, valor) VALUES (?, '1') "
-                "ON CONFLICT(clave) DO UPDATE SET valor=excluded.valor",
-                (_AUTOSTART_INITIALIZED_KEY,),
-            )
-    except Exception:
-        _log.exception("ensure_autostart_default: no se pudo inicializar autostart")
-
-
 # ── API pública ───────────────────────────────────────────────────────────────
 
 _stop_event: threading.Event = None
@@ -466,10 +367,6 @@ def iniciar(on_abrir_app=None, on_salir=None) -> threading.Event:
     global _stop_event, _on_app_open
     _stop_event = threading.Event()
     _on_app_open = on_abrir_app
-
-    # P2.I: en el primer arranque activamos autostart por defecto. No-op en
-    # arranques posteriores si el usuario ya tocó el toggle.
-    ensure_autostart_default()
 
     # Hilo revisor
     hilo = threading.Thread(

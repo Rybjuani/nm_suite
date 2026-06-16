@@ -148,13 +148,6 @@ class DetallePacienteView(QWidget):
         # (no se generaron alertas), no diagnostica al paciente. "5d racha"
         # se mantiene como señal operativa (cuántos días lleva registrando),
         # no como juicio clínico.
-        self._chip_semana = NMBadge("Semana 12", tone="patient", modo=self._modo)
-        self._chip_riesgo = NMBadge("Sin alerta activa", tone="neutral", modo=self._modo)
-        # "racha" no se usa en Argentina (feedback owner) → "progreso".
-        self._chip_racha = NMBadge("Progreso 5d", tone="completed", modo=self._modo)
-        self._chip_row.addWidget(self._chip_semana)
-        self._chip_row.addWidget(self._chip_riesgo)
-        self._chip_row.addWidget(self._chip_racha)
         chips_col.addLayout(self._chip_row)
 
         ia_row = QHBoxLayout()

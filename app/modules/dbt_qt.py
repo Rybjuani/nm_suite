@@ -1002,14 +1002,6 @@ class ModuloDBT(NMModule):
             
         lay.addLayout(grid)
 
-        # Clinical safety note at the bottom
-        lbl_safety = QLabel(t("text.module.dbt.safety_note", "Esta es una herramienta educativa para la práctica de habilidades. No reemplaza la atención profesional ni de emergencia."))
-        lbl_safety.setObjectName("DbtSafetyLabel")
-        lbl_safety.setFont(qfont("size_caption"))
-        lbl_safety.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()};")
-        lbl_safety.setWordWrap(True)
-        lay.addWidget(lbl_safety)
-        
         return widget
         
     def _on_need_clicked(self, family: str):

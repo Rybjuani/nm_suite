@@ -13,7 +13,7 @@ Estructura según design_handoff_neuromood_v3 (Suite > Recordatorios):
 
 LÓGICA DE NEGOCIO PRESERVADA EXACTA:
   _save_reminder(), _toggle_active(), _delete_reminder(),
-  _leer_silencio(), _guardar_silencio(), _get_autostart(), _set_autostart(),
+  _leer_silencio(), _guardar_silencio(),
   get_card_status(), schema DB ``recordatorios`` y ``config``.
 """
 
@@ -514,7 +514,7 @@ class ModuloAvisos(NMModule):
         # 4. P2.H: footer "_DayProgressCard" eliminado (la supervisión es del Hub;
         # el paciente ya ve "N/M" en cada card de recordatorio).
 
-        # 5. Opciones: solo silencio (autostart vive en Ajustes del Home).
+        # 5. Opciones: solo silencio (autostart ya no se usa).
         if not visual_qa_enabled():
             self._build_opciones(lay)
 
@@ -679,8 +679,7 @@ class ModuloAvisos(NMModule):
     # ── Opciones del sistema (silencio + autostart) ─────────────────────────
 
     def _build_opciones(self, parent_layout: QVBoxLayout):
-        """P2.H: card OPCIONES reducida a solo el horario de silencio. El inicio
-        con Windows vive en Ajustes del Home (⚙ en la titlebar)."""
+        """Card OPCIONES: solo el horario de silencio (autostart eliminado)."""
         opts_card = NMCard(modo=self._modo, clickable=False)
         opts_lay = QVBoxLayout(opts_card)
         opts_lay.setContentsMargins(V3_SP["lg"], V3_SP["md"], V3_SP["lg"], V3_SP["md"])
@@ -725,10 +724,6 @@ class ModuloAvisos(NMModule):
         sil_row.addWidget(btn_apply)
         opts_lay.addLayout(sil_row)
 
-        # P2.H: shim de autostart eliminado (ya no hace falta: vive en Ajustes
-        # del Home y el paciente lo ve en ⚙ de la titlebar).
-        self._autostart_shim_lbl = None
-
         # 4.2: exponer la card de Silencio para poder ocultarla cuando no hay
         # recordatorios (el empty state domina el viewport sin competencia).
         self._silencio_card = opts_card
@@ -770,27 +765,6 @@ class ModuloAvisos(NMModule):
                 self._btn_apply_silencio.play_success()
         except Exception:
             _log.exception("Failed to save silencio config")
-
-    # ── Autostart — delegado a avisos_daemon (F3.B) ────────────────────────
-    # Fuente canónica única: app/avisos_daemon.py  (NO reimplementado aquí).
-
-    def _get_autostart(self) -> bool:
-        """Delegado a avisos_daemon._get_autostart."""
-        try:
-            from app.avisos_daemon import _get_autostart
-
-            return _get_autostart()
-        except Exception:
-            return False
-
-    def _set_autostart(self, activar: bool):
-        """Delegado a avisos_daemon._set_autostart."""
-        try:
-            from app.avisos_daemon import _set_autostart
-
-            _set_autostart(activar)
-        except Exception:
-            _log.exception("Failed to delegate set_autostart to avisos_daemon")
 
     # ── Hooks ────────────────────────────────────────────────────────────────
 

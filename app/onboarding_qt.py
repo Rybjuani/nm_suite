@@ -128,10 +128,12 @@ class OnboardingDialog(QDialog):
                 "bg": _v3c("bg", modo).name(),
             }
             self._has_theme = True
-            # Full-bleed: el fondo de la ventana ES la superficie de la card.
-            # Antes (bg + card interna con borde/radio) se veían dos bordes
-            # laterales y huecos arriba/abajo — feedback owner v1.0.
-            self.setStyleSheet(f"OnboardingDialog {{ background-color: {self._t['canvas']}; }}")
+            # Fondo de la ventana = color de la card (surface). Antes
+            # se usaba canvas (un tono distinto) y se veían dos subfondos
+            # azul/gris a los lados cuando la ventana era más ancha que la
+            # card. Ahora la card queda "al raz" del borde de la ventana
+            # sin costura visible entre el frame y la card.
+            self.setStyleSheet(f"OnboardingDialog {{ background-color: {self._t['surface']}; }}")
         except Exception:
             self._t = {}
             self._has_theme = False
@@ -172,7 +174,17 @@ class OnboardingDialog(QDialog):
         new_modo = "light_hybrid" if "dark" in self._modo else "dark_hybrid"
         self._modo = norm_modo(new_modo)
         ThemeManager.instance().switch_mode(self._modo)
+        # El diálogo completo debe repintarse con la nueva paleta. Los
+        # QFrame/QLabel/QPushButton fijaron su stylesheet en _build_ui
+        # contra tokens del tema anterior; sin este refresh la mitad de
+        # los widgets (card, labels, inputs, chips, feedback) conservan
+        # los colores viejos y la transición queda a medias.
         self._init_theme()
+        try:
+            ThemeManager.instance().theme_changed.emit(self._modo)
+        except Exception:
+            pass
+        self._refresh_card_theme()
 
     def _configure_responsive_window(self):
         from PyQt6.QtCore import QSize
@@ -550,6 +562,47 @@ class OnboardingDialog(QDialog):
         footer_lay.addLayout(btn_row)
 
         card_lay.addWidget(footer_widget)
+
+    def _refresh_card_theme(self) -> None:
+        """Re-aplica los estilos tematizados al cambiar light/dark.
+
+        Necesario porque la card (QFrame) y los labels de título fijan
+        stylesheets con tokens del tema actual en _build_ui; cuando el
+        usuario hace toggle desde la titlebar, _init_theme refresca los
+        tokens del diálogo pero NO toca los hijos. Aquí los
+        reaplicamos contra la paleta ya actualizada.
+        """
+        if not self._has_theme:
+            return
+        try:
+            border_c = self._t["v3c"]("border", self._modo)
+            border_css = (
+                f"rgba({border_c.red()},{border_c.green()},"
+                f"{border_c.blue()},{border_c.alpha()})"
+            )
+            card_radius = 22 if _is_windows_11_or_newer() else 0
+            for frame in self.findChildren(QFrame):
+                if frame.objectName() == "AuthCard":
+                    frame.setStyleSheet(
+                        f"QFrame#AuthCard {{ background: {self._t['surface']}; "
+                        f"border: 1px solid {border_css}; "
+                        f"border-radius: {card_radius}px; }}"
+                    )
+                    break
+        except Exception:
+            pass
+        try:
+            for lbl in self.findChildren(QLabel):
+                if lbl.text() == "Bienvenido a NeuroMood":
+                    lbl.setStyleSheet(
+                        f"color: {self._t['text']}; background: transparent;"
+                    )
+                elif lbl.text() == "Suite":
+                    lbl.setStyleSheet(
+                        f"color: {self._t['primary']}; background: transparent;"
+                    )
+        except Exception:
+            pass
 
     def _lbl(self, text: str, is_compact: bool = False) -> QLabel:
         lbl = QLabel(text)

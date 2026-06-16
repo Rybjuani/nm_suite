@@ -358,10 +358,15 @@ class ModuloTimer(NMModule):
         cent_lay.addLayout(ctrl_row)
 
         # Input Actividad
+        # El paciente NO puede crear su propia actividad temporizada: las
+        # actividades las asigna el profesional desde el Hub. El campo es
+        # solo-lectura y muestra el placeholder invitando a pedir
+        # actividades a su profesional.
         input_row = QHBoxLayout()
         input_row.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        self._ent_actividad = NMInput("¿En qué vas a trabajar?", modo=self._modo)
+        self._ent_actividad = NMInput("Pedile a tu profesional que te asigne una actividad", modo=self._modo)
         self._ent_actividad.setFixedWidth(320)
+        self._ent_actividad.setReadOnly(True)
         if visual_qa_enabled():
             self._ent_actividad.setText("Deep Work Session")
         input_row.addWidget(self._ent_actividad)

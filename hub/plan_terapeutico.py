@@ -285,7 +285,6 @@ class _PresetTimerTab(QWidget):
         form_lay.setSpacing(8)
 
         # Sin jerga de developer ("preset") cara al profesional.
-        form_lay.addWidget(_section_title("Agregar o editar temporizador", self._modo))
 
         self._ent_name = NMInput("Nombre (ej: Pomodoro)", modo=self._modo)
         self._ent_name.setMaxLength(24)
@@ -329,7 +328,7 @@ class _PresetTimerTab(QWidget):
         list_lay.setContentsMargins(10, 10, 10, 10)
 
         list_lay.addLayout(_section_header_row(
-            "Temporizadores del paciente",
+            "Actividades del paciente",
             self._modo,
             _make_reset_button(
                 self,
@@ -581,7 +580,6 @@ class _PresetRecordatoriosTab(QWidget):
         form_lay.setContentsMargins(12, 12, 12, 12)
         form_lay.setSpacing(8)
 
-        form_lay.addWidget(_section_title("Agregar recordatorio", self._modo))
 
         self._ent_hora = NMInput("Hora (HH:MM, ej: 08:30)", modo=self._modo)
         self._ent_hora.setMaxLength(5)
@@ -815,7 +813,6 @@ class _PresetRutinaTab(QWidget):
         form_lay.setContentsMargins(12, 12, 12, 12)
         form_lay.setSpacing(8)
 
-        form_lay.addWidget(_section_title("Asignar tarea de rutina", self._modo))
 
         self._ent_task = NMInput("Descripción de la tarea (máx 100)", modo=self._modo)
         self._ent_task.setMaxLength(100)
@@ -848,7 +845,7 @@ class _PresetRutinaTab(QWidget):
         list_lay.setContentsMargins(10, 10, 10, 10)
 
         list_lay.addLayout(_section_header_row(
-            "Tareas asignadas",
+            "Tareas del paciente",
             self._modo,
             _make_reset_button(
                 self,
@@ -1034,7 +1031,6 @@ class _PresetActivacionTab(QWidget):
         form_lay.setContentsMargins(12, 12, 12, 12)
         form_lay.setSpacing(8)
 
-        form_lay.addWidget(_section_title("Nueva actividad", self._modo))
 
         self._ent_name = NMInput("Nombre (ej: Caminata corta, máx 50)", modo=self._modo)
         self._ent_name.setMaxLength(50)
@@ -1043,7 +1039,7 @@ class _PresetActivacionTab(QWidget):
 
         self._combo_cat = QComboBox()
         self._combo_cat.setStyleSheet(stylesheet_combobox(self._modo))
-        for cat in ("Autocuidado", "Social", "Físico", "Productivo"):
+        for cat in ("Autocuidado", "Física", "Cognitiva", "Placer", "Social", "Maestría"):
             self._combo_cat.addItem(cat, cat)
 
         # Rango de ánimo (1-10) — items cortos ("Mín: N"): el texto largo

@@ -542,12 +542,11 @@ class _HeroBienestar(QFrame):
     """
 
     def __init__(
-        self, modo: str, get_status_fn, on_registrar_click, username: str = "", parent=None
+        self, modo: str, get_status_fn, username: str = "", parent=None
     ):
         super().__init__(parent)
         self._modo = norm_modo(modo)
         self._get_status = get_status_fn or (lambda mid: "")
-        self._on_registrar_click = on_registrar_click
         # Nombre capitalizado (Fase 7): el saludo "Hola, juan" salía en minúscula
         # cuando el nombre venía así de la cuenta. Tomamos el primer nombre y
         # capitalizamos para un saludo prolijo ("Hola, Juan"). Guarda anti-split
@@ -584,15 +583,6 @@ class _HeroBienestar(QFrame):
         )
         top.addWidget(self._eyebrow)
         top.addStretch()
-        # Lazy import para evitar circular dependency en arranque
-        try:
-            from shared.components import NMBadge
-
-            self._badge = NMBadge("Sin registro hoy", tone="neutral", modo=self._modo)
-        except Exception:
-            self._badge = QLabel("Sin registro hoy")
-            self._badge.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
-        top.addWidget(self._badge)
         root.addLayout(top)
 
         self._hero_title = QLabel(f"Hola, {self._username}")
@@ -613,12 +603,6 @@ class _HeroBienestar(QFrame):
         self._msg.setFont(qfont("size_small"))
         empty_lay.addWidget(self._msg)
         empty_lay.addStretch()
-
-        self._btn_registrar = NMButton(
-            "Registrar", variant="ghost", size="sm", modo=self._modo, width=90
-        )
-        self._btn_registrar.clicked.connect(self._on_registrar_click)
-        empty_lay.addWidget(self._btn_registrar)
         self._stack.addWidget(self._empty_page)
 
         # ── Filled page ──
@@ -731,16 +715,9 @@ class _HeroBienestar(QFrame):
         score = self._parse_score(raw)
         if score is None:
             self._stack.setCurrentIndex(0)
-            self._badge.show()
-            try:
-                self._badge.set_tone("neutral")
-                self._badge.setText("Sin registro hoy")
-            except Exception:
-                pass
             return
 
         self._stack.setCurrentIndex(1)
-        self._badge.hide()
 
         if score == int(score):
             self._score.setText(str(int(score)))
@@ -770,10 +747,6 @@ class _HeroBienestar(QFrame):
         self._modo = norm_modo(modo)
         self._apply_styles()
         self._apply_hero_shadow()
-        try:
-            self._badge._apply_theme(self._modo)
-        except Exception:
-            pass
 
 
 # ── _ProximaSesionCard ────────────────────────────────────────────────────────
@@ -908,7 +881,6 @@ class HomeView(QWidget):
         self._hero = _HeroBienestar(
             self._modo,
             self._get_status,
-            on_registrar_click=lambda: self._open_cb("animo"),
             username=self._username,
             parent=content,
         )

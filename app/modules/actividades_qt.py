@@ -11,7 +11,7 @@ Estructura según design_handoff_neuromood_v3 (Suite > Actividades):
                   ánimo + intensidad + NMPlayButton
 
 LÓGICA DE NEGOCIO PRESERVADA EXACTA:
-  _FALLBACK_ACTIVIDADES, _get_last_mood(), _get_activities(),
+  _get_last_mood(), _get_activities(),
   _register_result() (INSERT INTO activacion), get_card_status(), on_enter,
   visual_qa fixtures (activity_suggestions, last_mood).
 """
@@ -107,36 +107,6 @@ except ImportError:
 from shared.remote_config import t
 
 
-# ── Fallback activities (preservado exacto) ──────────────────────────────────
-
-_FALLBACK_ACTIVIDADES = [
-    {
-        "nombre": "Caminata corta",
-        "descripcion": "Salí 10 minutos a caminar sin destino fijo.",
-        "categoria": "Física",
-    },
-    {
-        "nombre": "Escuchar música",
-        "descripcion": "Elegí una canción que te guste y escuchala con atención.",
-        "categoria": "Placer",
-    },
-    {
-        "nombre": "Orden breve",
-        "descripcion": "Ordená un cajón o superficie pequeña.",
-        "categoria": "Maestría",
-    },
-    {
-        "nombre": "Respiración",
-        "descripcion": "3 minutos de respiración consciente.",
-        "categoria": "Autocuidado",
-    },
-    {
-        "nombre": "Contacto social",
-        "descripcion": "Mandá un mensaje breve a alguien.",
-        "categoria": "Social",
-    },
-    {"nombre": "Hidratación", "descripcion": "Tomá un vaso de agua.", "categoria": "Autocuidado"},
-]
 
 
 # ── Categorías y mapeo de iconos SVG ────────────────────────────────────────
@@ -991,20 +961,9 @@ class ModuloActividades(NMModule):
         except Exception:
             _log.exception("Operation failed")
 
-        # Fallback heurístico (preservado)
-        if animo <= 3:
-            pool = [a for a in _FALLBACK_ACTIVIDADES if a["categoria"] in ("Autocuidado", "Placer")]
-        elif animo <= 6:
-            pool = _FALLBACK_ACTIVIDADES[:]
-        else:
-            pool = [
-                a
-                for a in _FALLBACK_ACTIVIDADES
-                if a["categoria"] in ("Física", "Maestría", "Social")
-            ]
-        if not pool:
-            pool = _FALLBACK_ACTIVIDADES
-        return pool[:]
+        # Sin actividades precargadas: las actividades las asigna el
+        # profesional desde el Hub. Si no hay, se muestra el empty state.
+        return []
 
     # ── Hooks ────────────────────────────────────────────────────────────────
 
