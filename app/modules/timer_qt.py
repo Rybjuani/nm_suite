@@ -202,7 +202,7 @@ def _load_presets() -> list[tuple[str, int, str]]:
 
 def _manual_timer_enabled() -> bool:
     try:
-        return _parse_bool_config(leer_config("perm_temporizador_manual", "1"))
+        return _parse_bool_config(leer_config("perm_temporizador_manual", "0"))
     except Exception:
         return True
 

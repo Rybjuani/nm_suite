@@ -299,7 +299,7 @@ class _PresetTimerTab(QWidget):
         form_lay.addWidget(self._ent_cat)
 
         btn_row = QHBoxLayout()
-        self._save_btn = NMButton("Agregar", modo=self._modo, width=100, height=32, size="sm")
+        self._save_btn = NMButton("Agregar actividad", modo=self._modo, width=140, height=32, size="sm")
         self._save_btn.clicked.connect(self._save_preset)
         self._cancel_btn = NMButtonOutline("Cancelar", modo=self._modo)
         self._cancel_btn.setFixedHeight(32)
@@ -309,18 +309,16 @@ class _PresetTimerTab(QWidget):
 
         btn_row.addWidget(self._save_btn)
         btn_row.addWidget(self._cancel_btn)
-        # Stretch al final: sin esto los botones se estiran al ancho de la
-        # card (lavanda gigante).
         btn_row.addStretch()
         form_lay.addLayout(btn_row)
 
-        self._preview_card, self._preview_body = _make_preview_card(
-            self._modo, "El paciente lo verá como opción rápida en su Temporizador."
-        )
-        form_lay.addWidget(self._preview_card)
-        for _w in (self._ent_name, self._ent_secs, self._ent_cat):
-            _w.textChanged.connect(self._update_preview)
-        self._update_preview()
+        ia_row = QHBoxLayout()
+        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm")
+        self._ia_btn.setFixedHeight(32)
+        self._ia_btn.clicked.connect(self._autofill_with_ia)
+        ia_row.addWidget(self._ia_btn)
+        ia_row.addStretch()
+        form_lay.addLayout(ia_row)
         form_lay.addStretch()
 
         lay.addWidget(form_card, 1)
@@ -361,14 +359,40 @@ class _PresetTimerTab(QWidget):
         lay.addWidget(list_card, 2)
         self._load_presets()
 
-    def _update_preview(self):
-        name = self._ent_name.text().strip() or "Nombre del temporizador"
-        secs = self._ent_secs.text().strip()
-        cat = self._ent_cat.text().strip() or "General"
-        if not secs:
-            self._preview_body.setText("Completá nombre y duración.")
-            return
-        self._preview_body.setText(f"{name}\n{secs} min · {cat}")
+    def _autofill_with_ia(self):
+        self._ia_btn.setEnabled(False)
+        self._ia_btn.setText("Generando…")
+        from hub.ia_asistente import generar_asignacion
+        from shared.qt_thread import run_on_gui
+
+        def on_ok(txt: str):
+            run_on_gui(lambda: self._on_ia_success(txt))
+
+        def on_err(msg: str):
+            run_on_gui(lambda: self._on_ia_failure(msg))
+
+        generar_asignacion("timer", {}, "", on_ok, on_err, patient_id=self._pid)
+
+    def _on_ia_success(self, text: str):
+        self._ia_btn.setEnabled(True)
+        self._ia_btn.setText("Completar con IA")
+        vals = {}
+        for line in text.strip().splitlines():
+            if ":" in line:
+                k, _, v = line.partition(":")
+                vals[k.strip().lower()] = v.strip()
+        if vals.get("nombre"):
+            self._ent_name.setText(vals["nombre"][:24])
+        if vals.get("minutos"):
+            self._ent_secs.setText(vals["minutos"][:3])
+        if vals.get("categoria"):
+            self._ent_cat.setText(vals["categoria"][:20])
+        NMToast.display(self.window(), "Temporizador sugerido por la IA", variant="success")
+
+    def _on_ia_failure(self, msg: str):
+        self._ia_btn.setEnabled(True)
+        self._ia_btn.setText("Completar con IA")
+        NMToast.display(self.window(), f"IA no disponible: {msg[:40]}", variant="error")
 
     def _empty_hint(self, text: str) -> QWidget:
         return _empty_hint_label(text, self._modo)
@@ -422,7 +446,6 @@ class _PresetTimerTab(QWidget):
                 name = row.get("name", "")
                 mins = int(row.get("duracion_seg", 0)) // 60
                 cat = row.get("categoria", "")
-                active = bool(row.get("activo", True))
 
                 lbl = QLabel(f"{name} ({mins} min) · {cat}")
                 lbl.setFont(qfont("size_small"))
@@ -431,19 +454,12 @@ class _PresetTimerTab(QWidget):
 
                 btn_edit = NMButtonOutline("Editar", modo=self._modo)
                 btn_edit.setFixedHeight(28)
-                btn_edit.setMinimumWidth(66)
+                btn_edit.setMinimumWidth(60)
                 btn_edit.clicked.connect(lambda _, r=row: self._edit(r))
                 row_lay.addWidget(btn_edit)
 
-                btn_act = NMButtonOutline("Activo" if active else "Inactivo", modo=self._modo)
-                btn_act.setFixedHeight(28)
-                btn_act.setMinimumWidth(76)
-                btn_act.clicked.connect(lambda _, r=row: self._toggle_active(r))
-                row_lay.addWidget(btn_act)
-
-                btn_del = NMButtonOutline("Eliminar", modo=self._modo)
-                btn_del.setFixedHeight(28)
-                btn_del.setMinimumWidth(76)
+                btn_del = NMButtonOutline("✕", modo=self._modo)
+                btn_del.setFixedSize(28, 28)
                 btn_del.clicked.connect(lambda _, rid=row["id"]: self._delete(rid))
                 row_lay.addWidget(btn_del)
 
@@ -506,16 +522,8 @@ class _PresetTimerTab(QWidget):
         self._ent_name.clear()
         self._ent_secs.clear()
         self._ent_cat.clear()
-        self._save_btn.setText("Agregar")
+        self._save_btn.setText("Agregar actividad")
         self._cancel_btn.hide()
-
-    def _toggle_active(self, row: dict):
-        try:
-            new_val = not bool(row.get("activo", True))
-            self._sb.table("timer_presets_remote").update({"activo": new_val}).eq("id", row["id"]).execute()
-            self._load_presets()
-        except Exception:
-            _log.exception("Error toggling timer active")
 
     def _delete(self, rid: int):
         try:
@@ -544,11 +552,18 @@ class _PresetTimerTab(QWidget):
 # ── Subtab 2: Recordatorios ───────────────────────────────────────────────────
 
 class _PresetRecordatoriosTab(QWidget):
+    """Tab unificado de Recordatorios de Bienestar.
+
+    Combina mensaje y hora en un unico formulario: hora + mensaje
+    se asignan juntos con un solo boton 'Agregar recordatorio'.
+    """
+
     def __init__(self, sb, pid: str, modo: str, parent=None):
         super().__init__(parent)
         self._sb = sb
         self._pid = pid
         self._modo = modo
+        self._ia_btn = None
         self._setup()
 
     def _setup(self):
@@ -560,208 +575,83 @@ class _PresetRecordatoriosTab(QWidget):
         lay.setSpacing(12)
         outer.addWidget(_tab_scroll_wrap(body, self._modo))
 
-        # Messages Panel (Left)
-        msg_card = NMCard(modo=self._modo, clickable=False)
-        msg_lay = QVBoxLayout(msg_card)
-        msg_lay.setContentsMargins(12, 12, 12, 12)
-        msg_lay.setSpacing(8)
+        # Form card (Left)
+        form_card = NMCard(modo=self._modo, clickable=False)
+        form_lay = QVBoxLayout(form_card)
+        form_lay.setContentsMargins(12, 12, 12, 12)
+        form_lay.setSpacing(8)
 
-        msg_lay.addLayout(_section_header_row(
-            "Mensajes de apoyo",
-            self._modo,
-            _make_reset_button(
-                self,
-                self._modo,
-                "Se eliminarán los mensajes de apoyo propios de este paciente. "
-                "Su Suite volverá a los mensajes por defecto.",
-                self._reset_messages,
-            ),
-        ))
+        form_lay.addWidget(_section_title("Agregar recordatorio", self._modo))
 
-        self._ent_msg = NMInput("Mensaje de apoyo (máx 150)", modo=self._modo)
+        self._ent_hora = NMInput("Hora (HH:MM, ej: 08:30)", modo=self._modo)
+        self._ent_hora.setMaxLength(5)
+        self._ent_msg = NMInput("Mensaje del recordatorio (máx 150)", modo=self._modo)
         self._ent_msg.setMaxLength(150)
-        self._combo_cat = QComboBox()
-        self._combo_cat.setStyleSheet(stylesheet_combobox(self._modo))
-        # Desde shared: el bundle PyInstaller del Hub NO incluye app/ — importar
-        # app.modules.* crashearía en el .exe instalado (solo andaba en dev).
-        from shared.utils import SUPPORT_CATEGORIES
-        for cat in SUPPORT_CATEGORIES:
-            self._combo_cat.addItem(cat, cat)
-        msg_lay.addWidget(self._ent_msg)
-        msg_lay.addWidget(self._combo_cat)
+        form_lay.addWidget(self._ent_hora)
+        form_lay.addWidget(self._ent_msg)
 
-        self._save_msg_btn = NMButton(
-            "Agregar mensaje", modo=self._modo, width=150, height=32, size="sm"
+        btn_row = QHBoxLayout()
+        self._save_btn = NMButton(
+            "Agregar recordatorio", modo=self._modo, width=180, height=32, size="sm"
         )
-        self._save_msg_btn.clicked.connect(self._save_message)
-        # AlignLeft: sin esto el QVBoxLayout estira el CTA al ancho completo
-        # (botón lavanda gigante — rechazo del owner).
-        msg_lay.addWidget(self._save_msg_btn, alignment=Qt.AlignmentFlag.AlignLeft)
+        self._save_btn.clicked.connect(self._save_recordatorio)
+        btn_row.addWidget(self._save_btn)
+        btn_row.addStretch()
+        form_lay.addLayout(btn_row)
 
-        self._preview_card, self._preview_body = _make_preview_card(
-            self._modo, "Aparece como mensaje de apoyo en Recordatorios de Bienestar."
-        )
-        msg_lay.addWidget(self._preview_card)
-        self._ent_msg.textChanged.connect(self._update_preview)
-        self._combo_cat.currentIndexChanged.connect(self._update_preview)
-        self._update_preview()
+        ia_row = QHBoxLayout()
+        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm")
+        self._ia_btn.setFixedHeight(32)
+        self._ia_btn.clicked.connect(self._autofill_with_ia)
+        ia_row.addWidget(self._ia_btn)
+        ia_row.addStretch()
+        form_lay.addLayout(ia_row)
+        form_lay.addStretch()
 
-        # Message List scroll
-        msg_scroll = QScrollArea()
-        msg_scroll.setWidgetResizable(True)
-        msg_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        msg_scroll.setStyleSheet(
-            stylesheet_scrollarea(self._modo)
-        )
-        _wheel_passthrough(msg_scroll)
-        self._msg_list_w = QWidget()
-        self._msg_list_lay = QVBoxLayout(self._msg_list_w)
-        self._msg_list_lay.setContentsMargins(0, 0, 0, 0)
-        self._msg_list_lay.setSpacing(4)
-        self._msg_list_lay.setAlignment(Qt.AlignmentFlag.AlignTop)
-        msg_scroll.setWidget(self._msg_list_w)
-        msg_lay.addWidget(msg_scroll, 1)
+        lay.addWidget(form_card, 1)
 
-        lay.addWidget(msg_card, 1)
+        # List card (Right)
+        list_card = NMCard(modo=self._modo, clickable=False)
+        list_lay = QVBoxLayout(list_card)
+        list_lay.setContentsMargins(10, 10, 10, 10)
 
-        # Schedules Panel (Right)
-        sched_card = NMCard(modo=self._modo, clickable=False)
-        sched_lay = QVBoxLayout(sched_card)
-        sched_lay.setContentsMargins(12, 12, 12, 12)
-        sched_lay.setSpacing(8)
-
-        sched_lay.addLayout(_section_header_row(
-            "Horarios de aviso",
+        list_lay.addLayout(_section_header_row(
+            "Recordatorios del paciente",
             self._modo,
             _make_reset_button(
                 self,
                 self._modo,
-                "Se eliminarán los horarios de aviso asignados a este paciente. "
-                "Su Suite quedará sin alertas asignadas por el profesional.",
-                self._reset_schedules,
+                "Se eliminarán todos los recordatorios asignados a este paciente. "
+                "Su Suite quedará sin alertas del profesional.",
+                self._reset_recordatorios,
             ),
         ))
 
-        self._ent_time = NMInput("Hora (HH:MM, ej: 08:30)", modo=self._modo)
-        self._ent_time.setMaxLength(5)
-        self._ent_time_msg = NMInput("Mensaje recordatorio", modo=self._modo)
-        self._ent_time_msg.setMaxLength(150)
-        sched_lay.addWidget(self._ent_time)
-        sched_lay.addWidget(self._ent_time_msg)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        _wheel_passthrough(scroll)
+        self._list_w = QWidget()
+        self._list_lay = QVBoxLayout(self._list_w)
+        self._list_lay.setContentsMargins(0, 0, 0, 0)
+        self._list_lay.setSpacing(4)
+        self._list_lay.setAlignment(Qt.AlignmentFlag.AlignTop)
+        scroll.setWidget(self._list_w)
+        list_lay.addWidget(scroll, 1)
 
-        self._save_sched_btn = NMButton(
-            "Asignar alerta", modo=self._modo, width=140, height=32, size="sm"
-        )
-        self._save_sched_btn.clicked.connect(self._save_schedule)
-        sched_lay.addWidget(self._save_sched_btn, alignment=Qt.AlignmentFlag.AlignLeft)
+        lay.addWidget(list_card, 2)
+        self._load_recordatorios()
 
-        # Alert List scroll
-        sched_scroll = QScrollArea()
-        sched_scroll.setWidgetResizable(True)
-        sched_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        sched_scroll.setStyleSheet(
-            stylesheet_scrollarea(self._modo)
-        )
-        _wheel_passthrough(sched_scroll)
-        self._sched_list_w = QWidget()
-        self._sched_list_lay = QVBoxLayout(self._sched_list_w)
-        self._sched_list_lay.setContentsMargins(0, 0, 0, 0)
-        self._sched_list_lay.setSpacing(4)
-        self._sched_list_lay.setAlignment(Qt.AlignmentFlag.AlignTop)
-        sched_scroll.setWidget(self._sched_list_w)
-        sched_lay.addWidget(sched_scroll, 1)
-
-        lay.addWidget(sched_card, 1)
-
-        self._load_messages()
-        self._load_schedules()
-
-    def _update_preview(self):
-        msg = self._ent_msg.text().strip() or "Tu mensaje de apoyo…"
-        cat = self._combo_cat.currentText() or "General"
-        self._preview_body.setText(f"[{cat}]\n“{msg}”")
-
-    def _load_messages(self):
-        while self._msg_list_lay.count():
-            item = self._msg_list_lay.takeAt(0)
+    def _load_recordatorios(self):
+        while self._list_lay.count():
+            item = self._list_lay.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
 
         if not self._sb:
-            self._msg_list_lay.addWidget(
-                _empty_hint_label("Este paciente todavía no tiene mensajes propios.", self._modo)
-            )
-            return
-        try:
-            res = (
-                self._sb.table("support_messages")
-                .select("id,categoria,mensaje,activa")
-                .eq("scope", f"patient:{self._pid}")
-                .execute()
-            )
-            rows = res.data or []
-            if not rows:
-                self._msg_list_lay.addWidget(_empty_hint_label("Este paciente todavía no tiene mensajes propios.", self._modo))
-                return
-            for r in rows:
-                w = QFrame()
-                w.setStyleSheet(f"background: {v3c('surface', self._modo).name()}; border-radius: 4px; padding: 4px;")
-                wl = QHBoxLayout(w)
-                wl.setContentsMargins(4, 2, 4, 2)
-
-                lbl = QLabel(f"[{r.get('categoria')}] {r.get('mensaje')}")
-                lbl.setFont(qfont("size_caption"))
-                lbl.setWordWrap(True)
-                lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-                wl.addWidget(lbl, 1)
-
-                btn_del = NMButtonOutline("Eliminar", modo=self._modo)
-                btn_del.setFixedHeight(24)
-                btn_del.setMinimumWidth(70)
-                btn_del.clicked.connect(lambda _, rid=r["id"]: self._delete_msg(rid))
-                wl.addWidget(btn_del)
-
-                self._msg_list_lay.addWidget(w)
-        except Exception:
-            _log.exception("Error al cargar mensajes")
-
-    def _save_message(self):
-        msg = self._ent_msg.text().strip()
-        cat = self._combo_cat.currentData()
-        if not msg:
-            return
-        if len(msg) > 150:
-            NMToast.display(self.window(), "Mensaje muy largo (máx 150)", variant="error")
-            return
-        try:
-            self._sb.table("support_messages").insert({
-                "scope": f"patient:{self._pid}",
-                "categoria": cat,
-                "mensaje": msg,
-                "activa": True,
-            }).execute()
-            self._ent_msg.clear()
-            self._load_messages()
-            NMToast.display(self.window(), "Mensaje de apoyo agregado", variant="success")
-        except Exception as e:
-            NMToast.display(self.window(), str(e)[:50], variant="error")
-
-    def _delete_msg(self, rid: int):
-        try:
-            self._sb.table("support_messages").delete().eq("id", rid).execute()
-            self._load_messages()
-        except Exception:
-            pass
-
-    def _load_schedules(self):
-        while self._sched_list_lay.count():
-            item = self._sched_list_lay.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-
-        if not self._sb:
-            self._sched_list_lay.addWidget(
-                _empty_hint_label("Sin horarios configurados aún.", self._modo)
+            self._list_lay.addWidget(
+                _empty_hint_label("Sin recordatorios asignados aún.", self._modo)
             )
             return
         try:
@@ -769,41 +659,51 @@ class _PresetRecordatoriosTab(QWidget):
                 self._sb.table("assigned_reminders")
                 .select("id,hora,mensaje,activa")
                 .eq("patient_id", self._pid)
+                .order("hora")
                 .execute()
             )
             rows = res.data or []
             if not rows:
-                self._sched_list_lay.addWidget(_empty_hint_label("Sin horarios configurados aún.", self._modo))
+                self._list_lay.addWidget(
+                    _empty_hint_label("Sin recordatorios asignados aún.", self._modo)
+                )
                 return
             for r in rows:
                 w = QFrame()
-                w.setStyleSheet(f"background: {v3c('surface', self._modo).name()}; border-radius: 4px; padding: 4px;")
+                w.setStyleSheet(
+                    f"background: {v3c('surface', self._modo).name()}; "
+                    f"border: 1px solid {qcolor_to_rgba_css(v3c('borderSoft', self._modo))}; "
+                    "border-radius: 6px; padding: 4px;"
+                )
                 wl = QHBoxLayout(w)
-                wl.setContentsMargins(4, 2, 4, 2)
+                wl.setContentsMargins(10, 6, 10, 6)
+                wl.setSpacing(8)
 
                 lbl = QLabel(f"{r.get('hora')} · {r.get('mensaje')}")
                 lbl.setFont(qfont("size_caption"))
+                lbl.setWordWrap(True)
                 lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
                 wl.addWidget(lbl, 1)
 
-                btn_del = NMButtonOutline("Eliminar", modo=self._modo)
-                btn_del.setFixedHeight(24)
-                btn_del.setMinimumWidth(70)
-                btn_del.clicked.connect(lambda _, rid=r["id"]: self._delete_sched(rid))
+                btn_del = NMButtonOutline("✕", modo=self._modo)
+                btn_del.setFixedSize(28, 28)
+                btn_del.clicked.connect(lambda _, rid=r["id"]: self._delete_recordatorio(rid))
                 wl.addWidget(btn_del)
 
-                self._sched_list_lay.addWidget(w)
+                self._list_lay.addWidget(w)
         except Exception:
-            _log.exception("Error al cargar horarios")
+            _log.exception("Error al cargar recordatorios")
 
-    def _save_schedule(self):
-        time = self._ent_time.text().strip()
-        msg = self._ent_time_msg.text().strip()
-        if not time or not msg:
+    def _save_recordatorio(self):
+        hora = self._ent_hora.text().strip()
+        msg = self._ent_msg.text().strip()
+        if not hora or not msg:
+            NMToast.display(self.window(), "Completá la hora y el mensaje", variant="error")
             return
-        # format check
-        if not re.match(r"^\d{2}:\d{2}$", time):
-            NMToast.display(self.window(), "Formato de hora incorrecto (debe ser HH:MM)", variant="error")
+        if not re.match(r"^\d{2}:\d{2}$", hora):
+            NMToast.display(
+                self.window(), "Formato de hora incorrecto (debe ser HH:MM)", variant="error"
+            )
             return
         if len(msg) > 150:
             NMToast.display(self.window(), "Mensaje muy largo (máx 150)", variant="error")
@@ -811,52 +711,83 @@ class _PresetRecordatoriosTab(QWidget):
         try:
             self._sb.table("assigned_reminders").insert({
                 "patient_id": self._pid,
-                "hora": time,
+                "hora": hora,
                 "mensaje": msg,
                 "dias": "1,2,3,4,5,6,7",
                 "activa": True,
             }).execute()
-            self._ent_time.clear()
-            self._ent_time_msg.clear()
-            self._load_schedules()
-            NMToast.display(self.window(), "Alerta asignada", variant="success")
+            self._ent_hora.clear()
+            self._ent_msg.clear()
+            self._load_recordatorios()
+            NMToast.display(self.window(), "Recordatorio agregado", variant="success")
         except Exception as e:
             NMToast.display(self.window(), str(e)[:50], variant="error")
 
-    def _delete_sched(self, rid: int):
+    def _delete_recordatorio(self, rid: int):
         try:
             self._sb.table("assigned_reminders").delete().eq("id", rid).execute()
-            self._load_schedules()
+            self._load_recordatorios()
         except Exception:
             pass
 
-    def _reset_messages(self):
+    def _reset_recordatorios(self):
         if not self._sb:
-            NMToast.display(self.window(), "Sin conexión: no hay nada que restablecer.", variant="info")
+            NMToast.display(
+                self.window(), "Sin conexión: no hay nada que restablecer.", variant="info"
+            )
             return
         try:
-            self._sb.table("support_messages").delete().eq(
-                "scope", f"patient:{self._pid}"
+            self._sb.table("assigned_reminders").delete().eq(
+                "patient_id", self._pid
             ).execute()
-            self._load_messages()
+            try:
+                self._sb.table("support_messages").delete().eq(
+                    "scope", f"patient:{self._pid}"
+                ).execute()
+            except Exception:
+                pass
+            self._load_recordatorios()
             NMToast.display(
-                self.window(), "Mensajes restablecidos por defecto.", variant="success"
+                self.window(), "Recordatorios restablecidos por defecto.", variant="success"
             )
         except Exception as e:
             NMToast.display(self.window(), f"Error: {str(e)[:50]}", variant="error")
 
-    def _reset_schedules(self):
-        if not self._sb:
-            NMToast.display(self.window(), "Sin conexión: no hay nada que restablecer.", variant="info")
-            return
-        try:
-            self._sb.table("assigned_reminders").delete().eq("patient_id", self._pid).execute()
-            self._load_schedules()
-            NMToast.display(
-                self.window(), "Horarios restablecidos por defecto.", variant="success"
-            )
-        except Exception as e:
-            NMToast.display(self.window(), f"Error: {str(e)[:50]}", variant="error")
+    def _autofill_with_ia(self):
+        if self._ia_btn:
+            self._ia_btn.setEnabled(False)
+            self._ia_btn.setText("Generando…")
+        from hub.ia_asistente import generar_asignacion
+        from shared.qt_thread import run_on_gui
+
+        def on_ok(txt: str):
+            run_on_gui(lambda: self._on_ia_success(txt))
+
+        def on_err(msg: str):
+            run_on_gui(lambda: self._on_ia_failure(msg))
+
+        generar_asignacion("avisos", {}, "", on_ok, on_err, patient_id=self._pid)
+
+    def _on_ia_success(self, text: str):
+        if self._ia_btn:
+            self._ia_btn.setEnabled(True)
+            self._ia_btn.setText("Completar con IA")
+        vals = {}
+        for line in text.strip().splitlines():
+            if ":" in line:
+                k, _, v = line.partition(":")
+                vals[k.strip().lower()] = v.strip()
+        if vals.get("hora"):
+            self._ent_hora.setText(vals["hora"][:5])
+        if vals.get("mensaje"):
+            self._ent_msg.setText(vals["mensaje"][:150])
+        NMToast.display(self.window(), "Recordatorio sugerido por la IA", variant="success")
+
+    def _on_ia_failure(self, msg: str):
+        if self._ia_btn:
+            self._ia_btn.setEnabled(True)
+            self._ia_btn.setText("Completar con IA")
+        NMToast.display(self.window(), f"IA no disponible: {msg[:40]}", variant="error")
 
 
 # ── Subtab 3: Routine/Checklist ───────────────────────────────────────────────
@@ -900,13 +831,13 @@ class _PresetRutinaTab(QWidget):
         self._save_btn.clicked.connect(self._save_task)
         form_lay.addWidget(self._save_btn, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        self._preview_card, self._preview_body = _make_preview_card(
-            self._modo, "Aparece como ítem del Checklist de Rutina Diaria del paciente."
-        )
-        form_lay.addWidget(self._preview_card)
-        self._ent_task.textChanged.connect(self._update_preview)
-        self._combo_sec.currentIndexChanged.connect(self._update_preview)
-        self._update_preview()
+        ia_row = QHBoxLayout()
+        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm")
+        self._ia_btn.setFixedHeight(32)
+        self._ia_btn.clicked.connect(self._autofill_with_ia)
+        ia_row.addWidget(self._ia_btn)
+        ia_row.addStretch()
+        form_lay.addLayout(ia_row)
         form_lay.addStretch()
 
         lay.addWidget(form_card, 1)
@@ -946,10 +877,40 @@ class _PresetRutinaTab(QWidget):
         lay.addWidget(list_card, 2)
         self._load_tasks()
 
-    def _update_preview(self):
-        desc = self._ent_task.text().strip() or "Descripción de la tarea…"
-        sec = self._combo_sec.currentText() or "Mañana"
-        self._preview_body.setText(f"[ ]  {desc}\n{sec}")
+    def _autofill_with_ia(self):
+        self._ia_btn.setEnabled(False)
+        self._ia_btn.setText("Generando…")
+        from hub.ia_asistente import generar_asignacion
+        from shared.qt_thread import run_on_gui
+
+        def on_ok(txt: str):
+            run_on_gui(lambda: self._on_ia_success(txt))
+
+        def on_err(msg: str):
+            run_on_gui(lambda: self._on_ia_failure(msg))
+
+        generar_asignacion("rutina", {}, "", on_ok, on_err, patient_id=self._pid)
+
+    def _on_ia_success(self, text: str):
+        self._ia_btn.setEnabled(True)
+        self._ia_btn.setText("Completar con IA")
+        vals = {}
+        for line in text.strip().splitlines():
+            if ":" in line:
+                k, _, v = line.partition(":")
+                vals[k.strip().lower()] = v.strip()
+        if vals.get("tarea"):
+            self._ent_task.setText(vals["tarea"][:100])
+        if vals.get("seccion"):
+            sec_map = {"manana": 0, "mañana": 0, "tarde": 1, "noche": 2}
+            idx = sec_map.get(vals["seccion"].lower(), 0)
+            self._combo_sec.setCurrentIndex(idx)
+        NMToast.display(self.window(), "Tarea sugerida por la IA", variant="success")
+
+    def _on_ia_failure(self, msg: str):
+        self._ia_btn.setEnabled(True)
+        self._ia_btn.setText("Completar con IA")
+        NMToast.display(self.window(), f"IA no disponible: {msg[:40]}", variant="error")
 
     def _load_tasks(self):
         while self._list_lay.count():
@@ -997,9 +958,8 @@ class _PresetRutinaTab(QWidget):
                     lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
                     wl.addWidget(lbl, 1)
 
-                    btn_del = NMButtonOutline("Eliminar", modo=self._modo)
-                    btn_del.setFixedHeight(24)
-                    btn_del.setMinimumWidth(70)
+                    btn_del = NMButtonOutline("✕", modo=self._modo)
+                    btn_del.setFixedSize(28, 28)
                     btn_del.clicked.connect(lambda _, rid=r["id"]: self._delete_task(rid))
                     wl.addWidget(btn_del)
 
@@ -1127,15 +1087,6 @@ class _PresetActivacionTab(QWidget):
         ia_row.addStretch()
         form_lay.addLayout(ia_row)
 
-        self._preview_card, self._preview_body = _make_preview_card(
-            self._modo, "Sugerida en el Asistente de Activación Conductual según el ánimo."
-        )
-        form_lay.addWidget(self._preview_card)
-        for _w in (self._ent_name, self._ent_desc):
-            _w.textChanged.connect(self._update_preview)
-        for _c in (self._combo_cat, self._combo_min, self._combo_max):
-            _c.currentIndexChanged.connect(self._update_preview)
-        self._update_preview()
         form_lay.addStretch()
 
         lay.addWidget(form_card, 1)
@@ -1174,14 +1125,6 @@ class _PresetActivacionTab(QWidget):
 
         lay.addWidget(list_card, 2)
         self._load_activities()
-
-    def _update_preview(self):
-        name = self._ent_name.text().strip() or "Nombre de la actividad"
-        desc = self._ent_desc.text().strip() or "Descripción breve…"
-        cat = self._combo_cat.currentText() or "Autocuidado"
-        lo = self._combo_min.currentData() or 1
-        hi = self._combo_max.currentData() or 10
-        self._preview_body.setText(f"{name} · {cat}\n{desc}\nÁnimo {lo}–{hi}")
 
     def _load_activities(self):
         while self._list_lay.count():
@@ -1222,9 +1165,8 @@ class _PresetActivacionTab(QWidget):
                 info.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
                 wl.addWidget(info, 1)
 
-                btn_del = NMButtonOutline("Eliminar", modo=self._modo)
-                btn_del.setFixedHeight(24)
-                btn_del.setMinimumWidth(70)
+                btn_del = NMButtonOutline("✕", modo=self._modo)
+                btn_del.setFixedSize(28, 28)
                 btn_del.clicked.connect(lambda _, rid=r["id"]: self._delete_activity(rid))
                 wl.addWidget(btn_del)
 
@@ -1298,7 +1240,7 @@ class _PresetActivacionTab(QWidget):
 
         # Async run via ia_asistente
         from hub.ia_asistente import autocompletar_actividad
-        from shared.theme_qt import run_on_gui
+        from shared.qt_thread import run_on_gui
 
         def on_ok(txt: str):
             run_on_gui(lambda: self._on_ia_success(txt))

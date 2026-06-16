@@ -633,6 +633,62 @@ def generar_asignacion(modulo: str, datos: dict, nombre: str, on_result, on_erro
     _llamar(prompt, sistema, f"generar_asignacion_{modulo}", patient_id, on_result, on_error)
 
 
+def generar_resumen_paciente(datos: dict, nombre: str, on_result, on_error, patient_id=None):
+    """Genera un resumen clinico completo del paciente a partir de sus 8 modulos."""
+    if not _contexto_clinico_valido(nombre, patient_id, on_error):
+        return
+    _ensure_provider()
+
+    animo = datos.get("animo", [])
+    respiracion = datos.get("respiracion", [])
+    tcc = datos.get("tcc", [])
+    checklist = datos.get("checklist", [])
+    actividades = datos.get("actividades", [])
+    timer = datos.get("timer", [])
+    recordatorios = datos.get("recordatorios", [])
+    dbt = datos.get("dbt", [])
+
+    puntajes = [r.get("puntaje") for r in animo if r.get("puntaje")]
+    prom = round(sum(puntajes) / len(puntajes), 1) if puntajes else None
+
+    contexto = (
+        f"Fecha actual: {date.today()}\n"
+        f"Paciente: {nombre}.\n"
+        f"Registros disponibles:\n"
+        f"- Animo: {len(animo)} registros"
+        + (f", promedio {prom}/10" if prom else "") + "\n"
+        f"- Respiracion: {len(respiracion)} sesiones\n"
+        f"- TCC: {len(tcc)} registros\n"
+        f"- Rutina: {len(checklist)} completadas\n"
+        f"- Actividades conductuales: {len(actividades)} registros\n"
+        f"- Temporizador: {len(timer)} sesiones\n"
+        f"- Recordatorios asignados: {len(recordatorios)}\n"
+        f"- DBT: {len(dbt)} registros\n"
+    )
+    if tcc:
+        emociones = [r.get("emocion") for r in tcc[:5] if r.get("emocion")]
+        if emociones:
+            contexto += f"Emociones TCC recientes: {', '.join(emociones[:3])}.\n"
+
+    prompt = (
+        f"{contexto}\n"
+        "Redacta un resumen clinico ordenado y breve para el terapeuta. "
+        "Usa exactamente estas 4 secciones, cada una de 1-2 oraciones:\n"
+        "Estado general: ...\n"
+        "Adherencia y habitos: ...\n"
+        "Aspectos a monitorear: ...\n"
+        "Recomendacion de sesion: ...\n"
+        "Sin texto adicional fuera de esas secciones."
+    )
+    sistema = (
+        "Sos un asistente profesional para terapeutas de salud mental. "
+        "Analiza datos de apps de bienestar para dar contexto al terapeuta. "
+        "Nunca haces diagnosticos ni recomiendas medicacion. "
+        "Usa lenguaje profesional conciso en espanol rioplatense."
+    )
+    _llamar(prompt, sistema, "generar_resumen_paciente", patient_id, on_result, on_error)
+
+
 def autocompletar_actividad(nombre_parcial: str, on_result, on_error, patient_id=None):
     """Sugiere una descripcion corta para una actividad conductual.
 

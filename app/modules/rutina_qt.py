@@ -115,11 +115,7 @@ RUTINA_MODOS = {"solo_profesional", "mixto", "solo_paciente"}
 
 
 def _rutina_modo() -> str:
-    try:
-        modo = leer_config("rutina_modo", "mixto").strip()
-    except Exception:
-        modo = "mixto"
-    return modo if modo in RUTINA_MODOS else "mixto"
+    return "solo_profesional"
 
 
 class _HeroDayCard(NMCard):
@@ -414,8 +410,7 @@ class ModuloRutina(NMModule):
         self._empty_state = NMEmptyState(
             "routine",
             "Sin rutina asignada",
-            "Tu terapeuta te enviará actividades pronto, o podés agregarlas "
-            "vos manualmente con el botón de cada sección.",
+            "Tu terapeuta te enviara actividades pronto.",
             parent=body,
         )
         self._empty_state.hide()
