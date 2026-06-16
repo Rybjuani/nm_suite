@@ -37,7 +37,6 @@ try:
         ThemeManager,
         NMCard,
         NMTabs,
-        NMTextArea,
     )
     from shared.theme_qt import (
         norm_modo,
@@ -63,7 +62,6 @@ except ImportError:
         ThemeManager,
         NMCard,
         NMTabs,
-        NMTextArea,
     )
     from shared.theme_qt import (
         norm_modo,
@@ -437,143 +435,6 @@ class _SkillCard(NMCard):
         self.guide_lbl.setStyleSheet(f"color: {v3c('teal', self._modo).name()};")
 
 
-class _PracticeHistoryRow(NMCard):
-    """Fila en la vista de Historial."""
-    
-    def __init__(self, record: dict, modo: str = None, parent=None):
-        self._record = record
-        modo_norm = norm_modo(modo or _tm().modo)
-        family_color_key = {
-            "mindfulness": "teal",
-            "distress_tolerance": "danger",
-            "emotion_regulation": "warning",
-            "interpersonal_effectiveness": "primary"
-        }.get(record["familia"], "text")
-        initial_accent = v3c(family_color_key, modo_norm).name()
-        
-        super().__init__(parent=parent, modo=modo, clickable=False, glow=True, accent_color=initial_accent)
-        
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(20, 12, 16, 12)
-        lay.setSpacing(6)
-        
-        row1 = QHBoxLayout()
-        self.title_lbl = QLabel(record["title"])
-        self.title_lbl.setFont(v3_font("size_body", weight=TYPOGRAPHY["weight_bold"]))
-        row1.addWidget(self.title_lbl)
-        
-        row1.addStretch()
-        
-        self.date_lbl = QLabel(f"{record['fecha']} {record['hora']}")
-        self.date_lbl.setFont(qfont("size_caption"))
-        row1.addWidget(self.date_lbl)
-        lay.addLayout(row1)
-        
-        row2 = QHBoxLayout()
-        family_title = {
-            "mindfulness": "Mindfulness",
-            "distress_tolerance": "Tolerancia",
-            "emotion_regulation": "Regulación",
-            "interpersonal_effectiveness": "Efectividad"
-        }.get(record["familia"], "")
-        
-        desc_text = f"{family_title}"
-        if record.get("necesidad"):
-            desc_text += f" · {record['necesidad']}"
-        self.desc_lbl = QLabel(desc_text)
-        self.desc_lbl.setFont(qfont("size_small"))
-        row2.addWidget(self.desc_lbl)
-        
-        row2.addStretch()
-        
-        distress_text = ""
-        if record.get("malestar_antes") is not None and record.get("malestar_despues") is not None:
-            distress_text = f"Malestar: {record['malestar_antes']} → {record['malestar_despues']}"
-        elif record.get("malestar_antes") is not None:
-            distress_text = f"Malestar antes: {record['malestar_antes']}"
-        elif record.get("malestar_despues") is not None:
-            distress_text = f"Malestar ahora: {record['malestar_despues']}"
-            
-        if distress_text:
-            self.distress_lbl = QLabel(distress_text)
-            self.distress_lbl.setFont(qfont("size_caption"))
-            row2.addWidget(self.distress_lbl)
-        
-        dur_min = max(1, record["duracion_seg"] // 60)
-        self.dur_lbl = QLabel(f"⏱ {dur_min} min")
-        self.dur_lbl.setFont(qfont("size_caption"))
-        row2.addWidget(self.dur_lbl)
-        
-        result_text = {
-            "ayudo": "Me ayudó",
-            "parcial": "Un poco",
-            "no_esta_vez": "No esta vez",
-            "sin_evaluar": "Sin evaluar"
-        }.get(record["resultado"], "Sin evaluar")
-        
-        self.result_badge = QLabel(result_text)
-        self.result_badge.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
-        row2.addWidget(self.result_badge)
-        lay.addLayout(row2)
-        
-        if record.get("nota"):
-            self.note_lbl = QLabel(f"“{record['nota']}”")
-            self.note_lbl.setFont(qfont("size_caption"))
-            self.note_lbl.setWordWrap(True)
-            lay.addWidget(self.note_lbl)
-            
-        self.setMinimumHeight(75)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-            
-        self._apply_theme(self._modo)
-        
-    def _apply_theme(self, modo: str):
-        self._modo = norm_modo(modo)
-        
-        family_color_key = {
-            "mindfulness": "teal",
-            "distress_tolerance": "danger",
-            "emotion_regulation": "warning",
-            "interpersonal_effectiveness": "primary"
-        }.get(self._record["familia"], "text")
-        accent_color_hex = v3c(family_color_key, self._modo).name()
-        self.set_accent(accent_color_hex)
-        
-        super()._apply_theme(self._modo)
-        
-        self.title_lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-        self.date_lbl.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()};")
-        self.desc_lbl.setStyleSheet(f"color: {v3c('ink_secondary', self._modo).name()};")
-        self.dur_lbl.setStyleSheet(f"color: {v3c('ink_secondary', self._modo).name()};")
-        if hasattr(self, "distress_lbl"):
-            self.distress_lbl.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()};")
-        
-        # Result badge
-        res = self.result_badge.text()
-        val = "sin_evaluar"
-        if "ayud" in res:
-            val = "ayudo"
-        elif "poco" in res:
-            val = "parcial"
-        elif "esta vez" in res:
-            val = "no_esta_vez"
-            
-        badge_bg = {
-            "ayudo": v3c("teal", self._modo).name(),
-            "parcial": v3c("warning", self._modo).name(),
-            "no_esta_vez": v3c("danger", self._modo).name(),
-            "sin_evaluar": v3c("bg_subtle", self._modo).name()
-        }.get(val, v3c("bg_subtle", self._modo).name())
-        badge_fg = "#FFFFFF" if val != "sin_evaluar" else v3c("text", self._modo).name()
-        
-        self.result_badge.setStyleSheet(
-            f"color: {badge_fg}; background: {badge_bg}; "
-            "padding: 2px 6px; border-radius: 4px;"
-        )
-        if hasattr(self, "note_lbl"):
-            self.note_lbl.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()}; font-style: italic;")
-
-
 class _StepProgressIndicator(QWidget):
     """Horizontal step dots indicator with smooth family semantic colors."""
     
@@ -916,10 +777,9 @@ class _SkillPracticeView(QWidget):
 
 
 class _PracticeClosure(QWidget):
-    """Pantalla de evaluación final y notas antes de guardar."""
-    
+    """Pantalla de evaluación final antes de guardar."""
+
     saved = pyqtSignal(object, object, str, str)  # (antes, despues, resultado, nota)
-    cancelled = pyqtSignal()
     
     def __init__(self, skill_title: str, modo: str = None, parent=None):
         super().__init__(parent)
@@ -995,29 +855,13 @@ class _PracticeClosure(QWidget):
         # Preselect "sin_evaluar"
         self._select_resultado("sin_evaluar")
         
-        # Nota
-        self.lbl_nota = QLabel("Nota o comentario breve (Opcional)")
-        self.lbl_nota.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_semibold"]))
-        lay.addWidget(self.lbl_nota)
-        
-        self.txt_nota = NMTextArea(placeholder="Escribí una nota corta...", modo=self._modo)
-        self.txt_nota.setMaximumHeight(80)
-        lay.addWidget(self.txt_nota)
-        
         lay.addStretch()
-        
-        # Controls
+
         btn_lay = QHBoxLayout()
-        self.btn_cancel = NMButton("Salir sin guardar", parent=self, variant="ghost", size="md")
-        self.btn_cancel.clicked.connect(self.cancelled.emit)
-        btn_lay.addWidget(self.btn_cancel)
-        
         btn_lay.addStretch()
-        
         self.btn_save = NMButton("Guardar práctica", parent=self, variant="gradient", size="md")
         self.btn_save.clicked.connect(self._save_practice)
         btn_lay.addWidget(self.btn_save)
-        
         lay.addLayout(btn_lay)
         
         self._apply_theme(self._modo)
@@ -1029,8 +873,7 @@ class _PracticeClosure(QWidget):
         self.lbl_antes.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
         self.lbl_despues.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
         self.lbl_res.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-        self.lbl_nota.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-        
+
         for btn in self.antes_buttons:
             btn._apply_theme(self._modo)
         for btn in self.despues_buttons:
@@ -1058,73 +901,7 @@ class _PracticeClosure(QWidget):
             return
         self._is_saved = True
         self.btn_save.setEnabled(False)
-        self.btn_cancel.setEnabled(False)
-        self.saved.emit(self._antes, self._despues, self._resultado, self.txt_nota.toPlainText().strip())
-
-
-class _DbtEmptyHistoryState(QWidget):
-    """Beautiful and premium empty state for history with quick actions."""
-    
-    def __init__(self, parent_module, parent=None, modo: str = None):
-        super().__init__(parent)
-        self._parent_module = parent_module
-        self._modo = norm_modo(modo)
-        
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(24, 40, 24, 40)
-        lay.setSpacing(12)
-        lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
-        self.icon_lbl = QLabel()
-        self.icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lay.addWidget(self.icon_lbl)
-        
-        self.title_lbl = QLabel("Sin prácticas en el historial")
-        self.title_lbl.setFont(v3_font("size_h3", weight=TYPOGRAPHY["weight_bold"]))
-        self.title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lay.addWidget(self.title_lbl)
-        
-        self.desc_lbl = QLabel("Las prácticas guiadas que completes se registrarán acá para que puedas hacer un seguimiento de tu progreso y bienestar.")
-        self.desc_lbl.setFont(qfont("size_small"))
-        self.desc_lbl.setWordWrap(True)
-        self.desc_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.desc_lbl.setMaximumWidth(320)
-        lay.addWidget(self.desc_lbl)
-        
-        lay.addSpacing(8)
-        
-        btn_lay = QHBoxLayout()
-        btn_lay.setSpacing(10)
-        btn_lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
-        self.btn_now = NMButton("¿Qué necesito ahora?", parent=self, variant="secondary", size="sm")
-        self.btn_now.clicked.connect(self._go_to_now)
-        btn_lay.addWidget(self.btn_now)
-        
-        self.btn_lib = NMButton("Ver biblioteca", parent=self, variant="gradient", size="sm")
-        self.btn_lib.clicked.connect(self._go_to_lib)
-        btn_lay.addWidget(self.btn_lib)
-        
-        lay.addLayout(btn_lay)
-        self._apply_theme(self._modo)
-        
-    def _go_to_now(self):
-        self._parent_module._tabs.set_current(0)
-        
-    def _go_to_lib(self):
-        self._parent_module._tabs.set_current(1)
-        
-    def _apply_theme(self, modo: str):
-        self._modo = norm_modo(modo)
-        from shared.icons_svg import nm_svg_pixmap
-        
-        icon_color = v3c("textMuted", self._modo).name()
-        self.icon_lbl.setPixmap(nm_svg_pixmap("spark", color=icon_color, size=32))
-        
-        self.title_lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-        self.desc_lbl.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()};")
-        self.btn_now._apply_theme(self._modo)
-        self.btn_lib._apply_theme(self._modo)
+        self.saved.emit(self._antes, self._despues, self._resultado, "")
 
 
 class ModuloDBT(NMModule):
@@ -1153,7 +930,7 @@ class ModuloDBT(NMModule):
         self._main_layout.setSpacing(16)
         
         # Tabs at the top
-        self._tabs = NMTabs(["Ahora", "Biblioteca", "Historial"], modo=self._modo, parent=self)
+        self._tabs = NMTabs(["Ahora", "Biblioteca"], modo=self._modo, parent=self)
         self._tabs.changed.connect(self._on_tab_changed)
         self._main_layout.addWidget(self._tabs)
         
@@ -1164,11 +941,9 @@ class ModuloDBT(NMModule):
         # 3 main views
         self._view_ahora = self._build_view_ahora()
         self._view_biblioteca = self._build_view_biblioteca()
-        self._view_historial = self._build_view_historial()
-        
+
         self._view_stack.addWidget(self._view_ahora)
         self._view_stack.addWidget(self._view_biblioteca)
-        self._view_stack.addWidget(self._view_historial)
         
         self._practice_view = None
         self._closure_view = None
@@ -1183,12 +958,8 @@ class ModuloDBT(NMModule):
         self._view_stack.setCurrentIndex(idx)
         self._tabs.show()
         
-        if idx == 0:
-            self._load_recent_practices()
-        elif idx == 1:
+        if idx == 1:
             self._filter_library()
-        elif idx == 2:
-            self._load_history()
             
     def on_enter(self):
         super().on_enter()
@@ -1230,18 +1001,7 @@ class ModuloDBT(NMModule):
             grid.addWidget(card, i // 2, i % 2)
             
         lay.addLayout(grid)
-        
-        # Recent section
-        lbl_recent = QLabel("Recientes")
-        lbl_recent.setObjectName("DbtRecentHeaderLabel")
-        lbl_recent.setFont(v3_font("size_body", weight=TYPOGRAPHY["weight_bold"]))
-        lbl_recent.setStyleSheet(f"color: {v3c('text', self._modo).name()}; padding-top: 8px;")
-        lay.addWidget(lbl_recent)
-        
-        self._recent_layout = QVBoxLayout()
-        self._recent_layout.setSpacing(8)
-        lay.addLayout(self._recent_layout)
-        
+
         # Clinical safety note at the bottom
         lbl_safety = QLabel(t("text.module.dbt.safety_note", "Esta es una herramienta educativa para la práctica de habilidades. No reemplaza la atención profesional ni de emergencia."))
         lbl_safety.setObjectName("DbtSafetyLabel")
@@ -1308,141 +1068,6 @@ class ModuloDBT(NMModule):
                 card.clicked.connect(lambda s=skill: self.start_practice(s))
                 self._library_flow.addWidget(card)
                 
-    def _build_view_historial(self) -> QWidget:
-        widget = QWidget()
-        lay = QVBoxLayout(widget)
-        lay.setContentsMargins(0, 0, 0, 0)
-        lay.setSpacing(12)
-        
-        # Scroll Area for History Rows
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-        self._historial_scroll = scroll
-        
-        self._history_container = QWidget()
-        self._history_container.setStyleSheet("background: transparent;")
-        self._history_layout = QVBoxLayout(self._history_container)
-        self._history_layout.setContentsMargins(0, 0, 0, 0)
-        self._history_layout.setSpacing(10)
-        self._history_layout.addStretch()
-        
-        scroll.setWidget(self._history_container)
-        lay.addWidget(scroll)
-        
-        return widget
-        
-    def _load_history(self):
-        # Clear previous rows except stretch
-        for i in reversed(range(self._history_layout.count() - 1)):
-            item = self._history_layout.takeAt(i)
-            w = item.widget()
-            if w:
-                w.deleteLater()
-                
-        # Query practices
-        try:
-            with conexion() as conn:
-                rows = conn.execute(
-                    "SELECT record_id, fecha, hora, skill_id, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota "
-                    "FROM dbt_practicas ORDER BY created_at DESC"
-                ).fetchall()
-        except Exception as e:
-            _log.error(f"Error loading history: {e}")
-            rows = []
-            
-        if not rows:
-            for w in self._history_container.findChildren(_DbtEmptyHistoryState):
-                w.deleteLater()
-            empty_state = _DbtEmptyHistoryState(self, parent=self._history_container, modo=self._modo)
-            empty_state.setObjectName("EmptyHistoryLabel")
-            self._history_layout.insertWidget(0, empty_state)
-        else:
-            for r in rows:
-                skill = DBT_SKILLS.get(r["skill_id"])
-                title = skill["title"] if skill else r["skill_id"]
-                record_dict = dict(r)
-                record_dict["title"] = title
-                
-                row_w = _PracticeHistoryRow(record_dict, modo=self._modo, parent=self._history_container)
-                self._history_layout.insertWidget(self._history_layout.count() - 1, row_w)
-                
-    def _load_recent_practices(self):
-        while self._recent_layout.count():
-            item = self._recent_layout.takeAt(0)
-            w = item.widget()
-            if w:
-                w.deleteLater()
-                
-        try:
-            with conexion() as conn:
-                rows = conn.execute(
-                    "SELECT record_id, fecha, hora, skill_id, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota "
-                    "FROM dbt_practicas ORDER BY created_at DESC LIMIT 3"
-                ).fetchall()
-        except Exception as e:
-            _log.error(f"Error loading recent: {e}")
-            rows = []
-            
-        if not rows:
-            card = NMCard(parent=self, clickable=False, modo=self._modo)
-            card.setObjectName("RecentEmptyCard")
-            card_lay = QVBoxLayout(card)
-            card_lay.setContentsMargins(16, 16, 16, 16)
-            card_lay.setSpacing(12)
-            
-            lbl_desc = QLabel("Acá van a aparecer tus prácticas más recientes para que puedas repetirlas fácilmente. ¿Querés empezar una ahora?")
-            lbl_desc.setObjectName("RecentEmptyDesc")
-            lbl_desc.setFont(qfont("size_small"))
-            lbl_desc.setWordWrap(True)
-            lbl_desc.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()};")
-            card_lay.addWidget(lbl_desc)
-            
-            btn_start = NMButton("Explorar Biblioteca de Habilidades", parent=card, variant="secondary", size="sm")
-            btn_start.clicked.connect(lambda: self._tabs.set_current(1))
-            card_lay.addWidget(btn_start)
-            
-            self._recent_layout.addWidget(card)
-        else:
-            for r in rows:
-                skill = DBT_SKILLS.get(r["skill_id"])
-                title = skill["title"] if skill else r["skill_id"]
-                
-                family_color_key = {
-                    "mindfulness": "teal",
-                    "distress_tolerance": "danger",
-                    "emotion_regulation": "warning",
-                    "interpersonal_effectiveness": "primary"
-                }.get(r["familia"], "text")
-                initial_accent = v3c(family_color_key, self._modo).name()
-                
-                # Card row for recent
-                row_w = NMCard(parent=self, clickable=False, modo=self._modo, glow=True, accent_color=initial_accent)
-                row_w.setProperty("dbt_family", r["familia"])
-                
-                row_lay = QHBoxLayout(row_w)
-                row_lay.setContentsMargins(18, 10, 16, 10)
-                
-                lbl_title = QLabel(title)
-                lbl_title.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_bold"]))
-                lbl_title.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-                row_lay.addWidget(lbl_title)
-                
-                lbl_date = QLabel(f"{r['fecha']} {r['hora']}")
-                lbl_date.setFont(qfont("size_caption"))
-                lbl_date.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()};")
-                row_lay.addWidget(lbl_date)
-                
-                row_lay.addStretch()
-                
-                btn_retry = NMButton("Volver a practicar", parent=row_w, variant="secondary", size="sm")
-                if skill:
-                    btn_retry.clicked.connect(lambda checked=False, s=skill: self.start_practice(s))
-                row_lay.addWidget(btn_retry)
-                
-                self._recent_layout.addWidget(row_w)
-                
     def start_practice(self, skill: dict):
         self._cleanup_practice_flow()
         self._tabs.hide()
@@ -1474,7 +1099,6 @@ class ModuloDBT(NMModule):
         skill_title = skill["title"] if skill else ""
         
         self._closure_view = _PracticeClosure(skill_title, modo=self._modo, parent=self)
-        self._closure_view.cancelled.connect(self._on_practice_cancelled)
         self._closure_view.saved.connect(self._on_practice_saved)
         
         self._main_layout.addWidget(self._closure_view)
@@ -1523,7 +1147,7 @@ class ModuloDBT(NMModule):
         self._cleanup_practice_flow()
         self._tabs.show()
         self._view_stack.show()
-        self._tabs.set_current(2)  # Return to Historial tab to see the saved entry
+        self._tabs.set_current(0)
         
     def _get_need_text(self, family: str) -> str:
         return {
@@ -1568,9 +1192,6 @@ class ModuloDBT(NMModule):
         # Style scroll areas dynamically on theme change
         if hasattr(self, "_biblioteca_scroll") and self._biblioteca_scroll:
             self._biblioteca_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-        if hasattr(self, "_historial_scroll") and self._historial_scroll:
-            self._historial_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-        
         # Trigger theme re-apply for all internal views
         if hasattr(self, "_view_ahora"):
             # Recurse children manually
@@ -1587,18 +1208,11 @@ class ModuloDBT(NMModule):
                     child.set_accent(accent_color_hex)
                 if hasattr(child, "_apply_theme"):
                     child._apply_theme(self._modo)
-            for card in self._view_ahora.findChildren(NMCard, "RecentEmptyCard"):
-                for lbl in card.findChildren(QLabel, "RecentEmptyDesc"):
-                    lbl.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()};")
-                for btn in card.findChildren(NMButton):
-                    btn._apply_theme(self._modo)
             for lbl in self._view_ahora.findChildren(QLabel):
                 obj_name = lbl.objectName()
                 if obj_name == "DbtEyebrowLabel":
                     lbl.setStyleSheet(f"color: {v3c('ink_secondary', self._modo).name()};")
                 elif obj_name == "DbtPromptLabel":
-                    lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-                elif obj_name == "DbtRecentHeaderLabel":
                     lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
                 elif obj_name == "DbtSafetyLabel":
                     lbl.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()};")
@@ -1610,15 +1224,6 @@ class ModuloDBT(NMModule):
             if hasattr(self, "_family_tabs"):
                 self._family_tabs._apply_theme(self._modo)
                 
-        if hasattr(self, "_view_historial"):
-            for child in self._view_historial.findChildren(NMCard):
-                if hasattr(child, "_apply_theme"):
-                    child._apply_theme(self._modo)
-                    
-        # Apply theme to all empty history states
-        for w in self.findChildren(_DbtEmptyHistoryState):
-            w._apply_theme(self._modo)
-            
         # Forward theme calls to active practice flows
         if hasattr(self, "_practice_view") and self._practice_view:
             if hasattr(self._practice_view, "_apply_theme"):

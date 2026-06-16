@@ -47,8 +47,6 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QSizePolicy,
-    QFrame,
-    QScrollArea,
 )
 
 try:
@@ -656,81 +654,6 @@ class _StepCard(NMCard):
         self._apply_step_styles()
 
 
-# ── _HistorialCard ──────────────────────────────────────────────────────────
-
-
-class _HistorialMiniCard(NMCard):
-    """Card mini de sesión pasada: fecha + duración + ring de ciclos."""
-
-    def __init__(
-        self, fecha: str, hora: str, duracion: float, ciclos: int, modo: str = None, parent=None
-    ):
-        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
-        self._fecha = fecha
-        self._hora = hora
-        self._duracion = duracion
-        self._ciclos = ciclos
-        self._build()
-
-    def _build(self):
-        lay = QHBoxLayout(self)
-        lay.setContentsMargins(
-            V3_SP["sm"], V3_SP["xs"], V3_SP["sm"], V3_SP["xs"]
-        )  # compact R5A: era md/md
-        lay.setSpacing(V3_SP["sm"])
-
-        # Ring chico con % ciclos vs target (15 ciclos = full). Sin label "NN%":
-        # a 32px el texto no entra y se montaba sobre el arco (doc del propio
-        # NMModuleRing); el progreso lo comunica el arco y los ciclos el texto.
-        ring_pct = min(self._ciclos / 15.0, 1.0)
-        self._ring = NMModuleRing(
-            size=32, pct=ring_pct, modo=self._modo, show_label=False
-        )
-        lay.addWidget(self._ring)
-
-        col = QVBoxLayout()
-        col.setSpacing(0)
-        self._date_lbl = QLabel(self._format_date())
-        self._date_lbl.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
-        col.addWidget(self._date_lbl)
-        self._dur_lbl = QLabel(self._format_duration())
-        self._dur_lbl.setFont(qfont("size_caption_xs"))
-        col.addWidget(self._dur_lbl)
-        lay.addLayout(col, stretch=1)
-        self._apply_hist_styles()
-
-    def _format_date(self) -> str:
-        try:
-            import datetime as dt
-
-            d = dt.datetime.strptime(self._fecha, "%Y-%m-%d").date()
-            today = dt.date.today()
-            if d == today:
-                return f"Hoy · {self._hora[:5]}"
-            if d == today - dt.timedelta(days=1):
-                return f"Ayer · {self._hora[:5]}"
-            return f"{d.strftime('%d/%m')} · {self._hora[:5]}"
-        except Exception:
-            return f"{self._fecha} {self._hora[:5]}"
-
-    def _format_duration(self) -> str:
-        return f"{self._duracion:g} min · {self._ciclos} ciclos"
-
-    def _apply_hist_styles(self):
-        self._date_lbl.setStyleSheet(
-            f"color: {v3c('text', self._modo).name()}; background: transparent;"
-        )
-        self._dur_lbl.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-        )
-
-    def _apply_theme(self, modo: str):
-        super()._apply_theme(modo)
-        self._ring._modo = self._modo
-        self._ring.update()
-        self._apply_hist_styles()
-
-
 # ── ModuloRespiracion v3 ─────────────────────────────────────────────────────
 
 
@@ -946,38 +869,6 @@ class ModuloRespiracion(NMModule):
         # Dummy hidden label to preserve compatibility with existing status update methods
         self._chrono_meta = QLabel()
 
-        # Card de historial ESTÁTICA (decisión owner #3): reemplaza el drawer
-        # colapsable feo. Siempre visible a la derecha; aprovecha el espacio libre
-        # del módulo. El scroll interno acota la lista para que no rompa el layout.
-        # Card redondeada coherente con el resto del producto (S04): el motivo
-        # original del radius=0 era que pegada al borde de la ventana "leía
-        # desprolijo" — se resuelve con el margen de main_page_layout, no
-        # aplanando la card (que partía la pantalla en dos lenguajes visuales).
-        self._history_card = NMCard(modo=self._modo, clickable=False, glow=False)
-        self._history_card.setFixedWidth(236)
-        _hist_outer = QVBoxLayout(self._history_card)
-        _hist_outer.setContentsMargins(V3_SP["md"], V3_SP["md"], V3_SP["md"], V3_SP["md"])
-        _hist_outer.setSpacing(V3_SP["sm"])
-        self._hist_eyebrow = QLabel("Historial reciente")
-        self._hist_eyebrow.setFont(eyebrow_font())
-        _hist_outer.addWidget(self._hist_eyebrow)
-        main_page_layout.addSpacing(V3_SP["md"])
-        main_page_layout.addWidget(self._history_card)
-
-        self._hist_scroll = QScrollArea()
-        self._hist_scroll.setWidgetResizable(True)
-        self._hist_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self._hist_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._hist_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-        self._hist_container = QWidget()
-        self._hist_container.setStyleSheet("background: transparent;")
-        self._hist_row = QVBoxLayout(self._hist_container)
-        self._hist_row.setSpacing(V3_SP["sm"])
-        self._hist_row.setContentsMargins(0, 0, 0, 0)
-        self._hist_scroll.setWidget(self._hist_container)
-        _hist_outer.addWidget(self._hist_scroll, stretch=1)
-
-        self._cargar_historial()
         self._apply_text_styles()
 
         # Ring pulse — overlay de finalización de sesión
@@ -1012,12 +903,6 @@ class ModuloRespiracion(NMModule):
         self._session_lbl.setStyleSheet(
             f"color: {v3c('ink_primary', self._modo).name()}; background: transparent;"
         )
-        if hasattr(self, "_hist_eyebrow"):
-            self._hist_eyebrow.setStyleSheet(
-                f"color: {c}; background: transparent;"
-            )
-        if hasattr(self, "_hist_scroll"):
-            self._hist_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
 
     # ── theme ────────────────────────────────────────────────────────────────
 
@@ -1113,7 +998,6 @@ class ModuloRespiracion(NMModule):
         if hasattr(self, "_calm_pct_lbl"):
             self._calm_pct_lbl.setText("—")
         self._update_phase_chips(None)
-        self._cargar_historial()
 
     def _update_phase_chips(self, phase_idx: int | None):
         if not hasattr(self, "_chip_inhala"):
@@ -1224,7 +1108,6 @@ class ModuloRespiracion(NMModule):
         self._session_lbl.setText("00:00")
         self._chrono_meta.setText(f"Completo · {self._ciclos} ciclos")
         self._btn_play.setText("Iniciar")
-        self._cargar_historial()
 
     # ── DB (preservado exacto) ───────────────────────────────────────────────
 
@@ -1251,69 +1134,6 @@ class ModuloRespiracion(NMModule):
                 pass
         except Exception:
             _log.exception("Operation failed")
-
-    # ── historial ────────────────────────────────────────────────────────────
-
-    def _load_recent_sessions(self, limit: int = 4):
-        if visual_qa_enabled():
-            return [
-                ("2026-05-17", "08:30", 5.0, 6),
-                ("2026-05-16", "21:15", 10.0, 12),
-                ("2026-05-16", "07:00", 3.5, 4),
-                ("2026-05-15", "12:00", 5.0, 6),
-            ]
-        try:
-            conn = obtener_conexion()
-            rows = conn.execute(
-                "SELECT fecha, hora, duracion_minutos, ciclos FROM respiracion "
-                "ORDER BY fecha DESC, hora DESC LIMIT ?",
-                (limit,),
-            ).fetchall()
-            conn.close()
-            out = []
-            for r in rows:
-                if hasattr(r, "keys"):
-                    out.append(
-                        (
-                            r["fecha"],
-                            r["hora"],
-                            float(r["duracion_minutos"] or 0),
-                            int(r["ciclos"] or 0),
-                        )
-                    )
-                else:
-                    out.append((r[0], r[1], float(r[2] or 0), int(r[3] or 0)))
-            return out
-        except Exception:
-            _log.exception("Error cargando historial respiración")
-            return []
-
-    def _cargar_historial(self):
-        # Clear
-        while self._hist_row.count():
-            item = self._hist_row.takeAt(0)
-            w = item.widget()
-            if w:
-                w.deleteLater()
-        sessions = self._load_recent_sessions(10)
-        if not sessions:
-            empty = QLabel(t("text.module.respiracion.empty_state", "Sin sesiones."))
-            empty.setFont(qfont("size_small"))
-            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            empty.setStyleSheet(
-                f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-            )
-            # Centrar (h+v) el estado vacío: antes el label quedaba suelto
-            # arriba-izquierda en un panel alto (se veía "roto"). Stretch
-            # arriba/abajo + AlignCenter → estado vacío intencional.
-            self._hist_row.addStretch()
-            self._hist_row.addWidget(empty)
-            self._hist_row.addStretch()
-            return
-        for fecha, hora, dur, ciclos in sessions:
-            card = _HistorialMiniCard(fecha, hora, dur, ciclos, modo=self._modo)
-            self._hist_row.addWidget(card)
-        self._hist_row.addStretch()
 
     # ── hooks NMModule ───────────────────────────────────────────────────────
 

@@ -12,17 +12,14 @@ mensajes de apoyo globales y banco de actividades global.
 
 import logging
 
-from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QWidget,
-    QHBoxLayout,
     QLabel,
     QStackedWidget,
     QVBoxLayout,
 )
 
 from shared.components import (
-    NMButtonOutline,
     NMBadge,
     NMCard,
     NMListRow,
@@ -126,19 +123,6 @@ class PersonalizacionGlobalView(QWidget):
         ep.setContentsMargins(0, 0, 0, 0)
         ep.setSpacing(V3_SP["xs"])
 
-        head = QHBoxLayout()
-        head.setSpacing(V3_SP["sm"])
-        self._btn_back = NMButtonOutline("‹ Volver", modo=self._modo, size="sm")
-        self._btn_back.setFixedHeight(30)
-        self._btn_back.clicked.connect(self._back_to_list)
-        head.addWidget(self._btn_back)
-        self._editor_title = QLabel("")
-        self._editor_title.setFont(
-            qfont("size_small", weight=TYPOGRAPHY["weight_semibold"])
-        )
-        head.addWidget(self._editor_title, stretch=1)
-        ep.addLayout(head)
-
         self._editor_slot = QVBoxLayout()
         self._editor_slot.setContentsMargins(0, 0, 0, 0)
         ep.addLayout(self._editor_slot, stretch=1)
@@ -164,19 +148,23 @@ class PersonalizacionGlobalView(QWidget):
             self._sb, modo=self._modo, fixed_category=categoria
         )
         self._editor_slot.addWidget(self._editor)
-        self._editor_title.setText(f"{nombre} · Textos")
         self._stack.setCurrentIndex(1)
+        main = self.window()
+        if hasattr(main, "_chrome"):
+            main._chrome.set_module_context(f"{nombre} · Textos", None, self._back_to_list)
 
     def _back_to_list(self):
         self._stack.setCurrentIndex(0)
+        main = self.window()
+        if hasattr(main, "_chrome") and hasattr(main, "_back_to_pacientes"):
+            main._chrome.set_module_context(
+                "Personalización global", None, main._back_to_pacientes
+            )
 
     def _apply_text_styles(self):
         ink2 = v3c("ink_secondary", self._modo).name()
         self._eyebrow.setStyleSheet(f"color: {ink2}; background: transparent;")
         self._hint.setStyleSheet(f"color: {ink2}; background: transparent;")
-        self._editor_title.setStyleSheet(
-            f"color: {v3c('text', self._modo).name()}; background: transparent;"
-        )
 
     def apply_theme(self, modo: str):
         self._modo = norm_modo(modo)

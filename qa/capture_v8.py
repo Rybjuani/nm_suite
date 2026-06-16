@@ -90,14 +90,6 @@ _RECIPE_EVIDENCE_FLAGS: dict[tuple[str, str], dict[str, list[str]]] = {
         "flags": [_STATUS_REQUIRES_DATA_STATE],
         "notes": ["No-score depends on real persisted mood state; QA cache forcing is not product evidence."],
     },
-    ("suite", "home-settings-open"): {
-        "flags": [_STATUS_REQUIRES_RUNTIME, _STATUS_WRONG_VIEW],
-        "notes": ["Settings overlay is a transient child state; static main-window capture can miss it."],
-    },
-    ("suite", "animo-stats-empty"): {
-        "flags": [_STATUS_REQUIRES_DATA_STATE],
-        "notes": ["Empty mood statistics require real absence of mood history; forced QA state is not product evidence."],
-    },
     ("suite", "privacy-lock"): {
         "flags": [_STATUS_REQUIRES_RUNTIME],
         "notes": ["Standalone lock dialog does not prove the live lock route or dismissal lifecycle."],
@@ -106,29 +98,9 @@ _RECIPE_EVIDENCE_FLAGS: dict[tuple[str, str], dict[str, list[str]]] = {
         "flags": [_STATUS_REQUIRES_RUNTIME],
         "notes": ["Standalone lock error does not prove live lock route or failed-unlock lifecycle."],
     },
-    ("suite", "pin-setup"): {
-        "flags": [_STATUS_REQUIRES_RUNTIME],
-        "notes": ["Standalone PIN setup does not prove invoked setup route, chrome, or lifecycle."],
-    },
-    ("hub", "dashboard"): {
-        "flags": [_STATUS_REQUIRES_DATA_STATE],
-        "notes": ["Dashboard uses QA/demo data; real data distribution is not established by this capture."],
-    },
-    ("hub", "dashboard-empty"): {
-        "flags": [_STATUS_REQUIRES_DATA_STATE],
-        "notes": ["Empty dashboard depends on real data absence; in-memory clearing can leave demo fragments."],
-    },
     ("hub", "pacientes"): {
         "flags": [_STATUS_REQUIRES_DATA_STATE],
         "notes": ["Patient rows are QA/demo data; real patients state is not covered."],
-    },
-    ("hub", "pacientes-search"): {
-        "flags": [_STATUS_REQUIRES_DATA_STATE],
-        "notes": ["Search result quality depends on real patient records and empty-result state."],
-    },
-    ("hub", "pacientes-filter-activos"): {
-        "flags": [_STATUS_REQUIRES_DATA_STATE],
-        "notes": ["Filter state depends on real patient status distribution."],
     },
     ("hub", "pacientes-empty"): {
         "flags": [_STATUS_REQUIRES_DATA_STATE],
@@ -243,14 +215,6 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "home-no-score"}],
         },
-        "home-settings-open": {
-            "label": "Home + panel ajustes abierto",
-            "parent": "home",
-            "actions": [{"action": "navigate", "view": "home"},
-                        {"action": "call", "func": "_open_settings_over_home"},
-                        {"action": "drain", "cycles": 8},
-                        {"action": "capture", "view": "home-settings-open"}],
-        },
 
         # ── Onboarding / Auth ─────────────────────────────────────────────
         "onboarding": {
@@ -303,14 +267,6 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 8},
                         {"action": "capture", "view": "animo"}],
         },
-        "animo-emotion-chips": {
-            "label": "Animo + chips emocion",
-            "parent": "animo",
-            "actions": [{"action": "navigate", "view": "animo"},
-                        {"action": "call", "func": "_animo_toggle_chips"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "animo-emotion-chips"}],
-        },
         "animo-note-filled": {
             "label": "Animo + nota escrita",
             "parent": "animo",
@@ -318,14 +274,6 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "call", "func": "_animo_type_note"},
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "animo-note-filled"}],
-        },
-        "animo-stats-empty": {
-            "label": "Animo stats vacias",
-            "parent": "animo",
-            "actions": [{"action": "navigate", "view": "animo"},
-                        {"action": "call", "func": "_animo_clear_stats"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "animo-stats-empty"}],
         },
         "dbt-now": {
             "label": "DBT Ahora - entrada por necesidad",
@@ -361,24 +309,6 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "call", "func": "_dbt_go_to_closure"},
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "dbt-practice-closure"}],
-        },
-        "dbt-history-empty": {
-            "label": "DBT Historial - vacío",
-            "parent": "dbt-now",
-            "actions": [{"action": "navigate", "view": "dbt"},
-                        {"action": "call", "func": "_dbt_select_tab_history"},
-                        {"action": "call", "func": "_dbt_empty_history"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "dbt-history-empty"}],
-        },
-        "dbt-history-filled": {
-            "label": "DBT Historial - lleno con registros",
-            "parent": "dbt-now",
-            "actions": [{"action": "navigate", "view": "dbt"},
-                        {"action": "call", "func": "_dbt_select_tab_history"},
-                        {"action": "call", "func": "_dbt_fill_history"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "dbt-history-filled"}],
         },
 
         "respiracion": {
@@ -421,14 +351,6 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "call", "func": "_respiracion_pause"},
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "respiracion-paused"}],
-        },
-        "respiracion-historial": {
-            "label": "Respiracion historial vacio (card sin sesiones previas)",
-            "parent": None,
-            "actions": [{"action": "navigate", "view": "respiracion"},
-                        {"action": "call", "func": "_respiracion_toggle_history"},
-                        {"action": "drain", "cycles": 8},
-                        {"action": "capture", "view": "respiracion-historial"}],
         },
 
         "registro": {
@@ -619,39 +541,12 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "capture", "view": "avisos-empty"}],
         },
 
-        # ── Dialogos standalone ───────────────────────────────────────────
-        # NOTA: no existe receta "ajustes" standalone — _SettingsPanel suelto
-        # renderizaba una franja de 380x30; la ruta real (modal sobre Home)
-        # ya la cubre home-settings-open.
-        "pin-setup": {
-            "label": "Configurar PIN",
-            "parent": None,
-            "actions": [{"action": "call", "func": "_build_pin_setup"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "pin-setup"}],
-        },
     },
 
     # ═══════════════════════════════════════════════════════════════════════
     # HUB
     # ═══════════════════════════════════════════════════════════════════════
     "hub": {
-        "dashboard": {
-            "label": "Dashboard default",
-            "parent": None,
-            "actions": [{"action": "navigate", "view": "dashboard"},
-                        {"action": "drain", "cycles": 8},
-                        {"action": "capture", "view": "dashboard"}],
-        },
-        "dashboard-empty": {
-            "label": "Dashboard sin pacientes",
-            "parent": "dashboard",
-            "actions": [{"action": "navigate", "view": "dashboard"},
-                        {"action": "call", "func": "_clear_hub_patients"},
-                        {"action": "navigate", "view": "dashboard"},
-                        {"action": "drain", "cycles": 8},
-                        {"action": "capture", "view": "dashboard-empty"}],
-        },
 
         "pacientes": {
             "label": "Pacientes default",
@@ -659,38 +554,6 @@ _RECIPES: dict[str, dict[str, dict]] = {
             "actions": [{"action": "navigate", "view": "pacientes"},
                         {"action": "drain", "cycles": 8},
                         {"action": "capture", "view": "pacientes"}],
-        },
-        "pacientes-search": {
-            "label": "Pacientes con busqueda",
-            "parent": "pacientes",
-            "actions": [{"action": "navigate", "view": "pacientes"},
-                        {"action": "call", "func": "_pacientes_search"},
-                        {"action": "drain", "cycles": 8},
-                        {"action": "capture", "view": "pacientes-search"}],
-        },
-        "pacientes-filter-activos": {
-            "label": "Pacientes filtro Activos",
-            "parent": "pacientes",
-            "actions": [{"action": "navigate", "view": "pacientes"},
-                        {"action": "click", "text": "Activos"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "pacientes-filter-activos"}],
-        },
-        "pacientes-filter-sin-registros": {
-            "label": "Pacientes filtro Sin registros",
-            "parent": "pacientes",
-            "actions": [{"action": "navigate", "view": "pacientes"},
-                        {"action": "click", "text": "Sin registros"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "pacientes-filter-sin-registros"}],
-        },
-        "pacientes-filter-sin-sync": {
-            "label": "Pacientes filtro Sin sincronizacion reciente",
-            "parent": "pacientes",
-            "actions": [{"action": "navigate", "view": "pacientes"},
-                        {"action": "click", "text": "Sin sincronización reciente"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "pacientes-filter-sin-sync"}],
         },
         "pacientes-empty": {
             "label": "Pacientes empty state",
@@ -709,52 +572,17 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 8},
                         {"action": "capture", "view": "detalle"}],
         },
-        "detalle-ia": {
-            "label": "Detalle > IA tab",
-            "parent": "detalle",
-            "actions": [{"action": "navigate", "view": "detalle"},
-                        {"action": "set_tab", "tab_text": "IA"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "detalle-ia"}],
-        },
-        "detalle-registros": {
-            "label": "Detalle > Registros tab",
-            "parent": "detalle",
-            "actions": [{"action": "navigate", "view": "detalle"},
-                        {"action": "set_tab", "tab_text": "Registros"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "detalle-registros"}],
-        },
-        "detalle-registros-bottom": {
-            "label": "Detalle > Registros (scroll al final: lista de registros)",
-            "parent": "detalle-registros",
-            "actions": [{"action": "navigate", "view": "detalle"},
-                        {"action": "set_tab", "tab_text": "Registros"},
-                        {"action": "call", "func": "_registros_scroll_bottom"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "detalle-registros-bottom"}],
-        },
         "detalle-plan": {
             "label": "Detalle > Plan terapeutico tab (Recordatorios)",
             "parent": "detalle",
             "actions": [{"action": "navigate", "view": "detalle"},
-                        {"action": "set_tab", "tab_text": "Plan terapéutico"},
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "detalle-plan"}],
-        },
-        "detalle-ia-asignacion": {
-            "label": "Detalle > IA > Asignación sugerida (borrador + aprobación)",
-            "parent": "detalle-ia",
-            "actions": [{"action": "navigate", "view": "detalle-ia"},
-                        {"action": "call", "func": "_ia_scroll_to_asignacion"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "detalle-ia-asignacion"}],
         },
         "detalle-plan-timer": {
             "label": "Detalle > Plan > Temporizador",
             "parent": "detalle-plan",
             "actions": [{"action": "navigate", "view": "detalle"},
-                        {"action": "set_tab", "tab_text": "Plan terapéutico"},
                         {"action": "call", "func": "_plan_set_subtab", "index": 1},
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "detalle-plan-timer"}],
@@ -763,7 +591,6 @@ _RECIPES: dict[str, dict[str, dict]] = {
             "label": "Detalle > Plan > Rutina",
             "parent": "detalle-plan",
             "actions": [{"action": "navigate", "view": "detalle"},
-                        {"action": "set_tab", "tab_text": "Plan terapéutico"},
                         {"action": "call", "func": "_plan_set_subtab", "index": 2},
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "detalle-plan-rutina"}],
@@ -772,15 +599,13 @@ _RECIPES: dict[str, dict[str, dict]] = {
             "label": "Detalle > Plan > Activación",
             "parent": "detalle-plan",
             "actions": [{"action": "navigate", "view": "detalle"},
-                        {"action": "set_tab", "tab_text": "Plan terapéutico"},
                         {"action": "call", "func": "_plan_set_subtab", "index": 3},
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "detalle-plan-activacion"}],
         },
 
         # NOTA: no existen recetas "ia*" — IAAssistantView fue eliminada en la
-        # reestructura v1.0; la IA runtime vive en el tab IA del detalle de
-        # paciente y la cubre la receta detalle-ia.
+        # reestructura v1.0; el asistente IA fue consolidado en el Plan terapéutico.
 
         "personalizacion": {
             "label": "Personalización > módulos (textos globales)",
@@ -796,14 +621,6 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "call", "func": "_personalizacion_open_editor"},
                         {"action": "drain", "cycles": 8},
                         {"action": "capture", "view": "personalizacion-textos"}],
-        },
-        "sidebar-collapsed": {
-            "label": "Hub sidebar collapsed",
-            "parent": "dashboard",
-            "actions": [{"action": "navigate", "view": "dashboard"},
-                        {"action": "call", "func": "_sidebar_collapse"},
-                        {"action": "drain", "cycles": 8},
-                        {"action": "capture", "view": "sidebar-collapsed"}],
         },
 
         "editor-text-overrides": {
@@ -863,16 +680,6 @@ def _force_no_score(win, qapp, action):
             home._side.update_wellbeing("")
     _drain(qapp, cycles=4)
 
-
-@_register_helper
-def _open_settings_over_home(win, qapp, action):
-    """Abre el panel de ajustes sobre el Home."""
-    from app.home_qt import _SettingsPanel
-    panel = _SettingsPanel(win, getattr(win, '_modo', 'dark_hybrid'))
-    panel.show()
-    _drain(qapp, cycles=8)
-    # La captura la hara' el caller despues de drain
-    _HELPERS['_last_child'] = panel
 
 
 @_register_helper
@@ -944,23 +751,6 @@ def _privacy_lock_wrong_pin(win, qapp, action):
     _drain(qapp, cycles=4)
 
 
-@_register_helper
-def _build_pin_setup(win, qapp, action):
-    """Construye _PINSetupDialog standalone."""
-    from PyQt6.QtWidgets import QApplication
-    from shared.theme_qt import stylesheet_base
-    modo = getattr(win, '_modo', 'dark_hybrid') if win else 'dark_hybrid'
-    qa = QApplication.instance()
-    if qa:
-        qa.setStyleSheet(stylesheet_base(modo))
-    from app.home_qt import _PINSetupDialog
-    dlg = _PINSetupDialog(None, modo)
-    # Tamaño natural del diálogo (como privacy-lock); a 960x600 quedaba el
-    # contenido pegado a la izquierda con ~75% del ancho vacío.
-    dlg.show()
-    _drain(qapp, cycles=6)
-    globals()['_CURRENT_STANDALONE'] = dlg
-
 
 def _wrap_standalone_canvas(editor, modo):
     """Host con el canvas del tema para editores que en producto viven
@@ -979,40 +769,6 @@ def _wrap_standalone_canvas(editor, modo):
     return host
 
 
-@_register_helper
-def _ia_scroll_to_asignacion(win, qapp, action):
-    """Scrollea el tab IA hasta la card 'Asignación sugerida'."""
-    det = win._stack.currentWidget() if hasattr(win, "_stack") else None
-    ia = getattr(det, "_tab_ia", None)
-    scroll = getattr(ia, "_ia_scroll", None)
-    if scroll is not None:
-        bar = scroll.verticalScrollBar()
-        bar.setValue(bar.maximum())
-        _drain(qapp, cycles=4)
-
-
-@_register_helper
-def _registros_scroll_bottom(win, qapp, action):
-    """Carga datos y scrollea el tab Registros hasta el final.
-
-    La lista de registros (Termómetro/TCC/etc.) vive bajo el chart y queda
-    fuera del viewport 960x600: sin scrollear no hay evidencia del badge de
-    intensidad TCC (/10) ni del contenido recortado señalado en H13."""
-    det = win._stack.currentWidget() if hasattr(win, "_stack") else None
-    reg = getattr(det, "_tab_reg", None)
-    if reg is None:
-        return
-    if hasattr(reg, "_cargar_datos"):
-        reg._cargar_datos()
-    # La carga puede ser asíncrona (señal _datos_loaded_signal): drená amplio y
-    # re-fijá el scroll al máximo varias veces para absorber filas tardías.
-    _drain(qapp, cycles=12)
-    scroll = getattr(reg, "_scroll", None)
-    if scroll is not None:
-        bar = scroll.verticalScrollBar()
-        for _ in range(4):
-            bar.setValue(bar.maximum())
-            _drain(qapp, cycles=3)
 
 
 @_register_helper
@@ -1047,20 +803,6 @@ def _build_editor_text_overrides(win, qapp, action):
     _drain(qapp, cycles=6)
     globals()['_CURRENT_STANDALONE'] = host
 
-
-@_register_helper
-def _animo_toggle_chips(win, qapp, action):
-    """Toggleea chips de emocion en Animo."""
-    target = getattr(win, '_current_module', None) or win
-    from PyQt6.QtWidgets import QPushButton
-    buttons = [w for w in target.findChildren(QPushButton) if hasattr(w, 'isCheckable') and w.isCheckable()]
-    for btn in buttons[:3]:
-        try:
-            btn.setChecked(True)
-            btn.clicked.emit(True)
-        except Exception:
-            pass
-    _drain(qapp, cycles=4)
 
 
 @_register_helper
@@ -1352,13 +1094,6 @@ def _dbt_select_tab_library(win, qapp, action):
     _drain(qapp, cycles=4)
 
 
-@_register_helper
-def _dbt_select_tab_history(win, qapp, action):
-    target = _module_target(win)
-    if target is not None:
-        target._tabs.set_current(2)
-    _drain(qapp, cycles=4)
-
 
 @_register_helper
 def _dbt_start_stop_practice(win, qapp, action):
@@ -1398,43 +1133,6 @@ def _dbt_go_to_closure(win, qapp, action):
         _drain(qapp, cycles=4)
 
 
-@_register_helper
-def _dbt_empty_history(win, qapp, action):
-    from shared.db import conexion
-    try:
-        with conexion() as conn:
-            conn.execute("DELETE FROM dbt_practicas")
-    except Exception:
-        pass
-    target = _module_target(win)
-    if target is not None:
-        target._load_history()
-    _drain(qapp, cycles=4)
-
-
-@_register_helper
-def _dbt_fill_history(win, qapp, action):
-    from shared.db import conexion
-    import uuid
-    try:
-        with conexion() as conn:
-            conn.execute("DELETE FROM dbt_practicas")
-            conn.execute(
-                "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (str(uuid.uuid4()), "2026-06-13", "14:30:00", "distress_stop", 1, "distress_tolerance", "Atravesar un momento intenso", 8, 3, "ayudo", 120, "Me sirvió mucho para calmarme.", "2026-06-13T14:30:00Z")
-            )
-            conn.execute(
-                "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (str(uuid.uuid4()), "2026-06-14", "10:15:00", "mind_wise", 1, "mindfulness", "Volver al presente", 6, 4, "parcial", 90, "Pude enfocarme un poco mejor.", "2026-06-14T10:15:00Z")
-            )
-    except Exception:
-        pass
-    target = _module_target(win)
-    if target is not None:
-        target._load_history()
-    _drain(qapp, cycles=4)
 
 
 @_register_helper
@@ -1583,12 +1281,7 @@ def _avisos_force_empty(win, qapp, action):
 
 @_register_helper
 def _clear_hub_patients(win, qapp, action):
-    """Limpia la lista de pacientes del Hub para estados vacios.
-
-    force_recreate=True es OBLIGATORIO: con la cache de vistas, el refresh
-    suave solo reasigna _pacientes al DashboardView ya construido y este
-    decide su empty-state EN EL CONSTRUCTOR — sin recrear, dashboard-empty
-    capturaba el dashboard lleno."""
+    """Limpia la lista de pacientes del Hub para mostrar estado vacio en Pacientes."""
     if hasattr(win, '_pacientes'):
         win._pacientes = []
     if hasattr(win, '_refresh_all_views'):
@@ -1596,41 +1289,6 @@ def _clear_hub_patients(win, qapp, action):
     _drain(qapp, cycles=6)
 
 
-@_register_helper
-def _pacientes_search(win, qapp, action):
-    """Escribe busqueda en Pacientes."""
-    from shared.components import NMSearchInput
-    for search_widget in win.findChildren(NMSearchInput):
-        if search_widget.isVisible():
-            search_widget.set_text("Ana")
-            search_widget.text_changed.emit("Ana")
-            break
-    _drain(qapp, cycles=6)
-
-
-@_register_helper
-def _animo_clear_stats(win, qapp, action):
-    """Vacía las stats de Animo por la rama real del producto: serie de
-    valencia sin valores (usuario sin registros) → chart vacío y stats en
-    '—' via _cargar_grafico/_refresh_insights reales."""
-    target = _module_target(win)
-    if hasattr(target, '_get_valence_series'):
-        target._get_valence_series = lambda: ([None] * 7, [None] * 7)
-    if hasattr(target, '_load_streak'):
-        target._load_streak = lambda: 0
-    if hasattr(target, '_cargar_grafico'):
-        target._cargar_grafico()
-    if hasattr(target, '_refresh_insights'):
-        target._refresh_insights()
-    _drain(qapp, cycles=6)
-
-
-@_register_helper
-def _sidebar_collapse(win, qapp, action):
-    """Colapsa sidebar del Hub."""
-    if hasattr(win, 'set_sidebar_collapsed'):
-        win.set_sidebar_collapsed(True)
-    _drain(qapp, cycles=6)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -2413,7 +2071,7 @@ def _navigate_suite(win, view_id: str, qapp) -> None:
 
 def _navigate_hub(win, view_id: str, qapp) -> None:
     # Detalle tabs
-    if view_id in ("detalle", "detalle-ia", "detalle-registros", "detalle-plan"):
+    if view_id in ("detalle", "detalle-plan"):
         if hasattr(win, "_stack"):
             # Quitar y destruir cualquier widget en el stack que sea de tipo DetallePacienteView para evitar acumulacion
             from hub.pacientes_qt import DetallePacienteView
@@ -2442,8 +2100,6 @@ def _navigate_hub(win, view_id: str, qapp) -> None:
             det = det.currentWidget()
         if det is not None and hasattr(det, "_tabs"):
             _tab_map = {
-                "detalle-ia": "_tab_ia",
-                "detalle-registros": "_tab_reg",
                 "detalle-plan": "_tab_plan",
             }
             tab_attr = _tab_map.get(view_id)

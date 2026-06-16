@@ -68,7 +68,6 @@ try:
         last_mood as qa_last_mood,
         activity_suggestions,
     )
-    from shared.adaptive_layout_qt import NMCollapsiblePanel
 except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
@@ -105,8 +104,6 @@ except ImportError:
         last_mood as qa_last_mood,
         activity_suggestions,
     )
-    from shared.adaptive_layout_qt import NMCollapsiblePanel
-
 from shared.remote_config import t
 
 
@@ -747,7 +744,6 @@ class ModuloActividades(NMModule):
         self._suggested_cards = []
         self._row_widgets = []
         self._hidden_card_ids: set[int] = set()
-        self._history_items: list[tuple[str, str, str]] = []  # (nombre, resultado, hora)
 
         # 1. Header de módulo — NMPageHeader gestiona su propio tema
         # BL-07: título de módulo ahora en la titlebar; se conserva oculto.
@@ -809,41 +805,7 @@ class ModuloActividades(NMModule):
         self._grid_layout.setVerticalSpacing(V3_SP["sm"])
         self._scroll_layout.addWidget(self._grid_container)
 
-        # 5. Historial fijo, mismo patrón de panel que Registro TCC.
-        self._history_card = NMCollapsiblePanel(
-            "Registros previos",
-            status="Actividades completadas hoy",
-            expanded=False,
-            modo=self._modo,
-        )
-        history_lay = QVBoxLayout()
-        history_lay.setContentsMargins(0, 0, 0, 0)
-        history_lay.setSpacing(V3_SP["xs"])
-        self._history_scroll = QScrollArea(self._history_card)
-        self._history_scroll.setWidgetResizable(True)
-        self._history_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self._history_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._history_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self._history_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-        self._history_scroll.setMinimumHeight(76)
-        self._history_scroll.setMaximumHeight(180)
-        self._history_body = QWidget()
-        self._history_body.setStyleSheet("background: transparent;")
-        self._history_list_lay = QVBoxLayout()
-        self._history_list_lay.setContentsMargins(0, 0, 0, 0)
-        self._history_list_lay.setSpacing(4)
-        self._history_body.setLayout(self._history_list_lay)
-        self._history_scroll.setWidget(self._history_body)
-        history_lay.addWidget(self._history_scroll)
-        history_outer = QWidget()
-        history_outer.setStyleSheet("background: transparent;")
-        history_outer.setLayout(history_lay)
-        self._history_card.set_content(history_outer)
-        self._history_card.setMaximumHeight(240)
-        self._footer_layout.addWidget(self._history_card)
-        self._refresh_history()
-
-        # 6. Footer count
+        # 5. Footer count
         self._footer_lbl = QLabel("")
         self._footer_lbl.setFont(qfont("size_caption"))
         self._footer_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -974,14 +936,6 @@ class ModuloActividades(NMModule):
                 card_widget.deleteLater()
             except Exception:
                 pass
-        try:
-            from shared.utils import hora_actual as _hora
-            self._history_items.insert(0, (nombre, resultado, _hora()[:5]))
-            self._history_items = self._history_items[:5]
-        except Exception:
-            pass
-        self._refresh_history()
-
         if hasattr(card_widget, "set_accent"):
             color_map = {
                 "hecha": v3c("success", self._modo).name(),
@@ -1000,54 +954,6 @@ class ModuloActividades(NMModule):
             variant="success" if resultado == "hecha" else "info",
             duration_ms=2000,
         )
-
-    def _refresh_history(self):
-        """Historial fijo de hoy: hasta 5 items (nombre · estado · hora)."""
-        if not hasattr(self, "_history_list_lay"):
-            return
-        while self._history_list_lay.count():
-            item = self._history_list_lay.takeAt(0)
-            w = item.widget()
-            if w:
-                w.setParent(None)
-                w.deleteLater()
-        if not self._history_items:
-            empty = QLabel("Aún no hay registros previos.")
-            empty.setFont(qfont("size_small"))
-            empty.setStyleSheet(
-                f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-            )
-            self._history_list_lay.addWidget(empty)
-            return
-        for nombre, resultado, hora in self._history_items:
-            row = QHBoxLayout()
-            row.setContentsMargins(0, 0, 0, 0)
-            row.setSpacing(V3_SP["sm"])
-            name_lbl = QLabel(nombre)
-            name_lbl.setFont(qfont("size_small"))
-            name_lbl.setStyleSheet(
-                f"color: {v3c('text', self._modo).name()}; background: transparent;"
-            )
-            name_lbl.setWordWrap(False)
-            row.addWidget(name_lbl, stretch=1)
-            tag = "Hecha" if resultado == "hecha" else "No se pudo"
-            tag_color = v3c("success", self._modo).name() if resultado == "hecha" else v3c("danger", self._modo).name()
-            tag_lbl = QLabel(tag)
-            tag_lbl.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
-            tag_lbl.setStyleSheet(
-                f"color: {tag_color}; background: transparent;"
-            )
-            row.addWidget(tag_lbl)
-            time_lbl = QLabel(hora)
-            time_lbl.setFont(qfont_mono(9, bold=False))
-            time_lbl.setStyleSheet(
-                f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-            )
-            row.addWidget(time_lbl)
-            wrap = QWidget()
-            wrap.setStyleSheet("background: transparent;")
-            wrap.setLayout(row)
-            self._history_list_lay.addWidget(wrap)
 
     # ── Data access (lógica preservada) ─────────────────────────────────────
 

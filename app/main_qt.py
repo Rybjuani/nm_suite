@@ -206,7 +206,6 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
             title="NeuroMood Suite",
             modo=self._modo,
             show_theme_toggle=True,
-            show_settings_btn=True,
             parent=central,
         )
         self._chrome.theme_toggle.connect(self._toggle_theme)
@@ -244,8 +243,6 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
             username=self._nombre,
         )
         self._home._theme_switch_requested.connect(self._toggle_theme)
-        # La tuerca de ajustes vive en la titlebar (chrome), no en el Home.
-        self._chrome.settings_clicked.connect(self._home._open_settings)
         # Estado de sync del footer: el hilo emite el signal, el slot corre en UI.
         self._sync_status_sig.connect(self._home.set_sync_status)
         self._stack.addWidget(self._home)
@@ -787,18 +784,6 @@ def main():
             sys.exit(0)
         if not _is_onboarded():
             _show_onboarding_required()
-
-    # ── Pantalla de privacidad (F3.A) ─────────────────────────────────────
-    # Se ejecuta ANTES de construir NeuroMoodApp para que nunca se vea el Home
-    # si el usuario no pasa el PIN.
-    try:
-        from app.privacy_lock_qt import check_lock
-
-        if not check_lock(parent=None):
-            _log.info("Privacy lock: acceso denegado — cerrando.")
-            sys.exit(0)
-    except Exception as _lock_exc:
-        _log.warning("Privacy lock omitido por error: %s", _lock_exc)
 
     window = NeuroMoodApp()
     window.show()

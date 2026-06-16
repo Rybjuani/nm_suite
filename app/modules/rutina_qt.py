@@ -49,7 +49,6 @@ try:
         NMCard,
         NMIcon,
         NMModuleRing,
-        NMDayNote,
         NMCustomCheck,
         NMEmptyState,
         NMProgressLine,
@@ -65,7 +64,6 @@ try:
         v3c,
         V3_SP,
         V3_RD,
-        stylesheet_textedit,
         stylesheet_scrollarea,
         PAD_CONTAINER,
         eyebrow_font,
@@ -85,7 +83,6 @@ except ImportError:
         NMCard,
         NMIcon,
         NMModuleRing,
-        NMDayNote,
         NMCustomCheck,
         NMEmptyState,
     )
@@ -94,7 +91,6 @@ except ImportError:
         qfont_mono,
         v3c,
         V3_SP,
-        stylesheet_textedit,
         eyebrow_font,
     )
     from shared.theme import TYPOGRAPHY
@@ -442,9 +438,6 @@ class ModuloRutina(NMModule):
         lay.addWidget(self._sections_grid_widget)
         self._relayout_sections()
 
-        # 5. Nota del día (NMDayNote ya existente)
-        self._build_nota_dia(lay)
-
         self._apply_text_styles()
         self._load_tasks()
         QTimer.singleShot(0, self._relayout_sections)
@@ -487,11 +480,6 @@ class ModuloRutina(NMModule):
 
     def _on_theme(self, modo: str) -> None:
         super()._on_theme(modo)
-        if hasattr(self, "_nota_txt") and self._nota_txt is not None:
-            try:
-                self._nota_txt.setStyleSheet(stylesheet_textedit(self._modo))
-            except Exception:
-                pass
         if hasattr(self, "_hero_card"):
             self._hero_card._modo = self._modo
             self._hero_card._apply_theme(self._modo)
@@ -792,85 +780,6 @@ class ModuloRutina(NMModule):
         except Exception:
             _log.exception("Operation failed")
         self._load_tasks()
-
-    # ── nota del día (lógica preservada) ─────────────────────────────────────
-
-    def _build_nota_dia(self, parent_layout: QVBoxLayout):
-        existing_note: str | None = None
-        if visual_qa_enabled():
-            existing_note = "Día estable, energía alta y buena adherencia a la rutina."
-        else:
-            try:
-                conn = obtener_conexion()
-                row = conn.execute(
-                    "SELECT nota FROM checklist_notas_dia WHERE fecha = ?", (fecha_hoy(),)
-                ).fetchone()
-                conn.close()
-                if row and row[0]:
-                    existing_note = row[0]
-            except Exception:
-                _log.exception("Operation failed")
-
-        # Disponibilidad (feedback owner v1.0): la nota se habilita cuando el
-        # PROFESIONAL configuró la rutina (tareas origen<>'manual'); una nota
-        # ya guardada NO bloquea — se puede seguir editando (el upsert pisa).
-        prof_checklist = visual_qa_enabled()
-        if not prof_checklist:
-            try:
-                conn = obtener_conexion()
-                n_prof = conn.execute(
-                    "SELECT COUNT(*) FROM checklist_tareas "
-                    "WHERE COALESCE(origen, 'manual') <> 'manual'"
-                ).fetchone()[0]
-                conn.close()
-                prof_checklist = bool(n_prof)
-            except Exception:
-                _log.exception("Operation failed")
-
-        locked = not prof_checklist
-        lock_reason = (
-            "Disponible cuando tu profesional configure tu rutina." if locked else ""
-        )
-
-        self._day_note = NMDayNote(locked=locked, lock_reason=lock_reason, modo=self._modo)
-        self._day_note.setMaximumHeight(116 if locked else 170)
-        self._day_note.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
-        note_textarea = getattr(self._day_note, "_textarea", None)
-        if note_textarea is not None:
-            note_textarea.setFixedHeight(64)
-        if existing_note:
-            # Nota de HOY ya guardada: se carga EDITABLE (no se cierra). El owner
-            # pidió que la nota no se "expanda/cierre" tras guardar; la confirmación
-            # es un toast emergente, y el upsert por fecha permite re-editarla.
-            self._day_note.set_note(existing_note)
-        self._day_note.note_changed.connect(self._guardar_nota_text)
-        # Compatibilidad con _on_theme: nombrar attribute si el día_note expone textarea
-        self._nota_txt = getattr(self._day_note, "_text", None)
-        parent_layout.addWidget(self._day_note)
-
-    def _guardar_nota_text(self, text: str):
-        nota = text.strip()
-        if not nota:
-            return
-        # Al guardarse (botón Guardar / FocusOut / Enter) la nota NO se cierra ni
-        # expande: queda editable y la confirmación es un toast emergente (pedido
-        # owner). El upsert por fecha permite seguir editándola el mismo día.
-        if visual_qa_enabled():
-            NMToast.display(
-                self.window(), "Nota guardada en demo visual", variant="success", duration_ms=1600
-            )
-            return
-        try:
-            with conexion() as conn:
-                conn.execute(
-                    "INSERT INTO checklist_notas_dia (fecha, nota) VALUES (?, ?) "
-                    "ON CONFLICT(fecha) DO UPDATE SET nota = excluded.nota",
-                    (fecha_hoy(), nota),
-                )
-        except Exception:
-            _log.exception("Operation failed")
-            return
-        NMToast.display(self.window(), "Nota guardada", variant="success", duration_ms=2000)
 
     # ── Hooks NMModule ───────────────────────────────────────────────────────
 

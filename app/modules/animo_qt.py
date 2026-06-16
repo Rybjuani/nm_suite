@@ -37,12 +37,9 @@ from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
-    QGridLayout,
     QLabel,
     QFrame,
-    QPushButton,
     QBoxLayout,
-    QSizePolicy,
 )
 
 try:
@@ -114,35 +111,6 @@ from shared.design_tokens import MOOD_PALETTE
 from shared.remote_config import t
 
 
-EMOCIONES_POSITIVAS = {"Calma", "Energía", "Gratitud"}
-EMOCIONES_NEGATIVAS = {"Tensión", "Tristeza", "Cansancio"}
-EMOCIONES_VALIDAS = EMOCIONES_POSITIVAS | EMOCIONES_NEGATIVAS
-
-
-def valencia_de_emocion(emocion: str) -> str:
-    """'positiva' | 'negativa' | 'neutral' según la emoción elegida."""
-    if emocion in EMOCIONES_POSITIVAS:
-        return "positiva"
-    if emocion in EMOCIONES_NEGATIVAS:
-        return "negativa"
-    return "neutral"
-
-
-def bienestar_desde_emocion(emocion: str, intensidad: int) -> int:
-    """Mapea emoción+intensidad (1-10) → bienestar (1-10) coherente con Hub/Activación.
-
-    Positivas (Calma/Energía/Gratitud): bienestar = intensidad.
-    Negativas (Tensión/Tristeza/Cansancio): bienestar = 11 - intensidad.
-    Sin emoción: bienestar = intensidad (compatibilidad hacia atrás).
-    """
-    intensidad = max(1, min(10, int(intensidad)))
-    if emocion in EMOCIONES_POSITIVAS:
-        return intensidad
-    if emocion in EMOCIONES_NEGATIVAS:
-        return 11 - intensidad
-    return intensidad
-
-
 def _colores_puntaje() -> dict:
     """Retorna dict nivel->hex usando MOOD_PALETTE V5 para que los agentes
     usen tokens y no colores hardcodeados. Mantiene compatibilidad con la
@@ -171,104 +139,6 @@ def _mood_care(level: int) -> tuple[str, str]:
 def _mood_color_for_level(level: int) -> str:
     """Hex color del extremo 'from' del MOOD_PALETTE para el nivel dado."""
     return MOOD_PALETTE[max(1, min(10, int(level)))]["from"]
-
-
-class _AnimoHeroCard(NMCard):
-    """Hero V5 local: copy cálido, badge de estado y score con mensaje."""
-
-    def __init__(self, modo: str, parent=None):
-        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
-        self.setMinimumHeight(88)
-        self._build()
-
-    def _build(self):
-        lay = QHBoxLayout(self)
-        lay.setContentsMargins(24, 12, 24, 12)
-        lay.setSpacing(16)
-
-        text_col = QVBoxLayout()
-        text_col.setContentsMargins(0, 0, 0, 0)
-        text_col.setSpacing(3)
-        self._eyebrow = QLabel("Tu ánimo")
-        self._eyebrow.setFont(eyebrow_font())
-        self._eyebrow.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-        )
-        text_col.addWidget(self._eyebrow)
-        self._title = QLabel("Registra cómo estás hoy")
-        self._title.setFont(
-            v3_font("size_display_m", weight=TYPOGRAPHY["weight_medium"], serif=True)
-        )
-        text_col.addWidget(self._title)
-        # Sin consejo clínico ("una nota corta ayuda a..."): los desarrolladores
-        # no dan tips terapéuticos (decisión owner v1.0). Descriptor neutro.
-        self._body = QLabel("Tu registro diario, en tus palabras.")
-        self._body.setFont(qfont("size_small"))
-        self._body.setWordWrap(True)
-        text_col.addWidget(self._body)
-        lay.addLayout(text_col, 1)
-
-        status_col = QVBoxLayout()
-        status_col.setContentsMargins(0, 0, 0, 0)
-        status_col.setSpacing(4)
-        status_col.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self._status = QLabel("Sin registro")
-        self._status.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
-        self._status.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        status_col.addWidget(self._status, 0, Qt.AlignmentFlag.AlignRight)
-
-        self._status_hint = QLabel("Tu check-in de hoy aparece aquí.")
-        self._status_hint.setFont(qfont("size_caption_xs"))
-        self._status_hint.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self._status_hint.setWordWrap(True)
-        status_col.addWidget(self._status_hint, 0, Qt.AlignmentFlag.AlignRight)
-
-        score_row = QHBoxLayout()
-        score_row.setSpacing(4)
-        score_row.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom)
-        self._score = QLabel("—")
-        self._score.setFont(
-            v3_font("size_display_m", weight=TYPOGRAPHY["weight_medium"], serif=True)
-        )
-        score_row.addWidget(self._score)
-        self._unit = QLabel("/ 10")
-        self._unit.setFont(qfont("size_small"))
-        score_row.addWidget(self._unit, alignment=Qt.AlignmentFlag.AlignBottom)
-        status_col.addLayout(score_row)
-        lay.addLayout(status_col)
-        self._apply_theme(self._modo)
-
-    def set_level(self, level: int):
-        label, message = _mood_care(level)
-        self._score.setText(str(int(level)))
-        self._status.setText(label)
-        self._status_hint.setText(message)
-
-    def _apply_theme(self, modo: str):
-        super()._apply_theme(modo)
-        self._eyebrow.setStyleSheet(
-            f"color: {v3c('text2', self._modo).name()}; background: transparent; "
-        )
-        self._eyebrow.setFont(eyebrow_font())
-        self._title.setStyleSheet(
-            f"color: {v3c('text', self._modo).name()}; background: transparent;"
-        )
-        self._body.setStyleSheet(
-            f"color: {v3c('text2', self._modo).name()}; background: transparent;"
-        )
-        primary = v3c("primary", self._modo)
-        primary_soft = C("primary_soft", self._modo)
-        self._status.setStyleSheet(
-            f"color: {primary.name()}; background: {primary_soft}; "
-            "border-radius: 7px; padding: 4px 10px;"
-        )
-        self._status_hint.setStyleSheet(
-            f"color: {v3c('text2', self._modo).name()}; background: transparent;"
-        )
-        self._score.setStyleSheet(f"color: {primary.name()}; background: transparent;")
-        self._unit.setStyleSheet(
-            f"color: {v3c('text2', self._modo).name()}; background: transparent;"
-        )
 
 
 class _CareStatCard(NMCard):
@@ -526,9 +396,6 @@ class ModuloAnimo(NMModule):
         lay.setContentsMargins(24, 12, 24, 12)
         lay.setSpacing(10)
 
-        self._hero = _AnimoHeroCard(self._modo, parent=body)
-        lay.addWidget(self._hero)
-
         self._main_row = QBoxLayout(QBoxLayout.Direction.LeftToRight)
         self._main_row.setSpacing(12)
         left_col = QWidget()
@@ -559,27 +426,13 @@ class ModuloAnimo(NMModule):
         self._hist_card.set_chart(self._wave_chart)
         right_lay.addWidget(self._hist_card)
 
-        # Registro pos/neg separado (v1.0): un lado NO descuenta al otro.
-        # Lenguaje descriptivo, sin consejo clínico (criterio owner).
-        self._stat_avg = _CareStatCard(
-            "Positivo · 7 días",
-            "—",
-            "Promedio de tus registros positivos.",
-            modo=self._modo,
-        )
-        self._stat_prog = _CareStatCard(
-            "Negativo · 7 días",
-            "—",
-            "Promedio de tus registros negativos.",
-            modo=self._modo,
-        )
         self._stat_streak = _CareStatCard(
             "Progreso",
             "0 días",
             "Días seguidos con registro.",
             modo=self._modo,
         )
-        self._stat_cards = [self._stat_avg, self._stat_prog, self._stat_streak]
+        self._stat_cards = [self._stat_streak]
         for card in self._stat_cards:
             right_lay.addWidget(card)
 
@@ -615,84 +468,22 @@ class ModuloAnimo(NMModule):
         self._v3_slider.level_changed.connect(self._on_level_changed)
         slider_lay.addWidget(self._v3_slider)
 
-        chips = QGridLayout()
-        chips.setHorizontalSpacing(V3_SP["sm"])
-        chips.setVerticalSpacing(V3_SP["sm"])
-        self._emotion_chips: list[QPushButton] = []
-        self._emocion_por_chip: dict[QPushButton, str] = {}
-        self._emocion_actual: str | None = None
-        for text in ("Calma", "Tensión", "Tristeza", "Energía", "Cansancio", "Gratitud"):
-            chip = QPushButton(text)
-            chip.setFont(qfont("size_caption"))
-            chip.setCursor(Qt.CursorShape.PointingHandCursor)
-            # Pastilla compacta: el QPushButton global impone min-height 36 y los
-            # chips quedaban altos/estirados. Fijamos 30px (la QSS del chip
-            # también la cap­ea) para reducirlos sin perder legibilidad.
-            chip.setFixedHeight(30)
-            chip.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-            chip.setCheckable(True)
-            chip.clicked.connect(lambda _checked=False, c=chip: self._on_emotion_chip_clicked(c))
-            self._emotion_chips.append(chip)
-            self._emocion_por_chip[chip] = text
-            idx = len(self._emotion_chips) - 1
-            chips.addWidget(chip, idx // 3, idx % 3)
-        slider_lay.addLayout(chips)
         left_lay.addWidget(slider_card)
         self._slider_card = slider_card
 
-        # 4. Nota del día card
-        note_card = NMCard(modo=self._modo, clickable=False, glow=False)
-        note_card.setMinimumHeight(176)
-        note_lay = QVBoxLayout(note_card)
-        note_lay.setContentsMargins(18, 12, 18, 14)
-        note_lay.setSpacing(6)
-
-        note_header = QHBoxLayout()
-        self._note_eyebrow = QLabel("Nota del día")
-        self._note_eyebrow.setFont(eyebrow_font())
-        note_header.addWidget(self._note_eyebrow)
-        note_header.addStretch()
-        self._note_counter = QLabel("0/500")
-        self._note_counter.setFont(qfont_mono(10, bold=False))
-        note_header.addWidget(self._note_counter)
-        note_lay.addLayout(note_header)
-
-        self._txt_nota = NMTextArea(
-            t("text.module.animo.note_placeholder", "¿Qué influyó en tu estado hoy?"),
-            modo=self._modo,
-            min_height=72,
-        )
-        # Min 64 + Expanding: en ventanas grandes el espacio extra del card lo
-        # absorbe el ÁREA DE ESCRITURA (útil), no los labels (que centraban su
-        # texto y dejaban un hueco muerto arriba de "Nota del día" a 1920px).
-        self._txt_nota.setMinimumHeight(64)
-        self._txt_nota.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self._txt_nota.setPlaceholderText(t("text.module.animo.note_placeholder", "¿Qué influyó en tu estado hoy?"))
-        self._txt_nota.textChanged.connect(self._on_note_changed)
-        note_lay.addWidget(self._txt_nota)
-
-        footer = QVBoxLayout()
-        footer.setContentsMargins(0, 0, 0, 0)
-        footer.setSpacing(6)
-        # (Hint "Una frase alcanza..." eliminado — feedback owner v1.0: era
-        # recomendación clínica; no la hacemos nosotros como desarrolladores.)
+        # 4. Botón guardar registro
         btn_row = QHBoxLayout()
-        btn_row.setContentsMargins(0, 0, 0, 0)
+        btn_row.setContentsMargins(0, 4, 0, 0)
         btn_row.setSpacing(V3_SP["sm"])
         btn_row.addStretch()
         self._btn_reg = NMButton(
             t("text.module.animo.save_btn", "Guardar registro"), modo=self._modo, variant="gradient", size="md", width=180
         )
         self._btn_reg.setFixedHeight(34)
-        # 4.1: deshabilitado hasta que el paciente toque el slider. La razón se
-        # explica en el score label "—/10" — coherente.
         self._btn_reg.setEnabled(False)
         self._btn_reg.clicked.connect(self._registrar)
         btn_row.addWidget(self._btn_reg)
-        footer.addLayout(btn_row)
-        note_lay.addLayout(footer)
-        left_lay.addWidget(note_card)
-        self._note_card = note_card
+        left_lay.addLayout(btn_row)
 
         left_lay.addStretch()
         right_lay.addStretch()
@@ -733,8 +524,6 @@ class ModuloAnimo(NMModule):
 
         for lbl in (
             getattr(self, "_range_lbl", None),
-            getattr(self, "_note_eyebrow", None),
-            getattr(self, "_note_counter", None),
             getattr(self, "_slider_eyebrow", None),
         ):
             if lbl is not None:
@@ -758,40 +547,17 @@ class ModuloAnimo(NMModule):
                 )
         if hasattr(self, "_v3_slider"):
             self._v3_slider._apply_theme(self._modo)
-        if hasattr(self, "_emotion_chips"):
-            accent = C("accent", self._modo)
-            bg_active = C("accent_soft", self._modo)
-            for chip in self._emotion_chips:
-                chip.setStyleSheet(
-                    f"QPushButton {{ color: {text2}; "
-                    f"background: {surface_2}; "
-                    f"border: 1px solid {border_solid}; "
-                    "border-radius: 15px; padding: 3px 12px; "
-                    "min-height: 20px; max-height: 20px; "
-                    f"font-size: {TYPOGRAPHY['size_caption']}px; }}"
-                    f"QPushButton:hover {{ color: {accent}; "
-                    f"background: {bg_active}; border-color: {accent}; }}"
-                    f"QPushButton:checked {{ color: {accent}; "
-                    f"background: {bg_active}; border-color: {accent}; }}"
-                )
 
     # ── theme switch ─────────────────────────────────────────────────────────
 
     def _on_theme(self, modo: str) -> None:
         super()._on_theme(modo)
-        if hasattr(self, "_txt_nota"):
-            if hasattr(self._txt_nota, "_apply_theme"):
-                self._txt_nota._apply_theme(self._modo)
         if hasattr(self, "_wave_chart"):
             self._wave_chart._apply_theme(self._modo)
-        if hasattr(self, "_hero"):
-            self._hero._apply_theme(self._modo)
         if hasattr(self, "_hist_card"):
             self._hist_card._apply_theme(self._modo)
         if hasattr(self, "_slider_card"):
             self._slider_card._apply_theme(self._modo)
-        if hasattr(self, "_note_card"):
-            self._note_card._apply_theme(self._modo)
         if hasattr(self, "_stat_cards"):
             for card in self._stat_cards:
                 card._apply_theme(self._modo)
@@ -829,47 +595,9 @@ class ModuloAnimo(NMModule):
             self._slider_score.setStyleSheet(
                 f"color: {v3c('accent', self._modo).name()}; background: transparent;"
             )
-        if hasattr(self, "_hero"):
-            self._hero.set_level(self.puntaje)
         if hasattr(self, "_btn_reg"):
             self._btn_reg.setEnabled(True)
         self._apply_text_styles()
-
-    def _on_emotion_chip_clicked(self, chip: QPushButton):
-        """Selección exclusiva del chip de emoción. Click en chip activo lo deselecciona."""
-        if not hasattr(self, "_emocion_por_chip"):
-            return
-        if chip.isChecked():
-            for other in self._emocion_por_chip:
-                if other is not chip and other.isChecked():
-                    other.blockSignals(True)
-                    other.setChecked(False)
-                    other.blockSignals(False)
-            self._emocion_actual = self._emocion_por_chip.get(chip)
-        else:
-            if self._emocion_por_chip.get(chip) == self._emocion_actual:
-                self._emocion_actual = None
-
-    def _on_note_changed(self):
-        text = self._txt_nota.toPlainText()
-        n = len(text)
-        if n > 500:
-            self._txt_nota.blockSignals(True)
-            cursor = self._txt_nota.textCursor()
-            cursor_pos = cursor.position()
-            self._txt_nota.setPlainText(text[:500])
-            cursor = self._txt_nota.textCursor()
-            cursor.setPosition(min(cursor_pos, 500))
-            self._txt_nota.setTextCursor(cursor)
-            self._txt_nota.blockSignals(False)
-            n = 500
-        # Color del contador: si > 450 → warning, sino ink_secondary
-        if n > 450:
-            color = v3c("warning", self._modo).name()
-        else:
-            color = v3c("ink_secondary", self._modo).name()
-        self._note_counter.setText(f"{n}/500")
-        self._note_counter.setStyleSheet(f"color: {color}; background: transparent;")
 
     # ── streak (lógica preservada) ────────────────────────────────────────────
 
@@ -916,26 +644,7 @@ class ModuloAnimo(NMModule):
         self._wave_chart.set_data(positiva, negativa)
 
     def _refresh_insights(self):
-        """Actualiza los 3 stats: positivo 7d / negativo 7d / progreso."""
-        positiva, negativa = self._get_valence_series()
-
-        p_valid = [v for v in positiva if v is not None]
-        if hasattr(self, "_stat_avg"):
-            self._stat_avg.set_value(
-                f"{sum(p_valid) / len(p_valid):.1f}/10" if p_valid else "—"
-            )
-            self._stat_avg.set_message("Promedio de tus registros positivos.")
-            self._stat_avg.set_tone("primary" if p_valid else None)
-
-        n_valid = [v for v in negativa if v is not None]
-        if hasattr(self, "_stat_prog"):
-            self._stat_prog.set_value(
-                f"{sum(n_valid) / len(n_valid):.1f}/10" if n_valid else "—"
-            )
-            self._stat_prog.set_message("Promedio de tus registros negativos.")
-            self._stat_prog.set_tone("danger" if n_valid else None)
-            self._stat_prog.set_delta("", positive=None)
-
+        """Actualiza stat de progreso (racha de días con registro)."""
         streak = self._load_streak()
         if hasattr(self, "_stat_streak"):
             self._stat_streak.set_value("1 día" if streak == 1 else f"{streak} días")
@@ -952,28 +661,9 @@ class ModuloAnimo(NMModule):
                 variant="warning",
             )
             return
-        # Emoción OBLIGATORIA: sin una de las 6 opciones no hay valencia y el
-        # registro caía del lado positivo aunque fuera tristeza (feedback owner).
-        if not self._emocion_actual:
-            NMToast.display(
-                self.window(),
-                "Selecciona una emoción (Calma, Tensión, Tristeza, Energía, "
-                "Cansancio o Gratitud) antes de guardar.",
-                variant="warning",
-            )
-            return
-
-        emocion = self._emocion_actual or ""
         intensidad = int(self.puntaje)
-        puntaje_wellbeing = bienestar_desde_emocion(emocion, intensidad)
-        # Registro pos/neg separado: la valencia y la intensidad CRUDA se
-        # guardan explícitas. "Tristeza 10" es un registro NEGATIVO fuerte,
-        # no "ánimo 1" — el bienestar combinado se conserva para continuidad,
-        # pero las métricas separan ambos lados.
-        valencia = valencia_de_emocion(emocion)
-        nota = self._txt_nota.toPlainText().strip()[:500]
+        puntaje_wellbeing = intensidad
         if visual_qa_enabled():
-            self._txt_nota.clear()
             self._cargar_grafico()
             self._refresh_insights()
             if hasattr(self._btn_reg, "play_success"):
@@ -984,7 +674,6 @@ class ModuloAnimo(NMModule):
                 variant="success",
                 duration_ms=1800,
             )
-            self._trigger_celebration_if_needed(emocion, intensidad)
             return
         try:
             with conexion() as conn:
@@ -996,13 +685,12 @@ class ModuloAnimo(NMModule):
                         fecha_hoy(),
                         hora_actual(),
                         puntaje_wellbeing,
-                        emocion,
-                        nota,
-                        valencia,
+                        "",
+                        "",
+                        "positiva",
                         intensidad,
                     ),
                 )
-            self._txt_nota.clear()
             try:
                 from shared.sync import sync_inmediato_background
 
@@ -1018,27 +706,8 @@ class ModuloAnimo(NMModule):
                 f"Registro guardado. Tu ánimo de hoy: {puntaje_wellbeing}/10.",
                 variant="success",
             )
-            self._trigger_celebration_if_needed(emocion, intensidad)
         except Exception:
             _log.exception("Operation failed")
-
-    def _trigger_celebration_if_needed(self, emocion: str, intensidad: int | None = None):
-        """El confeti es refuerzo POSITIVO: solo se dispara con emociones
-        positivas (Calma, Energía, Gratitud) en intensidad CRUDA 7-10.
-
-        Una emoción negativa nunca lo dispara aunque su bienestar invertido sea
-        alto (p. ej. Cansancio nivel 1 → bienestar 10): ese era el bug — se
-        gatillaba sobre el bienestar, no sobre la valencia/intensidad reales.
-        Tiers: 7-8 leve, 9 media, 10 mayor (definición owner).
-        """
-        if valencia_de_emocion(emocion) != "positiva":
-            return
-        if intensidad is None or int(intensidad) < 7:
-            return
-        if not hasattr(self, "_celebration"):
-            return
-        origin = self._btn_reg.mapTo(self._content, self._btn_reg.rect().center())
-        self._celebration.launch(origin.x(), origin.y(), score=int(intensidad))
 
     # ── hooks NMModule ───────────────────────────────────────────────────────
 

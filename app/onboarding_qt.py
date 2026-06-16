@@ -153,15 +153,26 @@ class OnboardingDialog(QDialog):
         try:
             from shared.adaptive_layout_qt import apply_child_window_chrome
 
-            apply_child_window_chrome(
+            chrome = apply_child_window_chrome(
                 self,
                 title="NeuroMood · Configuración inicial",
                 modo=self._modo,
+                show_theme_toggle=True,
                 # Ventana de tamaño fijo: solo "—" minimizar y "✕" cerrar.
                 show_maximize=False,
             )
+            chrome.theme_toggle.connect(self._toggle_theme)
         except Exception:
             pass
+
+    def _toggle_theme(self):
+        from shared.theme_manager import ThemeManager
+        from shared.theme_qt import norm_modo
+
+        new_modo = "light_hybrid" if "dark" in self._modo else "dark_hybrid"
+        self._modo = norm_modo(new_modo)
+        ThemeManager.instance().switch_mode(self._modo)
+        self._init_theme()
 
     def _configure_responsive_window(self):
         from PyQt6.QtCore import QSize

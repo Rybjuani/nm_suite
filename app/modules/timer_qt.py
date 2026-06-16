@@ -38,8 +38,6 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QFrame,
-    QScrollArea,
 )
 
 try:
@@ -275,97 +273,6 @@ def _play_soft_alarm() -> None:
         _log.debug("No se pudo reproducir el chime suave")
 
 
-# ── _SessionsListCard ───────────────────────────────────────────────────────
-
-
-class _SessionsListCard(NMCard):
-    """Card v3 con lista de sesiones del día (tabla compacta)."""
-
-    def __init__(self, modo: str = None, parent=None):
-        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
-        self._build()
-
-    def _build(self):
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(
-            V3_SP["lg"], V3_SP["md"], V3_SP["lg"], V3_SP["md"]
-        )  # compact R5A: era xl/xl
-        lay.setSpacing(V3_SP["sm"])  # compact R5A: era V3_SP["md"]=10
-        self._eyebrow = QLabel("Sesiones de hoy")
-        self._eyebrow.setFont(eyebrow_font())
-        lay.addWidget(self._eyebrow)
-        # Patrón "Registros previos" de TCC (informe owner v1.0): los
-        # registros acumulados scrollean DENTRO de la card — con 3+ sesiones
-        # el contenido desbordaba el tope de la card y comprimía/pisaba el
-        # temporizador principal.
-        self._items_scroll = QScrollArea()
-        self._items_scroll.setWidgetResizable(True)
-        self._items_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self._items_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._items_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self._items_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-        _items_body = QWidget()
-        _items_body.setStyleSheet("background: transparent;")
-        self._items_layout = QVBoxLayout(_items_body)
-        self._items_layout.setContentsMargins(0, 0, 0, 0)
-        self._items_layout.setSpacing(V3_SP["xs"])
-        self._items_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self._items_scroll.setWidget(_items_body)
-        lay.addWidget(self._items_scroll, stretch=1)
-        self._apply_sess_styles()
-
-    def set_sessions(self, items: list[str]):
-        """Cada item es 'nombre · MM:SS' (formato preservado por compat)."""
-        while self._items_layout.count():
-            child = self._items_layout.takeAt(0)
-            w = child.widget()
-            if w:
-                w.deleteLater()
-        if not items:
-            empty = QLabel(t("text.module.timer.empty_state", "Sin sesiones todavía hoy."))
-            empty.setFont(qfont("size_small"))
-            empty.setStyleSheet(
-                f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-            )
-            self._items_layout.addWidget(empty)
-            return
-        for text in items:
-            # Parse "nombre · MM:SS" → mostrar nombre + chip de duración
-            parts = text.split("·")
-            nombre = parts[0].strip() if parts else text
-            duracion = parts[1].strip() if len(parts) > 1 else ""
-            row = QHBoxLayout()
-            row.setSpacing(V3_SP["sm"])
-            icon = NMIcon("timer", size=16, color_key="teal", modo=self._modo)
-            row.addWidget(icon)
-            name_lbl = QLabel(nombre)
-            name_lbl.setFont(qfont("size_small"))
-            name_lbl.setStyleSheet(
-                f"color: {v3c('text', self._modo).name()}; background: transparent;"
-            )
-            row.addWidget(name_lbl, stretch=1)
-            if duracion:
-                dur_lbl = QLabel(duracion)
-                dur_lbl.setFont(qfont_mono(10, bold=False))
-                dur_lbl.setStyleSheet(
-                    f"color: {v3c('teal', self._modo).name()}; background: transparent;"
-                )
-                row.addWidget(dur_lbl)
-            wrap = QWidget()
-            wrap.setLayout(row)
-            self._items_layout.addWidget(wrap)
-
-    def _apply_sess_styles(self):
-        self._eyebrow.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; "
-            f"background: transparent;"
-        )
-
-    def _apply_theme(self, modo: str):
-        super()._apply_theme(modo)
-        self._apply_sess_styles()
-
-
 # ── ModuloTimer v3 ──────────────────────────────────────────────────────────
 
 
@@ -515,15 +422,8 @@ class ModuloTimer(NMModule):
         outer.addWidget(timer_card, stretch=1)
         self._timer_card = timer_card
 
-        # SESIONES DE HOY card
-        self._sessions_card = _SessionsListCard(modo=self._modo)
-        self._sessions_card.setMinimumHeight(88)
-        self._sessions_card.setMaximumHeight(136)
-        outer.addWidget(self._sessions_card)
-
         self._apply_text_styles()
         self._update_canvas()
-        self._load_quick_history()
 
         # Ring pulse — overlay de finalización de sesión
         self._ring_pulse = NMRingPulse(self._content, modo=self._modo)
@@ -705,7 +605,6 @@ class ModuloTimer(NMModule):
         self._btn_play.set_icon("play")
         self._canvas.reset()
         self._update_canvas()
-        self._load_quick_history()
 
     # ── Tick (1s interval — preservado) ─────────────────────────────────────
 
@@ -760,7 +659,6 @@ class ModuloTimer(NMModule):
         self._canvas.reset()
         self._remaining_sec = self._total_sec
         self._update_canvas()
-        self._load_quick_history()
 
     # ── DB (preservado exacto) ───────────────────────────────────────────────
 
@@ -787,33 +685,6 @@ class ModuloTimer(NMModule):
                 sync_inmediato_background()
             except Exception:
                 pass
-        except Exception:
-            _log.exception("Operation failed")
-
-    def _load_quick_history(self):
-        if visual_qa_enabled():
-            self._sessions_card.set_sessions(timer_sessions())
-            return
-        sessions = []
-        try:
-            conn = obtener_conexion()
-            rows = conn.execute(
-                "SELECT nombre, duracion_real FROM actividades_temporizador "
-                "WHERE fecha = ? ORDER BY rowid DESC LIMIT 6",
-                (fecha_hoy(),),
-            ).fetchall()
-            conn.close()
-            for row in rows:
-                if hasattr(row, "keys"):
-                    name = row["nombre"]
-                    dr = row["duracion_real"]
-                else:
-                    name = row[0]
-                    dr = row[1]
-                mins = dr // 60
-                secs = dr % 60
-                sessions.append(f"{name} · {mins:02d}:{secs:02d}")
-            self._sessions_card.set_sessions(sessions)
         except Exception:
             _log.exception("Operation failed")
 

@@ -3,15 +3,10 @@ hub/main_qt.py — NeuroMood Hub (PyQt6 entry point)
 
 Layout:
     QMainWindow
-    ├── NMSidebar (200px, izquierda)
-    └── área derecha
-        ├── NMHeader (56px)
-        └── NMFadeWidget
-            ├── DashboardView
-            ├── PacientesView
-            ├── DetallePacienteView (se carga al seleccionar paciente)
-
-Toda la lógica de conexión Supabase preservada exacta.
+    └── NMFadeWidget
+        ├── PacientesView
+        ├── PersonalizacionGlobalView
+        └── DetallePacienteView (se carga al seleccionar paciente)
 """
 
 import sys
@@ -36,14 +31,12 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QLabel,
     QScrollArea,
-    QGridLayout,
     QFrame,
     QSizePolicy,
-    QPushButton,
     QDialog,
 )
 from PyQt6.QtCore import Qt, QTimer, QRectF, pyqtSignal, QSettings
-from PyQt6.QtGui import QColor, QIcon, QPainter, QBrush, QLinearGradient
+from PyQt6.QtGui import QIcon, QPainter, QBrush, QLinearGradient
 from PyQt6 import sip
 
 from shared.theme_qt import (
@@ -52,8 +45,6 @@ from shared.theme_qt import (
     colors,
     norm_modo,
     qfont,
-    qfont_mono,
-    v3_font,
     app_palette,
     stylesheet_base,
     stylesheet_scrollarea,
@@ -63,7 +54,6 @@ from shared.theme_qt import (
     nm_icon,
     apply_hub_density,
     HUB_DENSITY_OBJECT_NAME,
-    eyebrow_font,
 )
 from shared.adaptive_layout_qt import (
     configure_adaptive_window,
@@ -77,22 +67,14 @@ from shared.components import (
     NMButton,
     NMCard,
     NMToast,
-    NMSyncOrb,
-    NMProgressBar,
-    NMHubSidebar,
+    NMButton,
     NMPatientRowPremium,
-    NMPanel,
-    NMFormRow,
-    NMSearchInput,
-    NMTabs,
     NMEmptyState,
     NMWindowChrome,
     NMBadge,
-    NMElidedLabel,
     NMPageHeader,
-    NMMetricCard,
 )
-from shared.visual_qa import visual_qa_enabled, hub_patients, hub_module_metrics
+from shared.visual_qa import visual_qa_enabled, hub_patients
 
 _sb_create = None
 
@@ -162,14 +144,6 @@ def _ensure_hub_env_base() -> None:
             pass
 
 
-# Navegación canónica del Hub: español humano, sin rutas redundantes.
-_HUB_NAV_ITEMS = [
-    ("dashboard", "dashboard", "Inicio"),
-    ("pacientes", "users", "Pacientes"),
-    # Label corto en el sidebar ("Personalización global" se cortaba a 960px);
-    # el título completo vive en la titlebar vía _VIEW_TITLES.
-    ("personalizacion", "edit", "Personalización"),
-]
 
 
 # ── QSettings · persistencia del tema (handoff Mayo 2026) ────────────────────
@@ -246,367 +220,6 @@ def _get_sb():
     return client, None
 
 
-# ── Mini indicador de ánimo ───────────────────────────────────────────────────
-
-
-class _AnimoIndicator(QWidget):
-    """Círculo de 14px con color semántico del último ánimo registrado."""
-
-    _COLORS = {
-        range(1, 4): "error",
-        range(4, 7): "warning",
-        range(7, 11): "success",
-    }
-
-    def __init__(self, puntaje: int | None, modo: str = "dark_hybrid", parent=None):
-        super().__init__(parent)
-        self._modo = modo
-        self._puntaje = puntaje
-        self.setFixedSize(14, 14)
-        self._update_color()
-        self.setStyleSheet("background: transparent;")
-        ThemeManager.instance().theme_changed.connect(self.apply_theme)
-
-    def _update_color(self):
-        modo = norm_modo(self._modo)
-        self._color = C("text_tertiary", modo)
-        if self._puntaje is not None:
-            for r, key in self._COLORS.items():
-                if self._puntaje in r:
-                    self._color = C(key, modo)
-                    break
-
-    def apply_theme(self, modo: str):
-        self._modo = modo
-        self._update_color()
-        self.update()
-
-    def paintEvent(self, event):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        p.setBrush(QBrush(QColor(self._color)))
-        p.setPen(Qt.PenStyle.NoPen)
-        p.drawEllipse(1, 1, 12, 12)
-        p.end()
-
-
-# ── DashboardView ─────────────────────────────────────────────────────────────
-
-
-class DashboardView(ThemeAwareWidgetMixin, QWidget):
-    def __init__(self, modo: str, pacientes: list, sb, on_select_patient, parent=None):
-        super().__init__(parent)
-        self._modo = norm_modo(modo)
-        self._pacientes = pacientes
-        self._sb = sb
-        self._on_select = on_select_patient
-        self._setup()
-        self._connect_theme()
-
-    def _setup(self):
-        from shared.theme_qt import v3c, V3_SP
-        from shared.theme import TYPOGRAPHY as _TY
-
-        self._v3c = v3c
-        self._sp = V3_SP
-        self._ty = _TY
-        self.setStyleSheet("background: transparent;")
-        self._grid_cols = 0
-
-        _outer = QVBoxLayout(self)
-        _outer.setContentsMargins(0, 0, 0, 0)
-        _outer.setSpacing(0)
-        _content = QWidget()
-        _content.setStyleSheet("background: transparent;")
-        # Red de seguridad anti-solape: si la ventana baja del presupuesto
-        # vertical del dashboard (pantallas chicas — el contrato permite hasta
-        # 360px de alto), aparece un scroll calmo en vez de que Qt fuerce
-        # geometrías bajo el mínimo y las cards se pisen físicamente.
-        from shared.theme_qt import stylesheet_scrollarea as _ss_scroll
-
-        _scroll = QScrollArea()
-        _scroll.setWidgetResizable(True)
-        _scroll.setFrameShape(QFrame.Shape.NoFrame)
-        _scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        _scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        _scroll.setStyleSheet(_ss_scroll(self._modo))
-        _scroll.setWidget(_content)
-        _outer.addWidget(_scroll)
-
-        layout = QVBoxLayout(_content)
-        # M3 premium: más aire (márgenes/gaps generosos, como el Suite).
-        layout.setContentsMargins(V3_SP["xl"], V3_SP["lg"], V3_SP["xl"], V3_SP["lg"])
-        layout.setSpacing(V3_SP["md"])
-
-        # El título de la vista ahora vive en la titlebar ("NeuroMood Hub /
-        # Dashboard"), por lo que el NMPageHeader grande se oculta para recuperar
-        # el espacio vertical superior. Se crea (oculto) por compatibilidad.
-        n = len(self._pacientes)
-        self._dash_header = NMPageHeader(
-            "Dashboard",
-            f"{n} paciente{'s' if n != 1 else ''} vinculado{'s' if n != 1 else ''}",
-            modo=self._modo,
-        )
-        self._dash_header.hide()
-        layout.addWidget(self._dash_header)
-
-        # M3 premium: saludo cálido (calidez emocional, no admin panel). Eyebrow
-        # + título serif (Newsreader), como los saludos del Home del Suite.
-        import datetime as _dt
-        _h = _dt.datetime.now().hour
-        _saludo = "Buenos días" if _h < 12 else ("Buenas tardes" if _h < 20 else "Buenas noches")
-        _greet = QWidget()
-        _greet.setStyleSheet("background: transparent;")
-        _gl = QVBoxLayout(_greet)
-        _gl.setContentsMargins(0, 0, 0, 0)
-        _gl.setSpacing(2)
-        _greet_eyebrow = QLabel(_saludo)
-        _greet_eyebrow.setFont(eyebrow_font())
-        _greet_eyebrow.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-        )
-        _gl.addWidget(_greet_eyebrow)
-        _greet_title = QLabel("Panel profesional")
-        _greet_title.setFont(v3_font("size_h2", weight=self._ty["weight_semibold"], serif=True))
-        _greet_title.setStyleSheet(
-            f"color: {v3c('text', self._modo).name()}; background: transparent;"
-        )
-        _gl.addWidget(_greet_title)
-        layout.addWidget(_greet)
-
-        # Stats grid premium. "Tareas activas" y "Recordatorios" se quitaron de
-        # acá: eran redundantes con el panel "Actividad asignada global" de abajo
-        # (que ya desglosa Tareas/Recordatorios/Temporizadores/Actividades).
-        # Quedan los 2 KPIs no duplicados: Pacientes y Uso de módulos.
-        stats_grid = QGridLayout()
-        stats_grid.setSpacing(self._sp["md"])
-
-        n_pacientes = len(self._pacientes)
-        usage_avg = self._module_usage_average()
-        usage_txt = f"{int(round(usage_avg * 100))}%" if usage_avg is not None else "—"
-        # Badge contextual en ambas KPI cards → jerarquía consistente y sin
-        # hueco inferior (la card de Pacientes ya no queda con el número suelto
-        # sobre vacío). Hub compact: altura 90 (Suite mantiene 96 por defecto).
-        cards_data = [
-            ("Pacientes", str(n_pacientes), "vinculados", "primary"),
-            ("Uso módulos", usage_txt, "promedio 7 módulos" if usage_avg is not None else "", "violet"),
-        ]
-
-        self._stat_cards = []
-        for label, value, delta, tone in cards_data:
-            card = NMMetricCard(label, value, modo=self._modo, height=90)
-            card.set_tone(tone)
-            if delta:
-                # Badge neutro en las dos cards (el color de jerarquía vive en el
-                # número, no en el sub-rótulo) → lectura calma y consistente.
-                card.set_badge(delta, "default")
-            self._stat_cards.append(card)
-        self._stats_grid = stats_grid
-        self._layout_stat_cards(len(self._stat_cards))
-        layout.addLayout(stats_grid)
-
-        if not self._pacientes:
-            empty = NMEmptyState(
-                "users",
-                "Sin pacientes vinculados",
-                "Cuando un paciente complete el alta desde la Suite, aparecerá acá automáticamente.",
-                parent=self
-            )
-            layout.addWidget(empty)
-            layout.addStretch()
-            return
-
-        layout.addWidget(
-            self._build_assignment_summary_card(self._dashboard_assignment_summary())
-        )
-
-        # La card de uso por módulo dimensiona a su contenido (7 barras) en vez de
-        # estirarse a todo el alto: antes quedaba un hueco vacío grande dentro de
-        # la card (se veía "rota"). El espacio sobrante baja como un respiro al pie.
-        activity_card = self._build_actividad_por_modulo_card()
-        activity_card.setMinimumHeight(190)
-        activity_card.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        layout.addWidget(activity_card)
-        layout.addStretch()
-
-    def _dashboard_count(self, table: str, *, active_col: str | None = None) -> int:
-        if self._sb is None:
-            return 0
-        try:
-            q = self._sb.table(table).select("id", count="exact")
-            if active_col:
-                q = q.eq(active_col, True)
-            r = q.execute()
-            return int(r.count) if r.count is not None else len(r.data or [])
-        except Exception:
-            return 0
-
-    def _dashboard_assignment_summary(self) -> dict[str, int]:
-        if visual_qa_enabled():
-            return {"tasks": 8, "reminders": 12, "timers": 4, "activities": 9}
-        return {
-            "tasks": self._dashboard_count("assigned_tasks", active_col="activa"),
-            "reminders": self._dashboard_count("assigned_reminders", active_col="activa"),
-            "timers": self._dashboard_count("timer_presets_remote", active_col="activo"),
-            "activities": self._dashboard_count("patient_activities", active_col="activa"),
-        }
-
-    def _module_usage_average(self) -> float | None:
-        vals = [pct for _label, pct in hub_module_metrics() if pct is not None]
-        return (sum(vals) / len(vals)) if vals else None
-
-    def _build_assignment_summary_card(self, summary: dict[str, int]) -> NMCard:
-        card = NMCard(modo=self._modo, clickable=False, glow=False)
-        lay = QVBoxLayout(card)
-        lay.setContentsMargins(self._sp["lg"], self._sp["md"], self._sp["lg"], self._sp["md"])
-        lay.setSpacing(self._sp["sm"])
-
-        hdr = QHBoxLayout()
-        hdr.setSpacing(self._sp["sm"])
-        title = QLabel("Actividad asignada global")
-        title.setFont(eyebrow_font())
-        title.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-        )
-        hdr.addWidget(title)
-        hdr.addStretch()
-        hdr.addWidget(NMBadge(f"{sum(summary.values())} activas", tone="info", modo=self._modo))
-        lay.addLayout(hdr)
-
-        grid = QGridLayout()
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.setHorizontalSpacing(self._sp["md"])
-        grid.setVerticalSpacing(self._sp["xs"])
-        for i, (label, value) in enumerate(
-            (
-                ("Tareas", summary["tasks"]),
-                ("Recordatorios", summary["reminders"]),
-                ("Temporizadores", summary["timers"]),
-                ("Actividades", summary["activities"]),
-            )
-        ):
-            block = QWidget()
-            block.setStyleSheet("background: transparent;")
-            bl = QVBoxLayout(block)
-            bl.setContentsMargins(0, 0, 0, 0)
-            bl.setSpacing(1)
-            value_lbl = QLabel(str(value))
-            value_lbl.setFont(v3_font("size_h2", weight=self._ty["weight_semibold"], serif=True))
-            value_lbl.setStyleSheet(
-                f"color: {v3c('text', self._modo).name()}; background: transparent;"
-            )
-            label_lbl = QLabel(label)
-            label_lbl.setFont(qfont("size_caption"))
-            label_lbl.setStyleSheet(
-                f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-            )
-            bl.addWidget(value_lbl)
-            bl.addWidget(label_lbl)
-            grid.addWidget(block, 0, i)
-            grid.setColumnStretch(i, 1)
-        lay.addLayout(grid)
-        return card
-
-    def _build_actividad_por_modulo_card(self) -> NMCard:
-        card = NMCard(modo=self._modo, clickable=False)
-        lay = QVBoxLayout(card)
-        lay.setContentsMargins(self._sp["lg"], self._sp["md"], self._sp["lg"], self._sp["md"])
-        lay.setSpacing(6)
-
-        # Compact inline header: metric title left, period right.
-        hdr_row = QHBoxLayout()
-        hdr_row.setSpacing(8)
-        _ey = QLabel("Uso promedio por módulo")
-        _ey.setFont(eyebrow_font())
-        _ey.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-        )
-        hdr_row.addWidget(_ey)
-        hdr_row.addStretch()
-        _sub = QLabel("Promedio 7 días · 7 módulos")
-        _sub.setFont(qfont("size_small"))
-        _sub.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-        )
-        hdr_row.addWidget(_sub)
-        lay.addLayout(hdr_row)
-
-        for label, pct in hub_module_metrics():
-            row = QHBoxLayout()
-            row.setSpacing(10)
-            # Elide con "…": a 180px fijos "Registro de Pensamientos (TCC)"
-            # quedaba cortado a mitad de palabra sin indicación visual.
-            lbl = NMElidedLabel(label)
-            lbl.setFont(qfont("size_small", weight=self._ty["weight_medium"]))
-            lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
-            lbl.setFixedWidth(220)
-            row.addWidget(lbl)
-
-            pbar = NMProgressBar(height=5, modo=self._modo)
-            pbar.set_progress(pct)
-            row.addWidget(pbar, stretch=1)
-
-            pct_lbl = QLabel(f"{int(pct * 100)}%")
-            pct_lbl.setFont(qfont_mono(10))
-            pct_lbl.setStyleSheet(
-                f"color: {v3c('teal', self._modo).name()}; background: transparent;"
-            )
-            pct_lbl.setFixedWidth(35)
-            row.addWidget(pct_lbl)
-
-            lay.addLayout(row)
-
-        return card
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        self._apply_responsive()
-
-    def showEvent(self, event):
-        super().showEvent(event)
-        self._apply_responsive()
-
-    def _layout_stat_cards(self, cols: int):
-        grid = getattr(self, "_stats_grid", None)
-        if grid is None:
-            return
-        cols = max(1, cols)
-        for i in reversed(range(grid.count())):
-            it = grid.takeAt(i)
-            if it.widget():
-                it.widget().setParent(None)
-        for c in range(4):
-            grid.setColumnStretch(c, 1 if c < cols else 0)
-        for i, card in enumerate(self._stat_cards):
-            grid.addWidget(card, i // cols, i % cols)
-
-    def _apply_responsive(self):
-        """Reflow fit-first según el ancho disponible (HANDOFF §4): stat tiles a
-        3/2 columnas y sección inferior lado-a-lado o apilada."""
-        if sip.isdeleted(self):
-            return
-        w = self.width()
-        # M3 premium: 4 KPIs en 1 fila cuando hay ancho (aire vertical); 2×2 angosto.
-        # Umbral 700 (no 860): a 960px de ventana el contenido mide ~750 — con
-        # 2×2 el presupuesto vertical del dashboard no entra en 600px de alto
-        # y Qt termina superponiendo las cards físicamente.
-        n_cards = len(self._stat_cards) if hasattr(self, "_stat_cards") else 4
-        if w >= 700:
-            cols = min(4, n_cards)
-        elif w >= 480:
-            cols = min(2, n_cards)
-        else:
-            cols = 1
-        if cols != self._grid_cols and hasattr(self, "_stat_cards"):
-            self._grid_cols = cols
-            self._layout_stat_cards(cols)
-        return
-
-    def _apply_theme(self, modo: str):
-        self._modo = norm_modo(modo)
-        self.setStyleSheet("background: transparent;")
-
-
 # ── Desvinculación local (fallback) ───────────────────────────────────────────
 # La X "Quitar del Hub" escribe patients.unlinked=true en Supabase, pero si esa
 # columna todavía no existe (db/patients_email_unlink.sql sin correr) el update
@@ -663,23 +276,25 @@ class PacientesView(QWidget):
         basado en umbral de adherencia (prompt F0.1.B).
     """
 
-    def __init__(self, modo: str, pacientes: list, on_select, on_refresh, sb=None, parent=None):
+    def __init__(
+        self,
+        modo: str,
+        pacientes: list,
+        on_select,
+        on_refresh,
+        sb=None,
+        on_personalizacion=None,
+        parent=None,
+    ):
         super().__init__(parent)
         self._modo = norm_modo(modo)
         self._pacientes = pacientes
         self._on_select = on_select
         self._on_refresh = on_refresh
         self._sb = sb
-        self._search_query: str = ""
-        self._current_filter: str = "todos"
-        # Carga segmentada (auditoría v1.0): instanciar 150+ filas premium de
-        # una vez lagea la vista; se renderizan de a tandas con "Mostrar más".
+        self._on_personalizacion = on_personalizacion
         self._rows_limit: int = 40
         self._setup()
-
-    _FILTER_KEYS = ("todos", "activos", "sin", "sin_sync")
-    _FILTER_LABELS = ("Todos", "Activos", "Sin registros", "Sin sincronización reciente")
-    _SYNC_STALE_DAYS = 7  # umbral neutral del filtro "Sin sincronización reciente"
 
     def _setup(self):
         from shared.theme_qt import v3c, V3_SP, V3_RD
@@ -711,25 +326,7 @@ class PacientesView(QWidget):
         self._section_header.hide()
         layout.addWidget(self._section_header)
 
-        # 2. Search card: NMSearchInput sobre NMCard (tokens ADN)
-        search_card = NMCard(modo=self._modo, clickable=False, glow=False)
-        sc_lay = QVBoxLayout(search_card)
-        sc_lay.setContentsMargins(V3_SP["sm"], V3_SP["xs"], V3_SP["sm"], V3_SP["xs"])
-        sc_lay.setSpacing(V3_SP["xs"])
-        # SearchInput con icono lupa y clear - already has premium look
-        self._search_input = NMSearchInput(
-            placeholder="Buscar por nombre o mail…",
-            modo=self._modo,
-        )
-        self._search_input.text_changed.connect(self._on_search)
-        sc_lay.addWidget(self._search_input)
-        # Filter tabs: pills con active state fill gradient lavender (NMTabs pill style)
-        self._filter_tabs = NMTabs(list(self._FILTER_LABELS), variant="filter", modo=self._modo)
-        self._filter_tabs.changed.connect(self._on_filter_tab_changed)
-        sc_lay.addWidget(self._filter_tabs)
-        layout.addWidget(search_card)
-
-        # 3. Tabla NMCard con NMPatientRow × N
+        # 2. Tabla NMCard con NMPatientRow × N
         table_card = NMCard(modo=self._modo, clickable=False, glow=False)
         tc_lay = QVBoxLayout(table_card)
         tc_lay.setContentsMargins(V3_SP["sm"], V3_SP["xs"], V3_SP["sm"], V3_SP["xs"])
@@ -754,6 +351,13 @@ class PacientesView(QWidget):
         )
         roster_meta.addWidget(self._table_hint, alignment=Qt.AlignmentFlag.AlignVCenter)
         roster_meta.addStretch()
+        self._btn_personalizacion = NMButton(
+            "Personalización", variant="ghost", size="sm", modo=self._modo
+        )
+        self._btn_personalizacion.clicked.connect(self._go_personalizacion)
+        roster_meta.addWidget(
+            self._btn_personalizacion, alignment=Qt.AlignmentFlag.AlignVCenter
+        )
         tc_lay.addLayout(roster_meta)
 
         self._table_header = table_header = QWidget()
@@ -813,18 +417,9 @@ class PacientesView(QWidget):
 
         self._render_rows()
 
-    def _on_search(self, text: str):
-        self._search_query = text.lower().strip()
-        self._rows_limit = 40
-        self._render_rows()
-
-    def _on_filter_tab_changed(self, index: int, _label: str):
-        try:
-            self._current_filter = self._FILTER_KEYS[index]
-        except IndexError:
-            self._current_filter = "todos"
-        self._rows_limit = 40
-        self._render_rows()
+    def _go_personalizacion(self):
+        if callable(self._on_personalizacion):
+            self._on_personalizacion()
 
     def _render_rows(self):
         # Limpiar contenido previo
@@ -835,60 +430,16 @@ class PacientesView(QWidget):
                 w.deleteLater()
 
         rows = list(self._pacientes)
-        if self._search_query:
-            q = self._search_query
-            rows = [
-                p
-                for p in rows
-                if q in (p.get("patient_name") or "").lower()
-                or q in (p.get("patient_id") or "").lower()
-                or q in (p.get("email") or "").lower()
-            ]
-        if self._current_filter == "sin_sync":
-            # Criterio neutral: sin sincronización en los últimos N días, o
-            # nunca sincronizado. No interpreta adherencia clínica (decisión 7).
-            import datetime as _dt
-
-            cutoff = _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(days=self._SYNC_STALE_DAYS)
-
-            def _is_stale(p: dict) -> bool:
-                raw = p.get("last_sync_date")
-                if not raw:
-                    return True  # nunca sincronizó → cae en el filtro
-                try:
-                    ts = _dt.datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
-                    if ts.tzinfo is None:
-                        ts = ts.replace(tzinfo=_dt.timezone.utc)
-                    return ts < cutoff
-                except (ValueError, TypeError):
-                    return True
-
-            rows = [p for p in rows if _is_stale(p)]
-        elif self._current_filter == "sin":
-            rows = [p for p in rows if self._has_no_records(p)]
-        elif self._current_filter == "activos":
-            rows = [p for p in rows if self._is_active_patient(p)]
-
         self._update_roster_meta(rows)
 
         if not rows:
-            # Sin filas: ocultar el header de columnas para que no quede huérfano
-            # sobre el empty-state (no hay nada que encabezar). Reaparece al volver filas.
             self._table_header.hide()
-            # Estado vacío diferenciado premium: icono 48px en chip 64×64 r18,
-            # título display-m serif, subtítulo body
-            if self._search_query or self._current_filter != "todos":
-                title = "Sin resultados"
-                msg = "Probá con otro término o ajustá los filtros para ver más pacientes."
-                icon = "search"
-            else:
-                title = "Sin pacientes vinculados"
-                msg = (
-                    "Cuando un paciente complete el alta desde la Suite, "
-                    "aparecerá acá automáticamente."
-                )
-                icon = "users"
-            empty = NMEmptyState(icon, title, msg, parent=self._table_card)
+            empty = NMEmptyState(
+                "users",
+                "Sin pacientes vinculados",
+                "Cuando un paciente complete el alta desde la Suite, aparecerá acá automáticamente.",
+                parent=self._table_card,
+            )
             self._table_lay.addWidget(empty)
             return
 
@@ -1070,61 +621,9 @@ class PacientesView(QWidget):
 
     def _update_roster_meta(self, rows: list[dict]) -> None:
         visible = len(rows)
-        total = len(self._pacientes)
         suffix = "s" if visible != 1 else ""
-        badge_text = f"{visible} paciente{suffix}"
-        filtered = self._search_query or self._current_filter != "todos"
-        if filtered and visible != total:
-            badge_text += " visibles"
-        self._results_badge.setText(badge_text)
-
-        if self._search_query:
-            self._table_hint.setText(f'Filtro activo: "{self._search_query}"')
-        elif self._current_filter == "sin":
-            self._table_hint.setText("Mostrando pacientes sin registros recientes")
-        elif self._current_filter == "sin_sync":
-            self._table_hint.setText("Mostrando pacientes con sincronización pendiente")
-        elif self._current_filter == "activos":
-            self._table_hint.setText("Pacientes activos · mail, ánimo 7d y uso")
-        else:
-            self._table_hint.setText("Mail, ánimo de 7 días y uso por paciente")
-
-    def _has_record_evidence(self, p: dict) -> bool:
-        """True solo cuando el dict trae evidencia explícita de registros."""
-        if p.get("last_mood") is not None or p.get("last_session"):
-            return True
-        for key in ("mood_data_7d", "mood_data", "records_7d", "animo_7d"):
-            data = p.get(key)
-            if isinstance(data, (list, tuple)) and any(v is not None for v in data):
-                return True
-        for key in ("mood_count", "records_count", "registros_count"):
-            value = p.get(key)
-            try:
-                if value is not None and int(value) > 0:
-                    return True
-            except (TypeError, ValueError):
-                pass
-        return False
-
-    def _has_no_records(self, p: dict) -> bool:
-        """Evita falsos positivos: desconocido no significa sin registros."""
-        explicit_zero_keys = ("mood_count", "records_count", "registros_count")
-        if any(k in p for k in explicit_zero_keys):
-            return not self._has_record_evidence(p)
-        if any(k in p for k in ("last_mood", "last_session", "mood_data_7d", "mood_data")):
-            return not self._has_record_evidence(p)
-        return False
-
-    def _is_active_patient(self, p: dict) -> bool:
-        if p.get("unlinked") or p.get("archived") or p.get("inactive"):
-            return False
-        for key in ("active", "activo", "is_active"):
-            if key in p:
-                return bool(p.get(key))
-        status = str(p.get("status") or p.get("estado") or "").strip().lower()
-        if status:
-            return status not in {"inactivo", "inactive", "archived", "archivo", "baja", "unlinked"}
-        return True
+        self._results_badge.setText(f"{visible} paciente{suffix}")
+        self._table_hint.setText("Mail, ánimo de 7 días y uso por paciente")
 
     def _patient_tags(self, p: dict) -> list[str]:
         tags = []
@@ -1222,8 +721,8 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         self._current_view = (
             qa_start_view
             if visual_qa_enabled()
-            and qa_start_view in {"dashboard", "pacientes", "personalizacion"}
-            else "dashboard"
+            and qa_start_view in {"pacientes", "personalizacion"}
+            else "pacientes"
         )
 
         ThemeManager.instance().switch_mode(self._modo)
@@ -1280,7 +779,6 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
     # NMPageHeader grande por vista). El brand "NeuroMood Hub" queda como
     # prefijo y el subtítulo refleja la sección activa: "NeuroMood Hub / Pacientes".
     _VIEW_TITLES = {
-        "dashboard": "Inicio",
         "pacientes": "Pacientes",
         "personalizacion": "Personalización global",
     }
@@ -1306,73 +804,17 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         )
         outer_layout.addWidget(self._chrome)
 
-        # ── Fila de contenido: sidebar + área derecha ─────────────────────────
+        # ── Área de contenido ─────────────────────────────────────────────────
         content = QWidget(central)
         content.setStyleSheet("background: transparent;")
-        main_layout = QHBoxLayout(content)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
         outer_layout.addWidget(content, 1)
 
-        # Sidebar
-        # 180px (antes 200): "Personalización" (label más largo, ~113px) entra
-        # con icono y aire; el ancho ganado va al contenido (pedido owner v1.0;
-        # reemplaza a opciones de configuración separadas para sidebar/densidad).
-        self._sidebar = NMHubSidebar(
-            _HUB_NAV_ITEMS,
-            active=self._current_view,
-            modo=self._modo,
-            parent=content,
-            sidebar_width=180,
-        )
-        self._sidebar.set_footer("")
-
-        # ── Sidebar footer: NMSyncOrb + collapse toggle ───────────────────────
-        footer = QWidget()
-        footer.setStyleSheet("background: transparent;")
-        footer_layout = QHBoxLayout(footer)
-        footer_layout.setContentsMargins(10, 6, 10, 8)
-        footer_layout.setSpacing(8)
-
-        self._sync_orb = NMSyncOrb(state="syncing", size=12, modo=self._modo, parent=footer)
-        footer_layout.addWidget(self._sync_orb, alignment=Qt.AlignmentFlag.AlignVCenter)
-
-        self._sync_orb_label = QLabel("Conectando…")
-        self._sync_orb_label.setFont(qfont("size_caption"))
-        colors(self._modo)
-        self._sync_orb_label.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-        )
-        footer_layout.addWidget(self._sync_orb_label, stretch=1)
-
-        self._btn_collapse = QPushButton(footer)
-        self._btn_collapse.setCursor(Qt.CursorShape.PointingHandCursor)
-        # Sin borde ni relleno en ningún estado (pedido owner): el relleno gris
-        # hardcodeado del hover se leía como un recuadro gris que se cortaba.
-        self._btn_collapse.setStyleSheet(
-            "QPushButton { border: none; background: transparent; border-radius: 13px; }"
-            "QPushButton:hover { background: transparent; }"
-            "QPushButton:pressed { background: transparent; }"
-        )
-        self._btn_collapse.setFixedSize(26, 26)
-        self._btn_collapse.setIcon(nm_icon("arrowLeft", C("ink_secondary", self._modo), size=12))
-        self._btn_collapse.clicked.connect(self._toggle_sidebar)
-        footer_layout.addWidget(self._btn_collapse, alignment=Qt.AlignmentFlag.AlignVCenter)
-
-        self._sidebar._layout.addWidget(footer)
-        self._sidebar_collapsed = False  # estado efectivo aplicado
-        self._sidebar_pref_collapsed = False  # preferencia del usuario (botón)
-
-        self._sidebar.nav_clicked.connect(self._on_nav)
-        main_layout.addWidget(self._sidebar)
-
-        # Área derecha
-        right = QWidget()
+        right = QWidget(content)
         right.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        rl = QVBoxLayout(right)
+        rl = QVBoxLayout(content)
         rl.setContentsMargins(0, 0, 0, 0)
         rl.setSpacing(0)
-        main_layout.addWidget(right)
+        rl.addWidget(right)
 
         self._chrome.theme_toggle.connect(self._toggle_theme)
 
@@ -1409,20 +851,6 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
 
         from hub.personalizacion_global import PersonalizacionGlobalView
 
-        # Dashboard ("Inicio")
-        if "dashboard" not in self._views_cache or sip.isdeleted(self._views_cache["dashboard"]):
-            self._view_dashboard = DashboardView(
-                self._modo,
-                self._pacientes,
-                self._sb,
-                on_select_patient=self._select_patient,
-                parent=self._stack,
-            )
-            self._views_cache["dashboard"] = self._view_dashboard
-            self._stack.addWidget(self._view_dashboard)
-        else:
-            self._view_dashboard._pacientes = self._pacientes
-
         # Pacientes
         if "pacientes" not in self._views_cache or sip.isdeleted(self._views_cache["pacientes"]):
             self._view_pacientes = PacientesView(
@@ -1431,6 +859,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
                 on_select=self._select_patient,
                 on_refresh=self._cargar_pacientes,
                 sb=self._sb,
+                on_personalizacion=self._nav_to_personalizacion,
                 parent=self._stack,
             )
             self._views_cache["pacientes"] = self._view_pacientes
@@ -1464,15 +893,11 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
             return
 
         views = self._nav_views()
-        target = views.get(self._current_view, self._view_dashboard)
+        target = views.get(self._current_view, self._view_pacientes)
         self._stack.setCurrentWidget(target)
-        self._sidebar.set_active(self._current_view)
 
     def _nav_views(self) -> dict:
-        """Mapa único id-de-nav → vista (antes duplicado en _refresh_all_views
-        y _on_nav: fuente clásica de drift)."""
         return {
-            "dashboard": self._view_dashboard,
             "pacientes": self._view_pacientes,
             "personalizacion": self._view_personalizacion,
         }
@@ -1483,12 +908,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         self._current_view = item_id
         views = self._nav_views()
         if item_id in views:
-            # M3 F0 (B3): NMFadeWidget ya corta solo un fade en curso (stop()
-            # → finished → limpieza) y conmuta igual: un único code path, sin
-            # clicks de nav perdidos.
-            target = views[item_id]
-            self._stack.setCurrentWidget(target)
-            self._sidebar.set_active(item_id)
+            self._stack.setCurrentWidget(views[item_id])
             if hasattr(self, "_chrome"):
                 self._chrome.set_subtitle(self._view_title(item_id))
 
@@ -1521,15 +941,15 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
             paciente_id=pid,
             paciente_nombre=nombre,
         )
-        detalle.back_requested.connect(self._back_to_dashboard)
+        detalle.back_requested.connect(self._back_to_pacientes)
 
         self._stack.addWidget(detalle)
-        # NMFadeWidget corta solo un fade en curso (p.ej. Inicio→Pacientes
-        # recién disparado) y conmuta igual: el detalle siempre se muestra.
         self._stack.setCurrentWidget(detalle)
         self._current_view = "detalle"
         if hasattr(self, "_chrome"):
-            self._chrome.set_subtitle((nombre or "")[:24])
+            self._chrome.set_module_context(
+                (nombre or "")[:24], None, self._back_to_pacientes
+            )
 
         self._lbl_status.hide()
         self._lbl_status.setText(nombre[:24])
@@ -1537,12 +957,19 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
             f"color: {v3c('text', self._modo).name()}; background: transparent;"
         )
 
-    def _back_to_dashboard(self):
-        self._current_view = "dashboard"
-        self._stack.setCurrentWidget(self._view_dashboard)
-        self._sidebar.set_active("dashboard")
+    def _nav_to_personalizacion(self):
+        self._current_view = "personalizacion"
+        self._stack.setCurrentWidget(self._view_personalizacion)
         if hasattr(self, "_chrome"):
-            self._chrome.set_subtitle(self._view_title("dashboard"))
+            self._chrome.set_module_context(
+                "Personalización global", None, self._back_to_pacientes
+            )
+
+    def _back_to_pacientes(self):
+        self._current_view = "pacientes"
+        self._stack.setCurrentWidget(self._view_pacientes)
+        if hasattr(self, "_chrome"):
+            self._chrome.clear_module_context()
 
     # ── Conexión (lógica preservada exacta) ───────────────────────────────────
 
@@ -1577,13 +1004,6 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
                 self._lbl_status.setStyleSheet(
                     f"color: {v3c('success', self._modo).name()}; background: transparent;"
                 )
-                if hasattr(self, "_sync_orb"):
-                    self._sync_orb.set_state("ok")
-                if hasattr(self, "_sync_orb_label"):
-                    self._sync_orb_label.setText("Conectado")
-                    self._sync_orb_label.setStyleSheet(
-                        f"color: {v3c('success', self._modo).name()}; background: transparent;"
-                    )
                 self._cargar_pacientes()
                 return
             self._sb = None
@@ -1592,13 +1012,6 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         self._lbl_status.setStyleSheet(
             f"color: {v3c('error', self._modo).name()}; background: transparent;"
         )
-        if hasattr(self, "_sync_orb"):
-            self._sync_orb.set_state("error")
-        if hasattr(self, "_sync_orb_label"):
-            self._sync_orb_label.setText("Sin conexión")
-            self._sync_orb_label.setStyleSheet(
-                f"color: {v3c('error', self._modo).name()}; background: transparent;"
-            )
     def _cargar_pacientes(self):
         if visual_qa_enabled():
             self._on_pacientes_loaded(hub_patients())
@@ -1651,26 +1064,12 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         if self._pacientes:
             self._paciente_id = self._pacientes[0]["patient_id"]
             self._paciente_nombre = self._pacientes[0]["patient_name"]
-        if hasattr(self, "_sidebar"):
-            self._sidebar.set_footer("")
         if hasattr(self, "_chrome"):
-            # Titlebar refleja la sección activa (no contexto clínico). El brand
-            # "NeuroMood Hub / <sección>" reemplaza al NMPageHeader por vista.
             self._chrome.set_subtitle(self._view_title(self._current_view))
         self._lbl_status.setText("● Demo visual")
         self._lbl_status.setStyleSheet(
             f"color: {v3c('teal', self._modo).name()}; background: transparent;"
         )
-        if hasattr(self, "_sync_orb"):
-            self._sync_orb.set_state("ok")
-        if hasattr(self, "_sync_orb_label"):
-            self._sync_orb_label.setText("Conectado")
-            self._sync_orb_label.setStyleSheet(
-                f"color: {v3c('success', self._modo).name()}; background: transparent;"
-            )
-        # force_recreate: las vistas se construyeron en el init con _pacientes vacío;
-        # ahora que hub_patients() cargó, hay que RECONSTRUIRLAS (sin esto el
-        # dashboard se queda en empty-state — regresión del force_recreate de Gemini).
         self._refresh_all_views(force_recreate=True)
 
     def _reconnect(self):
@@ -1680,13 +1079,6 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
             return
         self._sb, motivo = _get_sb()
         colors(self._modo)
-        if hasattr(self, "_sync_orb"):
-            self._sync_orb.set_state("syncing")
-        if hasattr(self, "_sync_orb_label"):
-            self._sync_orb_label.setText("Reconectando…")
-            self._sync_orb_label.setStyleSheet(
-                f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-            )
         if self._sb:
             try:
                 res = self._sb.table("patients").select("patient_id", count="exact").execute()
@@ -1695,13 +1087,6 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
                     self._lbl_status.setStyleSheet(
                         f"color: {v3c('success', self._modo).name()}; background: transparent;"
                     )
-                    if hasattr(self, "_sync_orb"):
-                        self._sync_orb.set_state("ok")
-                    if hasattr(self, "_sync_orb_label"):
-                        self._sync_orb_label.setText("Conectado")
-                        self._sync_orb_label.setStyleSheet(
-                            f"color: {v3c('success', self._modo).name()}; background: transparent;"
-                        )
                     self._cargar_pacientes()
                     NMToast.display(
                         self, "Conexión restablecida", variant="success", duration_ms=2000
@@ -1714,56 +1099,9 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         self._lbl_status.setStyleSheet(
             f"color: {v3c('error', self._modo).name()}; background: transparent;"
         )
-        if hasattr(self, "_sync_orb"):
-            self._sync_orb.set_state("error")
-        if hasattr(self, "_sync_orb_label"):
-            self._sync_orb_label.setText("Sin conexión")
-            self._sync_orb_label.setStyleSheet(
-                f"color: {v3c('error', self._modo).name()}; background: transparent;"
-            )
         NMToast.display(
             self, f"No se pudo conectar: {motivo or 'verificación fallida'}", variant="error"
         )
-
-    # ── Sidebar collapse ──────────────────────────────────────────────────────
-
-    def _toggle_sidebar(self):
-        """Botón de colapso manual: alterna la preferencia del usuario."""
-        self._sidebar_pref_collapsed = not getattr(self, "_sidebar_pref_collapsed", False)
-        self._apply_sidebar_state(force=True)
-
-    def set_sidebar_collapsed(self, collapsed: bool):
-        """API pública para fijar la preferencia de sidebar colapsada."""
-        self._sidebar_pref_collapsed = bool(collapsed)
-        self._apply_sidebar_state(force=True)
-
-    def _apply_sidebar_state(self, force: bool = False):
-        """Aplica el estado de colapso efectivo: forzado bajo 1000px (HANDOFF §4
-        breakpoint), o según la preferencia del usuario en pantallas anchas."""
-        if sip.isdeleted(self):
-            return
-        sb = getattr(self, "_sidebar", None)
-        if sb is None or sip.isdeleted(sb):
-            return
-        # Breakpoint 720 (antes 1000): a 960px (el contrato) el sidebar quedaba
-        # SIEMPRE forzado colapsado por narrow, así que el toggle/preferencia no
-        # tenía efecto ("no funciona"). Con 720 el usuario controla a 960; solo
-        # se fuerza colapsado en ventanas realmente chicas.
-        narrow = self.width() < 720
-        collapsed = narrow or getattr(self, "_sidebar_pref_collapsed", False)
-        if not force and collapsed == self._sidebar_collapsed:
-            return
-        self._sidebar_collapsed = collapsed
-        sb.set_collapsed(collapsed)
-        if hasattr(self, "_sync_orb_label") and self._sync_orb_label is not None:
-            self._sync_orb_label.setVisible(not collapsed)
-        if hasattr(self, "_btn_collapse"):
-            icon = "arrowRight" if collapsed else "arrowLeft"
-            self._btn_collapse.setIcon(nm_icon(icon, C("ink_secondary", self._modo), size=12))
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        self._apply_sidebar_state()
 
     # ── Tema ──────────────────────────────────────────────────────────────────
 
@@ -1785,20 +1123,8 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
             cw.set_shell_modo(self._modo)
         if hasattr(self, "_chrome"):
             self._chrome._apply_theme(self._modo)
-        if hasattr(self, "_sidebar"):
-            self._sidebar._apply_theme(self._modo)
         if hasattr(self, "_header"):
             self._header._apply_theme(self._modo)
-        if hasattr(self, "_lbl_status"):
-            colors(self._modo)
-            self._lbl_status.setStyleSheet(
-                f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-            )
-        if hasattr(self, "_sync_orb_label"):
-            colors(self._modo)
-            self._sync_orb_label.setStyleSheet(
-                f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-            )
         # M3 F2: propagar el cambio de tema de forma no destructiva a todas las vistas
         if hasattr(self, "_views_cache"):
             for name, w in self._views_cache.items():

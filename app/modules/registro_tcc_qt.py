@@ -59,7 +59,6 @@ try:
         NMTextArea,
         NMInput,
     )
-    from shared.adaptive_layout_qt import NMCollapsiblePanel
     from shared.theme_qt import (
         C,
         colors,
@@ -96,7 +95,6 @@ except ImportError:
         NMTextArea,
         NMInput,
     )
-    from shared.adaptive_layout_qt import NMCollapsiblePanel
     from shared.theme_qt import (
         C,
         qfont,
@@ -686,45 +684,6 @@ class ModuloRegistroTCC(NMModule):
         lay.addLayout(self._main_grid)
         self._relayout_main_grid()
 
-        # 3. Footer: Registros previos — colapsado por defecto (4.4)
-        # El stepper activo del registro debe dominar el viewport. El historial
-        # sigue disponible con un click (header expandible) sin robar altura.
-        self._prev_collapsible = NMCollapsiblePanel(
-            "Registros previos",
-            modo=self._modo,
-            expanded=False,
-        )
-        self._prev_collapsible.setMaximumHeight(220)
-        prev_outer = QWidget()
-        prev_outer.setStyleSheet("background: transparent;")
-        prev_outer_lay = QVBoxLayout(prev_outer)
-        prev_outer_lay.setContentsMargins(0, 0, 0, 0)
-        prev_outer_lay.setSpacing(0)
-        self._prev_scroll = QScrollArea(prev_outer)
-        self._prev_scroll.setWidgetResizable(True)
-        self._prev_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self._prev_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._prev_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self._prev_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-        self._prev_scroll.setMaximumHeight(180)
-        self._prev_scroll.setMinimumHeight(72)
-        self._prev_body = QWidget()
-        self._prev_body.setStyleSheet("background: transparent;")
-        self._prev_lay = QVBoxLayout(self._prev_body)
-        self._prev_lay.setContentsMargins(0, 0, 0, 0)
-        self._prev_lay.setSpacing(V3_SP["xs"] + 2)
-        self._prev_scroll.setWidget(self._prev_body)
-        prev_outer_lay.addWidget(self._prev_scroll)
-        self._prev_collapsible.set_content(prev_outer)
-        # Compatibilidad: referencias previas usadas por _cargar_registros_previos
-        # y _apply_text_styles. Mantener nombres aunque ahora vivan dentro del
-        # collapsible (no hay label "Registros previos" suelto — vive en el header).
-        self._prev_section_lbl = self._prev_collapsible._title
-        lay.addWidget(self._prev_collapsible)
-        # Mantener referencia para el guard de QSettings/tema (puede no existir).
-        self._prev_card = self._prev_collapsible
-        self._cargar_registros_previos()
-
         self._apply_text_styles()
         self._show_step()
         self._resumen.update_data(self._data)
@@ -759,9 +718,6 @@ class ModuloRegistroTCC(NMModule):
     def _apply_text_styles(self):
         c = v3c("ink_secondary", self._modo).name()
         self._eyebrow.setStyleSheet(f"color: {c}; background: transparent;")
-        self._prev_section_lbl.setStyleSheet(
-            f"color: {c}; background: transparent;"
-        )
         self._error_lbl.setStyleSheet(
             f"color: {v3c('warning', self._modo).name()}; background: transparent;"
         )
@@ -1352,7 +1308,6 @@ class ModuloRegistroTCC(NMModule):
         # fallo genuino de guardado.
         if visual_qa_enabled():
             self._show_success_page()
-            self._cargar_registros_previos()
             QTimer.singleShot(3000, lambda: self._reset() if not sip.isdeleted(self) else None)
             return
 
@@ -1376,7 +1331,6 @@ class ModuloRegistroTCC(NMModule):
         # el botón. (El "destello verde" reportado antes era el resaltador del
         # lector de pantalla sobre widgets huérfanos, no este botón.)
         self._show_success_page()
-        self._cargar_registros_previos()
         QTimer.singleShot(3000, lambda: self._reset() if not sip.isdeleted(self) else None)
 
     def _show_success_page(self):
@@ -1453,134 +1407,6 @@ class ModuloRegistroTCC(NMModule):
         self._show_step()
         self._resumen.update_data(self._data)
 
-    # ── Registros previos (footer) ───────────────────────────────────────────
-
-    def _load_recent_records(self, limit: int = 5):
-        if visual_qa_enabled():
-            return [
-                (
-                    "2026-05-17",
-                    "10:30:00",
-                    "Reunión con mi jefe",
-                    "Ansiedad",
-                    7,
-                    "Catastrofización",
-                ),
-                (
-                    "2026-05-16",
-                    "20:15:00",
-                    "Discusión con mi pareja",
-                    "Tristeza",
-                    6,
-                    "Personalización",
-                ),
-                ("2026-05-15", "08:00:00", "Llegué tarde al trabajo", "Culpa", 5, "Debería"),
-            ]
-        try:
-            conn = obtener_conexion()
-            rows = conn.execute(
-                "SELECT fecha, hora, situacion, emocion, intensidad, distorsiones "
-                "FROM pensamientos ORDER BY fecha DESC, hora DESC LIMIT ?",
-                (limit,),
-            ).fetchall()
-            conn.close()
-            out = []
-            for r in rows:
-                if hasattr(r, "keys"):
-                    out.append(
-                        (
-                            r["fecha"],
-                            r["hora"],
-                            r["situacion"] or "",
-                            r["emocion"] or "",
-                            int(r["intensidad"] or 0),
-                            r["distorsiones"] or "",
-                        )
-                    )
-                else:
-                    out.append((r[0], r[1], r[2] or "", r[3] or "", int(r[4] or 0), r[5] or ""))
-            return out
-        except Exception:
-            _log.exception("Error cargando registros TCC previos")
-            return []
-
-    def _cargar_registros_previos(self):
-        # Clear — setParent(None) saca el widget del layout YA; deleteLater lo
-        # destruye (antes quedaban huérfanos top-level vivos).
-        while self._prev_lay.count():
-            item = self._prev_lay.takeAt(0)
-            w = item.widget()
-            if w:
-                w.setParent(None)
-                w.deleteLater()
-        records = self._load_recent_records(5)
-        if not records:
-            empty = QLabel(t("text.module.registro.empty_state", "Aún no hay registros previos."))
-            empty.setFont(qfont("size_small"))
-            empty.setStyleSheet(
-                f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-            )
-            self._prev_lay.addWidget(empty)
-            return
-        for fecha, hora, situacion, emocion, intensidad, distorsiones in records:
-            row = QHBoxLayout()
-            row.setSpacing(V3_SP["md"])
-            # Fecha mono
-            date_lbl = QLabel(self._format_date(fecha, hora))
-            # P2.D: tipografía más suave (caption sin mono) para integrar con el resto.
-            date_lbl.setFont(qfont("size_caption"))
-            date_lbl.setStyleSheet(
-                f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-            )
-            date_lbl.setFixedWidth(110)
-            row.addWidget(date_lbl)
-            # Situación (snippet)
-            snippet = situacion if len(situacion) <= 60 else situacion[:59] + "…"
-            sit_lbl = QLabel(snippet)
-            sit_lbl.setFont(qfont("size_small"))
-            sit_lbl.setStyleSheet(
-                f"color: {v3c('text', self._modo).name()}; background: transparent;"
-            )
-            row.addWidget(sit_lbl, stretch=1)
-            # Emoción chip
-            emo_lbl = QLabel(emocion or "—")
-            emo_lbl.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
-            emo_lbl.setContentsMargins(V3_SP["sm"], 2, V3_SP["sm"], 2)
-            emo_color = v3c("teal", self._modo).name()
-            qc = QColor(emo_color)
-            emo_lbl.setStyleSheet(
-                f"color: {emo_color}; "
-                f"background: rgba({qc.red()},{qc.green()},{qc.blue()},36); "
-                f"border-radius: 8px;"
-            )
-            row.addWidget(emo_lbl)
-            # Intensidad
-            int_lbl = QLabel(f"{intensidad}/10")
-            # P2.D: tipografía más suave (caption regular).
-            int_lbl.setFont(qfont("size_caption"))
-            int_lbl.setStyleSheet(
-                f"color: {v3c('text2', self._modo).name()}; background: transparent;"
-            )
-            int_lbl.setFixedWidth(48)
-            row.addWidget(int_lbl)
-            wrap = QWidget()
-            wrap.setLayout(row)
-            self._prev_lay.addWidget(wrap)
-
-    def _format_date(self, fecha: str, hora: str) -> str:
-        try:
-            import datetime as dt
-
-            d = dt.datetime.strptime(fecha, "%Y-%m-%d").date()
-            today = dt.date.today()
-            if d == today:
-                return f"Hoy · {hora[:5]}"
-            if d == today - dt.timedelta(days=1):
-                return f"Ayer · {hora[:5]}"
-            return f"{d.strftime('%d/%m')} · {hora[:5]}"
-        except Exception:
-            return f"{fecha} {hora[:5]}"
-
     # ── Hooks ────────────────────────────────────────────────────────────────
 
     def _has_registros_hoy(self) -> bool:
@@ -1599,7 +1425,6 @@ class ModuloRegistroTCC(NMModule):
     def on_enter(self):
         """Resetea el wizard al volver al módulo."""
         self._reset()
-        self._cargar_registros_previos()
 
     def get_card_status(self) -> str:
         try:
