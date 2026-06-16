@@ -732,7 +732,6 @@ class _ServiceOptionButton(QPushButton):
         
         h = self.height()
         r = min(LAYOUT["radius_button"], h // 2)
-        w = self.width()
         rect = QRectF(self.rect())
         path = QPainterPath()
         path.addRoundedRect(rect, r, r)

@@ -125,5 +125,6 @@ def test_nm_data_db_no_tocado(db_temporal, tmp_path):
     from app.modules import registro_tcc_qt as tcc
 
     tcc._persistir_pensamiento(_registro(), 4)
-    db_file = tmp_path / "appdata" / "NeuroMood" / "nm_data.db"
-    assert db_file.exists()
+    # db_temporal returns the isolated db path (NEUROMOOD_TEST_DB takes priority
+    # over APPDATA when the autouse isolated_db fixture is active).
+    assert db_temporal.exists()
