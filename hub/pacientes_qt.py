@@ -1076,6 +1076,11 @@ class _TabRegistros(QWidget):
                     "fecha,hora,energia,actividad,resultado",
                     20,
                 ),
+                "dbt": (
+                    "dbt_practice_records",
+                    "fecha,hora,skill_id,skill_version,familia,necesidad,malestar_antes,malestar_despues,resultado,duracion_seg,nota,created_at",
+                    30,
+                ),
             }
             for clave, (tabla, campos, lim) in tablas.items():
                 try:
@@ -1360,6 +1365,107 @@ class _TabRegistros(QWidget):
                 top_lay.addWidget(lbl_e)
             content_lay.addLayout(top_lay)
 
+        elif tipo == "dbt":
+            DBT_SKILLS_TITLES = {
+                "mind_observe": "Observar y describir",
+                "mind_wise": "Mente sabia",
+                "distress_stop": "STOP",
+                "distress_senses": "Autocalma con los sentidos",
+                "emotion_facts": "Verificar los hechos",
+                "emotion_opposite": "Acción opuesta",
+                "interpersonal_dearman": "DEAR MAN",
+                "interpersonal_givefast": "GIVE / FAST",
+            }
+            DBT_FAMILY_TITLES = {
+                "mindfulness": "Mindfulness",
+                "distress_tolerance": "Tolerancia al malestar",
+                "emotion_regulation": "Regulación emocional",
+                "interpersonal_effectiveness": "Efectividad interpersonal"
+            }
+            DBT_RESULT_LABELS = {
+                "ayudo": "Me ayudó",
+                "parcial": "Un poco",
+                "no_esta_vez": "No esta vez",
+                "sin_evaluar": "Sin evaluar"
+            }
+
+            skill_id = r.get("skill_id", "")
+            title = DBT_SKILLS_TITLES.get(skill_id, skill_id)
+            familia = r.get("familia") or ""
+            fam_title = DBT_FAMILY_TITLES.get(familia, familia.capitalize())
+            dur_seg = r.get("duracion_seg") or 0
+            mins = max(1, dur_seg // 60)
+            antes = r.get("malestar_antes")
+            despues = r.get("malestar_despues")
+            resultado = r.get("resultado") or "sin_evaluar"
+            res_label = DBT_RESULT_LABELS.get(resultado, "Sin evaluar")
+            nota = r.get("nota") or ""
+
+            top_lay = QHBoxLayout()
+            top_lay.setSpacing(8)
+
+            lbl_title = QLabel(f"Práctica DBT: {title}")
+            lbl_title.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_semibold"]))
+            lbl_title.setStyleSheet(
+                f"color: {v3c('text', self._modo).name()}; background: transparent;"
+            )
+            top_lay.addWidget(lbl_title)
+
+            # Badge for result
+            res_color = {
+                "ayudo": v3c("teal", self._modo).name(),
+                "parcial": v3c("amber", self._modo).name(),
+                "no_esta_vez": v3c("danger", self._modo).name(),
+                "sin_evaluar": v3c("bg_subtle", self._modo).name()
+            }.get(resultado, v3c("bg_subtle", self._modo).name())
+
+            badge = QLabel(res_label)
+            badge.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
+            _style_mini_pill(badge, res_color)
+            top_lay.addWidget(badge)
+
+            # Duration badge
+            dur_badge = QLabel(f"{mins} min")
+            dur_badge.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
+            _style_mini_pill(dur_badge, v3c("primary", self._modo).name())
+            top_lay.addWidget(dur_badge)
+
+            top_lay.addStretch()
+
+            # Malestar comparison
+            if antes is not None or despues is not None:
+                antes_str = str(antes) if antes is not None else "—"
+                despues_str = str(despues) if despues is not None else "—"
+                lbl_malestar = QLabel(f"Malestar: {antes_str} → {despues_str}")
+                lbl_malestar.setFont(qfont("size_caption"))
+                lbl_malestar.setStyleSheet(
+                    f"color: {v3c('text2', self._modo).name()}; background: transparent;"
+                )
+                top_lay.addWidget(lbl_malestar)
+
+            content_lay.addLayout(top_lay)
+
+            # Familia + Necesidad subtitle
+            necesidad = r.get("necesidad") or ""
+            sub_text = f"Familia: {fam_title}"
+            if necesidad:
+                sub_text += f" · Necesidad: {necesidad}"
+            lbl_sub = QLabel(sub_text)
+            lbl_sub.setFont(qfont("size_caption"))
+            lbl_sub.setStyleSheet(
+                f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
+            )
+            content_lay.addWidget(lbl_sub)
+
+            if nota:
+                lbl_nota = QLabel(f'"{nota}"')
+                lbl_nota.setFont(qfont("size_small"))
+                lbl_nota.setStyleSheet(
+                    f"color: {v3c('text2', self._modo).name()}; font-style: italic; background: transparent;"
+                )
+                lbl_nota.setWordWrap(True)
+                content_lay.addWidget(lbl_nota)
+
         content_widget = QWidget()
         content_widget.setStyleSheet("background: transparent;")
         content_widget.setLayout(content_lay)
@@ -1456,6 +1562,87 @@ class _TabRegistros(QWidget):
         _seccion("Temporizador de Actividades", datos.get("timer", []), "timer")
         _seccion("Recordatorios de Bienestar", datos.get("reclog", []), "reclog")
         _seccion("Asistente de Activación Conductual", datos.get("activacion", []), "activacion")
+
+        # Prácticas DBT
+        dbt_records = datos.get("dbt", [])
+        dbt_frame = NMCard(modo=self._modo, clickable=False)
+        dvl = QVBoxLayout(dbt_frame)
+        dvl.setContentsMargins(PAD_CARD, 14, PAD_CARD, 14)
+        dvl.setSpacing(10)
+
+        dt = QLabel("Prácticas DBT")
+        dt.setFont(qfont("size_heading_m", weight=TYPOGRAPHY["weight_semibold"]))
+        dt.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
+        dvl.addWidget(dt)
+
+        if not dbt_records:
+            e = QLabel("Sin registros de prácticas DBT.")
+            e.setFont(qfont("size_caption"))
+            e.setStyleSheet(f"color: {c['text_tertiary']}; background: transparent;")
+            dvl.addWidget(e)
+        else:
+            DBT_SKILLS_TITLES = {
+                "mind_observe": "Observar y describir",
+                "mind_wise": "Mente sabia",
+                "distress_stop": "STOP",
+                "distress_senses": "Autocalma con los sentidos",
+                "emotion_facts": "Verificar los hechos",
+                "emotion_opposite": "Acción opuesta",
+                "interpersonal_dearman": "DEAR MAN",
+                "interpersonal_givefast": "GIVE / FAST",
+            }
+            DBT_FAMILY_TITLES = {
+                "mindfulness": "Mindfulness",
+                "distress_tolerance": "Tolerancia al malestar",
+                "emotion_regulation": "Regulación emocional",
+                "interpersonal_effectiveness": "Efectividad interpersonal"
+            }
+
+            # Calculate metrics
+            total_practices = len(dbt_records)
+
+            # Count families and skills
+            families_count = {}
+            skills_count = {}
+            diffs = []
+            for r in dbt_records:
+                fam = r.get("familia") or ""
+                skill = r.get("skill_id") or ""
+                families_count[fam] = families_count.get(fam, 0) + 1
+                skills_count[skill] = skills_count.get(skill, 0) + 1
+
+                antes = r.get("malestar_antes")
+                despues = r.get("malestar_despues")
+                if antes is not None and despues is not None:
+                    diffs.append(antes - despues)
+
+            # Most used skill and family
+            most_used_skill_id = max(skills_count, key=skills_count.get) if skills_count else None
+            most_used_skill_title = DBT_SKILLS_TITLES.get(most_used_skill_id, most_used_skill_id) if most_used_skill_id else "Ninguna"
+
+            most_used_fam_id = max(families_count, key=families_count.get) if families_count else None
+            most_used_fam_title = DBT_FAMILY_TITLES.get(most_used_fam_id, most_used_fam_id.upper()) if most_used_fam_id else "Ninguna"
+
+            stats_text = f"Total: {total_practices} prácticas  |  Familia más activa: {most_used_fam_title}  |  Habilidad más usada: {most_used_skill_title}"
+
+            if diffs:
+                avg_diff = round(sum(diffs) / len(diffs), 1)
+                sign = "+" if avg_diff > 0 else ""
+                stats_text += f"\nReducción prom. malestar (Autoinforme): {sign}{avg_diff} pts ({len(diffs)} pares completos)"
+            else:
+                stats_text += "\nReducción prom. malestar (Autoinforme): sin suficientes datos"
+
+            lbl_stats = QLabel(stats_text)
+            lbl_stats.setFont(qfont("size_caption"))
+            lbl_stats.setStyleSheet(f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;")
+            lbl_stats.setWordWrap(True)
+            dvl.addWidget(lbl_stats)
+
+            # Render rows
+            for r in dbt_records[:10]:
+                dvl.addWidget(self._render_registro_row("dbt", r))
+
+        self._list_layout.addWidget(dbt_frame)
 
     def _exportar_pdf(self):
         if not self._datos_cache:

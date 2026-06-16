@@ -327,28 +327,58 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "animo-stats-empty"}],
         },
-        "evolucion": {
-            "label": "Evolucion animica default",
+        "dbt-now": {
+            "label": "DBT Ahora - entrada por necesidad",
             "parent": None,
-            "actions": [{"action": "navigate", "view": "evolucion"},
+            "actions": [{"action": "navigate", "view": "dbt"},
                         {"action": "drain", "cycles": 8},
-                        {"action": "capture", "view": "evolucion"}],
+                        {"action": "capture", "view": "dbt-now"}],
         },
-        "evolucion-sparse": {
-            "label": "Evolucion sparse state (< 2 puntos — evidencia S13)",
-            "parent": "evolucion",
-            "actions": [{"action": "navigate", "view": "evolucion"},
-                        {"action": "call", "func": "_evolucion_force_sparse"},
-                        {"action": "drain", "cycles": 4},
-                        {"action": "capture", "view": "evolucion-sparse"}],
-        },
-        "evolucion-monthly": {
-            "label": "Evolucion mensual",
-            "parent": "evolucion",
-            "actions": [{"action": "navigate", "view": "evolucion"},
-                        {"action": "call", "func": "_evolucion_select_monthly"},
+        "dbt-library": {
+            "label": "DBT Biblioteca - catálogo de cuatro familias",
+            "parent": "dbt-now",
+            "actions": [{"action": "navigate", "view": "dbt"},
+                        {"action": "call", "func": "_dbt_select_tab_library"},
                         {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "evolucion-monthly"}],
+                        {"action": "capture", "view": "dbt-library"}],
+        },
+        "dbt-practice-stop": {
+            "label": "DBT Práctica - paso intermedio de STOP",
+            "parent": "dbt-now",
+            "actions": [{"action": "navigate", "view": "dbt"},
+                        {"action": "call", "func": "_dbt_select_tab_library"},
+                        {"action": "call", "func": "_dbt_start_stop_practice"},
+                        {"action": "call", "func": "_dbt_go_to_step_2"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture", "view": "dbt-practice-stop"}],
+        },
+        "dbt-practice-closure": {
+            "label": "DBT Cierre - evaluación sin ratings seleccionados",
+            "parent": "dbt-now",
+            "actions": [{"action": "navigate", "view": "dbt"},
+                        {"action": "call", "func": "_dbt_select_tab_library"},
+                        {"action": "call", "func": "_dbt_start_stop_practice"},
+                        {"action": "call", "func": "_dbt_go_to_closure"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture", "view": "dbt-practice-closure"}],
+        },
+        "dbt-history-empty": {
+            "label": "DBT Historial - vacío",
+            "parent": "dbt-now",
+            "actions": [{"action": "navigate", "view": "dbt"},
+                        {"action": "call", "func": "_dbt_select_tab_history"},
+                        {"action": "call", "func": "_dbt_empty_history"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture", "view": "dbt-history-empty"}],
+        },
+        "dbt-history-filled": {
+            "label": "DBT Historial - lleno con registros",
+            "parent": "dbt-now",
+            "actions": [{"action": "navigate", "view": "dbt"},
+                        {"action": "call", "func": "_dbt_select_tab_history"},
+                        {"action": "call", "func": "_dbt_fill_history"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture", "view": "dbt-history-filled"}],
         },
 
         "respiracion": {
@@ -1315,32 +1345,96 @@ def _rutina_force_empty(win, qapp, action):
 
 
 @_register_helper
-def _evolucion_force_sparse(win, qapp, action):
-    """Fuerza evolucion a sparse state (0 puntos válidos) — evidencia visual S13."""
-    import shared.utils as _su
+def _dbt_select_tab_library(win, qapp, action):
     target = _module_target(win)
-    _orig = _su.get_valence_series
-    _su.get_valence_series = lambda days: ([], [])
-    try:
-        target._load_tab_data(0)
-    finally:
-        _su.get_valence_series = _orig
+    if target is not None:
+        target._tabs.set_current(1)
     _drain(qapp, cycles=4)
 
 
 @_register_helper
-def _evolucion_select_monthly(win, qapp, action):
-    """Selecciona la vista mensual de Evolucion."""
+def _dbt_select_tab_history(win, qapp, action):
     target = _module_target(win)
-    tabs = getattr(target, "_tabs", None)
+    if target is not None:
+        target._tabs.set_current(2)
+    _drain(qapp, cycles=4)
+
+
+@_register_helper
+def _dbt_start_stop_practice(win, qapp, action):
+    target = _module_target(win)
+    if target is not None:
+        from app.modules.dbt_qt import DBT_SKILLS
+        skill = DBT_SKILLS["distress_stop"]
+        target.start_practice(skill)
+    _drain(qapp, cycles=4)
+
+
+@_register_helper
+def _dbt_go_to_step_2(win, qapp, action):
+    target = _module_target(win)
+    if target is not None and getattr(target, "_practice_view", None) is not None:
+        target._practice_view._next_step()
+    _drain(qapp, cycles=4)
+
+
+@_register_helper
+def _dbt_go_to_closure(win, qapp, action):
+    target = _module_target(win)
+    if target is not None and getattr(target, "_practice_view", None) is not None:
+        steps_count = len(target._practice_view._skill["steps"])
+        for _ in range(steps_count):
+            target._practice_view._next_step()
+            _drain(qapp, cycles=2)
+    _drain(qapp, cycles=4)
+
+    # Pre-select ratings for QA captures to showcase low/medium/high colors:
+    # antes=2 (Green/Low), despues=9 (Red/High), resultado="parcial" (Amber/Medium)
+    if target is not None and getattr(target, "_closure_view", None) is not None:
+        closure = target._closure_view
+        closure._select_antes(2)
+        closure._select_despues(9)
+        closure._select_resultado("parcial")
+        _drain(qapp, cycles=4)
+
+
+@_register_helper
+def _dbt_empty_history(win, qapp, action):
+    from shared.db import conexion
     try:
-        if tabs is not None and hasattr(tabs, "set_current"):
-            tabs.set_current(1)
-        elif hasattr(target, "_load_tab_data"):
-            target._load_tab_data(1)
+        with conexion() as conn:
+            conn.execute("DELETE FROM dbt_practicas")
     except Exception:
         pass
-    _drain(qapp, cycles=6)
+    target = _module_target(win)
+    if target is not None:
+        target._load_history()
+    _drain(qapp, cycles=4)
+
+
+@_register_helper
+def _dbt_fill_history(win, qapp, action):
+    from shared.db import conexion
+    import uuid
+    try:
+        with conexion() as conn:
+            conn.execute("DELETE FROM dbt_practicas")
+            conn.execute(
+                "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (str(uuid.uuid4()), "2026-06-13", "14:30:00", "distress_stop", 1, "distress_tolerance", "Atravesar un momento intenso", 8, 3, "ayudo", 120, "Me sirvió mucho para calmarme.", "2026-06-13T14:30:00Z")
+            )
+            conn.execute(
+                "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (str(uuid.uuid4()), "2026-06-14", "10:15:00", "mind_wise", 1, "mindfulness", "Volver al presente", 6, 4, "parcial", 90, "Pude enfocarme un poco mejor.", "2026-06-14T10:15:00Z")
+            )
+    except Exception:
+        pass
+    target = _module_target(win)
+    if target is not None:
+        target._load_history()
+    _drain(qapp, cycles=4)
 
 
 @_register_helper
@@ -2743,6 +2837,26 @@ def main() -> int:
     p.add_argument("--scale", type=_parse_scale, default=1.0, help="Qt scale factor for capture subprocesses (for example: 1.25)")
     p.add_argument("--_child-single", action="store_true", help=argparse.SUPPRESS)
     args = p.parse_args()
+
+    if not args.list and not os.environ.get("NEUROMOOD_TEST_DB"):
+        import tempfile
+        import atexit
+        temp_db_dir = tempfile.mkdtemp(prefix="nm_qa_db_")
+        db_file = Path(temp_db_dir) / "test_nm_data.db"
+        os.environ["NEUROMOOD_TEST_DB"] = str(db_file)
+
+        from shared.db import inicializar_tablas
+        try:
+            inicializar_tablas()
+        except Exception as e:
+            print(f"[QA SETUP WARNING] Failed to initialize tables: {e}", file=sys.stderr)
+
+        def cleanup_temp_db():
+            if os.path.exists(temp_db_dir):
+                import shutil
+                shutil.rmtree(temp_db_dir, ignore_errors=True)
+        atexit.register(cleanup_temp_db)
+        print(f"[QA] Using isolated database: {db_file}")
 
     out_dir = Path(args.out_dir)
     scale = float(args.scale)

@@ -8,6 +8,9 @@ _log = logging.getLogger(__name__)
 
 
 def obtener_ruta_db() -> Path:
+    override = os.environ.get("NEUROMOOD_TEST_DB")
+    if override:
+        return Path(override)
     appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
     carpeta = Path(appdata) / "NeuroMood"
     carpeta.mkdir(parents=True, exist_ok=True)
@@ -323,6 +326,35 @@ def inicializar_tablas():
             categoria TEXT NOT NULL,
             mensaje TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS dbt_practicas (
+            record_id TEXT PRIMARY KEY,
+            fecha TEXT NOT NULL,
+            hora TEXT NOT NULL,
+            skill_id TEXT NOT NULL,
+            skill_version INTEGER NOT NULL DEFAULT 1,
+            familia TEXT NOT NULL CHECK (
+                familia IN (
+                    'mindfulness',
+                    'distress_tolerance',
+                    'emotion_regulation',
+                    'interpersonal_effectiveness'
+                )
+            ),
+            necesidad TEXT DEFAULT '',
+            malestar_antes INTEGER NULL CHECK (
+                malestar_antes IS NULL OR malestar_antes BETWEEN 0 AND 10
+            ),
+            malestar_despues INTEGER NULL CHECK (
+                malestar_despues IS NULL OR malestar_despues BETWEEN 0 AND 10
+            ),
+            resultado TEXT NOT NULL DEFAULT 'sin_evaluar' CHECK (
+                resultado IN ('ayudo', 'parcial', 'no_esta_vez', 'sin_evaluar')
+            ),
+            duracion_seg INTEGER NOT NULL DEFAULT 0 CHECK (duracion_seg >= 0),
+            nota TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL
+        );
     """)
 
     conn.commit()
@@ -412,6 +444,7 @@ def inicializar_tablas():
         "CREATE INDEX IF NOT EXISTS idx_actividades_temporizador_fecha "
         "ON actividades_temporizador (fecha)",
         "CREATE INDEX IF NOT EXISTS idx_recordatorios_log_fecha ON recordatorios_log (fecha)",
+        "CREATE INDEX IF NOT EXISTS idx_dbt_practicas_fecha ON dbt_practicas (fecha)",
     ):
         try:
             conn.execute(_idx_sql)

@@ -35,3 +35,15 @@ def _clean_visual_qa_env(monkeypatch):
     ]
     for key in keys_visual_qa:
         monkeypatch.delenv(key, raising=False)
+
+
+@pytest.fixture(autouse=True, scope="function")
+def isolated_db(tmp_path, monkeypatch):
+    db_file = tmp_path / "test_nm_data.db"
+    monkeypatch.setenv("NEUROMOOD_TEST_DB", str(db_file))
+
+    # Initialize the temporary database tables
+    from shared.db import inicializar_tablas
+    inicializar_tablas()
+
+    yield db_file

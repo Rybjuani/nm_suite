@@ -98,7 +98,7 @@ _MODULE_MAP = {
     "actividades": ("app.modules.actividades_qt", "ModuloActividades"),
     "timer": ("app.modules.timer_qt", "ModuloTimer"),
     "avisos": ("app.modules.avisos_qt", "ModuloAvisos"),
-    "evolucion": ("app.modules.evolucion_qt", "ModuloEvolucion"),
+    "dbt": ("app.modules.dbt_qt", "ModuloDBT"),
 }
 
 _MODULE_UI_META = {
@@ -109,7 +109,7 @@ _MODULE_UI_META = {
     "actividades": ("Asistente de Activación Conductual", "actividades"),
     "timer": ("Temporizador de Actividades", "timer"),
     "avisos": ("Recordatorios de Bienestar", "avisos"),
-    "evolucion": ("Visualizador de Evolución Anímica", "chart"),
+    "dbt": ("Habilidades DBT", "spark"),
 }
 
 

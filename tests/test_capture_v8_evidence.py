@@ -124,7 +124,7 @@ def test_phase0_required_recipes_are_registered():
         "actividades-empty",
         "avisos-empty",
         "recuperar-acceso",
-        "evolucion-monthly",
+        "dbt-now",
         "registro-success",
     ):
         assert view_id in suite

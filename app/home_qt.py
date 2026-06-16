@@ -176,11 +176,11 @@ MODULES_CONFIG = [
         "chip": "Diario",
     },
     {
-        "id": "evolucion",
-        "icon_v3": "chart",
-        "title": "Visualizador de Evolución Anímica",
-        "desc": "Humor semanal y mensual",
-        "chip": "Evolución",
+        "id": "dbt",
+        "icon_v3": "spark",
+        "title": "Habilidades DBT",
+        "desc": "Práctica guiada breve",
+        "chip": "Habilidades",
     },
 ]
 
