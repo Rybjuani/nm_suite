@@ -148,48 +148,6 @@ def _wheel_passthrough(inner: QScrollArea) -> None:
     inner.wheelEvent = _wheel
 
 
-def _make_preview_card(modo: str, hint: str = ""):
-    """Card 'VISTA PREVIA EN SUITE' que el profesional ve mientras tipea.
-
-    Devuelve (card, body_label). El caller actualiza body_label en vivo con una
-    representación de cómo se verá el preset en el módulo del Suite del paciente.
-    """
-    card = NMCard(modo=modo, clickable=False)
-    card.setMaximumHeight(148)
-    lay = QVBoxLayout(card)
-    lay.setContentsMargins(10, 8, 10, 8)
-    lay.setSpacing(4)
-    eb = QLabel("Vista previa en Suite")
-    eb.setFont(eyebrow_font())
-    eb.setStyleSheet(
-        f"color: {v3c('ink_secondary', modo).name()}; background: transparent;"
-    )
-    lay.addWidget(eb)
-    body = QLabel("")
-    body.setWordWrap(True)
-    body.setFont(qfont("size_small"))
-    # 6.2: borderSoft es rgba — preservar alpha con qcolor_to_rgba_css.
-    body.setStyleSheet(
-        f"color: {v3c('text', modo).name()}; background: {v3c('surface', modo).name()}; "
-        f"border: 1px solid {qcolor_to_rgba_css(v3c('borderSoft', modo))}; "
-        "border-radius: 8px; padding: 10px;"
-    )
-    # El QLabel wordwrap subestima la altura con borde+padding; estos límites
-    # mantienen la vista compacta sin cortar la segunda línea del preview.
-    body.setMinimumHeight(58)
-    body.setMaximumHeight(78)
-    body.setAlignment(Qt.AlignmentFlag.AlignTop)
-    lay.addWidget(body)
-    if hint:
-        h = QLabel(hint)
-        h.setWordWrap(True)
-        h.setFont(qfont("size_caption_xs"))
-        h.setStyleSheet(f"color: {v3c('ink_secondary', modo).name()}; background: transparent;")
-        h.setMaximumHeight(30)
-        lay.addWidget(h)
-    return card, body
-
-
 class PlanTerapeuticoTab(QWidget):
     """Contenedor del Plan terapéutico: sub-tabs por módulo del Suite."""
 

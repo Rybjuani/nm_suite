@@ -68,6 +68,12 @@ def _is_windows_11_or_newer() -> bool:
 def run_onboarding() -> bool:
     """Muestra el diálogo de onboarding. Retorna True si el usuario completó el proceso."""
     dlg = OnboardingDialog()
+    # Textos globales configurados desde el Hub (no-op si no hay overrides).
+    try:
+        from shared.text_overrides import apply_overrides
+        apply_overrides(dlg, "onboarding")
+    except Exception:
+        pass
     return dlg.exec() == QDialog.DialogCode.Accepted
 
 

@@ -768,12 +768,24 @@ HUB_IMPORTS = [
     "shared.utils",
     "shared.visual_qa",
     "shared.icons_svg",
+    "shared.text_overrides",       # capa de textos globales de la Suite
     "hub.pacientes_qt",
     "hub.ia_asistente",
     "hub.exportar",
-    "hub.personalizacion_global",  # vista nueva (reestructura v1.0)
+    "hub.config_global_suite",     # "Configuración global de Suite" (clon real navegable)
     "hub.plan_terapeutico",        # tab del detalle (reestructura v1.0)
-    "hub.editors.text_overrides_editor",
+    # El clon de "Configuración global de Suite" instancia las vistas REALES de
+    # la Suite → el Hub debe empaquetar todo app/ (Home, onboarding y módulos).
+    "app.home_qt",
+    "app.onboarding_qt",
+    "app.modules.animo_qt",
+    "app.modules.respiracion_qt",
+    "app.modules.registro_tcc_qt",
+    "app.modules.rutina_qt",
+    "app.modules.actividades_qt",
+    "app.modules.timer_qt",
+    "app.modules.avisos_qt",
+    "app.modules.dbt_qt",
     # tcc_template_editor eliminado en feat(hub-reorg-1): subtab Pensamientos borrado
 ]
 
@@ -811,6 +823,9 @@ TARGETS = [
             ("assets/fonts", "assets/fonts"),
             ("shared", "shared"),
             ("hub", "hub"),
+            # El Hub embebe las vistas REALES de la Suite en "Configuración global
+            # de Suite" → necesita el paquete app/ completo (Home, onboarding, módulos).
+            ("app", "app"),
         ],
         hidden_imports=HUB_IMPORTS,
         requires=["assets/LOGO.png", "assets/NM_icon.ico", "hub/main_qt.py"] + final_asset_requires(),

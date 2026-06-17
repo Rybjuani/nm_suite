@@ -90,14 +90,6 @@ _RECIPE_EVIDENCE_FLAGS: dict[tuple[str, str], dict[str, list[str]]] = {
         "flags": [_STATUS_REQUIRES_DATA_STATE],
         "notes": ["No-score depends on real persisted mood state; QA cache forcing is not product evidence."],
     },
-    ("suite", "privacy-lock"): {
-        "flags": [_STATUS_REQUIRES_RUNTIME],
-        "notes": ["Standalone lock dialog does not prove the live lock route or dismissal lifecycle."],
-    },
-    ("suite", "privacy-lock-error"): {
-        "flags": [_STATUS_REQUIRES_RUNTIME],
-        "notes": ["Standalone lock error does not prove live lock route or failed-unlock lifecycle."],
-    },
     ("hub", "pacientes"): {
         "flags": [_STATUS_REQUIRES_DATA_STATE],
         "notes": ["Patient rows are QA/demo data; real patients state is not covered."],
@@ -105,10 +97,6 @@ _RECIPE_EVIDENCE_FLAGS: dict[tuple[str, str], dict[str, list[str]]] = {
     ("hub", "pacientes-empty"): {
         "flags": [_STATUS_REQUIRES_DATA_STATE],
         "notes": ["Empty patients view depends on real data absence, not only QA in-memory clearing."],
-    },
-    ("hub", "editor-text-overrides"): {
-        "flags": [_STATUS_REQUIRES_RUNTIME],
-        "notes": ["Standalone editor capture does not prove Hub-launched chrome or close lifecycle."],
     },
     # editor-tcc-template ELIMINADA: el editor de plantilla TCC fue demolido
     # (reorganización user feedback — el Plan terapéutico asigna solo 4 módulos).
@@ -243,22 +231,6 @@ _RECIPES: dict[str, dict[str, dict]] = {
         # NOTA: no existe receta "onboarding-login" — el onboarding del
         # producto es UN solo form con dos CTAs (Crear cuenta / Iniciar
         # sesión); no hay vista/modo login separado que capturar.
-        "privacy-lock": {
-            "label": "Privacy Lock - PIN entry",
-            "parent": None,
-            "actions": [{"action": "call", "func": "_build_privacy_lock"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "privacy-lock"}],
-        },
-        "privacy-lock-error": {
-            "label": "Privacy Lock - error state",
-            "parent": "privacy-lock",
-            "actions": [{"action": "call", "func": "_build_privacy_lock"},
-                        {"action": "call", "func": "_privacy_lock_wrong_pin"},
-                        {"action": "drain", "cycles": 8},
-                        {"action": "capture", "view": "privacy-lock-error"}],
-        },
-
         # ── Modulos ──────────────────────────────────────────────────────
         "animo": {
             "label": "Animo default",
@@ -607,28 +579,37 @@ _RECIPES: dict[str, dict[str, dict]] = {
         # NOTA: no existen recetas "ia*" — IAAssistantView fue eliminada en la
         # reestructura v1.0; el asistente IA fue consolidado en el Plan terapéutico.
 
-        "personalizacion": {
-            "label": "Personalización > módulos (textos globales)",
+        "config-suite": {
+            "label": "Configuración global de Suite — clon real (Home con datos)",
             "parent": None,
             "actions": [{"action": "navigate", "view": "personalizacion"},
-                        {"action": "drain", "cycles": 8},
-                        {"action": "capture", "view": "personalizacion"}],
+                        {"action": "call", "func": "_config_suite_select_screen", "screen": "home"},
+                        {"action": "drain", "cycles": 10},
+                        {"action": "capture", "view": "config-suite"}],
         },
-        "personalizacion-textos": {
-            "label": "Personalización > editor de textos de un módulo",
-            "parent": "personalizacion",
+        "config-suite-onboarding": {
+            "label": "Configuración global de Suite — clon real (Primer arranque)",
+            "parent": "config-suite",
             "actions": [{"action": "navigate", "view": "personalizacion"},
-                        {"action": "call", "func": "_personalizacion_open_editor"},
-                        {"action": "drain", "cycles": 8},
-                        {"action": "capture", "view": "personalizacion-textos"}],
+                        {"action": "call", "func": "_config_suite_select_screen", "screen": "onboarding"},
+                        {"action": "drain", "cycles": 10},
+                        {"action": "capture", "view": "config-suite-onboarding"}],
         },
-
-        "editor-text-overrides": {
-            "label": "Editor Text Overrides",
-            "parent": None,
-            "actions": [{"action": "call", "func": "_build_editor_text_overrides"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "editor-text-overrides"}],
+        "config-suite-modulo": {
+            "label": "Configuración global de Suite — clon real (módulo con datos)",
+            "parent": "config-suite",
+            "actions": [{"action": "navigate", "view": "personalizacion"},
+                        {"action": "call", "func": "_config_suite_select_screen", "screen": "rutina"},
+                        {"action": "drain", "cycles": 10},
+                        {"action": "capture", "view": "config-suite-modulo"}],
+        },
+        "config-suite-editando": {
+            "label": "Configuración global de Suite — texto en edición",
+            "parent": "config-suite",
+            "actions": [{"action": "navigate", "view": "personalizacion"},
+                        {"action": "call", "func": "_config_suite_edit_first"},
+                        {"action": "drain", "cycles": 8},
+                        {"action": "capture", "view": "config-suite-editando"}],
         },
         # editor-tcc-template ELIMINADA (editor demolido, user feedback).
     },
@@ -710,48 +691,6 @@ def _onboarding_recovery_prompt(win, qapp, action):
     _drain(qapp, cycles=6)
 
 
-@_register_helper
-def _build_privacy_lock(win, qapp, action):
-    """Construye PrivacyLockDialog standalone."""
-    import app.privacy_lock_qt as privacy_lock
-
-    # Standalone visual QA must not read/write the user's real AppData config.
-    # Install an in-memory PIN state so privacy-lock-error actually exercises
-    # the wrong-PIN UI instead of passing through because the real hash is empty.
-    qa_config = {
-        "privacy_lock_enabled": "1",
-        "privacy_pin_hash": privacy_lock._hash_pwd(_TEST_CREDS["NM_TEST_PIN"]),
-        "privacy_lock_until": "0",
-        "patient_email": _TEST_CREDS["NM_TEST_EMAIL"],
-    }
-    privacy_lock.leer_config = lambda key, default="": qa_config.get(key, default)
-    privacy_lock.guardar_config = lambda key, value: qa_config.__setitem__(key, value)
-    privacy_lock.obtener_nombre_paciente = lambda: _TEST_CREDS["NM_TEST_NAME"]
-
-    PrivacyLockDialog = privacy_lock.PrivacyLockDialog
-    dlg = PrivacyLockDialog(parent=None)
-    dlg._on_theme(getattr(win, '_modo', 'dark_hybrid'))
-    dlg.show()
-    _drain(qapp, cycles=6)
-    globals()['_CURRENT_STANDALONE'] = dlg
-
-
-@_register_helper
-def _privacy_lock_wrong_pin(win, qapp, action):
-    """Fuerza un PIN incorrecto en el dialog standalone activo."""
-    dlg = globals().get('_CURRENT_STANDALONE')
-    if dlg is None:
-        return
-    pin_input = getattr(dlg, "_pin_input", None)
-    if pin_input is not None and hasattr(pin_input, "setText"):
-        pin_input.setText("000000")
-    unlock = getattr(dlg, "_on_unlock_clicked", None)
-    if callable(unlock):
-        unlock()
-    _drain(qapp, cycles=4)
-
-
-
 def _wrap_standalone_canvas(editor, modo):
     """Host con el canvas del tema para editores que en producto viven
     embebidos (tab del detalle / Personalización). Sin esto el root del
@@ -783,25 +722,22 @@ def _plan_set_subtab(win, qapp, action):
 
 
 @_register_helper
-def _personalizacion_open_editor(win, qapp, action):
-    """Abre el editor de textos del primer módulo en Personalización."""
+def _config_suite_select_screen(win, qapp, action):
+    """Selecciona una pantalla del clon en Configuración global de Suite."""
     view = getattr(win, "_view_personalizacion", None)
-    if view is not None and hasattr(view, "_open_editor"):
-        view._open_editor("animo")
-        _drain(qapp, cycles=6)
+    screen = action.get("screen", "home")
+    if view is not None and hasattr(view, "select_screen"):
+        view.select_screen(screen)
+        _drain(qapp, cycles=8)
 
 
 @_register_helper
-def _build_editor_text_overrides(win, qapp, action):
-    from hub.editors.text_overrides_editor import TextOverridesEditor
-    modo = getattr(win, '_modo', 'dark_hybrid') if win else 'dark_hybrid'
-    editor = TextOverridesEditor(None, modo=modo)
-    from PyQt6.QtCore import QSize
-    host = _wrap_standalone_canvas(editor, modo)
-    host.setFixedSize(QSize(960, 600))
-    host.show()
-    _drain(qapp, cycles=6)
-    globals()['_CURRENT_STANDALONE'] = host
+def _config_suite_edit_first(win, qapp, action):
+    """Abre la edición del primer texto editable de la pantalla actual."""
+    view = getattr(win, "_view_personalizacion", None)
+    if view is not None and hasattr(view, "_qa_begin_first_edit"):
+        view._qa_begin_first_edit()
+        _drain(qapp, cycles=6)
 
 
 

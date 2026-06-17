@@ -5,7 +5,7 @@ Layout:
     QMainWindow
     └── NMFadeWidget
         ├── PacientesView
-        ├── PersonalizacionGlobalView
+        ├── ConfigGlobalSuiteView ("Configuración global de Suite")
         └── DetallePacienteView (se carga al seleccionar paciente)
 """
 
@@ -67,7 +67,6 @@ from shared.components import (
     NMButton,
     NMCard,
     NMToast,
-    NMButton,
     NMPatientRowPremium,
     NMEmptyState,
     NMWindowChrome,
@@ -352,7 +351,7 @@ class PacientesView(QWidget):
         roster_meta.addWidget(self._table_hint, alignment=Qt.AlignmentFlag.AlignVCenter)
         roster_meta.addStretch()
         self._btn_personalizacion = NMButton(
-            "Personalización", variant="ghost", size="sm", modo=self._modo
+            "Configuración global Suite", variant="ghost", size="sm", modo=self._modo
         )
         self._btn_personalizacion.clicked.connect(self._go_personalizacion)
         roster_meta.addWidget(
@@ -780,7 +779,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
     # prefijo y el subtítulo refleja la sección activa: "NeuroMood Hub / Pacientes".
     _VIEW_TITLES = {
         "pacientes": "Pacientes",
-        "personalizacion": "Personalización global",
+        "personalizacion": "Configuración global de Suite",
     }
 
     def _view_title(self, view_id: str) -> str:
@@ -849,7 +848,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
                 w.deleteLater()
             self._views_cache.clear()
 
-        from hub.personalizacion_global import PersonalizacionGlobalView
+        from hub.config_global_suite import ConfigGlobalSuiteView
 
         # Pacientes
         if "pacientes" not in self._views_cache or sip.isdeleted(self._views_cache["pacientes"]):
@@ -869,13 +868,13 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
             if hasattr(self._view_pacientes, "_render_rows"):
                 self._view_pacientes._render_rows()
 
-        # Personalización global (textos/mensajes/temporizador/banco — todo
-        # lo que aplica a todos los pacientes; lo por-paciente vive en la
-        # ficha → Plan terapéutico)
+        # Configuración global de Suite: clon real, navegable y limpio de la
+        # Suite donde el profesional edita TODOS los textos de forma global. El
+        # id interno sigue siendo "personalizacion" para no romper navegación/QA.
         if "personalizacion" not in self._views_cache or sip.isdeleted(
             self._views_cache["personalizacion"]
         ):
-            self._view_personalizacion = PersonalizacionGlobalView(
+            self._view_personalizacion = ConfigGlobalSuiteView(
                 self._modo,
                 self._sb,
                 parent=self._stack,
@@ -962,7 +961,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         self._stack.setCurrentWidget(self._view_personalizacion)
         if hasattr(self, "_chrome"):
             self._chrome.set_module_context(
-                "Personalización global", None, self._back_to_pacientes
+                "Configuración global de Suite", None, self._back_to_pacientes
             )
 
     def _back_to_pacientes(self):

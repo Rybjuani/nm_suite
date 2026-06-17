@@ -89,6 +89,7 @@ from shared.db import inicializar_tablas
 from shared.identidad import obtener_nombre_paciente
 from app import avisos_daemon
 from shared.visual_qa import visual_qa_enabled, qa_patient_name, module_status as qa_module_status
+from shared.text_overrides import apply_overrides
 
 _MODULE_MAP = {
     "animo": ("app.modules.animo_qt", "ModuloAnimo"),
@@ -202,8 +203,16 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         main_layout.setSpacing(0)
 
         # ── Chrome (36 px, full-width, reemplaza barra nativa) ────────────────
+        # El nombre de la app (barra de título) también es un texto global
+        # configurable desde el Hub.
+        _brand_default = "NeuroMood Suite"
+        try:
+            from shared.text_overrides import current_overrides, override_key
+            _brand = current_overrides().get(override_key("chrome", _brand_default), _brand_default)
+        except Exception:
+            _brand = _brand_default
         self._chrome = NMWindowChrome(
-            title="NeuroMood Suite",
+            title=_brand,
             modo=self._modo,
             show_theme_toggle=True,
             parent=central,
@@ -245,6 +254,8 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         self._home._theme_switch_requested.connect(self._toggle_theme)
         # Estado de sync del footer: el hilo emite el signal, el slot corre en UI.
         self._sync_status_sig.connect(self._home.set_sync_status)
+        # Textos globales configurados desde el Hub (no-op si no hay overrides).
+        apply_overrides(self._home, "home")
         self._stack.addWidget(self._home)
         self._navigate_to(self._home)
 
@@ -296,6 +307,8 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         # negra al abrir/rethemear). El mismo patrón está en hub/main_qt.py.
         instance = cls(modo=self._modo, show_header=False, parent=self._stack)
         instance.back_requested.connect(self._go_home)
+        # Textos globales configurados desde el Hub (no-op si no hay overrides).
+        apply_overrides(instance, module_id)
         self._module_cache[module_id] = instance
         self._stack.addWidget(instance)
 
@@ -380,8 +393,8 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         self._on_close(event)
 
     def _on_close(self, event=None):
-        """Cierra la app. Solo persiste en bandeja si 'Iniciar con Windows' está
-        activo (única fuente de persistencia de proceso, por decisión del owner)."""
+        """Cierra la app. Cerrar la ventana cierra la app de verdad: no queda
+        ningún proceso oculto en segundo plano (autostart/bandeja removido)."""
         if (
             getattr(self, "_really_quit", False)
             or os.environ.get("NM_TEST_FORCE_CLOSE") == "1"
@@ -393,24 +406,8 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
             QApplication.instance().quit()
             return
 
-        # ── Persistencia en bandeja: SOLO si "Iniciar con Windows" está activo ──
-        # Regla del owner: el proceso únicamente persiste en segundo plano cuando
-        # esa opción está elegida (es la que mantiene vivos los recordatorios). Si
-        # está apagada, cerrar la ventana = cerrar la app de verdad (sin proceso
-        # oculto). NO se usa la cantidad de recordatorios/timer como gatillo.
-        try:
-            persistir = avisos_daemon._get_autostart() and avisos_daemon._PYSTRAY_OK
-        except Exception:
-            persistir = False
-
-        if persistir:
-            if event:
-                event.ignore()
-            self.hide()
-            return
-
-        # Autostart OFF → cierre real. Si hay un timer corriendo, avisar antes
-        # para no detenerlo sin querer.
+        # Cierre real. Si hay un timer corriendo, avisar antes para no detenerlo
+        # sin querer.
         timer_active = False
         if self._current_module and hasattr(self._current_module, "_running"):
             timer_active = getattr(self._current_module, "_running", False)
@@ -435,28 +432,7 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         QApplication.instance().quit()
 
     def _restaurar_ventana(self):
-        """Trae la ventana al frente (bandeja / segunda instancia).
-
-        Si la ventana estaba OCULTA (cerrada a bandeja con "Iniciar con
-        Windows" activo) y el PIN está configurado, se vuelve a pedir el PIN
-        antes de mostrar: cerrar la app debe re-bloquearla con la opción de
-        Windows encendida o apagada (feedback owner).
-        """
-        if getattr(self, "_lock_gate_open", False):
-            return
-        if self.isHidden():
-            try:
-                from app.privacy_lock_qt import check_lock
-
-                self._lock_gate_open = True
-                try:
-                    ok = check_lock(parent=None)
-                finally:
-                    self._lock_gate_open = False
-                if not ok:
-                    return
-            except Exception as exc:
-                _log.warning("Privacy lock al restaurar omitido por error: %s", exc)
+        """Trae la ventana al frente (bandeja / segunda instancia)."""
         self.showNormal()
         self.show()
         self.raise_()
