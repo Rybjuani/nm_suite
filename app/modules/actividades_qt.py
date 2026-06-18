@@ -902,10 +902,23 @@ class ModuloActividades(NMModule):
 
         try:
             with conexion() as conn:
+                # RA-1 (reauditoría UI-first): el módulo Actividades no captura
+                # energía por separado. Antes, _register_result copiaba `animo`
+                # como `energia` — inferencia falsa (en Behavioral Activation
+                # energía y ánimo son dimensiones distintas: ansiedad = ánimo
+                # bajo + energía alta; relajado cansado = ánimo alto + energía
+                # baja). El dato llegaba al Hub como autoinforme real.
+                #
+                # Solución: NO escribir `energia`. SQLite aplica NULL (la
+                # columna se hizo nullable vía migración _migrar_activacion_energia_null).
+                # El sync (RA-1 shared/sync.py) no la envía a Supabase.
+                # El Hub (RA-1 hub/pacientes_qt.py) no la pide.
+                # La columna física se conserva por compatibilidad con datos
+                # históricos; los registros nuevos llegan sin energia.
                 conn.execute(
-                    "INSERT INTO activacion (fecha, hora, energia, animo, actividad, resultado) "
-                    "VALUES (?, ?, ?, ?, ?, ?)",
-                    (fecha_hoy(), hora_actual(), animo, animo, nombre, resultado),
+                    "INSERT INTO activacion (fecha, hora, animo, actividad, resultado) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    (fecha_hoy(), hora_actual(), animo, nombre, resultado),
                 )
         except Exception:
             _log.exception("Operation failed")

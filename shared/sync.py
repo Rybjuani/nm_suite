@@ -342,11 +342,18 @@ def _exportar_activacion(sb, patient_id: str, desde: str):
 
     Fail-safe: si la tabla remota `activation_results` aún no existe (el owner
     debe crearla en Supabase), captura el error y NO rompe el resto del sync.
+
+    RA-1 (reauditoría UI-first): NO se envía `energia` al Hub. El módulo
+    Actividades actual no la captura; antes, _register_result copiaba `animo`
+    como `energia` y ese valor llegaba al Hub como autoinforme real. La
+    columna física se conserva en SQLite y Supabase por compatibilidad con
+    datos históricos; los registros nuevos llegan sin el campo (Supabase
+    aplica el default del schema: energia=NULL).
     """
     try:
         conn = obtener_conexion()
         rows = conn.execute(
-            "SELECT fecha, hora, energia, animo, actividad, resultado "
+            "SELECT fecha, hora, animo, actividad, resultado "
             "FROM activacion WHERE fecha >= ? ORDER BY fecha, hora",
             (desde,),
         ).fetchall()
@@ -358,7 +365,6 @@ def _exportar_activacion(sb, patient_id: str, desde: str):
                 "patient_id": patient_id,
                 "fecha": r["fecha"],
                 "hora": r["hora"],
-                "energia": r["energia"],
                 "animo": r["animo"],
                 "actividad": r["actividad"] or "",
                 "resultado": r["resultado"] or "",

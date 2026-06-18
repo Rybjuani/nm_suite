@@ -62,7 +62,7 @@ class _FakeSB:
                                        "descripcion": "Tomar agua",
                                        "categoria": "Logro", "origen": "manual"}],
             "activation_results": [{"fecha": "2026-06-18", "hora": "13:00",
-                                    "energia": 7, "animo": 7,
+                                    "animo": 7,
                                     "actividad": "Caminar", "resultado": "hecha"}],
             "timer_sessions": [{"fecha": "2026-06-18", "hora": "14:00",
                                 "nombre": "Pomodoro", "categoria": "Foco",

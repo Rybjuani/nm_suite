@@ -263,9 +263,12 @@ class DetallePacienteView(QWidget):
         _fetch("checklist", "checklist_completions",
                "fecha,descripcion,categoria,origen", limit=30)
 
-        # 5) Actividades - tabla real: activation_results (era "activacion_registros")
+        # 5) Actividades - tabla real: activation_results (era "activacion_registros").
+        # RA-1 (reauditoría UI-first): NO se pide `energia` porque el módulo
+        # Actividades no la captura. Pedirla traería el default del schema
+        # Supabase (NULL) — el Hub no la necesita para mostrar registros.
         _fetch("actividades", "activation_results",
-               "fecha,hora,energia,animo,actividad,resultado", limit=20)
+               "fecha,hora,animo,actividad,resultado", limit=20)
 
         # 6) Timer - tabla real: timer_sessions (ya era correcta)
         _fetch("timer", "timer_sessions",

@@ -110,13 +110,43 @@ def _migrar_activacion_0_10(conn):
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 fecha TEXT NOT NULL,
                 hora TEXT NOT NULL,
-                energia INTEGER NOT NULL CHECK(energia BETWEEN 0 AND 10),
+                energia INTEGER NULL CHECK(energia IS NULL OR energia BETWEEN 0 AND 10),
                 animo INTEGER NOT NULL CHECK(animo BETWEEN 0 AND 10),
                 actividad TEXT NOT NULL,
                 resultado TEXT NOT NULL CHECK(resultado IN ('hecha', 'intentada', 'no_pude'))
             );
             INSERT INTO activacion SELECT * FROM activacion_old;
             DROP TABLE activacion_old;
+        """)
+
+def _migrar_activacion_energia_null(conn):
+    """RA-1: permite energia NULL en DBs existentes con el schema viejo.
+
+    El schema anterior (pre-RA-1) tenia `energia INTEGER NOT NULL CHECK(...)`.
+    SQLite no soporta ALTER COLUMN, asi que hay que recrear la tabla.
+    Idempotente: si la columna ya permite NULL, no hace nada.
+    """
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='activacion'"
+    ).fetchone()
+    if not row:
+        return
+    sql = row["sql"] if hasattr(row, "keys") else row[0]
+    # Si el schema todavía tiene `energia INTEGER NOT NULL` (sin NULL), migrar.
+    if "energia INTEGER NOT NULL" in sql and "energia INTEGER NULL" not in sql:
+        conn.executescript("""
+            ALTER TABLE activacion RENAME TO activacion_old_v2;
+            CREATE TABLE activacion (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fecha TEXT NOT NULL,
+                hora TEXT NOT NULL,
+                energia INTEGER NULL CHECK(energia IS NULL OR energia BETWEEN 0 AND 10),
+                animo INTEGER NOT NULL CHECK(animo BETWEEN 0 AND 10),
+                actividad TEXT NOT NULL,
+                resultado TEXT NOT NULL CHECK(resultado IN ('hecha', 'intentada', 'no_pude'))
+            );
+            INSERT INTO activacion SELECT * FROM activacion_old_v2;
+            DROP TABLE activacion_old_v2;
         """)
 
 
@@ -192,7 +222,12 @@ def inicializar_tablas():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             fecha TEXT NOT NULL,
             hora TEXT NOT NULL,
-            energia INTEGER NOT NULL CHECK(energia BETWEEN 0 AND 10),
+            -- RA-1 (reauditoría UI-first): energia permite NULL porque el
+            -- módulo Actividades actual NO la captura. Antes, _register_result
+            -- copiaba animo como energia — inferencia falsa. Ahora se persiste
+            -- NULL ("sin dato"). La columna física se conserva por compatibilidad
+            -- con datos históricos.
+            energia INTEGER NULL CHECK(energia IS NULL OR energia BETWEEN 0 AND 10),
             animo INTEGER NOT NULL CHECK(animo BETWEEN 0 AND 10),
             actividad TEXT NOT NULL,
             resultado TEXT NOT NULL CHECK(resultado IN ('hecha', 'intentada', 'no_pude'))
@@ -361,6 +396,7 @@ def inicializar_tablas():
     _migrar_puntaje_min_1(conn)
     _migrar_pensamientos_0_10(conn)
     _migrar_activacion_0_10(conn)
+    _migrar_activacion_energia_null(conn)
     _migrar_checklist_sin_cascade(conn)
     _migrar_pensamientos_campos_tcc(conn)
     _migrar_tcc_templates_cache_schema(conn)
