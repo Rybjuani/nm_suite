@@ -246,9 +246,9 @@ class DetallePacienteView(QWidget):
                     table, key, self._pid, exc,
                 )
 
-        # 1) Animo - tabla real: mood_records (+ columnas valencia de mood_valencia_migration.sql)
+        # 1) Ánimo: escala única 1-10. No pedir campos que este módulo no captura.
         _fetch("animo", "mood_records",
-               "fecha,hora,puntaje,nota,emocion,valencia,intensidad", limit=30)
+               "fecha,hora,puntaje,nota", limit=30)
 
         # 2) Respiracion - tabla real: breathing_sessions (ya era correcta)
         _fetch("respiracion", "breathing_sessions",

@@ -414,23 +414,9 @@ def inicializar_tablas():
             conn.commit()
         except Exception:
             pass
-    # Backfill one-shot: derivar valencia/intensidad de registros previos
-    # (emocion ya persistida; intensidad = puntaje o 11-puntaje según valencia).
-    try:
-        conn.execute(
-            "UPDATE termometro SET "
-            "valencia = CASE "
-            "  WHEN emocion IN ('Calma','Energía','Gratitud') THEN 'positiva' "
-            "  WHEN emocion IN ('Tensión','Tristeza','Cansancio') THEN 'negativa' "
-            "  ELSE 'neutral' END, "
-            "intensidad = CASE "
-            "  WHEN emocion IN ('Tensión','Tristeza','Cansancio') THEN 11 - puntaje "
-            "  ELSE puntaje END "
-            "WHERE (valencia IS NULL OR valencia = '') AND puntaje IS NOT NULL"
-        )
-        conn.commit()
-    except Exception:
-        pass
+    # Backfill legacy retirado: el módulo actual no captura emoción,
+    # valencia ni intensidad. Las columnas se conservan solo por compatibilidad
+    # con instalaciones y datos históricos.
     # Índices de rendimiento (auditoría v1.0): las vistas de Evolución/Ánimo
     # consultan por fecha en bucle (hasta 60 queries por pantalla). Sin índice,
     # con 1-2 años de uso diario cada query escanea la tabla completa y la UI

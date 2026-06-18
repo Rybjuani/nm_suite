@@ -185,15 +185,14 @@ def registrar_paciente_en_nube(patient_id: str, nombre: str, pwd: str = "") -> b
 def _exportar_animo(sb, patient_id: str, desde: str):
     conn = obtener_conexion()
     rows = conn.execute(
-        "SELECT fecha, hora, puntaje, nota, emocion, valencia, intensidad "
+        "SELECT fecha, hora, puntaje, nota "
         "FROM termometro WHERE fecha >= ? ORDER BY fecha, hora",
         (desde,),
     ).fetchall()
     conn.close()
     if not rows:
         return
-    # Registro pos/neg separado: emocion/valencia/intensidad viajan al Hub.
-    # Requiere las columnas remotas de db/mood_valencia_migration.sql.
+    # Exportar únicamente los campos que el módulo Ánimo captura.
     payload = [
         {
             "patient_id": patient_id,
@@ -201,9 +200,6 @@ def _exportar_animo(sb, patient_id: str, desde: str):
             "hora": r["hora"],
             "puntaje": r["puntaje"],
             "nota": r["nota"] or "",
-            "emocion": r["emocion"] or "",
-            "valencia": r["valencia"] or "neutral",
-            "intensidad": r["intensidad"] if r["intensidad"] is not None else r["puntaje"],
         }
         for r in rows
     ]

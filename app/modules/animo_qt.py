@@ -721,18 +721,17 @@ class ModuloAnimo(NMModule):
             return
         try:
             with conexion() as conn:
+                # El módulo actual solo captura un puntaje 1-10.
+                # No inventar emoción, valencia ni intensidad.
                 conn.execute(
                     "INSERT INTO termometro "
-                    "(fecha, hora, puntaje, emocion, nota, valencia, intensidad) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    "(fecha, hora, puntaje, nota) "
+                    "VALUES (?, ?, ?, ?)",
                     (
                         fecha_hoy(),
                         hora_actual(),
                         puntaje_wellbeing,
                         "",
-                        "",
-                        "positiva",
-                        intensidad,
                     ),
                 )
             try:
