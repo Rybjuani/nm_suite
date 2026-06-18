@@ -552,7 +552,7 @@ class ModuloTimer(NMModule):
         else:
             progress = 0.0
         if not getattr(self, "_has_activity", True):
-            state = "Sin actividad asignada"
+            state = t("text.module.timer.empty_title", "Sin actividades asignadas")
         elif self._running and not self._paused:
             state = t("text.module.timer.running_state", "Sesión en curso")
         elif self._paused:
