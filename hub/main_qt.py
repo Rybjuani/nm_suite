@@ -5,7 +5,6 @@ Layout:
     QMainWindow
     └── NMFadeWidget
         ├── PacientesView
-        ├── ConfigGlobalSuiteView ("Configuración global de Suite")
         └── DetallePacienteView (se carga al seleccionar paciente)
 """
 
@@ -282,7 +281,6 @@ class PacientesView(QWidget):
         on_select,
         on_refresh,
         sb=None,
-        on_personalizacion=None,
         parent=None,
     ):
         super().__init__(parent)
@@ -291,7 +289,6 @@ class PacientesView(QWidget):
         self._on_select = on_select
         self._on_refresh = on_refresh
         self._sb = sb
-        self._on_personalizacion = on_personalizacion
         self._rows_limit: int = 40
         self._setup()
 
@@ -350,13 +347,6 @@ class PacientesView(QWidget):
         )
         roster_meta.addWidget(self._table_hint, alignment=Qt.AlignmentFlag.AlignVCenter)
         roster_meta.addStretch()
-        self._btn_personalizacion = NMButton(
-            "Configuración global Suite", variant="ghost", size="sm", modo=self._modo
-        )
-        self._btn_personalizacion.clicked.connect(self._go_personalizacion)
-        roster_meta.addWidget(
-            self._btn_personalizacion, alignment=Qt.AlignmentFlag.AlignVCenter
-        )
         tc_lay.addLayout(roster_meta)
 
         self._table_header = table_header = QWidget()
@@ -415,10 +405,6 @@ class PacientesView(QWidget):
         layout.addWidget(table_card, stretch=1)
 
         self._render_rows()
-
-    def _go_personalizacion(self):
-        if callable(self._on_personalizacion):
-            self._on_personalizacion()
 
     def _render_rows(self):
         # Limpiar contenido previo
@@ -720,7 +706,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         self._current_view = (
             qa_start_view
             if visual_qa_enabled()
-            and qa_start_view in {"pacientes", "personalizacion"}
+            and qa_start_view in {"pacientes"}
             else "pacientes"
         )
 
@@ -779,7 +765,6 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
     # prefijo y el subtítulo refleja la sección activa: "NeuroMood Hub / Pacientes".
     _VIEW_TITLES = {
         "pacientes": "Pacientes",
-        "personalizacion": "Configuración global de Suite",
     }
 
     def _view_title(self, view_id: str) -> str:
@@ -848,8 +833,6 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
                 w.deleteLater()
             self._views_cache.clear()
 
-        from hub.config_global_suite import ConfigGlobalSuiteView
-
         # Pacientes
         if "pacientes" not in self._views_cache or sip.isdeleted(self._views_cache["pacientes"]):
             self._view_pacientes = PacientesView(
@@ -858,7 +841,6 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
                 on_select=self._select_patient,
                 on_refresh=self._cargar_pacientes,
                 sb=self._sb,
-                on_personalizacion=self._nav_to_personalizacion,
                 parent=self._stack,
             )
             self._views_cache["pacientes"] = self._view_pacientes
@@ -867,20 +849,6 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
             self._view_pacientes._pacientes = self._pacientes
             if hasattr(self._view_pacientes, "_render_rows"):
                 self._view_pacientes._render_rows()
-
-        # Configuración global de Suite: clon real, navegable y limpio de la
-        # Suite donde el profesional edita TODOS los textos de forma global. El
-        # id interno sigue siendo "personalizacion" para no romper navegación/QA.
-        if "personalizacion" not in self._views_cache or sip.isdeleted(
-            self._views_cache["personalizacion"]
-        ):
-            self._view_personalizacion = ConfigGlobalSuiteView(
-                self._modo,
-                self._sb,
-                parent=self._stack,
-            )
-            self._views_cache["personalizacion"] = self._view_personalizacion
-            self._stack.addWidget(self._view_personalizacion)
 
         # Si el profesional estaba dentro de una ficha cuando llegó la carga
         # asíncrona de pacientes, NO patearlo a Inicio: el force_recreate
@@ -898,7 +866,6 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
     def _nav_views(self) -> dict:
         return {
             "pacientes": self._view_pacientes,
-            "personalizacion": self._view_personalizacion,
         }
 
     # ── Navegación ────────────────────────────────────────────────────────────
@@ -956,13 +923,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
             f"color: {v3c('text', self._modo).name()}; background: transparent;"
         )
 
-    def _nav_to_personalizacion(self):
-        self._current_view = "personalizacion"
-        self._stack.setCurrentWidget(self._view_personalizacion)
-        if hasattr(self, "_chrome"):
-            self._chrome.set_module_context(
-                "Configuración global de Suite", None, self._back_to_pacientes
-            )
+
 
     def _back_to_pacientes(self):
         self._current_view = "pacientes"
