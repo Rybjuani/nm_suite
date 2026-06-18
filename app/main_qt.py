@@ -89,7 +89,6 @@ from shared.db import inicializar_tablas
 from shared.identidad import obtener_nombre_paciente
 from app import avisos_daemon
 from shared.visual_qa import visual_qa_enabled, qa_patient_name, module_status as qa_module_status
-from shared.text_overrides import apply_overrides
 from shared.remote_config import t
 
 _MODULE_MAP = {
@@ -250,8 +249,6 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         self._home._theme_switch_requested.connect(self._toggle_theme)
         # Estado de sync del footer: el hilo emite el signal, el slot corre en UI.
         self._sync_status_sig.connect(self._home.set_sync_status)
-        # Textos globales configurados desde el Hub (no-op si no hay overrides).
-        apply_overrides(self._home, "home")
         self._stack.addWidget(self._home)
         self._navigate_to(self._home)
 
@@ -304,8 +301,6 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         # negra al abrir/rethemear). El mismo patrón está en hub/main_qt.py.
         instance = cls(modo=self._modo, show_header=False, parent=self._stack)
         instance.back_requested.connect(self._go_home)
-        # Textos globales configurados desde el Hub (no-op si no hay overrides).
-        apply_overrides(instance, module_id)
         self._module_cache[module_id] = instance
         self._stack.addWidget(instance)
 

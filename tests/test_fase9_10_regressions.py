@@ -22,7 +22,7 @@ def test_respiracion_sin_bpm_biometrico_simulado():
     src = _src("app/modules/respiracion_qt.py")
     assert "Simular arritmia" not in src, "quedó el comentario de la simulación de pulso"
     assert 'QLabel("BPM")' not in src, "la card sigue rotulando BPM"
-    assert 'QLabel("Ciclos")' in src
+    assert 'QLabel(t("text.module.respiracion.cycles_label", "Ciclos"))' in src
     assert "_ciclos_value_lbl" in src
     # el valor mostrado es el conteo real de ciclos, no un número simulado
     assert "self._ciclos_value_lbl.setText(str(self._ciclos))" in src
@@ -31,9 +31,14 @@ def test_respiracion_sin_bpm_biometrico_simulado():
 def test_actividades_hice_jerarquia_equivalente():
     """F10: 'Hice' dejó de ser variant=primary; mismo peso que 'No pude'."""
     src = _src("app/modules/actividades_qt.py")
-    assert 'NMButton("Hice", variant="secondary"' in src
-    assert 'NMButton("No pude", variant="secondary"' in src
-    assert 'NMButton("Hice", variant="primary"' not in src
+    assert 't("text.module.actividades.btn_done", "Hice")' in src
+    assert 't("text.module.actividades.btn_not_done", "No pude")' in src
+    assert 'variant="secondary"' in src.split('t("text.module.actividades.btn_done", "Hice")')[1][:180]
+    assert (
+        'variant="secondary"'
+        in src.split('t("text.module.actividades.btn_not_done", "No pude")')[1][:180]
+    )
+    assert 'variant="primary"' not in src.split('t("text.module.actividades.btn_done", "Hice")')[1][:180]
 
 
 def test_avisos_sin_duplicacion_completado_hecho():
@@ -50,7 +55,8 @@ def test_tcc_anterior_secondary_y_guardado_real_seam():
     """F8/F11: 'Anterior' es un botón secondary real y el guardado real vive en
     un seam (`_persistir_pensamiento`) que `_guardar` invoca."""
     src = _src("app/modules/registro_tcc_qt.py")
-    assert '"Anterior", parent=self._content, modo=self._modo, variant="secondary"' in src
-    assert 'variant="ghost"' not in src.split('"Anterior"')[1][:120]
+    assert 't("text.module.registro.prev_btn", "Anterior")' in src
+    assert 'variant="secondary"' in src.split('t("text.module.registro.prev_btn", "Anterior")')[1][:180]
+    assert 'variant="ghost"' not in src.split('t("text.module.registro.prev_btn", "Anterior")')[1][:180]
     assert "def _persistir_pensamiento(" in src
     assert "_persistir_pensamiento(d, intensidad)" in src
