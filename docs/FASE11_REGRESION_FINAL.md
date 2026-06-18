@@ -14,7 +14,7 @@
 - `evolucion-monthly` ×2 → **revisado** (vista Mensual 30 días, chart + métricas coherentes).
 - `pacientes-filter-sin-registros` ×2 → **parcial** (REQUIRES_DATA_STATE): el empty-state "Sin resultados" se inspeccionó OK, pero el set filtrado depende de la distribución real de datos, igual que `pacientes-filter-activos`.
 - `pacientes-filter-sin-sync` ×2 → **parcial** (REQUIRES_DATA_STATE): lista de 5 pacientes escaneable; el set depende de la sync real.
-- Además se inspeccionaron las filas `parcial` que aún tenían `inspeccion=pendiente` (dashboard-empty, pacientes-empty, pacientes-filter-activos, pacientes-search, animo-stats-empty y variantes runtime legacy): todas renderizan coherentes → `inspeccion=revisado_f11`. **Inspección-pendiente queda en 0: las 132 vistas fueron inspeccionadas.**
+- Además se inspeccionaron las **12 filas `parcial` que aún tenían `inspeccion=pendiente`** (dashboard-empty, pacientes-empty, pacientes-filter-activos, pacientes-search, animo-stats-empty, editor-text-overrides ×2): todas renderizan coherentes → `inspeccion=revisado_f11`. **Inspección-pendiente queda en 0: las 132 vistas fueron inspeccionadas.**
 
 ## 3. Guardado REAL del TCC probado (lo que QA salta deliberadamente)
 - El modo QA visual salta el INSERT (sólo muestra la página de éxito), así que el guardado real quedaba sin cubrir. Se extrajo el seam `_persistir_pensamiento(d, intensidad)` que `_guardar` invoca cuando QA está OFF.
@@ -45,7 +45,7 @@
 - **PARCIAL.** Por la regla del propio plan (`terminada` sólo si TODAS las filas están cerradas) no puede declararse terminado mientras existan filas `parcial`/`bloqueado`.
 - Matriz final: **pendiente=0** (resultado e inspección), `revisado=102`, `parcial=28`, `bloqueado=2`.
 - El residual **NO es deuda de diseño** — todo el trabajo visual de Fases 1–10 está cerrado e inspeccionado. Es límite del harness de captura estática:
-  - **28 `parcial`**: `REQUIRES_DATA_STATE` (el estado de datos real no se prueba con mock QA: empties/filtros/búsqueda/dashboard-pacientes) y `REQUIRES_RUNTIME` (capturas standalone no prueban el chrome/lifecycle lanzado: pin-setup, privacy-lock×2 y variantes legacy).
+  - **28 `parcial`**: `REQUIRES_DATA_STATE` (el estado de datos real no se prueba con mock QA: empties/filtros/búsqueda/dashboard-pacientes) y `REQUIRES_RUNTIME` (capturas standalone no prueban el chrome/lifecycle lanzado: editor-text-overrides, pin-setup, privacy-lock×2).
   - **2 `bloqueado`**: `home-settings-open` (overlay transitorio; la captura estática de la ventana principal puede no contenerlo).
 - Cerrar estos a `revisado` requeriría evidencia de runtime real con datos reales (fuera del alcance de coherencia visual), no más cambios de diseño.
 

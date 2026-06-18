@@ -19,9 +19,9 @@ Hash diff (MD5) entre `qa/_baseline_f0_phase01/` (132 PNGs) y `qa/_captures_v8/`
   valores ya presentes en el stylesheet base; headless no detecta diferencia visual)
   + archivos REQUIRES_RUNTIME/WRONG_VIEW que producen output identico en ambas runs.
 
-Capturas Hub vs Suite: Hub tiene ~55 capturas efectivas; las variantes vigentes
-del Hub aparecen en el grupo cambiado. Suite tiene ~77 capturas; ninguna registra
-cambio visible en headless post-Fase-1.
+Capturas Hub vs Suite: Hub tiene ~55 capturas efectivas; todos los Hub excepto
+`hub-editor-text-overrides` (REQUIRES_RUNTIME) aparecen en el grupo cambiado.
+Suite tiene ~77 capturas; ninguna registra cambio visible en headless post-Fase-1.
 
 Nota: un run previo con Suite regresada a 32px (bug chrome global) habia mostrado
 125 cambiados. Ese dato era invalido; 57 es el valor correcto post-fix.
@@ -57,5 +57,5 @@ python qa/capture_v8.py --all --no-clean
 ## Deuda Pendiente
 - 118 filas con `inspeccion_manual=pendiente` requieren revisión visual PNG (post-Fase-2).
 - 16 filas `REQUIRES_DATA_STATE` solo verificables con Supabase real (dashboard, pacientes y variantes).
-- Filas `REQUIRES_RUNTIME` no capturables en headless (privacy-lock, pin-setup, settings-overlay y variantes standalone legacy ya retiradas).
+- 8 filas `REQUIRES_RUNTIME` no capturables en headless (privacy-lock, pin-setup, settings-overlay, editor-text-overrides).
 - 2 filas `bloqueado` en `home-settings-open`: overlay transitorio no capturado desde la main-window estática.

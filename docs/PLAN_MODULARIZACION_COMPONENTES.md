@@ -273,7 +273,7 @@ Orden:
 - 4C: Suite modulos (`app/modules/*_qt.py`).
 - 4D: Hub shell (`hub/main_qt.py`, `hub/personalizacion_global.py`).
 - 4E: Hub pacientes/plan/editor (`hub/pacientes_qt.py`,
-  `hub/plan_terapeutico.py`).
+  `hub/plan_terapeutico.py`, `hub/editors/text_overrides_editor.py`).
 
 Riesgos:
 - Fallback imports duplicados en modulos con try/except.

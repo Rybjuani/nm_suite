@@ -145,8 +145,8 @@ def _load_presets() -> list[tuple[str, int, str]]:
 
     NO hay presets locales por defecto: si el profesional no asignó ninguna se
     devuelve [] y el módulo muestra el estado vacío (el paciente solo puede
-    iniciar actividades asignadas). En modo demostración (clon del Hub) se
-    devuelven ejemplos simulados que NO provienen de la DB ni se guardan.
+    iniciar actividades asignadas). En modo demostración (fixtures QA aislados)
+    se devuelven ejemplos simulados que NO provienen de la DB ni se guardan.
 
     Regla clínica 2026-06: la interfaz operativa del Timer SOLO aparece con
     asignaciones `patient:<id>` (lo que el profesional configuró para ESTE

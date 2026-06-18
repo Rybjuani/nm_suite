@@ -16,10 +16,11 @@
 - `hub/main_qt.py` no importa `app.modules`.
 - El menu del Hub ya no expone vistas globales de Presets/Textos/IA; la configuracion por paciente vive en Detalle.
 
-## Restos eliminados o normalizados en esta fase
+## Restos corregidos en esta fase
 
-- Documentacion vigente que apuntaba al editor de textos legacy como ruta actual.
-- Docstring de `shared/text_overrides.py`, para marcarlo como puente legacy transitorio y no como arquitectura nueva.
+- Docstring de `shared/text_overrides.py`, para marcarlo como aplicador legacy transitorio.
+- Docstring del Timer, para reemplazar la mencion a un clon por fixtures QA aislados.
+- Los documentos historicos permanecen en su version base de `432d74b`; no forman parte de esta correccion.
 
 ## Restos conservados deliberadamente
 

@@ -35,7 +35,7 @@ Comando para regenerar: `python qa/capture_v8.py --all --no-clean`
   ya presentes en la base; headless no detecta diferencia) + REQUIRES_RUNTIME/WRONG_VIEW.
 
 ### Archivos sin cambio — muestra representativa
-- Vistas standalone legacy del editor retirado (REQUIRES_RUNTIME en corridas antiguas)
+- `hub-editor-text-overrides-dark/light` (REQUIRES_RUNTIME)
 - `suite-pin-setup-dark/light` (REQUIRES_RUNTIME)
 - `suite-privacy-lock-light` (REQUIRES_RUNTIME)
 - `suite-home-settings-open-dark/light` (WRONG_VIEW / bloqueado)
