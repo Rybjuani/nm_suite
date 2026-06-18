@@ -7,7 +7,8 @@ from types import SimpleNamespace
 
 import pytest
 
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+# Movido a tests/conftest.py (se aplica a todos los tests antes de
+# cualquier import de PyQt6, no solo a los que lo seteaban individualmente).
 
 
 class _FakeHubConfigQuery:

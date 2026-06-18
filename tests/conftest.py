@@ -4,6 +4,18 @@ import sys
 
 import pytest
 
+# Activar pytest-qt: expone los fixtures `qapp`, `qapp_args`, `qapp_cls`, `qtbot`.
+# Requerido por tests/test_tcc_otro_placeholder.py y
+# tests/test_global_texts_integration.py (8 tests parametricos).
+# pytest-qt==4.5.0 ya esta en requirements-dev.txt; este unico cambio lo cablea.
+pytest_plugins = ["pytestqt"]
+
+# Forzar plataforma offscreen ANTES de cualquier import de PyQt6.
+# Sin esto, los tests que crean QApplication fallan en entornos sin display
+# (CI, contenedores, SSH sin X). Los tests individuales ya lo seteaban con
+# os.environ.setdefault; centralizarlo aca garantiza el orden para todos.
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)

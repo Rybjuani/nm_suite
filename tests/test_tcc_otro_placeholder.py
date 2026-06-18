@@ -16,19 +16,20 @@ from pathlib import Path
 import pytest
 
 # Forzar plataforma offscreen antes de importar PyQt6.
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-
-
-_qapp = None
+# Movido a tests/conftest.py (se aplica a todos los tests).
 
 
 def _get_qapp():
-    global _qapp
-    if _qapp is None:
-        from PyQt6.QtWidgets import QApplication
+    """Retorna la QApplication activa creada por el fixture `qapp` de pytest-qt.
 
-        _qapp = QApplication.instance() or QApplication(sys.argv)
-    return _qapp
+    Mantenida como helper para los calls `_get_qapp().processEvents()` dispersos
+    en este test. No crea una QApplication propia: si no hay instancia activa,
+    retorna None (el fixture `qapp` debe haberse inicializado antes via el
+    fixture `tcc_modulo` o similar).
+    """
+    from PyQt6.QtWidgets import QApplication
+
+    return QApplication.instance()
 
 
 @pytest.fixture
@@ -42,7 +43,6 @@ def tcc_modulo(qapp):
     from shared.theme_qt import stylesheet_base
     from app.modules.registro_tcc_qt import ModuloRegistroTCC
 
-    _get_qapp()
     load_fonts()
     qapp.setStyleSheet(stylesheet_base("dark_hybrid"))
 
