@@ -920,6 +920,15 @@ class ModuloActividades(NMModule):
                     "VALUES (?, ?, ?, ?, ?)",
                     (fecha_hoy(), hora_actual(), animo, nombre, resultado),
                 )
+            # RB-5: disparar sync inmediato para que la activación conductual
+            # llegue al Hub sin quedar pendiente hasta el próximo sync.
+            # Mismo patrón que timer_qt._save_session y animo_qt._registrar.
+            try:
+                from shared.sync import sync_inmediato_background
+
+                sync_inmediato_background()
+            except Exception:
+                pass
         except Exception:
             _log.exception("Operation failed")
 
