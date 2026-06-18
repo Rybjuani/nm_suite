@@ -50,14 +50,13 @@ _RES = os.environ.get("NM_PROBE_RES", "960x600")
 _THEME_MAP = {"light": "light_hybrid", "dark": "dark_hybrid"}
 
 # Vistas runtime-críticas (la matriz exhaustiva es trabajo de capture_v8.py).
-# Hub post-reestructura v1.0: nav runtime de 4 lugares (Inicio/Pacientes/
-# Personalización global/Ajustes) + detalle con tabs Plan terapéutico e IA
-# (las ex-vistas top-level presets/textos/ia ya no existen).
+# Hub post-reestructura v1.0: nav runtime de 3 lugares (Inicio/Pacientes/
+# Ajustes) + detalle con tabs Plan terapéutico e IA
+# (las ex-vistas top-level presets/textos/ia/personalizacion ya no existen).
 _VIEWS = {
     "suite": ["home", "animo", "respiracion", "timer", "avisos",
               "registro", "rutina", "actividades", "dbt"],
-    "hub": ["dashboard", "pacientes", "detalle", "detalle_plan", "detalle_ia",
-            "personalizacion"],
+    "hub": ["dashboard", "pacientes", "detalle", "detalle_plan", "detalle_ia"],
 }
 _SPEC = {
     "suite": ("app.main_qt", "NeuroMoodApp", "Suite"),

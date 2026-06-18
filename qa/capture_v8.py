@@ -579,38 +579,6 @@ _RECIPES: dict[str, dict[str, dict]] = {
         # NOTA: no existen recetas "ia*" — IAAssistantView fue eliminada en la
         # reestructura v1.0; el asistente IA fue consolidado en el Plan terapéutico.
 
-        "config-suite": {
-            "label": "Configuración global de Suite — clon real (Home con datos)",
-            "parent": None,
-            "actions": [{"action": "navigate", "view": "personalizacion"},
-                        {"action": "call", "func": "_config_suite_select_screen", "screen": "home"},
-                        {"action": "drain", "cycles": 10},
-                        {"action": "capture", "view": "config-suite"}],
-        },
-        "config-suite-onboarding": {
-            "label": "Configuración global de Suite — clon real (Primer arranque)",
-            "parent": "config-suite",
-            "actions": [{"action": "navigate", "view": "personalizacion"},
-                        {"action": "call", "func": "_config_suite_select_screen", "screen": "onboarding"},
-                        {"action": "drain", "cycles": 10},
-                        {"action": "capture", "view": "config-suite-onboarding"}],
-        },
-        "config-suite-modulo": {
-            "label": "Configuración global de Suite — clon real (módulo con datos)",
-            "parent": "config-suite",
-            "actions": [{"action": "navigate", "view": "personalizacion"},
-                        {"action": "call", "func": "_config_suite_select_screen", "screen": "rutina"},
-                        {"action": "drain", "cycles": 10},
-                        {"action": "capture", "view": "config-suite-modulo"}],
-        },
-        "config-suite-editando": {
-            "label": "Configuración global de Suite — texto en edición",
-            "parent": "config-suite",
-            "actions": [{"action": "navigate", "view": "personalizacion"},
-                        {"action": "call", "func": "_config_suite_edit_first"},
-                        {"action": "drain", "cycles": 8},
-                        {"action": "capture", "view": "config-suite-editando"}],
-        },
         # editor-tcc-template ELIMINADA (editor demolido, user feedback).
     },
 }
@@ -719,25 +687,6 @@ def _plan_set_subtab(win, qapp, action):
     if tabs is not None:
         tabs.setCurrentIndex(int(action.get("index", 0)))
         _drain(qapp, cycles=4)
-
-
-@_register_helper
-def _config_suite_select_screen(win, qapp, action):
-    """Selecciona una pantalla del clon en Configuración global de Suite."""
-    view = getattr(win, "_view_personalizacion", None)
-    screen = action.get("screen", "home")
-    if view is not None and hasattr(view, "select_screen"):
-        view.select_screen(screen)
-        _drain(qapp, cycles=8)
-
-
-@_register_helper
-def _config_suite_edit_first(win, qapp, action):
-    """Abre la edición del primer texto editable de la pantalla actual."""
-    view = getattr(win, "_view_personalizacion", None)
-    if view is not None and hasattr(view, "_qa_begin_first_edit"):
-        view._qa_begin_first_edit()
-        _drain(qapp, cycles=6)
 
 
 
