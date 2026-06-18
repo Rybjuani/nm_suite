@@ -192,15 +192,15 @@ class PlanTerapeuticoTab(QWidget):
         # profesional ve el mismo nombre que el paciente, sin ambigüedad sobre
         # qué módulo está configurando.
         self._tabs.addTab(
-            _PresetRecordatoriosTab(self._sb, self._pid, self._modo, self),
+            _PresetRecordatoriosTab(self._sb, self._pid, self._modo, self._nombre, self),
             "Recordatorios de Bienestar",
         )
         self._tabs.addTab(
-            _PresetTimerTab(self._sb, self._pid, self._modo, self),
+            _PresetTimerTab(self._sb, self._pid, self._modo, self._nombre, self),
             "Temporizador de Actividades",
         )
         self._tabs.addTab(
-            _PresetRutinaTab(self._sb, self._pid, self._modo, self),
+            _PresetRutinaTab(self._sb, self._pid, self._modo, self._nombre, self),
             "Checklist de Rutina Diaria",
         )
         self._tabs.addTab(
@@ -229,11 +229,12 @@ class PlanTerapeuticoTab(QWidget):
 # ── Subtab 1: Temporizador ───────────────────────────────────────────────────
 
 class _PresetTimerTab(QWidget):
-    def __init__(self, sb, pid: str, modo: str, parent=None):
+    def __init__(self, sb, pid: str, modo: str, nombre: str, parent=None):
         super().__init__(parent)
         self._sb = sb
         self._pid = pid
         self._modo = modo
+        self._nombre = nombre
         self._editing_id = None
         self._setup()
 
@@ -338,7 +339,7 @@ class _PresetTimerTab(QWidget):
         def on_err(msg: str):
             run_on_gui(lambda: self._on_ia_failure(msg))
 
-        generar_asignacion("timer", {}, "", on_ok, on_err, patient_id=self._pid)
+        generar_asignacion("timer", {}, self._nombre, on_ok, on_err, patient_id=self._pid)
 
     def _on_ia_success(self, text: str):
         self._ia_btn.setEnabled(True)
@@ -525,11 +526,12 @@ class _PresetRecordatoriosTab(QWidget):
     se asignan juntos con un solo boton 'Agregar'.
     """
 
-    def __init__(self, sb, pid: str, modo: str, parent=None):
+    def __init__(self, sb, pid: str, modo: str, nombre: str, parent=None):
         super().__init__(parent)
         self._sb = sb
         self._pid = pid
         self._modo = modo
+        self._nombre = nombre
         self._ia_btn = None
         self._setup()
 
@@ -732,7 +734,7 @@ class _PresetRecordatoriosTab(QWidget):
         def on_err(msg: str):
             run_on_gui(lambda: self._on_ia_failure(msg))
 
-        generar_asignacion("avisos", {}, "", on_ok, on_err, patient_id=self._pid)
+        generar_asignacion("avisos", {}, self._nombre, on_ok, on_err, patient_id=self._pid)
 
     def _on_ia_success(self, text: str):
         if self._ia_btn:
@@ -759,11 +761,12 @@ class _PresetRecordatoriosTab(QWidget):
 # ── Subtab 3: Routine/Checklist ───────────────────────────────────────────────
 
 class _PresetRutinaTab(QWidget):
-    def __init__(self, sb, pid: str, modo: str, parent=None):
+    def __init__(self, sb, pid: str, modo: str, nombre: str, parent=None):
         super().__init__(parent)
         self._sb = sb
         self._pid = pid
         self._modo = modo
+        self._nombre = nombre
         self._setup()
 
     def _setup(self):
@@ -854,7 +857,7 @@ class _PresetRutinaTab(QWidget):
         def on_err(msg: str):
             run_on_gui(lambda: self._on_ia_failure(msg))
 
-        generar_asignacion("rutina", {}, "", on_ok, on_err, patient_id=self._pid)
+        generar_asignacion("rutina", {}, self._nombre, on_ok, on_err, patient_id=self._pid)
 
     def _on_ia_success(self, text: str):
         self._ia_btn.setEnabled(True)
