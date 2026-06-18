@@ -233,13 +233,19 @@ def _exportar_pensamientos(sb, patient_id: str, desde: str):
     conn = obtener_conexion()
     rows = conn.execute(
         "SELECT fecha, hora, situacion, emocion, intensidad, pensamiento, "
-        "respuesta_alternativa, distorsiones, reflexion_ia "
+        "respuesta_alternativa, distorsiones "
         "FROM pensamientos WHERE fecha >= ?",
         (desde,),
     ).fetchall()
     conn.close()
     if not rows:
         return
+    # RA-6 (reauditoría UI-first): NO se envía `reflexion_ia` a Supabase.
+    # El módulo TCC actual no captura ese campo (no hay widget que lo
+    # escriba en registro_tcc_qt._guardar). Antes, _exportar_pensamientos
+    # lo enviaba siempre como "" — el Hub lo recibía como dato real.
+    # La columna física se conserva en SQLite y Supabase por compatibilidad
+    # con datos históricos; los registros nuevos llegan sin el campo.
     payload = [
         {
             "patient_id": patient_id,
@@ -251,7 +257,6 @@ def _exportar_pensamientos(sb, patient_id: str, desde: str):
             "pensamiento": r["pensamiento"],
             "respuesta_alternativa": r["respuesta_alternativa"] or "",
             "distorsiones": r["distorsiones"] or "",
-            "reflexion_ia": r["reflexion_ia"] or "",
         }
         for r in rows
     ]

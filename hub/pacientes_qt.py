@@ -254,10 +254,13 @@ class DetallePacienteView(QWidget):
         _fetch("respiracion", "breathing_sessions",
                "fecha,hora,tecnica,duracion_minutos,ciclos", limit=30)
 
-        # 3) TCC - tabla real: thought_records (era "tcc_registros")
+        # 3) TCC - tabla real: thought_records (era "tcc_registros").
+        # RA-6: NO se pide `reflexion_ia` porque el módulo TCC actual no la
+        # captura (no hay widget). Pedirla traería el default del schema
+        # Supabase (NULL) — el Hub no la necesita.
         _fetch("tcc", "thought_records",
                "fecha,hora,situacion,emocion,intensidad,pensamiento,"
-               "respuesta_alternativa,distorsiones,reflexion_ia", limit=20)
+               "respuesta_alternativa,distorsiones", limit=20)
 
         # 4) Rutina (checklist) - tabla real: checklist_completions (ya era correcta)
         _fetch("checklist", "checklist_completions",
