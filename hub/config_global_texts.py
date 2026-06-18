@@ -6,7 +6,9 @@ modulos de paciente y no construye previews de la Suite.
 
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt
+from typing import Any
+
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -26,13 +28,22 @@ from shared.components import (
     NMInput,
     NMSearchInput,
     NMTextArea,
+    NMToast,
+    nm_confirm,
 )
-from shared.suite_text_catalog import SuiteTextEntry, suite_text_entries, suite_text_sections
+from shared.suite_text_catalog import (
+    SuiteTextEntry,
+    suite_text_by_key,
+    suite_text_entries,
+    suite_text_sections,
+)
 from shared.theme import TYPOGRAPHY
 from shared.theme_qt import norm_modo, qfont, stylesheet_combobox, stylesheet_scrollarea, v3c, V3_SP
 
 
 class _TextEntryRow(NMCard):
+    changed = pyqtSignal()
+
     def __init__(self, entry: SuiteTextEntry, modo: str, parent=None):
         super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
         self.entry = entry
@@ -68,10 +79,10 @@ class _TextEntryRow(NMCard):
         if self.entry.multiline:
             self.editor = NMTextArea("", modo=self._modo, min_height=64, max_length=self.entry.max_chars)
             self.editor.setMaximumHeight(82)
-            self.editor.textChanged.connect(self._sync_counter)
+            self.editor.textChanged.connect(self._on_text_changed)
         else:
             self.editor = NMInput("", modo=self._modo, max_length=self.entry.max_chars)
-            self.editor.textChanged.connect(self._sync_counter)
+            self.editor.textChanged.connect(self._on_text_changed)
         self.editor.setMinimumWidth(230)
         lay.addWidget(self.editor, stretch=2)
 
@@ -96,12 +107,25 @@ class _TextEntryRow(NMCard):
             return self.editor.toPlainText()
         return self.editor.text()
 
-    def restore(self) -> None:
+    def set_value(self, value: str) -> None:
         if isinstance(self.editor, NMTextArea):
-            self.editor.setPlainText("")
+            self.editor.setPlainText(value or "")
         else:
-            self.editor.setText("")
+            self.editor.setText(value or "")
         self._sync_counter()
+
+    def effective_value(self) -> str:
+        value = self.value().strip()
+        if not value or value == self.entry.default:
+            return ""
+        return value
+
+    def is_over_limit(self) -> bool:
+        return len(self.value()) > self.entry.max_chars
+
+    def restore(self) -> None:
+        self.set_value("")
+        self.changed.emit()
 
     def matches(self, query: str, section: str) -> bool:
         if section and self.entry.section != section:
@@ -120,6 +144,10 @@ class _TextEntryRow(NMCard):
         self._count_lbl.setStyleSheet(
             f"color: {v3c(color_key, self._modo).name()}; background: transparent;"
         )
+
+    def _on_text_changed(self, *_args) -> None:
+        self._sync_counter()
+        self.changed.emit()
 
     def _apply_row_theme(self) -> None:
         self._section_lbl.setStyleSheet(
@@ -140,12 +168,18 @@ class _TextEntryRow(NMCard):
 
 
 class TextosGlobalesSuiteView(QWidget):
-    def __init__(self, modo: str = "dark_hybrid", parent=None):
+    def __init__(self, modo: str = "dark_hybrid", sb=None, parent=None):
         super().__init__(parent)
         self._modo = norm_modo(modo)
         self._rows: list[_TextEntryRow] = []
+        self._rows_by_key: dict[str, _TextEntryRow] = {}
+        self._catalog_by_key = suite_text_by_key()
+        self._original_values: dict[str, str] = {}
+        self._sb = sb
+        self._loading = False
         self._build()
         self._apply_theme(self._modo)
+        self.refresh_overrides(silent=True)
 
     def _build(self) -> None:
         root = QVBoxLayout(self)
@@ -192,26 +226,83 @@ class TextosGlobalesSuiteView(QWidget):
         for entry in suite_text_entries():
             row = _TextEntryRow(entry, self._modo, parent=self._content)
             row.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            row.changed.connect(self._on_row_changed)
             self._rows.append(row)
+            self._rows_by_key[entry.key] = row
             self._list_lay.addWidget(row)
         self._list_lay.addStretch(1)
 
         bottom = QHBoxLayout()
         bottom.setContentsMargins(0, 0, 0, V3_SP["xs"])
+        self._pending_badge = NMBadge("Sin cambios", tone="neutral", modo=self._modo)
+        bottom.addWidget(self._pending_badge, alignment=Qt.AlignmentFlag.AlignVCenter)
         bottom.addStretch()
         self._restore_all = NMButtonOutline("Restaurar todos", modo=self._modo, size="sm")
         self._restore_all.clicked.connect(self._restore_all_rows)
         bottom.addWidget(self._restore_all)
         self._save = NMButton("Guardar cambios", modo=self._modo, size="sm", width=150)
         self._save.setEnabled(False)
+        self._save.clicked.connect(self._save_changes)
         bottom.addWidget(self._save)
         root.addLayout(bottom)
 
         self._apply_filters()
+        self._update_pending_state()
 
     def _restore_all_rows(self) -> None:
+        nm_confirm(
+            self,
+            "Restaurar todos",
+            "Se quitaran todos los reemplazos globales de texto de Suite.",
+            self._restore_all_rows_confirmed,
+            confirm_text="Restaurar",
+            modo=self._modo,
+        )
+
+    def _restore_all_rows_confirmed(self) -> None:
         for row in self._rows:
             row.restore()
+        self._update_pending_state()
+
+    def set_supabase_client(self, sb) -> None:
+        self._sb = sb
+        if not self.has_pending_changes():
+            self.refresh_overrides(silent=True)
+        self._update_pending_state()
+
+    def has_pending_changes(self) -> bool:
+        return self._current_effective_values() != self._original_values
+
+    def refresh_overrides(self, silent: bool = False) -> None:
+        if self._sb is None:
+            self._update_pending_state()
+            return
+        try:
+            query = self._sb.table("hub_config").select("key,value").eq("scope", "global")
+            if hasattr(query, "like"):
+                query = query.like("key", "text.%")
+            res = query.execute()
+        except Exception as exc:
+            if not silent:
+                NMToast.display(
+                    self.window(),
+                    f"No se pudieron cargar los textos: {str(exc)[:80]}",
+                    variant="error",
+                )
+            return
+
+        loaded: dict[str, str] = {}
+        for item in res.data or []:
+            if not isinstance(item, dict):
+                continue
+            key = str(item.get("key") or "")
+            entry = self._catalog_by_key.get(key)
+            if entry is None:
+                continue
+            value = self._coerce_text_value(item.get("value")).strip()
+            if value and value != entry.default:
+                loaded[key] = value
+        self._set_loaded_values(loaded)
 
     def _apply_filters(self) -> None:
         query = self._search.text().strip() if hasattr(self, "_search") else ""
@@ -225,6 +316,117 @@ class TextosGlobalesSuiteView(QWidget):
         suffix = "s" if visible != 1 else ""
         self._count.setText(f"{visible} texto{suffix}")
 
+    def _current_effective_values(self) -> dict[str, str]:
+        values: dict[str, str] = {}
+        for row in self._rows:
+            value = row.effective_value()
+            if value:
+                values[row.entry.key] = value
+        return values
+
+    def _set_loaded_values(self, values: dict[str, str]) -> None:
+        self._loading = True
+        try:
+            for row in self._rows:
+                row.set_value(values.get(row.entry.key, ""))
+            self._original_values = {
+                key: value
+                for key, value in values.items()
+                if key in self._catalog_by_key and value
+            }
+        finally:
+            self._loading = False
+        self._update_pending_state()
+
+    def _on_row_changed(self) -> None:
+        if self._loading:
+            return
+        self._update_pending_state()
+
+    def _invalid_rows(self) -> list[_TextEntryRow]:
+        return [row for row in self._rows if row.is_over_limit()]
+
+    def _update_pending_state(self) -> None:
+        if not hasattr(self, "_save"):
+            return
+        invalid = bool(self._invalid_rows())
+        pending = self.has_pending_changes()
+        if invalid:
+            self._pending_badge.setText("Revisar limites")
+            self._pending_badge.set_tone("danger")
+        elif pending:
+            self._pending_badge.setText("Cambios pendientes")
+            self._pending_badge.set_tone("warning")
+        else:
+            self._pending_badge.setText("Sin cambios")
+            self._pending_badge.set_tone("neutral")
+        self._save.setEnabled(pending and not invalid)
+
+    def _save_changes(self) -> None:
+        invalid = self._invalid_rows()
+        if invalid:
+            NMToast.display(
+                self.window(),
+                "Hay textos que superan el limite permitido.",
+                variant="error",
+            )
+            self._update_pending_state()
+            return
+        if self._sb is None:
+            NMToast.display(
+                self.window(),
+                "No hay conexion con Supabase para guardar los textos.",
+                variant="error",
+            )
+            return
+
+        desired = self._current_effective_values()
+        changed_keys = set(self._original_values) | set(desired)
+        delete_keys = sorted(key for key in changed_keys if key not in desired)
+        upsert_rows = [
+            {"scope": "global", "key": key, "value": desired[key]}
+            for key in sorted(desired)
+            if key in self._catalog_by_key
+        ]
+        try:
+            for key in delete_keys:
+                if key not in self._catalog_by_key:
+                    continue
+                (
+                    self._sb.table("hub_config")
+                    .delete()
+                    .eq("scope", "global")
+                    .eq("key", key)
+                    .execute()
+                )
+            if upsert_rows:
+                (
+                    self._sb.table("hub_config")
+                    .upsert(upsert_rows, on_conflict="scope,key")
+                    .execute()
+                )
+        except Exception as exc:
+            NMToast.display(
+                self.window(),
+                f"No se pudieron guardar los textos: {str(exc)[:80]}",
+                variant="error",
+            )
+            return
+
+        self._original_values = desired
+        self._update_pending_state()
+        NMToast.display(self.window(), "Textos globales guardados.", variant="success")
+
+    @staticmethod
+    def _coerce_text_value(value: Any) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, str):
+            return value
+        if isinstance(value, (int, float, bool)):
+            return str(value)
+        return ""
+
     def _apply_theme(self, modo: str) -> None:
         self._modo = norm_modo(modo)
         self._title_lbl.setStyleSheet(
@@ -232,6 +434,8 @@ class TextosGlobalesSuiteView(QWidget):
         )
         self._section_filter.setStyleSheet(stylesheet_combobox(self._modo))
         self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        if hasattr(self, "_pending_badge"):
+            self._pending_badge._apply_theme(self._modo)
         for row in self._rows:
             row.apply_theme(self._modo)
 

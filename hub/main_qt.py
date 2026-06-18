@@ -868,10 +868,13 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
 
             self._view_textos_globales = TextosGlobalesSuiteView(
                 modo=self._modo,
+                sb=self._sb,
                 parent=self._stack,
             )
             self._views_cache["textos_globales"] = self._view_textos_globales
             self._stack.addWidget(self._view_textos_globales)
+        elif hasattr(self._views_cache["textos_globales"], "set_supabase_client"):
+            self._views_cache["textos_globales"].set_supabase_client(self._sb)
 
         # Si el profesional estaba dentro de una ficha cuando llegó la carga
         # asíncrona de pacientes, NO patearlo a Inicio: el force_recreate
@@ -953,6 +956,8 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         view = views.get("textos_globales")
         if view is None:
             return
+        if hasattr(view, "set_supabase_client"):
+            view.set_supabase_client(self._sb)
         self._stack.setCurrentWidget(view)
         if hasattr(self, "_chrome"):
             self._chrome.set_module_context(
