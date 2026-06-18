@@ -104,7 +104,8 @@ except ImportError:
 from shared.remote_config import t
 
 
-def _preset_from_row(row) -> tuple[str, int, str] | None:
+def _preset_from_row(row) -> tuple[str, int, str, str] | None:
+    """Separa descripción y categoría del preset remoto."""
     try:
         name = row["name"] if hasattr(row, "keys") else row[0]
         payload_raw = row["payload"] if hasattr(row, "keys") else row[1]
@@ -119,15 +120,16 @@ def _preset_from_row(row) -> tuple[str, int, str] | None:
 
     secs = None
     description = ""
+    categoria = ""
     if isinstance(payload, dict):
         secs = payload.get("duracion_seg") or payload.get("duration_sec") or payload.get("seconds")
         name = payload.get("name") or payload.get("nombre") or name
         description = (
             payload.get("description")
             or payload.get("descripcion")
-            or payload.get("categoria")
             or ""
         )
+        categoria = payload.get("categoria") or ""
     elif isinstance(payload, (int, float)):
         secs = payload
 
@@ -137,10 +139,15 @@ def _preset_from_row(row) -> tuple[str, int, str] | None:
         return None
     if secs <= 0:
         return None
-    return str(name or f"{secs // 60} min"), secs, str(description or "")
+    return (
+        str(name or f"{secs // 60} min"),
+        secs,
+        str(description or ""),
+        str(categoria or ""),
+    )
 
 
-def _load_presets() -> list[tuple[str, int, str]]:
+def _load_presets() -> list[tuple[str, int, str, str]]:
     """Actividades temporizadas asignadas por el profesional desde el Hub.
 
     NO hay presets locales por defecto: si el profesional no asignó ninguna se
@@ -156,8 +163,11 @@ def _load_presets() -> list[tuple[str, int, str]]:
     """
     from shared.visual_qa import visual_qa_enabled
     if visual_qa_enabled():
-        return [("Lectura", 25 * 60, ""), ("Pausa activa", 5 * 60, ""),
-                ("Trabajo profundo", 45 * 60, "")]
+        return [
+            ("Lectura", 25 * 60, "", "Foco"),
+            ("Pausa activa", 5 * 60, "", "Descanso"),
+            ("Trabajo profundo", 45 * 60, "", "Foco"),
+        ]
     try:
         patient_id = leer_config("patient_id", "").strip()
     except Exception:
@@ -284,6 +294,7 @@ class ModuloTimer(NMModule):
         )
         self._total_sec = initial_secs
         self._remaining_sec = initial_secs
+        self._current_categoria = ""
         self._timer_id: QTimer | None = None
         self._last_10s_blink = False
 
@@ -391,13 +402,15 @@ class ModuloTimer(NMModule):
         chips_row.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         chips_row.setSpacing(6)
         self._chip_btns: list[tuple[NMButtonOutline, int]] = []
-        for label, secs, description in self._presets[:8]:
+        for label, secs, description, categoria in self._presets[:8]:
             btn = NMButtonOutline(label, modo=self._modo, toggleable=False, size="sm")
             btn.setMinimumHeight(28)
             btn.setMinimumWidth(76)
             if description:
                 btn.setToolTip(description)
-            btn.clicked.connect(lambda _, n=label, s=secs: self._select_preset(n, s))
+            btn.clicked.connect(
+                lambda _, n=label, s=secs, c=categoria: self._select_preset(n, s, c)
+            )
             chips_row.addWidget(btn, 0, Qt.AlignmentFlag.AlignVCenter)
             self._chip_btns.append((btn, secs))
         self._chip_container = QWidget()
@@ -434,12 +447,13 @@ class ModuloTimer(NMModule):
         cent_lay.addStretch(1)
 
         if self._has_activity:
-            # Seleccionar la actividad asignada inicial (nombre + duración).
-            init_name = next(
-                (n for n, s, *_ in self._presets if s == self._total_sec),
-                self._presets[0][0],
+            # Seleccionar la actividad asignada inicial con su categoría.
+            init_preset = next(
+                (preset for preset in self._presets if preset[1] == self._total_sec),
+                self._presets[0],
             )
-            self._ent_actividad.setText(init_name)
+            self._ent_actividad.setText(init_preset[0])
+            self._current_categoria = init_preset[3]
             self._highlight_preset(self._total_sec)
         else:
             # Sin actividad asignada (regla clínica 2026-06): el paciente ve
@@ -527,12 +541,13 @@ class ModuloTimer(NMModule):
 
     # ── Presets ──────────────────────────────────────────────────────────────
 
-    def _select_preset(self, name: str, secs: int):
+    def _select_preset(self, name: str, secs: int, categoria: str = ""):
         if self._running:
             return
         self._total_sec = secs
         self._remaining_sec = secs
         self._ent_actividad.setText(name)
+        self._current_categoria = categoria
         self._highlight_preset(secs)
         self._update_canvas()
 
@@ -709,7 +724,14 @@ class ModuloTimer(NMModule):
                     "INSERT INTO actividades_temporizador "
                     "(fecha, hora, nombre, categoria, duracion_config, duracion_real) "
                     "VALUES (?, ?, ?, ?, ?, ?)",
-                    (fecha_hoy(), hora_actual(), nombre, "Timer", self._total_sec, duracion),
+                    (
+                        fecha_hoy(),
+                        hora_actual(),
+                        nombre,
+                        self._current_categoria,
+                        self._total_sec,
+                        duracion,
+                    ),
                 )
             try:
                 from shared.sync import sync_inmediato_background
