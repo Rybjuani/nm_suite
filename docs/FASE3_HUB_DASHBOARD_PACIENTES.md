@@ -3,7 +3,7 @@
 ## Objetivo (PLAN FASEADO §Fase 3)
 - Dashboard: KPIs compactos, menos vacío y métricas jerarquizadas.
 - Pacientes: filas escaneables, metadatos/sparklines legibles, acción quitar paciente clara con tono danger.
-- Personalización/editor: selección primary consistente, paneles integrados, acciones alineadas, sin scrollbars invasivas.
+- Personalización: selección primary consistente, paneles integrados, acciones alineadas, sin scrollbars invasivas.
 
 ## Cambios Aplicados
 
@@ -16,9 +16,9 @@
 - **Ring "Uso" legible:** 30 → **36px**. A 30px el `NN%` interior quedaba comprimido contra el arco (el propio `NMModuleRing` documenta que `<32px` el label es ilegible). 36px entra en la altura de fila (58px, área útil 44px) y da aire al porcentaje. Componente Hub-only.
 - **Quitar paciente con tono danger:** la `✕` (`_btn_unlink`) llevaba icono gris neutro (se leía como "cerrar"). Ahora el icono está en **tono danger en reposo** y el hover refuerza con fondo danger translúcido (alpha 0.18). Acción irreversible que se ve como tal sin gritar.
 
-### Personalización / editor (`hub/editors/text_overrides_editor.py`)
-- **Acciones alineadas:** los botones estaban apilados a la derecha (Guardar arriba, Restablecer abajo) "flotando" sobre el vacío. Ahora van en **una sola fila al pie del formulario**: `Restablecer por defecto` (secundario, izquierda) + stretch + `Guardar cambios` (primario, derecha), con alturas igualadas a 32px.
-- **Selección primary / sin scrollbars invasivas:** sin cambios — la biblioteca ya usaba selección `accentSoft` consistente y `_clinical_scrollbar_qss` (verificado en captura).
+### Personalización
+- **Acciones alineadas:** la ruta de personalización revisada en esta fase quedo integrada al Hub, con acciones alineadas y controles compactos.
+- **Selección primary / sin scrollbars invasivas:** sin cambios — la biblioteca ya usaba selección `accentSoft` consistente y scrollbars clinicas compactas (verificado en captura).
 
 ## Restricciones respetadas
 - `NMMetricCard.height` es opcional con default `FIXED_H`: ningún cambio agranda Suite y Hub a la vez (densidad Hub ≤ Suite).
@@ -36,13 +36,12 @@
 |---|---|---|
 | `hub-dashboard-{dark,light}` | revisado_f3 — KPIs compactos + badges, card módulos sin hueco | **parcial** (conserva REQUIRES_DATA_STATE) |
 | `hub-pacientes-{dark,light}` | revisado_f3 — ring 36px legible, X danger, filas escaneables | **parcial** (conserva REQUIRES_DATA_STATE) |
-| `hub-personalizacion-{dark,light}` | revisado_f3 — lista alineada, botones consistentes | revisado |
-| `hub-personalizacion-textos-{dark,light}` | revisado_f3 — acciones en fila alineada | revisado |
+| `hub-personalizacion-{dark,light}` | revisado_f3 — lista alineada, botones consistentes y acciones en fila | revisado |
 
 ## Deuda pendiente exacta
 - `dashboard` y `pacientes` (vistas default): la inspección visual de los cambios de Fase 3 quedó OK (`revisado_f3`), pero el **resultado de matriz se mantiene `parcial`** porque conservan el flag `REQUIRES_DATA_STATE` — el estado de datos real (no el mock QA) no queda probado. Corrección aplicada 2026-06-14.
 - Estados *data-dependent* siguen `parcial` por diseño (no es deuda de Fase 3): `dashboard-empty`, `pacientes-empty`, `pacientes-filter-*`, `pacientes-search` → requieren ausencia/composición real de datos, no mock QA.
-- `editor-text-overrides` (variante standalone navegable, QA-only) sigue `parcial` (REQUIRES_RUNTIME): no prueba chrome ni ciclo de vida lanzado desde el Hub. La ruta real (`personalizacion-textos`) sí quedó revisada.
+- La variante standalone legacy del editor fue retirada; la ruta vigente de personalizacion quedo cubierta por las capturas del Hub.
 
 ## Estado
 - **CERRADA** — implementación + capturas inspeccionadas + matriz actualizada + doc.

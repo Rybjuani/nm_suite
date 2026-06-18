@@ -49,7 +49,7 @@ Por eso el reemplazo no requiere migrar datos del módulo: no existe una tabla l
 | `app/main_qt.py` | Reemplazar `evolucion` por `dbt` en `_MODULE_MAP` y `_MODULE_UI_META`. |
 | `app/home_qt.py` | Sustituir la octava tarjeta del Home. |
 | `hub/personalizacion_global.py` | Sustituir la entrada de textos del Visualizador por Habilidades DBT. |
-| `hub/editors/text_overrides_editor.py` | Retirar las tres claves `text.module.evolucion.*`; agregar solo copys seguros del shell DBT. |
+| Textos globales configurables | Retirar las tres claves `text.module.evolucion.*`; agregar solo copys seguros del shell DBT. |
 | `build_neuromood.py` | Cambiar el hidden import de `app.modules.evolucion_qt` por `app.modules.dbt_qt`. |
 | `qa/capture_v8.py` | Retirar la receta `evolucion`; agregar estados DBT. |
 | `qa/runtime_live_probe.py` | Actualizar cualquier inventario o navegación que todavía espere `evolucion`. |

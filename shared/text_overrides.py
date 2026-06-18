@@ -1,10 +1,15 @@
-"""shared/text_overrides.py — Capa de textos globales de la Suite.
+"""shared/text_overrides.py — Puente legacy de textos globales de la Suite.
 
 Permite que el profesional reemplace, de forma GLOBAL, cualquier texto que la
 Suite muestra (Home, onboarding y los 8 módulos). Los overrides se guardan en
 `hub_config` (scope='global', key con prefijo ``text.ovr.``) y se sincronizan al
 cache local de cada paciente vía el pipeline de sync
 (`shared.sync._importar_hub_config` → `shared.remote_config.replace_scopes`).
+
+Este módulo queda como compatibilidad transitoria mientras la Suite migra a
+claves semánticas explícitas (`shared.suite_text_catalog` + `remote_config.t`).
+No hay una pantalla vigente del Hub que use `collect_texts`; la eliminación del
+puente completo corresponde a la fase de limpieza cuando ya no tenga consumidores.
 
 Mecanismo (sin tocar cada call-site):
     - Cada texto se identifica por ``(scope, texto_por_defecto)`` →
@@ -15,8 +20,8 @@ Mecanismo (sin tocar cada call-site):
       de widgets una vez (después de construir la vista) y reemplaza el texto de
       cada QLabel/QPushButton/checkbox y los placeholders de los inputs cuando hay
       un override para ese ``(scope, texto)``. Sin overrides en cache, es no-op.
-    - En el Hub, ``collect_texts(view, scope)`` enumera los mismos textos para que
-      el editor de "Configuración global de Suite" los haga editables.
+    - ``collect_texts(view, scope)`` queda disponible solo para cobertura legacy
+      hasta retirar este puente.
 
 Diseño: cero panics (cualquier error de DB cae a sin-overrides), sin estado
 global mutable, y el reemplazo solo ocurre si existe un override (no cambia el
