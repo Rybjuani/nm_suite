@@ -2,6 +2,8 @@
 hub/pacientes_qt.py — Vista detallada de paciente (PyQt6)
 """
 
+import logging
+
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QWidget,
@@ -62,6 +64,8 @@ except ImportError:
     from shared.qt_thread import run_on_gui
     from shared.theme import TYPOGRAPHY
     from shared.adaptive_layout_qt import window_edge_radius
+
+_log = logging.getLogger("NeuroMoodHub.Pacientes")
 
 # ── DetallePacienteView ───────────────────────────────────────────────────────
 
@@ -195,68 +199,105 @@ class DetallePacienteView(QWidget):
         )
 
     def _fetch_patient_data(self) -> dict:
+        """Trae registros reales de los 8 modulos Suite desde Supabase.
+
+        S0-1 (auditoria profunda): corrige 4 referencias a tablas inexistentes
+        que hacian que el fetch devolviera siempre listas vacias para
+        animo, TCC, activacion conductual y DBT. Los `except: pass` silenciaban
+        el error.
+
+        Tablas reales (ver db/supabase_schema.sql y db/dbt_practice_records.sql):
+          - mood_records           (era "animo_registros")
+          - breathing_sessions     (ya era correcta)
+          - thought_records        (era "tcc_registros")
+          - checklist_completions  (ya era correcta)
+          - activation_results     (era "activacion_registros")
+          - timer_sessions         (ya era correcta)
+          - assigned_reminders     (ya era correcta)
+          - dbt_practice_records   (era "dbt_registros")
+
+        Campos: trae los campos textuales reales de cada tabla (no solo
+        id+fecha) para que el prompt de IA y el PDF puedan usarlos. Esto es
+        tecnicamente S1-1, pero se incluye aca porque estamos reescribiendo
+        las queries de todas formas.
+        """
         datos: dict = {
             "animo": [], "respiracion": [], "tcc": [], "checklist": [],
             "actividades": [], "timer": [], "recordatorios": [], "dbt": [],
         }
         if not self._sb:
             return datos
+
+        def _fetch(key: str, table: str, columns: str, limit: int = 30) -> None:
+            """Una query por modulo. Loguea errores en vez de silenciarlos."""
+            try:
+                r = (
+                    self._sb.table(table)
+                    .select(columns)
+                    .eq("patient_id", self._pid)
+                    .order("fecha", desc=True)
+                    .limit(limit)
+                    .execute()
+                )
+                datos[key] = r.data or []
+            except Exception as exc:
+                _log.warning(
+                    "_fetch_patient_data: fallo fetch tabla=%s key=%s pid=%s: %s",
+                    table, key, self._pid, exc,
+                )
+
+        # 1) Animo - tabla real: mood_records (+ columnas valencia de mood_valencia_migration.sql)
+        _fetch("animo", "mood_records",
+               "fecha,hora,puntaje,nota,emocion,valencia,intensidad", limit=30)
+
+        # 2) Respiracion - tabla real: breathing_sessions (ya era correcta)
+        _fetch("respiracion", "breathing_sessions",
+               "fecha,hora,tecnica,duracion_minutos,ciclos", limit=30)
+
+        # 3) TCC - tabla real: thought_records (era "tcc_registros")
+        _fetch("tcc", "thought_records",
+               "fecha,hora,situacion,emocion,intensidad,pensamiento,"
+               "respuesta_alternativa,distorsiones,reflexion_ia", limit=20)
+
+        # 4) Rutina (checklist) - tabla real: checklist_completions (ya era correcta)
+        _fetch("checklist", "checklist_completions",
+               "fecha,descripcion,categoria,origen", limit=30)
+
+        # 5) Actividades - tabla real: activation_results (era "activacion_registros")
+        _fetch("actividades", "activation_results",
+               "fecha,hora,energia,animo,actividad,resultado", limit=20)
+
+        # 6) Timer - tabla real: timer_sessions (ya era correcta)
+        _fetch("timer", "timer_sessions",
+               "fecha,hora,nombre,categoria,duracion_config,duracion_real,notas", limit=20)
+
+        # 7) Recordatorios asignados - tabla real: assigned_reminders (ya era correcta).
+        # NOTA: assigned_reminders son los asignados por el profesional, no los
+        # registros de actividad del paciente. Para telemetria real de avisos
+        # disparados hay que leer reminder_logs (ver S2-1). Por ahora se mantiene
+        # el comportamiento legacy.
         try:
-            r = self._sb.table("animo_registros").select("puntaje,fecha").eq(
-                "patient_id", self._pid
-            ).order("fecha", desc=True).limit(30).execute()
-            datos["animo"] = r.data or []
-        except Exception:
-            pass
-        try:
-            r = self._sb.table("breathing_sessions").select("id,fecha").eq(
-                "patient_id", self._pid
-            ).order("fecha", desc=True).limit(30).execute()
-            datos["respiracion"] = r.data or []
-        except Exception:
-            pass
-        try:
-            r = self._sb.table("tcc_registros").select("id,emocion,fecha").eq(
-                "patient_id", self._pid
-            ).order("fecha", desc=True).limit(20).execute()
-            datos["tcc"] = r.data or []
-        except Exception:
-            pass
-        try:
-            r = self._sb.table("checklist_completions").select("id,fecha").eq(
-                "patient_id", self._pid
-            ).order("fecha", desc=True).limit(30).execute()
-            datos["checklist"] = r.data or []
-        except Exception:
-            pass
-        try:
-            r = self._sb.table("activacion_registros").select("id,fecha").eq(
-                "patient_id", self._pid
-            ).order("fecha", desc=True).limit(20).execute()
-            datos["actividades"] = r.data or []
-        except Exception:
-            pass
-        try:
-            r = self._sb.table("timer_sessions").select("id,duracion,fecha").eq(
-                "patient_id", self._pid
-            ).order("fecha", desc=True).limit(20).execute()
-            datos["timer"] = r.data or []
-        except Exception:
-            pass
-        try:
-            r = self._sb.table("assigned_reminders").select("id,hora,mensaje").eq(
-                "patient_id", self._pid
-            ).execute()
+            r = (
+                self._sb.table("assigned_reminders")
+                .select("id,hora,mensaje,activa")
+                .eq("patient_id", self._pid)
+                .order("hora", desc=False)
+                .limit(50)  # S1-7: limit explicito (antes era ilimitado)
+                .execute()
+            )
             datos["recordatorios"] = r.data or []
-        except Exception:
-            pass
-        try:
-            r = self._sb.table("dbt_registros").select("id,fecha").eq(
-                "patient_id", self._pid
-            ).order("fecha", desc=True).limit(20).execute()
-            datos["dbt"] = r.data or []
-        except Exception:
-            pass
+        except Exception as exc:
+            _log.warning(
+                "_fetch_patient_data: fallo fetch assigned_reminders pid=%s: %s",
+                self._pid, exc,
+            )
+
+        # 8) DBT - tabla real: dbt_practice_records (era "dbt_registros")
+        _fetch("dbt", "dbt_practice_records",
+               "fecha,hora,skill_id,skill_version,familia,necesidad,"
+               "malestar_antes,malestar_despues,resultado,duracion_seg,nota",
+               limit=20)
+
         return datos
 
     def _show_resumen_dialog(self, text: str):
