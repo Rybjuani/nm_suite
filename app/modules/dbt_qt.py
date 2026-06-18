@@ -940,6 +940,9 @@ class ModuloDBT(NMModule):
 
         self._current_family = None
         self._current_skill_id = None
+        # RA-5: cachear la version de la skill desde DBT_SKILLS[...]["version"].
+        # Antes se hardcodeaba 1 en el INSERT, ignorando el campo canónico.
+        self._current_skill_version = 1
         self._current_step = 0
         self._started_at = None
         self._origin_view = 0
@@ -1111,6 +1114,8 @@ class ModuloDBT(NMModule):
         self._origin_view = self._tabs.current()
         self._current_skill_id = skill["id"]
         self._current_family = skill["family"]
+        # RA-5: cachear la version canónica de DBT_SKILLS. Default 1 si falta.
+        self._current_skill_version = skill.get("version", 1)
         
         self._practice_view = _SkillPracticeView(skill, modo=self._modo, parent=self)
         self._practice_view.cancelled.connect(self._on_practice_cancelled)
@@ -1165,7 +1170,9 @@ class ModuloDBT(NMModule):
                 conn.execute(
                     "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (record_id, fecha, hora, self._current_skill_id, 1, self._current_family, self._get_need_text(self._current_family), antes, despues, resultado, dur_seg, nota, created_at)
+                    # RA-5: usar self._current_skill_version (canónico de DBT_SKILLS)
+                    # en vez de hardcodear 1.
+                    (record_id, fecha, hora, self._current_skill_id, self._current_skill_version, self._current_family, self._get_need_text(self._current_family), antes, despues, resultado, dur_seg, nota, created_at)
                 )
             NMToast.display(self, "Práctica guardada correctamente.", variant="success")
             
