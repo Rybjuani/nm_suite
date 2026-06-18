@@ -74,7 +74,7 @@ try:
     )
     from shared.theme import TYPOGRAPHY
     from shared.db import obtener_conexion, conexion
-    from shared.utils import fecha_hoy, hora_actual, get_valence_series
+    from shared.utils import fecha_hoy, hora_actual, get_mood_series
     from shared.visual_qa import visual_qa_enabled
 except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -103,7 +103,7 @@ except ImportError:
     )
     from shared.theme import TYPOGRAPHY
     from shared.db import obtener_conexion, conexion
-    from shared.utils import fecha_hoy, hora_actual
+    from shared.utils import fecha_hoy, hora_actual, get_mood_series
     from shared.visual_qa import visual_qa_enabled
 
 
@@ -421,13 +421,9 @@ class ModuloAnimo(NMModule):
             ["7 días", "30 días"], self._on_chart_range_changed
         )
 
-        # Serie positiva (teal) y negativa (danger) en paralelo, con leyenda:
-        # "tristeza 10" se ve como negativo fuerte, no como positivo.
-        self._wave_chart = NMWaveChart(
-            modo=self._modo,
-            secondary_color_key="danger",
-            series_labels=("Positivo", "Negativo"),
-        )
+        # Serie ÚNICA: el valor de ánimo (puntaje) promediado por día. Sin separar
+        # positivo/negativo — un solo punto diario, misma fórmula que Home y Hub.
+        self._wave_chart = NMWaveChart(modo=self._modo)
         self._wave_chart.setMinimumHeight(110)
         self._wave_chart.setMaximumHeight(140)
         self._hist_card.set_chart(self._wave_chart)
@@ -521,13 +517,7 @@ class ModuloAnimo(NMModule):
     # ── styles helper ────────────────────────────────────────────────────────
 
     def _apply_text_styles(self):
-        C("ink_primary", self._modo)
         text2 = C("ink_secondary", self._modo)
-        C("ink_placeholder", self._modo)
-        C("primary", self._modo)
-        C("border", self._modo)
-        surface_2 = C("bg_surface2", self._modo)
-        border_solid = C("border_solid", self._modo)
 
         for lbl in (
             getattr(self, "_range_lbl", None),
@@ -636,15 +626,14 @@ class ModuloAnimo(NMModule):
 
     # ── data fetchers (lectura) ──────────────────────────────────────────────
 
-    def _get_valence_series(self) -> tuple[list, list]:
-        """(positiva, negativa) — intensidad cruda promedio por día.
+    def _get_mood_series(self) -> list:
+        """Serie diaria de ánimo (promedio de puntaje por día).
 
         Respeta ``self._chart_range_days`` (7D o 30D). Cada punto es el
-        PROMEDIO de los registros del día (varios registros en el mismo
-        día se promedian), de modo que la curva refleja el ánimo diario
-        real del paciente sin inflar el conteo.
+        PROMEDIO de los registros del día (varios registros en el mismo día →
+        un solo punto). Misma fuente/fórmula que el score del Home y el Hub.
         """
-        return get_valence_series(self._chart_range_days)
+        return get_mood_series(self._chart_range_days)
 
     def _on_chart_range_changed(self, label: str) -> None:
         """Handler de los tabs 7D/30D del header del chart."""
@@ -656,12 +645,13 @@ class ModuloAnimo(NMModule):
             _log.exception("Error actualizando rango del chart de ánimo")
 
     def _cargar_grafico(self):
-        """Carga datos en el NMWaveChart: línea principal = registros positivos,
-        línea secundaria = registros negativos (intensidad cruda por día)."""
+        """Carga la serie ÚNICA de ánimo (promedio diario de puntaje) en el chart."""
         if not hasattr(self, "_wave_chart"):
             return
-        positiva, negativa = self._get_valence_series()
-        self._wave_chart.set_data(positiva, negativa)
+        serie = self._get_mood_series()
+        # NMWaveChart pinta dos series (principal/comparación); acá la comparación
+        # va vacía → una sola línea con el ánimo diario real.
+        self._wave_chart.set_data(serie, [None] * len(serie))
 
     def _refresh_insights(self):
         """Actualiza stat de progreso (racha de días con registro)."""

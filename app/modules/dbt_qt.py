@@ -971,13 +971,6 @@ class ModuloDBT(NMModule):
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(16)
         
-        # Prompt and safety disclaimer
-        lbl_eyebrow = QLabel(t("text.module.dbt.eyebrow", "Práctica de habilidades"))
-        lbl_eyebrow.setObjectName("DbtEyebrowLabel")
-        lbl_eyebrow.setFont(v3_font("size_caption", weight=TYPOGRAPHY["weight_bold"]))
-        lbl_eyebrow.setStyleSheet(f"color: {v3c('ink_secondary', self._modo).name()};")
-        lay.addWidget(lbl_eyebrow)
-        
         lbl_prompt = QLabel(t("text.module.dbt.now_prompt", "¿Qué necesitás en este momento?"))
         lbl_prompt.setObjectName("DbtPromptLabel")
         lbl_prompt.setFont(v3_font("size_h3", weight=TYPOGRAPHY["weight_bold"], serif=True))
@@ -1202,12 +1195,8 @@ class ModuloDBT(NMModule):
                     child._apply_theme(self._modo)
             for lbl in self._view_ahora.findChildren(QLabel):
                 obj_name = lbl.objectName()
-                if obj_name == "DbtEyebrowLabel":
-                    lbl.setStyleSheet(f"color: {v3c('ink_secondary', self._modo).name()};")
-                elif obj_name == "DbtPromptLabel":
+                if obj_name == "DbtPromptLabel":
                     lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-                elif obj_name == "DbtSafetyLabel":
-                    lbl.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()};")
                     
         if hasattr(self, "_view_biblioteca"):
             for child in self._view_biblioteca.findChildren(NMCard):

@@ -104,14 +104,14 @@ def get_weekly_series() -> tuple[list, list]:
         return [None] * 7, [None] * 7
 
 
-def get_valence_series(days: int = 7) -> tuple[list, list]:
-    """(positiva, negativa) — promedio diario de intensidad CRUDA por valencia.
+def get_mood_series(days: int = 7) -> list:
+    """Serie diaria de ánimo: promedio de ``puntaje`` por día (UN punto por día),
+    últimos ``days`` días (hoy-(days-1) .. hoy). ``None`` donde no hubo registro.
 
-    `days` valores/None cada una (hoy-(days-1) .. hoy). Registro pos/neg
-    separado (v1.0): "tristeza 10" cuenta como registro NEGATIVO de
-    intensidad 10, no como bienestar 1 — los dos lados se miden por separado.
-    Los registros sin emoción (valencia neutral/'') cuentan del lado positivo:
-    son un check-in de ánimo a secas (legacy: hoy la emoción es obligatoria).
+    Fuente y fórmula ÚNICAS del ánimo (sin separar valencia positiva/negativa):
+    el mismo ``AVG(puntaje)`` por día que usan el score del Home
+    (``_get_module_status``) y el módulo Ánimo. Garantiza que un mismo día dé el
+    mismo valor en Suite Home, módulo Ánimo y Hub.
     """
     from shared.visual_qa import visual_qa_enabled
     import logging
@@ -119,37 +119,24 @@ def get_valence_series(days: int = 7) -> tuple[list, list]:
     _log = logging.getLogger(__name__)
 
     if visual_qa_enabled():
-        base_p = [6, 7, None, 8, 7, 9, 8]
-        base_n = [3, None, 5, 2, 4, None, 3]
+        base = [6, 7, 5, 8, 7, 9, 8]
         reps = (days + 6) // 7
-        return (base_p * reps)[:days], (base_n * reps)[:days]
+        return (base * reps)[:days]
     try:
         import datetime as dt
         from shared.db import obtener_conexion
 
         con = obtener_conexion()
         today = dt.date.today()
-        positiva, negativa = [], []
+        serie: list = []
         for offset in range(days - 1, -1, -1):
             day = str(today - dt.timedelta(days=offset))
-            row_p = con.execute(
-                "SELECT AVG(COALESCE(intensidad, puntaje)) FROM termometro "
-                "WHERE date(fecha)=? AND (valencia IS NULL OR valencia != 'negativa')",
-                (day,),
+            row = con.execute(
+                "SELECT AVG(puntaje) FROM termometro WHERE date(fecha)=?", (day,)
             ).fetchone()
-            positiva.append(float(row_p[0]) if row_p and row_p[0] is not None else None)
-            row_n = con.execute(
-                "SELECT AVG(COALESCE(intensidad, 11 - puntaje)) FROM termometro "
-                "WHERE date(fecha)=? AND valencia = 'negativa'",
-                (day,),
-            ).fetchone()
-            negativa.append(float(row_n[0]) if row_n and row_n[0] is not None else None)
-        return positiva, negativa
+            serie.append(float(row[0]) if row and row[0] is not None else None)
+        con.close()
+        return serie
     except Exception:
-        _log.exception("Error cargando series de valencia")
-        return [None] * days, [None] * days
-
-
-def get_weekly_valence_series() -> tuple[list, list]:
-    """(positiva, negativa) de los últimos 7 días — ver get_valence_series."""
-    return get_valence_series(7)
+        _log.exception("Error cargando serie de ánimo")
+        return [None] * days

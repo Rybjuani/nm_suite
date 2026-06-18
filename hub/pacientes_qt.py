@@ -133,22 +133,12 @@ class DetallePacienteView(QWidget):
 
         tl.addLayout(text_col, stretch=1)
 
+        # Las pills de cabecera (Semana / Alerta / Progreso) fueron eliminadas:
+        # afirmaban señales clínicas que el seguimiento no valida. El encabezado
+        # queda con el perfil + el acceso a Resumen IA.
         chips_col = QVBoxLayout()
         chips_col.setContentsMargins(0, 0, 0, 0)
         chips_col.setSpacing(6)
-
-        self._chip_row = QHBoxLayout()
-        self._chip_row.setContentsMargins(0, 0, 0, 0)
-        self._chip_row.setSpacing(10)
-        # Si el hero se queda sin ancho, los chips NO deben comprimirse unos
-        # contra otros: el stretch inicial absorbe y los empuja a la derecha.
-        self._chip_row.addStretch()
-        # 5.1: lenguaje neutral — "Riesgo bajo" afirma una verdad clínica que el
-        # demo no valida. "Sin alerta activa" describe el estado de la app
-        # (no se generaron alertas), no diagnostica al paciente. "5d racha"
-        # se mantiene como señal operativa (cuántos días lleva registrando),
-        # no como juicio clínico.
-        chips_col.addLayout(self._chip_row)
 
         ia_row = QHBoxLayout()
         ia_row.setContentsMargins(0, 4, 0, 0)

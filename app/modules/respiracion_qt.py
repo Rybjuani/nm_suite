@@ -708,7 +708,7 @@ class ModuloRespiracion(NMModule):
         self._range_lbl.setFont(eyebrow_font())
         self._range_lbl.hide()
 
-        # 1+2. Bio-guía principal en card. Los presets 3/5/10 min viven DENTRO
+        # 1+2. Práctica de respiración principal en card. Los presets 3/5/10 min viven DENTRO
         # de la card (arriba a la derecha, posición conservada) en vez de flotar
         # fuera; la card se expande para ocupar el espacio disponible.
         practice_card = NMCard(modo=self._modo, clickable=False, glow=False)

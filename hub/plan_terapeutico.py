@@ -512,7 +512,7 @@ class _PresetRecordatoriosTab(QWidget):
     """Tab unificado de Recordatorios de Bienestar.
 
     Combina mensaje y hora en un unico formulario: hora + mensaje
-    se asignan juntos con un solo boton 'Agregar recordatorio'.
+    se asignan juntos con un solo boton 'Agregar'.
     """
 
     def __init__(self, sb, pid: str, modo: str, parent=None):
@@ -548,7 +548,7 @@ class _PresetRecordatoriosTab(QWidget):
 
         btn_row = QHBoxLayout()
         self._save_btn = NMButton(
-            "Agregar recordatorio", modo=self._modo, width=180, height=32, size="sm"
+            "Agregar", modo=self._modo, width=180, height=32, size="sm"
         )
         self._save_btn.clicked.connect(self._save_recordatorio)
         btn_row.addWidget(self._save_btn)

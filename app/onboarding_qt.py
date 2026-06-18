@@ -211,7 +211,10 @@ class OnboardingDialog(QDialog):
         # de lectura cómodo y se centra solo si la ventana se agranda.
         card = QFrame()
         card.setObjectName("AuthCard")
-        card.setMaximumWidth(520)
+        # Full-bleed: la card ocupa TODA la ventana (mismo surface que el diálogo)
+        # → sin maxWidth ni centrado no quedan bandas laterales de otro color ni
+        # una "segunda capa" flotando. El borde/radio quedan en el borde de la
+        # ventana. Vale igual en compacto y al ampliar.
         card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         if self._has_theme:
             border_c = self._t["v3c"]("border", self._modo)
@@ -225,7 +228,7 @@ class OnboardingDialog(QDialog):
             )
         else:
             card.setStyleSheet("QFrame#AuthCard { background: transparent; border: none; }")
-        root.addWidget(card, alignment=Qt.AlignmentFlag.AlignHCenter)
+        root.addWidget(card)
 
         # Card internal layout
         card_lay = QVBoxLayout(card)
@@ -310,6 +313,7 @@ class OnboardingDialog(QDialog):
         sub = QLabel(
             "Vinculá tu cuenta de NeuroMood. Tus datos se mantienen cifrados y bajo tu control."
         )
+        sub.setObjectName("OnbSub")
         sub.setWordWrap(True)
         sub_px = 11 if is_compact else 12
         if self._has_theme:
@@ -415,6 +419,7 @@ class OnboardingDialog(QDialog):
         except Exception:
             pass
         cc_title = QLabel("Privacidad y consentimiento")
+        cc_title.setObjectName("OnbCardTitle")
         if self._has_theme:
             cc_title.setFont(
                 self._t["v3_font"]("size_caption", weight=self._t["TY"]["weight_semibold"])
@@ -436,6 +441,7 @@ class OnboardingDialog(QDialog):
         cc_body.setStyleSheet(stylesheet_scrollarea(self._modo))
 
         consent_txt = QLabel(_CONSENT_TEXT)
+        consent_txt.setObjectName("OnbConsentText")
         consent_txt.setWordWrap(True)
         # Fuente vía QFont (no font-size CSS): el alto del visor se calcula con
         # fontMetrics y deben coincidir para no cortar líneas a la mitad.
@@ -473,6 +479,7 @@ class OnboardingDialog(QDialog):
         consent_row.addWidget(self._consent_check, alignment=Qt.AlignmentFlag.AlignTop)
 
         consent_lbl = QLabel("Acepto los términos y la política de privacidad")
+        consent_lbl.setObjectName("OnbConsentLabel")
         consent_lbl.setWordWrap(True)
         consent_lbl.setCursor(Qt.CursorShape.PointingHandCursor)
         consent_lbl.mouseReleaseEvent = lambda event: self._consent_check.setChecked(
@@ -580,38 +587,81 @@ class OnboardingDialog(QDialog):
         """
         if not self._has_theme:
             return
+        t = self._t
+        is_dark = "dark" in self._modo
+        border_c = t["v3c"]("border", self._modo)
+        border_css = (
+            f"rgba({border_c.red()},{border_c.green()},{border_c.blue()},{border_c.alpha()})"
+        )
+        # Fondo del diálogo (= color de la card, sin bandas laterales).
         try:
-            border_c = self._t["v3c"]("border", self._modo)
-            border_css = (
-                f"rgba({border_c.red()},{border_c.green()},"
-                f"{border_c.blue()},{border_c.alpha()})"
-            )
-            card_radius = 22 if _is_windows_11_or_newer() else 0
-            for frame in self.findChildren(QFrame):
-                if frame.objectName() == "AuthCard":
-                    frame.setStyleSheet(
-                        f"QFrame#AuthCard {{ background: {self._t['surface']}; "
-                        f"border: 1px solid {border_css}; "
-                        f"border-radius: {card_radius}px; }}"
-                    )
-                    break
+            self.setStyleSheet(f"OnboardingDialog {{ background-color: {t['surface']}; }}")
         except Exception:
             pass
+        # Frames: AuthCard (full-bleed) + ConsentCard.
+        try:
+            card_radius = 22 if _is_windows_11_or_newer() else 0
+            for frame in self.findChildren(QFrame):
+                name = frame.objectName()
+                if name == "AuthCard":
+                    frame.setStyleSheet(
+                        f"QFrame#AuthCard {{ background: {t['surface']}; "
+                        f"border: 1px solid {border_css}; border-radius: {card_radius}px; }}"
+                    )
+                elif name == "ConsentCard":
+                    bg_col = t["surface"] if is_dark else t["input"]
+                    cc_border = (
+                        f"rgba({border_c.red()},{border_c.green()},{border_c.blue()},45)"
+                        if is_dark else "rgba(28,34,24,0.10)"
+                    )
+                    frame.setStyleSheet(
+                        f"QFrame#ConsentCard {{ background-color: {bg_col}; "
+                        f"border: 1px solid {cc_border}; border-radius: 16px; }}"
+                    )
+        except Exception:
+            pass
+        # Scrollarea del consentimiento.
+        try:
+            from shared.theme_qt import stylesheet_scrollarea
+            for sa in self.findChildren(QScrollArea):
+                sa.setStyleSheet(stylesheet_scrollarea(self._modo))
+        except Exception:
+            pass
+        # Labels crudos por rol (objectName) + títulos.
+        role_color = {
+            "OnbSub": t["mute"],
+            "OnbField": t["text2"],
+            "OnbCardTitle": t["text"],
+            "OnbConsentText": t["text2"],
+            "OnbConsentLabel": t["text"],
+        }
         try:
             for lbl in self.findChildren(QLabel):
-                if lbl.text() == "Bienvenido a NeuroMood":
-                    lbl.setStyleSheet(
-                        f"color: {self._t['text']}; background: transparent;"
-                    )
+                name = lbl.objectName()
+                if name in role_color:
+                    lbl.setStyleSheet(f"color: {role_color[name]}; background: transparent;")
+                elif lbl.text() == "Bienvenido a NeuroMood":
+                    lbl.setStyleSheet(f"color: {t['text']}; background: transparent;")
                 elif lbl.text() == "Suite":
-                    lbl.setStyleSheet(
-                        f"color: {self._t['primary']}; background: transparent;"
-                    )
+                    lbl.setStyleSheet(f"color: {t['primary']}; background: transparent;")
+        except Exception:
+            pass
+        # Error + link de recuperación.
+        try:
+            if hasattr(self, "_error_lbl"):
+                self._error_lbl.setStyleSheet(f"color: {t['danger']}; background: transparent;")
+            if hasattr(self, "_forgot_link"):
+                link_color = t["v3c"]("aqua", self._modo).name()
+                self._forgot_link.setText(
+                    f'<a href="#" style="color:{link_color}; text-decoration:none;">'
+                    "¿Olvidaste tu contraseña?</a>"
+                )
         except Exception:
             pass
 
     def _lbl(self, text: str, is_compact: bool = False) -> QLabel:
         lbl = QLabel(text)
+        lbl.setObjectName("OnbField")
         if self._has_theme:
             sz = "size_caption_xs" if is_compact else "size_caption"
             lbl.setFont(self._t["v3_font"](sz, weight=self._t["TY"]["weight_medium"]))

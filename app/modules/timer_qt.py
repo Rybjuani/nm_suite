@@ -12,7 +12,7 @@ Estructura según design_handoff_neuromood_v3 (Suite > Timer):
                             NMCard "SESIONES DE HOY" con lista del día
 
 LÓGICA DE NEGOCIO PRESERVADA EXACTA:
-  PRESETS, _tick() (1s), _save_session() (INSERT INTO actividades_temporizador),
+  _tick() (1s), _save_session() (INSERT INTO actividades_temporizador),
   _finish() con NMRingPulse + auto-restore window + toast,
   on_leave() guarda si elapsed ≥ 30s, get_card_status().
 """
@@ -37,7 +37,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
 )
 
 try:
@@ -104,27 +103,6 @@ except ImportError:
 from shared.remote_config import t
 
 
-# ── Presets (preservados) ────────────────────────────────────────────────────
-
-PRESETS = [
-    ("5 min", 5 * 60),
-    ("10 min", 10 * 60),
-    ("25 min", 25 * 60),
-    ("45 min", 45 * 60),
-]
-
-
-def _parse_bool_config(value: str, default: bool = True) -> bool:
-    if value is None:
-        return default
-    text = str(value).strip().lower()
-    if text in ("0", "false", "no", "off"):
-        return False
-    if text in ("1", "true", "yes", "on"):
-        return True
-    return default
-
-
 def _preset_from_row(row) -> tuple[str, int, str] | None:
     try:
         name = row["name"] if hasattr(row, "keys") else row[0]
@@ -162,6 +140,17 @@ def _preset_from_row(row) -> tuple[str, int, str] | None:
 
 
 def _load_presets() -> list[tuple[str, int, str]]:
+    """Actividades temporizadas asignadas por el profesional desde el Hub.
+
+    NO hay presets locales por defecto: si el profesional no asignó ninguna se
+    devuelve [] y el módulo muestra el estado vacío (el paciente solo puede
+    iniciar actividades asignadas). En modo demostración (clon del Hub) se
+    devuelven ejemplos simulados que NO provienen de la DB ni se guardan.
+    """
+    from shared.visual_qa import visual_qa_enabled
+    if visual_qa_enabled():
+        return [("Lectura", 25 * 60, ""), ("Pausa activa", 5 * 60, ""),
+                ("Trabajo profundo", 45 * 60, "")]
     try:
         patient_id = leer_config("patient_id", "").strip()
     except Exception:
@@ -197,14 +186,8 @@ def _load_presets() -> list[tuple[str, int, str]]:
                 conn.close()
         except Exception:
             pass
-    return [(name, secs, "") for name, secs in PRESETS]
-
-
-def _manual_timer_enabled() -> bool:
-    try:
-        return _parse_bool_config(leer_config("perm_temporizador_manual", "0"))
-    except Exception:
-        return True
+    # Sin asignaciones del profesional: no hay fallback local de presets.
+    return []
 
 
 # ── Soft-alarm chime ─────────────────────────────────────────────────────────
@@ -285,16 +268,17 @@ class ModuloTimer(NMModule):
         self._running = False
         self._paused = False
         self._presets = _load_presets()
+        # Solo se puede usar el temporizador si el profesional asignó al menos una
+        # actividad (sin asignación → estado vacío, no se puede iniciar).
+        self._has_activity = bool(self._presets)
         initial_secs = next(
             (secs for _, secs, *_ in self._presets if secs == 25 * 60),
-            self._presets[0][1],
+            self._presets[0][1] if self._presets else 25 * 60,
         )
         self._total_sec = initial_secs
         self._remaining_sec = initial_secs
         self._timer_id: QTimer | None = None
-        self._custom_mode = False
         self._last_10s_blink = False
-        self._manual_timer_enabled = _manual_timer_enabled()
 
         outer = QVBoxLayout(self._content)
         # Aire inferior md: con sm la card SESIONES DE HOY quedaba pegada al
@@ -364,21 +348,20 @@ class ModuloTimer(NMModule):
         # actividades a su profesional.
         input_row = QHBoxLayout()
         input_row.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        # Nombre de la actividad asignada (solo-lectura). El paciente NO puede
+        # crear ni escribir su propia actividad: refleja la actividad asignada
+        # seleccionada (chip). Sin asignación → placeholder invitando a pedirla.
         self._ent_actividad = NMInput("Pedile a tu profesional que te asigne una actividad", modo=self._modo)
         self._ent_actividad.setFixedWidth(320)
         self._ent_actividad.setReadOnly(True)
-        if visual_qa_enabled():
-            self._ent_actividad.setText("Deep Work Session")
         input_row.addWidget(self._ent_actividad)
         cent_lay.addLayout(input_row)
 
-        # Preset chips row (pill-row, up to 8 chips horizontales)
+        # Preset chips row: una actividad temporizada asignada por chip (nombre +
+        # duración). No hay opción de minutos manuales (el paciente no crea).
         chips_row = QHBoxLayout()
         chips_row.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         chips_row.setSpacing(6)
-        # stretch=1 explícito: addStretch() (factor 0) repartía el espacio
-        # libre EN PARTES IGUALES con _custom_widget (Preferred) y a 1920px
-        # los chips quedaban huérfanos a un lado y min/OK desparramados.
         chips_row.addStretch(1)
         self._chip_btns: list[tuple[NMButtonOutline, int]] = []
         for label, secs, description in self._presets[:8]:
@@ -386,42 +369,24 @@ class ModuloTimer(NMModule):
             btn.setFixedSize(76, 28)
             if description:
                 btn.setToolTip(description)
-            btn.clicked.connect(lambda _, s=secs: self._select_preset(s))
+            btn.clicked.connect(lambda _, n=label, s=secs: self._select_preset(n, s))
             chips_row.addWidget(btn, 0, Qt.AlignmentFlag.AlignVCenter)
             self._chip_btns.append((btn, secs))
-
-        # Custom input inline
-        self._custom_widget = QWidget()
-        self._custom_widget.setVisible(self._manual_timer_enabled)
-        self._custom_widget.setEnabled(self._manual_timer_enabled)
-        # Un poco más alto que los chips para que el botón compacto conserve su
-        # borde/sombra sin quedar recortado a 960x600.
-        self._custom_widget.setFixedHeight(32)
-        cw_row = QHBoxLayout(self._custom_widget)
-        cw_row.setContentsMargins(0, 0, 0, 0)
-        cw_row.setSpacing(4)
-        cw_row.setAlignment(Qt.AlignmentFlag.AlignVCenter)
-
-        self._entry_custom = QLineEdit()
-        self._entry_custom.setPlaceholderText("min")
-        self._entry_custom.setFixedSize(64, 28)
-        self._entry_custom.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._entry_custom.setStyleSheet(self._pill_input_style())
-        cw_row.addWidget(self._entry_custom)
-
-        # Ancho 64: evita el micro-botón de una palabra y mantiene el target
-        # comparable al input "min" contiguo.
-        btn_ok = NMButton("OK", modo=self._modo, variant="primary", size="sm", width=64)
-        btn_ok.setFixedSize(64, 32)
-        btn_ok.clicked.connect(self._apply_custom)
-        cw_row.addWidget(btn_ok)
-
-        chips_row.addSpacing(8)
-        chips_row.addWidget(self._custom_widget, 0, Qt.AlignmentFlag.AlignVCenter)
         chips_row.addStretch(1)
         cent_lay.addLayout(chips_row)
 
-        self._highlight_preset(self._total_sec)
+        if self._has_activity:
+            # Seleccionar la actividad asignada inicial (nombre + duración).
+            init_name = next(
+                (n for n, s, *_ in self._presets if s == self._total_sec),
+                self._presets[0][0],
+            )
+            self._ent_actividad.setText(init_name)
+            self._highlight_preset(self._total_sec)
+        else:
+            # Sin actividad asignada: no se puede iniciar el temporizador.
+            self._btn_play.setEnabled(False)
+            self._btn_skip.setEnabled(False)
 
         timer_card_lay.addWidget(cent_container, stretch=1)
         outer.addWidget(timer_card, stretch=1)
@@ -439,19 +404,6 @@ class ModuloTimer(NMModule):
     def resizeEvent(self, event):
         super().resizeEvent(event)
 
-    def _pill_input_style(self) -> str:
-        """CSS para que el input de minutos custom tenga aspecto de pill (igual que los presets)."""
-        border = C("border", self._modo)
-        text = v3c("text", self._modo).name()
-        ph = v3c("ink_secondary", self._modo).name()
-        prim = v3c("primary", self._modo).name()
-        return (
-            f"QLineEdit {{ background: transparent; border: 1px solid {border}; "
-            f"border-radius: 12px; color: {text}; padding: 0 12px; "
-            f"font-size: {TYPOGRAPHY['size_body']}px; }}"
-            f"QLineEdit::placeholder {{ color: {ph}; }}"
-            f"QLineEdit:focus {{ border-color: {prim}; }}"
-        )
 
     def _apply_text_styles(self):
         c = v3c("ink_secondary", self._modo).name()
@@ -484,42 +436,24 @@ class ModuloTimer(NMModule):
             self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         if hasattr(self, "_canvas"):
             self._canvas._apply_theme(self._modo)
-        if hasattr(self, "_entry_custom"):
-            self._entry_custom.setStyleSheet(self._pill_input_style())
         if hasattr(self, "_eyebrow"):
             self._apply_text_styles()
         self.update()
 
     # ── Presets ──────────────────────────────────────────────────────────────
 
-    def _select_preset(self, secs: int):
+    def _select_preset(self, name: str, secs: int):
         if self._running:
             return
         self._total_sec = secs
         self._remaining_sec = secs
-        self._custom_mode = False
-        self._custom_widget.setVisible(self._manual_timer_enabled)
+        self._ent_actividad.setText(name)
         self._highlight_preset(secs)
         self._update_canvas()
 
     def _highlight_preset(self, selected: int):
         for btn, secs in self._chip_btns:
-            btn.set_active(secs == selected and not self._custom_mode)
-
-    def _apply_custom(self):
-        if not self._manual_timer_enabled:
-            return
-        try:
-            mins = int(self._entry_custom.text().strip())
-            mins = max(1, min(120, mins))
-            self._total_sec = mins * 60
-            self._remaining_sec = self._total_sec
-            self._custom_mode = True
-            self._highlight_preset(self._total_sec)
-            self._update_canvas()
-        except ValueError:
-            pass
-        self._custom_widget.setVisible(self._manual_timer_enabled)
+            btn.set_active(secs == selected)
 
     # ── Display ──────────────────────────────────────────────────────────────
 
@@ -532,11 +466,14 @@ class ModuloTimer(NMModule):
             progress = (self._total_sec - self._remaining_sec) / self._total_sec
         else:
             progress = 0.0
-        state = (
-            "Sesión en curso"
-            if (self._running and not self._paused)
-            else ("Pausado" if self._paused else "Listo para empezar")
-        )
+        if not getattr(self, "_has_activity", True):
+            state = "Sin actividad asignada"
+        elif self._running and not self._paused:
+            state = "Sesión en curso"
+        elif self._paused:
+            state = "Pausado"
+        else:
+            state = "Listo para empezar"
 
         # Handoff §5.5: focus timer digits in Newsreader display
         time_str = self._format_time(self._remaining_sec)
@@ -572,6 +509,10 @@ class ModuloTimer(NMModule):
 
     def _start(self):
         if self._running and not self._paused:
+            return
+        # Sin actividad asignada no se puede iniciar (red de seguridad; el botón
+        # ya está deshabilitado en ese estado).
+        if not getattr(self, "_has_activity", True):
             return
         self._running = True
         self._paused = False
@@ -645,16 +586,15 @@ class ModuloTimer(NMModule):
         # Alarma suave: chime breve que no asusta. No bloquea UI (winsound async).
         _play_soft_alarm()
 
-        nombre = self._ent_actividad.text().strip() or "Sin nombre"
+        nombre = self._ent_actividad.text().strip()
         top = self.window()
         if top and top.isMinimized():
             top.showNormal()
         if top:
             top.raise_()
             top.activateWindow()
-        NMToast.display(
-            top, f'Tiempo para "{nombre}" finalizado', variant="success", duration_ms=4000
-        )
+        msg = f'Tiempo para "{nombre}" finalizado' if nombre else "Tiempo finalizado"
+        NMToast.display(top, msg, variant="success", duration_ms=4000)
 
         QTimer.singleShot(
             4000, lambda: self._reset_after_finish() if not sip.isdeleted(self) else None
@@ -673,9 +613,11 @@ class ModuloTimer(NMModule):
                 # NMPlayButton no tiene play_success, ignorar gracefully
                 pass
             return
-        nombre = self._ent_actividad.text().strip() or (
-            self._format_time(self._total_sec) + " timer"
-        )
+        # Solo se guardan sesiones de una actividad asignada con nombre real:
+        # nunca con nombres automáticos ("Sin nombre", "25:00 timer").
+        nombre = self._ent_actividad.text().strip()
+        if not nombre:
+            return
         try:
             with conexion() as conn:
                 conn.execute(
