@@ -501,7 +501,10 @@ class _SuggestedCard(NMCard):
         self._intensity = _IntensityDots(_intensity_for(self._nombre), modo=self._modo)
         footer.addWidget(self._intensity)
         footer.addStretch()
-        self._btn_no = NMButton("No pude", variant="secondary", size="sm", modo=self._modo, width=78)
+        self._btn_no = NMButton(
+            t("text.module.actividades.btn_not_done", "No pude"),
+            variant="secondary", size="sm", modo=self._modo, width=78
+        )
         self._btn_no.clicked.connect(lambda: self.skipped.emit(self._nombre))
         footer.addWidget(self._btn_no)
         # "Hice" y "No pude" con jerarquía EQUIVALENTE (Fase 10): antes "Hice"
@@ -509,7 +512,10 @@ class _SuggestedCard(NMCard):
         # el "éxito". En activación conductual ambas respuestas son válidas y
         # honestas → ambos botones secondary, mismo peso visual, se distinguen
         # por la etiqueta.
-        self._btn_yes = NMButton("Hice", variant="secondary", size="sm", modo=self._modo, width=78)
+        self._btn_yes = NMButton(
+            t("text.module.actividades.btn_done", "Hice"),
+            variant="secondary", size="sm", modo=self._modo, width=78
+        )
         self._btn_yes.clicked.connect(lambda: self.completed.emit(self._nombre))
         footer.addWidget(self._btn_yes)
         lay.addLayout(footer)
@@ -521,7 +527,7 @@ class _SuggestedCard(NMCard):
         if completed:
             self._btn_yes.setEnabled(False)
             self._btn_no.setEnabled(False)
-            self._btn_yes.setText("Hecho")
+            self._btn_yes.setText(t("text.module.actividades.btn_done_state", "Hecho"))
             self._title_lbl.setText(self._nombre)
 
     def set_done(self, resultado: str):
@@ -727,8 +733,11 @@ class ModuloActividades(NMModule):
             self._scroll_layout.addWidget(
                 NMEmptyState(
                     "run",
-                    "Sin sugerencias",
-                    "Registrá tu ánimo primero para recibir sugerencias.",
+                    t("text.module.actividades.empty_no_mood_title", "Sin sugerencias"),
+                    t(
+                        "text.module.actividades.empty_no_mood_desc",
+                        "Registrá tu ánimo primero para recibir sugerencias.",
+                    ),
                 )
             )
             return
@@ -738,8 +747,11 @@ class ModuloActividades(NMModule):
             self._scroll_layout.addWidget(
                 NMEmptyState(
                     "run",
-                    "Sin sugerencias",
-                    "Tu terapeuta aún no ha cargado actividades para este ánimo.",
+                    t("text.module.actividades.empty_no_mood_title", "Sin sugerencias"),
+                    t(
+                        "text.module.actividades.empty_no_activities_desc",
+                        "Tu terapeuta aún no ha cargado actividades para este ánimo.",
+                    ),
                 )
             )
             return

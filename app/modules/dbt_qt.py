@@ -712,17 +712,17 @@ class _SkillPracticeView(QWidget):
         # Los botones quedan pegados al bloque de contenido.
 
         btn_lay = QHBoxLayout()
-        self.btn_cancel = NMButton("Salir", parent=self, variant="ghost", size="md")
+        self.btn_cancel = NMButton(t("text.module.dbt.cancel_btn", "Salir"), parent=self, variant="ghost", size="md")
         self.btn_cancel.clicked.connect(self.cancelled.emit)
         btn_lay.addWidget(self.btn_cancel)
 
         btn_lay.addStretch()
 
-        self.btn_prev = NMButton("Anterior", parent=self, variant="secondary", size="md")
+        self.btn_prev = NMButton(t("text.module.dbt.prev_btn", "Anterior"), parent=self, variant="secondary", size="md")
         self.btn_prev.clicked.connect(self._prev_step)
         btn_lay.addWidget(self.btn_prev)
 
-        self.btn_next = NMButton("Siguiente", parent=self, variant="gradient", size="md")
+        self.btn_next = NMButton(t("text.module.dbt.next_btn", "Siguiente"), parent=self, variant="gradient", size="md")
         self.btn_next.clicked.connect(self._next_step)
         btn_lay.addWidget(self.btn_next)
 
@@ -757,9 +757,9 @@ class _SkillPracticeView(QWidget):
         self.btn_prev.setEnabled(self._current_step > 0)
         
         if self._current_step == len(steps) - 1:
-            self.btn_next.setText("Terminar")
+            self.btn_next.setText(t("text.module.dbt.finish_btn", "Terminar"))
         else:
-            self.btn_next.setText("Siguiente")
+            self.btn_next.setText(t("text.module.dbt.next_btn", "Siguiente"))
             
     def _prev_step(self):
         if self._current_step > 0:
@@ -806,7 +806,12 @@ class _PracticeClosure(QWidget):
         lay.addWidget(self.title_lbl)
 
         # Antes
-        self.lbl_antes = QLabel("¿Cómo estaba tu nivel de malestar ANTES? (Opcional)")
+        self.lbl_antes = QLabel(
+            t(
+                "text.module.dbt.closure_antes",
+                "¿Cómo estaba tu nivel de malestar ANTES? (Opcional)",
+            )
+        )
         self.lbl_antes.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_semibold"]))
         lay.addWidget(self.lbl_antes)
 
@@ -821,7 +826,12 @@ class _PracticeClosure(QWidget):
         lay.addLayout(antes_lay)
 
         # Despues
-        self.lbl_despues = QLabel("¿Cómo está tu nivel de malestar AHORA? (Opcional)")
+        self.lbl_despues = QLabel(
+            t(
+                "text.module.dbt.closure_despues",
+                "¿Cómo está tu nivel de malestar AHORA? (Opcional)",
+            )
+        )
         self.lbl_despues.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_semibold"]))
         lay.addWidget(self.lbl_despues)
 
@@ -836,7 +846,7 @@ class _PracticeClosure(QWidget):
         lay.addLayout(despues_lay)
 
         # Resultado
-        self.lbl_res = QLabel("¿Te sirvió la práctica?")
+        self.lbl_res = QLabel(t("text.module.dbt.closure_result", "¿Te sirvió la práctica?"))
         self.lbl_res.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_semibold"]))
         lay.addWidget(self.lbl_res)
 
@@ -845,10 +855,10 @@ class _PracticeClosure(QWidget):
         res_lay.setSpacing(6)
 
         options = [
-            ("ayudo", "Me ayudó"),
-            ("parcial", "Un poco"),
-            ("no_esta_vez", "No esta vez"),
-            ("sin_evaluar", "Prefiero no evaluar")
+            ("ayudo", t("text.module.dbt.result_helped", "Me ayudó")),
+            ("parcial", t("text.module.dbt.result_partial", "Un poco")),
+            ("no_esta_vez", t("text.module.dbt.result_no", "No esta vez")),
+            ("sin_evaluar", t("text.module.dbt.result_skip", "Prefiero no evaluar"))
         ]
         for val, label in options:
             btn = _ServiceOptionButton(val, label, parent=self, modo=self._modo)
@@ -866,7 +876,10 @@ class _PracticeClosure(QWidget):
 
         btn_lay = QHBoxLayout()
         btn_lay.addStretch()
-        self.btn_save = NMButton("Guardar práctica", parent=self, variant="gradient", size="md")
+        self.btn_save = NMButton(
+            t("text.module.dbt.save_practice_btn", "Guardar práctica"),
+            parent=self, variant="gradient", size="md"
+        )
         self.btn_save.clicked.connect(self._save_practice)
         btn_lay.addWidget(self.btn_save)
         lay.addLayout(btn_lay)
@@ -937,7 +950,14 @@ class ModuloDBT(NMModule):
         self._main_layout.setSpacing(16)
         
         # Tabs at the top
-        self._tabs = NMTabs(["Ahora", "Biblioteca"], modo=self._modo, parent=self)
+        self._tabs = NMTabs(
+            [
+                t("text.module.dbt.tab_now", "Ahora"),
+                t("text.module.dbt.tab_library", "Biblioteca"),
+            ],
+            modo=self._modo,
+            parent=self,
+        )
         self._tabs.changed.connect(self._on_tab_changed)
         self._main_layout.addWidget(self._tabs)
         
@@ -956,7 +976,7 @@ class ModuloDBT(NMModule):
         self._closure_view = None
         
         # Navigation track
-        self._on_tab_changed(0, "Ahora")
+        self._on_tab_changed(0, t("text.module.dbt.tab_now", "Ahora"))
         
     def _on_tab_changed(self, idx: int, label: str):
         if self._practice_view or self._closure_view:
@@ -1035,7 +1055,17 @@ class ModuloDBT(NMModule):
         lay.setSpacing(12)
         
         # Horizontal family tabs filter
-        self._family_tabs = NMTabs(["Todas", "Mindfulness", "Tolerancia", "Regulación", "Efectividad"], modo=self._modo, parent=widget)
+        self._family_tabs = NMTabs(
+            [
+                t("text.module.dbt.family_all", "Todas"),
+                t("text.module.dbt.family_mindfulness", "Mindfulness"),
+                t("text.module.dbt.family_tolerance", "Tolerancia"),
+                t("text.module.dbt.family_regulation", "Regulación"),
+                t("text.module.dbt.family_effectiveness", "Efectividad"),
+            ],
+            modo=self._modo,
+            parent=widget,
+        )
         self._family_tabs.changed.connect(self._filter_library)
         lay.addWidget(self._family_tabs)
         

@@ -704,7 +704,7 @@ class ModuloRespiracion(NMModule):
 
         # Eyebrow del módulo vive en la titlebar (BL-07): se conserva el label
         # oculto por compatibilidad con el resto del módulo.
-        self._range_lbl = QLabel("Respiración 4-7-8")
+        self._range_lbl = QLabel(t("text.module.respiracion.eyebrow", "Respiración 4-7-8"))
         self._range_lbl.setFont(eyebrow_font())
         self._range_lbl.hide()
 
@@ -748,13 +748,16 @@ class ModuloRespiracion(NMModule):
         self._chips_layout.setSpacing(6)
 
         self._chip_inhala = NMChip(
-            "Inhala 4s", variant="default", size="sm", modo=self._modo, parent=self
+            t("text.module.respiracion.phase_inhale", "Inhala 4s"),
+            variant="default", size="sm", modo=self._modo, parent=self
         )
         self._chip_manten = NMChip(
-            "Mantiene 7s", variant="default", size="sm", modo=self._modo, parent=self
+            t("text.module.respiracion.phase_hold", "Mantiene 7s"),
+            variant="default", size="sm", modo=self._modo, parent=self
         )
         self._chip_exhala = NMChip(
-            "Exhala 8s", variant="default", size="sm", modo=self._modo, parent=self
+            t("text.module.respiracion.phase_exhale", "Exhala 8s"),
+            variant="default", size="sm", modo=self._modo, parent=self
         )
 
         self._chips_layout.addWidget(self._chip_inhala)
@@ -768,18 +771,25 @@ class ModuloRespiracion(NMModule):
         ctrl_row.setSpacing(V3_SP["md"])
 
         self._btn_reset = NMButton(
-            "Reiniciar", variant="secondary", size="md", parent=self, width=100
+            t("text.module.respiracion.reset_btn", "Reiniciar"),
+            variant="secondary", size="md", parent=self, width=100
         )
         self._btn_reset.clicked.connect(self._stop)
         ctrl_row.addWidget(self._btn_reset)
 
         # P2.E: botón Iniciar/Pausar a escala del producto (md, no lg) — antes se
         # veía gigante y rompía la jerarquía visual junto al orb.
-        self._btn_play = NMButton("Iniciar", variant="gradient", size="md", parent=self, width=120)
+        self._btn_play = NMButton(
+            t("text.module.respiracion.start_btn", "Iniciar"),
+            variant="gradient", size="md", parent=self, width=120
+        )
         self._btn_play.clicked.connect(self._toggle_play_pause)
         ctrl_row.addWidget(self._btn_play)
 
-        self._btn_stop = NMButton("Detener", variant="secondary", size="md", parent=self, width=100)
+        self._btn_stop = NMButton(
+            t("text.module.respiracion.stop_btn", "Detener"),
+            variant="secondary", size="md", parent=self, width=100
+        )
         self._btn_stop.clicked.connect(self._stop)
         ctrl_row.addWidget(self._btn_stop)
 
@@ -807,7 +817,7 @@ class ModuloRespiracion(NMModule):
         pat_lay = QVBoxLayout(self._pattern_card)
         pat_lay.setContentsMargins(14, 12, 14, 12)
         pat_lay.setSpacing(2)
-        self._pattern_eyebrow = QLabel("Patrón")
+        self._pattern_eyebrow = QLabel(t("text.module.respiracion.pattern_label", "Patrón"))
         self._pattern_eyebrow.setFont(eyebrow_font())
         self._pattern_title = QLabel("4-7-8")
         self._pattern_title.setFont(val_font)
@@ -820,7 +830,7 @@ class ModuloRespiracion(NMModule):
         chr_lay = QVBoxLayout(self._chrono_card)
         chr_lay.setContentsMargins(14, 12, 14, 12)
         chr_lay.setSpacing(2)
-        self._chrono_eyebrow = QLabel("Crono")
+        self._chrono_eyebrow = QLabel(t("text.module.respiracion.chrono_label", "Crono"))
         self._chrono_eyebrow.setFont(eyebrow_font())
         self._session_lbl = QLabel("00:00")
         self._session_lbl.setFont(val_font)
@@ -837,7 +847,7 @@ class ModuloRespiracion(NMModule):
         ciclos_lay = QVBoxLayout(self._ciclos_card)
         ciclos_lay.setContentsMargins(14, 12, 14, 12)
         ciclos_lay.setSpacing(2)
-        self._ciclos_eyebrow = QLabel("Ciclos")
+        self._ciclos_eyebrow = QLabel(t("text.module.respiracion.cycles_label", "Ciclos"))
         self._ciclos_eyebrow.setFont(eyebrow_font())
         self._ciclos_value_lbl = QLabel("—")
         self._ciclos_value_lbl.setFont(val_font)
@@ -956,8 +966,8 @@ class ModuloRespiracion(NMModule):
         self._phase_idx = 0
         self._phase_ms = 0
         self._last_phase_idx = -1
-        self._btn_play.setText("Pausar")
-        self._chrono_meta.setText("En curso")
+        self._btn_play.setText(t("text.module.respiracion.pause_btn", "Pausar"))
+        self._chrono_meta.setText(t("text.module.respiracion.running_state", "En curso"))
         self._tick()
 
     def _pause(self):
@@ -965,14 +975,14 @@ class ModuloRespiracion(NMModule):
             return
         if self._paused:
             self._paused = False
-            self._btn_play.setText("Pausar")
-            self._chrono_meta.setText("En curso")
+            self._btn_play.setText(t("text.module.respiracion.pause_btn", "Pausar"))
+            self._chrono_meta.setText(t("text.module.respiracion.running_state", "En curso"))
             self._circle._start_rendering()
             self._tick()
         else:
             self._paused = True
-            self._btn_play.setText("Reanudar")
-            self._chrono_meta.setText("Pausado")
+            self._btn_play.setText(t("text.module.respiracion.resume_btn", "Reanudar"))
+            self._chrono_meta.setText(t("text.module.respiracion.paused_state", "Pausado"))
             if self._timer_id:
                 self._timer_id.stop()
                 self._timer_id = None
@@ -985,10 +995,10 @@ class ModuloRespiracion(NMModule):
             self._save_session()
         self._running = False
         self._paused = False
-        self._btn_play.setText("Iniciar")
+        self._btn_play.setText(t("text.module.respiracion.start_btn", "Iniciar"))
         self._circle.reset_idle()
         self._session_lbl.setText("00:00")
-        self._chrono_meta.setText("Listo para comenzar")
+        self._chrono_meta.setText(t("text.module.respiracion.ready_state", "Listo para comenzar"))
         if hasattr(self, "_ciclos_value_lbl"):
             self._ciclos_value_lbl.setText("—")
         if hasattr(self, "_calm_pct_lbl"):
@@ -1103,7 +1113,7 @@ class ModuloRespiracion(NMModule):
         self._update_phase_chips(None)
         self._session_lbl.setText("00:00")
         self._chrono_meta.setText(f"Completo · {self._ciclos} ciclos")
-        self._btn_play.setText("Iniciar")
+        self._btn_play.setText(t("text.module.respiracion.start_btn", "Iniciar"))
 
     # ── DB (preservado exacto) ───────────────────────────────────────────────
 

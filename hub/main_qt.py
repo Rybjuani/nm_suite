@@ -280,6 +280,7 @@ class PacientesView(QWidget):
         pacientes: list,
         on_select,
         on_refresh,
+        on_global_texts=None,
         sb=None,
         parent=None,
     ):
@@ -288,6 +289,7 @@ class PacientesView(QWidget):
         self._pacientes = pacientes
         self._on_select = on_select
         self._on_refresh = on_refresh
+        self._on_global_texts = on_global_texts
         self._sb = sb
         self._rows_limit: int = 40
         self._setup()
@@ -340,6 +342,16 @@ class PacientesView(QWidget):
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
         )
         roster_meta.addWidget(self._table_hint, alignment=Qt.AlignmentFlag.AlignVCenter)
+        if callable(self._on_global_texts):
+            self._texts_btn = NMButton(
+                "Textos globales",
+                variant="secondary",
+                size="sm",
+                modo=self._modo,
+                width=130,
+            )
+            self._texts_btn.clicked.connect(self._on_global_texts)
+            roster_meta.addWidget(self._texts_btn, alignment=Qt.AlignmentFlag.AlignVCenter)
         roster_meta.addStretch()
         tc_lay.addLayout(roster_meta)
 
@@ -759,6 +771,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
     # prefijo y el subtítulo refleja la sección activa: "NeuroMood Hub / Pacientes".
     _VIEW_TITLES = {
         "pacientes": "Pacientes",
+        "textos_globales": "Textos globales de Suite",
     }
 
     def _view_title(self, view_id: str) -> str:
@@ -837,6 +850,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
                 self._pacientes,
                 on_select=self._select_patient,
                 on_refresh=self._cargar_pacientes,
+                on_global_texts=self._open_global_texts,
                 sb=self._sb,
                 parent=self._stack,
             )
@@ -846,6 +860,18 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
             self._view_pacientes._pacientes = self._pacientes
             if hasattr(self._view_pacientes, "_render_rows"):
                 self._view_pacientes._render_rows()
+
+        if "textos_globales" not in self._views_cache or sip.isdeleted(
+            self._views_cache["textos_globales"]
+        ):
+            from hub.config_global_texts import TextosGlobalesSuiteView
+
+            self._view_textos_globales = TextosGlobalesSuiteView(
+                modo=self._modo,
+                parent=self._stack,
+            )
+            self._views_cache["textos_globales"] = self._view_textos_globales
+            self._stack.addWidget(self._view_textos_globales)
 
         # Si el profesional estaba dentro de una ficha cuando llegó la carga
         # asíncrona de pacientes, NO patearlo a Inicio: el force_recreate
@@ -863,6 +889,7 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
     def _nav_views(self) -> dict:
         return {
             "pacientes": self._view_pacientes,
+            "textos_globales": self._view_textos_globales,
         }
 
     # ── Navegación ────────────────────────────────────────────────────────────
@@ -919,6 +946,18 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         self._lbl_status.setStyleSheet(
             f"color: {v3c('text', self._modo).name()}; background: transparent;"
         )
+
+    def _open_global_texts(self):
+        self._current_view = "textos_globales"
+        views = self._nav_views()
+        view = views.get("textos_globales")
+        if view is None:
+            return
+        self._stack.setCurrentWidget(view)
+        if hasattr(self, "_chrome"):
+            self._chrome.set_module_context(
+                "Textos globales de Suite", None, self._back_to_pacientes
+            )
 
 
 

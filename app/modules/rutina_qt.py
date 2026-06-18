@@ -103,9 +103,9 @@ from shared.remote_config import t
 
 # v3: SVG icons en lugar de fa5s
 SECCIONES = [
-    ("manana", "Mañana", "sun"),
-    ("tarde", "Tarde", "spark"),
-    ("noche", "Noche", "moon"),
+    ("manana", "text.module.rutina.section_morning", "Mañana", "sun"),
+    ("tarde", "text.module.rutina.section_afternoon", "Tarde", "spark"),
+    ("noche", "text.module.rutina.section_night", "Noche", "moon"),
 ]
 
 
@@ -169,8 +169,8 @@ class _HeroDayCard(NMCard):
             )
         else:
             self._ring.set_pct(0.0)
-            self._title_lbl.setText("Sin tareas configuradas")
-            self._desc_lbl.setText("Agregá una primera tarea para empezar tu rutina.")
+            self._title_lbl.setText(t("text.module.rutina.no_tasks_title", "Sin tareas configuradas"))
+            self._desc_lbl.setText(t("text.module.rutina.no_tasks_desc", "Tu rutina se va construyendo paso a paso."))
 
     def set_manual_enabled(self, enabled: bool):
         """Compatibilidad: el hero ya no tiene CTA. No-op silencioso."""
@@ -262,7 +262,8 @@ class _SectionCard(NMCard):
 
         # Footer: secondary visible para descubribilidad en columnas vacías
         self._add_btn = NMButton(
-            "+ Agregar tarea", variant="secondary", size="sm", modo=self._modo, width=0
+            t("text.module.rutina.add_task_btn", "+ Agregar tarea"),
+            variant="secondary", size="sm", modo=self._modo, width=0
         )
         self._add_btn.clicked.connect(lambda: self.add_requested.emit(self._key))
         lay.addWidget(self._add_btn, alignment=Qt.AlignmentFlag.AlignBottom)
@@ -297,7 +298,10 @@ class _SectionCard(NMCard):
             form_lay = QHBoxLayout(form)
             form_lay.setContentsMargins(V3_SP["sm"], V3_SP["sm"], V3_SP["sm"], V3_SP["sm"])
             form_lay.setSpacing(V3_SP["sm"])
-            entry = NMInput(placeholder="Nueva tarea…", modo=self._modo)
+            entry = NMInput(
+                placeholder=t("text.module.rutina.new_task_placeholder", "Nueva tarea…"),
+                modo=self._modo,
+            )
             entry.setMinimumHeight(34)
             entry.setMaximumHeight(38)
             form_lay.addWidget(entry, stretch=1)
@@ -409,8 +413,8 @@ class ModuloRutina(NMModule):
         # 2. Empty state (oculta cuando hay tareas)
         self._empty_state = NMEmptyState(
             "routine",
-            "Sin rutina asignada",
-            "Tu terapeuta te enviara actividades pronto.",
+            t("text.module.rutina.empty_title", "Sin rutina asignada"),
+            t("text.module.rutina.empty_desc", "Tu terapeuta te enviara actividades pronto."),
             parent=body,
         )
         self._empty_state.hide()
@@ -424,7 +428,8 @@ class ModuloRutina(NMModule):
         self._sections_grid.setHorizontalSpacing(V3_SP["sm"])
         self._sections_grid.setVerticalSpacing(V3_SP["sm"])
         self._section_order: list[_SectionCard] = []
-        for key, label, icon_name in SECCIONES:
+        for key, text_key, label, icon_name in SECCIONES:
+            label = t(text_key, label)
             card = _SectionCard(key, label, icon_name, modo=self._modo)
             card.add_requested.connect(self._on_section_add)
             card.set_manual_enabled(self._manual_enabled)
@@ -518,7 +523,7 @@ class ModuloRutina(NMModule):
         try:
             conn = obtener_conexion()
             hoy = fecha_hoy()
-            for key, _, _ in SECCIONES:
+            for key, _, _, _ in SECCIONES:
                 if self._rutina_modo == "solo_profesional":
                     tareas = conn.execute(
                         "SELECT id, descripcion, COALESCE(origen, 'manual') AS origen "
@@ -601,7 +606,7 @@ class ModuloRutina(NMModule):
                     _w.deleteLater()
 
         fixtures = routine_sections()
-        for key, _, _ in SECCIONES:
+        for key, _, _, _ in SECCIONES:
             tareas = fixtures.get(key, [])
             card = self._section_cards[key]
             layout = card.body_layout()
@@ -695,7 +700,7 @@ class ModuloRutina(NMModule):
 
     def _update_section_progress(self):
         if visual_qa_enabled():
-            for key, _, _ in SECCIONES:
+            for key, _, _, _ in SECCIONES:
                 ids = [tid for tid, s in self._task_section.items() if s == key]
                 total = len(ids)
                 done = sum(1 for tid in ids if self._task_done.get(tid))
@@ -705,7 +710,7 @@ class ModuloRutina(NMModule):
         try:
             conn = obtener_conexion()
             hoy = fecha_hoy()
-            for key, _, _ in SECCIONES:
+            for key, _, _, _ in SECCIONES:
                 if key not in self._section_cards:
                     continue
                 if getattr(self, "_rutina_modo", "mixto") == "solo_profesional":

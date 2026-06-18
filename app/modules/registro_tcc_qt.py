@@ -616,7 +616,7 @@ class ModuloRegistroTCC(NMModule):
         lay.setSpacing(V3_SP["sm"])
 
         # 1. Eyebrow + Stepper
-        self._eyebrow = QLabel("Registro TCC")
+        self._eyebrow = QLabel(t("text.module.registro.eyebrow", "Registro TCC"))
         self._eyebrow.setFont(eyebrow_font())
         lay.addWidget(self._eyebrow)
         self._eyebrow.hide()  # BL-07: título de módulo ahora en la titlebar
@@ -668,14 +668,15 @@ class ModuloRegistroTCC(NMModule):
         nav_layout = QHBoxLayout()
         nav_layout.setSpacing(V3_SP["sm"])
         self._btn_prev = NMButton(
-            "Anterior", parent=self._content, modo=self._modo, variant="secondary", size="md",
+            t("text.module.registro.prev_btn", "Anterior"),
+            parent=self._content, modo=self._modo, variant="secondary", size="md",
             width=120,
         )
         self._btn_prev.clicked.connect(self._prev_step)
         nav_layout.addWidget(self._btn_prev)
         nav_layout.addStretch()
         self._btn_next = NMButton(
-            "Siguiente",
+            t("text.module.registro.next_btn", "Siguiente"),
             parent=self._content,
             modo=self._modo,
             variant="gradient",
@@ -804,7 +805,7 @@ class ModuloRegistroTCC(NMModule):
             layout.addWidget(lbl)
 
         self._txt_situacion = NMTextArea(
-            "Escribí lo que pasó…",
+            t("text.module.registro.situation_placeholder", "Escribí lo que pasó…"),
             modo=self._modo,
             min_height=120,
         )
@@ -884,7 +885,10 @@ class ModuloRegistroTCC(NMModule):
                 self._custom_emotion_input.textChanged.connect(
                     self._on_custom_emotion_changed
                 )
+                otro_placeholder = t("text.module.registro.other_emotion_placeholder", "¿Cuál?")
                 self._custom_emotion_input.setPlaceholderText("¿Cuál?")
+                if otro_placeholder != "¿Cuál?":
+                    self._custom_emotion_input.setPlaceholderText(otro_placeholder)
                 # Palette: color tenue para el placeholder (placeholderText role).
                 _ink2_c = QColor(v3c("ink_secondary", self._modo).name())
                 self._custom_emotion_input.setPalette(
@@ -935,7 +939,7 @@ class ModuloRegistroTCC(NMModule):
             layout.addWidget(lbl)
 
         self._txt_pensamiento = NMTextArea(
-            "Escribi el pensamiento automatico",
+            t("text.module.registro.thought_placeholder", "Escribi el pensamiento automatico"),
             modo=self._modo,
             min_height=96,
         )
@@ -961,7 +965,9 @@ class ModuloRegistroTCC(NMModule):
         )
         left_col.addWidget(self._pensamiento_count_lbl)
 
-        self._dist_eyebrow = QLabel("Posibles distorsiones detectadas")
+        self._dist_eyebrow = QLabel(
+            t("text.module.registro.distortions_eyebrow", "Posibles distorsiones detectadas")
+        )
         self._dist_eyebrow.setFont(eyebrow_font())
         self._dist_eyebrow.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; "
@@ -1011,7 +1017,7 @@ class ModuloRegistroTCC(NMModule):
             layout.addWidget(lbl)
 
         self._txt_respuesta = NMTextArea(
-            "Escribi una respuesta alternativa",
+            t("text.module.registro.response_placeholder", "Escribi una respuesta alternativa"),
             modo=self._modo,
             min_height=120,
         )
@@ -1162,7 +1168,7 @@ class ModuloRegistroTCC(NMModule):
                 )
                 self._distortion_layout.addWidget(wrapper)
         else:
-            none_lbl = QLabel("Ninguna detectada aún")
+            none_lbl = QLabel(t("text.module.registro.no_distortions", "Ninguna detectada aún"))
             none_lbl.setFont(qfont("size_small"))
             none_lbl.setStyleSheet(
                 f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
@@ -1235,9 +1241,9 @@ class ModuloRegistroTCC(NMModule):
 
             self._btn_prev.setEnabled(self._step > 0)
             if self._step == 3:
-                self._btn_next.setText("Guardar")
+                self._btn_next.setText(t("text.module.registro.save_btn", "Guardar"))
             else:
-                self._btn_next.setText("Siguiente")
+                self._btn_next.setText(t("text.module.registro.next_btn", "Siguiente"))
             # 2026-06 round 4: el input Otro usa setPlaceholderText (no setText),
             # por lo que no necesita re-set tras _reset() — el placeholder es
             # siempre "¿Cuál?" y text() permanece vacio.
@@ -1422,14 +1428,19 @@ class ModuloRegistroTCC(NMModule):
         layout.setSpacing(V3_SP["sm"])
         check_icon = NMIcon("check", size=64, color_key="success", modo=self._modo)
         layout.addWidget(check_icon, alignment=Qt.AlignmentFlag.AlignCenter)
-        title_lbl = QLabel("Registro guardado")
+        title_lbl = QLabel(t("text.module.registro.success_title", "Registro guardado"))
         title_lbl.setFont(qfont("size_h2", weight=TYPOGRAPHY["weight_semibold"]))
         title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_lbl.setStyleSheet(
             f"color: {v3c('text', self._modo).name()}; background: transparent;"
         )
         layout.addWidget(title_lbl)
-        sub_lbl = QLabel("Buen trabajo al identificar y cuestionar el pensamiento.")
+        sub_lbl = QLabel(
+            t(
+                "text.module.registro.success_subtitle",
+                "Buen trabajo al identificar y cuestionar el pensamiento.",
+            )
+        )
         sub_lbl.setFont(qfont("size_body"))
         sub_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         sub_lbl.setWordWrap(True)

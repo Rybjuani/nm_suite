@@ -90,6 +90,7 @@ from shared.identidad import obtener_nombre_paciente
 from app import avisos_daemon
 from shared.visual_qa import visual_qa_enabled, qa_patient_name, module_status as qa_module_status
 from shared.text_overrides import apply_overrides
+from shared.remote_config import t
 
 _MODULE_MAP = {
     "animo": ("app.modules.animo_qt", "ModuloAnimo"),
@@ -205,12 +206,7 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         # ── Chrome (36 px, full-width, reemplaza barra nativa) ────────────────
         # El nombre de la app (barra de título) también es un texto global
         # configurable desde el Hub.
-        _brand_default = "NeuroMood Suite"
-        try:
-            from shared.text_overrides import current_overrides, override_key
-            _brand = current_overrides().get(override_key("chrome", _brand_default), _brand_default)
-        except Exception:
-            _brand = _brand_default
+        _brand = t("text.chrome.app_title", "NeuroMood Suite")
         self._chrome = NMWindowChrome(
             title=_brand,
             modo=self._modo,
@@ -279,7 +275,8 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         if module_id not in _MODULE_MAP:
             return
 
-        title, icon = _MODULE_UI_META.get(module_id, ("", ""))
+        title_default, icon = _MODULE_UI_META.get(module_id, ("", ""))
+        title = t(f"text.home.module.{module_id}.title", title_default)
 
         # Si ya fue instanciado, reusar con fade
         if module_id in self._module_cache:

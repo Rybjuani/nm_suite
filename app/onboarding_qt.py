@@ -37,6 +37,7 @@ from PyQt6.QtWidgets import (
 from shared.components import NMButton, NMInput
 from shared.adaptive_layout_qt import configure_adaptive_window
 from shared.config import supabase_key, supabase_url
+from shared.remote_config import t as suite_t
 from shared.legal_contract import (
     SUITE_VERSION,
     DISCLAIMER_VERSION,
@@ -277,8 +278,8 @@ class OnboardingDialog(QDialog):
         # ── Título - Handoff §5.1: hero serif (Newsreader display) ────────────
         title_row = QHBoxLayout()
         title_row.setSpacing(4 if is_compact else 8)
-        title_main = QLabel("Bienvenido a NeuroMood")
-        title_tail = QLabel("Suite")
+        title_main = QLabel(suite_t("text.onboarding.title_main", "Bienvenido a NeuroMood"))
+        title_tail = QLabel(suite_t("text.onboarding.title_suffix", "Suite"))
         if self._has_theme:
             title_size = "size_h2" if is_compact else "size_h1"
             f_disp = self._t["v3_font"](
@@ -311,7 +312,10 @@ class OnboardingDialog(QDialog):
         form_lay.addLayout(title_row)
 
         sub = QLabel(
-            "Vinculá tu cuenta de NeuroMood. Tus datos se mantienen cifrados y bajo tu control."
+            suite_t(
+                "text.onboarding.subtitle",
+                "Vinculá tu cuenta de NeuroMood. Tus datos se mantienen cifrados y bajo tu control.",
+            )
         )
         sub.setObjectName("OnbSub")
         sub.setWordWrap(True)
@@ -336,8 +340,8 @@ class OnboardingDialog(QDialog):
         form_lay.addSpacing(2 if is_compact else 8)
 
         # ── Nombre ────────────────────────────────────────────────────────────
-        form_lay.addWidget(self._lbl("Nombre *", is_compact))
-        self._name = NMInput("Tu nombre", modo=self._modo)
+        form_lay.addWidget(self._lbl(suite_t("text.onboarding.name_label", "Nombre *"), is_compact))
+        self._name = NMInput(suite_t("text.onboarding.name_placeholder", "Tu nombre"), modo=self._modo)
         if is_compact:
             self._name.setMinimumHeight(34)
         form_lay.addWidget(self._name)
@@ -345,8 +349,13 @@ class OnboardingDialog(QDialog):
         form_lay.addSpacing(0 if is_compact else 4)
 
         # ── Email ─────────────────────────────────────────────────────────────
-        form_lay.addWidget(self._lbl("Correo electrónico *", is_compact))
-        self._email = NMInput("correo@ejemplo.com", modo=self._modo)
+        form_lay.addWidget(
+            self._lbl(suite_t("text.onboarding.email_label", "Correo electrónico *"), is_compact)
+        )
+        self._email = NMInput(
+            suite_t("text.onboarding.email_placeholder", "correo@ejemplo.com"),
+            modo=self._modo,
+        )
         if is_compact:
             self._email.setMinimumHeight(34)
         form_lay.addWidget(self._email)
@@ -354,8 +363,16 @@ class OnboardingDialog(QDialog):
         form_lay.addSpacing(0 if is_compact else 4)
 
         # ── Contraseña ────────────────────────────────────────────────────────
-        form_lay.addWidget(self._lbl("Contraseña * (mín. 6 caracteres)", is_compact))
-        self._code = NMInput("Contraseña de tu cuenta NeuroMood", modo=self._modo)
+        form_lay.addWidget(
+            self._lbl(
+                suite_t("text.onboarding.password_label", "Contraseña * (mín. 6 caracteres)"),
+                is_compact,
+            )
+        )
+        self._code = NMInput(
+            suite_t("text.onboarding.password_placeholder", "Contraseña de tu cuenta NeuroMood"),
+            modo=self._modo,
+        )
         self._code.setEchoMode(NMInput.EchoMode.Password)
         if is_compact:
             self._code.setMinimumHeight(34)
@@ -557,18 +574,28 @@ class OnboardingDialog(QDialog):
         )
         self._forgot_link.setText(
             f'<a href="#" style="color:{link_color}; text-decoration:none;">'
-            "¿Olvidaste tu contraseña?</a>"
+            f"{suite_t('text.onboarding.forgot_password', '¿Olvidaste tu contraseña?')}</a>"
         )
         self._forgot_link.linkActivated.connect(self._on_forgot_password)
         btn_row.addWidget(self._forgot_link, 0, Qt.AlignmentFlag.AlignVCenter)
         btn_row.addStretch()
 
         btn_sz = "sm" if is_compact else "md"
-        self._btn_signup = NMButton("Crear cuenta", variant="secondary", size=btn_sz, width=140)
+        self._btn_signup = NMButton(
+            suite_t("text.onboarding.signup_btn", "Crear cuenta"),
+            variant="secondary",
+            size=btn_sz,
+            width=140,
+        )
         self._btn_signup.clicked.connect(lambda: self._on_accept("signup"))
         btn_row.addWidget(self._btn_signup)
 
-        self._btn_ok = NMButton("Iniciar sesión", variant="gradient", size=btn_sz, width=140)
+        self._btn_ok = NMButton(
+            suite_t("text.onboarding.login_btn", "Iniciar sesión"),
+            variant="gradient",
+            size=btn_sz,
+            width=140,
+        )
         self._btn_ok.setDefault(True)
         self._btn_ok.clicked.connect(lambda: self._on_accept("login"))
         btn_row.addWidget(self._btn_ok)
@@ -642,7 +669,7 @@ class OnboardingDialog(QDialog):
                     lbl.setStyleSheet(f"color: {role_color[name]}; background: transparent;")
                 elif lbl.text() == "Bienvenido a NeuroMood":
                     lbl.setStyleSheet(f"color: {t['text']}; background: transparent;")
-                elif lbl.text() == "Suite":
+                elif lbl.text() == suite_t("text.onboarding.title_suffix", "Suite"):
                     lbl.setStyleSheet(f"color: {t['primary']}; background: transparent;")
         except Exception:
             pass
@@ -654,7 +681,7 @@ class OnboardingDialog(QDialog):
                 link_color = t["v3c"]("aqua", self._modo).name()
                 self._forgot_link.setText(
                     f'<a href="#" style="color:{link_color}; text-decoration:none;">'
-                    "¿Olvidaste tu contraseña?</a>"
+                    f"{suite_t('text.onboarding.forgot_password', '¿Olvidaste tu contraseña?')}</a>"
                 )
         except Exception:
             pass
@@ -682,26 +709,33 @@ class OnboardingDialog(QDialog):
         self._set_feedback("")
 
         if not nombre:
-            self._error_lbl.setText("El nombre es obligatorio.")
+            self._error_lbl.setText(suite_t("text.onboarding.error_name_required", "El nombre es obligatorio."))
             self._name.setFocus()
             return
         if "@" not in email or "." not in email:
-            self._error_lbl.setText("Ingresá un email válido.")
+            self._error_lbl.setText(suite_t("text.onboarding.error_invalid_email", "Ingresá un email válido."))
             self._email.setFocus()
             return
         if len(password) < 6:
-            self._error_lbl.setText("La contraseña debe tener al menos 6 caracteres.")
+            self._error_lbl.setText(
+                suite_t(
+                    "text.onboarding.error_short_password",
+                    "La contraseña debe tener al menos 6 caracteres.",
+                )
+            )
             self._code.setFocus()
             return
         if not self._consent_check.isChecked():
-            self._error_lbl.setText("Debés aceptar los términos para continuar.")
+            self._error_lbl.setText(
+                suite_t("text.onboarding.error_terms_required", "Debés aceptar los términos para continuar.")
+            )
             return
 
         self._error_lbl.setText("")
         self._btn_ok.setEnabled(False)
         self._btn_signup.setEnabled(False)
-        self._btn_ok.setText("Conectando...")
-        self._btn_signup.setText("Conectando...")
+        self._btn_ok.setText(suite_t("text.onboarding.connecting_btn", "Conectando..."))
+        self._btn_signup.setText(suite_t("text.onboarding.connecting_btn", "Conectando..."))
 
         try:
             self._save(nombre, email, password, action)
@@ -710,8 +744,8 @@ class OnboardingDialog(QDialog):
             self._error_lbl.setText(f"Error al guardar la configuración: {str(exc)[:220]}")
             self._btn_ok.setEnabled(True)
             self._btn_signup.setEnabled(True)
-            self._btn_ok.setText("Iniciar sesión")
-            self._btn_signup.setText("Crear cuenta")
+            self._btn_ok.setText(suite_t("text.onboarding.login_btn", "Iniciar sesión"))
+            self._btn_signup.setText(suite_t("text.onboarding.signup_btn", "Crear cuenta"))
 
     def _set_feedback(self, msg: str, *, ok: bool = False):
         """Muestra un mensaje en la línea de estado: verde si ok, rojo si error."""

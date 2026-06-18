@@ -329,7 +329,7 @@ class ModuloTimer(NMModule):
         cent_lay.addWidget(self._canvas, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         # State chip
-        self._state_chip = QLabel("Listo para empezar")
+        self._state_chip = QLabel(t("text.module.timer.ready_state", "Listo para empezar"))
         self._state_chip.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_semibold"]))
         self._state_chip.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._state_chip.setContentsMargins(V3_SP["lg"], V3_SP["xs"], V3_SP["lg"], V3_SP["xs"])
@@ -364,7 +364,13 @@ class ModuloTimer(NMModule):
         # (2026-06: ancho fijo removido → el input se expande con el card
         # hasta un máximo razonable. Antes 320px rígido dejaba el campo
         # flotando en cards anchos sin aprovechar el espacio.)
-        self._ent_actividad = NMInput("Pedile a tu profesional que te asigne una actividad", modo=self._modo)
+        self._ent_actividad = NMInput(
+            t(
+                "text.module.timer.activity_placeholder",
+                "Pedile a tu profesional que te asigne una actividad",
+            ),
+            modo=self._modo,
+        )
         self._ent_actividad.setMinimumWidth(280)
         self._ent_actividad.setMaximumWidth(420)
         self._ent_actividad.setReadOnly(True)
@@ -414,9 +420,12 @@ class ModuloTimer(NMModule):
         # sizeHint compacto.)
         self._empty_state = NMEmptyState(
             "timer",
-            "Sin actividades asignadas",
-            "Pedile a tu profesional que te asigne una "
-            "actividad temporizada para poder empezar.",
+            t("text.module.timer.empty_title", "Sin actividades asignadas"),
+            t(
+                "text.module.timer.empty_desc",
+                "Pedile a tu profesional que te asigne una "
+                "actividad temporizada para poder empezar.",
+            ),
             parent=cent_container,
         )
         self._empty_state.hide()
@@ -439,7 +448,7 @@ class ModuloTimer(NMModule):
             # invitando a pedir una actividad.
             self._btn_play.setEnabled(False)
             self._btn_skip.setEnabled(False)
-            self._state_chip.setText("Sin actividades asignadas")
+            self._state_chip.setText(t("text.module.timer.empty_title", "Sin actividades asignadas"))
             # Ocultar ring, controles, input y chips — solo el empty state.
             # (2026-06 round 3: setMaximumSize(0,0) en los items ocultos para
             # que NO contribuyan al sizeHint del layout — sin esto, el
@@ -545,11 +554,11 @@ class ModuloTimer(NMModule):
         if not getattr(self, "_has_activity", True):
             state = "Sin actividad asignada"
         elif self._running and not self._paused:
-            state = "Sesión en curso"
+            state = t("text.module.timer.running_state", "Sesión en curso")
         elif self._paused:
             state = "Pausado"
         else:
-            state = "Listo para empezar"
+            state = t("text.module.timer.ready_state", "Listo para empezar")
 
         # Handoff §5.5: focus timer digits in Newsreader display
         time_str = self._format_time(self._remaining_sec)

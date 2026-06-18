@@ -179,6 +179,22 @@ MODULES_CONFIG = [
 ]
 
 
+def _module_text(module_id: str, field: str, default: str) -> str:
+    return str(t(f"text.home.module.{module_id}.{field}", default))
+
+
+def module_configs() -> list[dict]:
+    configs = []
+    for cfg in MODULES_CONFIG:
+        module_id = cfg["id"]
+        item = dict(cfg)
+        item["title"] = _module_text(module_id, "title", cfg["title"])
+        item["desc"] = _module_text(module_id, "desc", cfg["desc"])
+        item["chip"] = _module_text(module_id, "chip", cfg["chip"])
+        configs.append(item)
+    return configs
+
+
 def _dot_color(idx: int, modo: str) -> str:
     """Color degradado teal→violet según posición del módulo."""
     grad = gradient_colors(norm_modo(modo))
@@ -560,6 +576,17 @@ class _HeroBienestar(QFrame):
         self._apply_hero_shadow()
         self.refresh()
 
+    def _greeting_text(self) -> str:
+        name = (self._username or "Paciente").strip() or "Paciente"
+        hour = datetime.now().hour
+        if 5 <= hour < 12:
+            prefix = t("text.home.greeting_morning", "Buenos días,").rstrip(",")
+        elif 12 <= hour < 20:
+            prefix = t("text.home.greeting_afternoon", "Buenas tardes,").rstrip(",")
+        else:
+            prefix = t("text.home.greeting_evening", "Buenas noches,").rstrip(",")
+        return f"{prefix}, {name}"
+
     def _apply_hero_shadow(self):
         """Drop shadow para dar elevación al hero card."""
         eff = QGraphicsDropShadowEffect(self)
@@ -576,7 +603,7 @@ class _HeroBienestar(QFrame):
 
         # Eyebrow row + badge derecho
         top = QHBoxLayout()
-        self._eyebrow = QLabel("Bienvenida")
+        self._eyebrow = QLabel(t("text.home.hero_eyebrow", "Bienvenida"))
         self._eyebrow.setFont(eyebrow_font())
         self._eyebrow.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
@@ -585,7 +612,7 @@ class _HeroBienestar(QFrame):
         top.addStretch()
         root.addLayout(top)
 
-        self._hero_title = QLabel(f"Hola, {self._username}")
+        self._hero_title = QLabel(self._greeting_text())
         self._hero_title.setFont(qfont("size_h1", weight=TYPOGRAPHY["weight_semibold"]))
         root.addWidget(self._hero_title)
 
@@ -598,7 +625,10 @@ class _HeroBienestar(QFrame):
         empty_lay = QHBoxLayout(self._empty_page)
         empty_lay.setContentsMargins(0, 0, 0, 0)
         self._msg = QLabel(
-            "Aquí tienes tu espacio personal. Arriba están tus módulos recomendados."
+            t(
+                "text.home.empty_message",
+                "Aquí tienes tu espacio personal. Arriba están tus módulos recomendados.",
+            )
         )
         self._msg.setFont(qfont("size_small"))
         empty_lay.addWidget(self._msg)
@@ -777,7 +807,7 @@ class _ProximaSesionCard(QFrame):
         lay.setContentsMargins(12, 8, 12, 8)
         lay.setSpacing(2)
 
-        self._eyebrow = QLabel("Próxima sesión")
+        self._eyebrow = QLabel(t("text.home.next_session_eyebrow", "Próxima sesión"))
         self._eyebrow.setFont(eyebrow_font())
         lay.addWidget(self._eyebrow)
 
@@ -785,7 +815,7 @@ class _ProximaSesionCard(QFrame):
         self._time_lbl.setFont(qfont("size_heading_l", weight=600))
         lay.addWidget(self._time_lbl)
 
-        self._therapist_lbl = QLabel("Sin sesión programada")
+        self._therapist_lbl = QLabel(t("text.home.next_session_empty", "Sin sesión programada"))
         self._therapist_lbl.setFont(qfont("size_small"))
         self._therapist_lbl.setWordWrap(True)
         lay.addWidget(self._therapist_lbl)
@@ -904,7 +934,8 @@ class HomeView(QWidget):
         self._grid.setVerticalSpacing(12)  # Premium: 12px gap
         self._grid.setHorizontalSpacing(12)  # Premium: 12px gap
 
-        for idx, cfg in enumerate(MODULES_CONFIG):
+        self._module_configs = module_configs()
+        for idx, cfg in enumerate(self._module_configs):
             card = ModuleCard(
                 cfg, idx, self._modo, on_click=self._open_cb, get_status_fn=self._get_status
             )
@@ -921,7 +952,7 @@ class HomeView(QWidget):
         root.addWidget(content, stretch=1)
 
         # Staggered entrance
-        for idx, cfg in enumerate(MODULES_CONFIG):
+        for idx, cfg in enumerate(self._module_configs):
             card = self._cards.get(cfg["id"])
             if card:
                 card.animate_enter(delay_ms=idx * 55)
@@ -966,7 +997,7 @@ class HomeView(QWidget):
         # Equal column widths; no row-stretch so cards stay at natural height.
         for c in range(cols):
             self._grid.setColumnStretch(c, 1)
-        n = len(MODULES_CONFIG)
+        n = len(self._module_configs)
         num_rows = (n + cols - 1) // cols
         # Handoff §3 (Home): distribución balanceada al hueco del grid 4×2.
         # Con N módulos reales (7) en `cols` columnas, la última fila puede
@@ -974,7 +1005,7 @@ class HomeView(QWidget):
         # Sin inventar features ni placeholders.
         last_row_count = n - (num_rows - 1) * cols if num_rows > 0 else n
         last_row_offset = max(0, (cols - last_row_count) // 2)
-        for idx, cfg in enumerate(MODULES_CONFIG):
+        for idx, cfg in enumerate(self._module_configs):
             card = self._cards.get(cfg["id"])
             if not card:
                 continue

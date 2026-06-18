@@ -374,7 +374,8 @@ class _ReminderCardV3(QFrame):
 
         # Completar button
         self._btn_done = NMButton(
-            "Completar", variant="secondary", size="sm", modo=self._modo, width=98
+            t("text.module.avisos.complete_btn", "Completar"),
+            variant="secondary", size="sm", modo=self._modo, width=98
         )
         self._btn_done.setFixedHeight(28)
         # Conserva el ancho aunque se oculte (filas completadas): mantiene la
@@ -435,7 +436,7 @@ class _ReminderCardV3(QFrame):
             self._btn_done.setVisible(False)
         else:
             self._btn_done.setVisible(True)
-            self._btn_done.setText("Completar")
+            self._btn_done.setText(t("text.module.avisos.complete_btn", "Completar"))
             self._btn_done.setEnabled(self._activo)
 
     def _apply_theme(self, modo: str):
@@ -486,7 +487,11 @@ class ModuloAvisos(NMModule):
         filter_row = QHBoxLayout()
         filter_row.setSpacing(V3_SP["sm"])
         self._filter_pills: dict[str, _StepPill] = {}
-        for key, label in (("todos", "Todos"), ("activos", "Activos"), ("hoy", "Hoy")):
+        for key, label in (
+            ("todos", t("text.module.avisos.filter_all", "Todos")),
+            ("activos", t("text.module.avisos.filter_active", "Activos")),
+            ("hoy", t("text.module.avisos.filter_today", "Hoy")),
+        ):
             pill = _StepPill(label, active=(key == "todos"), modo=self._modo)
             pill.setMinimumWidth(70)
             pill.setFixedHeight(32)
@@ -603,14 +608,17 @@ class ModuloAvisos(NMModule):
 
         if not rows:
             empty_msg = (
-                "Sin recordatorios asignados"
+                t("text.module.avisos.empty_title", "Sin recordatorios asignados")
                 if not self._all_rows
-                else "Sin resultados con esos filtros"
+                else t("text.module.avisos.empty_filter_title", "Sin resultados con esos filtros")
             )
             empty_sub = (
-                "Tu profesional configura tus recordatorios de bienestar desde el Hub."
+                t(
+                    "text.module.avisos.empty_desc",
+                    "Tu profesional configura tus recordatorios de bienestar desde el Hub.",
+                )
                 if not self._all_rows
-                else "Probá cambiar los filtros."
+                else t("text.module.avisos.empty_filter_desc", "Probá cambiar los filtros.")
             )
             empty = NMEmptyState("bell", empty_msg, empty_sub, parent=self._list_widget)
             # 4.2: empty state centrado verticalmente dentro del scroll (no
@@ -685,7 +693,7 @@ class ModuloAvisos(NMModule):
         opts_lay.setContentsMargins(V3_SP["lg"], V3_SP["md"], V3_SP["lg"], V3_SP["md"])
         opts_lay.setSpacing(V3_SP["sm"])
 
-        opts_eyebrow = QLabel("Silencio")
+        opts_eyebrow = QLabel(t("text.module.avisos.silence_eyebrow", "Silencio"))
         opts_eyebrow.setFont(eyebrow_font())
         opts_eyebrow.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; "
@@ -698,7 +706,7 @@ class ModuloAvisos(NMModule):
         sil_ini, sil_fin = self._leer_silencio()
         sil_row = QHBoxLayout()
         sil_row.setSpacing(V3_SP["sm"])
-        sil_lbl = QLabel("Horario de silencio")
+        sil_lbl = QLabel(t("text.module.avisos.silence_label", "Horario de silencio"))
         sil_lbl.setFont(qfont("size_small"))
         sil_lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
         sil_row.addWidget(sil_lbl)
@@ -718,7 +726,10 @@ class ModuloAvisos(NMModule):
         if sil_fin:
             self._entry_sil_fin.setText(sil_fin)
         sil_row.addWidget(self._entry_sil_fin)
-        btn_apply = NMButton("Aplicar", variant="secondary", size="sm", modo=self._modo, width=80)
+        btn_apply = NMButton(
+            t("text.module.avisos.apply_btn", "Aplicar"),
+            variant="secondary", size="sm", modo=self._modo, width=80
+        )
         btn_apply.clicked.connect(self._guardar_silencio)
         self._btn_apply_silencio = btn_apply
         sil_row.addWidget(btn_apply)

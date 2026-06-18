@@ -463,7 +463,7 @@ class ModuloAnimo(NMModule):
 
         slider_head = QHBoxLayout()
         slider_head.setSpacing(V3_SP["sm"])
-        self._slider_eyebrow = QLabel("Escala emocional")
+        self._slider_eyebrow = QLabel(t("text.module.animo.slider_eyebrow", "Escala emocional"))
         self._slider_eyebrow.setFont(eyebrow_font())
         slider_head.addWidget(self._slider_eyebrow)
         slider_head.addStretch()
@@ -481,8 +481,8 @@ class ModuloAnimo(NMModule):
         # 0 no se muestra en la fila de números.)
         self._v3_slider = V3MoodSlider(
             level=5,
-            title="¿Cómo te sientes hoy?",
-            subtitle="Desliza para indicar tu estado.",
+            title=t("text.module.animo.slider_title", "¿Cómo te sientes hoy?"),
+            subtitle=t("text.module.animo.slider_subtitle", "Desliza para indicar tu estado."),
             modo=self._modo,
             compact=True,
             unset=True,
