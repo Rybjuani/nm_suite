@@ -979,6 +979,56 @@ def _upsert_paciente(sb, pid: str, nombre: str, pwd: str, install_code: str):
         raise
 
 
+# ── Pipeline de exportadores (RD-1) ──────────────────────────────────────────
+
+
+# Claves cortas (nombre de tabla/exportador) en orden canónico. La resolución
+# al símbolo ``_exportar_<clave>`` se hace en runtime vía ``globals()`` para
+# permitir que los tests parcheen funciones individuales con ``monkeypatch``
+# sin tener que reemplazar toda la tupla (convención usada por test_ra1,
+# test_ra5, test_ra6 y similares).
+_EXPORTADORES = (
+    "animo",
+    "respiracion",
+    "pensamientos",
+    "checklist",
+    "temporizador",
+    "recordatorios_log",
+    "activacion",
+    "dbt_practicas",
+)
+
+
+def _ejecutar_exportadores(sb, patient_id: str, desde: str) -> list[str]:
+    """Ejecuta cada exportador en orden, aislando excepciones (RD-1).
+
+    Antes, todos los exportadores corrían dentro del mismo bloque ``try`` del
+    caller; si uno lanzaba, los siguientes no se ejecutaban. Ahora cada uno
+    tiene su propio ``try/except``: el error se registra con el nombre del
+    exportador y el pipeline continúa con los restantes.
+
+    Devuelve la lista de nombres de exportadores que fallaron (vacía si todos
+    OK). El caller decide si registrarlo como warning; el contrato global de
+    ``sync_completo``/``sync_inmediato`` (True/None) no se ve alterado por
+    fallos parciales de exportación — estos quedan en el log para auditoría.
+    """
+    fallidos: list[str] = []
+    for nombre in _EXPORTADORES:
+        try:
+            fn = globals()[f"_exportar_{nombre}"]
+            fn(sb, patient_id, desde)
+        except Exception as e:
+            fallidos.append(nombre)
+            _log.error("Exportador '%s' fallo: %s", nombre, e)
+    if fallidos:
+        _log.warning(
+            "Sync finalizo con %d exportador(es) fallido(s): %s",
+            len(fallidos),
+            ", ".join(fallidos),
+        )
+    return fallidos
+
+
 # ── Sync completo ─────────────────────────────────────────────────────────────
 
 
@@ -1000,14 +1050,7 @@ def sync_completo(patient_id: str = None, nombre: str = None) -> bool:
         pwd = obtener_password_hash(install_code)
         _upsert_paciente(sb, pid, nombre, pwd, install_code)
         desde = "1900-01-01"
-        _exportar_animo(sb, pid, desde)
-        _exportar_respiracion(sb, pid, desde)
-        _exportar_pensamientos(sb, pid, desde)
-        _exportar_checklist(sb, pid, desde)
-        _exportar_temporizador(sb, pid, desde)
-        _exportar_recordatorios_log(sb, pid, desde)
-        _exportar_activacion(sb, pid, desde)
-        _exportar_dbt_practicas(sb, pid, desde)
+        _ejecutar_exportadores(sb, pid, desde)
         _importar_rutina_modo(sb, pid)
         _importar_routine_template(sb, pid)
         _importar_tcc_templates(sb, pid)
@@ -1225,14 +1268,7 @@ def sync_inmediato():
         install_code = leer_config("install_code", "")
         pwd = obtener_password_hash(install_code)
         _upsert_paciente(sb, pid, nombre, pwd, install_code)
-        _exportar_animo(sb, pid, desde)
-        _exportar_respiracion(sb, pid, desde)
-        _exportar_pensamientos(sb, pid, desde)
-        _exportar_checklist(sb, pid, desde)
-        _exportar_temporizador(sb, pid, desde)
-        _exportar_recordatorios_log(sb, pid, desde)
-        _exportar_activacion(sb, pid, desde)
-        _exportar_dbt_practicas(sb, pid, desde)
+        _ejecutar_exportadores(sb, pid, desde)
     except Exception as e:
         _log.error("Fallo al ejecutar sync_inmediato: %s", e)
 
