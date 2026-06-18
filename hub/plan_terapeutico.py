@@ -45,9 +45,12 @@ _log = logging.getLogger(__name__)
 
 def _section_title(text: str, modo: str) -> QLabel:
     """Título de panel consistente (semibold + color de texto del tema) —
-    antes eran QLabel crudos con estilo por defecto, distintos entre tabs."""
+    antes eran QLabel crudos con estilo por defecto, distintos entre tabs.
+    (Jerarquía 2026-06: size_body → size_h3, weight_semibold → weight_bold,
+    para que el título del panel sea el primer punto de lectura después del
+    nombre del módulo en la tab activa.)"""
     lbl = QLabel(text)
-    lbl.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_semibold"]))
+    lbl.setFont(qfont("size_h3", weight=TYPOGRAPHY["weight_bold"]))
     lbl.setStyleSheet(f"color: {v3c('text', norm_modo(modo)).name()}; background: transparent;")
     return lbl
 
@@ -170,9 +173,14 @@ class PlanTerapeuticoTab(QWidget):
         # Override compacto solo para estas tabs: los 4 nombres completos de los
         # módulos Suite son largos; con menos padding/fuente entran los 4 en una
         # fila a 960 sin scroll ni tabs cortadas (ADN).
+        # (Jerarquía 2026-06: padding/fuente ↑ ligeramente para que el nombre
+        # del módulo sea legible sin agrandar la fila — los 4 nombres caben
+        # igual a 960; el activo se distingue por el fondo primary, no por
+        # tamaño. font-weight 600 en selected refuerza la jerarquía visual.)
         self._tabs.setStyleSheet(
             stylesheet_tabwidget_segmented(self._modo)
-            + "QTabBar::tab { padding: 3px 7px; font-size: 10px; }"
+            + "QTabBar::tab { padding: 4px 9px; font-size: 11px; }"
+            + "QTabBar::tab:selected { font-weight: 600; }"
         )
         self._tabs.setDocumentMode(True)
 
@@ -206,9 +214,11 @@ class PlanTerapeuticoTab(QWidget):
         # Override compacto solo para estas tabs: los 4 nombres completos de los
         # módulos Suite son largos; con menos padding/fuente entran los 4 en una
         # fila a 960 sin scroll ni tabs cortadas (ADN).
+        # (Jerarquía 2026-06: padding/fuente ↑ ligeramente — ver _setup.)
         self._tabs.setStyleSheet(
             stylesheet_tabwidget_segmented(self._modo)
-            + "QTabBar::tab { padding: 3px 7px; font-size: 10px; }"
+            + "QTabBar::tab { padding: 4px 9px; font-size: 11px; }"
+            + "QTabBar::tab:selected { font-weight: 600; }"
         )
         for i in range(self._tabs.count()):
             w = self._tabs.widget(i)
@@ -286,7 +296,7 @@ class _PresetTimerTab(QWidget):
         list_lay.setContentsMargins(10, 10, 10, 10)
 
         list_lay.addLayout(_section_header_row(
-            "Actividades del paciente",
+            "Temporizadores del paciente",
             self._modo,
             _make_reset_button(
                 self,

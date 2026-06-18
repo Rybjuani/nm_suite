@@ -305,22 +305,16 @@ class PacientesView(QWidget):
 
         layout = QVBoxLayout(self)
         # Fit-first 960x600: márgenes compactos para que las 5 filas de pacientes
-        # quepan completas en el primer viewport sin fila cortada al pie.
+        # quepan completas en el primer viewport sin fila cortada al pie. El
+        # alto se redistribuye al table_card (stretch=1) → más filas visibles
+        # sin fila cortada al pie.
         layout.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], 0)
         layout.setSpacing(V3_SP["xs"])
 
-        # 1. Header plegado a la titlebar ("NeuroMood Hub / Pacientes"). El
-        # NMPageHeader grande se oculta; la acción Sincronizar se reubica en
-        # la barra "Lista activa" del roster para recuperar el espacio
-        # vertical superior.
-        n_pacientes = len(self._pacientes)
-        self._section_header = NMPageHeader(
-            "Pacientes",
-            f"{n_pacientes} paciente{'s' if n_pacientes != 1 else ''} vinculado{'s' if n_pacientes != 1 else ''}",
-            modo=self._modo,
-        )
-        self._section_header.hide()
-        layout.addWidget(self._section_header)
+        # (Antes había un NMPageHeader plegado a la titlebar que se ocultaba
+        # pero seguía ocupando 640x480 en el layout → vaciío superior en
+        # Pacientes. Eliminado: la titlebar ya muestra "NeuroMood Hub /
+        # Pacientes" y la barra "Lista activa" del roster hace de header.)
 
         # 2. Tabla NMCard con NMPatientRow × N
         table_card = NMCard(modo=self._modo, clickable=False, glow=False)
@@ -789,16 +783,22 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         outer_layout.addWidget(self._chrome)
 
         # ── Área de contenido ─────────────────────────────────────────────────
+        # Layout vertical único: chrome + stack. Antes había un QWidget
+        # intermedio vacío (`right`) que se llevaba el 50% del alto del
+        # content area (Qt divide a partes iguales cuando no hay stretch)
+        # y dejaba un vacío superior compartido entre Pacientes y Detalle de
+        # ~150-200 px. Stack directo sobre el layout del content con stretch=1
+        # → el contenido empieza debajo de la titlebar y el alto recuperado
+        # se redistribuye a Pacientes (más filas visibles) y Plan Terapéutico
+        # (más alto para el form + lista).
         content = QWidget(central)
         content.setStyleSheet("background: transparent;")
         outer_layout.addWidget(content, 1)
-
-        right = QWidget(content)
-        right.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         rl = QVBoxLayout(content)
-        rl.setContentsMargins(0, 0, 0, 0)
+        # M3 premium: aire inferior/derecho para que ninguna vista quede
+        # pegada al borde de la ventana (respiración global, Hub-only).
+        rl.setContentsMargins(0, 0, 12, 8)
         rl.setSpacing(0)
-        rl.addWidget(right)
 
         self._chrome.theme_toggle.connect(self._toggle_theme)
 
@@ -811,11 +811,8 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         self._lbl_status = QLabel("", self)
         self._lbl_status.hide()
 
-        # Stack. M3 premium: aire inferior/derecho para que ninguna vista
-        # quede pegada al borde de la ventana (respiración global, Hub-only).
-        rl.setContentsMargins(0, 0, 12, 8)
-        self._stack = NMFadeWidget(right)
-        rl.addWidget(self._stack)
+        self._stack = NMFadeWidget(content)
+        rl.addWidget(self._stack, 1)
 
         # Vistas iniciales
         self._refresh_all_views()
