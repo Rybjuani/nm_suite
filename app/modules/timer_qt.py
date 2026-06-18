@@ -52,6 +52,7 @@ try:
         NMPlayButton,
         NMFocusArc,
         NMRingPulse,
+        NMEmptyState,
     )
     from shared.theme_qt import (
         C,
@@ -146,6 +147,12 @@ def _load_presets() -> list[tuple[str, int, str]]:
     devuelve [] y el módulo muestra el estado vacío (el paciente solo puede
     iniciar actividades asignadas). En modo demostración (clon del Hub) se
     devuelven ejemplos simulados que NO provienen de la DB ni se guardan.
+
+    Regla clínica 2026-06: la interfaz operativa del Timer SOLO aparece con
+    asignaciones `patient:<id>` (lo que el profesional configuró para ESTE
+    paciente) o con fixtures QA aislados (visual_qa). Nunca con presets
+    globales o predeterminados — el paciente no puede temporizar nada que
+    su profesional no le haya asignado explícitamente.
     """
     from shared.visual_qa import visual_qa_enabled
     if visual_qa_enabled():
@@ -155,10 +162,10 @@ def _load_presets() -> list[tuple[str, int, str]]:
         patient_id = leer_config("patient_id", "").strip()
     except Exception:
         patient_id = ""
-    scopes = []
-    if patient_id:
-        scopes.append(f"patient:{patient_id}")
-    scopes.append("global")
+    # Solo `patient:<id>`. Sin fallback a "global" ni a defaults locales.
+    if not patient_id:
+        return []
+    scopes = [f"patient:{patient_id}"]
 
     conn = None
     try:
@@ -303,15 +310,21 @@ class ModuloTimer(NMModule):
         cent_container = QWidget()
         cent_container.setStyleSheet("background: transparent;")
         cent_lay = QVBoxLayout(cent_container)
-        cent_lay.setContentsMargins(0, 4, 0, 4)
-        cent_lay.setSpacing(8)
+        # 2026-06: spacing 8→12, margins top 4→12 para dar respiro al ring
+        # ampliado. El bloque operativo ahora llena la card sin huecos
+        # verticales.
+        cent_lay.setContentsMargins(0, 12, 0, 12)
+        cent_lay.setSpacing(12)
         cent_lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._cent_lay = cent_lay  # para el helper QA _timer_force_empty
 
-        # Canvas: ring reducido a 180px. A 210 el bloque (ring+chip+controles+
-        # input+presets) medía ~414px y a 960x600 la card sólo da ~360-390 → el
-        # centrado desbordaba y RECORTABA el ring arriba y la fila OK abajo. 180
-        # hace caber todo sin comprimir los controles (pedido owner).
-        self._canvas = NMFocusArc(size=180, modo=self._modo)
+        # Canvas: ring ampliado a 220px (2026-06: era 180px, quedaba
+        # pequeño en cards de 960×600 con mucho espacio vertical muerto).
+        # 220 hace que el ring domine la card como punto focal principal,
+        # y los bloques inferiores (chip+controles+input+presets) leen
+        # como subordinados. Reducir `cent_lay.setSpacing(12)` mantiene
+        # el ritmo sin comprimir.
+        self._canvas = NMFocusArc(size=220, modo=self._modo)
         self._canvas.set_data(0.0, self._format_time(self._remaining_sec))
         cent_lay.addWidget(self._canvas, alignment=Qt.AlignmentFlag.AlignHCenter)
 
@@ -341,39 +354,75 @@ class ModuloTimer(NMModule):
 
         cent_lay.addLayout(ctrl_row)
 
-        # Input Actividad
-        # El paciente NO puede crear su propia actividad temporizada: las
-        # actividades las asigna el profesional desde el Hub. El campo es
-        # solo-lectura y muestra el placeholder invitando a pedir
-        # actividades a su profesional.
+        # Input Actividad (envuelto en un container para poder ocultarlo
+        # en el empty state). 2026-06: agrupado en _input_container.
         input_row = QHBoxLayout()
         input_row.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         # Nombre de la actividad asignada (solo-lectura). El paciente NO puede
         # crear ni escribir su propia actividad: refleja la actividad asignada
         # seleccionada (chip). Sin asignación → placeholder invitando a pedirla.
+        # (2026-06: ancho fijo removido → el input se expande con el card
+        # hasta un máximo razonable. Antes 320px rígido dejaba el campo
+        # flotando en cards anchos sin aprovechar el espacio.)
         self._ent_actividad = NMInput("Pedile a tu profesional que te asigne una actividad", modo=self._modo)
-        self._ent_actividad.setFixedWidth(320)
+        self._ent_actividad.setMinimumWidth(280)
+        self._ent_actividad.setMaximumWidth(420)
         self._ent_actividad.setReadOnly(True)
         input_row.addWidget(self._ent_actividad)
-        cent_lay.addLayout(input_row)
+        self._input_container = QWidget()
+        self._input_container.setStyleSheet("background: transparent;")
+        input_container_lay = QHBoxLayout(self._input_container)
+        input_container_lay.setContentsMargins(0, 0, 0, 0)
+        input_container_lay.addLayout(input_row)
+        cent_lay.addWidget(self._input_container)
 
-        # Preset chips row: una actividad temporizada asignada por chip (nombre +
-        # duración). No hay opción de minutos manuales (el paciente no crea).
+        # Preset chips row (envuelto en un container para poder ocultarlo
+        # en el empty state). 2026-06: agrupado en _chip_container.
+        # (2026-06: setFixedSize(76,28) removido → los chips usan su sizeHint
+        # y se expanden con el card. "Trabajo profundo" antes se cortaba a
+        # "abajo profund..." por el ancho fijo de 76px.)
         chips_row = QHBoxLayout()
         chips_row.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         chips_row.setSpacing(6)
-        chips_row.addStretch(1)
         self._chip_btns: list[tuple[NMButtonOutline, int]] = []
         for label, secs, description in self._presets[:8]:
             btn = NMButtonOutline(label, modo=self._modo, toggleable=False, size="sm")
-            btn.setFixedSize(76, 28)
+            btn.setMinimumHeight(28)
+            btn.setMinimumWidth(76)
             if description:
                 btn.setToolTip(description)
             btn.clicked.connect(lambda _, n=label, s=secs: self._select_preset(n, s))
             chips_row.addWidget(btn, 0, Qt.AlignmentFlag.AlignVCenter)
             self._chip_btns.append((btn, secs))
-        chips_row.addStretch(1)
-        cent_lay.addLayout(chips_row)
+        self._chip_container = QWidget()
+        self._chip_container.setStyleSheet("background: transparent;")
+        chip_container_lay = QHBoxLayout(self._chip_container)
+        chip_container_lay.setContentsMargins(0, 0, 0, 0)
+        chip_container_lay.addLayout(chips_row)
+        cent_lay.addWidget(self._chip_container)
+
+        # 2026-06: siempre crear el _empty_state canónico (oculto por
+        # defecto) para que el helper QA `_timer_force_empty` pueda
+        # mostrarlo sin recrear todo el módulo. Reemplaza al _empty_lbl
+        # QLabel improvisado — usa el widget NMEmptyState de la librería
+        # compartida (icono en chip 64×64, título display-m serif, subtítulo
+        # body, sin CTAs operativos).
+        # (2026-06 round 3: compactado y centrado como un solo bloque
+        # siguiendo el patrón del empty de Recordatorios — addStretch(1)
+        # antes y después para centrarlo verticalmente en el espacio
+        # disponible, sin stretch en el NMEmptyState para que tome su
+        # sizeHint compacto.)
+        self._empty_state = NMEmptyState(
+            "timer",
+            "Sin actividades asignadas",
+            "Pedile a tu profesional que te asigne una "
+            "actividad temporizada para poder empezar.",
+            parent=cent_container,
+        )
+        self._empty_state.hide()
+        cent_lay.addStretch(1)
+        cent_lay.addWidget(self._empty_state)
+        cent_lay.addStretch(1)
 
         if self._has_activity:
             # Seleccionar la actividad asignada inicial (nombre + duración).
@@ -384,9 +433,36 @@ class ModuloTimer(NMModule):
             self._ent_actividad.setText(init_name)
             self._highlight_preset(self._total_sec)
         else:
-            # Sin actividad asignada: no se puede iniciar el temporizador.
+            # Sin actividad asignada (regla clínica 2026-06): el paciente ve
+            # el mensaje de empty state, los controles quedan deshabilitados
+            # y no hay presets/chips. El input muestra el placeholder
+            # invitando a pedir una actividad.
             self._btn_play.setEnabled(False)
             self._btn_skip.setEnabled(False)
+            self._state_chip.setText("Sin actividades asignadas")
+            # Ocultar ring, controles, input y chips — solo el empty state.
+            # (2026-06 round 3: setMaximumSize(0,0) en los items ocultos para
+            # que NO contribuyan al sizeHint del layout — sin esto, el
+            # NMEmptyState quedaba estirado en lugar de compacto.)
+            for w in (self._canvas, self._state_chip,
+                      self._input_container, self._chip_container):
+                w.setMaximumSize(0, 0)
+                w.hide()
+            self._btn_reset.setEnabled(False)
+            # Ocultar también la fila de controles (reset/play/skip) — buscar
+            # el QHBoxLayout de controles por inspección.
+            for i in range(cent_lay.count()):
+                item = cent_lay.itemAt(i)
+                if item and item.layout() and not item.widget():
+                    ctrl_row_layout = item.layout()
+                    for j in range(ctrl_row_layout.count()):
+                        w = ctrl_row_layout.itemAt(j).widget()
+                        if w:
+                            w.setMaximumSize(0, 0)
+                            w.hide()
+                    break
+            # Mostrar el empty state canónico (icono + título + subtítulo).
+            self._empty_state.show()
 
         timer_card_lay.addWidget(cent_container, stretch=1)
         outer.addWidget(timer_card, stretch=1)

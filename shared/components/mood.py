@@ -504,11 +504,17 @@ class _MoodNumRow(QWidget):
     i/10 del ancho útil). Con el layout anterior de stretches, el centro de
     cada número quedaba ~10px corrido del dot real del slider (informe user feedback
     v1.0, módulo Ánimo).
+
+    Parámetro ``show_zero`` (2026-06): si es False, se omite la label del 0
+    y los números 1-10 se reposicionan para quedar bajo los dots 1-10
+    (fórmula ``(i+1)/10`` en vez de ``i/10``). Usado en el módulo Ánimo
+    para mostrar la escala clínica 1-10 sin el tick 0.
     """
 
-    def __init__(self, labels: list[QLabel], parent=None):
+    def __init__(self, labels: list[QLabel], parent=None, show_zero: bool = True):
         super().__init__(parent)
         self._labels = labels
+        self._show_zero = bool(show_zero)
         self.setFixedHeight(20)
         for lbl in labels:
             lbl.setParent(self)
@@ -519,7 +525,11 @@ class _MoodNumRow(QWidget):
         margin = 16
         span = max(0, self.width() - 2 * margin)
         for i, lbl in enumerate(self._labels):
-            x = margin + (i / 10) * span
+            if self._show_zero:
+                x = margin + (i / 10) * span
+            else:
+                # Sin tick 0: los números 1-10 se posicionan bajo los dots 1-10
+                x = margin + ((i + 1) / 10) * span
             lbl.move(int(x - lbl.width() / 2), 0)
 
 
@@ -712,12 +722,14 @@ class V3MoodSlider(QWidget):
         parent=None,
         compact: bool = False,
         unset: bool = False,
+        show_zero: bool = True,
     ):
         super().__init__(parent)
         self._level = max(1, min(10, int(level)))
         self._modo = norm_modo(modo or _tm().modo)
         self._compact = compact
         self._unset = bool(unset)
+        self._show_zero = bool(show_zero)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -774,16 +786,24 @@ class V3MoodSlider(QWidget):
         # registra valor — feedback user feedback). _MoodNumRow los posiciona
         # con la MISMA fórmula del track: cada número queda centrado bajo su
         # dot real (antes el layout de stretches los corría ~10px).
+        # (2026-06: si show_zero=False, se omite la label del 0 y los
+        # números 1-10 se reposicionan para llenar el track 1-10.)
         self._num_labels: list[_MoodPickLabel] = []
-        self._zero_lbl = QLabel("0")
-        self._zero_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._zero_lbl.setFont(qfont_mono(10))
-        for n in range(1, 11):
-            lbl = _MoodPickLabel(str(n), n)
-            lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            lbl.picked.connect(self._on_level_clicked)
-            self._num_labels.append(lbl)
-        num_row = _MoodNumRow([self._zero_lbl, *self._num_labels])
+        if self._show_zero:
+            self._zero_lbl = QLabel("0")
+            self._zero_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self._zero_lbl.setFont(qfont_mono(10))
+            num_row = _MoodNumRow(
+                [self._zero_lbl, *[self._make_num_label(n) for n in range(1, 11)]],
+                show_zero=True,
+            )
+        else:
+            # Sin tick 0: solo los 10 números 1-10, reposicionados.
+            self._zero_lbl = None
+            num_row = _MoodNumRow(
+                [self._make_num_label(n) for n in range(1, 11)],
+                show_zero=False,
+            )
         root.addWidget(num_row)
 
         # ── Range descriptors ─────────────────────────────────────────────────
@@ -871,6 +891,15 @@ class V3MoodSlider(QWidget):
     def _on_level_clicked(self, n):
         self.set_level(int(n))
 
+    def _make_num_label(self, n: int) -> "_MoodPickLabel":
+        """Crea un _MoodPickLabel para el número n (1-10). Usado por _setup_ui
+        para construir la fila de números, tanto con show_zero=True (11
+        labels) como con show_zero=False (10 labels)."""
+        lbl = _MoodPickLabel(str(n), n)
+        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lbl.picked.connect(self._on_level_clicked)
+        return lbl
+
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         self._refresh_styles()
@@ -893,7 +922,7 @@ class V3MoodSlider(QWidget):
         self._numeric_lbl.setStyleSheet(f"color: {c_text2}; background: transparent;")
         for d in self._desc_labels:
             d.setStyleSheet(f"color: {c_ink_secondary}; background: transparent;")
-        if hasattr(self, "_zero_lbl"):
+        if hasattr(self, "_zero_lbl") and self._zero_lbl is not None:
             self._zero_lbl.setStyleSheet(f"color: {c_text4}; background: transparent;")
         for lbl in self._num_labels:
             active = lbl._value == self._level and not self._unset

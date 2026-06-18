@@ -340,6 +340,20 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 4},
                         {"action": "capture", "view": "registro-step1-emotion"}],
         },
+        # 2026-06: TCC paso 1 con la emoción "Otro" seleccionada y el input
+        # de texto abierto en la celda (overlay QStackedWidget). Verifica
+        # que la grilla 4×2 mantiene la celda de "Otro" con la misma
+        # geometría que el resto.
+        "registro-step1-emotion-otro": {
+            "label": "TCC paso 1 - Emocion Otro seleccionado",
+            "parent": "registro",
+            "actions": [{"action": "navigate", "view": "registro"},
+                        {"action": "call", "func": "_tcc_prepare_step", "step": 1},
+                        {"action": "drain", "cycles": 4},
+                        {"action": "call", "func": "_tcc_pick_otro"},
+                        {"action": "drain", "cycles": 4},
+                        {"action": "capture", "view": "registro-step1-emotion-otro"}],
+        },
         "registro-step2-distortions": {
             "label": "TCC paso 2 - distorsiones",
             "parent": "registro",
@@ -469,6 +483,18 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "call", "func": "_timer_select_preset", "seconds": 45 * 60},
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "timer-preset-45min"}],
+        },
+        # 2026-06: Timer empty state — sin asignación `patient:<id>` ni fixture
+        # QA. Verifica que el módulo muestra el mensaje de empty state y los
+        # controles quedan deshabilitados (regla clínica: no hay presets
+        # globales ni predeterminados).
+        "timer-empty": {
+            "label": "Timer sin actividades asignadas (empty state)",
+            "parent": "timer",
+            "actions": [{"action": "navigate", "view": "timer"},
+                        {"action": "call", "func": "_timer_force_empty"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture", "view": "timer-empty"}],
         },
 
         "avisos": {
@@ -759,6 +785,25 @@ def _tcc_pick_first_emotion(win, qapp, action):
             tile.clicked.emit()
         except Exception:
             tile.click()
+    _drain(qapp, cycles=4)
+
+
+@_register_helper
+def _tcc_pick_otro(win, qapp, action):
+    """Selecciona la emoción 'Otro' en TCC paso 1 (overlay QStackedWidget).
+    Verifica que la celda mantiene la geometría 4×2 al abrirse el input.
+    (2026-06: nuevo helper para la receta registro-step1-emotion-otro.)
+    """
+    target = getattr(win, '_current_module', None) or win
+    if hasattr(target, '_emotion_tiles') and target._emotion_tiles:
+        # Buscar el tile con label "Otro"
+        for tile in target._emotion_tiles:
+            if getattr(tile, '_label_text', None) == "Otro":
+                try:
+                    tile.clicked.emit()
+                except Exception:
+                    tile.click()
+                break
     _drain(qapp, cycles=4)
 
 
@@ -1090,11 +1135,72 @@ def _timer_pause(win, qapp, action):
 
 @_register_helper
 def _timer_select_preset(win, qapp, action):
-    """Selecciona preset de Timer por segundos sin depender del widget del chip."""
+    """Selecciona preset de Timer por segundos sin depender del widget del chip.
+
+    El módulo Timer expone `_select_preset(name, secs)` (firma usada por el
+    click del chip). La receta QA solo conoce los segundos, así que busca el
+    nombre correspondiente en `_presets` antes de invocar. (2026-06: antes
+    llamaba con un solo argumento → `TypeError: missing 1 required positional
+    argument: 'secs'` y fallaba timer-preset-5min/45min.)
+    """
     target = _module_target(win)
     seconds = int(action.get("seconds", 25 * 60))
-    if hasattr(target, '_select_preset'):
-        target._select_preset(seconds)
+    if hasattr(target, '_select_preset') and hasattr(target, '_presets'):
+        name = ""
+        for n, s, *_ in target._presets:
+            if s == seconds:
+                name = n
+                break
+        target._select_preset(name, seconds)
+    _drain(qapp, cycles=6)
+
+
+@_register_helper
+def _timer_force_empty(win, qapp, action):
+    """Fuerza el empty state del Timer: _presets=[], controles deshabilitados,
+    input y chips ocultos, mensaje empty visible. Verifica la regla clínica
+    2026-06: sin asignación `patient:<id>` ni fixture QA → el módulo NO
+    muestra la interfaz operativa. (2026-06: nuevo helper para la receta
+    timer-empty.)
+    """
+    target = _module_target(win)
+    if not hasattr(target, '_presets'):
+        return
+    # Vaciar presets y forzar empty state
+    target._presets = []
+    target._has_activity = False
+    if hasattr(target, '_btn_play'):
+        target._btn_play.setEnabled(False)
+    if hasattr(target, '_btn_skip'):
+        target._btn_skip.setEnabled(False)
+    if hasattr(target, '_btn_reset'):
+        target._btn_reset.setEnabled(False)
+    if hasattr(target, '_state_chip'):
+        target._state_chip.setText("Sin actividades asignadas")
+        target._state_chip.hide()
+    if hasattr(target, '_canvas'):
+        target._canvas.hide()
+        target._canvas.set_data(0.0, "—:—")
+    if hasattr(target, '_input_container'):
+        target._input_container.hide()
+    if hasattr(target, '_chip_container'):
+        target._chip_container.hide()
+    if hasattr(target, '_cent_lay'):
+        # Ocultar fila de controles (reset/play/skip) — buscar el QHBoxLayout
+        ctrl_row_layout = None
+        for i in range(target._cent_lay.count()):
+            item = target._cent_lay.itemAt(i)
+            if item and item.layout() and not item.widget():
+                ctrl_row_layout = item.layout()
+                break
+        if ctrl_row_layout:
+            # Ocultar cada widget del layout de controles
+            for i in range(ctrl_row_layout.count()):
+                w = ctrl_row_layout.itemAt(i).widget()
+                if w:
+                    w.hide()
+    if hasattr(target, '_empty_state'):
+        target._empty_state.show()
     _drain(qapp, cycles=6)
 
 

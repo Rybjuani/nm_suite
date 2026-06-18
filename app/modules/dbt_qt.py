@@ -665,62 +665,67 @@ class _SkillPracticeView(QWidget):
         
     def _setup_ui(self):
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(24, 24, 24, 24)
-        lay.setSpacing(20)
-        
+        lay.setContentsMargins(24, 16, 24, 16)
+        lay.setSpacing(12)
+
         self.title_lbl = QLabel(self._skill["title"])
         self.title_lbl.setFont(v3_font("size_h3", weight=TYPOGRAPHY["weight_bold"], serif=True))
         lay.addWidget(self.title_lbl)
-        
+
         self.progress_lbl = QLabel()
-        self.progress_lbl.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_bold"]))
+        self.progress_lbl.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
         self.progress_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lay.addWidget(self.progress_lbl)
-        
+
         # Visual step indicator
         self.step_indicator = _StepProgressIndicator(len(self._skill["steps"]), self._skill["family"], parent=self, modo=self._modo)
         lay.addWidget(self.step_indicator)
-        
+
         self.step_card = NMCard(parent=self, clickable=False, modo=self._modo)
         self.step_card_lay = QVBoxLayout(self.step_card)
-        self.step_card_lay.setContentsMargins(24, 24, 24, 24)
-        self.step_card_lay.setSpacing(12)
-        
+        self.step_card_lay.setContentsMargins(20, 16, 20, 16)
+        self.step_card_lay.setSpacing(8)
+
         self.step_title_lbl = QLabel()
         self.step_title_lbl.setFont(v3_font("size_h4", weight=TYPOGRAPHY["weight_bold"]))
         self.step_card_lay.addWidget(self.step_title_lbl)
-        
+
         self.step_body_lbl = QLabel()
         self.step_body_lbl.setFont(qfont("size_body"))
         self.step_body_lbl.setWordWrap(True)
         self.step_card_lay.addWidget(self.step_body_lbl)
-        
-        lay.addWidget(self.step_card)
-        
+
+        # 2026-06: el step_card con stretch=1 para que se expanda y rellene
+        # el alto disponible. Antes el contenido quedaba arriba con un
+        # vacío grande entre el bloque y los botones de navegación.
+        lay.addWidget(self.step_card, stretch=1)
+
         self.safety_lbl = None
         if self._skill.get("safety_note"):
             self.safety_lbl = QLabel(self._skill["safety_note"])
             self.safety_lbl.setFont(qfont("size_caption"))
             self.safety_lbl.setWordWrap(True)
             lay.addWidget(self.safety_lbl)
-            
-        lay.addStretch()
-        
+
+        # 2026-06: removido `lay.addStretch()` que generaba un vacío
+        # excesivo entre el safety_note y los botones de navegación.
+        # Los botones quedan pegados al bloque de contenido.
+
         btn_lay = QHBoxLayout()
         self.btn_cancel = NMButton("Salir", parent=self, variant="ghost", size="md")
         self.btn_cancel.clicked.connect(self.cancelled.emit)
         btn_lay.addWidget(self.btn_cancel)
-        
+
         btn_lay.addStretch()
-        
+
         self.btn_prev = NMButton("Anterior", parent=self, variant="secondary", size="md")
         self.btn_prev.clicked.connect(self._prev_step)
         btn_lay.addWidget(self.btn_prev)
-        
+
         self.btn_next = NMButton("Siguiente", parent=self, variant="gradient", size="md")
         self.btn_next.clicked.connect(self._next_step)
         btn_lay.addWidget(self.btn_next)
-        
+
         lay.addLayout(btn_lay)
         
         self._update_step()
@@ -793,18 +798,18 @@ class _PracticeClosure(QWidget):
         
     def _setup_ui(self):
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(24, 24, 24, 24)
-        lay.setSpacing(14)
-        
+        lay.setContentsMargins(24, 16, 24, 16)
+        lay.setSpacing(10)
+
         self.title_lbl = QLabel(f"Finalizar práctica: {self._skill_title}")
         self.title_lbl.setFont(v3_font("size_h3", weight=TYPOGRAPHY["weight_bold"], serif=True))
         lay.addWidget(self.title_lbl)
-        
+
         # Antes
         self.lbl_antes = QLabel("¿Cómo estaba tu nivel de malestar ANTES? (Opcional)")
         self.lbl_antes.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_semibold"]))
         lay.addWidget(self.lbl_antes)
-        
+
         self.antes_buttons = []
         antes_lay = QHBoxLayout()
         antes_lay.setSpacing(4)
@@ -814,12 +819,12 @@ class _PracticeClosure(QWidget):
             antes_lay.addWidget(btn)
             self.antes_buttons.append(btn)
         lay.addLayout(antes_lay)
-        
+
         # Despues
         self.lbl_despues = QLabel("¿Cómo está tu nivel de malestar AHORA? (Opcional)")
         self.lbl_despues.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_semibold"]))
         lay.addWidget(self.lbl_despues)
-        
+
         self.despues_buttons = []
         despues_lay = QHBoxLayout()
         despues_lay.setSpacing(4)
@@ -829,16 +834,16 @@ class _PracticeClosure(QWidget):
             despues_lay.addWidget(btn)
             self.despues_buttons.append(btn)
         lay.addLayout(despues_lay)
-        
+
         # Resultado
         self.lbl_res = QLabel("¿Te sirvió la práctica?")
         self.lbl_res.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_semibold"]))
         lay.addWidget(self.lbl_res)
-        
+
         self.res_buttons = {}
         res_lay = QHBoxLayout()
         res_lay.setSpacing(6)
-        
+
         options = [
             ("ayudo", "Me ayudó"),
             ("parcial", "Un poco"),
@@ -851,11 +856,13 @@ class _PracticeClosure(QWidget):
             res_lay.addWidget(btn)
             self.res_buttons[val] = btn
         lay.addLayout(res_lay)
-        
+
         # Preselect "sin_evaluar"
         self._select_resultado("sin_evaluar")
-        
-        lay.addStretch()
+
+        # 2026-06: removido `lay.addStretch()` que generaba un vacío
+        # excesivo entre los botones de resultado y el botón Guardar.
+        # El botón ahora queda pegado al bloque de arriba.
 
         btn_lay = QHBoxLayout()
         btn_lay.addStretch()
@@ -970,30 +977,43 @@ class ModuloDBT(NMModule):
         lay = QVBoxLayout(widget)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(16)
-        
+
         lbl_prompt = QLabel(t("text.module.dbt.now_prompt", "¿Qué necesitás en este momento?"))
         lbl_prompt.setObjectName("DbtPromptLabel")
         lbl_prompt.setFont(v3_font("size_h3", weight=TYPOGRAPHY["weight_bold"], serif=True))
         lbl_prompt.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
         lay.addWidget(lbl_prompt)
-        
+
         # 4 need cards grid
         grid = QGridLayout()
         grid.setSpacing(12)
-        
+        for c in range(2):
+            grid.setColumnStretch(c, 1)
+        for r in range(2):
+            grid.setRowStretch(r, 1)
+
         needs = [
             ("Volver al presente", "Mindfulness: pausar, enfocar y notar el aquí y ahora.", "mindfulness", "mind"),
             ("Atravesar un momento intenso", "Tolerancia: superar crisis sin empeorar la situación.", "distress_tolerance", "shield"),
             ("Regular una emoción", "Regulación: entender y suavizar sentimientos desbordantes.", "emotion_regulation", "mood"),
             ("Comunicarme con claridad", "Efectividad: pedir límites o dialogar con autorrespeto.", "interpersonal_effectiveness", "handshake"),
         ]
-        
+
         for i, (title, desc, family, icon) in enumerate(needs):
             card = _NeedCard(title, desc, family, icon, modo=self._modo, parent=widget)
             card.clicked.connect(lambda f=family: self._on_need_clicked(f))
+            # Expanding vertical para que las celdas del grid rellenen el
+            # alto disponible y eliminen el hueco excesivo entre el prompt
+            # y las 4 cards (antes el QStackedWidget centraba el contenido
+            # y quedaba un gap grande arriba).
+            card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             grid.addWidget(card, i // 2, i % 2)
-            
-        lay.addLayout(grid)
+
+        # 2026-06: stretch=1 en la grid para que el contenido se pegue al
+        # top de la vista (sin el stretch, Qt centra vertical → gap arriba
+        # y vacío abajo). Con el stretch, la grid se expande para llenar
+        # el alto del QStackedWidget.
+        lay.addLayout(grid, stretch=1)
 
         return widget
         

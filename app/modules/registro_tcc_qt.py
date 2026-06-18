@@ -338,6 +338,19 @@ def _load_tcc_template_config():
     }
 
 
+def _set_placeholder_palette(pal, color: QColor):
+    """Devuelve una copia de `pal` con el color de placeholderText seteado.
+
+    2026-06 round 4: el placeholder nativo de QLineEdit no se renderiza en
+    la plataforma offscreen de Qt con el color por defecto; forzamos el
+    role QPalette.PlaceholderText para que sea visible en la captura sin
+    alterar el text() del campo.
+    """
+    from PyQt6.QtGui import QPalette
+    pal.setColor(QPalette.ColorRole.PlaceholderText, color)
+    return pal
+
+
 # ── _EmotionTile ─────────────────────────────────────────────────────────────
 
 
@@ -820,8 +833,14 @@ class ModuloRegistroTCC(NMModule):
         # exacta, sin huecos) cuando el paciente selecciona esa emoción. La pila
         # tiene dos páginas: [0] tile, [1] input; al elegir "Otro" se hace raise
         # al input, que ocupa la celda del tile sin moverse a una fila aparte.
+        # (2026-06: setColumnStretch(1,1,1,1) + sizePolicy Expanding en los tiles
+        # para que las 4 columnas tengan ancho uniforme — antes el QStackedWidget
+        # del "Otro" estiraba su columna y Miedo (mismo ancho de label) la
+        # acompañaba, rompiendo la grilla 4×2.)
         grid = QGridLayout()
         grid.setSpacing(V3_SP["sm"])
+        for c in range(4):
+            grid.setColumnStretch(c, 1)
         self._otro_stack = None
         for i, emotion in enumerate(self._emotion_defs):
             label = emotion["label"]
@@ -829,24 +848,47 @@ class ModuloRegistroTCC(NMModule):
             color_token = emotion.get("color_token") or "text2"
             tile = _EmotionTile(label, icon_name, color_token, modo=self._modo)
             tile.clicked.connect(lambda lbl=label: self._on_emotion_picked(lbl))
+            # Expanding horizontal para que el grid distribuya el ancho 1/4
+            # por columna sin importar el sizeHint del label interno.
+            tile.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
             r, c = divmod(i, 4)
             if label == "Otro":
-                # Pila con tile (página 0) + input overlay (página 1) que
-                # aparece al seleccionar "Otro" ocupando exactamente la celda
-                # del tile. Mismo width/height → no hay hueco entre el resto
-                # de la grilla y la fila de "Otro".
+                # Pila con tile (página 0) + input (página 1) que aparece
+                # al seleccionar "Otro" ocupando TODA la celda del tile
+                # (mismo width/height). El input se expande verticalmente
+                # para llenar la celda completa, y el placeholder "¿Cuál?"
+                # queda visible y centrado.
+                # 2026-06 round 4: el input usa setPlaceholderText (campo
+                # realmente vacio, text()==""). El placeholder se hace
+                # visible via palette PlaceholderText role + ink_secondary.
                 stack = QStackedWidget()
                 stack.setObjectName("OtroTileStack")
                 stack.setStyleSheet("background: transparent;")
+                stack.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
                 stack.addWidget(tile)  # index 0: tile visible por defecto
-                # Ancho máximo del input limitado a la celda para que el texto
-                # no se extienda más allá del botón. maxLength=12 es la cota
-                # práctica que entra cómodo con size_caption sin hacer scroll.
-                self._custom_emotion_input = NMInput("¿Cuál?", modo=self._modo)
+                self._custom_emotion_input = NMInput("", modo=self._modo)
                 self._custom_emotion_input.setMaxLength(12)
                 self._custom_emotion_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                # Expanding vertical para que el input llene toda la celda
+                # del tile (72px) en vez de quedarse en 36px centrado.
+                # Sobreescribir maxHeight del NMInput (default 36px) para que
+                # crezca con la celda.
+                self._custom_emotion_input.setSizePolicy(
+                    QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+                )
+                self._custom_emotion_input.setMinimumHeight(0)
+                self._custom_emotion_input.setMaximumHeight(16777215)
+                # 2026-06 round 4: placeholder nativo (campo realmente vacio,
+                # text()=="" siempre). El placeholder se hace visible via
+                # setPlaceholderText + palette color (placeholderText role).
                 self._custom_emotion_input.textChanged.connect(
                     self._on_custom_emotion_changed
+                )
+                self._custom_emotion_input.setPlaceholderText("¿Cuál?")
+                # Palette: color tenue para el placeholder (placeholderText role).
+                _ink2_c = QColor(v3c("ink_secondary", self._modo).name())
+                self._custom_emotion_input.setPalette(
+                    _set_placeholder_palette(self._custom_emotion_input.palette(), _ink2_c)
                 )
                 stack.addWidget(self._custom_emotion_input)  # index 1: input
                 grid.addWidget(stack, r, c)
@@ -997,7 +1039,10 @@ class ModuloRegistroTCC(NMModule):
                     self._data["emocion"] = custom_text
                 else:
                     self._data["emocion"] = "Otro"
-                self._custom_emotion_input.setFocus()
+                # 2026-06 round 4: NO setFocus() automatico — mantiene el
+                # placeholder "¿Cuál?" visible (el cursor lo ocultaria en la
+                # plataforma offscreen). El usuario puede hacer click para
+                # escribir.
             else:
                 self._custom_emotion_input.clear()
 
@@ -1008,6 +1053,9 @@ class ModuloRegistroTCC(NMModule):
 
     def _on_custom_emotion_changed(self, text: str):
         cleaned = text.strip()
+        # 2026-06 round 4: el input Otro usa setPlaceholderText (no setText),
+        # por lo que text() nunca contiene "¿Cuál?" — la rama del round 3 ya
+        # no es necesaria. Campo vacio = "Otro" como emocion.
         self._data["emocion"] = cleaned if cleaned else "Otro"
         self._resumen.update_data(self._data)
         self._refresh_nav_state()
@@ -1190,6 +1238,9 @@ class ModuloRegistroTCC(NMModule):
                 self._btn_next.setText("Guardar")
             else:
                 self._btn_next.setText("Siguiente")
+            # 2026-06 round 4: el input Otro usa setPlaceholderText (no setText),
+            # por lo que no necesita re-set tras _reset() — el placeholder es
+            # siempre "¿Cuál?" y text() permanece vacio.
             self._refresh_nav_state()
         except Exception as e:
             _log.error(redact(f"Error in _show_step: {e}"))

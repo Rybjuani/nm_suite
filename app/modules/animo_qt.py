@@ -410,8 +410,12 @@ class ModuloAnimo(NMModule):
         right_lay.setSpacing(8)
 
         # 1. NMChartPanel con wave chart — zona reservada (Plan 2 NMChartPanel)
+        # 2026-06: minimumHeight 182→224 para balancear la columna derecha con la
+        # izquierda (slider card ocupa ~280px) — sin esto, el chart queda
+        # pequeño y las stats se "amontonan" abajo con stretch vacío entre
+        # el chart y las cards.
         self._hist_card = NMChartPanel("Últimos días", modo=self._modo)
-        self._hist_card.setMinimumHeight(182)
+        self._hist_card.setMinimumHeight(224)
         self._range_lbl = None  # ya manejado internamente por NMChartPanel
         # Selector 7D/30D — el chart muestra el promedio DIARIO de los
         # registros (varios registros en el mismo día se promedian a un solo
@@ -429,13 +433,25 @@ class ModuloAnimo(NMModule):
         self._hist_card.set_chart(self._wave_chart)
         right_lay.addWidget(self._hist_card)
 
-        self._stat_streak = _CareStatCard(
-            "Progreso",
+        # 2026-06: dos tarjetas de progreso (7 y 30 días) en lugar de una
+        # sola "Progreso". Se integran directamente con el bloque superior
+        # (sin stretch intermedio) para eliminar el vacío central.
+        # El chart ya muestra 7/30 días por separado, así que las stats
+        # tienen que reflejar el mismo rango para no quedar desfasadas.
+        # Mismo tamaño mínimo (66px) para que la grilla vertical lea uniforme.
+        self._stat_streak_7 = _CareStatCard(
+            "Progreso 7 días",
             "0 días",
-            "Días seguidos con registro.",
+            "Días seguidos con registro esta semana.",
             modo=self._modo,
         )
-        self._stat_cards = [self._stat_streak]
+        self._stat_streak_30 = _CareStatCard(
+            "Progreso 30 días",
+            "0 días",
+            "Días seguidos con registro este mes.",
+            modo=self._modo,
+        )
+        self._stat_cards = [self._stat_streak_7, self._stat_streak_30]
         for card in self._stat_cards:
             right_lay.addWidget(card)
 
@@ -460,6 +476,9 @@ class ModuloAnimo(NMModule):
         # unset=True: el thumb arranca ESTACIONADO en la muesca 0 (el 0 no es
         # un valor registrable — feedback owner v1.0); al primer click/drag se
         # mueve a 1-10 y se habilita guardar.
+        # (2026-06: show_zero=False — la escala clínica visible es 1-10 sin tick
+        # 0. El thumb sigue arrancando en la muesca 0 (unset), pero el número
+        # 0 no se muestra en la fila de números.)
         self._v3_slider = V3MoodSlider(
             level=5,
             title="¿Cómo te sientes hoy?",
@@ -467,6 +486,7 @@ class ModuloAnimo(NMModule):
             modo=self._modo,
             compact=True,
             unset=True,
+            show_zero=False,
         )
         self._v3_slider.level_changed.connect(self._on_level_changed)
         slider_lay.addWidget(self._v3_slider)
@@ -488,8 +508,11 @@ class ModuloAnimo(NMModule):
         btn_row.addWidget(self._btn_reg)
         left_lay.addLayout(btn_row)
 
+        # 2026-06: el stretch del final de cada columna ya no es necesario
+        # (el de la derecha está entre el chart y las stats; el de la
+        # izquierda se removió para que el botón Guardar quede pegado al
+        # final de la columna, balanceando con las stats de la derecha).
         left_lay.addStretch()
-        right_lay.addStretch()
         self._main_row.addWidget(left_col, 1)
         self._main_row.addWidget(right_col, 1)
         lay.addLayout(self._main_row)
@@ -598,10 +621,15 @@ class ModuloAnimo(NMModule):
 
     # ── streak (lógica preservada) ────────────────────────────────────────────
 
-    def _load_streak(self) -> int:
-        """Días consecutivos con registro de ánimo (tabla termometro)."""
+    def _load_streak(self, days: int = 30) -> int:
+        """Días consecutivos con registro de ánimo (tabla termometro).
+
+        `days` limita la ventana de búsqueda (7 para la tarjeta semanal,
+        30 para la mensual). En QA devuelve 7 días para la semanal y
+        12 para la mensual (representativo sin saturar la tarjeta).
+        """
         if visual_qa_enabled():
-            return 7
+            return 7 if days <= 7 else 12
         try:
             import datetime as dt
 
@@ -609,7 +637,8 @@ class ModuloAnimo(NMModule):
             rows = [
                 r[0]
                 for r in con.execute(
-                    "SELECT DISTINCT date(fecha) FROM termometro ORDER BY date(fecha) DESC LIMIT 30"
+                    "SELECT DISTINCT date(fecha) FROM termometro ORDER BY date(fecha) DESC LIMIT ?",
+                    (max(days, 60),),
                 ).fetchall()
             ]
             today = dt.date.today()
@@ -654,12 +683,17 @@ class ModuloAnimo(NMModule):
         self._wave_chart.set_data(serie, [None] * len(serie))
 
     def _refresh_insights(self):
-        """Actualiza stat de progreso (racha de días con registro)."""
-        streak = self._load_streak()
-        if hasattr(self, "_stat_streak"):
-            self._stat_streak.set_value("1 día" if streak == 1 else f"{streak} días")
-            self._stat_streak.set_message("Días seguidos con registro.")
-            self._stat_streak.set_tone("primary" if streak else None)
+        """Actualiza stats de progreso (rachas 7 y 30 días)."""
+        streak_7 = self._load_streak(days=7)
+        streak_30 = self._load_streak(days=30)
+        if hasattr(self, "_stat_streak_7"):
+            self._stat_streak_7.set_value("1 día" if streak_7 == 1 else f"{streak_7} días")
+            self._stat_streak_7.set_message("Días seguidos con registro esta semana.")
+            self._stat_streak_7.set_tone("primary" if streak_7 else None)
+        if hasattr(self, "_stat_streak_30"):
+            self._stat_streak_30.set_value("1 día" if streak_30 == 1 else f"{streak_30} días")
+            self._stat_streak_30.set_message("Días seguidos con registro este mes.")
+            self._stat_streak_30.set_tone("primary" if streak_30 else None)
 
     # ── registrar (lógica preservada exacta) ─────────────────────────────────
 
