@@ -106,6 +106,93 @@ _ATTEMPT_DEADLINE_SECS: int = 22
 # que congela el hilo de IA y deja la UI colgada en "GENERANDO" para siempre.
 _lock = threading.RLock()
 _IDIOMA = "Respondé siempre en español rioplatense, sin emojis, de forma concisa."
+_MAX_RECORDS_PER_MODULE = 5
+_MAX_FIELD_CHARS = 180
+_MAX_PROMPT_CHARS = 8000
+
+_RESUMEN_MODULE_FIELDS = {
+    "animo": (
+        ("fecha", "fecha"),
+        ("hora", "hora"),
+        ("puntaje", "puntaje"),
+        ("nota", "nota"),
+    ),
+    "respiracion": (
+        ("fecha", "fecha"),
+        ("hora", "hora"),
+        ("tecnica", "tecnica"),
+        ("duracion_minutos", "duracion_min"),
+        ("ciclos", "ciclos"),
+    ),
+    "tcc": (
+        ("fecha", "fecha"),
+        ("hora", "hora"),
+        ("situacion", "situacion"),
+        ("emocion", "emocion"),
+        ("intensidad", "intensidad"),
+        ("pensamiento", "pensamiento"),
+        ("respuesta_alternativa", "respuesta_alternativa"),
+        ("distorsiones", "distorsiones"),
+    ),
+    "checklist": (
+        ("fecha", "fecha"),
+        ("descripcion", "descripcion"),
+        ("categoria", "categoria"),
+        ("origen", "origen"),
+    ),
+    "actividades": (
+        ("fecha", "fecha"),
+        ("hora", "hora"),
+        ("animo", "animo"),
+        ("actividad", "actividad"),
+        ("resultado", "resultado"),
+    ),
+    "timer": (
+        ("fecha", "fecha"),
+        ("hora", "hora"),
+        ("nombre", "nombre"),
+        ("categoria", "categoria"),
+        ("duracion_config", "duracion_config"),
+        ("duracion_real", "duracion_real"),
+        ("notas", "notas"),
+    ),
+    "recordatorios": (
+        ("hora", "hora"),
+        ("mensaje", "mensaje"),
+        ("activa", "activa"),
+    ),
+    "dbt": (
+        ("fecha", "fecha"),
+        ("hora", "hora"),
+        ("skill_id", "skill"),
+        ("skill_version", "version"),
+        ("familia", "familia"),
+        ("necesidad", "necesidad"),
+        ("malestar_antes", "malestar_antes"),
+        ("malestar_despues", "malestar_despues"),
+        ("resultado", "resultado"),
+        ("duracion_seg", "duracion_seg"),
+        ("nota", "nota"),
+    ),
+    "avisos_disparados": (
+        ("fecha", "fecha"),
+        ("hora", "hora"),
+        ("mensaje", "mensaje"),
+        ("cerrado", "cerrado"),
+    ),
+}
+
+_RESUMEN_MODULE_TITLES = {
+    "animo": "Animo",
+    "respiracion": "Respiracion",
+    "tcc": "TCC",
+    "checklist": "Rutina",
+    "actividades": "Actividades conductuales",
+    "timer": "Temporizador",
+    "recordatorios": "Recordatorios asignados",
+    "dbt": "DBT",
+    "avisos_disparados": "Avisos disparados",
+}
 
 _picked = False
 _picked_lock = threading.Lock()
@@ -122,6 +209,60 @@ def _ensure_provider():
 
 def _cfg():
     return _config_get
+
+
+def _compact_text(value, max_chars: int = _MAX_FIELD_CHARS) -> str:
+    text = " ".join(str(value).split())
+    if len(text) <= max_chars:
+        return text
+    return text[: max_chars - 3].rstrip() + "..."
+
+
+def _format_clinical_record(row: dict, fields: tuple[tuple[str, str], ...]) -> str:
+    parts: list[str] = []
+    for key, label in fields:
+        value = row.get(key)
+        if value is None or value == "":
+            continue
+        parts.append(f"{label}: {_compact_text(value)}")
+    return "; ".join(parts)
+
+
+def _truncate_block(text: str, max_chars: int) -> str:
+    if len(text) <= max_chars:
+        return text
+    suffix = "\n[Contexto truncado para mantener el tamaño del prompt.]"
+    cut = text[: max(0, max_chars - len(suffix))]
+    if "\n" in cut:
+        cut = cut.rsplit("\n", 1)[0]
+    return cut.rstrip() + suffix
+
+
+def _resumen_registros_recientes(modulos: dict[str, list]) -> str:
+    sections: list[str] = []
+    for key, rows in modulos.items():
+        if not rows:
+            continue
+        fields = _RESUMEN_MODULE_FIELDS[key]
+        lines: list[str] = []
+        for row in rows[:_MAX_RECORDS_PER_MODULE]:
+            if not isinstance(row, dict):
+                continue
+            formatted = _format_clinical_record(row, fields)
+            if formatted:
+                lines.append(f"  - {formatted}")
+        if lines:
+            title = _RESUMEN_MODULE_TITLES[key]
+            sections.append(f"{title} (hasta 5 recientes):\n" + "\n".join(lines))
+    if not sections:
+        return ""
+    return "Registros recientes con contenido clinico:\n" + "\n".join(sections)
+
+
+def _prompt_con_presupuesto(contexto: str, instrucciones: str) -> str:
+    budget_contexto = max(1200, _MAX_PROMPT_CHARS - len(instrucciones) - 2)
+    contexto = _truncate_block(contexto, budget_contexto)
+    return f"{contexto}\n\n{instrucciones}"
 
 
 
@@ -647,6 +788,7 @@ def generar_resumen_paciente(datos: dict, nombre: str, on_result, on_error, pati
     timer = datos.get("timer", [])
     recordatorios = datos.get("recordatorios", [])
     dbt = datos.get("dbt", [])
+    avisos_disparados = datos.get("avisos_disparados", [])
 
     puntajes = [r.get("puntaje") for r in animo if r.get("puntaje")]
     prom = round(sum(puntajes) / len(puntajes), 1) if puntajes else None
@@ -664,15 +806,33 @@ def generar_resumen_paciente(datos: dict, nombre: str, on_result, on_error, pati
         f"- Temporizador: {len(timer)} sesiones\n"
         f"- Recordatorios asignados: {len(recordatorios)}\n"
         f"- DBT: {len(dbt)} registros\n"
+        f"- Avisos disparados: {len(avisos_disparados)} registros\n"
     )
     if tcc:
         emociones = [r.get("emocion") for r in tcc[:5] if r.get("emocion")]
         if emociones:
             contexto += f"Emociones TCC recientes: {', '.join(emociones[:3])}.\n"
+    detalles = _resumen_registros_recientes(
+        {
+            "animo": animo,
+            "respiracion": respiracion,
+            "tcc": tcc,
+            "checklist": checklist,
+            "actividades": actividades,
+            "timer": timer,
+            "recordatorios": recordatorios,
+            "dbt": dbt,
+            "avisos_disparados": avisos_disparados,
+        }
+    )
+    if detalles:
+        contexto += "\n" + detalles + "\n"
 
-    prompt = (
-        f"{contexto}\n"
+    instrucciones = (
         "Redacta un resumen clinico ordenado y breve para el terapeuta. "
+        "Usa los registros recientes como evidencia, sin inventar datos ausentes. "
+        "No incluyas identificadores tecnicos ni datos de cuenta. "
+        "El texto es un borrador para revision profesional. "
         "Usa exactamente estas 4 secciones, cada una de 1-2 oraciones:\n"
         "Estado general: ...\n"
         "Adherencia y habitos: ...\n"
@@ -680,6 +840,7 @@ def generar_resumen_paciente(datos: dict, nombre: str, on_result, on_error, pati
         "Recomendacion de sesion: ...\n"
         "Sin texto adicional fuera de esas secciones."
     )
+    prompt = _prompt_con_presupuesto(contexto, instrucciones)
     sistema = (
         "Sos un asistente profesional para terapeutas de salud mental. "
         "Analiza datos de apps de bienestar para dar contexto al terapeuta. "
