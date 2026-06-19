@@ -634,17 +634,20 @@ class ModuloRegistroTCC(NMModule):
         # progression, so the card stays compact at the 960x600 contract.
         steps_card = NMCard(modo=self._modo, clickable=False)
         steps_card.setMinimumWidth(480)  # Slightly more compact
-        # Piso de altura: garantiza espacio al grid 4×2 de emoción para que el
-        # crecimiento de "Registros previos" nunca lo comprima/superponga (M2 P0).
-        steps_card.setMinimumHeight(330)
+        # Altura acotada: los campos largos scrollean en su QTextEdit, sin
+        # convertir el paso completo en una caja vacía de media pantalla.
+        steps_card.setMinimumHeight(318)
+        steps_card.setMaximumHeight(352)
+        steps_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         sc_lay = QVBoxLayout(steps_card)
         sc_lay.setContentsMargins(V3_SP["md"], V3_SP["sm"], V3_SP["md"], V3_SP["sm"])
         sc_lay.setSpacing(V3_SP["sm"])
 
         self._stack = QStackedWidget()
-        self._stack.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self._stack.setMaximumHeight(244)
+        self._stack.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         self._success_page: QWidget | None = None
-        sc_lay.addWidget(self._stack)
+        sc_lay.addWidget(self._stack, stretch=0)
 
         self._step_headers = []
         self._pages: list[QWidget] = []
@@ -809,10 +812,9 @@ class ModuloRegistroTCC(NMModule):
             modo=self._modo,
             min_height=120,
         )
+        self._txt_situacion.setMaximumHeight(156)
         self._txt_situacion.textChanged.connect(self._update_situacion_count)
-        # La textarea absorbe el alto disponible de la card (stretch=1): fija en
-        # 78px + addStretch abría un vacío enorme sobre la navegación (S05/S08).
-        layout.addWidget(self._txt_situacion, stretch=1)
+        layout.addWidget(self._txt_situacion, stretch=0)
 
         self._situacion_count_lbl = QLabel("0 / 500")
         self._situacion_count_lbl.setFont(qfont("size_caption_xs"))
@@ -943,10 +945,9 @@ class ModuloRegistroTCC(NMModule):
             modo=self._modo,
             min_height=96,
         )
+        self._txt_pensamiento.setMaximumHeight(132)
         self._txt_pensamiento.textChanged.connect(self._on_pensamiento_changed)
-        # Expandible: deja que la textarea tome el alto sobrante y ancla las
-        # columnas (contador/distorsiones + tip) debajo, sin área muerta (S07).
-        layout.addWidget(self._txt_pensamiento, stretch=1)
+        layout.addWidget(self._txt_pensamiento, stretch=0)
 
         # QHBoxLayout for 2 columns below the textarea
         two_cols = QHBoxLayout()
@@ -1021,7 +1022,8 @@ class ModuloRegistroTCC(NMModule):
             modo=self._modo,
             min_height=120,
         )
-        layout.addWidget(self._txt_respuesta, stretch=1)
+        self._txt_respuesta.setMaximumHeight(156)
+        layout.addWidget(self._txt_respuesta, stretch=0)
         self._pages.append(page)
 
     # ── emotion tile picker ──────────────────────────────────────────────────
@@ -1203,6 +1205,12 @@ class ModuloRegistroTCC(NMModule):
         try:
             self._update_progress()
             if hasattr(self, "_stack") and self._stack and self._pages:
+                stack_h = {0: 244, 1: 284, 2: 288, 3: 244}.get(self._step, 260)
+                card_h = {0: 324, 1: 364, 2: 372, 3: 324}.get(self._step, 342)
+                self._stack.setMaximumHeight(stack_h)
+                if hasattr(self, "_steps_card"):
+                    self._steps_card.setMinimumHeight(min(card_h, 352))
+                    self._steps_card.setMaximumHeight(min(card_h, 372))
                 self._stack.setCurrentWidget(self._pages[self._step])
 
             for i, page in enumerate(self._pages):

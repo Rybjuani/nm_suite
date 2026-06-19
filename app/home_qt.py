@@ -225,18 +225,12 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._shadow: QGraphicsDropShadowEffect | None = None
         self._fade_eff: QGraphicsOpacityEffect | None = None
 
-        # M2 P2-C: al quitar las cards "Progreso de Ánimo" y "Resumen Semanal",
-        # las 8 cards de módulo se agrandan para ocupar el espacio liberado y
-        # ganar presencia (más premium), sin solapar títulos de 2 líneas.
-        # Altura elástica acotada: con alturas FIJAS en todos los items, el
-        # QVBoxLayout del Home repartía el sobrante como huecos entre items
-        # (voids proporcionales al agrandar la ventana). El chip de estado
-        # queda anclado abajo por el stretch interno. Tope 288 (era 256): el
-        # alto que liberó el hero compacto lo absorben estas cards.
-        self.setMinimumHeight(150)
-        self.setMaximumHeight(288)
+        # Altura cómoda: las cards no deben crecer hasta crear un vacío central
+        # entre descripción y estado.
+        self.setMinimumHeight(156)
+        self.setMaximumHeight(190)
         self.setMinimumWidth(0)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
 
@@ -265,8 +259,9 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 14, 20, 14)  # Premium: 20px padding
+        layout.setContentsMargins(20, 14, 20, 14)
         layout.setSpacing(0)
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # Top row: icon + chip
         top = QHBoxLayout()
@@ -296,8 +291,6 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._desc_lbl.setStyleSheet("background: transparent;")
         layout.addWidget(self._desc_lbl)
 
-        layout.addStretch()
-
         # Bottom row: badge + ring (size 22)
         bottom = QHBoxLayout()
         bottom.setContentsMargins(0, 0, 0, 0)
@@ -310,7 +303,9 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._ring = NMModuleRing(size=22, pct=0.0, modo=self._modo, show_label=False)
         self._ring.hide()
         bottom.addWidget(self._ring)
+        layout.addSpacing(14)
         layout.addLayout(bottom)
+        layout.addStretch(1)
 
         self._apply_styles()
         self._refresh_status()
@@ -930,20 +925,7 @@ class HomeView(QWidget):
         self._session_card = _ProximaSesionCard(self._modo, parent=content)
         self._session_card.hide()
         content_lay.addWidget(self._hero, stretch=1)
-        content_lay.addSpacing(V3_SP["sm"])
-
-        # Sección "Tus módulos": eyebrow jerárquico del frame del prototipo
-        # (separador entre el hero y la grilla de módulos). No agrega función,
-        # solo rótulo de sección para mantener el ritmo visual del mockup.
-        self._modules_label = QLabel(
-            t("text.home.modules_section", "Tus módulos").upper()
-        )
-        self._modules_label.setFont(eyebrow_font())
-        self._modules_label.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-        )
-        content_lay.addWidget(self._modules_label)
-        content_lay.addSpacing(V3_SP["xs"])
+        content_lay.addSpacing(V3_SP["md"])
 
         # P2.C: cards de "Progreso de Ánimo" y "Resumen Semanal" removidas.
         # El espacio liberado se usa para agrandar las 8 cards de módulo (la grilla
@@ -952,6 +934,7 @@ class HomeView(QWidget):
         self._grid.setContentsMargins(0, 0, 0, 0)
         self._grid.setVerticalSpacing(12)  # Premium: 12px gap
         self._grid.setHorizontalSpacing(12)  # Premium: 12px gap
+        self._grid.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         self._module_configs = module_configs()
         for idx, cfg in enumerate(self._module_configs):
@@ -966,7 +949,8 @@ class HomeView(QWidget):
         # SIN stretch final (feedback owner v1.0 r3): hero y cards absorben
         # TODO el alto disponible (máximos 192/256 cubren de sobra el contrato
         # 960×600 e incluso 1366×768) — el pie queda lleno, no "con resto".
-        content_lay.addLayout(self._grid, stretch=3)
+        content_lay.addLayout(self._grid, stretch=0)
+        content_lay.addStretch(1)
 
         root.addWidget(content, stretch=1)
 
@@ -1151,10 +1135,6 @@ class HomeView(QWidget):
             self._hero.apply_theme(self._modo)
         if hasattr(self, "_session_card"):
             self._session_card.apply_theme(self._modo)
-        if hasattr(self, "_modules_label"):
-            self._modules_label.setStyleSheet(
-                f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-            )
         self.update()
 
     def _refresh_home_wave(self):

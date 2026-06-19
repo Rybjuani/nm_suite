@@ -1,0 +1,4 @@
+# Seguimiento de fases
+
+- Fase 0 — Foundation: ✅ HECHA
+- Fase 1 — Consumidores Suite: ✅ HECHA

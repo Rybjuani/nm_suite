@@ -36,6 +36,7 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QBoxLayout,
+    QSizePolicy,
 )
 
 try:
@@ -388,9 +389,12 @@ class ModuloAnimo(NMModule):
 
         # 2. Registro del ánimo: escala sobria + mensaje de cuidado.
         slider_card = NMCard(modo=self._modo, clickable=False, glow=False)
+        slider_card.setMaximumHeight(184)
+        slider_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         slider_lay = QVBoxLayout(slider_card)
         slider_lay.setContentsMargins(18, 12, 18, 12)
-        slider_lay.setSpacing(6)
+        slider_lay.setSpacing(8)
+        slider_lay.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         slider_head = QHBoxLayout()
         slider_head.setSpacing(V3_SP["sm"])
@@ -419,6 +423,8 @@ class ModuloAnimo(NMModule):
             unset=True,
             show_zero=False,
         )
+        self._v3_slider.setMaximumHeight(86)
+        self._v3_slider.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         self._v3_slider.level_changed.connect(self._on_level_changed)
         slider_lay.addWidget(self._v3_slider)
 

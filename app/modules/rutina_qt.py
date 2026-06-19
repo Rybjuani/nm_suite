@@ -215,8 +215,9 @@ class _SectionCard(NMCard):
         self._label = label
         self._icon_name = icon_name
         self._build()
-        self.setMinimumHeight(250)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setMinimumHeight(154)
+        self.setMaximumHeight(260)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
 
     def _build(self):
         lay = QVBoxLayout(self)
@@ -245,12 +246,8 @@ class _SectionCard(NMCard):
         self._body_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._body_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self._body_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-        # El body llena todo el alto disponible (stretch=1) y el "+ Agregar
-        # tarea" queda pinneado al fondo. Antes un setMaximumHeight(260) capaba
-        # la lista y dejaba el botón flotando en el medio con espacio muerto
-        # abajo cuando se acumulaban tareas (feedback owner). Sin tope, la lista
-        # se extiende y scrollea calma.
-        self._body_scroll.setMinimumHeight(104)
+        self._body_scroll.setMinimumHeight(62)
+        self._body_scroll.setMaximumHeight(172)
         self._body = QWidget()
         self._body.setStyleSheet("background: transparent;")
         self._body_lay = QVBoxLayout(self._body)
@@ -285,9 +282,22 @@ class _SectionCard(NMCard):
         else:
             self._ring.set_pct(0.0)
             self._count_lbl.setText("0/0")
+        self._sync_height_to_content(total)
+
+    def _sync_height_to_content(self, total: int):
+        rows = max(1, min(total, 5))
+        footer_h = 34 if self._add_btn.isVisible() else 0
+        target = max(154, min(252, 92 + rows * 30 + footer_h))
+        self.setMinimumHeight(target)
+        self.setMaximumHeight(target)
 
     def set_manual_enabled(self, enabled: bool):
         self._add_btn.setVisible(enabled)
+        try:
+            total = int(self._count_lbl.text().split("/", 1)[1])
+        except Exception:
+            total = 0
+        self._sync_height_to_content(total)
 
     def show_add_inline(self, on_save):
         """Inserta una fila inline (input tematizado + botón check) al final del body."""
@@ -403,6 +413,7 @@ class ModuloRutina(NMModule):
         lay = QVBoxLayout(body)
         lay.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], V3_SP["md"])
         lay.setSpacing(V3_SP["sm"])
+        lay.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # 1. Hero Day Card (Ring grande del día, sin CTA — el "+ Agregar tarea"
         # vive en cada sección para evitar duplicación y solapamiento).
@@ -427,6 +438,10 @@ class ModuloRutina(NMModule):
         self._sections_grid.setContentsMargins(0, 0, 0, 0)
         self._sections_grid.setHorizontalSpacing(V3_SP["sm"])
         self._sections_grid.setVerticalSpacing(V3_SP["sm"])
+        self._sections_grid.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self._sections_grid_widget.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum
+        )
         self._section_order: list[_SectionCard] = []
         for key, text_key, label, icon_name in SECCIONES:
             label = t(text_key, label)
@@ -455,7 +470,9 @@ class ModuloRutina(NMModule):
         for c in range(3):
             self._sections_grid.setColumnStretch(c, 1 if c < cols else 0)
         for idx, card in enumerate(self._section_order):
-            self._sections_grid.addWidget(card, idx // cols, idx % cols)
+            self._sections_grid.addWidget(
+                card, idx // cols, idx % cols, alignment=Qt.AlignmentFlag.AlignTop
+            )
 
     def _compact_task_check(self, cb: NMCustomCheck) -> NMCustomCheck:
         cb.setMinimumHeight(28)
