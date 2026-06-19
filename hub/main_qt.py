@@ -466,6 +466,11 @@ class PacientesView(QWidget):
             sync_state = "ok" if p.get("last_sync_date") or visual_qa_enabled() else "stale"
             _qa_mood = [6, 6, 7, 7, 7, 8, 8] if visual_qa_enabled() else None
             mood_data = p.get("mood_data_7d") or _qa_mood
+            pct_val = p.get("adherence")
+            try:
+                pct = float(pct_val) if pct_val is not None else None
+            except (TypeError, ValueError):
+                pct = None
             row = NMPatientRowPremium(
                 nombre,
                 patient_id=pid,
@@ -474,7 +479,7 @@ class PacientesView(QWidget):
                 next_session=next_session,
                 tags=["Hub", "Activo"] if visual_qa_enabled() else ["Hub"],
                 sync_state=sync_state,
-                pct=float(p.get("adherence", 0.75)),
+                pct=pct,
                 mood_data=mood_data,
                 selected=False,
                 modo=self._modo,

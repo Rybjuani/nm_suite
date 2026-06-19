@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 from PyQt6.QtCore import QEasingCurve, QPointF, QPropertyAnimation, QRectF, Qt, QTimer, pyqtProperty
 from PyQt6.QtGui import QBrush, QColor, QPainter, QPen, QRadialGradient
 from PyQt6.QtWidgets import QWidget
@@ -38,6 +40,18 @@ def _ring_stroke(size: int) -> int:
     if size <= 200:
         return 12
     return 14
+
+
+def _clamp_optional_pct(pct: float | None) -> float | None:
+    if pct is None:
+        return None
+    try:
+        value = float(pct)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(value):
+        return None
+    return max(0.0, min(1.0, value))
 
 
 def _color_at_t(stops, t: float) -> QColor:
@@ -333,22 +347,22 @@ class NMModuleRing(QWidget):
     def __init__(
         self,
         size: int = 56,
-        pct: float = 0.0,
+        pct: float | None = 0.0,
         modo: str = None,
         show_label: bool = True,
         parent=None,
     ):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
-        self._pct = max(0.0, min(1.0, pct))
+        self._pct = _clamp_optional_pct(pct)
         self._size = size
         self._show_label = bool(show_label)
         self.setFixedSize(size, size)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
         _tm().theme_changed.connect(self._apply_theme)
 
-    def set_pct(self, pct: float):
-        self._pct = max(0.0, min(1.0, pct))
+    def set_pct(self, pct: float | None):
+        self._pct = _clamp_optional_pct(pct)
         self.update()
 
     def _apply_theme(self, modo: str):
@@ -376,14 +390,15 @@ class NMModuleRing(QWidget):
         p.drawEllipse(QPointF(cx, cy), r_arc, r_arc)
 
         # Arco progreso con gradient firma v3 (uniforme entre rings)
-        if self._pct > 0.001:
+        if self._pct is not None and self._pct > 0.001:
             _paint_v3_arc(p, arc_rect, 90.0, -360.0 * self._pct, pen_w, self._modo)
 
         # Texto centrado (solo si show_label=True; tamaños chicos no lo pintan)
         if self._show_label:
             p.setPen(v3c("text", self._modo))
             p.setFont(qfont_mono(max(9, int(s * 0.20)), bold=False))
-            p.drawText(QRectF(0, 0, s, s), Qt.AlignmentFlag.AlignCenter, f"{int(self._pct * 100)}%")
+            label = "—" if self._pct is None else f"{int(self._pct * 100)}%"
+            p.drawText(QRectF(0, 0, s, s), Qt.AlignmentFlag.AlignCenter, label)
 
         p.restore()
         p.end()
