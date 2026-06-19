@@ -35,6 +35,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
+    QFrame,
     QBoxLayout,
     QSizePolicy,
 )
@@ -47,6 +48,7 @@ try:
         NMCard,
         NMWaveChart,
         V3MoodSlider,
+        NMIcon,
         NMChartPanel,
     )
     from shared.theme_qt import (
@@ -58,6 +60,7 @@ try:
         V3_SP,
         eyebrow_font,
         v3_font,
+        qcolor_to_rgba_css,
     )
     from shared.theme import TYPOGRAPHY
     from shared.db import obtener_conexion, conexion
@@ -74,6 +77,7 @@ except ImportError:
         NMToast,
         NMWaveChart,
         V3MoodSlider,
+        NMIcon,
         NMChartPanel,
     )
     from shared.theme_qt import (
@@ -85,6 +89,7 @@ except ImportError:
         V3_SP,
         eyebrow_font,
         v3_font,
+        qcolor_to_rgba_css,
     )
     from shared.theme import TYPOGRAPHY
     from shared.db import obtener_conexion, conexion
@@ -129,32 +134,60 @@ def _mood_color_for_level(level: int) -> str:
 class _CareStatCard(NMCard):
     """Métrica compacta con mensaje de cuidado; nunca muestra un valor solo."""
 
-    def __init__(self, label: str, value: str, message: str, modo: str = None, parent=None):
+    def __init__(
+        self,
+        label: str,
+        value: str,
+        message: str,
+        modo: str = None,
+        parent=None,
+        icon_name: str = "chart",
+    ):
         super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
-        self.setMinimumHeight(66)
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(12, 6, 12, 6)
-        lay.setSpacing(1)
+        self.setMinimumHeight(96)
+        self.setMaximumHeight(116)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(18, 12, 18, 12)
+        lay.setSpacing(14)
+        lay.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+
+        self._icon_tile = QFrame(self)
+        self._icon_tile.setObjectName("MoodStatIconTile")
+        self._icon_tile.setFixedSize(58, 58)
+        self._icon_tile.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        icon_lay = QVBoxLayout(self._icon_tile)
+        icon_lay.setContentsMargins(0, 0, 0, 0)
+        icon_lay.setSpacing(0)
+        self._icon = NMIcon(icon_name, size=26, color_key="primary", modo=self._modo)
+        icon_lay.addWidget(self._icon, 0, Qt.AlignmentFlag.AlignCenter)
+        lay.addWidget(self._icon_tile, 0, Qt.AlignmentFlag.AlignVCenter)
+
+        text_col = QVBoxLayout()
+        text_col.setContentsMargins(0, 0, 0, 0)
+        text_col.setSpacing(2)
         self._label = QLabel(label)
-        self._label.setFont(eyebrow_font())
-        lay.addWidget(self._label)
+        self._label.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_semibold"]))
+        text_col.addWidget(self._label)
 
         row = QHBoxLayout()
         row.setSpacing(6)
         self._value = QLabel(value)
-        self._value.setFont(v3_font("size_h3", weight=TYPOGRAPHY["weight_semibold"], serif=True))
+        self._value.setFont(v3_font("size_h2", weight=TYPOGRAPHY["weight_semibold"], serif=True))
         row.addWidget(self._value)
         self._delta = QLabel("")
         self._delta.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
         self._delta.setVisible(False)
         row.addWidget(self._delta)
         row.addStretch()
-        lay.addLayout(row)
+        text_col.addLayout(row)
 
         self._message = QLabel(message)
-        self._message.setFont(qfont("size_caption_xs"))
+        self._message.setFont(qfont("size_caption"))
         self._message.setWordWrap(True)
-        lay.addWidget(self._message)
+        text_col.addWidget(self._message)
+        lay.addLayout(text_col, stretch=1)
         self._tone_key = None
         self._apply_theme(self._modo)
 
@@ -187,10 +220,20 @@ class _CareStatCard(NMCard):
 
     def _apply_theme(self, modo: str):
         super()._apply_theme(modo)
-        self._label.setStyleSheet(
-            f"color: {v3c('text2', self._modo).name()}; background: transparent; "
+        tile_bg = qcolor_to_rgba_css(v3c("primary_soft", self._modo))
+        border = qcolor_to_rgba_css(v3c("border", self._modo))
+        self._icon_tile.setStyleSheet(
+            "QFrame#MoodStatIconTile {"
+            f"background: {tile_bg};"
+            f"border: 1px solid {border};"
+            "border-radius: 29px;"
+            "}"
         )
-        self._label.setFont(eyebrow_font())
+        self._icon._apply_theme(self._modo)
+        self._label.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; background: transparent; "
+        )
+        self._label.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_semibold"]))
         self._message.setStyleSheet(
             f"color: {v3c('text2', self._modo).name()}; background: transparent;"
         )
@@ -325,29 +368,27 @@ class ModuloAnimo(NMModule):
         outer.addWidget(body)
 
         lay = QVBoxLayout(body)
-        lay.setContentsMargins(24, 12, 24, 12)
-        lay.setSpacing(10)
+        lay.setContentsMargins(24, 14, 24, 14)
+        lay.setSpacing(0)
 
         self._main_row = QBoxLayout(QBoxLayout.Direction.LeftToRight)
-        self._main_row.setSpacing(12)
+        self._main_row.setSpacing(14)
         left_col = QWidget()
         left_col.setStyleSheet("background: transparent;")
         left_lay = QVBoxLayout(left_col)
         left_lay.setContentsMargins(0, 0, 0, 0)
-        left_lay.setSpacing(8)
+        left_lay.setSpacing(12)
         right_col = QWidget()
         right_col.setStyleSheet("background: transparent;")
         right_lay = QVBoxLayout(right_col)
         right_lay.setContentsMargins(0, 0, 0, 0)
-        right_lay.setSpacing(8)
+        right_lay.setSpacing(0)
 
-        # 1. NMChartPanel con wave chart — zona reservada (Plan 2 NMChartPanel)
-        # 2026-06: minimumHeight 182→224 para balancear la columna derecha con la
-        # izquierda (slider card ocupa ~280px) — sin esto, el chart queda
-        # pequeño y las stats se "amontonan" abajo con stretch vacío entre
-        # el chart y las cards.
+        # 1. Historial como panel dominante de la columna derecha: las stats
+        # viven a la izquierda para evitar el vacío central del layout previo.
         self._hist_card = NMChartPanel("Últimos días", modo=self._modo)
-        self._hist_card.setMinimumHeight(224)
+        self._hist_card.setMinimumHeight(470)
+        self._hist_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._range_lbl = None  # ya manejado internamente por NMChartPanel
         # Selector 7D/30D — el chart muestra el promedio DIARIO de los
         # registros (varios registros en el mismo día se promedian a un solo
@@ -360,17 +401,16 @@ class ModuloAnimo(NMModule):
         # Serie ÚNICA: el valor de ánimo (puntaje) promediado por día. Sin separar
         # positivo/negativo — un solo punto diario, misma fórmula que Home y Hub.
         self._wave_chart = NMWaveChart(modo=self._modo)
-        self._wave_chart.setMinimumHeight(110)
-        self._wave_chart.setMaximumHeight(140)
+        self._wave_chart.setMinimumHeight(330)
+        self._wave_chart.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._hist_card.set_chart(self._wave_chart)
-        right_lay.addWidget(self._hist_card)
+        right_lay.addWidget(self._hist_card, stretch=1)
 
         # 2026-06: dos tarjetas de progreso (7 y 30 días) en lugar de una
-        # sola "Progreso". Se integran directamente con el bloque superior
-        # (sin stretch intermedio) para eliminar el vacío central.
+        # sola "Progreso". Se integran debajo del registro, como en el mock de
+        # referencia, para que el panel de historial pueda ocupar toda la derecha.
         # El chart ya muestra 7/30 días por separado, así que las stats
         # tienen que reflejar el mismo rango para no quedar desfasadas.
-        # Mismo tamaño mínimo (66px) para que la grilla vertical lea uniforme.
         self._stat_streak_7 = _CareStatCard(
             "Progreso 7 días",
             "0 días",
@@ -384,16 +424,15 @@ class ModuloAnimo(NMModule):
             modo=self._modo,
         )
         self._stat_cards = [self._stat_streak_7, self._stat_streak_30]
-        for card in self._stat_cards:
-            right_lay.addWidget(card)
 
         # 2. Registro del ánimo: escala sobria + mensaje de cuidado.
         slider_card = NMCard(modo=self._modo, clickable=False, glow=False)
-        slider_card.setMaximumHeight(184)
+        slider_card.setMinimumHeight(262)
+        slider_card.setMaximumHeight(292)
         slider_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         slider_lay = QVBoxLayout(slider_card)
-        slider_lay.setContentsMargins(18, 12, 18, 12)
-        slider_lay.setSpacing(8)
+        slider_lay.setContentsMargins(20, 18, 20, 18)
+        slider_lay.setSpacing(14)
         slider_lay.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         slider_head = QHBoxLayout()
@@ -423,35 +462,35 @@ class ModuloAnimo(NMModule):
             unset=True,
             show_zero=False,
         )
-        self._v3_slider.setMaximumHeight(86)
+        self._v3_slider.setMinimumHeight(102)
+        self._v3_slider.setMaximumHeight(118)
         self._v3_slider.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         self._v3_slider.level_changed.connect(self._on_level_changed)
         slider_lay.addWidget(self._v3_slider)
 
-        left_lay.addWidget(slider_card)
-        self._slider_card = slider_card
-
-        # 4. Botón guardar registro
+        # 3. Botón guardar registro dentro de la tarjeta de escala.
         btn_row = QHBoxLayout()
-        btn_row.setContentsMargins(0, 4, 0, 0)
+        btn_row.setContentsMargins(0, 2, 0, 0)
         btn_row.setSpacing(V3_SP["sm"])
         btn_row.addStretch()
         self._btn_reg = NMButton(
-            t("text.module.animo.save_btn", "Guardar registro"), modo=self._modo, variant="gradient", size="md", width=180
+            t("text.module.animo.save_btn", "Guardar registro"), modo=self._modo, variant="gradient", size="md", width=272
         )
-        self._btn_reg.setFixedHeight(34)
+        self._btn_reg.setFixedHeight(44)
         self._btn_reg.setEnabled(False)
         self._btn_reg.clicked.connect(self._registrar)
         btn_row.addWidget(self._btn_reg)
-        left_lay.addLayout(btn_row)
+        btn_row.addStretch()
+        slider_lay.addLayout(btn_row)
 
-        # 2026-06: el stretch del final de cada columna ya no es necesario
-        # (el de la derecha está entre el chart y las stats; el de la
-        # izquierda se removió para que el botón Guardar quede pegado al
-        # final de la columna, balanceando con las stats de la derecha).
-        left_lay.addStretch()
-        self._main_row.addWidget(left_col, 1)
-        self._main_row.addWidget(right_col, 1)
+        left_lay.addWidget(slider_card)
+        self._slider_card = slider_card
+        for card in self._stat_cards:
+            left_lay.addWidget(card)
+        left_lay.addStretch(1)
+
+        self._main_row.addWidget(left_col, 9)
+        self._main_row.addWidget(right_col, 10)
         lay.addLayout(self._main_row)
 
         # Datos iniciales
