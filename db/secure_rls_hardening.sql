@@ -62,6 +62,7 @@ grant select, insert, update, delete on table public.activation_results    to au
 grant select, insert, update, delete on table public.patient_activities    to authenticated;
 grant select on table public.assigned_tasks        to authenticated;
 grant select on table public.assigned_reminders    to authenticated;
+grant update (completado_en) on table public.assigned_reminders to authenticated;
 grant select, insert on table public.legal_consents to authenticated;
 grant select, insert on table public.ia_audit_log   to authenticated;
 grant select, insert on table public.ia_chat_history to authenticated;
@@ -150,6 +151,12 @@ drop policy if exists "assigned_reminders_select_own" on public.assigned_reminde
 create policy "assigned_reminders_select_own" on public.assigned_reminders
 for select to authenticated
 using (patient_id = auth.uid()::text);
+
+drop policy if exists "assigned_reminders_update_completion_own" on public.assigned_reminders;
+create policy "assigned_reminders_update_completion_own" on public.assigned_reminders
+for update to authenticated
+using (patient_id = auth.uid()::text)
+with check (patient_id = auth.uid()::text);
 
 drop policy if exists "patient_routine_template_select_own" on public.patient_routine_template;
 create policy "patient_routine_template_select_own" on public.patient_routine_template

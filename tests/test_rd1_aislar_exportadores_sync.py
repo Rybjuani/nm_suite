@@ -1,6 +1,6 @@
 """RD-1: aislar cada exportador de sync_inmediato y sync_completo.
 
-Antes de este fix, ``sync_completo`` y ``sync_inmediato`` llamaban a los 8
+Antes de este fix, ``sync_completo`` y ``sync_inmediato`` llamaban a los
 ``_exportar_*`` en secuencia dentro del mismo bloque ``try/except`` externo.
 Si el primero (o cualquiera sin try interno) lanzaba, los siguientes no se
 ejecutaban y, en ``sync_completo``, tampoco corrían los ``_importar_*``.
@@ -35,6 +35,7 @@ _EXPORTADOR_NAMES = [
     "_exportar_checklist",
     "_exportar_temporizador",
     "_exportar_recordatorios_log",
+    "_exportar_recordatorios_estado",
     "_exportar_activacion",
     "_exportar_dbt_practicas",
 ]
@@ -48,6 +49,7 @@ _EXPORTADOR_KEYS = [
     "checklist",
     "temporizador",
     "recordatorios_log",
+    "recordatorios_estado",
     "activacion",
     "dbt_practicas",
 ]
@@ -132,7 +134,7 @@ def sync_pipeline(monkeypatch):
 
 
 def test_sync_completo_continua_tras_fallo_del_primer_exportador(sync_pipeline, caplog):
-    """RD-1: si el primer exportador (_exportar_animo) lanza, los 7 restantes
+    """RD-1: si el primer exportador (_exportar_animo) lanza, los restantes
     igualmente se ejecutan. Antes del fix, ninguno de los posteriores corría.
     """
     sync_pipeline.raise_on.add("_exportar_animo")
@@ -145,7 +147,7 @@ def test_sync_completo_continua_tras_fallo_del_primer_exportador(sync_pipeline, 
         "sync_completo debe retornar True aunque un exportador falle aislado; "
         "el fallo parcial ya quedó registrado en el log."
     )
-    # Los 8 exportadores deben haberse llamado exactamente una vez cada uno.
+    # Los exportadores deben haberse llamado exactamente una vez cada uno.
     export_calls = [c for c in sync_pipeline.calls if c.startswith("_exportar_")]
     assert export_calls == _EXPORTADOR_NAMES, (
         f"Orden/llamadas de exportadores incorrecto: {export_calls}. "
@@ -161,7 +163,7 @@ def test_sync_completo_continua_tras_fallo_del_primer_exportador(sync_pipeline, 
 
 
 def test_sync_completo_continua_tras_fallo_intermedio(sync_pipeline):
-    """RD-1: un fallo en _exportar_pensamientos (3ro) no impide que los 5
+    """RD-1: un fallo en _exportar_pensamientos (3ro) no impide que los
     posteriores se ejecuten, y los 2 anteriores también corrieron.
     """
     sync_pipeline.raise_on.add("_exportar_pensamientos")
