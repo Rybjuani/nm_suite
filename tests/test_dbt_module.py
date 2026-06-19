@@ -400,11 +400,13 @@ def test_hub_exportar_pdf_integration():
     
     test_datos = {
         "animo": [],
-        "resp": [],
-        "pens": [],
+        "respiracion": [],
+        "tcc": [],
         "checklist": [],
+        "actividades": [],
         "timer": [],
-        "reclog": [],
+        "recordatorios": [],
+        "avisos_disparados": [],
         "dbt": [
             {
                 "record_id": "test_id",

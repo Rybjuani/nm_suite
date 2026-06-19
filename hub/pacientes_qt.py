@@ -148,6 +148,11 @@ class DetallePacienteView(QWidget):
         ia_row = QHBoxLayout()
         ia_row.setContentsMargins(0, 4, 0, 0)
         ia_row.addStretch()
+        self._btn_exportar_pdf = NMButton(
+            "Exportar PDF", variant="secondary", size="sm", modo=self._modo, width=120
+        )
+        self._btn_exportar_pdf.clicked.connect(self._on_exportar_pdf)
+        ia_row.addWidget(self._btn_exportar_pdf)
         self._btn_resumen_ia = NMButton(
             "Resumen IA", variant="ghost", size="sm", modo=self._modo, width=120
         )
@@ -197,6 +202,37 @@ class DetallePacienteView(QWidget):
 
         generar_resumen_paciente(
             datos, self._nombre, on_ok, on_err, patient_id=self._pid
+        )
+
+    def _set_exportar_pdf_busy(self, busy: bool):
+        self._btn_exportar_pdf.setEnabled(not busy)
+        self._btn_exportar_pdf.setText("Exportando..." if busy else "Exportar PDF")
+
+    def _on_exportar_pdf(self):
+        self._set_exportar_pdf_busy(True)
+        try:
+            from hub.exportar import exportar_pdf
+        except ImportError:
+            self._set_exportar_pdf_busy(False)
+            NMToast.display(self.window(), "Exportación PDF no disponible", variant="error")
+            return
+
+        datos = self._fetch_patient_data()
+
+        def on_done(ruta: str):
+            self._set_exportar_pdf_busy(False)
+            NMToast.display(self.window(), f"PDF generado: {ruta}", variant="success")
+
+        def on_error(msg: str):
+            self._set_exportar_pdf_busy(False)
+            NMToast.display(self.window(), f"No se pudo exportar PDF: {msg[:60]}", variant="error")
+
+        exportar_pdf(
+            self._nombre,
+            self._pid,
+            datos,
+            on_done=on_done,
+            on_error=on_error,
         )
 
     def _fetch_patient_data(self) -> dict:
@@ -290,7 +326,7 @@ class DetallePacienteView(QWidget):
         try:
             r = (
                 self._sb.table("assigned_reminders")
-                .select("id,hora,mensaje,activa")
+                .select("id,hora,mensaje,dias,activa,completado_en")
                 .eq("patient_id", self._pid)
                 .order("hora", desc=False)
                 .limit(50)  # RC-3/S0-1: limit explicito (regresion congelada por test_rc3_limit_assigned_reminders)
