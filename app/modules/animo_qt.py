@@ -394,7 +394,7 @@ class ModuloAnimo(NMModule):
 
         slider_head = QHBoxLayout()
         slider_head.setSpacing(V3_SP["sm"])
-        self._slider_eyebrow = QLabel(t("text.module.animo.slider_eyebrow", "Escala emocional"))
+        self._slider_eyebrow = QLabel(t("text.module.animo.slider_eyebrow", "Escala emocional").upper())
         self._slider_eyebrow.setFont(eyebrow_font())
         slider_head.addWidget(self._slider_eyebrow)
         slider_head.addStretch()
@@ -485,6 +485,7 @@ class ModuloAnimo(NMModule):
             # tocado, mostrar el puntaje real en color accent.
             if not getattr(self, "_slider_touched", False):
                 self._slider_score.setText("—/10")
+                self._slider_score.setFont(qfont_mono(11, bold=True))
                 self._slider_score.setStyleSheet(
                     f"color: {v3c('textMuted', self._modo).name()}; background: transparent;"
                 )
@@ -493,8 +494,13 @@ class ModuloAnimo(NMModule):
                 if score is None and hasattr(self, "_v3_slider"):
                     score = self._v3_slider.level()
                 self._slider_score.setText(f"{score}/10")
+                # Polish visual: score seteado en serif teal (presencia del
+                # registro, frame del prototipo) en lugar de mono plano.
+                self._slider_score.setFont(
+                    v3_font("size_h3", weight=TYPOGRAPHY["weight_semibold"], serif=True)
+                )
                 self._slider_score.setStyleSheet(
-                    f"color: {v3c('accent', self._modo).name()}; background: transparent;"
+                    f"color: {v3c('teal', self._modo).name()}; background: transparent;"
                 )
         if hasattr(self, "_v3_slider"):
             self._v3_slider._apply_theme(self._modo)

@@ -66,6 +66,7 @@ try:
         V3_SP,
         V3_RD,
         v3_font,
+        paint_card_lift,
         stylesheet_scrollarea,
         eyebrow_font,
     )
@@ -98,6 +99,7 @@ except ImportError:
         V3_SP,
         V3_RD,
         v3_font,
+        paint_card_lift,
         eyebrow_font,
     )
     from shared.theme import TYPOGRAPHY
@@ -426,6 +428,10 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         p.setPen(Qt.PenStyle.NoPen)
         p.drawRoundedRect(rect, r, r)
 
+        # Lift: highlight superior interno (mockup aprobado) — coherente con NMCard.
+        if not self._disabled and self.isEnabled():
+            paint_card_lift(p, rect, r, self._modo)
+
         is_active = self._hover and self.isEnabled() and not self._disabled
 
         # Border — más grueso y accent-tinted en hover
@@ -603,7 +609,7 @@ class _HeroBienestar(QFrame):
 
         # Eyebrow row + badge derecho
         top = QHBoxLayout()
-        self._eyebrow = QLabel(t("text.home.hero_eyebrow", "Bienvenida"))
+        self._eyebrow = QLabel(t("text.home.hero_eyebrow", "Bienvenida").upper())
         self._eyebrow.setFont(eyebrow_font())
         self._eyebrow.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
@@ -613,7 +619,7 @@ class _HeroBienestar(QFrame):
         root.addLayout(top)
 
         self._hero_title = QLabel(self._greeting_text())
-        self._hero_title.setFont(qfont("size_h1", weight=TYPOGRAPHY["weight_semibold"]))
+        self._hero_title.setFont(v3_font("size_display_m", weight=TYPOGRAPHY["weight_semibold"], serif=True))
         root.addWidget(self._hero_title)
 
         # Stacked area for empty vs filled
@@ -713,7 +719,7 @@ class _HeroBienestar(QFrame):
         # Try to use Newsreader for name
         from shared.theme_qt import v3_font
 
-        self._hero_title.setFont(v3_font("size_h1", weight=600, serif=True))
+        self._hero_title.setFont(v3_font("size_display_m", weight=600, serif=True))
 
         self._score.setStyleSheet(f"color: {accent.name()}; background: transparent;")
         self._score_unit.setStyleSheet(f"color: {muted.name()}; background: transparent;")
@@ -926,6 +932,19 @@ class HomeView(QWidget):
         content_lay.addWidget(self._hero, stretch=1)
         content_lay.addSpacing(V3_SP["sm"])
 
+        # Sección "Tus módulos": eyebrow jerárquico del frame del prototipo
+        # (separador entre el hero y la grilla de módulos). No agrega función,
+        # solo rótulo de sección para mantener el ritmo visual del mockup.
+        self._modules_label = QLabel(
+            t("text.home.modules_section", "Tus módulos").upper()
+        )
+        self._modules_label.setFont(eyebrow_font())
+        self._modules_label.setStyleSheet(
+            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
+        )
+        content_lay.addWidget(self._modules_label)
+        content_lay.addSpacing(V3_SP["xs"])
+
         # P2.C: cards de "Progreso de Ánimo" y "Resumen Semanal" removidas.
         # El espacio liberado se usa para agrandar las 8 cards de módulo (la grilla
         # pasa a ocupar el área que antes usaban esas dos cards).
@@ -1132,6 +1151,10 @@ class HomeView(QWidget):
             self._hero.apply_theme(self._modo)
         if hasattr(self, "_session_card"):
             self._session_card.apply_theme(self._modo)
+        if hasattr(self, "_modules_label"):
+            self._modules_label.setStyleSheet(
+                f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
+            )
         self.update()
 
     def _refresh_home_wave(self):

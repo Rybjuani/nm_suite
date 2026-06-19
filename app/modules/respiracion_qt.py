@@ -121,8 +121,12 @@ PRESETS = [
 # los 4 lados al expandir (feedback owner v1.0).
 _CANVAS_V3 = 248
 _RING_STROKE = 2
-_R_MIN = 78   # radio en reposo / exhala final
-_R_MAX = 109  # radio máximo en inhala
+# Radios subidos (propagación visual): el orb en reposo (78 → 92) llenaba poco
+# su canvas de 248px y se leía chico, flotando con ~46px de padding transparente
+# que inflaba el vacío percibido por encima. 92/116 lo hacen presente y reducen
+# el hueco sin tocar el layout ni recortar el borde orgánico (max+ondas < 124).
+_R_MIN = 92   # radio en reposo / exhala final
+_R_MAX = 116  # radio máximo en inhala
 
 # ── Breathing Aurora — constantes de efectos visuales ────────────────────────
 _N_PARTICLES        = 8      # puntos en órbita
@@ -710,7 +714,10 @@ class ModuloRespiracion(NMModule):
         ctrl_row.addWidget(self._btn_stop)
 
         circle_container.addLayout(ctrl_row)
-        circle_container.addStretch(2)
+        # Antes 1:2 (anclado arriba) dejaba un hueco asimétrico grande debajo de
+        # los controles. Con el orb agrandado, centrar el grupo (1:1) reparte el
+        # aire de forma pareja y elimina el vacío excesivo inferior.
+        circle_container.addStretch(1)
         practice_lay.addLayout(circle_container, stretch=1)
         self._practice_card = practice_card
         # stretch=1: la card del respirador ocupa el espacio disponible entre el

@@ -241,12 +241,18 @@ def _load_support_messages() -> dict[str, list[str]]:
 
 
 class _StepPill(QPushButton):
-    """Step pill toggleable — usado para tabs filtro (Todos/Activos/Hoy)."""
+    """Step pill toggleable — usado para tabs filtro (Todos/Activos/Hoy).
 
-    def __init__(self, label: str, active: bool = False, modo: str = "dark_hybrid", parent=None):
+    ``segmented=True`` renderiza la pill sin borde propio para vivir dentro de
+    un contenedor segmentado (track surface2 + radio pill), tal como el frame
+    de Avisos del prototipo polido.
+    """
+
+    def __init__(self, label: str, active: bool = False, modo: str = "dark_hybrid", segmented: bool = False, parent=None):
         super().__init__(label, parent)
         self._modo = norm_modo(modo)
         self._active = active
+        self._segmented = segmented
         self.setFixedHeight(36)
         self.setMinimumWidth(80)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -261,17 +267,24 @@ class _StepPill(QPushButton):
 
     def _refresh(self):
         if self._active:
-            # Activo = tinte suave del primary + borde con alpha (propuesta
-            # codex adaptada): la caja gradiente llena se leía dura/violenta,
-            # sobre todo en light (informe owner v1.0).
+            # Activo = relleno primary + tinta invertida (pill segmentada).
             _p = QColor(v3c("primary", self._modo))
-            _fill = f"rgba({_p.red()},{_p.green()},{_p.blue()},32)"
-            _bord = f"rgba({_p.red()},{_p.green()},{_p.blue()},86)"
             self.setStyleSheet(
-                f"QPushButton {{ background: {_fill}; "
-                f"color: {v3c('primary', self._modo).name()}; "
-                f"border: 1px solid {_bord}; border-radius: 16px; "
-                f"padding: 0 14px; min-height: 32px; }}"
+                f"QPushButton {{ background: {_p.name()}; "
+                f"color: {v3c('primary_ink', self._modo).name()}; "
+                f"border: none; border-radius: 16px; "
+                f"padding: 0 16px; min-height: 32px; }}"
+            )
+        elif self._segmented:
+            # Inactivo dentro del track segmentado: transparente, sin borde.
+            self.setStyleSheet(
+                f"QPushButton {{ background: transparent; "
+                f"color: {v3c('text2', self._modo).name()}; "
+                f"border: none; border-radius: 16px; "
+                f"padding: 0 16px; min-height: 32px; }}"
+                f"QPushButton:hover {{ "
+                f"color: {v3c('text', self._modo).name()}; "
+                f"background: {v3c('primary_soft', self._modo)}; }}"
             )
         else:
             self.setStyleSheet(
@@ -485,20 +498,29 @@ class ModuloAvisos(NMModule):
 
         # 2. P2.H: solo filter pills (la card de búsqueda se eliminó por
         # limpieza: con filtros todos/activos/hoy y lista corta no aporta).
-        filter_row = QHBoxLayout()
-        filter_row.setSpacing(V3_SP["sm"])
+        # Polish visual: pills agrupadas en un track segmentado (surface2 +
+        # radio pill), igual al frame de Avisos del prototipo.
+        self._filter_segment = QFrame()
+        self._filter_segment.setObjectName("FilterSegment")
+        self._filter_segment.setStyleSheet(self._segment_qss(self._modo))
+        seg_lay = QHBoxLayout(self._filter_segment)
+        seg_lay.setContentsMargins(4, 4, 4, 4)
+        seg_lay.setSpacing(4)
         self._filter_pills: dict[str, _StepPill] = {}
         for key, label in (
             ("todos", t("text.module.avisos.filter_all", "Todos")),
             ("activos", t("text.module.avisos.filter_active", "Activos")),
             ("hoy", t("text.module.avisos.filter_today", "Hoy")),
         ):
-            pill = _StepPill(label, active=(key == "todos"), modo=self._modo)
+            pill = _StepPill(label, active=(key == "todos"), modo=self._modo, segmented=True)
             pill.setMinimumWidth(70)
             pill.setFixedHeight(32)
             pill.clicked.connect(lambda _, k=key: self._on_filter_changed(k))
             self._filter_pills[key] = pill
-            filter_row.addWidget(pill)
+            seg_lay.addWidget(pill)
+        filter_row = QHBoxLayout()
+        filter_row.setSpacing(V3_SP["sm"])
+        filter_row.addWidget(self._filter_segment)
         filter_row.addStretch()
         lay.addLayout(filter_row)
 
@@ -535,6 +557,15 @@ class ModuloAvisos(NMModule):
         # Handoff §5: serif display for title if needed, but RECORDATORIOS is eyebrow
         # If we had a main title here it would be serif.
 
+    def _segment_qss(self, modo: str) -> str:
+        """Track del filtro segmentado Todos/Activos/Hoy (surface2 + radio pill)."""
+        m = norm_modo(modo)
+        return (
+            f"#FilterSegment {{ background: {v3c('surface2', m).name()}; "
+            f"border: 1px solid {C('borderSoft', m)}; "
+            f"border-radius: 999px; }}"
+        )
+
     def _on_theme(self, modo: str) -> None:
         super()._on_theme(modo)
         if hasattr(self, "_scroll"):
@@ -544,6 +575,8 @@ class ModuloAvisos(NMModule):
         for pill in getattr(self, "_filter_pills", {}).values():
             pill._modo = self._modo
             pill._refresh()
+        if hasattr(self, "_filter_segment"):
+            self._filter_segment.setStyleSheet(self._segment_qss(self._modo))
         self._load_reminders()
         self.update()
 

@@ -138,7 +138,7 @@ class _HeroDayCard(NMCard):
 
         col = QVBoxLayout()
         col.setSpacing(V3_SP["xs"])
-        self._eyebrow = QLabel(t("text.module.rutina.eyebrow", "Progreso del día"))
+        self._eyebrow = QLabel(t("text.module.rutina.eyebrow", "Progreso del día").upper())
         self._eyebrow.setFont(eyebrow_font())
         col.addWidget(self._eyebrow)
         self._title_lbl = QLabel(t("text.module.rutina.no_tasks_title", "Sin tareas configuradas"))

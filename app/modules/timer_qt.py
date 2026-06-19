@@ -329,6 +329,12 @@ class ModuloTimer(NMModule):
         cent_lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._cent_lay = cent_lay  # para el helper QA _timer_force_empty
 
+        # Stretch superior de balance: los dos addStretch del empty-state (abajo)
+        # empujaban el bloque operativo (ring+controles+presets) hacia arriba,
+        # dejando el tercio inferior vacío. Este stretch lo equilibra y centra el
+        # contenido en modo operativo (el empty-state sigue centrado por los suyos).
+        cent_lay.addStretch(1)
+
         # Canvas: ring ampliado a 220px (2026-06: era 180px, quedaba
         # pequeño en cards de 960×600 con mucho espacio vertical muerto).
         # 220 hace que el ring domine la card como punto focal principal,
