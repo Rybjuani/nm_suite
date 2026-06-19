@@ -27,7 +27,17 @@ _PDF_CAPTION = _DS_COLORS["light_hybrid"]["text_tertiary"] if _DS_COLORS else "#
 _PDF_ROW_TINT = "#f6f3ec"  # linen claro print-only
 _PDF_GRID = "#dcd6c6"  # warm stone print-only
 
-_SECCIONES_DEFAULT = ("animo", "resp", "pens", "checklist", "timer", "reclog", "dbt")
+_SECCIONES_DEFAULT = (
+    "animo",
+    "respiracion",
+    "tcc",
+    "checklist",
+    "actividades",
+    "timer",
+    "recordatorios",
+    "avisos_disparados",
+    "dbt",
+)
 
 
 def _normalizar_secciones(secciones: list[str] | None) -> set[str]:
@@ -200,9 +210,9 @@ def _generar(
         prom_txt,
     )
     _render(
-        "resp",
+        "respiracion",
         "Sesiones de respiración",
-        _filtrar_fechas(datos.get("resp", []), fecha_desde, fecha_hasta),
+        _filtrar_fechas(datos.get("respiracion", []), fecha_desde, fecha_hasta),
         ["Fecha", "Hora", "Técnica", "Duración (min)"],
         lambda r: [
             r.get("fecha", "")[:10],
@@ -212,9 +222,9 @@ def _generar(
         ],
     )
     _render(
-        "pens",
+        "tcc",
         "Registros de pensamientos",
-        _filtrar_fechas(datos.get("pens", []), fecha_desde, fecha_hasta),
+        _filtrar_fechas(datos.get("tcc", []), fecha_desde, fecha_hasta),
         ["Fecha", "Emoción", "Intensidad", "Pensamiento"],
         lambda r: [
             r.get("fecha", "")[:10],
@@ -226,25 +236,27 @@ def _generar(
     all_check = _filtrar_fechas(datos.get("checklist", []), fecha_desde, fecha_hasta)
     _render(
         "checklist",
-        "Actividades de activación",
-        [r for r in all_check if r.get("origen") == "activacion"],
-        ["Fecha", "Categoría", "Actividad"],
-        lambda r: [
-            r.get("fecha", "")[:10],
-            r.get("categoria", "?"),
-            (r.get("descripcion") or "")[:80],
-        ],
-    )
-    _render(
-        "checklist",
         "Checklist completadas",
-        [r for r in all_check if r.get("origen") != "activacion"],
+        all_check,
         ["Fecha", "Origen", "Categoría", "Descripción"],
         lambda r: [
             r.get("fecha", "")[:10],
             "Profesional" if str(r.get("origen") or "").startswith("profesional") else "Paciente",
             r.get("categoria", "?"),
             (r.get("descripcion") or "")[:70],
+        ],
+    )
+    _render(
+        "actividades",
+        "Actividades conductuales",
+        _filtrar_fechas(datos.get("actividades", []), fecha_desde, fecha_hasta),
+        ["Fecha", "Hora", "Ánimo", "Actividad", "Resultado"],
+        lambda r: [
+            r.get("fecha", "")[:10],
+            r.get("hora", "")[:5],
+            str(r.get("animo", "")),
+            (r.get("actividad") or "")[:60],
+            r.get("resultado", ""),
         ],
     )
     _render(
@@ -260,9 +272,21 @@ def _generar(
         ],
     )
     _render(
-        "reclog",
-        "Recordatorios disparados",
-        _filtrar_fechas(datos.get("reclog", []), fecha_desde, fecha_hasta),
+        "recordatorios",
+        "Recordatorios asignados",
+        datos.get("recordatorios", []),
+        ["Hora", "Mensaje", "Días", "Estado"],
+        lambda r: [
+            r.get("hora", "")[:5],
+            (r.get("mensaje") or "")[:80],
+            r.get("dias", ""),
+            "Activo" if r.get("activa", True) else "Inactivo",
+        ],
+    )
+    _render(
+        "avisos_disparados",
+        "Avisos disparados",
+        _filtrar_fechas(datos.get("avisos_disparados", []), fecha_desde, fecha_hasta),
         ["Fecha", "Hora", "Mensaje", "Estado"],
         lambda r: [
             r.get("fecha", "")[:10],
