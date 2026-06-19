@@ -14,8 +14,8 @@ Estructura según design_handoff_neuromood_v3 (Suite > Rutina):
 
 LÓGICA DE NEGOCIO PRESERVADA EXACTA:
   SECCIONES, _load_tasks(), _on_check(), _add_task(), _guardar_nota_text(),
-  get_card_status(), schema DB (checklist_tareas, checklist_completadas,
-  checklist_notas_dia), NMToast + checkmark animado al completar tarea.
+  get_card_status(), schema DB (checklist_tareas, checklist_completadas),
+  NMToast + checkmark animado al completar tarea.
 """
 
 import os
