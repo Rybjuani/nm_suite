@@ -118,9 +118,6 @@ def _count_sensitive_tables() -> dict[str, int]:
         "actividades_temporizador",
         "respiracion",
         "dbt_practicas",
-        "timer_presets",
-        "checklist_plantillas",
-        "checklist_notas_dia",
         "config",
     )
     conn = obtener_conexion()

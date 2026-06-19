@@ -150,6 +150,20 @@ def _migrar_activacion_energia_null(conn):
         """)
 
 
+def _eliminar_tablas_re1_muertas(conn):
+    """RE-1: retirar tablas SQLite auditadas como no usadas."""
+    for table in (
+        "checklist_snapshot",
+        "mensajes_biblioteca",
+        "activacion_config",
+        "activacion_perfil",
+        "timer_presets",
+        "checklist_plantillas",
+        "checklist_notas_dia",
+    ):
+        conn.execute(f"DROP TABLE IF EXISTS {table}")
+
+
 def inicializar_tablas():
     conn = obtener_conexion()
     cursor = conn.cursor()
@@ -239,11 +253,6 @@ def inicializar_tablas():
             valor TEXT NOT NULL
         );
 
-        CREATE TABLE IF NOT EXISTS checklist_snapshot (
-            fecha TEXT PRIMARY KEY,
-            total_tareas INTEGER NOT NULL
-        );
-
         CREATE TABLE IF NOT EXISTS recordatorios_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             fecha TEXT NOT NULL,
@@ -251,12 +260,6 @@ def inicializar_tablas():
             mensaje TEXT NOT NULL,
             rec_id INTEGER,
             cerrado INTEGER NOT NULL DEFAULT 0
-        );
-
-        CREATE TABLE IF NOT EXISTS mensajes_biblioteca (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            categoria TEXT NOT NULL,
-            mensaje TEXT NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS activacion_actividades (
@@ -271,42 +274,6 @@ def inicializar_tablas():
             animo_max INTEGER NOT NULL DEFAULT 10,
             activa INTEGER NOT NULL DEFAULT 1,
             es_custom INTEGER NOT NULL DEFAULT 0
-        );
-
-        CREATE TABLE IF NOT EXISTS activacion_config (
-            clave TEXT PRIMARY KEY,
-            valor TEXT NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS activacion_perfil (
-            clave TEXT PRIMARY KEY,
-            valor TEXT NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS timer_presets (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL,
-            descripcion TEXT DEFAULT '',
-            categoria TEXT DEFAULT '',
-            duracion_seg INTEGER NOT NULL DEFAULT 300,
-            orden INTEGER NOT NULL DEFAULT 0,
-            es_custom INTEGER NOT NULL DEFAULT 0,
-            animo_rango TEXT DEFAULT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS checklist_plantillas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            descripcion TEXT NOT NULL,
-            seccion TEXT NOT NULL CHECK(seccion IN ('manana', 'tarde', 'noche')),
-            categoria TEXT DEFAULT 'Logro',
-            dificultad INTEGER DEFAULT 1,
-            orden INTEGER NOT NULL DEFAULT 0,
-            es_custom INTEGER NOT NULL DEFAULT 0
-        );
-
-        CREATE TABLE IF NOT EXISTS checklist_notas_dia (
-            fecha TEXT PRIMARY KEY,
-            nota TEXT NOT NULL DEFAULT ''
         );
 
         -- Cache local de hub_config remoto (F2.0.B).
@@ -401,6 +368,7 @@ def inicializar_tablas():
     _migrar_checklist_sin_cascade(conn)
     _migrar_pensamientos_campos_tcc(conn)
     _migrar_tcc_templates_cache_schema(conn)
+    _eliminar_tablas_re1_muertas(conn)
     conn.commit()
     try:
         conn.execute("ALTER TABLE actividades_temporizador ADD COLUMN notas TEXT DEFAULT ''")
@@ -433,11 +401,6 @@ def inicializar_tablas():
     except Exception:
         pass
     _migrar_activacion_actividades_animo(conn)
-    try:
-        conn.execute("ALTER TABLE timer_presets ADD COLUMN animo_rango TEXT DEFAULT NULL")
-        conn.commit()
-    except Exception:
-        pass
     try:
         conn.execute("ALTER TABLE termometro ADD COLUMN emocion TEXT DEFAULT ''")
         conn.commit()
