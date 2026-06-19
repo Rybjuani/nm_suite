@@ -19,6 +19,7 @@ LÓGICA DE NEGOCIO PRESERVADA EXACTA:
 
 import os
 import sys
+import datetime
 from shared.crash_log import redact
 import logging
 
@@ -652,8 +653,10 @@ class ModuloAvisos(NMModule):
 
     def _on_completar(self, rec_id: int):
         """'Completar' deactiva el aviso (interpretación v3 del README)."""
-        self._toggle_active(rec_id, False)
+        saved = self._toggle_active(rec_id, False)
         self._load_reminders()
+        if saved:
+            self._sync_inmediato_background()
         NMToast.display(self.window(), "Aviso completado", variant="success", duration_ms=1500)
 
     # ── _toggle_active (lógica preservada exacta) ───────────────────────────
@@ -661,15 +664,38 @@ class ModuloAvisos(NMModule):
     def _toggle_active(self, rec_id: int, checked: bool):
         if visual_qa_enabled():
             self._load_reminders()
-            return
+            return False
+        completado_en = None
+        if not checked:
+            completado_en = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
         try:
             with conexion() as conn:
-                conn.execute(
-                    "UPDATE recordatorios SET activo = ? WHERE id = ?",
-                    (1 if checked else 0, rec_id),
-                )
+                try:
+                    conn.execute(
+                        "UPDATE recordatorios SET activo = ?, completado_en = ? WHERE id = ?",
+                        (1 if checked else 0, completado_en, rec_id),
+                    )
+                except Exception as e:
+                    if "completado_en" not in str(e):
+                        raise
+                    conn.execute(
+                        "UPDATE recordatorios SET activo = ? WHERE id = ?",
+                        (1 if checked else 0, rec_id),
+                    )
+            return True
         except Exception:
             _log.exception("Failed to save reminder")
+            return False
+
+    def _sync_inmediato_background(self):
+        if visual_qa_enabled():
+            return
+        try:
+            from shared import sync as sync_module
+
+            sync_module.sync_inmediato_background()
+        except Exception:
+            _log.exception("Failed to trigger immediate sync after reminder completion")
 
     # ── _delete_reminder (lógica preservada exacta) ─────────────────────────
 

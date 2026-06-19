@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS assigned_reminders (
     mensaje     TEXT NOT NULL,
     dias        TEXT DEFAULT '1,2,3,4,5,6,7',
     activa      BOOLEAN DEFAULT TRUE,
+    completado_en TIMESTAMPTZ,
     created_at  TIMESTAMPTZ DEFAULT now(),
     UNIQUE (patient_id, hora, mensaje)
 );
@@ -138,6 +139,7 @@ ALTER TABLE patients ADD COLUMN IF NOT EXISTS perm_temporizador_manual   BOOLEAN
 ALTER TABLE patients ADD COLUMN IF NOT EXISTS perm_recordatorios_manual  BOOLEAN DEFAULT FALSE;
 ALTER TABLE patients ADD COLUMN IF NOT EXISTS last_sync_date            TIMESTAMPTZ;
 ALTER TABLE assigned_tasks ADD COLUMN IF NOT EXISTS animo_rango TEXT DEFAULT NULL;
+ALTER TABLE assigned_reminders ADD COLUMN IF NOT EXISTS completado_en TIMESTAMPTZ;
 
 -- ── Banco general de actividades (compartido entre todos los pacientes) ────────
 CREATE TABLE IF NOT EXISTS activity_bank (

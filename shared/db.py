@@ -169,7 +169,8 @@ def inicializar_tablas():
             hora TEXT NOT NULL,
             mensaje TEXT NOT NULL,
             dias TEXT NOT NULL DEFAULT '1,2,3,4,5,6,7',
-            activo INTEGER NOT NULL DEFAULT 1
+            activo INTEGER NOT NULL DEFAULT 1,
+            completado_en TEXT DEFAULT NULL
         );
 
         CREATE TABLE IF NOT EXISTS actividades_temporizador (
@@ -403,6 +404,11 @@ def inicializar_tablas():
     conn.commit()
     try:
         conn.execute("ALTER TABLE actividades_temporizador ADD COLUMN notas TEXT DEFAULT ''")
+        conn.commit()
+    except Exception:
+        pass
+    try:
+        conn.execute("ALTER TABLE recordatorios ADD COLUMN completado_en TEXT DEFAULT NULL")
         conn.commit()
     except Exception:
         pass

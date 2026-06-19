@@ -341,6 +341,31 @@ def _exportar_recordatorios_log(sb, patient_id: str, desde: str):
     sb.table("reminder_logs").upsert(payload, on_conflict="patient_id,fecha,hora,mensaje").execute()
 
 
+def _exportar_recordatorios_estado(sb, patient_id: str, desde: str):
+    """Publica el estado local de avisos sin modificar la asignación profesional."""
+    conn = obtener_conexion()
+    try:
+        rows = conn.execute(
+            "SELECT hora, mensaje, activo, completado_en FROM recordatorios ORDER BY hora"
+        ).fetchall()
+    finally:
+        conn.close()
+    for r in rows:
+        hora = (r["hora"] or "").strip()
+        mensaje = (r["mensaje"] or "").strip()
+        if not hora or not mensaje:
+            continue
+        completado_en = None if r["activo"] else (r["completado_en"] or None)
+        (
+            sb.table("assigned_reminders")
+            .update({"completado_en": completado_en})
+            .eq("patient_id", patient_id)
+            .eq("hora", hora)
+            .eq("mensaje", mensaje)
+            .execute()
+        )
+
+
 def _exportar_activacion(sb, patient_id: str, desde: str):
     """[M1 Fase 0.3] Exporta resultados de Activación Conductual para que el
     profesional los monitoree en el Hub (detalle del paciente · Registros).
@@ -879,6 +904,28 @@ def _importar_support_messages(sb, patient_id: str):
         conn.close()
 
 
+def _local_date_from_timestamp(value) -> str:
+    if not value:
+        return ""
+    if isinstance(value, datetime):
+        dt = value
+    else:
+        text = str(value).strip()
+        if not text:
+            return ""
+        try:
+            dt = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        except ValueError:
+            return text[:10]
+    if dt.tzinfo is not None:
+        dt = dt.astimezone()
+    return dt.date().isoformat()
+
+
+def _reminder_completed_today(value) -> bool:
+    return _local_date_from_timestamp(value) == datetime.now().date().isoformat()
+
+
 def _importar_recordatorios_asignados(sb, patient_id: str):
     """Descarga recordatorios asignados por el profesional y reconcilia el cache local."""
     try:
@@ -907,21 +954,47 @@ def _importar_recordatorios_asignados(sb, patient_id: str):
             return
 
         existentes = {
-            (r[0], r[1])
-            for r in conn.execute("SELECT hora, mensaje FROM recordatorios").fetchall()
+            (r["hora"], r["mensaje"]): r
+            for r in conn.execute(
+                "SELECT hora, mensaje, completado_en FROM recordatorios"
+            ).fetchall()
         }
         for r in recs:
             hora = r.get("hora", "")
             msg = r.get("mensaje", "")
             if not hora or not msg:
                 continue
-            if (hora, msg) in existentes:
-                continue
             dias = r.get("dias", "1,2,3,4,5,6,7")
+            remote_completed_at = r.get("completado_en")
+            remote_completed_today = _reminder_completed_today(remote_completed_at)
+            existing = existentes.get((hora, msg))
+            if existing is not None:
+                local_completed_at = existing["completado_en"]
+                local_completed_today = _reminder_completed_today(local_completed_at)
+                completed_at = (
+                    remote_completed_at
+                    if remote_completed_today
+                    else local_completed_at
+                    if local_completed_today
+                    else None
+                )
+                conn.execute(
+                    "UPDATE recordatorios SET dias = ?, activo = ?, completado_en = ? "
+                    "WHERE hora = ? AND mensaje = ?",
+                    (dias, 0 if completed_at else 1, completed_at, hora, msg),
+                )
+                continue
             try:
                 conn.execute(
-                    "INSERT INTO recordatorios (hora, mensaje, dias, activo) VALUES (?, ?, ?, 1)",
-                    (hora, msg, dias),
+                    "INSERT INTO recordatorios (hora, mensaje, dias, activo, completado_en) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    (
+                        hora,
+                        msg,
+                        dias,
+                        0 if remote_completed_today else 1,
+                        remote_completed_at if remote_completed_today else None,
+                    ),
                 )
             except Exception:
                 pass
@@ -994,6 +1067,7 @@ _EXPORTADORES = (
     "checklist",
     "temporizador",
     "recordatorios_log",
+    "recordatorios_estado",
     "activacion",
     "dbt_practicas",
 )
