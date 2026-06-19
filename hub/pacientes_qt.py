@@ -3,6 +3,7 @@ hub/pacientes_qt.py — Vista detallada de paciente (PyQt6)
 """
 
 import logging
+from datetime import datetime, timedelta
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -230,6 +231,8 @@ class DetallePacienteView(QWidget):
         if not self._sb:
             return datos
 
+        fecha_desde = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+
         def _fetch(key: str, table: str, columns: str, limit: int = 30) -> None:
             """Una query por modulo. Loguea errores en vez de silenciarlos."""
             try:
@@ -237,6 +240,7 @@ class DetallePacienteView(QWidget):
                     self._sb.table(table)
                     .select(columns)
                     .eq("patient_id", self._pid)
+                    .gte("fecha", fecha_desde)
                     .order("fecha", desc=True)
                     .limit(limit)
                     .execute()

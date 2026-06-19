@@ -29,6 +29,7 @@ class _FakeQuery:
 
     def select(self, *_args, **_kw): return self
     def eq(self, *_args, **_kw): return self
+    def gte(self, *_args, **_kw): return self
     def order(self, *_args, **_kw): return self
     def limit(self, *_args, **_kw): return self
 
@@ -96,7 +97,7 @@ def test_fetch_patient_data_uses_real_table_names(qapp):
     view._pid = "test-pid-123"
     view._nombre = "Test"
 
-    datos = view._fetch_patient_data()
+    view._fetch_patient_data()
 
     # Las 4 tablas inexistentes NO deben aparecer en calls
     bad = {"animo_registros", "tcc_registros",
