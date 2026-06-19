@@ -808,65 +808,6 @@ def _importar_timer_presets(sb, patient_id: str):
         conn.close()
 
 
-def _importar_breathing_presets(sb, patient_id: str):
-    """[DORMANTE — M1 Fase 2.3] Cachea presets remotos de respiración.
-
-    El módulo #5 (Guía de Respiración Animada) es SOLO SEGUIMIENTO: el patrón
-    4-7-8 es fijo y no hay editor de breathing presets en el Hub que popule
-    `breathing_presets_remote`. Por lo tanto este import no trae datos hoy
-    (la query devuelve 0 filas) y es un no-op efectivo. Se conserva el path
-    —fail-safe, sin romper sync— para una eventual reactivación con editor.
-    """
-    scopes = _sync_scopes(patient_id)
-    try:
-        res = (
-            sb.table("breathing_presets_remote")
-            .select(
-                "id,scope,name,fase_in,fase_hold,fase_out,fase_hold_after,duracion_min_default,activa,orden"
-            )
-            .in_("scope", scopes)
-            .order("orden")
-            .execute()
-        )
-    except Exception:
-        return
-    rows = res.data or []
-    conn = obtener_conexion()
-    try:
-        for scope in scopes:
-            conn.execute("DELETE FROM breathing_presets_cache WHERE scope = ?", (scope,))
-        for row in rows:
-            if row.get("activa") is False:
-                continue
-            payload = {
-                "name": row.get("name") or "",
-                "fases": {
-                    "in": row.get("fase_in") or 0,
-                    "hold": row.get("fase_hold") or 0,
-                    "out": row.get("fase_out") or 0,
-                    "hold_after": row.get("fase_hold_after") or 0,
-                },
-                "duracion_min_default": row.get("duracion_min_default") or 5,
-                "activa": True,
-                "orden": row.get("orden") or 0,
-            }
-            conn.execute(
-                "INSERT OR REPLACE INTO breathing_presets_cache "
-                "(id, scope, name, payload) VALUES (?, ?, ?, ?)",
-                (
-                    row.get("id"),
-                    row.get("scope") or "global",
-                    row.get("name") or "",
-                    json.dumps(payload, ensure_ascii=False),
-                ),
-            )
-        conn.commit()
-    except Exception:
-        pass
-    finally:
-        conn.close()
-
-
 def _importar_support_messages(sb, patient_id: str):
     """Cachea biblioteca remota de mensajes de apoyo para Avisos."""
     scopes = _sync_scopes(patient_id)
@@ -1129,7 +1070,6 @@ def sync_completo(patient_id: str = None, nombre: str = None) -> bool:
         _importar_routine_template(sb, pid)
         _importar_tcc_templates(sb, pid)
         _importar_timer_presets(sb, pid)
-        _importar_breathing_presets(sb, pid)
         _importar_support_messages(sb, pid)
         _importar_tareas_asignadas(sb, pid)
         _importar_recordatorios_asignados(sb, pid)
@@ -1293,7 +1233,6 @@ def verificar_asignaciones(patient_id: str = None):
         _importar_routine_template(sb, pid)
         _importar_tcc_templates(sb, pid)
         _importar_timer_presets(sb, pid)
-        _importar_breathing_presets(sb, pid)
         _importar_support_messages(sb, pid)
         _importar_tareas_asignadas(sb, pid)
         _importar_recordatorios_asignados(sb, pid)

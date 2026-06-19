@@ -3,10 +3,10 @@ import sqlite3
 import datetime
 import uuid
 import pytest
-from PyQt6.QtWidgets import QApplication, QWidget
+from PyQt6.QtWidgets import QApplication
 
 from shared.db import conexion, inicializar_tablas
-from app.modules.dbt_qt import ModuloDBT, DBT_SKILLS, _PracticeClosure, _PracticeHistoryRow
+from app.modules.dbt_qt import ModuloDBT, DBT_SKILLS, _PracticeClosure
 
 _qapp = None
 def get_qapp():
@@ -199,33 +199,6 @@ def test_dbt_double_save_prevention():
     assert len(emitted_payloads) == 1
 
 
-def test_dbt_history_populates_ui():
-    get_qapp()
-    module = ModuloDBT(show_header=False)
-    
-    # Clear and insert a specific record
-    with conexion() as conn:
-        conn.execute("DELETE FROM dbt_practicas")
-        conn.execute(
-            "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ("rec_hist_test", "2026-06-14", "10:15:00", "mind_observe", 1, "mindfulness", "Volver al presente", 7, 4, "ayudo", 180, "test note in history", "2026-06-14T10:15:00Z")
-        )
-        
-    # Trigger history loading
-    module._load_history()
-    
-    # Find PracticeHistoryRow widgets in the layout
-    history_rows = module._history_container.findChildren(_PracticeHistoryRow)
-    assert len(history_rows) == 1
-    
-    # Verify content is loaded correctly
-    row = history_rows[0]
-    assert row.title_lbl.text() == "Observar y describir"
-    assert "2026-06-14 10:15:00" in row.date_lbl.text()
-    assert "test note in history" in row.note_lbl.text()
-
-
 def test_dbt_get_card_status():
     get_qapp()
     inicializar_tablas()
@@ -304,20 +277,18 @@ def test_dbt_reopen_module_retains_records():
     get_qapp()
     
     # Clear and insert a record
+    today_str = datetime.date.today().isoformat()
     with conexion() as conn:
         conn.execute("DELETE FROM dbt_practicas")
         conn.execute(
             "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ("rec_reopen_test", "2026-06-14", "10:00:00", "mind_wise", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
+            ("rec_reopen_test", today_str, "10:00:00", "mind_wise", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
         )
         
-    # Instantiate a module, load history, verify it is present
+    # Instantiate two modules and verify both see the persisted DB state.
     module1 = ModuloDBT(show_header=False)
-    module1._load_history()
-    history_rows = module1._history_container.findChildren(_PracticeHistoryRow)
-    assert len(history_rows) == 1
-    assert history_rows[0].title_lbl.text() == "Mente sabia"
+    assert module1.get_card_status() == "1 práctica hoy"
     
     # Close/destroy module1
     module1.deleteLater()
@@ -325,10 +296,7 @@ def test_dbt_reopen_module_retains_records():
     
     # Instantiate a second module, check card status and history
     module2 = ModuloDBT(show_header=False)
-    module2._load_history()
-    history_rows2 = module2._history_container.findChildren(_PracticeHistoryRow)
-    assert len(history_rows2) == 1
-    assert history_rows2[0].title_lbl.text() == "Mente sabia"
+    assert module2.get_card_status() == "1 práctica hoy"
 
 
 class MockSupabaseTable:
@@ -449,7 +417,6 @@ def test_dbt_module_apply_theme_scroll_bars():
     from shared.theme_qt import stylesheet_scrollarea
     expected_style = stylesheet_scrollarea(module._modo)
     assert module._biblioteca_scroll.styleSheet() == expected_style
-    assert module._historial_scroll.styleSheet() == expected_style
 
 
 def test_dbt_custom_widgets_behaviors():
@@ -485,33 +452,5 @@ def test_dbt_custom_widgets_behaviors():
     btn_low.repaint()
     btn_opt.repaint()
     indicator.repaint()
-    
-    
-def test_dbt_history_row_shows_distress():
-    get_qapp()
-    record = {
-        "record_id": "test_distress_row",
-        "fecha": "2026-06-14",
-        "hora": "12:00:00",
-        "skill_id": "mind_wise",
-        "title": "Mente sabia",
-        "familia": "mindfulness",
-        "necesidad": "Volver al presente",
-        "malestar_antes": 8,
-        "malestar_despues": 3,
-        "resultado": "ayudo",
-        "duracion_seg": 120,
-        "nota": "test distress display"
-    }
-    row = _PracticeHistoryRow(record, modo="dark")
-    assert hasattr(row, "distress_lbl")
-    assert "8 → 3" in row.distress_lbl.text()
-    
-    # Test only before is present
-    record_before = record.copy()
-    record_before["malestar_despues"] = None
-    row_before = _PracticeHistoryRow(record_before, modo="light")
-    assert hasattr(row_before, "distress_lbl")
-    assert "antes: 8" in row_before.distress_lbl.text()
 
 

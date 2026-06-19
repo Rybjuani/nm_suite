@@ -59,7 +59,6 @@ _IMPORTADOR_NAMES = [
     "_importar_routine_template",
     "_importar_tcc_templates",
     "_importar_timer_presets",
-    "_importar_breathing_presets",
     "_importar_support_messages",
     "_importar_tareas_asignadas",
     "_importar_recordatorios_asignados",

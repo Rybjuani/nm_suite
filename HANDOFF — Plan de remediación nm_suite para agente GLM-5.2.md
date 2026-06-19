@@ -1,5 +1,10 @@
 # HANDOFF — Plan de remediación nm_suite para agente local GLM-5.2
 
+> Estado actualizado 2026-06-19: el plan de remediación quedó completado.
+> RB-2, RB-4/RB-6, RC-2, RC-1, RB-7 y Fase 5 (RE-1 a RE-9) fueron cerrados
+> con suite completa verde. Las secciones de pendientes que siguen abajo se
+> conservan como auditoría histórica del origen del trabajo, no como backlog vivo.
+
 ## 1. Propósito
 
 Este documento reemplaza el flujo anterior basado en un agente web que entregaba patches.
@@ -210,7 +215,7 @@ Verificar que `main` local y `origin/main` sean idénticos.
 
 ---
 
-## 9. Trabajo pendiente actualizado
+## 9. Trabajo pendiente histórico ya resuelto
 
 ## Fase 2 — Integridad del Hub y sync
 
@@ -515,7 +520,7 @@ No borrarlos solo por no verse en una captura; verificar creación, layout, visi
 
 ---
 
-## 10. Orden recomendado actualizado
+## 10. Orden recomendado histórico ya resuelto
 
 1. ~~RD-1 — aislamiento del pipeline de sync.~~ — mergeado en `f1f1b6b` (pendiente de mover a "Estado cerrado").
 2. ~~RC-3 — límite de `assigned_reminders`.~~ — cerrado en `b49333a`.

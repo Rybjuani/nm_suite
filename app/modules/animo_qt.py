@@ -1,13 +1,11 @@
 """
 app/modules/animo_qt.py — Módulo Mood Tracker v3 (PyQt6)
 
-Estructura según design_handoff_neuromood_v3 (Suite > Mood Tracker):
+Estructura actual (Suite > Mood Tracker):
 
-  Header        eyebrow "ÚLTIMOS 7 DÍAS"
-  Wave card     NMWaveChart altura 280 (current + previous week)
-  Slider card   V3MoodSlider 1-10 (slashbar emocional + NMMoodEmoji 104px)
-  Nota card     textarea con contador X/500 + NMButton "Guardar registro"
-  Insights row  3 cards (Promedio / Racha / Progreso semanal) con NMModuleRing
+  Wave card     NMWaveChart con últimos días
+  Slider card   V3MoodSlider 1-10
+  Nota card     textarea con contador + NMButton "Guardar registro"
 
 LÓGICA DE NEGOCIO PRESERVADA EXACTA:
   COLORES_PUNTAJE (chips legacy + celebration), _registrar() (DB write +
@@ -31,14 +29,12 @@ from PyQt6.QtGui import (
     QColor,
     QPainter,
     QBrush,
-    QFont,
 )
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
-    QFrame,
     QBoxLayout,
 )
 
@@ -47,28 +43,18 @@ try:
         NMModule,
         NMButton,
         NMToast,
-        ThemeManager,
         NMCard,
         NMWaveChart,
-        NMModuleRing,
         V3MoodSlider,
-        NMTextArea,
-        NMDivider,
-        responsive_columns,
         NMChartPanel,
     )
     from shared.theme_qt import (
         C,
-        colors,
         norm_modo,
         qfont,
         qfont_mono,
         v3c,
         V3_SP,
-        V3_RD,
-        stylesheet_textedit,
-        stylesheet_scrollarea,
-        PAD_CONTAINER,
         eyebrow_font,
         v3_font,
     )
@@ -86,9 +72,7 @@ except ImportError:
         NMCard,
         NMToast,
         NMWaveChart,
-        NMModuleRing,
         V3MoodSlider,
-        NMTextArea,
         NMChartPanel,
     )
     from shared.theme_qt import (
@@ -312,59 +296,6 @@ class MoodCelebration(QWidget):
             p.setBrush(QBrush(col))
             p.drawEllipse(QPointF(part.x, part.y), part.radius, part.radius)
         p.end()
-
-
-# ── _InsightCard ─────────────────────────────────────────────────────────────
-
-
-class _InsightCard(NMCard):
-    """Tarjeta de insight v3: NMModuleRing + eyebrow + valor grande."""
-
-    def __init__(self, label: str, value: str, pct: float, modo: str = None, parent=None):
-        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
-        self._label_text = label
-        self._value_text = value
-        self._pct = max(0.0, min(1.0, pct))
-        self._build()
-
-    def _build(self):
-        h = QHBoxLayout(self)
-        h.setContentsMargins(V3_SP["lg"], V3_SP["lg"], V3_SP["lg"], V3_SP["lg"])
-        h.setSpacing(V3_SP["md"])
-
-        self._ring = NMModuleRing(size=56, pct=self._pct, modo=self._modo)
-        h.addWidget(self._ring, alignment=Qt.AlignmentFlag.AlignVCenter)
-
-        col = QVBoxLayout()
-        col.setSpacing(2)
-        self._label_lbl = QLabel(self._label_text)
-        self._label_lbl.setFont(eyebrow_font())
-        col.addWidget(self._label_lbl)
-        self._value_lbl = QLabel(self._value_text)
-        self._value_lbl.setFont(qfont("size_h2", weight=TYPOGRAPHY["weight_semibold"]))
-        col.addWidget(self._value_lbl)
-        h.addLayout(col, stretch=1)
-        self._apply_insight_styles()
-
-    def set_value(self, value: str, pct: float):
-        self._value_text = value
-        self._pct = max(0.0, min(1.0, pct))
-        self._value_lbl.setText(value)
-        self._ring.set_pct(self._pct)
-
-    def _apply_insight_styles(self):
-        self._label_lbl.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-        )
-        self._value_lbl.setStyleSheet(
-            f"color: {v3c('text', self._modo).name()}; background: transparent;"
-        )
-
-    def _apply_theme(self, modo: str):
-        super()._apply_theme(modo)
-        self._ring._modo = self._modo
-        self._ring.update()
-        self._apply_insight_styles()
 
 
 # ── ModuloAnimo v3 ──────────────────────────────────────────────────────────
