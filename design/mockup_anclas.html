@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light" data-screen="suite-home">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuroMood · Sistema visual — 4 pantallas ancla</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════════════════════════════════════
+   NeuroMood — Polish visual global · Mockup de evaluación
+   ────────────────────────────────────────────────────────────────────────────
+   Cuatro pantallas ancla (Suite Home light/dark · Hub Pacientes light/dark).
+   Estructura BLOQUEADA según capturas reales 960×600. El polish vive en
+   tipografía, jerarquía, superficies, profundidad, bordes, iconografía,
+   indicadores, microespaciado y estados — sin tocar contenido ni funciones.
+
+   Capas (separadas para que la dirección aprobada pueda propagarse):
+     1. TOKENS        — paleta/spacing/radius/sombras (light + dark)
+     2. COMPONENTES   — chrome, card, chip, pill, badge, botón, anillo,
+                        sparkline, módulo, fila de paciente, avatar
+     3. PANTALLAS     — Suite Home · Hub Pacientes
+     4. SHELL MOCKUP  — backdrop + dock de evaluación (NO es producto)
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║ 1 · TOKENS                                                                 ║
+   ╚══════════════════════════════════════════════════════════════════════════╝
+   Derivados de shared/theme.py (V3_LIGHT / V3_DARK). Identidad conservada:
+   Suite/Hub comparten un único sistema; light = linen+sage, dark = indigo
+   profundo. Evolución de polish: bordes activos (borderStrong en light para
+   que las cards se lean), sombras calibradas con tinta de marca y un halo
+   superior interno (--lift) que da material sin "zoom". */
+:root, [data-theme="light"] {
+  --canvas:#F4EFE5;        --bg-1:#ECE5D4;
+  --surface:#FBF8F1;       --surface-2:#ECE5D4;     --surface-3:#F6F1E7;
+  --border:rgba(28,34,24,.10);  --border-soft:rgba(28,34,24,.07);  --border-strong:rgba(28,34,24,.20);
+  --ink:#1C2218;  --ink-2:#3F4636;  --ink-muted:#76796B;  --ink-faint:#8B8979;
+  --primary:#305A48;       --primary-soft:rgba(48,90,72,.10);   --primary-ink:#FBF8F1;
+  --accent:#B8633B;        --accent-soft:rgba(184,99,59,.12);
+  --teal:#2F7E73;          --teal-soft:rgba(47,126,115,.12);
+  --amber:#C68A2E;
+  --success:#4D7A52;       --success-soft:rgba(77,122,82,.13);
+  --warning:#C68A2E;       --warning-soft:rgba(198,138,46,.15);
+  --danger:#B14B3B;        --danger-soft:rgba(177,75,59,.13);
+  /* gradiente firma (rings, barra de bienestar) — sage → olivo → oro */
+  --grad-from:#305A48;  --grad-mid:#7B7140;  --grad-to:#C68A2E;
+  /* avatares (pares reales C(): accent=sage, teal, violet=terracotta) */
+  --av-sage:#305A48;  --av-teal:#2F7E73;  --av-terra:#B8633B;
+  /* profundidad */
+  --lift:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 42%);
+  --shadow-card:0 1px 0 rgba(28,34,24,.02), 0 6px 18px -10px rgba(28,34,24,.22);
+  --shadow-card-hover:0 2px 0 rgba(28,34,24,.03), 0 16px 34px -14px rgba(28,34,24,.30);
+  --shadow-hero:0 1px 0 rgba(255,255,255,.5) inset, 0 10px 30px -16px rgba(28,34,24,.28);
+  --shadow-window:0 40px 90px -30px rgba(28,34,24,.45), 0 8px 28px -16px rgba(28,34,24,.3);
+  --ring-track:rgba(28,34,24,.10);
+  --chrome:#EFE9DD;  --chrome-ink:#1C2218;
+  --backdrop-1:#E7E0D2;  --backdrop-2:#DCD3C0;
+}
+[data-theme="dark"] {
+  --canvas:#07091A;        --bg-1:#0E132B;
+  --surface:#141A38;       --surface-2:#0E132B;     --surface-3:#171E40;
+  --border:rgba(255,255,255,.07);  --border-soft:rgba(255,255,255,.045);  --border-strong:rgba(255,255,255,.13);
+  --ink:#ECECFB;  --ink-2:#C7C9E5;  --ink-muted:#8285A8;  --ink-faint:#6A6F93;
+  --primary:#A99CFF;       --primary-soft:rgba(169,156,255,.13);  --primary-ink:#0E132B;
+  --accent:#5EE0C7;        --accent-soft:rgba(94,224,199,.15);
+  --teal:#5EE0C7;          --teal-soft:rgba(94,224,199,.15);
+  --amber:#E8B86A;
+  --success:#60B89A;       --success-soft:rgba(96,184,154,.17);
+  --warning:#E8B86A;       --warning-soft:rgba(232,184,106,.16);
+  --danger:#FF8A7A;        --danger-soft:rgba(255,138,122,.16);
+  --grad-from:#A99CFF;  --grad-mid:#C8A89B;  --grad-to:#E8B86A;
+  --av-sage:#A99CFF;  --av-teal:#5EE0C7;  --av-terra:#5EE0C7;
+  --lift:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0) 40%);
+  --shadow-card:0 1px 0 rgba(0,0,0,.4), 0 8px 22px -12px rgba(0,0,0,.7);
+  --shadow-card-hover:0 2px 0 rgba(0,0,0,.5), 0 20px 40px -16px rgba(0,0,0,.8);
+  --shadow-hero:0 1px 0 rgba(255,255,255,.05) inset, 0 14px 34px -18px rgba(0,0,0,.75);
+  --shadow-window:0 50px 110px -28px rgba(0,0,0,.8), 0 10px 30px -16px rgba(0,0,0,.6);
+  --ring-track:rgba(255,255,255,.08);
+  --chrome:#0B1024;  --chrome-ink:#ECECFB;
+  --backdrop-1:#05060F;  --backdrop-2:#0A0E22;
+}
+
+* { box-sizing:border-box; margin:0; padding:0; }
+html,body { height:100%; }
+body {
+  font-family:'Manrope', system-ui, sans-serif;
+  background:radial-gradient(120% 120% at 50% 0%, var(--backdrop-1), var(--backdrop-2));
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  min-height:100vh; gap:18px; padding:40px 20px 120px;
+  transition:background .5s ease;
+}
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║ 4 · SHELL MOCKUP (no producto)                                             ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+.stage { position:relative; }
+.window {
+  width:960px; height:600px; position:relative;
+  border-radius:16px; overflow:hidden;
+  background:var(--canvas);
+  box-shadow:var(--shadow-window);
+  border:1px solid var(--border-strong);
+  transition:background .5s ease, box-shadow .5s ease, border-color .5s ease;
+}
+.screen { position:absolute; inset:0; display:flex; flex-direction:column;
+  opacity:0; pointer-events:none; transition:opacity .35s ease; }
+[data-screen="suite-home"]  .screen.suite-home   { opacity:1; pointer-events:auto; }
+[data-screen="hub-pacientes"] .screen.hub-pacientes { opacity:1; pointer-events:auto; }
+
+.caption { font-size:12px; color:rgba(255,255,255,.5); letter-spacing:.04em;
+  font-weight:500; text-align:center; }
+[data-theme="light"] .caption { color:rgba(28,34,24,.5); }
+
+/* ── Dock de evaluación ─────────────────────────────────────────────────────*/
+.dock {
+  position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+  display:flex; align-items:center; gap:6px; z-index:50;
+  padding:7px; border-radius:16px;
+  background:rgba(18,22,40,.72); backdrop-filter:blur(20px) saturate(1.2);
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 20px 50px -16px rgba(0,0,0,.6);
+}
+.dock-label { font-size:10.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+  color:rgba(255,255,255,.45); padding:0 10px 0 8px; }
+.dock-seg { display:flex; background:rgba(0,0,0,.28); border-radius:11px; padding:3px; gap:2px; }
+.dock-btn { appearance:none; border:none; cursor:pointer; font-family:inherit;
+  font-size:12.5px; font-weight:600; color:rgba(255,255,255,.62);
+  padding:7px 14px; border-radius:9px; background:transparent; transition:all .2s ease; }
+.dock-btn:hover { color:#fff; }
+.dock-btn.active { background:rgba(255,255,255,.14); color:#fff; box-shadow:0 1px 0 rgba(255,255,255,.12) inset; }
+.dock-theme { width:38px; height:38px; border-radius:11px; border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06); cursor:pointer; color:#fff; display:grid; place-items:center;
+  transition:all .2s ease; }
+.dock-theme:hover { background:rgba(255,255,255,.14); transform:translateY(-1px); }
+.dock-theme svg { width:18px; height:18px; }
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║ 2 · COMPONENTES COMPARTIDOS                                                ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+/* ── Chrome / faux titlebar ─────────────────────────────────────────────────*/
+.chrome { height:36px; flex:0 0 36px; display:flex; align-items:center;
+  padding:0 8px 0 12px; background:var(--chrome); color:var(--chrome-ink);
+  border-bottom:1px solid var(--border-soft); -webkit-app-region:drag;
+  transition:background .5s ease; }
+.chrome-brand { display:flex; align-items:center; gap:8px; }
+.chrome-glyph { width:22px; height:22px; border-radius:7px; display:grid; place-items:center;
+  background:var(--primary-soft); color:var(--primary); }
+.chrome-glyph svg { width:14px; height:14px; }
+.chrome-title { font-size:12.5px; font-weight:700; letter-spacing:.01em; }
+.chrome-crumb { font-size:12.5px; font-weight:600; color:var(--ink-muted); }
+.chrome-crumb::before { content:"/"; margin:0 7px; color:var(--ink-faint); font-weight:400; }
+.chrome-spacer { flex:1; }
+.chrome-ctrls { display:flex; align-items:center; gap:2px; -webkit-app-region:no-drag; }
+.chrome-ico { width:26px; height:26px; border-radius:7px; display:grid; place-items:center;
+  color:var(--ink-muted); cursor:pointer; transition:all .15s ease; background:transparent; border:none; }
+.chrome-ico svg { width:14px; height:14px; }
+.chrome-ico:hover { background:var(--border); color:var(--ink); }
+.chrome-ico.close:hover { background:var(--danger); color:#fff; }
+
+/* ── Eyebrow ────────────────────────────────────────────────────────────────*/
+.eyebrow { font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-muted); }
+
+/* ── Chip de categoría (Suite) ──────────────────────────────────────────────*/
+.chip { display:inline-flex; align-items:center; height:18px; padding:0 8px;
+  font-size:11px; font-weight:600; letter-spacing:.01em; border-radius:7px;
+  color:var(--accent); background:var(--accent-soft); white-space:nowrap; }
+
+/* ── Pill de estado (Suite) ─────────────────────────────────────────────────*/
+.pill { display:inline-flex; align-items:center; height:21px; padding:0 9px;
+  font-size:11px; font-weight:600; border-radius:8px; white-space:nowrap; }
+.pill--success { color:var(--success); background:var(--success-soft); }
+.pill--warning { color:var(--warning); background:var(--warning-soft); }
+.pill--teal    { color:var(--teal);    background:var(--teal-soft); }
+.pill--primary { color:var(--primary); background:var(--primary-soft); }
+
+/* ── Badge (Hub · "5 pacientes") ────────────────────────────────────────────*/
+.badge { display:inline-flex; align-items:center; height:20px; padding:0 9px;
+  font-size:11px; font-weight:600; border-radius:999px;
+  color:var(--teal); background:var(--teal-soft);
+  border:1px solid color-mix(in srgb, var(--teal) 22%, transparent); }
+
+/* ── Botón secundario (Hub · "Textos globales") ─────────────────────────────*/
+.btn { appearance:none; cursor:pointer; font-family:inherit; font-weight:600;
+  font-size:12px; height:30px; padding:0 14px; border-radius:999px;
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--surface); color:var(--ink-2);
+  border:1px solid var(--border-strong);
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset; transition:all .16s ease; }
+.btn:hover { border-color:var(--primary); color:var(--primary);
+  background:var(--primary-soft); transform:translateY(-1px); }
+.btn:active { transform:translateY(0); }
+.btn:focus-visible { outline:none; box-shadow:0 0 0 3px var(--primary-soft); border-color:var(--primary); }
+
+/* ── Card genérica ──────────────────────────────────────────────────────────*/
+.card { position:relative; background:var(--surface); border:1px solid var(--border-strong);
+  border-radius:16px; box-shadow:var(--shadow-card); }
+.card::before { content:""; position:absolute; inset:0; border-radius:inherit;
+  background:var(--lift); pointer-events:none; }
+
+/* ── Anillo de progreso (firma) ─────────────────────────────────────────────*/
+.ring { position:relative; display:grid; place-items:center; }
+.ring svg { transform:rotate(-90deg); }
+.ring .ring-track { fill:none; stroke:var(--ring-track); }
+.ring .ring-arc { fill:none; stroke-linecap:round; }
+.ring .ring-val { position:absolute; font-family:'JetBrains Mono', monospace;
+  color:var(--ink); font-weight:500; }
+
+/* ── Sparkline ──────────────────────────────────────────────────────────────*/
+.spark { display:block; }
+.spark .spark-line { fill:none; stroke:var(--primary); stroke-width:1.8;
+  stroke-linecap:round; stroke-linejoin:round; }
+.spark .spark-dot { fill:var(--primary); }
+
+/* ── Avatar (Hub) ───────────────────────────────────────────────────────────*/
+.avatar { width:28px; height:28px; border-radius:10px; display:grid; place-items:center;
+  font-size:11px; font-weight:700; color:#fff; letter-spacing:.02em;
+  border:1px solid rgba(255,255,255,.4); flex:0 0 auto;
+  box-shadow:0 2px 6px -3px rgba(0,0,0,.4); }
+[data-theme="dark"] .avatar { border-color:rgba(255,255,255,.2); }
+.av0 { background:linear-gradient(135deg, var(--av-sage), var(--av-teal)); }
+.av1 { background:linear-gradient(135deg, var(--av-teal), var(--av-terra)); }
+.av2 { background:linear-gradient(135deg, var(--av-terra), var(--av-sage)); }
+.av3 { background:linear-gradient(135deg, var(--av-sage), var(--av-terra)); }
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║ 3a · PANTALLA — SUITE HOME (densidad comfortable)                          ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+.suite-body { flex:1; min-height:0; padding:14px 24px 12px; display:flex; flex-direction:column;
+  background:
+    radial-gradient(80% 60% at 88% -10%, var(--primary-soft), transparent 60%),
+    var(--canvas);
+  transition:background .5s ease; }
+
+/* Hero de bienestar */
+.hero { position:relative; border-radius:16px; padding:16px 24px;
+  background:linear-gradient(135deg, var(--primary-soft), var(--surface));
+  border:1px solid var(--border); box-shadow:var(--shadow-hero);
+  overflow:hidden; }
+.hero-eyebrow { color:var(--ink-2); }
+.hero-greet { font-family:'Newsreader', serif; font-size:26px; font-weight:600;
+  letter-spacing:-.01em; color:var(--ink); margin-top:2px; line-height:1.18; }
+.hero-score-row { display:flex; align-items:baseline; gap:7px; margin-top:7px; }
+.hero-score { font-family:'Newsreader', serif; font-size:30px; font-weight:600; line-height:1;
+  color:var(--accent); letter-spacing:-.01em; }
+.hero-unit { font-size:13px; color:var(--ink-muted); font-weight:500; }
+.hero-delta { font-size:13px; font-weight:700; color:var(--teal); display:flex; align-items:center; gap:2px; }
+.hero-bar { margin-top:10px; height:5px; border-radius:999px; background:var(--ring-track);
+  overflow:hidden; position:relative; }
+.hero-bar-fill { height:100%; border-radius:999px; width:100%;
+  background:linear-gradient(90deg, var(--grad-from), var(--grad-mid), var(--grad-to));
+  box-shadow:0 0 10px -2px color-mix(in srgb, var(--grad-to) 55%, transparent); }
+
+.modules-label { margin:14px 2px 8px; }
+
+/* Grid de módulos 4×2 */
+.modgrid { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; flex:1; min-height:0; }
+.mod { position:relative; background:var(--surface); border:1px solid var(--border-strong);
+  border-radius:16px; padding:14px 18px; display:flex; flex-direction:column;
+  box-shadow:var(--shadow-card); cursor:pointer; overflow:hidden;
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.mod::before { content:""; position:absolute; inset:0; border-radius:inherit;
+  background:var(--lift); pointer-events:none; }
+.mod:hover { transform:translateY(-3px); box-shadow:var(--shadow-card-hover);
+  border-color:color-mix(in srgb, var(--mod-c) 55%, var(--border-strong)); }
+.mod:active { transform:translateY(-1px); }
+.mod:focus-visible { outline:none; border-color:var(--mod-c);
+  box-shadow:var(--shadow-card-hover), 0 0 0 3px color-mix(in srgb, var(--mod-c) 22%, transparent); }
+.mod.sel { border-color:var(--mod-c);
+  box-shadow:var(--shadow-card), 0 0 0 1px var(--mod-c) inset; }
+.mod-c { --mod-c:color-mix(in srgb, var(--grad-from), var(--grad-to) var(--t)); }
+.mod-top { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.mod-ico { color:var(--mod-c); display:grid; place-items:center; }
+.mod-ico svg { width:18px; height:18px; }
+.mod-title { font-size:12px; font-weight:600; color:var(--ink); line-height:1.28; margin-top:8px; }
+.mod-desc { font-size:11px; color:var(--ink-muted); line-height:1.3; margin-top:2px; }
+.mod-foot { margin-top:auto; padding-top:10px; }
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║ 3b · PANTALLA — HUB PACIENTES (densidad compact)                           ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+.hub-body { flex:1; min-height:0; padding:6px 14px 0; display:flex;
+  background:
+    radial-gradient(70% 50% at 96% -8%, var(--teal-soft), transparent 60%),
+    var(--canvas);
+  transition:background .5s ease; }
+.roster { flex:1; min-height:0; display:flex; flex-direction:column;
+  padding:8px 8px 4px; border-radius:16px; }
+.roster::before { border-radius:16px; }
+
+.roster-meta { display:flex; align-items:center; gap:9px; padding:2px 4px 0; margin-bottom:2px; }
+.roster-title { font-size:12.5px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
+.roster-hint { font-size:11px; color:var(--ink-muted); }
+.roster-meta .btn { margin-left:2px; }
+
+/* Header de columnas */
+.cols { display:flex; align-items:center; padding:0 14px 10px 76px; gap:12px; }
+.cols .c { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-muted); }
+.c-paciente { flex:3; }
+.c-mail { flex:2; }
+.c-animo { width:64px; text-align:center; }
+.c-uso { width:56px; text-align:center; }
+.c-x { width:26px; }
+
+/* Filas */
+.rows { flex:1; min-height:0; display:flex; flex-direction:column; gap:2px;
+  overflow-y:auto; padding-bottom:6px; }
+.prow { display:flex; align-items:center; gap:12px; height:58px; flex:0 0 58px;
+  padding:0 14px; border-radius:12px; cursor:pointer;
+  background:var(--surface); border:1px solid var(--border-soft);
+  border-left:3px solid transparent;
+  transition:background .16s ease, border-color .16s ease, transform .16s ease; }
+.prow:hover { background:color-mix(in srgb, var(--teal) 6%, var(--surface));
+  border-color:color-mix(in srgb, var(--teal) 38%, transparent); }
+.prow.sel { border-left-color:var(--accent);
+  background:color-mix(in srgb, var(--accent) 7%, var(--surface));
+  border-color:color-mix(in srgb, var(--accent) 34%, transparent); }
+.dot { width:10px; height:10px; border-radius:50%; background:var(--success); flex:0 0 auto;
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--success) 16%, transparent); }
+.p-id { flex:3; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.p-name { font-size:12px; font-weight:600; color:var(--ink); }
+.p-sub  { font-size:11px; color:var(--ink-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.p-prog { flex:2; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.p-mail { font-size:11px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.p-next { font-size:11px; color:var(--ink-muted); }
+.p-spark { width:64px; flex:0 0 64px; display:grid; place-items:center; }
+.p-ring { width:56px; flex:0 0 56px; display:grid; place-items:center; }
+.p-x { width:26px; height:26px; flex:0 0 26px; border-radius:13px; border:none; cursor:pointer;
+  background:transparent; color:var(--danger); display:grid; place-items:center;
+  opacity:.7; transition:all .15s ease; }
+.p-x svg { width:13px; height:13px; }
+.p-x:hover { background:var(--danger-soft); opacity:1; }
+
+/* Scrollbar clínica neutra (paridad con stylesheet_scrollarea) */
+.rows::-webkit-scrollbar { width:8px; }
+.rows::-webkit-scrollbar-thumb { background:var(--border-strong); border-radius:4px; }
+.rows::-webkit-scrollbar-track { background:transparent; }
+</style>
+</head>
+<body>
+
+<!-- ════════ STAGE · ventana 960×600 con las dos pantallas ════════ -->
+<div class="stage">
+  <div class="window">
+
+    <!-- ─────────────── PANTALLA · SUITE HOME ─────────────── -->
+    <section class="screen suite-home">
+      <!-- chrome -->
+      <header class="chrome">
+        <div class="chrome-brand">
+          <span class="chrome-glyph" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 4.5a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0-1.8 4.2A2.6 2.6 0 0 0 6 16a2.5 2.5 0 0 0 3.5 2.3V4.5Z"/><path d="M14.5 4.5A2.5 2.5 0 0 1 17 7a2.5 2.5 0 0 1 1.8 4.2A2.6 2.6 0 0 1 18 16a2.5 2.5 0 0 1-3.5 2.3V4.5Z"/></svg>
+          </span>
+          <span class="chrome-title">NeuroMood Suite</span>
+        </div>
+        <div class="chrome-spacer"></div>
+        <div class="chrome-ctrls">
+          <button class="chrome-ico js-theme" title="Cambiar tema">
+            <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8Z"/></svg>
+          </button>
+          <button class="chrome-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+          <button class="chrome-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
+          <button class="chrome-ico close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+      </header>
+
+      <!-- contenido -->
+      <div class="suite-body">
+        <!-- HERO -->
+        <div class="hero">
+          <div class="eyebrow hero-eyebrow">Bienvenida</div>
+          <div class="hero-greet">Buenas tardes, Juan</div>
+          <div class="hero-score-row">
+            <span class="hero-score">10</span>
+            <span class="hero-unit">/ 10</span>
+            <span class="hero-delta">↑ 0.8</span>
+          </div>
+          <div class="hero-bar"><div class="hero-bar-fill"></div></div>
+        </div>
+
+        <div class="eyebrow modules-label">Tus módulos</div>
+
+        <!-- GRID 4×2 -->
+        <div class="modgrid" id="modgrid"></div>
+      </div>
+    </section>
+
+    <!-- ─────────────── PANTALLA · HUB PACIENTES ─────────────── -->
+    <section class="screen hub-pacientes">
+      <!-- chrome -->
+      <header class="chrome">
+        <div class="chrome-brand">
+          <span class="chrome-glyph" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 4.5a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0-1.8 4.2A2.6 2.6 0 0 0 6 16a2.5 2.5 0 0 0 3.5 2.3V4.5Z"/><path d="M14.5 4.5A2.5 2.5 0 0 1 17 7a2.5 2.5 0 0 1 1.8 4.2A2.6 2.6 0 0 1 18 16a2.5 2.5 0 0 1-3.5 2.3V4.5Z"/></svg>
+          </span>
+          <span class="chrome-title">NeuroMood Hub</span>
+          <span class="chrome-crumb">Pacientes</span>
+        </div>
+        <div class="chrome-spacer"></div>
+        <div class="chrome-ctrls">
+          <button class="chrome-ico js-theme" title="Cambiar tema">
+            <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8Z"/></svg>
+          </button>
+          <button class="chrome-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+          <button class="chrome-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
+          <button class="chrome-ico close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+      </header>
+
+      <!-- contenido -->
+      <div class="hub-body">
+        <div class="card roster">
+          <!-- meta -->
+          <div class="roster-meta">
+            <span class="roster-title">Lista activa</span>
+            <span class="badge">5 pacientes</span>
+            <span class="roster-hint">Mail, ánimo de 7 días y uso por paciente</span>
+            <button class="btn">Textos globales</button>
+          </div>
+          <!-- header de columnas -->
+          <div class="cols">
+            <span class="c c-paciente">Paciente</span>
+            <span class="c c-mail">Mail</span>
+            <span class="c c-animo">Ánimo 7d</span>
+            <span class="c c-uso">Uso</span>
+            <span class="c-x"></span>
+          </div>
+          <!-- filas -->
+          <div class="rows" id="rows"></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<p class="caption">Mockup de evaluación · sistema visual NeuroMood — 4 pantallas ancla (Suite Home · Hub Pacientes, claro y oscuro)</p>
+
+<!-- ════════ DOCK de evaluación (no es producto) ════════ -->
+<div class="dock">
+  <span class="dock-label">Mockup</span>
+  <div class="dock-seg">
+    <button class="dock-btn active" data-go="suite-home">Suite Home</button>
+    <button class="dock-btn" data-go="hub-pacientes">Hub Pacientes</button>
+  </div>
+  <button class="dock-theme js-theme" title="Claro / oscuro">
+    <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8Z"/></svg>
+  </button>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════════
+   DATOS (extraídos de la UI real — fixtures QA visibles en las capturas)
+   ════════════════════════════════════════════════════════════════════════════ */
+
+// Suite Home · 8 módulos (MODULES_CONFIG de app/home_qt.py) + estado "full"
+// (statuses/colores según ModuleCard._refresh_status visto en la captura).
+const ICONS = {
+  mood:'<path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="M8.5 14a4 4 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/>',
+  breath:'<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h15a3 3 0 1 1-3 3"/><path d="M3 16h9a2.5 2.5 0 1 1-2.5 2.5"/>',
+  brain:'<path d="M9.5 4.5A2.5 2.5 0 0 0 7 7a2.5 2.5 0 0 0-1.8 4.2A2.6 2.6 0 0 0 6 16a2.5 2.5 0 0 0 3.5 2.3V4.5Z"/><path d="M14.5 4.5A2.5 2.5 0 0 1 17 7a2.5 2.5 0 0 1 1.8 4.2A2.6 2.6 0 0 1 18 16a2.5 2.5 0 0 1-3.5 2.3V4.5Z"/>',
+  routine:'<path d="M4 6.5h2l1 1 2-2"/><path d="M4 12.5h2l1 1 2-2"/><path d="M4 18h2l1 1 2-2"/><path d="M13 6.5h7M13 12.5h7M13 18h7"/>',
+  run:'<circle cx="14" cy="5" r="1.8"/><path d="M5 20l3-4 1-4 3 2 1 3"/><path d="M9 12l-2-3 4-2 3 2 2-1"/>',
+  timer:'<path d="M9 2.5h6"/><path d="M12 6.5a7 7 0 1 0 0 14 7 7 0 0 0 0-14Z"/><path d="M12 10v3.5l2 1.5"/>',
+  bell:'<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 19a2 2 0 0 0 4 0"/>',
+  spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/><path d="M18.5 16.5l.6 1.8 1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6Z"/>',
+};
+const MODULES = [
+  {ic:'mood',    title:'Termómetro Emocional',            desc:'Registro emocional diario',  chip:'Bienestar',   st:'10/10',      pill:'warning'},
+  {ic:'breath',  title:'Guía de Respiración Animada',     desc:'Técnicas de calma 4-7-8',     chip:'Calma',       st:'Activo',     pill:'teal'},
+  {ic:'brain',   title:'Registro de Pensamientos (TCC)',  desc:'Pensamientos automáticos',    chip:'Cognitivo',   st:'En progreso',pill:'warning'},
+  {ic:'routine', title:'Checklist de Rutina Diaria',      desc:'Checklist del día',           chip:'Hábitos',     st:'Completo',   pill:'success'},
+  {ic:'run',     title:'Asistente de Activación Conductual',desc:'Activación conductual',     chip:'Acción',      st:'3 hoy',      pill:'teal'},
+  {ic:'timer',   title:'Temporizador de Actividades',     desc:'Sesiones de enfoque',         chip:'Focus',       st:'45 min hoy', pill:'primary'},
+  {ic:'bell',    title:'Recordatorios de Bienestar',      desc:'Recordatorios del día',       chip:'Diario',      st:'2/5 listos', pill:'warning'},
+  {ic:'spark',   title:'Habilidades DBT',                 desc:'Práctica guiada breve',       chip:'Habilidades', st:'',           pill:''},
+];
+
+// Hub Pacientes · 5 pacientes (fixtures QA visibles en la captura)
+const SPARK = [6,6,7,7,7,8,8];            // mood_data_7d QA (idéntico por fila)
+const PATIENTS = [
+  {ini:'AM', name:'Ana Martínez',   sub:'Último registro: hace 2 días', mail:'ana.martinez@ejemplo.com',   pct:75},
+  {ini:'JR', name:'Juan Rodríguez', sub:'Último registro: hace 5 días', mail:'juanr@ejemplo.com',          pct:50},
+  {ini:'CL', name:'Carmen López',   sub:'Último registro: ayer',        mail:'carmen.lopez@ejemplo.com',   pct:88},
+  {ini:'PS', name:'Pedro Sánchez',  sub:'Último registro: hace 3 días', mail:'pedrosanchez@ejemplo.com',   pct:62},
+  {ini:'LG', name:'Laura Gómez',    sub:'Último registro: hoy',         mail:'lauragomez@ejemplo.com',     pct:94},
+];
+
+/* ════════ Helpers de render ════════ */
+function svg(ic){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[ic]}</svg>`; }
+
+function sparkSVG(){
+  const w=64,h=22,pad=3,n=SPARK.length;
+  const mn=Math.min(...SPARK),mx=Math.max(...SPARK),span=(mx-mn)||1;
+  const pts=SPARK.map((v,i)=>{
+    const x=pad+i*(w-2*pad)/(n-1);
+    const y=pad+(h-2*pad)-((v-mn)/span)*(h-2*pad);
+    return [x,y];
+  });
+  const d=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const last=pts[pts.length-1];
+  // área suave bajo la curva
+  const area=`M${pts[0][0].toFixed(1)} ${(h-pad).toFixed(1)} `+
+             pts.map(p=>'L'+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+
+             ` L${last[0].toFixed(1)} ${(h-pad).toFixed(1)} Z`;
+  const gid='sg'+Math.random().toString(36).slice(2,7);
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--primary)" stop-opacity=".22"/>
+      <stop offset="1" stop-color="var(--primary)" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#${gid})"/>
+    <path class="spark-line" d="${d}"/>
+    <circle class="spark-dot" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.4"/>
+  </svg>`;
+}
+
+function ringSVG(pct, size=36, sw=3){
+  const r=(size-sw)/2 - .5, c=2*Math.PI*r, off=c*(1-pct/100);
+  const gid='rg'+Math.random().toString(36).slice(2,7);
+  const fs=Math.max(9, Math.round(size*0.20));
+  return `<div class="ring" style="width:${size}px;height:${size}px">
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="var(--grad-from)"/>
+        <stop offset="0.5" stop-color="var(--grad-mid)"/>
+        <stop offset="1" stop-color="var(--grad-to)"/>
+      </linearGradient></defs>
+      <circle class="ring-track" cx="${size/2}" cy="${size/2}" r="${r}" stroke-width="${sw}"/>
+      <circle class="ring-arc" cx="${size/2}" cy="${size/2}" r="${r}" stroke="url(#${gid})"
+        stroke-width="${sw}" stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}"/>
+    </svg>
+    <span class="ring-val" style="font-size:${fs}px">${pct}%</span>
+  </div>`;
+}
+
+/* ════════ Render · Suite Home ════════ */
+const modgrid=document.getElementById('modgrid');
+modgrid.innerHTML = MODULES.map((m,i)=>{
+  const t = Math.round(i/(MODULES.length-1)*100);   // _dot_color: interp grad-from→grad-to
+  const pill = m.st ? `<span class="pill pill--${m.pill}">${m.st}</span>` : '';
+  return `<div class="mod mod-c" style="--t:${t}%" tabindex="0">
+    <div class="mod-top">
+      <span class="mod-ico">${svg(m.ic)}</span>
+      <span class="chip">${m.chip}</span>
+    </div>
+    <div class="mod-title">${m.title}</div>
+    <div class="mod-desc">${m.desc}</div>
+    <div class="mod-foot">${pill}</div>
+  </div>`;
+}).join('');
+
+/* ════════ Render · Hub Pacientes ════════ */
+const rows=document.getElementById('rows');
+rows.innerHTML = PATIENTS.map((p,i)=>`
+  <div class="prow" tabindex="0">
+    <span class="dot"></span>
+    <span class="avatar av${i%4}">${p.ini}</span>
+    <span class="p-id">
+      <span class="p-name">${p.name}</span>
+      <span class="p-sub">${p.sub}</span>
+    </span>
+    <span class="p-prog">
+      <span class="p-mail">${p.mail}</span>
+      <span class="p-next">Próxima: vie 16:00</span>
+    </span>
+    <span class="p-spark">${sparkSVG()}</span>
+    <span class="p-ring">${ringSVG(p.pct)}</span>
+    <button class="p-x" title="Quitar paciente del Hub">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>`).join('');
+
+/* ════════ Interacción ════════ */
+const root=document.documentElement;
+function setTheme(t){ root.dataset.theme=t;
+  document.querySelectorAll('.js-theme svg').forEach(s=>{
+    s.innerHTML = t==='dark'
+      ? '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>'
+      : '<path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8Z"/>';
+  });
+}
+document.querySelectorAll('.js-theme').forEach(b=>b.addEventListener('click',()=>{
+  setTheme(root.dataset.theme==='dark'?'light':'dark');
+}));
+document.querySelectorAll('.dock-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.dock-btn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  root.dataset.screen=b.dataset.go;
+}));
+// Estados selected (demostración — el producto soporta selección de fila/card)
+rows.addEventListener('click',e=>{ const r=e.target.closest('.prow'); if(!r||e.target.closest('.p-x'))return;
+  rows.querySelectorAll('.prow').forEach(x=>x.classList.remove('sel')); r.classList.add('sel'); });
+modgrid.addEventListener('click',e=>{ const m=e.target.closest('.mod'); if(!m)return;
+  modgrid.querySelectorAll('.mod').forEach(x=>x.classList.remove('sel')); m.classList.add('sel'); });
+// Atajos: 1/2 pantallas · T tema
+addEventListener('keydown',e=>{
+  if(e.key==='1') document.querySelector('[data-go="suite-home"]').click();
+  if(e.key==='2') document.querySelector('[data-go="hub-pacientes"]').click();
+  if(e.key.toLowerCase()==='t') document.querySelector('.dock-theme').click();
+});
+</script>
+</body>
+</html>
