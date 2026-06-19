@@ -39,6 +39,7 @@ El SHA anterior es una referencia histórica. Antes de cada tarea debe verificar
 | RB-5 | `87d7953` | Actividades dispara sync inmediato tras registrar resultado |
 | RB-1 | `1e82e2f` | Los tres subtabs IA reciben el nombre real del paciente |
 | RC-3 | `b49333a` | Test congela `.limit(50)+.order+.eq` en `assigned_reminders` (cambio productivo ya en S0-1 `8b4f19a`) |
+| RB-3 | `b4c9937` | Fetch de `reminder_logs` (telemetría avisos disparados) bajo key `avisos_disparados` en `_fetch_patient_data` |
 | Handoff local | `8aeb389` | Primera versión documental; este archivo la reemplaza |
 
 No modificar estos fixes salvo que una regresión reproducible lo exija.
@@ -260,26 +261,32 @@ No inventar una fórmula de adherencia.
 
 ---
 
-### RB-3 — Telemetría de avisos invisible en el Hub
+### RB-3 — Telemetría de avisos invisible en el Hub — CERRADO (`b4c9937`)
 
-**Problema a verificar:** Suite exporta `recordatorios_log` a `reminder_logs`, pero el Hub no consulta esa tabla.
+**Resolución:** `hub/pacientes_qt._fetch_patient_data` agrega fetch #9 a `reminder_logs` bajo la key nueva `avisos_disparados`, usando el helper `_fetch` existente con `select("fecha,hora,mensaje,cerrado")`, `.eq("patient_id", pid)`, `.order("fecha", desc=True)` (default helper) y `.limit(50)`. Schema verificado en `db/supabase_schema.sql:82-90`. El comentario engañoso "S2-1 pendiente" fue reemplazado por una nota que explica la distinción con `assigned_reminders`.
 
-**Objetivo propuesto:**
+**Problema a verificar (histórico):** Suite exporta `recordatorios_log` a `reminder_logs`, pero el Hub no consultaba esa tabla.
 
-- agregar fetch de `reminder_logs`;
-- seleccionar únicamente columnas reales verificadas en schema;
-- limitar resultados;
-- guardar la telemetría en una key nueva y explícita, por ejemplo `avisos_disparados`;
-- no confundir `reminder_logs` con `assigned_reminders`.
+**Objetivo propuesto (cumplido):**
+
+- agregar fetch de `reminder_logs`; ✅
+- seleccionar únicamente columnas reales verificadas en schema; ✅ (`fecha, hora, mensaje, cerrado`)
+- limitar resultados; ✅ (`.limit(50)`)
+- guardar la telemetría en una key nueva y explícita, por ejemplo `avisos_disparados`; ✅
+- no confundir `reminder_logs` con `assigned_reminders`. ✅ (test de no-confusión explícito)
 
 **Archivo:** `hub/pacientes_qt.py`
 
-**Tests:**
+**Tests (agregados en `tests/test_rb3_telemetria_avisos_disparados.py`):**
 
-- captura real de `.table("reminder_logs")`;
-- verificación del `.select(...)`;
-- límite aplicado;
-- resultado almacenado bajo la key correcta.
+- captura real de `.table("reminder_logs")`; ✅
+- verificación del `.select(...)`; ✅ (con garantía negativa sobre columnas inexistentes)
+- límite aplicado; ✅
+- resultado almacenado bajo la key correcta. ✅
+- test adicional de no-confusión con `assigned_reminders`.
+- test smoke de estructura del dict.
+
+Tests de `tests/test_s0_1_fetch_patient_data.py` actualizados para reflejar la 9ª tabla/key (defensa en profundidad).
 
 Antes de implementar, comprobar schema Supabase y exportador actual.
 
@@ -512,7 +519,7 @@ No borrarlos solo por no verse en una captura; verificar creación, layout, visi
 
 1. ~~RD-1 — aislamiento del pipeline de sync.~~ — mergeado en `f1f1b6b` (pendiente de mover a "Estado cerrado").
 2. ~~RC-3 — límite de `assigned_reminders`.~~ — cerrado en `b49333a`.
-3. RB-3 — telemetría de avisos en Hub.
+3. ~~RB-3 — telemetría de avisos en Hub.~~ — cerrado en `b4c9937`.
 4. RB-2 — métricas fantasma, después de decisión del owner.
 5. RB-4 + RB-6 — después de decisión del modelo remoto.
 6. RC-2 — ventana temporal real.
