@@ -38,6 +38,7 @@ El SHA anterior es una referencia histórica. Antes de cada tarea debe verificar
 | RA-6 | `485cb1a` | Retiro de `reflexion_ia` del contrato activo de TCC |
 | RB-5 | `87d7953` | Actividades dispara sync inmediato tras registrar resultado |
 | RB-1 | `1e82e2f` | Los tres subtabs IA reciben el nombre real del paciente |
+| RC-3 | `b49333a` | Test congela `.limit(50)+.order+.eq` en `assigned_reminders` (cambio productivo ya en S0-1 `8b4f19a`) |
 | Handoff local | `8aeb389` | Primera versión documental; este archivo la reemplaza |
 
 No modificar estos fixes salvo que una regresión reproducible lo exija.
@@ -318,15 +319,17 @@ No crear tablas ni migraciones sin autorización explícita.
 
 ---
 
-### RC-3 — Límite de recordatorios asignados
+### RC-3 — Límite de recordatorios asignados — CERRADO (`b49333a`)
 
-**Problema a verificar:** fetch de `assigned_reminders` sin límite.
+**Resolución:** el cambio productivo (`.limit(50) + .order("hora", desc=False) + .eq("patient_id", pid)`) fue introducido en S0-1 (`8b4f19a`) — el handoff original estaba desactualizado. RC-3 agrega `tests/test_rc3_limit_assigned_reminders.py` (4 tests de comportamiento) que congela el contrato y detecta regresión si se remueve el `.limit()` o se altera su valor.
 
-**Objetivo:** aplicar `.limit(50)` o el límite que autorice el owner.
+**Problema a verificar (histórico):** fetch de `assigned_reminders` sin límite.
 
-**Archivo:** `hub/pacientes_qt.py`
+**Objetivo (cumplido):** aplicar `.limit(50)` o el límite que autorice el owner.
 
-**Test:** capturar la cadena Supabase y comprobar el límite real.
+**Archivo:** `hub/pacientes_qt.py` — solo comentario L291 actualizado; sin cambio funcional.
+
+**Test (agregado):** `tests/test_rc3_limit_assigned_reminders.py` captura la cadena Supabase y comprueba límite real, orden, filtro por `patient_id` y garantía negativa.
 
 Puede resolverse antes de RC-1.
 
@@ -507,8 +510,8 @@ No borrarlos solo por no verse en una captura; verificar creación, layout, visi
 
 ## 10. Orden recomendado actualizado
 
-1. RD-1 — aislamiento del pipeline de sync.
-2. RC-3 — límite de `assigned_reminders`.
+1. ~~RD-1 — aislamiento del pipeline de sync.~~ — mergeado en `f1f1b6b` (pendiente de mover a "Estado cerrado").
+2. ~~RC-3 — límite de `assigned_reminders`.~~ — cerrado en `b49333a`.
 3. RB-3 — telemetría de avisos en Hub.
 4. RB-2 — métricas fantasma, después de decisión del owner.
 5. RB-4 + RB-6 — después de decisión del modelo remoto.
