@@ -213,8 +213,9 @@ class DetallePacienteView(QWidget):
           - checklist_completions  (ya era correcta)
           - activation_results     (era "activacion_registros")
           - timer_sessions         (ya era correcta)
-          - assigned_reminders     (ya era correcta)
+          - assigned_reminders     (ya era correcta — programacion del profesional)
           - dbt_practice_records   (era "dbt_registros")
+          - reminder_logs          (RB-3: telemetria de avisos disparados al paciente)
 
         Campos: trae los campos textuales reales de cada tabla (no solo
         id+fecha) para que el prompt de IA y el PDF puedan usarlos. Esto es
@@ -224,6 +225,7 @@ class DetallePacienteView(QWidget):
         datos: dict = {
             "animo": [], "respiracion": [], "tcc": [], "checklist": [],
             "actividades": [], "timer": [], "recordatorios": [], "dbt": [],
+            "avisos_disparados": [],
         }
         if not self._sb:
             return datos
@@ -278,10 +280,9 @@ class DetallePacienteView(QWidget):
                "fecha,hora,nombre,categoria,duracion_config,duracion_real,notas", limit=20)
 
         # 7) Recordatorios asignados - tabla real: assigned_reminders (ya era correcta).
-        # NOTA: assigned_reminders son los asignados por el profesional, no los
-        # registros de actividad del paciente. Para telemetria real de avisos
-        # disparados hay que leer reminder_logs (ver S2-1). Por ahora se mantiene
-        # el comportamiento legacy.
+        # NOTA: assigned_reminders es la programacion que el profesional definió
+        # para el paciente. La telemetría real de avisos disparados al paciente
+        # se consulta de reminder_logs (ver fetch #9 / RB-3). No mezclar.
         try:
             r = (
                 self._sb.table("assigned_reminders")
@@ -303,6 +304,13 @@ class DetallePacienteView(QWidget):
                "fecha,hora,skill_id,skill_version,familia,necesidad,"
                "malestar_antes,malestar_despues,resultado,duracion_seg,nota",
                limit=20)
+
+        # 9) Telemetría de avisos disparados - tabla real: reminder_logs (RB-3).
+        # Distinto de assigned_reminders: aqui se registra cada vez que un aviso
+        # se disparo efectivamente al paciente (auditoria / adherencia real).
+        # Columnas verificadas en db/supabase_schema.sql:82-90.
+        _fetch("avisos_disparados", "reminder_logs",
+               "fecha,hora,mensaje,cerrado", limit=50)
 
         return datos
 

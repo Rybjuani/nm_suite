@@ -1,11 +1,11 @@
-"""S0-1 smoke test: _fetch_patient_data trae datos de las 8 tablas reales.
+"""S0-1 smoke test: _fetch_patient_data trae datos de las 9 tablas reales.
 
-Verifica que después del fix S0-1:
+Verifica que después del fix S0-1 (+ RB-3 que agrega reminder_logs):
 1. Las 4 tablas inexistentes (animo_registros, tcc_registros, activacion_registros,
    dbt_registros) NO se consultan.
-2. Las 8 tablas reales (mood_records, breathing_sessions, thought_records,
+2. Las 9 tablas reales (mood_records, breathing_sessions, thought_records,
    checklist_completions, activation_results, timer_sessions, assigned_reminders,
-   dbt_practice_records) SÍ se consultan y devuelven datos.
+   dbt_practice_records, reminder_logs) SÍ se consultan y devuelven datos.
 3. Los campos textuales de cada módulo viajan en el dict (no solo id+fecha).
 
 Marcado como skip si PyQt6 no está disponible (corre en CI con PyQt6 instalado).
@@ -70,6 +70,8 @@ class _FakeSB:
                                 "notas": ""}],
             "assigned_reminders": [{"id": 1, "hora": "09:00",
                                     "mensaje": "Tomar medicina", "activa": True}],
+            "reminder_logs": [{"fecha": "2026-06-18", "hora": "09:00",
+                               "mensaje": "Tomar medicina", "cerrado": True}],
             "dbt_practice_records": [{"fecha": "2026-06-18", "hora": "15:00",
                                       "skill_id": "wise_mind", "skill_version": 1,
                                       "familia": "mindfulness", "necesidad": "",
@@ -104,10 +106,10 @@ def test_fetch_patient_data_uses_real_table_names(qapp):
         f"S0-1 regredió: se consultaron tablas inexistentes: {bad & consultadas}"
     )
 
-    # Las 8 tablas reales SÍ deben consultarse
+    # Las 9 tablas reales SÍ deben consultarse (RB-3 agrega reminder_logs)
     good = {"mood_records", "breathing_sessions", "thought_records",
             "checklist_completions", "activation_results", "timer_sessions",
-            "assigned_reminders", "dbt_practice_records"}
+            "assigned_reminders", "dbt_practice_records", "reminder_logs"}
     assert good.issubset(consultadas), (
         f"Faltan tablas reales por consultar: {good - consultadas}"
     )
@@ -125,7 +127,8 @@ def test_fetch_patient_data_returns_data_for_all_8_modules(qapp):
     datos = view._fetch_patient_data()
 
     expected_keys = {"animo", "respiracion", "tcc", "checklist",
-                     "actividades", "timer", "recordatorios", "dbt"}
+                     "actividades", "timer", "recordatorios", "dbt",
+                     "avisos_disparados"}
     assert set(datos.keys()) == expected_keys, (
         f"Keys inesperadas: {set(datos.keys()) ^ expected_keys}"
     )
@@ -172,7 +175,8 @@ def test_fetch_patient_data_handles_missing_supabase_gracefully(qapp):
     datos = view._fetch_patient_data()
 
     expected_keys = {"animo", "respiracion", "tcc", "checklist",
-                     "actividades", "timer", "recordatorios", "dbt"}
+                     "actividades", "timer", "recordatorios", "dbt",
+                     "avisos_disparados"}
     assert set(datos.keys()) == expected_keys
     for key in expected_keys:
         assert datos[key] == [], f"{key} debería ser [] cuando no hay sb"
