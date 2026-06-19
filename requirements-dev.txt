@@ -3,6 +3,7 @@
 ruff==0.15.14
 pytest==9.0.3
 pytest-qt==4.5.0
+pypdf==6.4.1
 coverage==7.14.1
 # Pyright se instala en CI via npm porque el paquete Python puede no publicar la misma version.
 bandit

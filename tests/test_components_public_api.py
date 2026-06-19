@@ -10,98 +10,69 @@ ROOT = Path(__file__).resolve().parent.parent
 CONSUMER_ROOTS = (ROOT / "app", ROOT / "hub", ROOT / "qa", ROOT / "build_neuromood.py")
 COMPONENT_MODULES = {"shared.components", "shared.components_qt"}
 MOVED_COMPONENT_MODULES = {
-    "NMAIDisclaimer": "shared.components.session",
     "NMIcon": "shared.components.icons",
     "NMSectionHeader": "shared.components.icons",
     "NMAvatar": "shared.components.icons",
     "NMBadge": "shared.components.surfaces",
     "NMButton": "shared.components.buttons",
     "NMButtonOutline": "shared.components.buttons",
-    "NMCalmBadge": "shared.components.status",
     "NMCard": "shared.components.cards",
     "NMChartPanel": "shared.components.cards",
     "NMChip": "shared.components.surfaces",
     "NMCustomCheck": "shared.components.session",
-    "NMCycleRing": "shared.components.rings",
-    "NMDayNote": "shared.components.session",
     "NMDialogScaffold": "shared.components.dialogs",
-    "NMDivider": "shared.components.surfaces",
     "NMElidedLabel": "shared.components.data",
     "NMEmptyState": "shared.components.overlays",
     "NMFadeWidget": "shared.components.core",
-    "NMFeaturedCard": "shared.components.cards",
     "NMFocusArc": "shared.components.rings",
     "NMFormPanel": "shared.components.cards",
-    "NMFormRow": "shared.components.surfaces",
     "NMHeatBar": "shared.components.feedback",
-    "NMHubSidebar": "shared.components.surfaces",
     "NMInput": "shared.components.buttons",
-    "NMListRow": "shared.components.surfaces",
-    "NMMetricCard": "shared.components.cards",
     "NMModule": "shared.components.navigation",
     "NMModuleRing": "shared.components.rings",
     "NMPageHeader": "shared.components.surfaces",
-    "NMPanel": "shared.components.surfaces",
     "NMPatientRowPremium": "shared.components.patient",
-    "NMPhaseChip": "shared.components.status",
     "NMPlayButton": "shared.components.inputs",
     "NMProgressBar": "shared.components.feedback",
     "NMProgressLine": "shared.components.feedback",
     "NMRingPulse": "shared.components.feedback",
     "NMSearchInput": "shared.components.buttons",
     "NMSegmentedChoice": "shared.components.buttons",
-    "NMSettingsSection": "shared.components.surfaces",
     "NMSkeleton": "shared.components.feedback",
     "NMStepper": "shared.components.feedback",
-    "NMSyncOrb": "shared.components.surfaces",
     "NMTabs": "shared.components.buttons",
     "NMTextArea": "shared.components.buttons",
     "NMToast": "shared.components.feedback",
     "NMToggle": "shared.components.inputs",
-    "NMTypingDots": "shared.components.feedback",
     "NMWaveChart": "shared.components.feedback",
     "NMWindowChrome": "shared.components.chrome",
     "ThemeManager": "shared.theme_manager",
     "V3MoodSlider": "shared.components.mood",
-    "h_spacer": "shared.components.layout",
     "nm_confirm": "shared.components.dialogs",
-    "responsive_columns": "shared.components.layout",
 }
 
 EXPECTED_PUBLIC_COMPONENT_SYMBOLS = {
-    "NMAIDisclaimer",
     "NMAvatar",
     "NMBadge",
     "NMButton",
     "NMButtonOutline",
-    "NMCalmBadge",
     "NMCard",
     "NMChartPanel",
     "NMChip",
     "NMCustomCheck",
-    "NMCycleRing",
-    "NMDayNote",
     "NMDialogScaffold",
-    "NMDivider",
     "NMElidedLabel",
     "NMEmptyState",
     "NMFadeWidget",
-    "NMFeaturedCard",
     "NMFocusArc",
     "NMFormPanel",
-    "NMFormRow",
     "NMHeatBar",
-    "NMHubSidebar",
     "NMIcon",
     "NMInput",
-    "NMListRow",
-    "NMMetricCard",
     "NMModule",
     "NMModuleRing",
     "NMPageHeader",
-    "NMPanel",
     "NMPatientRowPremium",
-    "NMPhaseChip",
     "NMPlayButton",
     "NMProgressBar",
     "NMProgressLine",
@@ -109,22 +80,17 @@ EXPECTED_PUBLIC_COMPONENT_SYMBOLS = {
     "NMSearchInput",
     "NMSectionHeader",
     "NMSegmentedChoice",
-    "NMSettingsSection",
     "NMSkeleton",
     "NMStepper",
-    "NMSyncOrb",
     "NMTabs",
     "NMTextArea",
     "NMToast",
     "NMToggle",
-    "NMTypingDots",
     "NMWaveChart",
     "NMWindowChrome",
     "ThemeManager",
     "V3MoodSlider",
-    "h_spacer",
     "nm_confirm",
-    "responsive_columns",
 }
 
 
@@ -157,7 +123,7 @@ def test_public_component_symbols_are_reexported_from_both_paths():
     components = importlib.import_module("shared.components")
     facade = importlib.import_module("shared.components_qt")
 
-    assert len(EXPECTED_PUBLIC_COMPONENT_SYMBOLS) == 56
+    assert len(EXPECTED_PUBLIC_COMPONENT_SYMBOLS) == 39
     assert set(facade.__all__) == EXPECTED_PUBLIC_COMPONENT_SYMBOLS
     assert set(components.__all__) == EXPECTED_PUBLIC_COMPONENT_SYMBOLS
     assert EXPECTED_PUBLIC_COMPONENT_SYMBOLS <= set(components.__all__)
@@ -188,18 +154,6 @@ def test_theme_manager_has_no_component_or_qt_adapter_dependencies():
             imported_modules.update(alias.name for alias in node.names)
 
     assert not (imported_modules & forbidden)
-
-
-def test_layout_helpers_are_leaf_exports_with_compatible_identity():
-    components = importlib.import_module("shared.components")
-    facade = importlib.import_module("shared.components_qt")
-    layout = importlib.import_module("shared.components.layout")
-
-    assert facade.h_spacer is layout.h_spacer
-    assert components.h_spacer is layout.h_spacer
-    assert facade.responsive_columns is layout.responsive_columns
-    assert components.responsive_columns is layout.responsive_columns
-    assert facade.responsive_breakpoint is layout.responsive_breakpoint
 
 
 def test_layout_module_does_not_import_component_facades_or_theme_adapters():

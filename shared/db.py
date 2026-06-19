@@ -150,8 +150,8 @@ def _migrar_activacion_energia_null(conn):
         """)
 
 
-def _eliminar_tablas_re1_muertas(conn):
-    """RE-1: retirar tablas SQLite auditadas como no usadas."""
+def _eliminar_tablas_muertas(conn):
+    """Retirar tablas SQLite auditadas como no usadas."""
     for table in (
         "checklist_snapshot",
         "mensajes_biblioteca",
@@ -160,6 +160,7 @@ def _eliminar_tablas_re1_muertas(conn):
         "timer_presets",
         "checklist_plantillas",
         "checklist_notas_dia",
+        "breathing_presets_cache",
     ):
         conn.execute(f"DROP TABLE IF EXISTS {table}")
 
@@ -307,14 +308,6 @@ def inicializar_tablas():
             fetched_at TEXT NOT NULL
         );
 
-        CREATE TABLE IF NOT EXISTS breathing_presets_cache (
-            id INTEGER PRIMARY KEY,
-            scope TEXT NOT NULL,
-            name TEXT NOT NULL,
-            payload TEXT NOT NULL,
-            UNIQUE (scope, name)
-        );
-
         CREATE TABLE IF NOT EXISTS timer_presets_cache (
             id INTEGER PRIMARY KEY,
             scope TEXT NOT NULL,
@@ -368,7 +361,7 @@ def inicializar_tablas():
     _migrar_checklist_sin_cascade(conn)
     _migrar_pensamientos_campos_tcc(conn)
     _migrar_tcc_templates_cache_schema(conn)
-    _eliminar_tablas_re1_muertas(conn)
+    _eliminar_tablas_muertas(conn)
     conn.commit()
     try:
         conn.execute("ALTER TABLE actividades_temporizador ADD COLUMN notas TEXT DEFAULT ''")

@@ -28,7 +28,6 @@ alter table public.assigned_reminders    enable row level security;
 alter table public.patient_activities    enable row level security;
 alter table public.legal_consents        enable row level security;
 alter table public.ia_audit_log          enable row level security;
-alter table public.ia_chat_history       enable row level security;
 alter table public.hub_config            enable row level security;
 alter table public.patient_routine_template enable row level security;
 
@@ -46,7 +45,6 @@ revoke all on table public.assigned_reminders    from anon;
 revoke all on table public.patient_activities    from anon;
 revoke all on table public.legal_consents        from anon;
 revoke all on table public.ia_audit_log          from anon;
-revoke all on table public.ia_chat_history       from anon;
 revoke all on table public.hub_config            from anon;
 revoke all on table public.patient_routine_template from anon;
 
@@ -65,7 +63,6 @@ grant select on table public.assigned_reminders    to authenticated;
 grant update (completado_en) on table public.assigned_reminders to authenticated;
 grant select, insert on table public.legal_consents to authenticated;
 grant select, insert on table public.ia_audit_log   to authenticated;
-grant select, insert on table public.ia_chat_history to authenticated;
 grant select on table public.hub_config to authenticated;
 grant select on table public.patient_routine_template to authenticated;
 
@@ -189,12 +186,6 @@ create policy "ia_audit_log_patient_own" on public.ia_audit_log
 for select to authenticated
 using (patient_id is null or patient_id = auth.uid()::text);
 
-drop policy if exists "ia_chat_history_patient_own" on public.ia_chat_history;
-create policy "ia_chat_history_patient_own" on public.ia_chat_history
-for all to authenticated
-using (patient_id is null or patient_id = auth.uid()::text)
-with check (patient_id is null or patient_id = auth.uid()::text);
-
 -- ── Tablas de config global — acceso authenticated ───────────────────────────
 -- Sin estas policies, tras habilitar RLS en feature_schemas.sql, el sync de
 -- la Suite no puede importar presets/mensajes/plantillas (queda en blanco).
@@ -202,7 +193,6 @@ with check (patient_id is null or patient_id = auth.uid()::text);
 -- tablas globales requieren service_role o auth profesional (PENDIENTE).
 
 grant select on table public.timer_presets_remote     to authenticated;
-grant select on table public.breathing_presets_remote to authenticated;
 grant select on table public.support_messages         to authenticated;
 grant select on table public.tcc_templates            to authenticated;
 grant select on table public.routine_templates        to authenticated;
@@ -210,11 +200,6 @@ grant select on table public.activity_bank            to authenticated;
 
 drop policy if exists "timer_presets_select_authenticated" on public.timer_presets_remote;
 create policy "timer_presets_select_authenticated" on public.timer_presets_remote
-for select to authenticated
-using (scope = 'global' or scope = ('patient:' || auth.uid()::text));
-
-drop policy if exists "breathing_presets_select_authenticated" on public.breathing_presets_remote;
-create policy "breathing_presets_select_authenticated" on public.breathing_presets_remote
 for select to authenticated
 using (scope = 'global' or scope = ('patient:' || auth.uid()::text));
 

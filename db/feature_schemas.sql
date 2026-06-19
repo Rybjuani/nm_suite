@@ -10,7 +10,7 @@
 --   - F2.3.A/B/C Rutina con sistema 3 estados (opción C, decisión 2026-05-21)
 --   - F2.2.A/B Timer profesional
 --   - F2.2.C/D Avisos plantillas equipo
---   - F4.B Audit log IA + persistencia chat
+--   - F4.B Audit log IA
 --
 -- RLS habilitado por defecto. No usar anon key para datos clinicos,
 -- patient-scoped ni logs IA.
@@ -55,23 +55,6 @@ CREATE TABLE IF NOT EXISTS public.patient_routine_template (
     PRIMARY KEY (patient_id)
 );
 
--- ── Presets remotos de respiración ───────────────────────────────────────────
--- 4 fases configurables (in/hold/out/hold_after) + duración default.
--- Reemplaza FASES + PRESETS hardcoded de app/modules/respiracion_qt.py. F2.4.
-CREATE TABLE IF NOT EXISTS public.breathing_presets_remote (
-    id                   BIGSERIAL PRIMARY KEY,
-    scope                TEXT NOT NULL DEFAULT 'global',
-    name                 TEXT NOT NULL,  -- ej "4-7-8", "Box 4-4-4-4"
-    fase_in              INT NOT NULL,
-    fase_hold            INT DEFAULT 0,
-    fase_out             INT NOT NULL,
-    fase_hold_after      INT DEFAULT 0,
-    duracion_min_default INT DEFAULT 5,
-    activa               BOOLEAN DEFAULT TRUE,
-    orden                INT DEFAULT 0,
-    UNIQUE (scope, name)
-);
-
 -- ── Presets remotos de timer ─────────────────────────────────────────────────
 -- Reemplaza PRESETS hardcoded de app/modules/timer_qt.py (5/10/25/45).
 -- Interpretación Propuesta Base item 3: el profesional delimita actividades
@@ -109,32 +92,20 @@ CREATE TABLE IF NOT EXISTS public.ia_audit_log (
     called_at     TIMESTAMPTZ DEFAULT now(),
     provider      TEXT,   -- "Groq", "Gemini", "OpenAI", "OllamaCloud"
     model         TEXT,   -- ej "llama-3.3-70b-versatile"
-    fn_name       TEXT,   -- "resumir_evolucion", "sugerir_acciones", etc.
+    fn_name       TEXT,   -- "generar_resumen_paciente", "generar_asignacion_*", etc.
     prompt_user   TEXT,
     prompt_system TEXT,
     output        TEXT,
     error         TEXT
 );
 
--- ── Persistencia chat IA global ──────────────────────────────────────────────
--- F4.B — Conserva el chat libre del IAAssistantView entre sesiones.
-CREATE TABLE IF NOT EXISTS public.ia_chat_history (
-    id         BIGSERIAL PRIMARY KEY,
-    patient_id TEXT,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    role       TEXT NOT NULL,  -- 'user' o 'assistant'
-    content    TEXT NOT NULL
-);
-
 -- ── RLS seguro por defecto ───────────────────────────────────────────────────
 ALTER TABLE public.tcc_templates             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.routine_templates         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.patient_routine_template  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.breathing_presets_remote  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.timer_presets_remote      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.support_messages          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ia_audit_log              ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ia_chat_history           ENABLE ROW LEVEL SECURITY;
 
 -- ── ALTER patients: campo `rutina_modo` (opción C, decisión 2026-05-21) ──────
 -- Sistema híbrido 3 estados: solo el profesional / mixto / solo el paciente.

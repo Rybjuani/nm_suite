@@ -11,6 +11,12 @@ RE1_DEAD_TABLES = {
     "checklist_notas_dia",
 }
 
+RE5_DEAD_TABLES = {
+    "breathing_presets_cache",
+}
+
+DEAD_SQLITE_TABLES = RE1_DEAD_TABLES | RE5_DEAD_TABLES
+
 
 def _existing_tables() -> set[str]:
     from shared.db import obtener_conexion
@@ -28,18 +34,18 @@ def _existing_tables() -> set[str]:
 
 
 def test_re1_dead_tables_no_se_crean_en_db_nueva(isolated_db):
-    assert not (RE1_DEAD_TABLES & _existing_tables())
+    assert not (DEAD_SQLITE_TABLES & _existing_tables())
 
 
 def test_re1_dead_tables_se_eliminan_de_db_existente(isolated_db):
     from shared.db import conexion, inicializar_tablas
 
     with conexion() as conn:
-        for table in RE1_DEAD_TABLES:
+        for table in DEAD_SQLITE_TABLES:
             conn.execute(f"CREATE TABLE IF NOT EXISTS {table} (id INTEGER)")
 
-    assert RE1_DEAD_TABLES <= _existing_tables()
+    assert DEAD_SQLITE_TABLES <= _existing_tables()
 
     inicializar_tablas()
 
-    assert not (RE1_DEAD_TABLES & _existing_tables())
+    assert not (DEAD_SQLITE_TABLES & _existing_tables())

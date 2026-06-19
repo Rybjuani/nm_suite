@@ -1,14 +1,11 @@
 """
 app/modules/respiracion_qt.py — Módulo Respiración 4-7-8 v3 (PyQt6)
 
-Estructura según design_handoff_neuromood_v3 (Suite > Respiración):
+Estructura actual (Suite > Respiración):
 
-  Header        eyebrow + pills de preset (3 / 5 / 10 min)
-  2-col main    LEFT: BIG breath circle (340, stroke 14) + phase chips
-                      + 3 controles NMPlayButton (play/stop/refresh)
-                RIGHT rail: cronómetro mono / BPM (NMCalmBadge) / calm bar
-  3 step cards  Inhala 4s / Mantén 7s / Exhala 8s
-  Historial     4 mini cards con fecha + duración + ring de ciclos
+  Practice card  BIG breath circle + phase chips + controles
+  Stats row      Patrón / Crono / Ciclos
+  Historial      Card lateral con sesiones recientes
 
 LÓGICA DE NEGOCIO PRESERVADA EXACTA:
   TECNICA, FASES, PRESETS, CICLO_TOTAL
@@ -54,42 +51,24 @@ try:
         NMModule,
         NMButton,
         NMButtonOutline,
-        ThemeManager,
         NMCard,
-        NMIcon,
-        NMPlayButton,
-        NMPhaseChip,
-        NMCycleRing,
-        NMCalmBadge,
-        NMModuleRing,
-        NMProgressLine,
-        NMProgressBar,
         NMRingPulse,
         NMChip,
     )
     from shared.theme_qt import (
-        C,
-        colors,
         norm_modo,
         qfont,
         qfont_mono,
         interpolate_color,
-        radial_glow_double,
-        gradient_colors,
         v3c,
         v3_mode,
         V3_SP,
-        V3_RD,
         ThemeAwareWidgetMixin,
-        stylesheet_scrollarea,
-        PAD_CONTAINER,
         eyebrow_font,
-        nm_icon,
     )
     from shared.theme import TYPOGRAPHY, V3_GRADIENTS
     from shared.db import obtener_conexion, conexion
     from shared.utils import fecha_hoy, hora_actual
-    from shared.visual_qa import visual_qa_enabled
 except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
@@ -99,9 +78,6 @@ except ImportError:
         NMButton,
         NMButtonOutline,
         NMCard,
-        NMCalmBadge,
-        NMModuleRing,
-        NMProgressBar,
         NMRingPulse,
         NMChip,
     )
@@ -119,7 +95,6 @@ except ImportError:
     from shared.theme import TYPOGRAPHY, V3_GRADIENTS
     from shared.db import obtener_conexion, conexion
     from shared.utils import fecha_hoy, hora_actual
-    from shared.visual_qa import visual_qa_enabled
 
 from shared.remote_config import t
 
@@ -601,59 +576,6 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         self.update()
 
 
-# ── StepCard v3 ──────────────────────────────────────────────────────────────
-
-
-class _StepCard(NMCard):
-    """Card de fase: ICONO/LABEL + segundos. Activa = glow + accent."""
-
-    def __init__(self, label: str, secs: str, modo: str = None, parent=None):
-        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
-        self._label_text = label
-        self._secs_text = secs
-        self._active = False
-        self._build()
-
-    def _build(self):
-        vl = QVBoxLayout(self)
-        vl.setContentsMargins(
-            V3_SP["sm"], V3_SP["xs"], V3_SP["sm"], V3_SP["xs"]
-        )  # compact R5A: era md/md
-        vl.setSpacing(2)
-        vl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._lbl = QLabel(self._label_text)
-        self._lbl.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_semibold"]))
-        self._lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        vl.addWidget(self._lbl)
-        self._secs_lbl = QLabel(self._secs_text)
-        self._secs_lbl.setFont(qfont_mono(11, bold=False))
-        self._secs_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        vl.addWidget(self._secs_lbl)
-        self._apply_step_styles()
-
-    def set_active(self, active: bool):
-        if active != self._active:
-            self._active = active
-            self.set_glow(active)
-            self._apply_step_styles()
-
-    def _apply_step_styles(self):
-        color_main = (
-            v3c("teal", self._modo).name() if self._active else v3c("text2", self._modo).name()
-        )
-        color_sec = (
-            v3c("teal", self._modo).name()
-            if self._active
-            else v3c("ink_secondary", self._modo).name()
-        )
-        self._lbl.setStyleSheet(f"color: {color_main}; background: transparent;")
-        self._secs_lbl.setStyleSheet(f"color: {color_sec}; background: transparent;")
-
-    def _apply_theme(self, modo: str):
-        super()._apply_theme(modo)
-        self._apply_step_styles()
-
-
 # ── ModuloRespiracion v3 ─────────────────────────────────────────────────────
 
 
@@ -701,12 +623,6 @@ class ModuloRespiracion(NMModule):
         # historial); acá solo el inset horizontal de la columna izquierda.
         lay.setContentsMargins(V3_SP["lg"], 0, V3_SP["lg"], 0)
         lay.setSpacing(V3_SP["sm"])
-
-        # Eyebrow del módulo vive en la titlebar (BL-07): se conserva el label
-        # oculto por compatibilidad con el resto del módulo.
-        self._range_lbl = QLabel(t("text.module.respiracion.eyebrow", "Respiración 4-7-8"))
-        self._range_lbl.setFont(eyebrow_font())
-        self._range_lbl.hide()
 
         # 1+2. Práctica de respiración principal en card. Los presets 3/5/10 min viven DENTRO
         # de la card (arriba a la derecha, posición conservada) en vez de flotar
@@ -854,27 +770,8 @@ class ModuloRespiracion(NMModule):
         ciclos_lay.addWidget(self._ciclos_eyebrow)
         ciclos_lay.addWidget(self._ciclos_value_lbl)
         stats_layout.addWidget(self._ciclos_card, stretch=1)
-        # NMCalmBadge (badge de pulso) permanece oculto/dormido por theme-compat.
-        self._calm_badge = NMCalmBadge(bpm=60, modo=self._modo, parent=self._ciclos_card)
-        self._calm_badge.setVisible(False)
-
-        # P2.E: card "Calma" removida — duplicaba info de BPM/calma que ya muestra
-        # el NMCalmBadge. Mantengo compat con el resto del código (no-op silencioso).
-        self._calm_card: NMCard | None = None
-        self._calm_eyebrow = QLabel("Calma")
-        self._calm_eyebrow.setFont(eyebrow_font())
-        self._calm_eyebrow.hide()
-        self._calm_pct_lbl = QLabel("—")
-        self._calm_pct_lbl.setFont(val_font)
-        self._calm_pct_lbl.hide()
-        self._calm_bar = NMProgressBar(height=4, modo=self._modo, parent=self)
-        self._calm_bar.set_progress(0.45)
-        self._calm_bar.setVisible(False)
 
         lay.addLayout(stats_layout)
-
-        # Dummy hidden label to preserve compatibility with existing status update methods
-        self._chrono_meta = QLabel()
 
         self._apply_text_styles()
 
@@ -895,14 +792,11 @@ class ModuloRespiracion(NMModule):
     def _apply_text_styles(self):
         c = v3c("ink_secondary", self._modo).name()
         for lbl in (
-            self._range_lbl,
             self._chrono_eyebrow,
             self._ciclos_eyebrow,
-            self._calm_eyebrow,
             self._pattern_eyebrow,
         ):
-            if hasattr(self, lbl.objectName()) or True:
-                lbl.setStyleSheet(f"color: {c}; background: transparent;")
+            lbl.setStyleSheet(f"color: {c}; background: transparent;")
         self._pattern_title.setStyleSheet(
             f"color: {v3c('ink_primary', self._modo).name()}; background: transparent;"
         )
@@ -925,13 +819,7 @@ class ModuloRespiracion(NMModule):
         if hasattr(self, "_chip_exhala"):
             self._chip_exhala._modo = self._modo
             self._chip_exhala._apply_style()
-        if hasattr(self, "_calm_badge"):
-            self._calm_badge._apply_theme(self._modo)
-        if hasattr(self, "_calm_bar"):
-            self._calm_bar._modo = self._modo
-            self._calm_bar.update()
-        if hasattr(self, "_range_lbl"):
-            self._apply_text_styles()
+        self._apply_text_styles()
         self.update()
 
     # ── presets ──────────────────────────────────────────────────────────────
@@ -967,7 +855,6 @@ class ModuloRespiracion(NMModule):
         self._phase_ms = 0
         self._last_phase_idx = -1
         self._btn_play.setText(t("text.module.respiracion.pause_btn", "Pausar"))
-        self._chrono_meta.setText(t("text.module.respiracion.running_state", "En curso"))
         self._tick()
 
     def _pause(self):
@@ -976,13 +863,11 @@ class ModuloRespiracion(NMModule):
         if self._paused:
             self._paused = False
             self._btn_play.setText(t("text.module.respiracion.pause_btn", "Pausar"))
-            self._chrono_meta.setText(t("text.module.respiracion.running_state", "En curso"))
             self._circle._start_rendering()
             self._tick()
         else:
             self._paused = True
             self._btn_play.setText(t("text.module.respiracion.resume_btn", "Reanudar"))
-            self._chrono_meta.setText(t("text.module.respiracion.paused_state", "Pausado"))
             if self._timer_id:
                 self._timer_id.stop()
                 self._timer_id = None
@@ -998,11 +883,8 @@ class ModuloRespiracion(NMModule):
         self._btn_play.setText(t("text.module.respiracion.start_btn", "Iniciar"))
         self._circle.reset_idle()
         self._session_lbl.setText("00:00")
-        self._chrono_meta.setText(t("text.module.respiracion.ready_state", "Listo para comenzar"))
         if hasattr(self, "_ciclos_value_lbl"):
             self._ciclos_value_lbl.setText("—")
-        if hasattr(self, "_calm_pct_lbl"):
-            self._calm_pct_lbl.setText("—")
         self._update_phase_chips(None)
 
     def _update_phase_chips(self, phase_idx: int | None):
@@ -1057,12 +939,6 @@ class ModuloRespiracion(NMModule):
                 phase_idx=self._phase_idx,
             )
 
-            if hasattr(self, "_calm_bar"):
-                calm_target = 0.45 + session_progress * 0.5
-                self._calm_bar.set_progress(min(calm_target, 0.95))
-            if hasattr(self, "_calm_pct_lbl"):
-                calm_target = 0.45 + session_progress * 0.5
-                self._calm_pct_lbl.setText(f"{int(min(calm_target, 0.95) * 100)}%")
             if hasattr(self, "_ciclos_value_lbl"):
                 # Conteo real de ciclos 4-7-8 completados en la sesión (no una
                 # métrica biométrica simulada): honesto, determinista y verificable.
@@ -1112,7 +988,6 @@ class ModuloRespiracion(NMModule):
         self._circle.reset_idle()
         self._update_phase_chips(None)
         self._session_lbl.setText("00:00")
-        self._chrono_meta.setText(f"Completo · {self._ciclos} ciclos")
         self._btn_play.setText(t("text.module.respiracion.start_btn", "Iniciar"))
 
     # ── DB (preservado exacto) ───────────────────────────────────────────────

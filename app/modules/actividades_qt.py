@@ -1,14 +1,10 @@
 """
 app/modules/actividades_qt.py — Activación conductual v3 (PyQt6)
 
-Estructura según design_handoff_neuromood_v3 (Suite > Actividades):
+Estructura actual (Suite > Actividades):
 
-  Header          eyebrow + NMMoodContextHeader (banner mood actual)
-  Categorías      _CategoriesCard con 6 mini-rings (NMIcon dentro), filtro live
-  Sugeridas       Row 3 _SuggestedCard (NMCard glow + icono grande + badge cat +
-                  intensidad dots + botones Hice / No pude)
-  Otras opciones  _ActivityRow tabla con NMIcon + nombre + chip cat + rango
-                  ánimo + intensidad + NMPlayButton
+  Categorías      _CategoriesCard con mini-rings y filtro live
+  Actividades     Grid unificado de _SuggestedCard con botones Hice / No pude
 
 LÓGICA DE NEGOCIO PRESERVADA EXACTA:
   _get_last_mood(), _get_activities(),
@@ -42,7 +38,6 @@ try:
         NMToast,
         NMCard,
         NMIcon,
-        NMPlayButton,
         NMEmptyState,
         NMSegmentedChoice,
         NMTabs,
@@ -58,7 +53,6 @@ try:
         v3_mode,
         V3_SP,
         eyebrow_font,
-        stylesheet_scrollarea,
     )
     from shared.theme import TYPOGRAPHY, V3_GRADIENTS
     from shared.db import obtener_conexion, conexion
@@ -78,7 +72,6 @@ except ImportError:
         NMToast,
         NMCard,
         NMIcon,
-        NMPlayButton,
         NMEmptyState,
         NMSegmentedChoice,
         NMTabs,
@@ -94,7 +87,6 @@ except ImportError:
         v3_mode,
         V3_SP,
         eyebrow_font,
-        stylesheet_scrollarea,
     )
     from shared.theme import TYPOGRAPHY, V3_GRADIENTS
     from shared.db import obtener_conexion, conexion
@@ -559,82 +551,6 @@ class _SuggestedCard(NMCard):
         self._apply_sug_styles()
 
 
-# ── _ActivityRow ────────────────────────────────────────────────────────────
-
-
-class _ActivityRow(QWidget):
-    """Fila de tabla "Otras opciones": icono + nombre + cat chip + rango + dots + play."""
-
-    play_clicked = pyqtSignal(str)  # nombre
-
-    def __init__(self, act: dict, modo: str = "dark_hybrid", parent=None):
-        super().__init__(parent)
-        self._modo = norm_modo(modo)
-        self._act = act
-        self._nombre = act.get("nombre", "Actividad")
-        self._categoria = _cat_canon(act.get("categoria", "Autocuidado"))
-        self._animo_min = act.get("animo_min")
-        self._animo_max = act.get("animo_max")
-        self._build()
-
-    def _build(self):
-        lay = QHBoxLayout(self)
-        lay.setContentsMargins(V3_SP["md"], V3_SP["sm"], V3_SP["md"], V3_SP["sm"])
-        lay.setSpacing(V3_SP["md"])
-
-        icon_name = dict(_CATEGORY_ORDER).get(self._categoria, "spark")
-        self._icon = NMIcon(
-            icon_name, size=20, color=_cat_color(self._categoria, self._modo), modo=self._modo
-        )
-        lay.addWidget(self._icon)
-
-        self._name_lbl = QLabel(self._nombre)
-        self._name_lbl.setFont(qfont("size_small"))
-        lay.addWidget(self._name_lbl, stretch=1)
-
-        # Chip categoría
-        self._cat_lbl = QLabel(_category_label(self._categoria))
-        self._cat_lbl.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
-        self._cat_lbl.setContentsMargins(8, 2, 8, 2)
-        lay.addWidget(self._cat_lbl)
-
-        # Rango ánimo
-        if self._animo_min is not None and self._animo_max is not None:
-            rango_txt = f"{self._animo_min}–{self._animo_max}"
-        else:
-            rango_txt = "1–10"
-        self._rango_lbl = QLabel(rango_txt)
-        self._rango_lbl.setFont(qfont_mono(10, bold=False))
-        self._rango_lbl.setFixedWidth(50)
-        lay.addWidget(self._rango_lbl)
-
-        # Intensidad
-        self._intensity = _IntensityDots(_intensity_for(self._nombre), modo=self._modo)
-        lay.addWidget(self._intensity)
-
-        # Play button
-        self._play = NMPlayButton(icon_name="play", size="sm", modo=self._modo)
-        self._play.clicked.connect(lambda: self.play_clicked.emit(self._nombre))
-        lay.addWidget(self._play)
-
-        self._apply_row_styles()
-
-    def _apply_row_styles(self):
-        cat_color = _cat_color(self._categoria, self._modo)
-        qc = QColor(cat_color)
-        bg_rgba = f"rgba({qc.red()},{qc.green()},{qc.blue()},36)"
-        self._cat_lbl.setText(_category_label(self._categoria))
-        self._cat_lbl.setStyleSheet(
-            f"color: {cat_color}; background: {bg_rgba}; border-radius: 10px;"
-        )
-        self._name_lbl.setStyleSheet(
-            f"color: {v3c('text', self._modo).name()}; background: transparent;"
-        )
-        self._rango_lbl.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
-        )
-
-
 # ── ModuloActividades v3 ────────────────────────────────────────────────────
 
 
@@ -646,7 +562,6 @@ class ModuloActividades(NMModule):
         self._all_activities: list[dict] = []
         self._current_filter: str = ""
         self._suggested_cards: list[_SuggestedCard] = []
-        self._row_widgets: list[_ActivityRow] = []
 
         outer = QVBoxLayout(self._content)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -718,7 +633,6 @@ class ModuloActividades(NMModule):
 
         self._all_activities = []
         self._suggested_cards = []
-        self._row_widgets = []
         self._hidden_card_ids: set[int] = set()
 
         # 1. Header de módulo — NMPageHeader gestiona su propio tema
@@ -825,7 +739,6 @@ class ModuloActividades(NMModule):
             if w:
                 w.deleteLater()
         self._suggested_cards.clear()
-        self._row_widgets.clear()
 
         activities = self._all_activities
         if cat:
