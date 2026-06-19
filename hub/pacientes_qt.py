@@ -288,7 +288,7 @@ class DetallePacienteView(QWidget):
                 .select("id,hora,mensaje,activa")
                 .eq("patient_id", self._pid)
                 .order("hora", desc=False)
-                .limit(50)  # S1-7: limit explicito (antes era ilimitado)
+                .limit(50)  # RC-3/S0-1: limit explicito (regresion congelada por test_rc3_limit_assigned_reminders)
                 .execute()
             )
             datos["recordatorios"] = r.data or []
