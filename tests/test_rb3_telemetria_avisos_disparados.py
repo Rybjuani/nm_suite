@@ -37,8 +37,8 @@ from __future__ import annotations
 class _RecordingQuery:
     """Registra los argumentos de cada paso de la cadena fluida para una tabla.
 
-    Soporta .select(columns).eq(col, val).order(col, desc=).limit(n).execute()
-    que es la forma usada por _fetch_patient_data.
+    Soporta .select(columns).eq(col, val).gte(col, val).order(col, desc=)
+    .limit(n).execute(), que es la forma usada por _fetch_patient_data.
     """
 
     def __init__(self, parent: "_RecordingSB", table: str):
@@ -51,6 +51,10 @@ class _RecordingQuery:
 
     def eq(self, column: str, value) -> "_RecordingQuery":
         self._parent.eq_calls.setdefault(self._table, []).append((column, value))
+        return self
+
+    def gte(self, column: str, value) -> "_RecordingQuery":
+        self._parent.gte_calls.setdefault(self._table, []).append((column, value))
         return self
 
     def order(self, column: str, desc: bool = False) -> "_RecordingQuery":
@@ -76,6 +80,7 @@ class _RecordingSB:
     def __init__(self):
         self.select_calls: dict[str, str] = {}
         self.eq_calls: dict[str, list[tuple[str, object]]] = {}
+        self.gte_calls: dict[str, list[tuple[str, object]]] = {}
         self.order_calls: dict[str, tuple[str, bool]] = {}
         self.limit_calls: dict[str, int] = {}
         self._rows: dict[str, list[dict]] = {
