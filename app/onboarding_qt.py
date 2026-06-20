@@ -594,8 +594,17 @@ class OnboardingDialog(QDialog):
         self._btn_ok.clicked.connect(lambda: self._on_accept("login"))
         btn_row.addWidget(self._btn_ok)
         footer_lay.addLayout(btn_row)
+        self._consent_check.toggled.connect(self._sync_action_buttons)
+        self._sync_action_buttons()
 
         card_lay.addWidget(footer_widget)
+
+    def _sync_action_buttons(self) -> None:
+        enabled = bool(getattr(self, "_consent_check", None) and self._consent_check.isChecked())
+        if hasattr(self, "_btn_signup"):
+            self._btn_signup.setEnabled(enabled)
+        if hasattr(self, "_btn_ok"):
+            self._btn_ok.setEnabled(enabled)
 
     def _refresh_card_theme(self) -> None:
         """Re-aplica los estilos tematizados al cambiar light/dark.
@@ -703,7 +712,12 @@ class OnboardingDialog(QDialog):
         self._set_feedback("")
 
         if not nombre:
-            self._error_lbl.setText(suite_t("text.onboarding.error_name_required", "El nombre es obligatorio."))
+            self._error_lbl.setText(
+                suite_t(
+                    "text.onboarding.error_name_required",
+                    "Completá tu nombre para continuar.",
+                )
+            )
             self._name.setFocus()
             return
         if "@" not in email or "." not in email:
@@ -736,10 +750,9 @@ class OnboardingDialog(QDialog):
             self.accept()
         except Exception as exc:
             self._error_lbl.setText(f"Error al guardar la configuración: {str(exc)[:220]}")
-            self._btn_ok.setEnabled(True)
-            self._btn_signup.setEnabled(True)
             self._btn_ok.setText(suite_t("text.onboarding.login_btn", "Iniciar sesión"))
             self._btn_signup.setText(suite_t("text.onboarding.signup_btn", "Crear cuenta"))
+            self._sync_action_buttons()
 
     def _set_feedback(self, msg: str, *, ok: bool = False):
         """Muestra un mensaje en la línea de estado: verde si ok, rojo si error."""
