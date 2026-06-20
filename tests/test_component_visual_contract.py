@@ -234,6 +234,67 @@ def test_play_button_matches_mockup_ctl_contract(qtbot) -> None:
     assert '"primary_ink" if is_main' in source
 
 
+def test_window_chrome_matches_mockup_titlebar_contract(qtbot) -> None:
+    from shared.components.chrome import (
+        NMWindowChrome,
+        _ChromeWinBtn,
+        _NM_CHROME_BACK_RADIUS,
+        _NM_CHROME_BACK_SIZE,
+        _NM_CHROME_GAP,
+        _NM_CHROME_ICON_SIZE,
+        _NM_CHROME_PAD_X,
+        _NM_CHROME_THEME_ICON_SIZE,
+        _NM_CHROME_THEME_RADIUS,
+        _NM_CHROME_THEME_SIZE,
+        _NM_CHROME_WIN_DOT_COLORS,
+        _NM_CHROME_WIN_DOT_GAP,
+        _NM_CHROME_WIN_DOT_OPACITY,
+        _NM_CHROME_WIN_DOT_SIZE,
+    )
+
+    chrome = NMWindowChrome(
+        title="NeuroMood",
+        subtitle="Pacientes",
+        show_theme_toggle=True,
+        modo="light_hybrid",
+        height=38,
+    )
+    qtbot.addWidget(chrome)
+    chrome.set_module_context("Respiracion", "breath")
+
+    margins = chrome.layout().contentsMargins()
+    assert margins.left() == _NM_CHROME_PAD_X == 16
+    assert margins.right() == 16
+    assert chrome.layout().spacing() == _NM_CHROME_GAP == 10
+
+    assert chrome._ctx_back.width() == _NM_CHROME_BACK_SIZE == 26
+    assert chrome._ctx_back.height() == 26
+    assert _NM_CHROME_BACK_RADIUS == 8
+    assert chrome._ctx_icon.width() == _NM_CHROME_ICON_SIZE == 18
+    assert chrome._btn_theme.width() == _NM_CHROME_THEME_SIZE == 24
+    assert chrome._btn_theme.iconSize().width() == _NM_CHROME_THEME_ICON_SIZE == 16
+    assert _NM_CHROME_THEME_RADIUS == 7
+
+    assert chrome._win_controls.layout().spacing() == _NM_CHROME_WIN_DOT_GAP == 8
+    assert chrome._btn_min.width() == _NM_CHROME_WIN_DOT_SIZE == 13
+    assert chrome._btn_max.width() == 13
+    assert chrome._btn_close.width() == 13
+    assert _NM_CHROME_WIN_DOT_OPACITY == 0.55
+    assert _NM_CHROME_WIN_DOT_COLORS == {
+        "min": "#E0B23E",
+        "max": "#56B27A",
+        "close": "#E0695A",
+    }
+
+    chrome_source = __import__("inspect").getsource(NMWindowChrome.paintEvent)
+    assert 'v3c("chrome", self._modo)' in chrome_source
+    assert 'v3c("chromeLine", self._modo)' in chrome_source
+
+    btn_source = __import__("inspect").getsource(_ChromeWinBtn.paintEvent)
+    assert "_NM_CHROME_WIN_DOT_COLORS" in btn_source
+    assert "_NM_CHROME_WIN_DOT_OPACITY" in btn_source
+
+
 def test_patient_row_premium_matches_mockup_prow_contract(qtbot) -> None:
     from shared.components.patient import (
         NMPatientRowPremium,
