@@ -28,4 +28,5 @@ def test_onboarding_name_error_copy_matches_mockup(qtbot) -> None:
 
     dialog._on_accept("signup")
 
-    assert dialog._error_lbl.text() == "Completá tu nombre para continuar."
+    # Mockup onboarding error línea 1315: "Completá tu nombre para crear la cuenta."
+    assert dialog._error_lbl.text() == "Completá tu nombre para crear la cuenta."

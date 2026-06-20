@@ -114,7 +114,7 @@ _add(
     "text.onboarding.title_main",
     "Onboarding",
     "Título principal",
-    "Bienvenido a NeuroMood",
+    "NeuroMood",
     48,
 )
 _add("text.onboarding.title_suffix", "Onboarding", "Sufijo de título", "Suite", 18)
@@ -170,7 +170,7 @@ _add(
     "text.onboarding.error_name_required",
     "Onboarding",
     "Error nombre obligatorio",
-    "El nombre es obligatorio.",
+    "Completá tu nombre para crear la cuenta.",
     80,
 )
 _add(

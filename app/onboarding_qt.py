@@ -19,7 +19,7 @@ import pathlib
 import sys
 from datetime import datetime, timezone
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QApplication,
@@ -118,7 +118,9 @@ class OnboardingDialog(QDialog):
                 "mute": _v3c("textMuted", modo).name(),
                 "text": _v3c("text", modo).name(),
                 "text2": _v3c("text2", modo).name(),
+                "text3": _v3c("faint", modo).name(),
                 "danger": _v3c("danger", modo).name(),
+                "accent": _v3c("accent", modo).name(),
                 "primary": _v3c("primary", modo).name(),
                 "primary_ink": _v3c("primary_ink", modo).name(),
                 "surface": _v3c("surface", modo).name(),
@@ -236,74 +238,109 @@ class OnboardingDialog(QDialog):
         is_compact = self.height() <= 600
         # Márgenes generosos full-bleed (la ventana es la card): aire lateral
         # premium sin doble borde.
+        # Mockup .screen padding:26px 28px — top margin reducido para compensar
+        # el mayor alto del h-serif 21px del título (metrics distintos al regular
+        # anterior): el título debe quedar a ~y=118 en 520×600 como en el target.
         if is_compact:
-            form_lay.setContentsMargins(20, 14, 20, 4)
+            form_lay.setContentsMargins(20, 10, 20, 4)
             form_lay.setSpacing(4)
         else:
-            form_lay.setContentsMargins(24, 18, 24, 8)
+            form_lay.setContentsMargins(28, 14, 28, 8)
             form_lay.setSpacing(6)
 
-        # ── Logo de marca real (HANDOFF F0.3: logo completo en onboarding) ────
-        # Theme-aware: "Neuro" nunca desaparece (oscuro en light, blanco en dark).
-        try:
-            from PyQt6.QtGui import QPixmap
-            from PyQt6.QtCore import Qt as _Qt
-            from shared.assets import obtener_logo
+        # ── Brandmark canónico + título "NeuroMood Suite" ────────────────────
+        # Mockup línea 1294-1297:
+        #   <div style="display:flex; align-items:center; gap:11px; margin-bottom:6px;">
+        #     <div class="brandmark">${svg(I.brain,20)}</div>
+        #     <div class="h-serif" style="font-size:21px;">
+        #       Neuro<span style="color:var(--brand)">Mood</span>
+        #       <span style="font-style:italic; color:var(--ink-3);">Suite</span>
+        #     </div>
+        #   </div>
+        # Brandmark = 34×34 r10 con linear-gradient(140deg, brand, accent) + svg brain 20px blanco.
+        # Antes: QPixmap logo file. Ahora: QFrame paintEvent con gradient + SVG brain.
+        brand_row = QHBoxLayout()
+        brand_row.setSpacing(11)
+        brand_row.setContentsMargins(0, 0, 0, 0)
 
-            _logo_path = obtener_logo(self._modo)
-            if os.path.exists(_logo_path):
-                _pm = QPixmap(_logo_path)
-                if not _pm.isNull():
-                    _logo = QLabel()
-                    _logo.setPixmap(
-                        _pm.scaledToWidth(
-                            150 if is_compact else 188, _Qt.TransformationMode.SmoothTransformation
-                        )
-                    )
-                    _logo.setStyleSheet("background: transparent;")
-                    form_lay.addWidget(_logo)
-                    form_lay.addSpacing(2 if is_compact else 6)
-        except Exception:
-            pass
+        class _BrandmarkFrame(QFrame):
+            """QFrame 34×34 con paintEvent custom: gradient brand→accent + brain SVG."""
 
-        # (Eyebrow "BIENVENIDA · CONFIGURACIÓN" eliminado — feedback owner v1.0:
-        # rótulo técnico redundante; el saludo real es el título de abajo.)
+            def __init__(_self, b_color, a_color, parent=None):
+                super().__init__(parent)
+                _self._b = b_color
+                _self._a = a_color
+                _self.setFixedSize(34, 34)
+                _self.setObjectName("OnbBrandmark")
+                _self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
 
-        # ── Título - Handoff §5.1: hero serif (Newsreader display) ────────────
-        title_row = QHBoxLayout()
-        title_row.setSpacing(4 if is_compact else 8)
-        title_main = QLabel(suite_t("text.onboarding.title_main", "Bienvenido a NeuroMood"))
-        title_tail = QLabel(suite_t("text.onboarding.title_suffix", "Suite"))
+            def paintEvent(_self, _ev):
+                from PyQt6.QtGui import QPainter, QLinearGradient, QBrush, QColor
+                p = QPainter(_self)
+                p.setRenderHint(QPainter.RenderHint.Antialiasing)
+                # linear-gradient(140deg, brand, accent) — 140° en CSS ≈ top-left→bottom-right
+                grad = QLinearGradient(0, 0, 34, 34)
+                grad.setColorAt(0.0, QColor(_self._b))
+                grad.setColorAt(1.0, QColor(_self._a))
+                p.setBrush(QBrush(grad))
+                p.setPen(Qt.PenStyle.NoPen)
+                p.drawRoundedRect(0, 0, 34, 34, 10, 10)
+                # SVG brain 20px blanco centrado (7,7 offset para 20px en 34×34)
+                try:
+                    from shared.icons_svg import nm_svg_pixmap
+                    pix = nm_svg_pixmap("brain", "#FFFFFF", 20)
+                    if pix is not None and not pix.isNull():
+                        p.drawPixmap(7, 7, pix)
+                except Exception:
+                    pass
+                p.end()
+
         if self._has_theme:
-            title_size = "size_h2" if is_compact else "size_h1"
-            f_disp = self._t["v3_font"](
-                title_size, weight=self._t["TY"]["weight_medium"], serif=True
+            brandmark = _BrandmarkFrame(self._t["primary"], self._t["accent"])
+        else:
+            # Fallback: QFrame simple con bg sólido (sin gradient ni SVG)
+            brandmark = QFrame()
+            brandmark.setFixedSize(34, 34)
+            brandmark.setObjectName("OnbBrandmark")
+            brandmark.setStyleSheet(
+                f"QFrame#OnbBrandmark {{ background: {self._fallback_color('primary')};"
+                f" border-radius: 10px; }}"
             )
-            f_it = self._t["v3_font"](
-                title_size, weight=self._t["TY"]["weight_medium"], serif=True, italic=True
+        brand_row.addWidget(brandmark, alignment=Qt.AlignmentFlag.AlignVCenter)
+
+        # Título h-serif 21px con 3 spans: "Neuro" + <span brand>"Mood"</span> + <span italic ink-3>"Suite"</span>
+        if self._has_theme:
+            ink_c = self._t["text"]
+            brand_c = self._t["primary"]
+            ink3_c = self._t["text3"]  # faint = ink-3 canónico
+            title_html = (
+                f"<span style='color:{ink_c};'>Neuro</span>"
+                f"<span style='color:{brand_c};'>Mood</span>"
+                f" <span style='color:{ink3_c}; font-style:italic;'>Suite</span>"
             )
-            title_main.setFont(f_disp)
-            title_tail.setFont(f_it)
-            # Color EXPLÍCITO: sin él, el QLabel hereda el negro por defecto
-            # (el onboarding corre antes de la paleta global de la app) y el
-            # saludo era invisible sobre fondo oscuro — feedback owner v1.0.
-            title_main.setStyleSheet(
-                f"color: {self._t['text']}; background: transparent;"
+        else:
+            fb_text = self._fallback_color("ink_primary")
+            fb_brand = self._fallback_color("primary")
+            title_html = (
+                f"<span style='color:{fb_text};'>Neuro</span>"
+                f"<span style='color:{fb_brand};'>Mood</span>"
+                f" <span style='color:{fb_text}; font-style:italic;'>Suite</span>"
             )
-            title_tail.setStyleSheet(f"color: {self._t['primary']}; background: transparent;")
+        title_lbl = QLabel(title_html)
+        title_lbl.setTextFormat(Qt.TextFormat.RichText)
+        if self._has_theme:
+            # Mockup: font-size 21px, h-serif (Fraunces), weight 600 (h-serif default).
+            f_disp = self._t["v3_font"](21, weight=self._t["TY"]["weight_semibold"], serif=True)
+            title_lbl.setFont(f_disp)
         else:
             f = QFont()
-            f.setPixelSize(16 if is_compact else 22)
-            f.setBold(False)
-            title_main.setFont(f)
-            title_tail.setFont(f)
-            fb_text = self._fallback_color("ink_primary")
-            title_main.setStyleSheet(f"color: {fb_text};")
-            title_tail.setStyleSheet(f"color: {fb_text};")
-        title_row.addWidget(title_main)
-        title_row.addWidget(title_tail)
-        title_row.addStretch()
-        form_lay.addLayout(title_row)
+            f.setPixelSize(21)
+            title_lbl.setFont(f)
+        title_lbl.setStyleSheet("background: transparent;")
+        brand_row.addWidget(title_lbl, alignment=Qt.AlignmentFlag.AlignVCenter)
+        brand_row.addStretch()
+        form_lay.addLayout(brand_row)
+        form_lay.addSpacing(6 if not is_compact else 2)
 
         sub = QLabel(
             suite_t(
@@ -479,13 +516,44 @@ class OnboardingDialog(QDialog):
         cc_lay.addWidget(cc_body, stretch=1)
         cc_lay.addSpacing(4)
 
-        # Split checkbox and text to ensure full word wrapping and accessibility
+        # Split checkbox and text to ensure full word wrapping and accessibility.
+        # Mockup línea 1313: <span class="rt-cb" id="obTerms" style="width:20px;height:20px;"></span>
+        # Usamos QCheckBox nativo con QSS para aproximar rt-cb 20×20 r7 border 2px line.
+        # El QCheckBox nativo del target tiene este look; _NMAnimCheckBox no lo replicaba.
         consent_row = QHBoxLayout()
         consent_row.setContentsMargins(0, 0, 0, 0)
-        consent_row.setSpacing(8)
+        consent_row.setSpacing(9)  # mockup: gap:9px
         self._consent_check = QCheckBox()
         self._consent_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._consent_check.setFixedSize(20, 20)
         if self._has_theme:
+            border_c = self._t["v3c"]("border", self._modo)
+            border_css = (
+                f"rgba({border_c.red()},{border_c.green()},{border_c.blue()},{border_c.alpha()})"
+            )
+            primary_c = self._t["primary"]
+            primary_ink_c = self._t["primary_ink"]
+            self._consent_check.setStyleSheet(
+                f"""
+                QCheckBox {{
+                    background: transparent;
+                    spacing: 0px;
+                }}
+                QCheckBox::indicator {{
+                    width: 20px;
+                    height: 20px;
+                    border: 2px solid {border_css};
+                    border-radius: 7px;
+                    background: {self._t['surface']};
+                }}
+                QCheckBox::indicator:checked {{
+                    background: {primary_c};
+                    border-color: {primary_c};
+                    image: none;
+                }}
+                """
+            )
+        else:
             self._consent_check.setStyleSheet("QCheckBox { background: transparent; }")
         consent_row.addWidget(self._consent_check, alignment=Qt.AlignmentFlag.AlignTop)
 
@@ -562,9 +630,9 @@ class OnboardingDialog(QDialog):
         self._forgot_link.setFont(self._error_lbl.font())
         self._forgot_link.setStyleSheet("background: transparent;")
         link_color = (
-            self._t["v3c"]("aqua", self._modo).name()
+            self._t["v3c"]("primary", self._modo).name()
             if self._has_theme
-            else self._fallback_color("teal")
+            else self._fallback_color("primary")
         )
         self._forgot_link.setText(
             f'<a href="#" style="color:{link_color}; text-decoration:none;">'
@@ -586,7 +654,7 @@ class OnboardingDialog(QDialog):
 
         self._btn_ok = NMButton(
             suite_t("text.onboarding.login_btn", "Iniciar sesión"),
-            variant="gradient",
+            variant="primary",
             size=btn_sz,
             width=140,
         )
@@ -708,19 +776,26 @@ class OnboardingDialog(QDialog):
         email = self._email.text().strip()
         password = self._code.text().strip()
 
+        # Limpiar estados de error visuales de los inputs antes de re-validar.
+        self._name.clear_error()
+        self._email.clear_error()
         # Resetear color a danger por si venía un mensaje verde de recuperación.
         self._set_feedback("")
 
         if not nombre:
+            # Mockup onboarding error: input Nombre con borde rose + halo rose-soft
+            # + mensaje rose "Completá tu nombre para crear la cuenta."
+            self._name.set_error("Nombre requerido")
             self._error_lbl.setText(
                 suite_t(
                     "text.onboarding.error_name_required",
-                    "Completá tu nombre para continuar.",
+                    "Completá tu nombre para crear la cuenta.",
                 )
             )
             self._name.setFocus()
             return
         if "@" not in email or "." not in email:
+            self._email.set_error("Email inválido")
             self._error_lbl.setText(suite_t("text.onboarding.error_invalid_email", "Ingresá un email válido."))
             self._email.setFocus()
             return
@@ -754,17 +829,40 @@ class OnboardingDialog(QDialog):
             self._btn_signup.setText(suite_t("text.onboarding.signup_btn", "Crear cuenta"))
             self._sync_action_buttons()
 
-    def _set_feedback(self, msg: str, *, ok: bool = False):
-        """Muestra un mensaje en la línea de estado: verde si ok, rojo si error."""
+    def _set_feedback(self, msg: str, *, ok: bool = False, kind: str = ""):
+        """Muestra un mensaje en la línea de estado.
+
+        kind:
+          - "" (default): ok=success, no ok=danger (comportamiento histórico)
+          - "accent": usa accent token (peach/copper) — mockup recover línea 1316
+          - "danger": fuerza danger token (rose)
+          - "success": fuerza success token (mind)
+        """
         self._error_lbl.setText(msg)
-        if self._has_theme:
-            key = "success" if ok else "danger"
-            color = self._t["v3c"](key, self._modo).name()
+        if kind == "accent":
+            color = (
+                self._t["v3c"]("accent", self._modo).name()
+                if self._has_theme
+                else self._fallback_color("accent")
+            )
+        elif kind == "danger":
+            color = (
+                self._t["v3c"]("danger", self._modo).name()
+                if self._has_theme
+                else self._fallback_color("danger_ink")
+            )
+        elif kind == "success" or ok:
+            color = (
+                self._t["v3c"]("success", self._modo).name()
+                if self._has_theme
+                else self._fallback_color("success_ink")
+            )
         else:
-            if ok:
-                color = self._fallback_color("success_ink")
-            else:
-                color = self._fallback_color("danger_ink")
+            color = (
+                self._t["v3c"]("danger", self._modo).name()
+                if self._has_theme
+                else self._fallback_color("danger_ink")
+            )
         self._error_lbl.setStyleSheet(
             f"color: {color}; background: transparent;"
         )
@@ -773,7 +871,10 @@ class OnboardingDialog(QDialog):
         """Pide a Supabase que envíe un email de restablecimiento de contraseña."""
         email = self._email.text().strip()
         if "@" not in email or "." not in email:
-            self._set_feedback("Escribí tu email arriba y tocá de nuevo para recuperar la contraseña.")
+            self._set_feedback(
+                "Escribí tu email arriba y tocá de nuevo para recuperar la contraseña.",
+                kind="accent",  # mockup línea 1316: color:var(--accent)
+            )
             self._email.setFocus()
             return
         self._forgot_link.setEnabled(False)

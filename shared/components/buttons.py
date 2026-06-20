@@ -589,26 +589,62 @@ class NMInput(QLineEdit):
             focus_c = border_c
         r = _NM_CONTROL_RADIUS
         sel_text_c = v3c("primary_ink", self._modo)
-        self.setStyleSheet(f"""
-            QLineEdit {{
-                background-color: {bg_c.name()};
-                color: {text_c.name()};
-                border: 1px solid {qcolor_to_rgba_css(border_c)};
-                border-radius: {r}px;
-                padding: 0 12px;
-                font-size: {TYPOGRAPHY["size_body"]}px;
-                selection-background-color: {acc_c.name()};
-                selection-color: {sel_text_c.name()};
-            }}
-            QLineEdit::placeholder {{
-                color: {faint_c.name()};
-            }}
-            QLineEdit:focus {{
-                border: 1px solid {qcolor_to_rgba_css(focus_c)};
-                background-color: {bg_c.name()};
-            }}
-            {focus_ring_stylesheet(self._modo)}
-        """)
+        # Estado error: halo rose-soft (mockup onboarding error línea 1300:
+        # border-color:var(--rose); box-shadow:0 0 0 3px var(--rose-soft))
+        if self._error_message:
+            danger_soft = v3c("dangerSoft", self._modo)
+            err_focus_block = (
+                f"QLineEdit {{ border: 1px solid {qcolor_to_rgba_css(border_c)};"
+                f" background-color: {bg_c.name()}; }}"
+                f"QLineEdit:focus {{ border: 1px solid {qcolor_to_rgba_css(focus_c)};"
+                f" background-color: {bg_c.name()}; }}"
+            )
+            self.setStyleSheet(f"""
+                QLineEdit {{
+                    background-color: {bg_c.name()};
+                    color: {text_c.name()};
+                    border: 1px solid {qcolor_to_rgba_css(border_c)};
+                    border-radius: {r}px;
+                    padding: 0 12px;
+                    font-size: {TYPOGRAPHY["size_body"]}px;
+                    selection-background-color: {acc_c.name()};
+                    selection-color: {sel_text_c.name()};
+                }}
+                QLineEdit::placeholder {{
+                    color: {faint_c.name()};
+                }}
+                {err_focus_block}
+            """)
+            # Halo vía QGraphicsDropShadowEffect (aproximación de box-shadow 3px)
+            from PyQt6.QtWidgets import QGraphicsDropShadowEffect
+            glow = QGraphicsDropShadowEffect(self)
+            glow.setBlurRadius(12)
+            glow.setOffset(0, 0)
+            dc = QColor(v3c("danger", self._modo))
+            dc.setAlpha(90)  # rose-soft approximation
+            glow.setColor(dc)
+            self.setGraphicsEffect(glow)
+        else:
+            self.setStyleSheet(f"""
+                QLineEdit {{
+                    background-color: {bg_c.name()};
+                    color: {text_c.name()};
+                    border: 1px solid {qcolor_to_rgba_css(border_c)};
+                    border-radius: {r}px;
+                    padding: 0 12px;
+                    font-size: {TYPOGRAPHY["size_body"]}px;
+                    selection-background-color: {acc_c.name()};
+                    selection-color: {sel_text_c.name()};
+                }}
+                QLineEdit::placeholder {{
+                    color: {faint_c.name()};
+                }}
+                QLineEdit:focus {{
+                    border: 1px solid {qcolor_to_rgba_css(focus_c)};
+                    background-color: {bg_c.name()};
+                }}
+                {focus_ring_stylesheet(self._modo)}
+            """)
 
     def focusInEvent(self, event):
         """Enciende glow suave alrededor del input en el color del accent."""
