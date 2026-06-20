@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from PyQt6.QtCore import (
     Qt,
-    QSize,
+    QRectF,
     pyqtSignal,
 )
 from PyQt6.QtGui import (
@@ -46,9 +46,14 @@ _NM_CHROME_STATUS_GAP = 14
 _NM_CHROME_BACK_SIZE = 26
 _NM_CHROME_BACK_RADIUS = 8
 _NM_CHROME_ICON_SIZE = 18
-_NM_CHROME_THEME_SIZE = 24
-_NM_CHROME_THEME_RADIUS = 7
+_NM_CHROME_THEME_TOGGLE_W = 132
+_NM_CHROME_THEME_TOGGLE_H = 30
+_NM_CHROME_THEME_TOGGLE_PAD_X = 12
+_NM_CHROME_THEME_TOGGLE_GAP = 9
 _NM_CHROME_THEME_ICON_SIZE = 16
+_NM_CHROME_THEME_DOT_W = 34
+_NM_CHROME_THEME_DOT_H = 18
+_NM_CHROME_THEME_KNOB_SIZE = 14
 _NM_CHROME_WIN_DOT_SIZE = 13
 _NM_CHROME_WIN_DOT_GAP = 8
 _NM_CHROME_WIN_DOT_OPACITY = 0.55
@@ -116,6 +121,88 @@ class _ChromeWinBtn(QPushButton):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         self._apply_style()
+        self.update()
+
+
+class _ChromeThemeToggle(QPushButton):
+    """Theme toggle pill with the mockup track/dot contract."""
+
+    def __init__(self, modo: str, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo)
+        self.setFixedSize(_NM_CHROME_THEME_TOGGLE_W, _NM_CHROME_THEME_TOGGLE_H)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+        self.setStyleSheet("""
+            QPushButton {
+                background: transparent;
+                border: none;
+                padding: 0px;
+            }
+        """)
+        self._apply_theme(self._modo)
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+        hovered = self.underMouse()
+        is_dark = "dark" in self._modo
+        rect = QRectF(0.5, 0.5, self.width() - 1, self.height() - 1)
+        radius = self.height() / 2
+
+        p.setPen(QPen(v3c("brandLine" if hovered else "line", self._modo), 1))
+        p.setBrush(v3c("surface3", self._modo))
+        p.drawRoundedRect(rect, radius, radius)
+
+        icon_name = "sun" if is_dark else "moon"
+        icon_color = v3c("ink" if hovered else "ink_2", self._modo)
+        icon = nm_icon(icon_name, icon_color, size=_NM_CHROME_THEME_ICON_SIZE)
+        ix = _NM_CHROME_THEME_TOGGLE_PAD_X
+        iy = (self.height() - _NM_CHROME_THEME_ICON_SIZE) // 2
+        p.drawPixmap(ix, iy, icon.pixmap(_NM_CHROME_THEME_ICON_SIZE, _NM_CHROME_THEME_ICON_SIZE))
+
+        text = "Oscuro" if is_dark else "Claro"
+        text_x = ix + _NM_CHROME_THEME_ICON_SIZE + _NM_CHROME_THEME_TOGGLE_GAP
+        dot_x = self.width() - _NM_CHROME_THEME_TOGGLE_PAD_X - _NM_CHROME_THEME_DOT_W
+        text_rect = QRectF(
+            text_x,
+            0,
+            max(0, dot_x - text_x - _NM_CHROME_THEME_TOGGLE_GAP),
+            self.height(),
+        )
+        p.setFont(qfont(13, weight=500))
+        p.setPen(icon_color)
+        p.drawText(text_rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, text)
+
+        dot_y = (self.height() - _NM_CHROME_THEME_DOT_H) / 2
+        dot_rect = QRectF(dot_x, dot_y, _NM_CHROME_THEME_DOT_W, _NM_CHROME_THEME_DOT_H)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(v3c("brand" if is_dark else "line", self._modo))
+        p.drawRoundedRect(dot_rect, _NM_CHROME_THEME_DOT_H / 2, _NM_CHROME_THEME_DOT_H / 2)
+
+        knob_x = dot_x + 2 + (16 if is_dark else 0)
+        knob_y = dot_y + 2
+        p.setBrush(v3c("surface", self._modo))
+        p.drawEllipse(
+            QRectF(knob_x, knob_y, _NM_CHROME_THEME_KNOB_SIZE, _NM_CHROME_THEME_KNOB_SIZE)
+        )
+        p.end()
+
+    def enterEvent(self, event):
+        super().enterEvent(event)
+        self.update()
+
+    def leaveEvent(self, event):
+        super().leaveEvent(event)
+        self.update()
+
+    def _apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self.setToolTip(
+            "Cambiar a modo claro" if "dark" in self._modo else "Cambiar a modo oscuro"
+        )
         self.update()
 
 
@@ -227,14 +314,7 @@ class NMWindowChrome(QWidget):
             lay.addSpacing(_NM_CHROME_STATUS_GAP)
 
         if self._show_theme_toggle:
-            self._btn_theme = QPushButton(self)
-            self._btn_theme.setCursor(Qt.CursorShape.PointingHandCursor)
-            self._btn_theme.setFlat(True)
-            self._btn_theme.setFixedSize(_NM_CHROME_THEME_SIZE, _NM_CHROME_THEME_SIZE)
-            is_dark = "dark" in self._modo
-            icon_name = "sun" if is_dark else "moon"
-            self._btn_theme.setIcon(nm_icon(icon_name, v3c("text3", self._modo), size=_NM_CHROME_THEME_ICON_SIZE))
-            self._btn_theme.setIconSize(QSize(_NM_CHROME_THEME_ICON_SIZE, _NM_CHROME_THEME_ICON_SIZE))
+            self._btn_theme = _ChromeThemeToggle(self._modo, self)
             self._btn_theme.clicked.connect(self.theme_toggle.emit)
             lay.addWidget(self._btn_theme, 0, Qt.AlignmentFlag.AlignVCenter)
 
@@ -349,26 +429,8 @@ class NMWindowChrome(QWidget):
         self._btn_close._apply_theme(modo)
         self._mark._apply_theme(modo)
 
-        surface_hover = _css_color(v3c("surface3", self._modo))
-        text_hover = _css_color(v3c("ink", self._modo))
-        text_idle = _css_color(c_ink3)
-        tool_btn_style = (
-            "QPushButton { border: none; "
-            f"background: transparent; border-radius: {_NM_CHROME_THEME_RADIUS}px; "
-            f"color: {text_idle}; padding: 0px; }} "
-            f"QPushButton:hover {{ color: {text_hover}; background: {surface_hover}; }}"
-        )
-
         if hasattr(self, "_btn_theme"):
-            self._btn_theme.setStyleSheet(tool_btn_style)
-            is_dark = "dark" in self._modo
-            icon_name = "sun" if is_dark else "moon"
-            self._btn_theme.setIcon(
-                nm_icon(icon_name, c_ink3, size=_NM_CHROME_THEME_ICON_SIZE)
-            )
-            self._btn_theme.setIconSize(
-                QSize(_NM_CHROME_THEME_ICON_SIZE, _NM_CHROME_THEME_ICON_SIZE)
-            )
+            self._btn_theme._apply_theme(self._modo)
 
         if hasattr(self, "_ctx_title"):
             self._apply_ctx_theme()
