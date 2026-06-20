@@ -253,8 +253,10 @@ V3_SHADOWS = {
         "sm": {"blur": 12, "offset": (0, 4), "color": (28, 34, 24, 14)},
         # md: 0 2px 4px rgba(28,34,24,.04), 0 12px 32px rgba(28,34,24,.07)
         "md": {"blur": 32, "offset": (0, 12), "color": (28, 34, 24, 24)},
-        # card alias de md (cards primarios)
-        "card": {"blur": 32, "offset": (0, 12), "color": (28, 34, 24, 24)},
+        # card (cards primarios) — recalibrado a la dirección del mockup
+        # aprobado: sombra más ceñida y nítida (menos blur/offset, algo más de
+        # tinta) para que la card "se levante" sin difuminarse contra el linen.
+        "card": {"blur": 22, "offset": (0, 8), "color": (28, 34, 24, 38)},
         # lg: 0 4px 8px rgba(28,34,24,.05), 0 24px 64px rgba(28,34,24,.10)
         "lg": {"blur": 64, "offset": (0, 24), "color": (28, 34, 24, 34)},
         # ring glow sage (NMRing, anillos)
@@ -268,7 +270,8 @@ V3_SHADOWS = {
     "dark": {
         "sm": {"blur": 12, "offset": (0, 4), "color": (0, 0, 0, 76)},
         "md": {"blur": 40, "offset": (0, 16), "color": (0, 0, 0, 102)},
-        "card": {"blur": 30, "offset": (0, 10), "color": (0, 0, 0, 90)},
+        # card recalibrado (mockup aprobado): negro algo más ceñido y presente.
+        "card": {"blur": 24, "offset": (0, 9), "color": (0, 0, 0, 120)},
         "lg": {"blur": 80, "offset": (0, 32), "color": (0, 0, 0, 130)},
         # glow lavender (anillos en dark) — F2 runtime: calmado (antes
         # blur 40/alpha 56 y alpha 64: halos que "brillaban" contra la regla
@@ -281,6 +284,14 @@ V3_SHADOWS = {
         "shadow_3": {"blur": 24, "offset": (0, 8), "color": (0, 0, 0, 140)},
     },
 }
+
+# Highlight superior interno de las superficies ("lift") — dirección del mockup
+# aprobado: un degradado blanco translúcido que cae sobre el ~42% superior de la
+# card y le da material/elevación sin sombra dura. Valores = alpha 0-255 del
+# blanco en el tope (cae a 0). En dark es casi imperceptible (solo "sella" el
+# borde superior); en light es el principal aportante de profundidad.
+V3_LIFT = {"light": 140, "dark": 16}
+
 
 # Paradas para QLinearGradient — gradiente firma del runtime spec.
 # Runtime spec §4.7: progress fill = linear primary → amber.

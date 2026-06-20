@@ -53,6 +53,7 @@ from shared.theme_qt import (
     nm_icon,
     apply_hub_density,
     HUB_DENSITY_OBJECT_NAME,
+    V3_SP,
 )
 from shared.adaptive_layout_qt import (
     configure_adaptive_window,
@@ -329,7 +330,7 @@ class PacientesView(QWidget):
         roster_meta.setContentsMargins(2, 0, 2, 0)
         roster_meta.setSpacing(V3_SP["sm"])
         self._table_title = QLabel("Lista activa")
-        self._table_title.setFont(qfont("size_small", weight=_TY["weight_semibold"]))
+        self._table_title.setFont(qfont("size_small", weight=_TY["weight_bold"]))
         self._table_title.setStyleSheet(
             f"color: {v3c('text', self._modo).name()}; background: transparent;"
         )
@@ -375,7 +376,7 @@ class PacientesView(QWidget):
             ("Ánimo 7d", 0),  # Sparkline area (60px)
             ("Uso", 0),  # Ring area
         ):
-            lbl = QLabel(text)
+            lbl = QLabel(text.upper())
             lbl.setFont(qfont("size_caption_xs", weight=_TY["weight_semibold"]))
             is_metric = stretch == 0
             lbl.setStyleSheet(
@@ -408,7 +409,8 @@ class PacientesView(QWidget):
         self._table_lay.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._rows_scroll.setWidget(self._rows_w)
         tc_lay.addWidget(self._rows_scroll)
-        layout.addWidget(table_card, stretch=1)
+        layout.addWidget(table_card, 0, Qt.AlignmentFlag.AlignTop)
+        layout.addStretch(1)
 
         self._render_rows()
 
@@ -422,6 +424,7 @@ class PacientesView(QWidget):
 
         rows = list(self._pacientes)
         self._update_roster_meta(rows)
+        self._sync_table_card_height(rows)
 
         if not rows:
             self._table_header.hide()
@@ -620,6 +623,25 @@ class PacientesView(QWidget):
         suffix = "s" if visible != 1 else ""
         self._results_badge.setText(f"{visible} paciente{suffix}")
         self._table_hint.setText("Mail, ánimo de 7 días y uso por paciente")
+
+    def _sync_table_card_height(self, rows: list[dict]) -> None:
+        if not hasattr(self, "_table_card"):
+            return
+        if not rows:
+            self._table_card.setSizePolicy(
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum
+            )
+            self._table_card.setMinimumHeight(520)
+            self._table_card.setMaximumHeight(520)
+            return
+        visible = min(len(rows), self._rows_limit)
+        # Header/meta + columnas + filas premium de 58px + espaciado fino.
+        target_h = min(520, max(252, 94 + visible * 60))
+        self._table_card.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum
+        )
+        self._table_card.setMinimumHeight(target_h)
+        self._table_card.setMaximumHeight(target_h)
 
     def _patient_tags(self, p: dict) -> list[str]:
         tags = []

@@ -36,6 +36,7 @@ from shared.theme_qt import (
     stylesheet_tabwidget_segmented,
     v3c,
     V3_SP,
+    V3_RD,
     eyebrow_font,
 )
 from shared.theme import TYPOGRAPHY
@@ -97,15 +98,14 @@ def _empty_hint_label(text: str, modo: str) -> QWidget:
     modo = norm_modo(modo)
     wrap = QWidget()
     wrap.setStyleSheet("background: transparent;")
-    # Expanding horizontal → el texto centra sobre todo el ancho del panel.
-    # Maximum vertical + maxHeight → no se estira para llenar el panel alto.
+    # Expanding horizontal: el texto centra sobre todo el ancho del panel.
+    # Maximum vertical: no se estira para llenar el panel alto.
     wrap.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
-    wrap.setMinimumHeight(96)
-    wrap.setMaximumHeight(132)
+    wrap.setMinimumHeight(58)
+    wrap.setMaximumHeight(78)
     wl = QVBoxLayout(wrap)
-    wl.setContentsMargins(V3_SP["lg"], V3_SP["xl"], V3_SP["lg"], V3_SP["lg"])
+    wl.setContentsMargins(V3_SP["lg"], V3_SP["md"], V3_SP["lg"], V3_SP["md"])
     wl.setSpacing(0)
-    wl.addStretch()
     lbl = QLabel(text)
     lbl.setWordWrap(True)
     lbl.setFont(qfont("size_small"))
@@ -113,9 +113,38 @@ def _empty_hint_label(text: str, modo: str) -> QWidget:
     lbl.setStyleSheet(
         f"color: {v3c('ink_secondary', modo).name()}; background: transparent;"
     )
-    wl.addWidget(lbl)
-    wl.addStretch()
+    wl.addWidget(lbl, 0, Qt.AlignmentFlag.AlignCenter)
     return wrap
+
+
+def _assigned_row_qss(modo: str) -> str:
+    """Stylesheet unificado para las filas de ítems asignados al paciente
+    (temporizadores, recordatorios, tareas de rutina y actividades) dentro
+    de las cards-lista del Plan terapéutico.
+
+    Lenguaje visual: ``surface2`` (leve elevación sobre la ``surface`` de la
+    card contenedora) + borde ``borderSoft`` + radio consistente ``V3_RD``.
+    Antes cada subtab armaba su propio estilo: ``surface`` idéntico al fondo
+    de la card (filas invisibles en dark) y radios inconsistentes (4/6px), y
+    las filas de rutina/activación carecían de borde. Polish visual global
+    Suite+Hub — sin tocar datos, consultas ni acciones.
+    """
+    m = norm_modo(modo)
+    bg = v3c("surface2", m).name()
+    border = qcolor_to_rgba_css(v3c("borderSoft", m))
+    return (
+        f"background: {bg}; "
+        f"border: 1px solid {border}; "
+        f"border-radius: {V3_RD['sm']}px; padding: 4px;"
+    )
+
+
+def _set_plan_card_height(card: NMCard, max_height: int, min_height: int | None = None) -> None:
+    """Evita que formularios/listas vacías llenen toda la altura disponible."""
+    card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+    if min_height is not None:
+        card.setMinimumHeight(min_height)
+    card.setMaximumHeight(max_height)
 
 
 def _tab_scroll_wrap(body: QWidget, modo: str) -> QScrollArea:
@@ -249,6 +278,7 @@ class _PresetTimerTab(QWidget):
 
         # Form (Left)
         form_card = NMCard(modo=self._modo, clickable=False)
+        _set_plan_card_height(form_card, 238)
         form_lay = QVBoxLayout(form_card)
         form_lay.setContentsMargins(12, 12, 12, 12)
         form_lay.setSpacing(8)
@@ -289,10 +319,11 @@ class _PresetTimerTab(QWidget):
         form_lay.addLayout(ia_row)
         form_lay.addStretch()
 
-        lay.addWidget(form_card, 1)
+        lay.addWidget(form_card, 1, Qt.AlignmentFlag.AlignTop)
 
         # List (Right)
         list_card = NMCard(modo=self._modo, clickable=False)
+        _set_plan_card_height(list_card, 286, min_height=220)
         list_lay = QVBoxLayout(list_card)
         list_lay.setContentsMargins(10, 10, 10, 10)
 
@@ -324,7 +355,7 @@ class _PresetTimerTab(QWidget):
         scroll.setWidget(self._list_w)
         list_lay.addWidget(scroll, 1)
 
-        lay.addWidget(list_card, 2)
+        lay.addWidget(list_card, 2, Qt.AlignmentFlag.AlignTop)
         self._load_presets()
 
     def _autofill_with_ia(self):
@@ -399,12 +430,7 @@ class _PresetTimerTab(QWidget):
 
             for row in rows:
                 row_w = QFrame()
-                # 6.2: borderSoft rgba — preservar alpha.
-                row_w.setStyleSheet(
-                    f"background: {v3c('surface', self._modo).name()}; "
-                    f"border: 1px solid {qcolor_to_rgba_css(v3c('borderSoft', self._modo))}; "
-                    "border-radius: 6px; padding: 4px;"
-                )
+                row_w.setStyleSheet(_assigned_row_qss(self._modo))
                 # Fila con aire: los botones a 24px pegados se veían
                 # "apretados y feos" (informe owner v1.0, Presets).
                 row_lay = QHBoxLayout(row_w)
@@ -546,6 +572,7 @@ class _PresetRecordatoriosTab(QWidget):
 
         # Form card (Left)
         form_card = NMCard(modo=self._modo, clickable=False)
+        _set_plan_card_height(form_card, 212)
         form_lay = QVBoxLayout(form_card)
         form_lay.setContentsMargins(12, 12, 12, 12)
         form_lay.setSpacing(8)
@@ -576,10 +603,11 @@ class _PresetRecordatoriosTab(QWidget):
         form_lay.addLayout(ia_row)
         form_lay.addStretch()
 
-        lay.addWidget(form_card, 1)
+        lay.addWidget(form_card, 1, Qt.AlignmentFlag.AlignTop)
 
         # List card (Right)
         list_card = NMCard(modo=self._modo, clickable=False)
+        _set_plan_card_height(list_card, 286, min_height=220)
         list_lay = QVBoxLayout(list_card)
         list_lay.setContentsMargins(10, 10, 10, 10)
 
@@ -608,7 +636,7 @@ class _PresetRecordatoriosTab(QWidget):
         scroll.setWidget(self._list_w)
         list_lay.addWidget(scroll, 1)
 
-        lay.addWidget(list_card, 2)
+        lay.addWidget(list_card, 2, Qt.AlignmentFlag.AlignTop)
         self._load_recordatorios()
 
     def _load_recordatorios(self):
@@ -638,11 +666,7 @@ class _PresetRecordatoriosTab(QWidget):
                 return
             for r in rows:
                 w = QFrame()
-                w.setStyleSheet(
-                    f"background: {v3c('surface', self._modo).name()}; "
-                    f"border: 1px solid {qcolor_to_rgba_css(v3c('borderSoft', self._modo))}; "
-                    "border-radius: 6px; padding: 4px;"
-                )
+                w.setStyleSheet(_assigned_row_qss(self._modo))
                 wl = QHBoxLayout(w)
                 wl.setContentsMargins(10, 6, 10, 6)
                 wl.setSpacing(8)
@@ -780,6 +804,7 @@ class _PresetRutinaTab(QWidget):
 
         # Form (Left)
         form_card = NMCard(modo=self._modo, clickable=False)
+        _set_plan_card_height(form_card, 212)
         form_lay = QVBoxLayout(form_card)
         form_lay.setContentsMargins(12, 12, 12, 12)
         form_lay.setSpacing(8)
@@ -808,10 +833,11 @@ class _PresetRutinaTab(QWidget):
         form_lay.addLayout(ia_row)
         form_lay.addStretch()
 
-        lay.addWidget(form_card, 1)
+        lay.addWidget(form_card, 1, Qt.AlignmentFlag.AlignTop)
 
         # List (Right)
         list_card = NMCard(modo=self._modo, clickable=False)
+        _set_plan_card_height(list_card, 286, min_height=220)
         list_lay = QVBoxLayout(list_card)
         list_lay.setContentsMargins(10, 10, 10, 10)
 
@@ -842,7 +868,7 @@ class _PresetRutinaTab(QWidget):
         scroll.setWidget(self._list_w)
         list_lay.addWidget(scroll, 1)
 
-        lay.addWidget(list_card, 2)
+        lay.addWidget(list_card, 2, Qt.AlignmentFlag.AlignTop)
         self._load_tasks()
 
     def _autofill_with_ia(self):
@@ -917,7 +943,7 @@ class _PresetRutinaTab(QWidget):
 
                 for r in sec_tasks:
                     w = QFrame()
-                    w.setStyleSheet(f"background: {v3c('surface', self._modo).name()}; border-radius: 4px; padding: 4px;")
+                    w.setStyleSheet(_assigned_row_qss(self._modo))
                     wl = QHBoxLayout(w)
                     wl.setContentsMargins(8, 2, 8, 2)
 
@@ -998,6 +1024,7 @@ class _PresetActivacionTab(QWidget):
 
         # Form (Left)
         form_card = NMCard(modo=self._modo, clickable=False)
+        _set_plan_card_height(form_card, 316)
         form_lay = QVBoxLayout(form_card)
         form_lay.setContentsMargins(12, 12, 12, 12)
         form_lay.setSpacing(8)
@@ -1056,10 +1083,11 @@ class _PresetActivacionTab(QWidget):
 
         form_lay.addStretch()
 
-        lay.addWidget(form_card, 1)
+        lay.addWidget(form_card, 1, Qt.AlignmentFlag.AlignTop)
 
         # List (Right)
         list_card = NMCard(modo=self._modo, clickable=False)
+        _set_plan_card_height(list_card, 316, min_height=236)
         list_lay = QVBoxLayout(list_card)
         list_lay.setContentsMargins(10, 10, 10, 10)
 
@@ -1090,7 +1118,7 @@ class _PresetActivacionTab(QWidget):
         scroll.setWidget(self._list_w)
         list_lay.addWidget(scroll, 1)
 
-        lay.addWidget(list_card, 2)
+        lay.addWidget(list_card, 2, Qt.AlignmentFlag.AlignTop)
         self._load_activities()
 
     def _load_activities(self):
@@ -1117,7 +1145,7 @@ class _PresetActivacionTab(QWidget):
                 return
             for r in rows:
                 w = QFrame()
-                w.setStyleSheet(f"background: {v3c('surface', self._modo).name()}; border-radius: 4px; padding: 4px;")
+                w.setStyleSheet(_assigned_row_qss(self._modo))
                 wl = QHBoxLayout(w)
                 wl.setContentsMargins(8, 2, 8, 2)
 

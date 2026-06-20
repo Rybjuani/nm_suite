@@ -61,6 +61,7 @@ from shared.theme_qt import (
     focus_ring_stylesheet,
     label_style,
     norm_modo,
+    paint_card_lift,
     qfont,
     qfont_mono,
     sp,
@@ -272,6 +273,11 @@ class NMCard(QFrame):
             p.setBrush(QBrush(v3c(surface_key, self._modo)))
             p.setPen(Qt.PenStyle.NoPen)
             p.drawRoundedRect(rect, r, r)
+
+        # Lift: highlight superior interno (mockup aprobado) — solo en cards
+        # activas/habilitadas; da material sin sombra dura.
+        if not self._disabled and self.isEnabled():
+            paint_card_lift(p, rect, r, self._modo)
 
         if self._glow and not self._disabled and self.isEnabled():
             accent = QColor(self._accent or v3c("primary", self._modo).name())
@@ -572,6 +578,8 @@ class NMAvisoCard(QFrame):
         path = QPainterPath()
         path.addRoundedRect(QRectF(0, 0, w, h), r, r)
         p.fillPath(path, bg)
+        if self._status != self.STATUS_EXPIRED:
+            paint_card_lift(p, QRectF(0, 0, w, h), r, self._modo)
 
         # Accent bar lateral 3px con gradient teal→violet (gris si expirado)
         if self._status == self.STATUS_EXPIRED:
@@ -715,6 +723,7 @@ class NMStatCard(QWidget):
         p.setBrush(QBrush(surf))
         p.setPen(QPen(v3c("border", self._modo), 1.0))
         p.drawRoundedRect(rect, r, r)
+        paint_card_lift(p, rect, r, self._modo)
         p.end()
 
     def _apply_theme(self, modo: str):
@@ -1395,6 +1404,7 @@ class NMFeaturedCard(QFrame):
         path = QPainterPath()
         path.addRoundedRect(QRectF(0, 0, w, h), r, r)
         p.fillPath(path, surf_col)
+        paint_card_lift(p, QRectF(0, 0, w, h), r, self._modo)
 
         border_c = v3c("border", self._modo)
         p.setPen(QPen(border_c, 1))

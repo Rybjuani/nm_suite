@@ -762,6 +762,11 @@ class ModuloActividades(NMModule):
         # actividades desde el Hub, el paciente nunca las veía (informe owner
         # v1.0 — Activación debe soportar muchos registros sin romperse).
         cols = self._activity_columns()
+        # Con pocas actividades (≤4), 3 columnas dejan una última fila rala (3+1)
+        # con dos celdas vacías a la derecha. Preferir 2 columnas equilibra el set
+        # común (2×2) sin perder densidad cuando hay muchas (≥5 sigue en 3 cols).
+        if len(activities) <= 4:
+            cols = min(cols, 2)
         for col in range(3):
             self._grid_layout.setColumnStretch(col, 1 if col < cols else 0)
         for i, act in enumerate(activities):

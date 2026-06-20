@@ -66,6 +66,7 @@ try:
         V3_SP,
         V3_RD,
         v3_font,
+        paint_card_lift,
         stylesheet_scrollarea,
         eyebrow_font,
     )
@@ -98,6 +99,7 @@ except ImportError:
         V3_SP,
         V3_RD,
         v3_font,
+        paint_card_lift,
         eyebrow_font,
     )
     from shared.theme import TYPOGRAPHY
@@ -223,18 +225,12 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._shadow: QGraphicsDropShadowEffect | None = None
         self._fade_eff: QGraphicsOpacityEffect | None = None
 
-        # M2 P2-C: al quitar las cards "Progreso de Ánimo" y "Resumen Semanal",
-        # las 8 cards de módulo se agrandan para ocupar el espacio liberado y
-        # ganar presencia (más premium), sin solapar títulos de 2 líneas.
-        # Altura elástica acotada: con alturas FIJAS en todos los items, el
-        # QVBoxLayout del Home repartía el sobrante como huecos entre items
-        # (voids proporcionales al agrandar la ventana). El chip de estado
-        # queda anclado abajo por el stretch interno. Tope 288 (era 256): el
-        # alto que liberó el hero compacto lo absorben estas cards.
-        self.setMinimumHeight(150)
-        self.setMaximumHeight(288)
+        # Altura cómoda: las cards no deben crecer hasta crear un vacío central
+        # entre descripción y estado.
+        self.setMinimumHeight(156)
+        self.setMaximumHeight(190)
         self.setMinimumWidth(0)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
 
@@ -263,8 +259,9 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 14, 20, 14)  # Premium: 20px padding
+        layout.setContentsMargins(20, 14, 20, 14)
         layout.setSpacing(0)
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # Top row: icon + chip
         top = QHBoxLayout()
@@ -294,8 +291,6 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._desc_lbl.setStyleSheet("background: transparent;")
         layout.addWidget(self._desc_lbl)
 
-        layout.addStretch()
-
         # Bottom row: badge + ring (size 22)
         bottom = QHBoxLayout()
         bottom.setContentsMargins(0, 0, 0, 0)
@@ -308,7 +303,9 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._ring = NMModuleRing(size=22, pct=0.0, modo=self._modo, show_label=False)
         self._ring.hide()
         bottom.addWidget(self._ring)
+        layout.addSpacing(14)
         layout.addLayout(bottom)
+        layout.addStretch(1)
 
         self._apply_styles()
         self._refresh_status()
@@ -425,6 +422,10 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         p.setBrush(QBrush(surf))
         p.setPen(Qt.PenStyle.NoPen)
         p.drawRoundedRect(rect, r, r)
+
+        # Lift: highlight superior interno (mockup aprobado) — coherente con NMCard.
+        if not self._disabled and self.isEnabled():
+            paint_card_lift(p, rect, r, self._modo)
 
         is_active = self._hover and self.isEnabled() and not self._disabled
 
@@ -603,7 +604,7 @@ class _HeroBienestar(QFrame):
 
         # Eyebrow row + badge derecho
         top = QHBoxLayout()
-        self._eyebrow = QLabel(t("text.home.hero_eyebrow", "Bienvenida"))
+        self._eyebrow = QLabel(t("text.home.hero_eyebrow", "Bienvenida").upper())
         self._eyebrow.setFont(eyebrow_font())
         self._eyebrow.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
@@ -613,7 +614,7 @@ class _HeroBienestar(QFrame):
         root.addLayout(top)
 
         self._hero_title = QLabel(self._greeting_text())
-        self._hero_title.setFont(qfont("size_h1", weight=TYPOGRAPHY["weight_semibold"]))
+        self._hero_title.setFont(v3_font("size_display_m", weight=TYPOGRAPHY["weight_semibold"], serif=True))
         root.addWidget(self._hero_title)
 
         # Stacked area for empty vs filled
@@ -713,7 +714,7 @@ class _HeroBienestar(QFrame):
         # Try to use Newsreader for name
         from shared.theme_qt import v3_font
 
-        self._hero_title.setFont(v3_font("size_h1", weight=600, serif=True))
+        self._hero_title.setFont(v3_font("size_display_m", weight=600, serif=True))
 
         self._score.setStyleSheet(f"color: {accent.name()}; background: transparent;")
         self._score_unit.setStyleSheet(f"color: {muted.name()}; background: transparent;")
@@ -924,7 +925,7 @@ class HomeView(QWidget):
         self._session_card = _ProximaSesionCard(self._modo, parent=content)
         self._session_card.hide()
         content_lay.addWidget(self._hero, stretch=1)
-        content_lay.addSpacing(V3_SP["sm"])
+        content_lay.addSpacing(V3_SP["md"])
 
         # P2.C: cards de "Progreso de Ánimo" y "Resumen Semanal" removidas.
         # El espacio liberado se usa para agrandar las 8 cards de módulo (la grilla
@@ -933,6 +934,7 @@ class HomeView(QWidget):
         self._grid.setContentsMargins(0, 0, 0, 0)
         self._grid.setVerticalSpacing(12)  # Premium: 12px gap
         self._grid.setHorizontalSpacing(12)  # Premium: 12px gap
+        self._grid.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         self._module_configs = module_configs()
         for idx, cfg in enumerate(self._module_configs):
@@ -947,7 +949,8 @@ class HomeView(QWidget):
         # SIN stretch final (feedback owner v1.0 r3): hero y cards absorben
         # TODO el alto disponible (máximos 192/256 cubren de sobra el contrato
         # 960×600 e incluso 1366×768) — el pie queda lleno, no "con resto".
-        content_lay.addLayout(self._grid, stretch=3)
+        content_lay.addLayout(self._grid, stretch=0)
+        content_lay.addStretch(1)
 
         root.addWidget(content, stretch=1)
 

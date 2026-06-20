@@ -33,6 +33,7 @@ from PyQt6.QtGui import (
     QPalette,
     QBrush,
     QPainter,
+    QPainterPath,
     QPixmap,
 )
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
@@ -51,6 +52,7 @@ try:
         V3_SPACE,
         V3_RADIUS,
         V3_SHADOWS,
+        V3_LIFT,
         V3_GRADIENTS,
         VISUAL_DENSITIES,
         MOOD_PALETTE,
@@ -72,6 +74,7 @@ except ImportError:
         V3_SPACE,
         V3_RADIUS,
         V3_SHADOWS,
+        V3_LIFT,
         V3_GRADIENTS,
         VISUAL_DENSITIES,
         get_v3_palette,
@@ -1781,6 +1784,39 @@ def v3c(key: str, modo: str = "dark", alpha: int | None = None) -> QColor:
     return c
 
 
+def paint_card_lift(painter, rect: QRectF, radius: float, modo: str) -> None:
+    """Pinta el *highlight* superior interno ("lift") de una superficie.
+
+    Dirección del mockup aprobado: un degradado blanco translúcido que cae
+    sobre el ~42% superior de la card y le da material/elevación sin sombra
+    dura. Debe llamarse en ``paintEvent`` DESPUÉS de rellenar la superficie y
+    ANTES (o después) de dibujar el borde. Recorta al rect redondeado para no
+    desbordar las esquinas.
+
+    Args:
+        painter: QPainter activo.
+        rect:    QRectF de la card (0,0,w,h).
+        radius:  radio de las esquinas (mismo que la superficie).
+        modo:    tema ('light'/'dark' o alias).
+    """
+    alpha = V3_LIFT["light" if v3_mode(modo) == "light" else "dark"]
+    if alpha <= 0 or rect.height() <= 1:
+        return
+    painter.save()
+    clip = QPainterPath()
+    clip.addRoundedRect(rect, radius, radius)
+    painter.setClipPath(clip)
+    grad = QLinearGradient(rect.left(), rect.top(), rect.left(), rect.top() + rect.height() * 0.42)
+    top = QColor(255, 255, 255, int(alpha))
+    bottom = QColor(255, 255, 255, 0)
+    grad.setColorAt(0.0, top)
+    grad.setColorAt(1.0, bottom)
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.setBrush(QBrush(grad))
+    painter.drawRoundedRect(rect, radius, radius)
+    painter.restore()
+
+
 def v3_shadow(name: str = "card", modo: str = "dark", parent=None) -> QGraphicsDropShadowEffect:
     """QGraphicsDropShadowEffect parametrizado desde V3_SHADOWS.
 
@@ -2170,15 +2206,25 @@ def shadow_lg(widget, dark: bool = False) -> None:
 
 
 def eyebrow_font() -> QFont:
-    """QFont para eyebrows: 11px/500 sans sin tracking forzado."""
-    return v3_font("size_eyebrow", "weight_medium")
+    """QFont para eyebrows: 11px semibold con letter-spacing.
+
+    Lenguaje visual del polish Suite+Hub: eyebrows en semibold tracked (frame
+    del prototipo: 11px / weight 600 / tracking ~.12em). Se fija el peso fuera
+    del clamp de ``_adn_clamped_weight`` (que baja a medium fuera de tokens de
+    título) porque los eyebrows sí deben leerse semibold.
+    """
+    f = v3_font("size_eyebrow", TYPOGRAPHY["weight_semibold"])
+    f.setWeight(QFont.Weight(TYPOGRAPHY["weight_semibold"]))
+    f.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 116)
+    return f
 
 
 def eyebrow_style(modo: str) -> str:
     """Stylesheet inline para QLabel eyebrow (sin fondo, color MUTE)."""
     return (
         f"color: {C('mute', modo)}; background: transparent; "
-        f"font-size: {TYPOGRAPHY.get('size_eyebrow', 11)}px; font-weight: 500;"
+        f"font-size: {TYPOGRAPHY.get('size_eyebrow', 11)}px; "
+        f"font-weight: {TYPOGRAPHY.get('weight_semibold', 600)};"
     )
 
 

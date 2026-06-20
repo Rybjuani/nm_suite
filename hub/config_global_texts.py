@@ -38,7 +38,7 @@ from shared.suite_text_catalog import (
     suite_text_sections,
 )
 from shared.theme import TYPOGRAPHY
-from shared.theme_qt import norm_modo, qfont, stylesheet_combobox, stylesheet_scrollarea, v3c, V3_SP
+from shared.theme_qt import norm_modo, qfont, stylesheet_combobox, stylesheet_scrollarea, v3_font, v3c, V3_SP
 
 
 class _TextEntryRow(NMCard):
@@ -189,7 +189,7 @@ class TextosGlobalesSuiteView(QWidget):
         top = QHBoxLayout()
         top.setSpacing(V3_SP["sm"])
         self._title_lbl = QLabel("Textos globales de Suite")
-        self._title_lbl.setFont(qfont("size_h3", weight=TYPOGRAPHY["weight_semibold"]))
+        self._title_lbl.setFont(v3_font("size_heading_l", weight=TYPOGRAPHY["weight_semibold"], serif=True))
         top.addWidget(self._title_lbl)
 
         self._search = NMSearchInput("Buscar textos", modo=self._modo)

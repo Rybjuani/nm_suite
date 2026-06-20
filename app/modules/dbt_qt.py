@@ -43,6 +43,7 @@ try:
         v3c,
         qfont,
         v3_font,
+        qcolor_to_rgba_css,
         TYPOGRAPHY,
         LAYOUT,
         stylesheet_scrollarea,
@@ -68,6 +69,7 @@ except ImportError:
         v3c,
         qfont,
         v3_font,
+        qcolor_to_rgba_css,
         TYPOGRAPHY,
         LAYOUT,
         stylesheet_scrollarea,
@@ -283,14 +285,21 @@ class _NeedCard(NMCard):
         self._icon_name = icon_name
         self._title = title
         self._subtitle = subtitle
+        self.setProperty("dbt_family", family)
+        self.setMinimumHeight(144)
+        self.setMaximumHeight(162)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(16, 16, 16, 16)
-        lay.setSpacing(8)
+        lay.setContentsMargins(16, 14, 16, 14)
+        lay.setSpacing(10)
+        lay.setAlignment(Qt.AlignmentFlag.AlignTop)
         
         header = QHBoxLayout()
+        header.setSpacing(8)
         self.icon_label = QLabel()
-        header.addWidget(self.icon_label)
+        self.icon_label.setFixedSize(28, 28)
+        header.addWidget(self.icon_label, alignment=Qt.AlignmentFlag.AlignTop)
         header.addStretch()
         
         family_title = {
@@ -304,18 +313,26 @@ class _NeedCard(NMCard):
         self.chip_label.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
         self.chip_label.setContentsMargins(8, 2, 8, 2)
         self.chip_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        header.addWidget(self.chip_label)
+        self.chip_label.setFixedHeight(22)
+        self.chip_label.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
+        header.addWidget(
+            self.chip_label,
+            alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight,
+        )
         lay.addLayout(header)
         
         self.title_label = QLabel(title)
         self.title_label.setFont(v3_font("size_h4", weight=TYPOGRAPHY["weight_bold"], serif=True))
         self.title_label.setWordWrap(True)
+        self.title_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         lay.addWidget(self.title_label)
         
         self.subtitle_label = QLabel(subtitle)
         self.subtitle_label.setFont(qfont("size_small"))
         self.subtitle_label.setWordWrap(True)
+        self.subtitle_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         lay.addWidget(self.subtitle_label)
+        lay.addStretch(1)
         
         self._apply_theme(self._modo)
         
@@ -342,14 +359,14 @@ class _NeedCard(NMCard):
             "amber": "amberSoft"
         }.get(family_color_key, "borderSoft")
         
-        chip_bg = v3c(soft_color_key, self._modo).name()
+        chip_bg = qcolor_to_rgba_css(v3c(soft_color_key, self._modo))
         self.chip_label.setStyleSheet(
             f"color: {icon_color}; "
             f"background: {chip_bg}; "
-            "border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);"
+            "border-radius: 7px; border: 1px solid rgba(255,255,255,0.06);"
         )
-        self.title_label.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-        self.subtitle_label.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()};")
+        self.title_label.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
+        self.subtitle_label.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()}; background: transparent;")
 
 
 class _SkillCard(NMCard):
@@ -1010,10 +1027,11 @@ class ModuloDBT(NMModule):
         # 4 need cards grid
         grid = QGridLayout()
         grid.setSpacing(12)
+        grid.setAlignment(Qt.AlignmentFlag.AlignTop)
         for c in range(2):
             grid.setColumnStretch(c, 1)
         for r in range(2):
-            grid.setRowStretch(r, 1)
+            grid.setRowStretch(r, 0)
 
         needs = [
             ("Volver al presente", "Mindfulness: pausar, enfocar y notar el aquí y ahora.", "mindfulness", "mind"),
@@ -1025,18 +1043,10 @@ class ModuloDBT(NMModule):
         for i, (title, desc, family, icon) in enumerate(needs):
             card = _NeedCard(title, desc, family, icon, modo=self._modo, parent=widget)
             card.clicked.connect(lambda f=family: self._on_need_clicked(f))
-            # Expanding vertical para que las celdas del grid rellenen el
-            # alto disponible y eliminen el hueco excesivo entre el prompt
-            # y las 4 cards (antes el QStackedWidget centraba el contenido
-            # y quedaba un gap grande arriba).
-            card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-            grid.addWidget(card, i // 2, i % 2)
+            grid.addWidget(card, i // 2, i % 2, alignment=Qt.AlignmentFlag.AlignTop)
 
-        # 2026-06: stretch=1 en la grid para que el contenido se pegue al
-        # top de la vista (sin el stretch, Qt centra vertical → gap arriba
-        # y vacío abajo). Con el stretch, la grid se expande para llenar
-        # el alto del QStackedWidget.
-        lay.addLayout(grid, stretch=1)
+        lay.addLayout(grid, stretch=0)
+        lay.addStretch(1)
 
         return widget
         
