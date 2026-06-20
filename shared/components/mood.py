@@ -500,15 +500,17 @@ class _MoodTrackBar(QWidget):
 
     level_clicked = pyqtSignal(int)
 
-    # 7-stop rainbow emocional (literal del README v3)
+    # 6-stop arcoíris canónico del mockup (neuromood-mockup.html línea 200):
+    #   linear-gradient(90deg, #7b8a99, #6b8fa8, #5faa86, #86b15f, #c99a3d, #b24e3d)
+    # PAleta emocional neutral (slate→teal→olive→amber→terracotta), NO saturada con
+    # lavanda/rosa. Coincide con el slider arcoíris del mockup para Ánimo y TCC.
     _RAINBOW_STOPS = (
-        ("#5b6cb8", 0.00),
-        ("#7ba8e6", 0.22),
-        ("#f5d76a", 0.50),
-        ("#5dd6a3", 0.70),
-        ("#36cfb8", 0.80),
-        ("#a78bfa", 0.95),
-        ("#ec4899", 1.00),
+        ("#7b8a99", 0.00),
+        ("#6b8fa8", 0.20),
+        ("#5faa86", 0.40),
+        ("#86b15f", 0.60),
+        ("#c99a3d", 0.80),
+        ("#b24e3d", 1.00),
     )
 
     def __init__(self, level: int = 5, parent=None, unset: bool = False):
