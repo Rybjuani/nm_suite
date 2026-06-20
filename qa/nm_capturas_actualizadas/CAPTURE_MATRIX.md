@@ -1,16 +1,14 @@
 # Matriz Baseline V8
 
-- Generada: 2026-06-19T14:37:56
-- Filas: 100
-- Resultados: parcial=18, pendiente=82
+- Generada: 2026-06-20T01:22:06
+- Filas: 96
+- Resultados: parcial=6, pendiente=90
 - Inspeccion manual: pendiente hasta revisar captura por captura.
 
 | producto | vista | estado | tema | resolucion | receta | captura | inspeccion manual | resultado | deuda pendiente |
 |---|---|---|---|---|---|---|---|---|---|
-| hub | detalle | Detalle paciente (overview) | dark | 960x600 | navigate:detalle > drain:8 > capture:detalle | hub-detalle-dark-960x600.png | pendiente | parcial | flags=DUPLICATE_SUSPECT ; notes=Exact PNG hash is shared with another screen/theme/state. |
-| hub | detalle | Detalle paciente (overview) | light | 960x600 | navigate:detalle > drain:8 > capture:detalle | hub-detalle-light-960x600.png | pendiente | parcial | flags=DUPLICATE_SUSPECT ; notes=Exact PNG hash is shared with another screen/theme/state. |
-| hub | detalle-plan | Detalle > Plan terapeutico tab (Recordatorios) | dark | 960x600 | navigate:detalle > drain:6 > capture:detalle-plan | hub-detalle-plan-dark-960x600.png | pendiente | parcial | flags=DUPLICATE_SUSPECT,FALLBACK ; notes=Exact PNG hash is shared with another screen/theme/state. \| Exact duplicate of its declared parent recipe; state was not visually reached. |
-| hub | detalle-plan | Detalle > Plan terapeutico tab (Recordatorios) | light | 960x600 | navigate:detalle > drain:6 > capture:detalle-plan | hub-detalle-plan-light-960x600.png | pendiente | parcial | flags=DUPLICATE_SUSPECT,FALLBACK ; notes=Exact PNG hash is shared with another screen/theme/state. \| Exact duplicate of its declared parent recipe; state was not visually reached. |
+| hub | detalle | Detalle paciente (overview) | dark | 960x600 | navigate:detalle > drain:8 > capture:detalle | hub-detalle-dark-960x600.png | pendiente | pendiente | requiere inspeccion manual |
+| hub | detalle | Detalle paciente (overview) | light | 960x600 | navigate:detalle > drain:8 > capture:detalle | hub-detalle-light-960x600.png | pendiente | pendiente | requiere inspeccion manual |
 | hub | detalle-plan-activacion | Detalle > Plan > Activación | dark | 960x600 | navigate:detalle > call:_plan_set_subtab > drain:6 > capture:detalle-plan-activacion | hub-detalle-plan-activacion-dark-960x600.png | pendiente | pendiente | requiere inspeccion manual |
 | hub | detalle-plan-activacion | Detalle > Plan > Activación | light | 960x600 | navigate:detalle > call:_plan_set_subtab > drain:6 > capture:detalle-plan-activacion | hub-detalle-plan-activacion-light-960x600.png | pendiente | pendiente | requiere inspeccion manual |
 | hub | detalle-plan-rutina | Detalle > Plan > Rutina | dark | 960x600 | navigate:detalle > call:_plan_set_subtab > drain:6 > capture:detalle-plan-rutina | hub-detalle-plan-rutina-dark-960x600.png | pendiente | pendiente | requiere inspeccion manual |
@@ -33,10 +31,8 @@
 | suite | actividades-filtered | Actividades + filtro con resultados | light | 960x600 | navigate:actividades > call:_actividades_filter_category > drain:6 > capture:actividades-filtered | suite-actividades-filtered-light-960x600.png | pendiente | pendiente | requiere inspeccion manual |
 | suite | actividades-marked-hice | Actividades + marcada Hecho | dark | 960x600 | navigate:actividades > click > drain:8 > capture:actividades-marked-hice | suite-actividades-marked-hice-dark-960x600.png | pendiente | pendiente | requiere inspeccion manual |
 | suite | actividades-marked-hice | Actividades + marcada Hecho | light | 960x600 | navigate:actividades > click > drain:8 > capture:actividades-marked-hice | suite-actividades-marked-hice-light-960x600.png | pendiente | pendiente | requiere inspeccion manual |
-| suite | animo | Animo default | dark | 960x600 | navigate:animo > drain:8 > capture:animo | suite-animo-dark-960x600.png | pendiente | parcial | flags=DUPLICATE_SUSPECT ; notes=Exact PNG hash is shared with another screen/theme/state. |
-| suite | animo | Animo default | light | 960x600 | navigate:animo > drain:8 > capture:animo | suite-animo-light-960x600.png | pendiente | parcial | flags=DUPLICATE_SUSPECT ; notes=Exact PNG hash is shared with another screen/theme/state. |
-| suite | animo-note-filled | Animo + nota escrita | dark | 960x600 | navigate:animo > call:_animo_type_note > drain:6 > capture:animo-note-filled | suite-animo-note-filled-dark-960x600.png | pendiente | parcial | flags=DUPLICATE_SUSPECT,FALLBACK ; notes=Exact PNG hash is shared with another screen/theme/state. \| Exact duplicate of its declared parent recipe; state was not visually reached. |
-| suite | animo-note-filled | Animo + nota escrita | light | 960x600 | navigate:animo > call:_animo_type_note > drain:6 > capture:animo-note-filled | suite-animo-note-filled-light-960x600.png | pendiente | parcial | flags=DUPLICATE_SUSPECT,FALLBACK ; notes=Exact PNG hash is shared with another screen/theme/state. \| Exact duplicate of its declared parent recipe; state was not visually reached. |
+| suite | animo | Animo default | dark | 960x600 | navigate:animo > drain:8 > capture:animo | suite-animo-dark-960x600.png | pendiente | pendiente | requiere inspeccion manual |
+| suite | animo | Animo default | light | 960x600 | navigate:animo > drain:8 > capture:animo | suite-animo-light-960x600.png | pendiente | pendiente | requiere inspeccion manual |
 | suite | avisos | Avisos default | dark | 960x600 | navigate:avisos > drain:8 > capture:avisos | suite-avisos-dark-960x600.png | pendiente | pendiente | requiere inspeccion manual |
 | suite | avisos | Avisos default | light | 960x600 | navigate:avisos > drain:8 > capture:avisos | suite-avisos-light-960x600.png | pendiente | pendiente | requiere inspeccion manual |
 | suite | avisos-completed | Avisos + completado | dark | 960x600 | navigate:avisos > call:_avisos_complete_first > drain:8 > capture:avisos-completed | suite-avisos-completed-dark-960x600.png | pendiente | pendiente | requiere inspeccion manual |
@@ -87,10 +83,10 @@
 | suite | respiracion-preset-3min | Respiracion preset 3 min | light | 960x600 | navigate:respiracion > click > drain:6 > capture:respiracion-preset-3min | suite-respiracion-preset-3min-light-960x600.png | pendiente | pendiente | requiere inspeccion manual |
 | suite | respiracion-running | Respiracion running (inhala) | dark | 960x600 | navigate:respiracion > call:_respiracion_start_capture_phase > drain:4 > capture:respiracion-running | suite-respiracion-running-dark-960x600.png | pendiente | pendiente | requiere inspeccion manual |
 | suite | respiracion-running | Respiracion running (inhala) | light | 960x600 | navigate:respiracion > call:_respiracion_start_capture_phase > drain:4 > capture:respiracion-running | suite-respiracion-running-light-960x600.png | pendiente | pendiente | requiere inspeccion manual |
-| suite | rutina | Rutina default (parcial) | dark | 960x600 | navigate:rutina > drain:8 > capture:rutina | suite-rutina-dark-960x600.png | pendiente | parcial | flags=DUPLICATE_SUSPECT ; notes=Exact PNG hash is shared with another screen/theme/state. |
-| suite | rutina | Rutina default (parcial) | light | 960x600 | navigate:rutina > drain:8 > capture:rutina | suite-rutina-light-960x600.png | pendiente | parcial | flags=DUPLICATE_SUSPECT ; notes=Exact PNG hash is shared with another screen/theme/state. |
-| suite | rutina-add-task | Rutina + agregar tarea inline | dark | 960x600 | navigate:rutina > call:_rutina_open_add_task > drain:6 > capture:rutina-add-task | suite-rutina-add-task-dark-960x600.png | pendiente | parcial | flags=DUPLICATE_SUSPECT,FALLBACK ; notes=Exact PNG hash is shared with another screen/theme/state. \| Exact duplicate of its declared parent recipe; state was not visually reached. |
-| suite | rutina-add-task | Rutina + agregar tarea inline | light | 960x600 | navigate:rutina > call:_rutina_open_add_task > drain:6 > capture:rutina-add-task | suite-rutina-add-task-light-960x600.png | pendiente | parcial | flags=DUPLICATE_SUSPECT,FALLBACK ; notes=Exact PNG hash is shared with another screen/theme/state. \| Exact duplicate of its declared parent recipe; state was not visually reached. |
+| suite | rutina | Rutina default (parcial) | dark | 960x600 | navigate:rutina > drain:8 > capture:rutina | suite-rutina-dark-960x600.png | pendiente | pendiente | requiere inspeccion manual |
+| suite | rutina | Rutina default (parcial) | light | 960x600 | navigate:rutina > drain:8 > capture:rutina | suite-rutina-light-960x600.png | pendiente | pendiente | requiere inspeccion manual |
+| suite | rutina-add-task | Rutina + agregar tarea inline | dark | 960x600 | navigate:rutina > call:_rutina_open_add_task > drain:6 > capture:rutina-add-task | suite-rutina-add-task-dark-960x600.png | pendiente | pendiente | requiere inspeccion manual |
+| suite | rutina-add-task | Rutina + agregar tarea inline | light | 960x600 | navigate:rutina > call:_rutina_open_add_task > drain:6 > capture:rutina-add-task | suite-rutina-add-task-light-960x600.png | pendiente | pendiente | requiere inspeccion manual |
 | suite | rutina-all-completed | Rutina 100% completada | dark | 960x600 | navigate:rutina > call:_rutina_complete_all > drain:8 > capture:rutina-all-completed | suite-rutina-all-completed-dark-960x600.png | pendiente | pendiente | requiere inspeccion manual |
 | suite | rutina-all-completed | Rutina 100% completada | light | 960x600 | navigate:rutina > call:_rutina_complete_all > drain:8 > capture:rutina-all-completed | suite-rutina-all-completed-light-960x600.png | pendiente | pendiente | requiere inspeccion manual |
 | suite | rutina-empty | Rutina sin tareas asignadas — NMEmptyState (evidencia S09) | dark | 960x600 | navigate:rutina > call:_rutina_force_empty > drain:6 > capture:rutina-empty | suite-rutina-empty-dark-960x600.png | pendiente | pendiente | requiere inspeccion manual |

@@ -239,14 +239,10 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 8},
                         {"action": "capture", "view": "animo"}],
         },
-        "animo-note-filled": {
-            "label": "Animo + nota escrita",
-            "parent": "animo",
-            "actions": [{"action": "navigate", "view": "animo"},
-                        {"action": "call", "func": "_animo_type_note"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "animo-note-filled"}],
-        },
+        # animo-note-filled ELIMINADA: el módulo Ánimo ya no expone campo de
+        # nota (la reorganización "redistribuye Animo Fase 1" dejó solo slider
+        # + stats + chart). No hay QTextEdit/NMTextArea donde escribir, así que
+        # la receta capturaba un estado inexistente (idéntico al parent).
         "dbt-now": {
             "label": "DBT Ahora - entrada por necesidad",
             "parent": None,
@@ -570,16 +566,13 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 8},
                         {"action": "capture", "view": "detalle"}],
         },
-        "detalle-plan": {
-            "label": "Detalle > Plan terapeutico tab (Recordatorios)",
-            "parent": "detalle",
-            "actions": [{"action": "navigate", "view": "detalle"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "detalle-plan"}],
-        },
+        # detalle-plan ELIMINADA: el PlanTerapeuticoTab es siempre visible bajo
+        # el header del paciente y su subtab default (index 0, Recordatorios)
+        # es exactamente lo que captura "detalle". No hay tab outer que conmutar;
+        # los 3 subtabs no-default ya tienen receta propia abajo.
         "detalle-plan-timer": {
             "label": "Detalle > Plan > Temporizador",
-            "parent": "detalle-plan",
+            "parent": "detalle",
             "actions": [{"action": "navigate", "view": "detalle"},
                         {"action": "call", "func": "_plan_set_subtab", "index": 1},
                         {"action": "drain", "cycles": 6},
@@ -587,7 +580,7 @@ _RECIPES: dict[str, dict[str, dict]] = {
         },
         "detalle-plan-rutina": {
             "label": "Detalle > Plan > Rutina",
-            "parent": "detalle-plan",
+            "parent": "detalle",
             "actions": [{"action": "navigate", "view": "detalle"},
                         {"action": "call", "func": "_plan_set_subtab", "index": 2},
                         {"action": "drain", "cycles": 6},
@@ -595,7 +588,7 @@ _RECIPES: dict[str, dict[str, dict]] = {
         },
         "detalle-plan-activacion": {
             "label": "Detalle > Plan > Activación",
-            "parent": "detalle-plan",
+            "parent": "detalle",
             "actions": [{"action": "navigate", "view": "detalle"},
                         {"action": "call", "func": "_plan_set_subtab", "index": 3},
                         {"action": "drain", "cycles": 6},
@@ -739,16 +732,8 @@ def _plan_set_subtab(win, qapp, action):
 
 
 
-@_register_helper
-def _animo_type_note(win, qapp, action):
-    """Escribe nota en Animo."""
-    target = getattr(win, '_current_module', None) or win
-    from PyQt6.QtWidgets import QTextEdit
-    text_edits = target.findChildren(QTextEdit)
-    if text_edits:
-        text_edits[0].setPlainText("Hoy me siento bastante bien. Tuve un dia productivo en el trabajo y pude manejar la ansiedad con ejercicios de respiracion.")
-        text_edits[0].textChanged.emit()
-    _drain(qapp, cycles=4)
+# _animo_type_note ELIMINADO: sin receta referenciante y sin QTextEdit en el
+# módulo Ánimo actual (ver nota en _RECIPES["suite"]).
 
 
 @_register_helper
@@ -1016,13 +1001,21 @@ def _rutina_complete_all(win, qapp, action):
 
 @_register_helper
 def _rutina_open_add_task(win, qapp, action):
-    """Abre el formulario inline para agregar tarea en Rutina."""
+    """Abre el formulario inline para agregar tarea en Rutina.
+
+    El modo producto fija ``_manual_enabled=False`` (rutina solo_profesional),
+    lo que haría que ``_on_section_add`` retorne sin abrir el form. Para que la
+    captura refleje el formulario real, se fuerza el flag durante la llamada.
+    """
     target = _module_target(win)
-    if hasattr(target, '_on_new_task_hero'):
-        target._on_new_task_hero()
-    elif hasattr(target, '_on_section_add'):
-        target._on_section_add("manana")
-    _drain(qapp, cycles=6)
+    _prev = getattr(target, "_manual_enabled", True)
+    target._manual_enabled = True
+    try:
+        if hasattr(target, "_on_section_add"):
+            target._on_section_add("manana")
+    finally:
+        target._manual_enabled = _prev
+    _drain(qapp, cycles=8)
 
 
 @_register_helper
@@ -2137,8 +2130,10 @@ def _navigate_suite(win, view_id: str, qapp) -> None:
 
 
 def _navigate_hub(win, view_id: str, qapp) -> None:
-    # Detalle tabs
-    if view_id in ("detalle", "detalle-plan"):
+    # Detalle paciente: siempre recrea la vista para estado limpio.
+    # (detalle-plan ya no es view_id de navegación: el plan siempre es visible
+    # bajo el header; los subtabs no-default se reached vía _plan_set_subtab.)
+    if view_id == "detalle":
         if hasattr(win, "_stack"):
             # Quitar y destruir cualquier widget en el stack que sea de tipo DetallePacienteView para evitar acumulacion
             from hub.pacientes_qt import DetallePacienteView
@@ -2162,16 +2157,6 @@ def _navigate_hub(win, view_id: str, qapp) -> None:
         if pacientes and hasattr(win, "_select_patient"):
             p = pacientes[0]
             win._select_patient(p.get("patient_id", ""), p.get("patient_name", ""))
-        det = getattr(win, "_stack", None)
-        if det and hasattr(det, "currentWidget"):
-            det = det.currentWidget()
-        if det is not None and hasattr(det, "_tabs"):
-            _tab_map = {
-                "detalle-plan": "_tab_plan",
-            }
-            tab_attr = _tab_map.get(view_id)
-            if tab_attr and hasattr(det, tab_attr):
-                det._tabs.setCurrentWidget(getattr(det, tab_attr))
     elif hasattr(win, "_on_nav"):
         win._on_nav(view_id)
     _drain(qapp)
