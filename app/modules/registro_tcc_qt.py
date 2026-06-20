@@ -30,9 +30,9 @@ import logging
 
 _log = logging.getLogger(__name__)
 
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, QRectF
 from PyQt6 import sip
-from PyQt6.QtGui import QColor
+from PyQt6.QtGui import QColor, QBrush, QPainter, QPen
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -505,7 +505,7 @@ class _ResumenCard(NMCard):
 
 
 class _TipCard(NMCard):
-    """Card con tip terapéutico v3 (página de Pensamiento) — sin glow (F2)."""
+    """Card gold-soft con tip terapéutico, como el mockup de Pensamiento."""
 
     def __init__(self, text: str, modo: str = None, parent=None):
         super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
@@ -516,7 +516,7 @@ class _TipCard(NMCard):
         lay = QHBoxLayout(self)
         lay.setContentsMargins(V3_SP["lg"], V3_SP["md"], V3_SP["lg"], V3_SP["md"])
         lay.setSpacing(V3_SP["md"])
-        self._icon = NMIcon("bulb", size=24, color_key="teal", modo=self._modo)
+        self._icon = NMIcon("bulb", size=24, color_key="gold", modo=self._modo)
         lay.addWidget(self._icon, alignment=Qt.AlignmentFlag.AlignTop)
         col = QVBoxLayout()
         col.setSpacing(2)
@@ -532,12 +532,26 @@ class _TipCard(NMCard):
 
     def _apply_tip_styles(self):
         self._eyebrow.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; "
+            f"color: {v3c('gold', self._modo).name()}; "
             f"background: transparent;"
         )
         self._text_lbl.setStyleSheet(
-            f"color: {v3c('text', self._modo).name()}; background: transparent;"
+            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
         )
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect = QRectF(0, 0, self.width(), self.height())
+        r = V3_RD["card"]
+        p.setBrush(QBrush(v3c("goldSoft", self._modo)))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawRoundedRect(rect, r, r)
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        border = v3c("gold", self._modo, alpha=44)
+        p.setPen(QPen(border, 1))
+        p.drawRoundedRect(QRectF(0.5, 0.5, self.width() - 1, self.height() - 1), r, r)
+        p.end()
 
     def _apply_theme(self, modo: str):
         super()._apply_theme(modo)
@@ -859,7 +873,7 @@ class ModuloRegistroTCC(NMModule):
                 # Pila con tile (página 0) + input (página 1) que aparece
                 # al seleccionar "Otro" ocupando TODA la celda del tile
                 # (mismo width/height). El input se expande verticalmente
-                # para llenar la celda completa, y el placeholder "¿Cuál?"
+                # para llenar la celda completa, y el placeholder canónico
                 # queda visible y centrado.
                 # 2026-06 round 4: el input usa setPlaceholderText (campo
                 # realmente vacio, text()==""). El placeholder se hace
@@ -887,9 +901,12 @@ class ModuloRegistroTCC(NMModule):
                 self._custom_emotion_input.textChanged.connect(
                     self._on_custom_emotion_changed
                 )
-                otro_placeholder = t("text.module.registro.other_emotion_placeholder", "¿Cuál?")
-                self._custom_emotion_input.setPlaceholderText("¿Cuál?")
-                if otro_placeholder != "¿Cuál?":
+                otro_placeholder = t(
+                    "text.module.registro.other_emotion_placeholder",
+                    "Nombrá tu emoción…",
+                )
+                self._custom_emotion_input.setPlaceholderText("Nombrá tu emoción…")
+                if otro_placeholder != "Nombrá tu emoción…":
                     self._custom_emotion_input.setPlaceholderText(otro_placeholder)
                 # Palette: color tenue para el placeholder (placeholderText role).
                 _ink2_c = QColor(v3c("ink_secondary", self._modo).name())
@@ -1048,7 +1065,7 @@ class ModuloRegistroTCC(NMModule):
                 else:
                     self._data["emocion"] = "Otro"
                 # 2026-06 round 4: NO setFocus() automatico — mantiene el
-                # placeholder "¿Cuál?" visible (el cursor lo ocultaria en la
+                # placeholder visible (el cursor lo ocultaria en la
                 # plataforma offscreen). El usuario puede hacer click para
                 # escribir.
             else:
@@ -1062,7 +1079,7 @@ class ModuloRegistroTCC(NMModule):
     def _on_custom_emotion_changed(self, text: str):
         cleaned = text.strip()
         # 2026-06 round 4: el input Otro usa setPlaceholderText (no setText),
-        # por lo que text() nunca contiene "¿Cuál?" — la rama del round 3 ya
+        # por lo que text() nunca contiene el placeholder — la rama del round 3 ya
         # no es necesaria. Campo vacio = "Otro" como emocion.
         self._data["emocion"] = cleaned if cleaned else "Otro"
         self._resumen.update_data(self._data)
@@ -1132,16 +1149,11 @@ class ModuloRegistroTCC(NMModule):
                 self._distortion_layout.removeWidget(w)
                 w.deleteLater()
 
-        cat_colors = {
-            "cat": v3c("danger", self._modo).name(),
-            "todo": v3c("violet", self._modo).name(),
-            "min": v3c("warning", self._modo).name(),
-        }
         if found:
             for d in found:
                 meta = self._distortion_by_label.get(d, {})
                 cat = meta.get("category") or _DISTORTION_CATEGORY.get(d, "min")
-                fg = cat_colors.get(cat, v3c("warning", self._modo).name())
+                fg = v3c("rose", self._modo).name()
                 # Chip: icon + label
                 chip_widget = QWidget()
                 chip_widget.setStyleSheet("background: transparent;")
@@ -1166,7 +1178,7 @@ class ModuloRegistroTCC(NMModule):
                 bg_rgba = f"rgba({qc.red()},{qc.green()},{qc.blue()},36)"
                 wrapper.setStyleSheet(
                     f"QFrame#DistortionChip {{ background: {bg_rgba}; "
-                    f"border: 1px solid {fg}; border-radius: 10px; }}"
+                    f"border: none; border-radius: 999px; }}"
                 )
                 self._distortion_layout.addWidget(wrapper)
         else:
@@ -1249,12 +1261,12 @@ class ModuloRegistroTCC(NMModule):
 
             self._btn_prev.setEnabled(self._step > 0)
             if self._step == 3:
-                self._btn_next.setText(t("text.module.registro.save_btn", "Guardar"))
+                self._btn_next.setText(t("text.module.registro.save_btn", "Guardar registro"))
             else:
                 self._btn_next.setText(t("text.module.registro.next_btn", "Siguiente"))
             # 2026-06 round 4: el input Otro usa setPlaceholderText (no setText),
             # por lo que no necesita re-set tras _reset() — el placeholder es
-            # siempre "¿Cuál?" y text() permanece vacio.
+            # siempre canónico y text() permanece vacio.
             self._refresh_nav_state()
         except Exception as e:
             _log.error(redact(f"Error in _show_step: {e}"))

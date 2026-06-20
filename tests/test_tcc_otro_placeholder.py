@@ -2,8 +2,8 @@
 (campo realmente vacio, text()=="") y la emocion se mantiene en "Otro" hasta
 que el usuario escribe algo distinto.
 
-2026-06 round 4: este test blinda la correccion que reemplazo setText("¿Cual?")
-por setPlaceholderText("¿Cual?") + palette PlaceholderText role.
+2026-06 round 4: este test blinda la correccion que reemplazo setText(placeholder)
+por setPlaceholderText(placeholder) + palette PlaceholderText role.
 """
 
 from __future__ import annotations
@@ -74,7 +74,7 @@ def _click_tile_otro(mod) -> None:
 
 
 def test_input_otro_placeholder_vacio_al_seleccionar(tcc_modulo):
-    """Al seleccionar 'Otro': text()=='', placeholderText()=='¿Cual?',
+    """Al seleccionar 'Otro': text()=='', placeholderText() canónico,
     _data['emocion']=='Otro'. El placeholder NO es contenido."""
     mod = tcc_modulo
     inp = mod._custom_emotion_input
@@ -87,8 +87,9 @@ def test_input_otro_placeholder_vacio_al_seleccionar(tcc_modulo):
         f"El input Otro debe estar vacio, pero text()={inp.text()!r}. "
         "El placeholder NO debe ser contenido."
     )
-    assert inp.placeholderText() == "¿Cuál?", (
-        f"placeholderText debe ser '¿Cual?', got {inp.placeholderText()!r}"
+    assert inp.placeholderText() == "Nombrá tu emoción…", (
+        "placeholderText debe ser 'Nombrá tu emoción…', "
+        f"got {inp.placeholderText()!r}"
     )
     assert mod._data["emocion"] == "Otro", (
         f"_data['emocion'] debe ser 'Otro' cuando el campo esta vacio, "
@@ -131,19 +132,19 @@ def test_input_otro_emocion_se_actualiza_al_tipear(tcc_modulo):
 
 
 def test_input_otro_no_settext_como_contenido(tcc_modulo):
-    """Estructural: el modulo NO debe llamar setText('¿Cual?') en ningun
+    """Estructural: el modulo NO debe llamar setText(placeholder) en ningun
     punto — solo setPlaceholderText. Esto blinda contra regresiones que
     conviertan el placeholder en contenido (rompiendo text()=='')."""
     import inspect
     from app.modules import registro_tcc_qt as tcc_mod
 
     src = inspect.getsource(tcc_mod)
-    forbidden = 'setText("¿Cuál?")'
+    forbidden = 'setText("Nombrá tu emoción…")'
     assert forbidden not in src, (
         f"Encontrado {forbidden!r} en registro_tcc_qt — el placeholder debe "
         "usarse via setPlaceholderText, nunca como contenido."
     )
     # Y debe estar el setPlaceholderText
-    assert 'setPlaceholderText("¿Cuál?")' in src, (
-        "Falta setPlaceholderText('¿Cual?') en registro_tcc_qt"
+    assert 'setPlaceholderText("Nombrá tu emoción…")' in src, (
+        "Falta setPlaceholderText('Nombrá tu emoción…') en registro_tcc_qt"
     )
