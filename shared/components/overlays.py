@@ -84,7 +84,9 @@ class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(sp("xl"), sp("xl"), sp("xl"), sp("xl"))
+        # Mockup canónico .empty (línea 306-307): padding 50px vertical × 24px horizontal.
+        # Antes: sp("xl")=16 uniforme (tight).
+        layout.setContentsMargins(24, 50, 24, 50)
         layout.setSpacing(V3_SP["md"])
         # Sin alignment a nivel layout: comprimía los QLabel wordwrap a su
         # sizeHint mínimo (título pisando el ícono, subtítulo recortado). Los
@@ -115,10 +117,15 @@ class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
         layout.addWidget(self._title_lbl)
 
         self._subtitle_lbl = QLabel(subtitle)
-        self._subtitle_lbl.setFont(v3_font("size_body"))
+        # Mockup línea 312: subtítulo font-size 13.5px (era size_body=14).
+        # Cota canónica: max-width 34ch para mantener legibilidad.
+        self._subtitle_lbl.setFont(v3_font("size_body", weight=TYPOGRAPHY["weight_regular"]))
+        # Aproximación: 34ch × ~7px/ch = 240px max-width (varía con fuente,
+        # pero suficiente para que el párrafo no se estire a todo el ancho).
+        self._subtitle_lbl.setMaximumWidth(34 * 7)
         self._subtitle_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._subtitle_lbl.setWordWrap(True)
-        layout.addWidget(self._subtitle_lbl)
+        layout.addWidget(self._subtitle_lbl, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # CTAs opcionales
         if cta_primary or cta_secondary:
