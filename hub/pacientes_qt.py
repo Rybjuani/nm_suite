@@ -108,8 +108,14 @@ class DetallePacienteView(QWidget):
         tl.setSpacing(14)
 
         initials = "".join(w[0] for w in (self._nombre or "?").split()[:2]).upper()
+        # Mockup canónico hero del Hub Detalle (líneas 254-256): avatar 52×52 r15
+        # (rounded square, no círculo). Antes: 40×40 círculo.
         self._avatar = NMAvatar(
-            initials=initials or "P", size=40, color_seed=self._pid or self._nombre, modo=self._modo
+            initials=initials or "P",
+            size=52,
+            radius=15,
+            color_seed=self._pid or self._nombre,
+            modo=self._modo,
         )
         tl.addWidget(self._avatar, alignment=Qt.AlignmentFlag.AlignTop)
 

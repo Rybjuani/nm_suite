@@ -223,10 +223,18 @@ class NMSectionHeader(QWidget):
 
 
 class NMAvatar(QWidget):
-    """Avatar circular con iniciales (fallback) o QPixmap.
+    """Avatar con iniciales (fallback) o QPixmap.
+
+    Soporta dos modos de forma según el radio:
+      - radius=None (default): círculo perfecto (avatar de paciente 40×40 r12
+        en el mockup línea 247 → en realidad usa r12 para 40px size, NO es
+        círculo perfecto; mantenemos círculo para compatibilidad histórica).
+      - radius=N: rounded square con esquinas de radio N (ej: hero del Hub
+        Detalle usa avatar 52×52 r15 según mockup).
 
     Uso:
-        av = NMAvatar(initials="AM", size=44)
+        av = NMAvatar(initials="AM", size=44)  # círculo
+        av = NMAvatar(initials="AM", size=52, radius=15)  # rounded square r15
         av.set_pixmap(QPixmap("foto.png"))
     """
 
@@ -237,6 +245,7 @@ class NMAvatar(QWidget):
         size: int = 40,
         color_seed: str | None = None,
         modo: str = None,
+        radius: int | None = None,
         parent=None,
     ):
         super().__init__(parent)
@@ -244,6 +253,7 @@ class NMAvatar(QWidget):
         self._initials = (initials or "?").strip().upper()[:2]
         self._pix = pixmap
         self._seed = color_seed or self._initials
+        self._radius = radius  # None = círculo perfecto, int = rounded square
         self.setFixedSize(size, size)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
         _tm().theme_changed.connect(self._apply_theme)
@@ -277,10 +287,14 @@ class NMAvatar(QWidget):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         d = self.width()
         rect = QRectF(0, 0, d, d)
-        if self._pix and not self._pix.isNull():
-            # Clip circular y pintar pixmap
-            path = QPainterPath()
+        # Path de clip según _radius: círculo (None) o rounded square (int)
+        path = QPainterPath()
+        if self._radius is None:
             path.addEllipse(rect)
+        else:
+            path.addRoundedRect(rect, self._radius, self._radius)
+        if self._pix and not self._pix.isNull():
+            # Clip según path y pintar pixmap
             p.setClipPath(path)
             scaled = self._pix.scaled(
                 d,
@@ -296,7 +310,7 @@ class NMAvatar(QWidget):
             grad.setColorAt(1.0, c2)
             p.setBrush(QBrush(grad))
             p.setPen(Qt.PenStyle.NoPen)
-            p.drawEllipse(rect)
+            p.drawPath(path)
             # Iniciales centradas en blanco
             p.setPen(QColor("#ffffff"))
             font_pt = max(10, int(d * 0.40))
@@ -306,7 +320,10 @@ class NMAvatar(QWidget):
         p.setClipping(False)
         p.setPen(QPen(v3c("border", self._modo), 1.0))
         p.setBrush(Qt.BrushStyle.NoBrush)
-        p.drawEllipse(QRectF(0.5, 0.5, d - 1, d - 1))
+        if self._radius is None:
+            p.drawEllipse(QRectF(0.5, 0.5, d - 1, d - 1))
+        else:
+            p.drawRoundedRect(QRectF(0.5, 0.5, d - 1, d - 1), self._radius, self._radius)
         p.end()
 
     def _apply_theme(self, modo: str):
