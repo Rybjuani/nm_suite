@@ -114,3 +114,40 @@ def test_empty_state_matches_mockup_icon_and_title_contract(qtbot) -> None:
     assert empty._title_lbl.font().pixelSize() == 20
     assert empty._title_lbl.font().weight() >= 600
     assert "border-radius: 18px" in empty._icon_chip.styleSheet()
+
+
+def test_toast_matches_mockup_pill_contract(qtbot) -> None:
+    from PyQt6.QtWidgets import QWidget
+    from shared.components.feedback import (
+        NMToast,
+        _NM_TOAST_BOTTOM_MARGIN,
+        _NM_TOAST_DEFAULT_DURATION,
+        _NM_TOAST_GAP,
+        _NM_TOAST_ICON_SIZE,
+        _NM_TOAST_PAD_X,
+        _NM_TOAST_PAD_Y,
+        _NM_TOAST_SLIDE_PX,
+    )
+
+    host = QWidget()
+    host.resize(520, 320)
+    qtbot.addWidget(host)
+    toast = NMToast(host, "Registro guardado")
+
+    assert toast._duration == _NM_TOAST_DEFAULT_DURATION == 2200
+    assert toast._margins == (_NM_TOAST_PAD_X, _NM_TOAST_PAD_Y, _NM_TOAST_PAD_X, _NM_TOAST_PAD_Y)
+    assert _NM_TOAST_ICON_SIZE == 16
+    assert _NM_TOAST_GAP == 9
+    assert toast._font.pixelSize() == 13
+    assert toast._font.weight() >= 500
+
+    toast._slide_offset = 0
+    toast._reposition()
+    assert toast.x() == (host.width() - toast.width()) // 2
+    assert toast.y() == host.height() - toast.height() - _NM_TOAST_BOTTOM_MARGIN
+
+    source = __import__("inspect").getsource(NMToast.paintEvent)
+    assert "drawPixmap" in source
+    assert "_NM_TOAST_SHADOW_PAD" in source
+    assert "drawRect(QRectF(0, 0, 4" not in source
+    assert _NM_TOAST_SLIDE_PX == 20

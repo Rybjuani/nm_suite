@@ -40,6 +40,7 @@ from shared.theme_qt import (
     blend_color,
     colors,
     interpolate_color,
+    nm_icon,
     norm_modo,
     qfont,
     v3c,
@@ -398,6 +399,18 @@ class NMTypingDots(QWidget):
         p.end()
 
 
+_NM_TOAST_DEFAULT_DURATION = 2200
+_NM_TOAST_MAX_WIDTH = 360
+_NM_TOAST_MIN_WIDTH = 220
+_NM_TOAST_ICON_SIZE = 16
+_NM_TOAST_GAP = 9
+_NM_TOAST_PAD_X = 20
+_NM_TOAST_PAD_Y = 12
+_NM_TOAST_BOTTOM_MARGIN = 24
+_NM_TOAST_SLIDE_PX = 20
+_NM_TOAST_SHADOW_PAD = 4
+
+
 class NMToast(QWidget):
     """
     Notificación inline en la esquina inferior derecha de la VENTANA.
@@ -423,7 +436,11 @@ class NMToast(QWidget):
     _active_by_host: dict = {}
 
     def __init__(
-        self, parent_window: QWidget, message: str, variant: str = "info", duration_ms: int = 2500
+        self,
+        parent_window: QWidget,
+        message: str,
+        variant: str = "info",
+        duration_ms: int = _NM_TOAST_DEFAULT_DURATION,
     ):
         host = parent_window.window() if parent_window is not None else None
         super().__init__(host)
@@ -432,6 +449,7 @@ class NMToast(QWidget):
         self._message = message
         self._duration = duration_ms
         self._opacity = 0.0
+        self._slide_offset = float(_NM_TOAST_SLIDE_PX)
         self._modo = norm_modo(ThemeManager.instance().modo)
         key = self._VARIANT_KEYS.get(variant, self._VARIANT_KEYS["info"])
         self._color = v3c(key, self._modo).name()
@@ -447,18 +465,32 @@ class NMToast(QWidget):
     def _setup_ui(self):
         # Texto auto-pintado en paintEvent (sin QLabel hijo): el fade por
         # painter.setOpacity debe afectar carta y texto por igual.
-        self._font = qfont("size_body")
-        self._text_color = v3c("text", self._modo)
-        # Margen izquierdo ampliado para no solapar la barra de acento (4 px)
-        self._margins = (18, 12, 16, 12)
+        self._font = qfont(13, weight=500)
+        self._text_color = v3c("surface", self._modo)
+        self._bg_color = v3c("ink", self._modo)
+        self._icon_pix = nm_icon("check", v3c("primary", self._modo), size=_NM_TOAST_ICON_SIZE).pixmap(
+            _NM_TOAST_ICON_SIZE, _NM_TOAST_ICON_SIZE
+        )
+        self._margins = (
+            _NM_TOAST_PAD_X,
+            _NM_TOAST_PAD_Y,
+            _NM_TOAST_PAD_X,
+            _NM_TOAST_PAD_Y,
+        )
         ml, mt, mr, mb = self._margins
         fm = QFontMetrics(self._font)
-        avail = 360 - ml - mr
+        avail = _NM_TOAST_MAX_WIDTH - ml - mr - _NM_TOAST_ICON_SIZE - _NM_TOAST_GAP
         text_rect = fm.boundingRect(
             QRect(0, 0, avail, 1000), int(Qt.TextFlag.TextWordWrap), self._message
         )
-        w = max(260, min(360, text_rect.width() + ml + mr))
-        h = text_rect.height() + mt + mb
+        w = max(
+            _NM_TOAST_MIN_WIDTH,
+            min(
+                _NM_TOAST_MAX_WIDTH,
+                text_rect.width() + _NM_TOAST_ICON_SIZE + _NM_TOAST_GAP + ml + mr,
+            ),
+        )
+        h = max(_NM_TOAST_ICON_SIZE, text_rect.height()) + mt + mb + _NM_TOAST_SHADOW_PAD
         self.setFixedSize(w, h)
 
     def paintEvent(self, event):
@@ -466,66 +498,39 @@ class NMToast(QWidget):
         p.setOpacity(self._opacity)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         w, h = float(self.width()), float(self.height())
-        r = 12.0
-        accent = QColor(self._color)
-
-        # Fondo y wash adaptativos al tema. Superficie 100% OPACA en ambos
-        # temas (feedback user feedback: cualquier traslucidez se lee "barata" y
-        # el aviso se confunde con el fondo); el color queda en la barra de
-        # acento + wash mínimo.
-        is_dark = "dark" in self._modo
-        wash = QColor(accent)
-        wash.setAlpha(12 if is_dark else 18)
-        if is_dark:
-            base_bg = QColor(v3c("surfaceSolid", self._modo))
-        else:
-            base_bg = QColor(v3c("surface", self._modo))
-        base_bg.setAlpha(255)
-        # El wash va ENCIMA del fondo opaco, nunca en su lugar: si el gradiente
-        # arranca en el wash solo (alpha ~12), el borde izquierdo del toast
-        # queda translúcido y se ve el contenido de atrás (feedback user feedback).
-        wash_grad = QLinearGradient(0, 0, w, 0)
-        wash_grad.setColorAt(0.0, wash)
-        wash_transparent = QColor(wash)
-        wash_transparent.setAlpha(0)
-        wash_grad.setColorAt(0.40, wash_transparent)
-
-        clip = QPainterPath()
-        clip.addRoundedRect(QRectF(0, 0, w, h), r, r)
-        p.setClipPath(clip)
+        content_h = h - _NM_TOAST_SHADOW_PAD
+        r = content_h / 2
 
         p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(QBrush(base_bg))
-        p.drawRoundedRect(QRectF(0, 0, w, h), r, r)
-        p.setBrush(QBrush(wash_grad))
-        p.drawRoundedRect(QRectF(0, 0, w, h), r, r)
+        shadow = QColor(0, 0, 0, 52 if "dark" in self._modo else 34)
+        p.setBrush(QBrush(shadow))
+        p.drawRoundedRect(QRectF(4, 3, w - 8, content_h), r, r)
 
-        # Barra de acento izquierda — 4 px, color sólido
-        p.setBrush(QBrush(accent))
-        p.drawRect(QRectF(0, 0, 4, h))
-
-        p.setClipping(False)
-
-        # Borde perimetral sutil en ambos temas (paridad dark/light) — apenas
-        # más firme que el de las cards para que el aviso se distinga del
-        # fondo sin recurrir a sombras.
-        border_c = QColor(accent)
-        border_c.setAlpha(95)
-        p.setPen(QPen(border_c, 1.0))
-        p.setBrush(Qt.BrushStyle.NoBrush)
-        p.drawRoundedRect(QRectF(0.5, 0.5, w - 1.0, h - 1.0), r, r)
+        p.setBrush(QBrush(self._bg_color))
+        p.drawRoundedRect(QRectF(0, 0, w, content_h), r, r)
 
         # Texto (auto-pintado para que el fade lo incluya)
         ml, mt, mr, mb = self._margins
+        icon_y = (content_h - _NM_TOAST_ICON_SIZE) / 2
+        p.drawPixmap(ml, int(icon_y), self._icon_pix)
+
         p.setFont(self._font)
         p.setPen(QPen(self._text_color))
         opt = QTextOption(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         opt.setWrapMode(QTextOption.WrapMode.WordWrap)
-        p.drawText(QRectF(ml, mt, w - ml - mr, h - mt - mb), self._message, opt)
+        text_x = ml + _NM_TOAST_ICON_SIZE + _NM_TOAST_GAP
+        p.drawText(
+            QRectF(text_x, mt, w - text_x - mr, content_h - mt - mb),
+            self._message,
+            opt,
+        )
         p.end()
 
-    def _set_opacity(self, value):
-        self._opacity = float(value)
+    def _set_progress(self, value):
+        progress = max(0.0, min(1.0, float(value)))
+        self._opacity = progress
+        self._slide_offset = (1.0 - progress) * _NM_TOAST_SLIDE_PX
+        self._reposition()
         self.update()
 
     def show_toast(self):
@@ -538,13 +543,13 @@ class NMToast(QWidget):
         self.raise_()
         self._announce()
 
-        # Fade in (painter opacity — sin QGraphicsOpacityEffect)
+        # Fade + slide in (painter opacity — sin QGraphicsOpacityEffect)
         anim_in = QVariantAnimation(self)
         anim_in.setDuration(300)
         anim_in.setStartValue(0.0)
         anim_in.setEndValue(1.0)
         anim_in.setEasingCurve(QEasingCurve.Type.OutCubic)
-        anim_in.valueChanged.connect(self._set_opacity)
+        anim_in.valueChanged.connect(self._set_progress)
         anim_in.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
         # Auto-dismiss
@@ -580,7 +585,7 @@ class NMToast(QWidget):
         anim_out.setStartValue(1.0)
         anim_out.setEndValue(0.0)
         anim_out.setEasingCurve(QEasingCurve.Type.InCubic)
-        anim_out.valueChanged.connect(self._set_opacity)
+        anim_out.valueChanged.connect(self._set_progress)
         anim_out.finished.connect(self._cleanup)
         anim_out.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
@@ -597,15 +602,19 @@ class NMToast(QWidget):
     def _reposition(self):
         if self._host is None or sip.isdeleted(self._host):
             return
-        margin = 20
+        margin = _NM_TOAST_BOTTOM_MARGIN
         self.adjustSize()
-        x = self._host.width() - self.width() - margin
-        y = self._host.height() - self.height() - margin
+        x = (self._host.width() - self.width()) // 2
+        y = self._host.height() - self.height() - margin + int(self._slide_offset)
         self.move(max(0, x), max(0, y))
 
     @classmethod
     def display(
-        cls, parent_window: QWidget, message: str, variant: str = "info", duration_ms: int = 2500
+        cls,
+        parent_window: QWidget,
+        message: str,
+        variant: str = "info",
+        duration_ms: int = _NM_TOAST_DEFAULT_DURATION,
     ):
         """Factory: crea y muestra un toast de una línea. None-safe: sin
         ventana host no se muestra nada (nunca un top-level)."""
