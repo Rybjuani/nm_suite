@@ -87,25 +87,30 @@ _add(
     56,
 )
 
+# (id, título de módulo [titlebar, largo], título de tarjeta [card, corto, mockup],
+#  descripción, chip). El mockup usa un título de card corto distinto del título
+#  largo del módulo — son dos textos editables separados.
 _HOME_MODULES = [
-    ("animo", "Termómetro Emocional", "Registro emocional diario", "Bienestar"),
-    ("respiracion", "Guía de Respiración Animada", "Técnicas de calma 4-7-8", "Calma"),
-    ("registro", "Registro de Pensamientos (TCC)", "Pensamientos automáticos", "Cognitivo"),
-    ("rutina", "Checklist de Rutina Diaria", "Checklist del día", "Hábitos"),
+    ("animo", "Termómetro Emocional", "Termómetro emocional", "Registro emocional diario", "Bienestar"),
+    ("respiracion", "Guía de Respiración Animada", "Guía de respiración", "Técnicas de calma 4·7·8", "Calma"),
+    ("registro", "Registro de Pensamientos (TCC)", "Registro de pensamientos", "Trabajo con pensamientos automáticos", "Cognitivo"),
+    ("rutina", "Checklist de Rutina Diaria", "Checklist de rutina", "Tu rutina del día", "Hábitos"),
     (
         "actividades",
         "Asistente de Activación Conductual",
         "Activación conductual",
+        "Sugerencias para activarte",
         "Acción",
     ),
-    ("timer", "Temporizador de Actividades", "Sesiones de enfoque", "Focus"),
-    ("avisos", "Recordatorios de Bienestar", "Recordatorios del día", "Diario"),
-    ("dbt", "Habilidades DBT", "Práctica guiada breve", "Habilidades"),
+    ("timer", "Temporizador de Actividades", "Temporizador", "Sesiones de foco", "Enfoque"),
+    ("avisos", "Recordatorios de Bienestar", "Recordatorios", "Avisos de bienestar", "Diario"),
+    ("dbt", "Habilidades DBT", "Habilidades DBT", "Práctica guiada breve", "Habilidades"),
 ]
 
-for _module_id, _title, _desc, _chip in _HOME_MODULES:
-    _section = f"Home - {_title}"
-    _add(f"text.home.module.{_module_id}.title", _section, "Título de tarjeta", _title, 60)
+for _module_id, _title, _card_title, _desc, _chip in _HOME_MODULES:
+    _section = f"Home - {_card_title}"
+    _add(f"text.home.module.{_module_id}.title", _section, "Título de módulo", _title, 60)
+    _add(f"text.home.module.{_module_id}.card_title", _section, "Título de tarjeta", _card_title, 40)
     _add(f"text.home.module.{_module_id}.desc", _section, "Descripción de tarjeta", _desc, 80)
     _add(f"text.home.module.{_module_id}.chip", _section, "Chip de tarjeta", _chip, 28)
 

@@ -121,62 +121,82 @@ from shared.remote_config import t
 
 # ── Módulos ───────────────────────────────────────────────────────────────────
 
+# Mockup homeCard (neuromood-mockup.html l.655-662): el TÍTULO de la card es
+# corto y específico (`card_title`), distinto del título largo de la pantalla del
+# módulo (`title`, que sigue alimentando el titlebar vía text.home.module.*.title).
+# `desc`/`chip` también se alinean al copy exacto del mockup (cat + sub).
 MODULES_CONFIG = [
     {
         "id": "animo",
         "icon_v3": "mood",
         "title": "Termómetro Emocional",
+        "card_title": "Termómetro emocional",
         "desc": "Registro emocional diario",
         "chip": "Bienestar",
+        "cat_tone": "brand",
     },
     {
         "id": "respiracion",
         "icon_v3": "breath",
         "title": "Guía de Respiración Animada",
-        "desc": "Técnicas de calma 4-7-8",
+        "card_title": "Guía de respiración",
+        "desc": "Técnicas de calma 4·7·8",
         "chip": "Calma",
+        "cat_tone": "mind",
     },
     {
         "id": "registro",
         "icon_v3": "brain",
         "title": "Registro de Pensamientos (TCC)",
-        "desc": "Pensamientos automáticos",
+        "card_title": "Registro de pensamientos",
+        "desc": "Trabajo con pensamientos automáticos",
         "chip": "Cognitivo",
+        "cat_tone": "efect",
     },
     {
         "id": "rutina",
         "icon_v3": "routine",
         "title": "Checklist de Rutina Diaria",
-        "desc": "Checklist del día",
+        "card_title": "Checklist de rutina",
+        "desc": "Tu rutina del día",
         "chip": "Hábitos",
+        "cat_tone": "brand",
     },
     {
         "id": "actividades",
         "icon_v3": "run",
         "title": "Asistente de Activación Conductual",
-        "desc": "Activación conductual",
+        "card_title": "Activación conductual",
+        "desc": "Sugerencias para activarte",
         "chip": "Acción",
+        "cat_tone": "accent",
     },
     {
         "id": "timer",
         "icon_v3": "timer",
         "title": "Temporizador de Actividades",
-        "desc": "Sesiones de enfoque",
-        "chip": "Focus",
+        "card_title": "Temporizador",
+        "desc": "Sesiones de foco",
+        "chip": "Enfoque",
+        "cat_tone": "gold",
     },
     {
         "id": "avisos",
         "icon_v3": "bell",
         "title": "Recordatorios de Bienestar",
-        "desc": "Recordatorios del día",
+        "card_title": "Recordatorios",
+        "desc": "Avisos de bienestar",
         "chip": "Diario",
+        "cat_tone": "brand",
     },
     {
         "id": "dbt",
         "icon_v3": "spark",
         "title": "Habilidades DBT",
+        "card_title": "Habilidades DBT",
         "desc": "Práctica guiada breve",
         "chip": "Habilidades",
+        "cat_tone": "efect",
     },
 ]
 
@@ -191,6 +211,7 @@ def module_configs() -> list[dict]:
         module_id = cfg["id"]
         item = dict(cfg)
         item["title"] = _module_text(module_id, "title", cfg["title"])
+        item["card_title"] = _module_text(module_id, "card_title", cfg.get("card_title", cfg["title"]))
         item["desc"] = _module_text(module_id, "desc", cfg["desc"])
         item["chip"] = _module_text(module_id, "chip", cfg["chip"])
         configs.append(item)
@@ -278,9 +299,10 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
 
         layout.addSpacing(6)
 
-        # Title (reference cockpit clinical: cleaner sans)
-        self._title_lbl = QLabel(self._config["title"])
-        self._title_lbl.setFont(qfont("size_small", weight=600))
+        # Title — mockup homeCard: `.h-serif` 16.5px (Fraunces) con el título CORTO
+        # de card (no el nombre largo del módulo). Serif por ADN del mockup.
+        self._title_lbl = QLabel(self._config.get("card_title", self._config["title"]))
+        self._title_lbl.setFont(v3_font(16, weight=600, serif=True))
         self._title_lbl.setWordWrap(True)
         self._title_lbl.setStyleSheet("background: transparent;")
         layout.addWidget(self._title_lbl)
@@ -303,9 +325,11 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._ring = NMModuleRing(size=22, pct=0.0, modo=self._modo, show_label=False)
         self._ring.hide()
         bottom.addWidget(self._ring)
-        layout.addSpacing(14)
-        layout.addLayout(bottom)
+        # Mockup homeCard: la badge de estado lleva `margin-top:auto` → se ancla al
+        # PIE de la card. El stretch va ANTES de la fila (antes estaba después, lo
+        # que la pegaba al subtítulo dejando hueco abajo).
         layout.addStretch(1)
+        layout.addLayout(bottom)
 
         self._apply_styles()
         self._refresh_status()
@@ -580,7 +604,9 @@ class _HeroBienestar(QFrame):
 
     def _greeting_text(self) -> str:
         name = (self._username or "Paciente").strip() or "Paciente"
-        hour = datetime.now().hour
+        # En modo QA visual el saludo se fija a "noches" para coincidir de forma
+        # determinista con el target del mockup (que muestra "Buenas noches").
+        hour = 21 if visual_qa_enabled() else datetime.now().hour
         if 5 <= hour < 12:
             prefix = t("text.home.greeting_morning", "Buenos días,").rstrip(",")
         elif 12 <= hour < 20:
@@ -656,9 +682,9 @@ class _HeroBienestar(QFrame):
         score_row.setSpacing(4)
         score_row.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         self._score = QLabel("—")
-        # Display M (26pt): sin el cartel de estado el hero se achica y el
-        # espacio ganado lo absorben las cards de módulo (feedback owner).
-        self._score.setFont(qfont("size_display_m", weight=TYPOGRAPHY["weight_medium"]))
+        # Mockup hero: <span class="h-serif" style="font-size:40px; color:var(--brand)">.
+        # Número serif 40 brand (antes sans display_m en color accent → no canónico).
+        self._score.setFont(v3_font(40, weight=600, serif=True))
         # Ancho mínimo para que "10" (dos dígitos) no se corte a 960×600.
         self._score.setMinimumWidth(40)
         self._score.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
@@ -708,7 +734,7 @@ class _HeroBienestar(QFrame):
         p.end()
 
     def _apply_styles(self):
-        accent = v3c("accent", self._modo)
+        brand = v3c("brand", self._modo)
         text2 = v3c("text2", self._modo)
         muted = v3c("textMuted", self._modo)
         text = v3c("text", self._modo)
@@ -726,7 +752,8 @@ class _HeroBienestar(QFrame):
 
         self._hero_title.setFont(v3_font("size_display_m", weight=600, serif=True))
 
-        self._score.setStyleSheet(f"color: {accent.name()}; background: transparent;")
+        # Mockup: número del hero en color brand (verde/menta), no accent (cobre).
+        self._score.setStyleSheet(f"color: {brand.name()}; background: transparent;")
         self._score_unit.setStyleSheet(f"color: {muted.name()}; background: transparent;")
         self._msg.setStyleSheet(f"color: {text2.name()}; background: transparent;")
         if hasattr(self, "_empty_cta"):
@@ -764,7 +791,8 @@ class _HeroBienestar(QFrame):
 
         self._stack.setCurrentIndex(1)
 
-        self._score.setText(f"{score:.1f}")
+        # Mockup muestra "10" (entero) y "8.5" (con decimal): sin ceros sobrantes.
+        self._score.setText(f"{score:.1f}".rstrip("0").rstrip("."))
 
         delta = 0.8 if visual_qa_enabled() else None
         if delta is not None:
@@ -1058,7 +1086,9 @@ class HomeView(QWidget):
 
     def _greeting_text(self) -> str:
         name = (self._username or "Paciente").strip() or "Paciente"
-        hour = datetime.now().hour
+        # En modo QA visual el saludo se fija a "noches" para coincidir de forma
+        # determinista con el target del mockup (que muestra "Buenas noches").
+        hour = 21 if visual_qa_enabled() else datetime.now().hour
         if 5 <= hour < 12:
             prefix = t("text.home.greeting_morning", "Buenos días,").rstrip(",")
         elif 12 <= hour < 20:

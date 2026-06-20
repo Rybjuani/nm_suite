@@ -34,7 +34,8 @@ def test_home_hero_filled_state_matches_mockup_score_and_delta(qtbot, monkeypatc
     hero.refresh()
 
     assert hero._stack.currentIndex() == 1
-    assert hero._score.text() == "4.0"
+    # Mockup muestra el score sin ceros sobrantes ("10", "4"; "8.5" conserva decimal).
+    assert hero._score.text() == "4"
     assert hero._score_unit.text() == "/ 10"
     assert hero._delta_lbl.text() == "▲ 0.8 vs semana"
     assert "border-radius: 10px" in hero._delta_lbl.styleSheet()

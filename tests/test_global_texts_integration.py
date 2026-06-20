@@ -207,7 +207,7 @@ def _tcc_next_button(qapp) -> str:
 @pytest.mark.parametrize(
     ("label", "key", "replacement", "reader"),
     [
-        ("Home", "text.home.module.timer.title", "Timer Fase 5", _home_timer_title),
+        ("Home", "text.home.module.timer.card_title", "Timer Fase 5", _home_timer_title),
         (
             "Onboarding",
             "text.onboarding.name_placeholder",
