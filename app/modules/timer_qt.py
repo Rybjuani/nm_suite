@@ -338,13 +338,10 @@ class ModuloTimer(NMModule):
         # contenido en modo operativo (el empty-state sigue centrado por los suyos).
         cent_lay.addStretch(1)
 
-        # Canvas: ring ampliado a 220px (2026-06: era 180px, quedaba
-        # pequeño en cards de 960×600 con mucho espacio vertical muerto).
-        # 220 hace que el ring domine la card como punto focal principal,
-        # y los bloques inferiores (chip+controles+input+presets) leen
-        # como subordinados. Reducir `cent_lay.setSpacing(12)` mantiene
-        # el ritmo sin comprimir.
-        self._canvas = NMFocusArc(size=220, modo=self._modo)
+        # Canvas: bigring 230×230 (mockup canónico línea 207), con inner core
+        # 200×200 + número central 52px font-display. NMFocusArc ahora implementa
+        # el contrato .bigring/.core/.num del mockup al pie de la letra.
+        self._canvas = NMFocusArc(size=230, modo=self._modo)
         self._canvas.set_data(0.0, self._format_time(self._remaining_sec))
         cent_lay.addWidget(self._canvas, alignment=Qt.AlignmentFlag.AlignHCenter)
 

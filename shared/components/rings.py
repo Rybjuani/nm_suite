@@ -117,9 +117,19 @@ def _paint_v3_arc(
 
 
 class NMFocusArc(QWidget):
-    """Arco circular de foco con aura, texto central, pulse y blink."""
+    """Arco circular de foco con aura, texto central, pulse y blink.
 
-    def __init__(self, size: int = 160, modo: str = None, parent=None):
+    Implementa la primitiva ``.bigring`` del mockup canónico
+    (neuromood-mockup.html líneas 207-219):
+      - contenedor 230×230 con radial-gradient brand-soft
+      - inner core 200×200 con radial-gradient surface→surface-2,
+        border 1px line, inset shadow + shadow-2
+      - número central 52px font-display weight 500
+      - arco de progreso brand + glow (extensión runtime sobre el mockup)
+      - pulse/blink animados (extensión runtime)
+    """
+
+    def __init__(self, size: int = 230, modo: str = None, parent=None):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._pct = 0.0
@@ -233,7 +243,7 @@ class NMFocusArc(QWidget):
         # ── Sección arc+aura: opacidad en blink-off (más alto en light para visibilidad)
         p.setOpacity(0.22 if not self._blink_on else 1.0)
 
-        # Aura radial — radio y alpha adaptativos al tema
+        # Aura radial — radio y alpha adaptativos al tema (mockup .bigring bg)
         base_alpha = 0.18 if is_dark else 0.11
         pulse_boost = 0.10 if is_dark else 0.07   # boost más sutil en light
         aura_alpha = min(1.0, base_alpha + self._pulse_intensity * pulse_boost)
@@ -273,9 +283,30 @@ class NMFocusArc(QWidget):
                 p.drawArc(glow_rect, int(90 * 16), int(-360.0 * self._pct * 16))
             _paint_v3_arc(p, rect, 90.0, -360.0 * self._pct, pen_w, self._modo)
 
+        # ── Inner core 200×200 (mockup .bigring .core líneas 209-212) ────────
+        # radial-gradient surface→surface-2 + border 1px line + inset shadow
+        # + shadow-2. Escalado proporcional al tamaño del widget (200/230).
+        core_d = w * (200.0 / 230.0)
+        core_r = core_d / 2
+        # Sombra exterior (shadow-2 approximation: 0 4px 12px rgba(0,0,0,.18))
+        shadow_col = QColor(0, 0, 0, 46)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(shadow_col))
+        p.drawEllipse(QPointF(cx, cy + 2), core_r + 2, core_r + 2)
+        # Core con radial-gradient surface → surface-2
+        core_grad = QRadialGradient(QPointF(cx, cy - core_r * 0.12), core_r)
+        core_grad.setColorAt(0.0, QColor(v3c("surface", self._modo)))
+        core_grad.setColorAt(0.70, QColor(v3c("surface2", self._modo)))
+        core_grad.setColorAt(1.0, QColor(v3c("surface2", self._modo)))
+        p.setBrush(QBrush(core_grad))
+        p.setPen(QPen(QColor(v3c("line", self._modo)), 1))
+        p.drawEllipse(QPointF(cx, cy), core_r, core_r)
+
         # ── Tiempo central: siempre 100% opacidad para ser legible ───────────
+        # Mockup línea 213: font-display 52px weight 500.
+        # Para size=230 → 52px exacto; para otros sizes, escala proporcional.
         p.setOpacity(1.0)
-        time_pt = max(16, int(w * 0.20))
+        time_pt = max(20, int(w * (52.0 / 230.0)))
         p.setPen(v3c("text", self._modo))
         try:
             from shared.theme_qt import v3_font as _v3_font
