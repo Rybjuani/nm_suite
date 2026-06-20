@@ -435,6 +435,7 @@ _add("text.module.avisos.apply_btn", "Recordatorios", "Botón aplicar", "Aplicar
 # DBT
 _add("text.module.dbt.tab_now", "DBT", "Tab ahora", "Ahora", 24)
 _add("text.module.dbt.tab_library", "DBT", "Tab biblioteca", "Biblioteca", 32)
+_add("text.module.dbt.tab_history", "DBT", "Tab historial", "Historial", 32)
 _add("text.module.dbt.now_prompt", "DBT", "Pregunta de entrada", "¿Qué necesitás en este momento?", 80)
 _add("text.module.dbt.family_all", "DBT", "Filtro todas", "Todas", 24)
 _add("text.module.dbt.family_mindfulness", "DBT", "Filtro mindfulness", "Mindfulness", 32)
@@ -453,6 +454,14 @@ _add("text.module.dbt.result_partial", "DBT", "Resultado parcial", "Un poco", 32
 _add("text.module.dbt.result_no", "DBT", "Resultado no", "No esta vez", 32)
 _add("text.module.dbt.result_skip", "DBT", "Resultado sin evaluar", "Prefiero no evaluar", 48)
 _add("text.module.dbt.save_practice_btn", "DBT", "Botón guardar práctica", "Guardar práctica", 40)
+_add("text.module.dbt.history_empty_title", "DBT", "Historial vacío título", "Sin prácticas guardadas", 48)
+_add(
+    "text.module.dbt.history_empty_desc",
+    "DBT",
+    "Historial vacío descripción",
+    "Cuando completes una habilidad, va a aparecer acá.",
+    80,
+)
 
 
 def suite_text_entries() -> tuple[SuiteTextEntry, ...]:
