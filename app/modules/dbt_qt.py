@@ -448,11 +448,20 @@ class _SkillCard(NMCard):
         
         info_lay = QHBoxLayout()
         info_lay.setSpacing(12)
-        
-        self.dur_lbl = QLabel(f"⏱ {skill['duration_min']} min")
+
+        # Duración: icono calendario SVG + "N min" (mockup `.dbt-card .meta`).
+        # Antes era el emoji "⏱" que no está en las fuentes cargadas → tofu (▯).
+        dur_box = QHBoxLayout()
+        dur_box.setSpacing(5)
+        dur_box.setContentsMargins(0, 0, 0, 0)
+        self.dur_icon = QLabel()
+        self.dur_icon.setStyleSheet("background: transparent;")
+        dur_box.addWidget(self.dur_icon, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.dur_lbl = QLabel(f"{skill['duration_min']} min")
         self.dur_lbl.setFont(qfont("size_caption"))
-        info_lay.addWidget(self.dur_lbl)
-        
+        dur_box.addWidget(self.dur_lbl, 0, Qt.AlignmentFlag.AlignVCenter)
+        info_lay.addLayout(dur_box)
+
         self.guide_lbl = QLabel("✓ Práctica guiada")
         self.guide_lbl.setFont(qfont("size_caption"))
         info_lay.addWidget(self.guide_lbl)
@@ -494,7 +503,14 @@ class _SkillCard(NMCard):
         self.title_lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
         self.summary_lbl.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()};")
         self.dur_lbl.setStyleSheet(f"color: {v3c('ink_secondary', self._modo).name()};")
-        self.guide_lbl.setStyleSheet(f"color: {v3c(family_color_key, self._modo).name()};")
+        # Icono calendario recoloreado al tema (ink-3 / faint, como el texto meta).
+        from shared.icons_svg import nm_svg_pixmap
+        self.dur_icon.setPixmap(
+            nm_svg_pixmap("calendar", color=v3c("faint", self._modo).name(), size=14)
+        )
+        # Mockup `.dbt-card .meta .pl{color:var(--brand)}` — "Práctica guiada" SIEMPRE
+        # en brand, no en el color de la familia (antes salía cobre/rojo por card).
+        self.guide_lbl.setStyleSheet(f"color: {v3c('brand', self._modo).name()};")
 
 
 def _row_get(row, key: str, default=""):
@@ -1099,6 +1115,7 @@ class ModuloDBT(NMModule):
                 t("text.module.dbt.tab_library", "Biblioteca"),
                 t("text.module.dbt.tab_history", "Historial"),
             ],
+            variant="seg",  # mockup `.seg`: contenedor surface-3, segmento sel = surface elevado
             modo=self._modo,
             parent=self,
         )

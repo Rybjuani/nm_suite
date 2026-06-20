@@ -985,7 +985,7 @@ class NMTabs(QWidget):
     ):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
-        self._variant = variant if variant in ("pill", "filter", "underline") else "pill"
+        self._variant = variant if variant in ("pill", "filter", "underline", "seg") else "pill"
         self._labels = list(labels or [])
         self._current = 0
         self._btns: list[QPushButton] = []
@@ -1005,15 +1005,20 @@ class NMTabs(QWidget):
             b.deleteLater()
         self._btns.clear()
         # Crear
+        _is_seg = self._variant == "seg"
+        # `.seg` del mockup: contenedor con padding 4; segmentos flex:1 (ancho
+        # igual) y SIN stretch final. El resto de variantes mantienen su layout.
+        self._lay.setContentsMargins(4, 4, 4, 4) if _is_seg else self._lay.setContentsMargins(0, 0, 0, 0)
         for i, label in enumerate(self._labels):
             btn = QPushButton(label)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setFlat(True)
             btn.setCheckable(True)
             btn.clicked.connect(lambda _=False, idx=i: self.set_current(idx))
-            self._lay.addWidget(btn)
+            self._lay.addWidget(btn, 1 if _is_seg else 0)
             self._btns.append(btn)
-        self._lay.addStretch()
+        if not _is_seg:
+            self._lay.addStretch()
 
     def set_labels(self, labels: list[str]):
         self._labels = list(labels or [])
@@ -1084,6 +1089,22 @@ class NMTabs(QWidget):
                         f"font-size: 12.5px; border-radius: 999px; }}"
                         f"QPushButton:hover {{ color: {text}; border-color: {strong_css}; }}"
                     )
+            elif self._variant == "seg":
+                # `.seg` canónico (mockup l.111-114): segmento seleccionado =
+                # superficie elevada (surface + ink), NO brand; resto transparente.
+                if checked:
+                    b.setStyleSheet(
+                        f"QPushButton {{ background: {v3c('surface', self._modo).name()}; "
+                        f"color: {text}; border: none; padding: 7px 0; "
+                        f"font-size: 12.5px; border-radius: 999px; }}"
+                    )
+                else:
+                    b.setStyleSheet(
+                        f"QPushButton {{ background: transparent; color: {text_muted}; "
+                        f"border: none; padding: 7px 0; font-size: 12.5px; "
+                        f"border-radius: 999px; }}"
+                        f"QPushButton:hover {{ color: {text}; }}"
+                    )
             elif checked:
                 b.setStyleSheet(
                     f"QPushButton {{ background: {primary}; color: {primary_ink}; "
@@ -1098,6 +1119,20 @@ class NMTabs(QWidget):
                     f"border-radius: {_NM_TAB_RADIUS - 3}px; }}"
                     f"QPushButton:hover {{ color: {text}; border-color: {strong_css}; }}"
                 )
+
+    def paintEvent(self, event):
+        # Solo la variante "seg" pinta contenedor (mockup `.seg`: fondo surface-3,
+        # borde line sutil, radio pill). El resto de variantes no tienen caja.
+        if self._variant != "seg":
+            return
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        rect = QRectF(0.5, 0.5, self.width() - 1, self.height() - 1)
+        radius = self.height() / 2
+        p.setBrush(QBrush(v3c("surface3", self._modo)))
+        p.setPen(QPen(v3c("border", self._modo), 1))
+        p.drawRoundedRect(rect, radius, radius)
+        p.end()
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
