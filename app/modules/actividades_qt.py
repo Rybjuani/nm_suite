@@ -37,6 +37,7 @@ try:
         NMButton,
         NMToast,
         NMCard,
+        NMBadge,
         NMIcon,
         NMEmptyState,
         NMSegmentedChoice,
@@ -71,6 +72,7 @@ except ImportError:
         NMButton,
         NMToast,
         NMCard,
+        NMBadge,
         NMIcon,
         NMEmptyState,
         NMSegmentedChoice,
@@ -510,6 +512,13 @@ class _SuggestedCard(NMCard):
         )
         self._btn_yes.clicked.connect(lambda: self.completed.emit(self._nombre))
         footer.addWidget(self._btn_yes)
+        self._done_badge = NMBadge(
+            t("text.module.actividades.btn_done_state", "Hecho"),
+            tone="brand",
+            modo=self._modo,
+        )
+        self._done_badge.hide()
+        footer.addWidget(self._done_badge)
         lay.addLayout(footer)
 
         self._apply_sug_styles()
@@ -517,10 +526,15 @@ class _SuggestedCard(NMCard):
     def set_completed(self, completed: bool):
         self._completed_flag = bool(completed)
         if completed:
-            self._btn_yes.setEnabled(False)
-            self._btn_no.setEnabled(False)
-            self._btn_yes.setText(t("text.module.actividades.btn_done_state", "Hecho"))
+            self._btn_yes.hide()
+            self._btn_no.hide()
+            self._done_badge.setText(t("text.module.actividades.btn_done_state", "Hecho"))
+            self._done_badge.show()
             self._title_lbl.setText(self._nombre)
+        else:
+            self._btn_yes.show()
+            self._btn_no.show()
+            self._done_badge.hide()
 
     def set_done(self, resultado: str):
         """Alias del API existente para activity cards."""
@@ -548,6 +562,8 @@ class _SuggestedCard(NMCard):
             self._icon._render()
         self._intensity._modo = self._modo
         self._intensity.update()
+        self._done_badge._modo = self._modo
+        self._done_badge._apply_theme(self._modo)
         self._apply_sug_styles()
 
 
