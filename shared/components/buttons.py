@@ -592,7 +592,6 @@ class NMInput(QLineEdit):
         # Estado error: halo rose-soft (mockup onboarding error línea 1300:
         # border-color:var(--rose); box-shadow:0 0 0 3px var(--rose-soft))
         if self._error_message:
-            danger_soft = v3c("dangerSoft", self._modo)
             err_focus_block = (
                 f"QLineEdit {{ border: 1px solid {qcolor_to_rgba_css(border_c)};"
                 f" background-color: {bg_c.name()}; }}"
