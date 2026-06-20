@@ -331,7 +331,8 @@ class NMBadge(QLabel):
             bg_css = C("surface3", self._modo)
         else:
             bg_css = C(_BADGE_TONE_TO_SOFT_KEY.get(self._tone, "primary_soft"), self._modo)
-        self._pill_r_applied = 11
+        # Mockup línea 265: .badge { border-radius: var(--r-pill) = 999px; font-size: 11.5px; padding: 4px 11px }
+        self._pill_r_applied = 999  # r-pill canónico (era 11)
         self.setStyleSheet(f"""
             NMBadge {{
                 color: {color_hex};
@@ -339,6 +340,7 @@ class NMBadge(QLabel):
                 border: 1px solid transparent;
                 border-radius: {self._pill_r_applied}px;
                 padding: 4px 11px;
+                font-size: 11.5px;
                 min-height: 22px;
             }}
         """)

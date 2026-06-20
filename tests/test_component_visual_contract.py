@@ -17,8 +17,11 @@ def test_badge_primitive_supports_mockup_tones(qtbot) -> None:
     qss = badge.styleSheet()
     assert "color: #C2912F" in qss
     assert "background-color: rgba(194,145,47,0.16)" in qss
-    assert "border-radius: 11px" in qss
+    # Mockup línea 265: .badge { border-radius: var(--r-pill) } = 999px (r-pill)
+    assert "border-radius: 999px" in qss
     assert "padding: 4px 11px" in qss
+    # Mockup línea 266: font-size: 11.5px
+    assert "font-size: 11.5px" in qss
 
 
 def test_card_hover_border_uses_brand_line() -> None:

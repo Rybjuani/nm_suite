@@ -117,9 +117,11 @@ class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
         layout.addWidget(self._title_lbl)
 
         self._subtitle_lbl = QLabel(subtitle)
-        # Mockup línea 312: subtítulo font-size 13.5px (era size_body=14).
-        # Cota canónica: max-width 34ch para mantener legibilidad.
-        self._subtitle_lbl.setFont(v3_font("size_body", weight=TYPOGRAPHY["weight_regular"]))
+        # Mockup línea 312: .empty p { font-size: 13.5px; color: ink-2; max-width: 34ch; line-height: 1.5 }
+        # size_body=14 NO es canónico; pasamos 13.5 como setPointSizeFloat (QFont admite float).
+        sub_font = v3_font("size_body", weight=TYPOGRAPHY["weight_regular"])
+        sub_font.setPointSizeF(13.5)
+        self._subtitle_lbl.setFont(sub_font)
         # Aproximación: 34ch × ~7px/ch = 240px max-width (varía con fuente,
         # pero suficiente para que el párrafo no se estire a todo el ancho).
         self._subtitle_lbl.setMaximumWidth(34 * 7)

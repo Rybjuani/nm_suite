@@ -421,10 +421,11 @@ class ModuloRutina(NMModule):
         lay.addWidget(self._hero_card)
 
         # 2. Empty state (oculta cuando hay tareas)
-        # Icono 'checklist' (cuadrado con check interno) en vez de 'routine'
-        # (calendario). Mockup canónico línea 909 usa svg(I.check) en .empty.
+        # Mockup línea 909: usa svg(I.check) dentro de .empty .ico — el icono
+        # 'check' del set mockup es visualmente un check + cuadrado redondeado
+        # (path compuesto), NO el 'routine' (calendario con rayas).
         self._empty_state = NMEmptyState(
-            "checklist",
+            "check",
             t("text.module.rutina.empty_title", "Sin tareas asignadas"),
             t(
                 "text.module.rutina.empty_desc",

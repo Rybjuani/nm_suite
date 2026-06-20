@@ -228,16 +228,9 @@ MOCKUP_ICON_BODIES: dict[str, str] = {
 
 ICON_BODIES.update(MOCKUP_ICON_BODIES)
 
-# Iconos derivados (NO están en el set canónico del mockup, pero son necesarios
-# para primitivas de la app). Se añaden tras ICON_BODIES.update() para que no
-# aparezcan en MOCKUP_ICON_BODIES (que el test valida como set exacto).
-ICON_BODIES["checklist"] = (
-    # Cuadrado con check interno — usado en el empty state de Rutina en vez
-    # de 'routine' (calendario). Mockup canónico línea 909 usa svg(I.check)
-    # dentro de .empty, que visualmente es un cuadrado con check.
-    '<rect x="3" y="3" width="18" height="18" rx="2"/>'
-    '<path d="M8 12l3 3 5-6"/>'
-)
+# Nota: para empty states, usar el icono canónico del set mockup directamente
+# (ej: 'check', 'bell', 'timer'). El icono 'routine' (calendario) se reserva
+# para navegación, NO para empty states.
 
 
 # ── Cache de pixmaps por (name, color, size) ─────────────────────────────────

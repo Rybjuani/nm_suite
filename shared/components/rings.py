@@ -293,7 +293,8 @@ class NMFocusArc(QWidget):
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QBrush(shadow_col))
         p.drawEllipse(QPointF(cx, cy + 2), core_r + 2, core_r + 2)
-        # Core con radial-gradient surface → surface-2
+        # Core con radial-gradient surface → surface-2 (mockup: circle at 50% 38%,
+        # surface 0% → surface-2 70%).
         core_grad = QRadialGradient(QPointF(cx, cy - core_r * 0.12), core_r)
         core_grad.setColorAt(0.0, QColor(v3c("surface", self._modo)))
         core_grad.setColorAt(0.70, QColor(v3c("surface2", self._modo)))
@@ -301,6 +302,16 @@ class NMFocusArc(QWidget):
         p.setBrush(QBrush(core_grad))
         p.setPen(QPen(QColor(v3c("line", self._modo)), 1))
         p.drawEllipse(QPointF(cx, cy), core_r, core_r)
+        # Inset shadow sutil (mockup línea 211: inset 0 2px 10px rgba(0,0,0,.04))
+        # Aproximación: arco superior interior con gradiente negro alpha 10/255.
+        inset_pen = QPen(QColor(0, 0, 0, 10), 2)
+        p.setPen(inset_pen)
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawArc(
+            QRectF(cx - core_r + 1, cy - core_r + 1, (core_r - 1) * 2, (core_r - 1) * 2),
+            int(20 * 16),
+            int(140 * 16),
+        )
 
         # ── Tiempo central: siempre 100% opacidad para ser legible ───────────
         # Mockup línea 213: font-display 52px weight 500.
