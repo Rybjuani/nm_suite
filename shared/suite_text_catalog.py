@@ -301,15 +301,15 @@ _add(
     "text.module.rutina.empty_title",
     "Rutina",
     "Título estado vacío",
-    "Sin rutina asignada",
+    "Sin tareas asignadas",
     56,
 )
 _add(
     "text.module.rutina.empty_desc",
     "Rutina",
     "Descripción estado vacío",
-    "Tu terapeuta te enviara actividades pronto.",
-    96,
+    "Cuando tu terapeuta asigne una rutina, tus tareas del día aparecerán organizadas por franja.",
+    128,
 )
 _add("text.module.rutina.section_morning", "Rutina", "Sección mañana", "Mañana", 24)
 _add("text.module.rutina.section_afternoon", "Rutina", "Sección tarde", "Tarde", 24)
