@@ -11,196 +11,252 @@ palette.
 # ============================================================
 
 V3_LIGHT = {
-    # ── Linen + Sage ─────────────────────────────────────────────────────────
-    # Backgrounds
-    "bg": "#F4EFE5",  # canvas linen
-    "bgAlt": "#ECE5D4",  # sidebar
-    "bgSoft": "#ECE5D4",
-    "bgSidebar": "#ECE5D4",
-    "surface": "#FBF8F1",  # card surface
-    "surface2": "#ECE5D4",  # inputs bg
-    "surface_hover": "rgba(48, 90, 72, 0.04)",
+    # Mockup canonical light: cream / forest / terracotta.
+    "bg": "#E9E3D6",
+    "bgGradA": "#EEE9DD",
+    "bgGradB": "#E3DCCB",
+    "bg-grad-a": "#EEE9DD",
+    "bg-grad-b": "#E3DCCB",
+    "bgAlt": "#E3DCCB",
+    "bgSoft": "#F3EFE4",
+    "bgSidebar": "#F3EFE4",
+    "surface": "#FBF8F1",
+    "surface2": "#F3EFE4",
+    "surface3": "#ECE6D8",
+    "surface_hover": "rgba(46,93,67,0.06)",
     "elevated": "#FBF8F1",
     "surfaceElevated": "#FBF8F1",
-    "surfaceGlass": "rgba(251, 248, 241, 0.85)",
-    # Borders — 6.1: borderStrong subido 0.15→0.22 para que las separaciones
-    # se lean sin gritar. Mantiene el tono ink #1C2218.
-    "border": "rgba(28, 34, 24, 0.10)",
-    "borderSoft": "rgba(28, 34, 24, 0.07)",
-    "borderStrong": "rgba(28, 34, 24, 0.22)",
-    "borderSolid": "#D8D3C5",
-    # Text
-    "text": "#1C2218",  # ink
-    "textMuted": "#76796B",  # mute
-    "text2": "#3F4636",  # ink-2
-    "text3": "#76796B",
-    "text4": "#8B8979",
-    # Primary / Sage
-    "primary": "#305A48",  # sage
-    "primary_soft": "rgba(48, 90, 72, 0.08)",
-    "primary_ink": "#FBF8F1",
-    # Accent / Terracotta
-    "accent": "#B8633B",  # terracotta accent (sage is primary)
-    "accentSoft": "rgba(184, 99, 59, 0.08)",
-    "accentSoftSolid": "#EADCD2",
-    "gradFrom": "#305A48",
-    "gradMid": "#7B7140",
-    "gradTo": "#C68A2E",
-    # Mood
-    "moodGradFrom": "#305A48",
-    "moodGradMid": "#7B7140",
-    "moodGradTo": "#B8633B",  # terracotta
-    # Tonos
-    "teal": "#2F7E73",
-    "tealSoft": "rgba(47, 126, 115, 0.08)",
-    "tealSoftSolid": "#D8DFD5",
-    "violet": "#B8633B",  # terracotta
-    "violetSoft": "rgba(184, 99, 59, 0.08)",
-    "violetSoftSolid": "#EDDED1",
-    "cyan": "#2F7E73",
-    "cyanSoft": "rgba(47, 126, 115, 0.08)",
-    "amber": "#C68A2E",
-    "amberSoft": "rgba(198, 138, 46, 0.08)",
-    "amberSoftSolid": "#EBE1CB",
-    # Semánticos
-    "success": "#4D7A52",
-    "successSoft": "rgba(77, 122, 82, 0.08)",
-    "successSoftSolid": "#DDDFD0",
-    "warning": "#C68A2E",
-    "warningSoft": "rgba(198, 138, 46, 0.08)",
-    "warningSoftSolid": "#EEE1CB",
-    "danger": "#B14B3B",
-    "dangerSoft": "rgba(177, 75, 59, 0.08)",
-    "dangerSoftSolid": "#EDDFD4",
-    "streak": "#B8633B",
-    "streakSoft": "rgba(184, 99, 59, 0.08)",
-    "warm": "#B8633B",
-    "warmSoft": "rgba(184, 99, 59, 0.08)",
-    # V5 design-system specification tokens & aliases
-    "bg-0": "#F4EFE5",
-    "bg-1": "#ECE5D4",
-    "surface-2": "#ECE5D4",
-    "canvas": "#F4EFE5",
-    "sidebar": "#ECE5D4",
+    "surfaceGlass": "rgba(251,248,241,0.85)",
+    "border": "rgba(49,45,39,0.10)",
+    "borderSoft": "rgba(49,45,39,0.06)",
+    "borderStrong": "rgba(49,45,39,0.18)",
+    "borderSolid": "#D8D0C0",
+    "line": "rgba(49,45,39,0.10)",
+    "line2": "rgba(49,45,39,0.06)",
+    "line-2": "rgba(49,45,39,0.06)",
+    "line_strong": "rgba(49,45,39,0.18)",
+    "text": "#312D27",
+    "textMuted": "#6B6457",
+    "text2": "#6B6457",
+    "text3": "#9A9382",
+    "text4": "#9A9382",
+    "ink": "#312D27",
+    "ink_2": "#6B6457",
+    "ink-2": "#6B6457",
+    "ink-3": "#9A9382",
+    "mute": "#6B6457",
+    "faint": "#9A9382",
+    "primary": "#2E5D43",
+    "primary_soft": "rgba(46,93,67,0.13)",
+    "primary_ink": "#F7F3EA",
+    "primarySoft": "rgba(46,93,67,0.13)",
+    "brand": "#2E5D43",
+    "brandStrong": "#244C37",
+    "brand-strong": "#244C37",
+    "brandInk": "#F7F3EA",
+    "brand-ink": "#F7F3EA",
+    "brandSoft": "rgba(46,93,67,0.13)",
+    "brand-soft": "rgba(46,93,67,0.13)",
+    "brandLine": "rgba(46,93,67,0.28)",
+    "brand-line": "rgba(46,93,67,0.28)",
+    "accent": "#B0683B",
+    "accentSoft": "rgba(176,104,59,0.15)",
+    "accentSoftSolid": "#E9DCCE",
+    "accent-soft": "rgba(176,104,59,0.15)",
+    "gold": "#C2912F",
+    "goldSoft": "rgba(194,145,47,0.16)",
+    "goldSoftSolid": "#E9DEC3",
+    "gold-soft": "rgba(194,145,47,0.16)",
+    "rose": "#B24E3D",
+    "roseSoft": "rgba(178,78,61,0.14)",
+    "roseSoftSolid": "#EAD8D0",
+    "rose-soft": "rgba(178,78,61,0.14)",
+    "mind": "#3C8A6B",
+    "toler": "#C25A45",
+    "regul": "#CC8F2C",
+    "efect": "#2E5D43",
+    "teal": "#3C8A6B",
+    "tealSoft": "rgba(60,138,107,0.13)",
+    "tealSoftSolid": "#D8E4D8",
+    "violet": "#B0683B",
+    "violetSoft": "rgba(176,104,59,0.15)",
+    "violetSoftSolid": "#E9DCCE",
+    "cyan": "#3C8A6B",
+    "cyanSoft": "rgba(60,138,107,0.13)",
+    "amber": "#C2912F",
+    "amberSoft": "rgba(194,145,47,0.16)",
+    "amberSoftSolid": "#E9DEC3",
+    "success": "#3C8A6B",
+    "successSoft": "rgba(60,138,107,0.13)",
+    "successSoftSolid": "#D8E4D8",
+    "warning": "#C2912F",
+    "warningSoft": "rgba(194,145,47,0.16)",
+    "warningSoftSolid": "#E9DEC3",
+    "danger": "#B24E3D",
+    "dangerSoft": "rgba(178,78,61,0.14)",
+    "dangerSoftSolid": "#EAD8D0",
+    "streak": "#B0683B",
+    "streakSoft": "rgba(176,104,59,0.15)",
+    "warm": "#B0683B",
+    "warmSoft": "rgba(176,104,59,0.15)",
+    "ringTrack": "rgba(49,45,39,0.10)",
+    "ring-track": "rgba(49,45,39,0.10)",
+    "focus": "rgba(46,93,67,0.45)",
+    "chrome": "#E5DED0",
+    "chromeLine": "rgba(49,45,39,0.10)",
+    "chrome-line": "rgba(49,45,39,0.10)",
+    "gradFrom": "#2E5D43",
+    "gradMid": "#3C8A6B",
+    "gradTo": "#C2912F",
+    "moodGradFrom": "#7B8A99",
+    "moodGradMid": "#5FAA86",
+    "moodGradTo": "#B24E3D",
+    "bg-0": "#E9E3D6",
+    "bg-1": "#F3EFE4",
+    "surface-2": "#F3EFE4",
+    "surface-3": "#ECE6D8",
+    "canvas": "#E9E3D6",
+    "sidebar": "#F3EFE4",
     "card": "#FBF8F1",
-    "ink": "#1C2218",
-    "sage": "#305A48",
-    "terracotta": "#B8633B",
-    # Semantic Helpers V5 mapping
-    "background": "#F4EFE5",
-    "primarySoft": "rgba(61, 90, 72, 0.08)",
-    # Alias snake_case
-    "bg_0": "#F4EFE5",
-    "bg_1": "#ECE5D4",
+    "sage": "#2E5D43",
+    "terracotta": "#B0683B",
+    "terracotta_soft": "rgba(176,104,59,0.15)",
+    "aqua": "#3C8A6B",
+    "aqua_soft": "rgba(60,138,107,0.13)",
+    "background": "#E9E3D6",
+    "bg_0": "#E9E3D6",
+    "bg_1": "#F3EFE4",
     "surface_card": "#FBF8F1",
-    "surface_2": "#ECE5D4",
+    "surface_2": "#F3EFE4",
+    "surface_3": "#ECE6D8",
     "surface_elev": "#FBF8F1",
-    "line": "rgba(28, 34, 24, 0.08)",
-    "line_strong": "rgba(28, 34, 24, 0.15)",
-    "ink_2": "#3F4636",
-    "mute": "#76796B",
-    "faint": "#8B8979",
-    "terracotta_soft": "rgba(184, 99, 59, 0.08)",
-    "aqua": "#2F7E73",
-    "aqua_soft": "rgba(47, 126, 115, 0.08)",
 }
 
 V3_DARK = {
-    # ── Indigo Profundo ──────────────────────────────────────────────────────
-    # Backgrounds
-    "bg": "#07091A",  # canvas indigo profundo (bg-0)
-    "bgAlt": "#0E132B",  # sidebar (bg-1)
-    "bgSoft": "#0E132B",
-    "bgSidebar": "#0E132B",
-    "surface": "#141A38",  # card surface
-    "surfaceSolid": "#141A38",
-    "surface2": "#0E132B",  # campos/anidados: tono sidebar, no canvas (campos negros = rechazo user feedback)
-    "elevated": "#141A38",
-    "surfaceElevated": "#141A38",
-    "elevatedSolid": "#141A38",
-    "surfaceGlass": "rgba(20, 26, 56, 0.85)",
-    # Borders
-    "border": "rgba(255,255,255,0.06)",
-    "borderSoft": "rgba(255,255,255,0.04)",
-    "borderStrong": "rgba(255,255,255,0.12)",
-    "borderSolid": "#232740",
-    # Text
-    "text": "#ECECFB",  # ink
-    "textMuted": "#8285A8",  # mute
-    "text2": "#C7C9E5",  # ink-2
-    "text3": "#8285A8",  # mute
-    "text4": "#6A6F93",  # faint
-    # Accent: primary = lavender, accent = aqua
-    "primary": "#A99CFF",  # lavender primary
-    "primary_soft": "rgba(169,156,255,0.10)",
-    "primary_ink": "#0E132B",
-    "accent": "#5EE0C7",  # aqua accent (lavender is primary)
-    "accentSoft": "rgba(94,224,199,0.14)",
-    "accentSoftSolid": "#123336",
-    "gradFrom": "#A99CFF",  # primary → amber
-    "gradMid": "#C8A89B",
-    "gradTo": "#E8B86A",
-    "moodGradFrom": "#A99CFF",
-    "moodGradMid": "#C8A89B",
-    "moodGradTo": "#5EE0C7",
-    # Tonos (claves compatibility re-mapeadas al runtime spec)
-    "teal": "#5EE0C7",  # aqua
-    "tealSoft": "rgba(94,224,199,0.14)",
-    "tealSoftSolid": "#123336",
-    "violet": "#5EE0C7",  # aqua
-    "violetSoft": "rgba(94,224,199,0.14)",
-    "violetSoftSolid": "#123336",
-    "cyan": "#5EE0C7",  # alias del aqua
-    "cyanSoft": "rgba(94,224,199,0.14)",
-    "cyanSoftSolid": "#123336",
-    "green": "#60B89A",
-    # Amber (runtime spec — progreso, energía)
-    "amber": "#E8B86A",
-    "amberSoft": "rgba(232,184,106,0.16)",
-    "amberSoftSolid": "#2F2722",
-    # Semánticos runtime spec
-    "success": "#60B89A",
-    "successSoft": "rgba(96,184,154,0.16)",
-    "successSoftSolid": "#18261A",
-    "warning": "#E8B86A",
-    "warningSoft": "rgba(232,184,106,0.16)",
-    "warningSoftSolid": "#2F2722",
-    "danger": "#FF8A7A",
-    "dangerSoft": "rgba(255,138,122,0.14)",
-    "dangerSoftSolid": "#2E1D22",
-    # Streak (re-mapeado a amber)
-    "streak": "#E8B86A",
-    "streakSoft": "rgba(232,184,106,0.16)",
-    # Warm secondary
-    "warm": "#E8B86A",
-    "warmSoft": "rgba(232,184,106,0.16)",
-    # V5 design-system specification tokens & aliases
-    "bg-0": "#07091A",
-    "bg-1": "#0E132B",
-    "surface-2": "#07091A",
-    "deep": "#07091A",
-    "sidebar": "#0E132B",
-    "card": "#141A38",
-    "ink": "#ECECFB",
-    "lavender": "#A99CFF",
-    "aqua": "#5EE0C7",
-    # Semantic Helpers V5 mapping
-    "background": "#07091A",
-    "primarySoft": "rgba(169,156,255,0.10)",
-    # ── Alias runtime spec con nombres CSS directos (snake_case) ───────────────────
-    "bg_0": "#07091A",
-    "bg_1": "#0E132B",
-    "surface_card": "#141A38",
-    "surface_2": "#0E132B",
-    "surface_elev": "#141A38",
-    "line": "rgba(255,255,255,0.06)",
-    "line_strong": "rgba(255,255,255,0.12)",
-    "ink_2": "#C7C9E5",
-    "mute": "#8285A8",
-    "faint": "#6A6F93",
-    "terracotta": "#5EE0C7",  # en dark el "accent" runtime es aqua
-    "terracotta_soft": "rgba(94,224,199,0.14)",
-    "aqua_soft": "rgba(94,224,199,0.14)",
+    # Mockup canonical dark: ink / mint.
+    "bg": "#0E121C",
+    "bgGradA": "#121726",
+    "bgGradB": "#0B0E18",
+    "bg-grad-a": "#121726",
+    "bg-grad-b": "#0B0E18",
+    "bgAlt": "#121726",
+    "bgSoft": "#212838",
+    "bgSidebar": "#141A28",
+    "surface": "#191F2E",
+    "surfaceSolid": "#191F2E",
+    "surface2": "#212838",
+    "surface3": "#283047",
+    "elevated": "#191F2E",
+    "surfaceElevated": "#191F2E",
+    "elevatedSolid": "#191F2E",
+    "surfaceGlass": "rgba(25,31,46,0.85)",
+    "surface_hover": "rgba(86,217,166,0.07)",
+    "border": "rgba(255,255,255,0.09)",
+    "borderSoft": "rgba(255,255,255,0.05)",
+    "borderStrong": "rgba(255,255,255,0.16)",
+    "borderSolid": "#30384B",
+    "line": "rgba(255,255,255,0.09)",
+    "line2": "rgba(255,255,255,0.05)",
+    "line-2": "rgba(255,255,255,0.05)",
+    "line_strong": "rgba(255,255,255,0.16)",
+    "text": "#E8EAF1",
+    "textMuted": "#A7AEC1",
+    "text2": "#A7AEC1",
+    "text3": "#727A90",
+    "text4": "#727A90",
+    "ink": "#E8EAF1",
+    "ink_2": "#A7AEC1",
+    "ink-2": "#A7AEC1",
+    "ink-3": "#727A90",
+    "mute": "#A7AEC1",
+    "faint": "#727A90",
+    "primary": "#56D9A6",
+    "primary_soft": "rgba(86,217,166,0.14)",
+    "primary_ink": "#06140D",
+    "primarySoft": "rgba(86,217,166,0.14)",
+    "brand": "#56D9A6",
+    "brandStrong": "#3FC592",
+    "brand-strong": "#3FC592",
+    "brandInk": "#06140D",
+    "brand-ink": "#06140D",
+    "brandSoft": "rgba(86,217,166,0.14)",
+    "brand-soft": "rgba(86,217,166,0.14)",
+    "brandLine": "rgba(86,217,166,0.34)",
+    "brand-line": "rgba(86,217,166,0.34)",
+    "accent": "#E0996A",
+    "accentSoft": "rgba(224,153,106,0.16)",
+    "accentSoftSolid": "#382C27",
+    "accent-soft": "rgba(224,153,106,0.16)",
+    "gold": "#E3B765",
+    "goldSoft": "rgba(227,183,101,0.16)",
+    "goldSoftSolid": "#383125",
+    "gold-soft": "rgba(227,183,101,0.16)",
+    "rose": "#F09182",
+    "roseSoft": "rgba(240,145,130,0.16)",
+    "roseSoftSolid": "#3D282B",
+    "rose-soft": "rgba(240,145,130,0.16)",
+    "mind": "#5FE0B2",
+    "toler": "#FF9082",
+    "regul": "#E9BC66",
+    "efect": "#7CC6F0",
+    "teal": "#5FE0B2",
+    "tealSoft": "rgba(95,224,178,0.14)",
+    "tealSoftSolid": "#1A3931",
+    "violet": "#7CC6F0",
+    "violetSoft": "rgba(124,198,240,0.16)",
+    "violetSoftSolid": "#243747",
+    "cyan": "#7CC6F0",
+    "cyanSoft": "rgba(124,198,240,0.16)",
+    "cyanSoftSolid": "#243747",
+    "green": "#56D9A6",
+    "amber": "#E3B765",
+    "amberSoft": "rgba(227,183,101,0.16)",
+    "amberSoftSolid": "#383125",
+    "success": "#5FE0B2",
+    "successSoft": "rgba(95,224,178,0.14)",
+    "successSoftSolid": "#1A3931",
+    "warning": "#E3B765",
+    "warningSoft": "rgba(227,183,101,0.16)",
+    "warningSoftSolid": "#383125",
+    "danger": "#F09182",
+    "dangerSoft": "rgba(240,145,130,0.16)",
+    "dangerSoftSolid": "#3D282B",
+    "streak": "#E0996A",
+    "streakSoft": "rgba(224,153,106,0.16)",
+    "warm": "#E0996A",
+    "warmSoft": "rgba(224,153,106,0.16)",
+    "ringTrack": "rgba(255,255,255,0.10)",
+    "ring-track": "rgba(255,255,255,0.10)",
+    "focus": "rgba(86,217,166,0.50)",
+    "chrome": "#141A28",
+    "chromeLine": "rgba(255,255,255,0.07)",
+    "chrome-line": "rgba(255,255,255,0.07)",
+    "gradFrom": "#56D9A6",
+    "gradMid": "#5FE0B2",
+    "gradTo": "#7CC6F0",
+    "moodGradFrom": "#7B8A99",
+    "moodGradMid": "#5FAA86",
+    "moodGradTo": "#F09182",
+    "bg-0": "#0E121C",
+    "bg-1": "#121726",
+    "surface-2": "#212838",
+    "surface-3": "#283047",
+    "deep": "#0E121C",
+    "sidebar": "#141A28",
+    "card": "#191F2E",
+    "lavender": "#56D9A6",
+    "aqua": "#56D9A6",
+    "aqua_soft": "rgba(86,217,166,0.14)",
+    "sage": "#56D9A6",
+    "terracotta": "#E0996A",
+    "terracotta_soft": "rgba(224,153,106,0.16)",
+    "background": "#0E121C",
+    "bg_0": "#0E121C",
+    "bg_1": "#121726",
+    "surface_card": "#191F2E",
+    "surface_2": "#212838",
+    "surface_3": "#283047",
+    "surface_elev": "#191F2E",
 }
 
 
@@ -239,48 +295,41 @@ V3_SPACE = {
     "xxl": 20,
     "xxxl": 24,
 }
-V3_RADIUS = {"sm": 8, "md": 12, "lg": 16, "xl": 16, "xxl": 22, "pill": 999, "card": 16, "input": 12}
+V3_RADIUS = {
+    "xs": 8,
+    "sm": 12,
+    "md": 16,
+    "lg": 22,
+    "xl": 28,
+    "xxl": 28,
+    "pill": 999,
+    "card": 22,
+    "input": 16,
+}
 
 # Shadows en formato consumible por QGraphicsDropShadowEffect:
 #   blur (px), offset (dx, dy), color (r, g, b, a 0-255)
 V3_SHADOWS = {
-    # Light sombras del runtime spec (§2.3): tono ink (28,34,24) con opacidades muy
-    # bajas para mantener el "nada brilla, la calma es el default".
-    # 6.1: opacidades levemente subidas para que el light se lea con el mismo
-    # "peso" que dark — antes las cards en light parecían planas.
+    # Approximation of mockup multi-layer shadows for QGraphicsDropShadowEffect.
     "light": {
-        # sm: 0 1px 0 rgba(28,34,24,.04), 0 4px 12px rgba(28,34,24,.04)
-        "sm": {"blur": 12, "offset": (0, 4), "color": (28, 34, 24, 14)},
-        # md: 0 2px 4px rgba(28,34,24,.04), 0 12px 32px rgba(28,34,24,.07)
-        "md": {"blur": 32, "offset": (0, 12), "color": (28, 34, 24, 24)},
-        # card (cards primarios) — recalibrado a la dirección del mockup
-        # aprobado: sombra más ceñida y nítida (menos blur/offset, algo más de
-        # tinta) para que la card "se levante" sin difuminarse contra el linen.
-        "card": {"blur": 22, "offset": (0, 8), "color": (28, 34, 24, 38)},
-        # lg: 0 4px 8px rgba(28,34,24,.05), 0 24px 64px rgba(28,34,24,.10)
-        "lg": {"blur": 64, "offset": (0, 24), "color": (28, 34, 24, 34)},
-        # ring glow sage (NMRing, anillos)
-        "ring": {"blur": 20, "offset": (0, 4), "color": (61, 90, 72, 80)},
-        # compact §2.5 — desktop compact shadows (más sutiles que sm/md/lg)
-        "shadow_1": {"blur": 2, "offset": (0, 1), "color": (28, 34, 24, 12)},
-        "shadow_2": {"blur": 12, "offset": (0, 4), "color": (28, 34, 24, 20)},
-        "shadow_3": {"blur": 24, "offset": (0, 8), "color": (28, 34, 24, 32)},
+        "sm": {"blur": 6, "offset": (0, 2), "color": (49, 45, 39, 10)},
+        "md": {"blur": 28, "offset": (0, 10), "color": (49, 45, 39, 18)},
+        "card": {"blur": 28, "offset": (0, 10), "color": (49, 45, 39, 18)},
+        "lg": {"blur": 60, "offset": (0, 30), "color": (49, 45, 39, 31)},
+        "ring": {"blur": 20, "offset": (0, 4), "color": (46, 93, 67, 72)},
+        "shadow_1": {"blur": 6, "offset": (0, 2), "color": (49, 45, 39, 10)},
+        "shadow_2": {"blur": 28, "offset": (0, 10), "color": (49, 45, 39, 18)},
+        "shadow_3": {"blur": 60, "offset": (0, 30), "color": (49, 45, 39, 31)},
     },
-    # Dark: opacidades 0.25–0.45 según runtime spec §2.3.
     "dark": {
-        "sm": {"blur": 12, "offset": (0, 4), "color": (0, 0, 0, 76)},
-        "md": {"blur": 40, "offset": (0, 16), "color": (0, 0, 0, 102)},
-        # card recalibrado (mockup aprobado): negro algo más ceñido y presente.
-        "card": {"blur": 24, "offset": (0, 9), "color": (0, 0, 0, 120)},
-        "lg": {"blur": 80, "offset": (0, 32), "color": (0, 0, 0, 130)},
-        # glow lavender (anillos en dark) — F2 runtime: calmado (antes
-        # blur 40/alpha 56 y alpha 64: halos que "brillaban" contra la regla
-        # "nada brilla, la calma es el default").
-        "glow": {"blur": 24, "offset": (0, 0), "color": (169, 156, 255, 24)},
-        "ring": {"blur": 20, "offset": (0, 4), "color": (169, 156, 255, 32)},
-        # compact §2.5 — desktop compact shadows
-        "shadow_1": {"blur": 2, "offset": (0, 1), "color": (0, 0, 0, 89)},
-        "shadow_2": {"blur": 4, "offset": (0, 2), "color": (0, 0, 0, 115)},
+        "sm": {"blur": 2, "offset": (0, 1), "color": (0, 0, 0, 102)},
+        "md": {"blur": 32, "offset": (0, 12), "color": (0, 0, 0, 89)},
+        "card": {"blur": 32, "offset": (0, 12), "color": (0, 0, 0, 89)},
+        "lg": {"blur": 70, "offset": (0, 30), "color": (0, 0, 0, 140)},
+        "glow": {"blur": 24, "offset": (0, 0), "color": (86, 217, 166, 28)},
+        "ring": {"blur": 20, "offset": (0, 4), "color": (86, 217, 166, 46)},
+        "shadow_1": {"blur": 2, "offset": (0, 1), "color": (0, 0, 0, 102)},
+        "shadow_2": {"blur": 32, "offset": (0, 12), "color": (0, 0, 0, 89)},
         "shadow_3": {"blur": 24, "offset": (0, 8), "color": (0, 0, 0, 140)},
     },
 }
@@ -293,13 +342,9 @@ V3_SHADOWS = {
 V3_LIFT = {"light": 140, "dark": 16}
 
 
-# Paradas para QLinearGradient — gradiente firma del runtime spec.
-# Runtime spec §4.7: progress fill = linear primary → amber.
-#   Light: sage (#305A48) → amber (#C68A2E)
-#   Dark:  lavender (#A99CFF) → amber (#E8B86A)
 V3_GRADIENTS = {
-    "light": [("#305A48", 0.0), ("#7B7140", 0.5), ("#C68A2E", 1.0)],
-    "dark": [("#A99CFF", 0.0), ("#C8A89B", 0.5), ("#E8B86A", 1.0)],
+    "light": [("#2E5D43", 0.0), ("#3C8A6B", 1.0)],
+    "dark": [("#56D9A6", 0.0), ("#5FE0B2", 1.0)],
 }
 
 
@@ -308,24 +353,20 @@ V3_GRADIENTS = {
 # ============================================================
 
 TYPOGRAPHY = {
-    # Familias runtime del runtime spec (§3): Newsreader serif (display), Manrope
-    # sans (UI), JetBrains Mono (timestamps). Fallbacks de sistema para
-    # entornos donde los .ttf de assets/fonts/ no estén disponibles.
-    "font_family": "Manrope, Manrope ExtraLight, Segoe UI, system-ui, sans-serif",
+    # Canonical mockup typography: Inter body + Fraunces display.
+    "font_family": "Inter, Segoe UI, system-ui, sans-serif",
     "font_family_fallback_chain": [
-        "Manrope",
-        "Manrope ExtraLight",
+        "Inter",
+        "Segoe UI",
         "Plus Jakarta Sans",
         "DM Sans",
-        "Segoe UI",
         "Arial",
     ],
     "font_fallback": "Segoe UI",
     "font_mono": "JetBrains Mono",
-    "font_serif": "Newsreader, Newsreader 16pt 16pt, Source Serif Pro, Georgia, serif",
+    "font_serif": "Fraunces, Georgia, Times New Roman, serif",
     "font_serif_fallback_chain": [
-        "Newsreader",
-        "Newsreader 16pt 16pt",
+        "Fraunces",
         "Source Serif Pro",
         "Georgia",
         "serif",
@@ -369,7 +410,7 @@ TYPOGRAPHY = {
     "weight_semibold": 600,
     "weight_bold": 700,
     # Letter spacing (runtime spec §3 — eyebrow .14em uppercase)
-    "tracking_tight": "-.02em",
+    "tracking_tight": "0",
     "tracking_normal": "0",
     "tracking_eyebrow": ".14em",
 }
@@ -502,27 +543,26 @@ def _bridge_dark():
             "bg_elevated": V3_DARK["elevatedSolid"],
             "bg_overlay": V3_DARK["surface2"],  # surface-2 runtime spec
             "bg_glass": V3_DARK["surfaceSolid"] + "d9",
-            "bg_input": V3_DARK["surface2"],  # inputs sobre surface-2 (runtime spec §4.3)
-            # Acentos compatibility (mapeo al runtime spec: primary lavender, accent aqua)
-            "accent": "#A99CFF",  # lavender primary for compatibility compatibility
-            "accent_hover": "#BFB4FF",  # lavender brighter
+            "bg_input": V3_DARK["surface2"],
+            "accent": V3_DARK["primary"],
+            "accent_hover": V3_DARK["brandStrong"],
             "accent_glow": V3_DARK["accentSoftSolid"],
-            "violet_hover": "#7CE6D0",  # aqua hover
+            "violet_hover": V3_DARK["efect"],
             "violet_glow": V3_DARK["violetSoftSolid"],
-            "teal_hover": "#7CE6D0",
+            "teal_hover": V3_DARK["brandStrong"],
             # Texto compatibility
             "text_primary": V3_DARK["text"],
             "text_secondary": V3_DARK["text2"],
             "text_tertiary": V3_DARK["text3"],
-            "text_on_accent": V3_DARK["primary_ink"],  # bg-1 — texto oscuro sobre lavender
+            "text_on_accent": V3_DARK["primary_ink"],
             # Bordes compatibility (sólidos para QSS)
             "border": V3_DARK["borderSolid"],
-            "border_accent": "#2A2F58",  # lavender undertone solid
-            "border_focus": "#A99CFF",  # lavender
+            "border_accent": "#315947",
+            "border_focus": V3_DARK["primary"],
             "border_card": V3_DARK["borderSolid"],
             # Semánticos compatibility
             "error": V3_DARK["danger"],
-            "info": "#7FA8E8",  # cool blue muted
+            "info": V3_DARK["efect"],
             "progress_track": V3_DARK["surface2"],
             "progress_fill": V3_DARK["primary"],
             # Tokens v2/v3 ya existentes en el codebase (re-mapeados al runtime spec dark)
@@ -533,14 +573,14 @@ def _bridge_dark():
             "tcc_heat_hot": V3_DARK["danger"],
             "routine_morning_tint": V3_DARK["amber"],
             "routine_afternoon_tint": V3_DARK["danger"],
-            "routine_night_tint": V3_DARK["aqua"],
+            "routine_night_tint": V3_DARK["primary"],
             "cat_autocuidado_color": V3_DARK["success"],
             "cat_social_color": V3_DARK["amber"],
-            "hub_blob_teal": V3_DARK["aqua"],
-            "hub_blob_violet": V3_DARK["accent"],  # lavender primary
+            "hub_blob_teal": V3_DARK["primary"],
+            "hub_blob_violet": V3_DARK["efect"],
             "sync_orb_green": V3_DARK["success"],
             "uninstall_danger": V3_DARK["danger"],
-            "installer_terminal_bg": V3_DARK["bg"],  # indigo profundo runtime spec
+            "installer_terminal_bg": V3_DARK["bg"],
         }
     )
     return v
@@ -554,46 +594,45 @@ def _bridge_light():
             "bg_secondary": V3_LIGHT["bgAlt"],
             "bg_surface": V3_LIGHT["surface"],
             "bg_elevated": V3_LIGHT["elevated"],
-            "bg_overlay": V3_LIGHT["bgAlt"],  # bg-1 runtime spec
+            "bg_overlay": V3_LIGHT["bgAlt"],
             "bg_glass": "#FBF8F1d9",  # surface translúcido
-            "bg_input": V3_LIGHT["surface2"],  # inputs sobre surface-2 (runtime spec §4.3)
-            # Acentos compatibility alineados al runtime spec: primary sage, accent terracotta
-            "accent": "#305A48",  # sage primary for compatibility compatibility
-            "accent_hover": "#345040",  # sage deeper
+            "bg_input": V3_LIGHT["surface2"],
+            "accent": V3_LIGHT["primary"],
+            "accent_hover": V3_LIGHT["brandStrong"],
             "accent_glow": V3_LIGHT["accentSoftSolid"],
-            "violet_hover": "#9C5530",  # terracotta deeper
+            "violet_hover": V3_LIGHT["accent"],
             "violet_glow": V3_LIGHT["violetSoftSolid"],
-            "teal_hover": "#27695F",
+            "teal_hover": V3_LIGHT["mind"],
             "text_primary": V3_LIGHT["text"],
             "text_secondary": V3_LIGHT["text2"],
             "text_tertiary": V3_LIGHT["text3"],
             "text_on_accent": V3_LIGHT["primary_ink"],  # surface — texto claro sobre sage
             "border": V3_LIGHT["borderSolid"],
-            "border_accent": "#C8C0AD",  # line-strong sólido
-            "border_focus": "#305A48",  # sage focus
+            "border_accent": "#C8BDA9",
+            "border_focus": V3_LIGHT["primary"],
             "border_card": V3_LIGHT["borderSolid"],
             # Semánticos light alineados al runtime spec
             "success": V3_LIGHT["success"],
             "warning": V3_LIGHT["warning"],
             "error": V3_LIGHT["danger"],
-            "info": "#3A6EA0",  # cool blue muted
+            "info": V3_LIGHT["mind"],
             "progress_track": V3_LIGHT["surface2"],
-            "progress_fill": "#305A48",
+            "progress_fill": V3_LIGHT["primary"],
             "sidebar_bg": V3_LIGHT["bgSidebar"],
             "streak_color": V3_LIGHT["streak"],  # terracotta
             "streak_bg": V3_LIGHT["violetSoftSolid"],
-            "tcc_heat_cold": "#3A6EA0",
+            "tcc_heat_cold": V3_LIGHT["mind"],
             "tcc_heat_hot": V3_LIGHT["danger"],
             "routine_morning_tint": V3_LIGHT["amber"],
-            "routine_afternoon_tint": V3_LIGHT["violet"],  # terracotta
-            "routine_night_tint": "#305A48",  # sage
+            "routine_afternoon_tint": V3_LIGHT["violet"],
+            "routine_night_tint": V3_LIGHT["primary"],
             "cat_autocuidado_color": V3_LIGHT["success"],
             "cat_social_color": V3_LIGHT["warning"],
             "hub_blob_teal": V3_LIGHT["teal"],
             "hub_blob_violet": V3_LIGHT["violet"],
             "sync_orb_green": V3_LIGHT["success"],
             "uninstall_danger": V3_LIGHT["danger"],
-            "installer_terminal_bg": V3_DARK["bg"],  # indigo profundo runtime spec dark
+            "installer_terminal_bg": V3_DARK["bg"],
         }
     )
     return v
@@ -622,20 +661,16 @@ for _m in ("dark_hybrid", "light_hybrid"):
 # ============================================================
 
 GRADIENTS = {
-    # Gradiente firma del runtime spec — primary → amber en cada tema.
     "dark_hybrid": [
-        ("#A99CFF", 0.0),
-        ("#C8A89B", 0.5),
-        ("#E8B86A", 1.0),
+        ("#56D9A6", 0.0),
+        ("#5FE0B2", 1.0),
     ],
     "light_hybrid": [
-        ("#305A48", 0.0),
-        ("#7B7140", 0.5),
-        ("#C68A2E", 1.0),
+        ("#2E5D43", 0.0),
+        ("#3C8A6B", 1.0),
     ],
-    # Pares (start, end) — claves compatibility preservadas (re-mapeadas al runtime spec)
-    "accent_teal_violet_dark": ("#A99CFF", "#E8B86A"),
-    "accent_teal_violet_light": ("#305A48", "#C68A2E"),
+    "accent_teal_violet_dark": ("#56D9A6", "#5FE0B2"),
+    "accent_teal_violet_light": ("#2E5D43", "#3C8A6B"),
 }
 
 
@@ -644,25 +679,23 @@ GRADIENTS = {
 # ============================================================
 
 SHADOWS = {
-    # Strings CSS-like preservados (consumidores compatibility). Valores re-mapeados al
-    # runtime spec §2.3: tono ink en light, negro en dark con opacidades 0.25–0.45.
     "dark": {
-        "card": "0 10px 30px rgba(0,0,0,0.35)",
-        "card_hover": "0 18px 44px rgba(0,0,0,0.45), 0 0 1px rgba(169,156,255,0.22)",
-        "glow_teal": "0 0 40px rgba(169,156,255,0.22), 0 0 16px rgba(169,156,255,0.12)",
+        "card": "0 4px 12px rgba(0,0,0,0.40), 0 12px 32px rgba(0,0,0,0.35)",
+        "card_hover": "0 10px 24px rgba(0,0,0,0.50), 0 30px 70px rgba(0,0,0,0.55)",
+        "glow_teal": "0 0 32px rgba(86,217,166,0.18)",
     },
     "light": {
-        "card": "0 4px 12px rgba(28,34,24,0.04), 0 1px 0 rgba(28,34,24,0.04)",
-        "card_hover": "0 12px 32px rgba(28,34,24,0.07), 0 2px 4px rgba(28,34,24,0.04)",
-        "glow_teal": "0 4px 20px rgba(48,90,72,0.20)",
+        "card": "0 1px 2px rgba(49,45,39,0.05), 0 2px 6px rgba(49,45,39,0.04)",
+        "card_hover": "0 2px 8px rgba(49,45,39,0.06), 0 10px 28px rgba(49,45,39,0.07)",
+        "glow_teal": "0 4px 20px rgba(46,93,67,0.18)",
     },
 }
 
 
 TRANSITIONS = {
-    "fast": 150,
-    "normal": 250,
-    "slow": 350,
+    "fast": 140,
+    "normal": 240,
+    "slow": 480,
 }
 
 
@@ -710,12 +743,10 @@ def get_mood(level: int):
 # ============================================================
 
 CATEGORY_COLORS = {
-    # Categorías de activación conductual — alineadas a la paleta del runtime spec
-    # (linen+sage / indigo profundo) sin perder distinción semántica.
-    "Autocuidado": "#4D7A52",  # runtime spec success  — salud, autocuidado
-    "Física": "#2F7E73",  # runtime spec teal     — movimiento, energía
-    "Cognitiva": "#305A48",  # primary — mente, claridad
-    "Placer": "#B8633B",  # runtime spec accent   — disfrute, creatividad
-    "Social": "#C68A2E",  # runtime spec warning  — calidez, conexión
-    "Maestría": "#A99CFF",  # dark primary — logro, habilidades
+    "Autocuidado": "#3C8A6B",
+    "Física": "#3C8A6B",
+    "Cognitiva": "#2E5D43",
+    "Placer": "#B0683B",
+    "Social": "#C2912F",
+    "Maestría": "#7CC6F0",
 }

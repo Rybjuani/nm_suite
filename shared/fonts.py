@@ -1,14 +1,14 @@
 """
 shared/fonts.py
-API pública para la carga de fuentes del handoff visual (Mayo 2026).
+API pública para la carga de fuentes del ADN visual del mockup canónico.
 
 Las familias se buscan en `assets/fonts/` (empaquetado en el build) y se
 registran con `QFontDatabase.addApplicationFont`. Si un `.ttf` no existe,
 la familia correspondiente cae a fallback de sistema.
 
-Familias del handoff:
-    serif  — Newsreader  (display, números bienestar, frases italic)
-    sans   — Manrope     (UI, body, labels)
+Familias del ADN mockup:
+    serif  — Fraunces  (display, números bienestar, headings serif)
+    sans   — Inter     (UI, body, labels)
     mono   — JetBrains Mono (timestamps, metadata clínica, log installer)
 
 Uso típico (entrypoints `app/main_qt.py`, `hub/main_qt.py`, instaladores):
@@ -35,8 +35,8 @@ _log = logging.getLogger(__name__)
 # Se completan con la familia real cuando `load_fonts()` corre. Antes de
 # eso devuelven los fallbacks de sistema declarados en el handoff §3.
 
-FONT_SERIF: str = "Georgia"  # fallback hasta que se cargue Newsreader
-FONT_SANS: str = "Segoe UI"  # fallback hasta que se cargue Manrope
+FONT_SERIF: str = "Georgia"  # fallback hasta que se cargue Fraunces
+FONT_SANS: str = "Segoe UI"  # fallback hasta que se cargue Inter
 FONT_MONO: str = "Consolas"  # fallback hasta que se cargue JetBrains Mono
 
 
@@ -98,9 +98,14 @@ def load_fonts() -> dict[str, str]:
         _LOADED = True
         return {"serif": FONT_SERIF, "sans": FONT_SANS, "mono": FONT_MONO}
 
-    # Archivos esperados por familia. El primero que cargue por familia gana.
+    # Archivos esperados por familia. Se registran todos los encontrados para que
+    # Qt pueda resolver pesos/itálicas; la preferencia final se elige por familia.
     expected = {
         "serif": [
+            "Fraunces-Variable.ttf",
+            "Fraunces-Italic-Variable.ttf",
+            "Fraunces[SOFT,WONK,opsz,wght].ttf",
+            "Fraunces-Italic[SOFT,WONK,opsz,wght].ttf",
             "Newsreader-Variable.ttf",
             "Newsreader-Variable.woff2",
             "Newsreader-Regular.ttf",
@@ -113,6 +118,12 @@ def load_fonts() -> dict[str, str]:
             "Newsreader-Italic.woff2",
         ],
         "sans": [
+            "Inter-Variable.ttf",
+            "Inter[opsz,wght].ttf",
+            "Inter-Regular.ttf",
+            "Inter-Medium.ttf",
+            "Inter-SemiBold.ttf",
+            "Inter-Bold.ttf",
             "Manrope-Variable.ttf",
             "Manrope-Variable.woff2",
             "Manrope-Regular.ttf",
@@ -159,8 +170,8 @@ def load_fonts() -> dict[str, str]:
     _AVAILABLE_FAMILIES = list(families_loaded)
 
     # Preferencias por rol — el primero presente gana.
-    serif_pref = ("Newsreader", "Source Serif Pro", "Georgia")
-    sans_pref = ("Manrope", "Plus Jakarta Sans", "DM Sans", "Inter", "Satoshi", "Segoe UI")
+    serif_pref = ("Fraunces", "Newsreader", "Source Serif Pro", "Georgia")
+    sans_pref = ("Inter", "Manrope", "Plus Jakarta Sans", "DM Sans", "Satoshi", "Segoe UI")
     mono_pref = ("JetBrains Mono", "Cascadia Mono", "Consolas")
 
     def _pick(prefs: tuple[str, ...], fallback: str) -> str:

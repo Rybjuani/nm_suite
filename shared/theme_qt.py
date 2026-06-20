@@ -128,9 +128,9 @@ SPACE = V3_SPACE
 
 
 ANIM = {
-    "fast":   150,   # micro-feedback: press, flash, toggle
-    "medium": 250,   # transiciones: checkmark, state change
-    "slow":   400,   # expansión completa: ripple, slide
+    "fast":   140,   # micro-feedback: press, flash, toggle
+    "medium": 240,   # transiciones: checkmark, state change
+    "slow":   480,   # expansión completa: ripple, slide
     "ring":   500,   # ring/wave pulse de una sola pasada
     "pulse": 2000,   # loop de pulso ambiental (FocusArc, breathing)
     "blink":  550,   # intervalo de parpadeo de urgencia

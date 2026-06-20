@@ -73,7 +73,7 @@ def _compat_palette(palette: dict[str, str], *, dark: bool) -> dict[str, str]:
         "card": palette["card"],
         "sidebar": palette["sidebar"],
         "ink": palette["ink"],
-        "sage": palette["sage"] if not dark else palette["lavender"],
+        "sage": palette["sage"],
         "terracotta": palette["terracotta"],
         "aqua": palette["aqua"],
         "line": palette["line"],

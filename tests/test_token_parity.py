@@ -45,12 +45,14 @@ def _assert_palette_adapter(adapter: dict[str, str], source: dict[str, str]) -> 
 def test_design_tokens_palette_adapters_follow_runtime_tokens():
     _assert_palette_adapter(dt.LIGHT, theme.V3_LIGHT)
     _assert_palette_adapter(dt.DARK, theme.V3_DARK)
-    assert dt.LIGHT["sage"] == theme.V3_LIGHT["sage"]
-    assert dt.LIGHT["canvas"] == theme.V3_LIGHT["canvas"]
-    assert dt.DARK["sage"] == theme.V3_DARK["lavender"]
-    assert dt.DARK["canvas"] == theme.V3_DARK["bg"]
-    assert dt.DARK["green"] == theme.V3_DARK["green"]
-    assert dt.DARK["deep"] == theme.V3_DARK["deep"]
+    assert dt.LIGHT["canvas"] == "#E9E3D6"
+    assert dt.LIGHT["sage"] == "#2E5D43"
+    assert dt.LIGHT["terracotta"] == "#B0683B"
+    assert dt.DARK["canvas"] == "#0E121C"
+    assert dt.DARK["sage"] == "#56D9A6"
+    assert dt.DARK["terracotta"] == "#E0996A"
+    assert dt.DARK["green"] == "#56D9A6"
+    assert dt.DARK["deep"] == "#0E121C"
 
 
 def test_design_tokens_structural_scales_reuse_runtime_tokens():
@@ -80,6 +82,25 @@ def test_theme_qt_reexports_runtime_token_objects():
     assert theme_qt.V3_DARK is theme.V3_DARK
     assert theme_qt.V3_SHADOWS is theme.V3_SHADOWS
     assert theme_qt.V3_GRADIENTS is theme.V3_GRADIENTS
+    assert theme_qt.ANIM["fast"] == 140
+    assert theme_qt.ANIM["medium"] == 240
+    assert theme_qt.ANIM["slow"] == 480
+
+
+def test_runtime_tokens_are_mockup_adn_values():
+    assert theme.V3_LIGHT["bg"] == "#E9E3D6"
+    assert theme.V3_LIGHT["surface"] == "#FBF8F1"
+    assert theme.V3_LIGHT["primary"] == "#2E5D43"
+    assert theme.V3_LIGHT["accent"] == "#B0683B"
+    assert theme.V3_DARK["bg"] == "#0E121C"
+    assert theme.V3_DARK["surface"] == "#191F2E"
+    assert theme.V3_DARK["primary"] == "#56D9A6"
+    assert theme.V3_DARK["accent"] == "#E0996A"
+    assert theme.V3_RADIUS["card"] == 22
+    assert theme.V3_RADIUS["input"] == 16
+    assert theme.TRANSITIONS == {"fast": 140, "normal": 240, "slow": 480}
+    assert theme.TYPOGRAPHY["font_family_fallback_chain"][0] == "Inter"
+    assert theme.TYPOGRAPHY["font_serif_fallback_chain"][0] == "Fraunces"
 
 
 def test_visual_density_contract_keeps_hub_compact_and_scoped():

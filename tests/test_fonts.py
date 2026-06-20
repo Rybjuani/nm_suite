@@ -10,6 +10,25 @@ from shared.fonts import (
     font_summary,
     load_fonts,
 )
+from pathlib import Path
+
+
+class TestFontAssets:
+    def test_mockup_font_assets_are_bundled(self):
+        asset_names = {
+            "Inter-Variable.ttf",
+            "Fraunces-Variable.ttf",
+            "Fraunces-Italic-Variable.ttf",
+            "OFL-Inter.txt",
+            "OFL-Fraunces.txt",
+        }
+        found = set()
+        for directory in _fonts_dirs():
+            try:
+                found.update(p.name for p in Path(directory).glob("*"))
+            except OSError:
+                continue
+        assert asset_names.issubset(found)
 
 
 class TestConstantesFonts:

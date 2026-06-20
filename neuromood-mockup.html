@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light" data-product="suite">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NeuroMood · Mockup interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   NeuroMood — design tokens
+   Light: cream / forest / terracotta  ·  Dark: ink / mint / lavender
+   ============================================================ */
+:root{
+  --font-display:"Fraunces", Georgia, "Times New Roman", serif;
+  --font-body:"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --r-xs:8px; --r-sm:12px; --r-md:16px; --r-lg:22px; --r-xl:28px; --r-pill:999px;
+  --t-fast:140ms cubic-bezier(.4,0,.2,1);
+  --t:240ms cubic-bezier(.32,.72,.24,1);
+  --t-slow:480ms cubic-bezier(.32,.72,.24,1);
+}
+
+/* ---- Light theme ---- */
+[data-theme="light"]{
+  --bg:#E9E3D6; --bg-grad-a:#EEE9DD; --bg-grad-b:#E3DCCB;
+  --surface:#FBF8F1; --surface-2:#F3EFE4; --surface-3:#ECE6D8;
+  --ink:#312D27; --ink-2:#6B6457; --ink-3:#9A9382;
+  --line:rgba(49,45,39,.10); --line-2:rgba(49,45,39,.06);
+  --shadow-1:0 1px 2px rgba(49,45,39,.05), 0 2px 6px rgba(49,45,39,.04);
+  --shadow-2:0 2px 8px rgba(49,45,39,.06), 0 10px 28px rgba(49,45,39,.07);
+  --shadow-3:0 8px 18px rgba(49,45,39,.10), 0 30px 60px rgba(49,45,39,.12);
+
+  --brand:#2E5D43; --brand-strong:#244C37; --brand-ink:#F7F3EA;
+  --brand-soft:rgba(46,93,67,.13); --brand-line:rgba(46,93,67,.28);
+  --accent:#B0683B; --accent-soft:rgba(176,104,59,.15);
+  --gold:#C2912F; --gold-soft:rgba(194,145,47,.16);
+  --rose:#B24E3D; --rose-soft:rgba(178,78,61,.14);
+  --mind:#3C8A6B; --toler:#C25A45; --regul:#CC8F2C; --efect:#2E5D43;
+
+  --ring-track:rgba(49,45,39,.10);
+  --focus:rgba(46,93,67,.45);
+  --chrome:#E5DED0; --chrome-line:rgba(49,45,39,.10);
+}
+
+/* ---- Dark theme ---- */
+[data-theme="dark"]{
+  --bg:#0E121C; --bg-grad-a:#121726; --bg-grad-b:#0B0E18;
+  --surface:#191F2E; --surface-2:#212838; --surface-3:#283047;
+  --ink:#E8EAF1; --ink-2:#A7AEC1; --ink-3:#727A90;
+  --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.05);
+  --shadow-1:0 1px 2px rgba(0,0,0,.4);
+  --shadow-2:0 4px 12px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.35);
+  --shadow-3:0 10px 24px rgba(0,0,0,.5), 0 30px 70px rgba(0,0,0,.55);
+
+  --brand:#56D9A6; --brand-strong:#3FC592; --brand-ink:#06140D;
+  --brand-soft:rgba(86,217,166,.14); --brand-line:rgba(86,217,166,.34);
+  --accent:#E0996A; --accent-soft:rgba(224,153,106,.16);
+  --gold:#E3B765; --gold-soft:rgba(227,183,101,.16);
+  --rose:#F09182; --rose-soft:rgba(240,145,130,.16);
+  --mind:#5FE0B2; --toler:#FF9082; --regul:#E9BC66; --efect:#7CC6F0;
+
+  --ring-track:rgba(255,255,255,.10);
+  --focus:rgba(86,217,166,.5);
+  --chrome:#141A28; --chrome-line:rgba(255,255,255,.07);
+}
+
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; font-family:var(--font-body); color:var(--ink);
+  background:
+    radial-gradient(1200px 800px at 80% -10%, var(--bg-grad-a), transparent 60%),
+    radial-gradient(1000px 700px at -10% 110%, var(--bg-grad-b), transparent 55%),
+    var(--bg);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  transition:background var(--t-slow), color var(--t);
+  overflow:hidden;
+}
+::selection{background:var(--brand-soft);}
+button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit;}
+input{font-family:inherit;}
+:focus-visible{outline:2px solid var(--focus); outline-offset:2px; border-radius:6px;}
+
+/* ============================================================
+   App layout : navigator rail + stage
+   ============================================================ */
+.app{display:grid; grid-template-columns:300px 1fr; height:100vh;}
+
+/* ---- Navigator ---- */
+.nav{
+  display:flex; flex-direction:column; min-height:0;
+  background:linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  border-right:1px solid var(--line);
+  box-shadow:var(--shadow-1);
+}
+.nav__brand{padding:20px 20px 14px; display:flex; align-items:center; gap:11px;}
+.brandmark{
+  width:34px; height:34px; border-radius:10px; flex:none;
+  background:linear-gradient(140deg, var(--brand), var(--accent));
+  display:grid; place-items:center; color:#fff; box-shadow:var(--shadow-1);
+}
+.brandmark svg{width:20px; height:20px;}
+.brand__name{font-family:var(--font-display); font-weight:600; font-size:17px; letter-spacing:-.01em; line-height:1;}
+.brand__name b{color:var(--brand); font-weight:600;}
+.brand__sub{font-size:11px; color:var(--ink-3); margin-top:3px; letter-spacing:.06em; text-transform:uppercase;}
+
+.seg{display:flex; gap:4px; margin:4px 16px 12px; padding:4px; background:var(--surface-3);
+  border-radius:var(--r-pill); border:1px solid var(--line-2);}
+.seg button{flex:1; padding:7px 0; font-size:12.5px; font-weight:600; color:var(--ink-2);
+  border-radius:var(--r-pill); transition:all var(--t-fast); letter-spacing:.01em;}
+.seg button[aria-pressed="true"]{background:var(--surface); color:var(--ink);
+  box-shadow:var(--shadow-1);}
+
+.nav__search{margin:0 16px 8px; position:relative;}
+.nav__search svg{position:absolute; left:12px; top:50%; transform:translateY(-50%);
+  width:15px; height:15px; color:var(--ink-3); pointer-events:none;}
+.nav__search input{width:100%; padding:9px 12px 9px 34px; font-size:13px; color:var(--ink);
+  background:var(--surface-3); border:1px solid var(--line); border-radius:var(--r-pill);
+  transition:border var(--t-fast), box-shadow var(--t-fast);}
+.nav__search input::placeholder{color:var(--ink-3);}
+.nav__search input:focus{outline:none; border-color:var(--brand-line); box-shadow:0 0 0 3px var(--brand-soft);}
+
+.nav__list{flex:1; overflow-y:auto; padding:4px 12px 20px; scrollbar-width:thin;}
+.nav__list::-webkit-scrollbar{width:8px;}
+.nav__list::-webkit-scrollbar-thumb{background:var(--line); border-radius:99px; border:2px solid transparent; background-clip:padding-box;}
+.nav__group{margin-top:14px;}
+.nav__group-h{display:flex; align-items:center; gap:8px; padding:4px 10px; margin-bottom:2px;}
+.nav__group-h span{font-size:10.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3);}
+.nav__group-h hr{flex:1; border:none; border-top:1px solid var(--line-2);}
+.nav__item{display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+  padding:8px 10px; border-radius:var(--r-sm); font-size:13.5px; color:var(--ink-2);
+  transition:background var(--t-fast), color var(--t-fast); position:relative; font-weight:450;}
+.nav__item:hover{background:var(--surface-3); color:var(--ink);}
+.nav__item.is-active{background:var(--brand-soft); color:var(--brand); font-weight:600;}
+[data-theme="dark"] .nav__item.is-active{color:var(--ink);}
+.nav__item.is-active::before{content:""; position:absolute; left:-12px; top:50%; transform:translateY(-50%);
+  width:3px; height:18px; border-radius:3px; background:var(--brand);}
+.nav__item .ic{width:17px; height:17px; flex:none; opacity:.85;}
+.nav__item .lbl{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.nav__item .tag{font-size:9.5px; font-weight:700; padding:1px 6px; border-radius:99px;
+  background:var(--surface-3); color:var(--ink-3); letter-spacing:.03em;}
+.nav__item.is-active .tag{background:rgba(255,255,255,.4); color:var(--brand);}
+[data-theme="dark"] .nav__item.is-active .tag{background:rgba(255,255,255,.12); color:var(--ink-2);}
+
+.nav__foot{padding:12px 16px; border-top:1px solid var(--line); display:flex; align-items:center; gap:10px;}
+.themetoggle{flex:1; display:flex; align-items:center; gap:9px; padding:9px 12px; border-radius:var(--r-pill);
+  background:var(--surface-3); border:1px solid var(--line); font-size:12.5px; font-weight:500; color:var(--ink-2);
+  transition:all var(--t-fast);}
+.themetoggle:hover{color:var(--ink); border-color:var(--brand-line);}
+.themetoggle svg{width:16px; height:16px;}
+.themetoggle .dot{margin-left:auto; width:34px; height:18px; border-radius:99px; background:var(--line);
+  position:relative; transition:background var(--t);}
+.themetoggle .dot::after{content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%;
+  background:var(--surface); box-shadow:var(--shadow-1); transition:transform var(--t);}
+[data-theme="dark"] .themetoggle .dot{background:var(--brand);}
+[data-theme="dark"] .themetoggle .dot::after{transform:translateX(16px);}
+
+/* ============================================================
+   Stage + device window
+   ============================================================ */
+.stage{position:relative; min-width:0; display:flex; flex-direction:column;
+  padding:26px 30px; overflow:auto;}
+.stage__top{display:flex; align-items:flex-end; gap:16px; margin-bottom:18px; flex-wrap:wrap;}
+.stage__title{font-family:var(--font-display); font-size:23px; font-weight:600; letter-spacing:-.015em; line-height:1.1;}
+.stage__desc{font-size:13px; color:var(--ink-2); margin-top:5px; max-width:60ch;}
+.stage__meta{margin-left:auto; display:flex; gap:8px; align-items:center;}
+.chip-state{display:flex; gap:4px; padding:4px; background:var(--surface-2); border:1px solid var(--line);
+  border-radius:var(--r-pill); box-shadow:var(--shadow-1);}
+.chip-state button{padding:6px 13px; font-size:12px; font-weight:600; color:var(--ink-2);
+  border-radius:var(--r-pill); transition:all var(--t-fast); white-space:nowrap;}
+.chip-state button[aria-pressed="true"]{background:var(--brand); color:var(--brand-ink); box-shadow:var(--shadow-1);}
+
+.window{
+  width:100%; max-width:980px; margin:0 auto; background:var(--surface);
+  border:1px solid var(--line); border-radius:var(--r-xl); overflow:hidden;
+  box-shadow:var(--shadow-3); animation:winIn var(--t-slow) both;
+}
+.window.narrow{max-width:560px;}
+@keyframes winIn{from{opacity:0; transform:translateY(10px) scale(.992);} to{opacity:1; transform:none;}}
+
+.titlebar{display:flex; align-items:center; gap:10px; padding:11px 16px;
+  background:var(--chrome); border-bottom:1px solid var(--chrome-line);}
+.titlebar .back{width:26px; height:26px; border-radius:8px; display:grid; place-items:center; color:var(--ink-2); transition:background var(--t-fast);}
+.titlebar .back:hover{background:var(--surface-3);}
+.titlebar .tb-ic{width:18px; height:18px; opacity:.9; color:var(--accent);}
+.titlebar .tb-title{font-size:13.5px; font-weight:600; letter-spacing:-.01em;}
+.titlebar .tb-crumb{font-size:13px; color:var(--ink-3);}
+.titlebar .tb-right{margin-left:auto; display:flex; align-items:center; gap:14px;}
+.tb-dot{width:13px; height:13px; border-radius:50%; opacity:.55; transition:opacity var(--t-fast);}
+.tb-dot:hover{opacity:1;}
+.tb-dots{display:flex; gap:8px;}
+.tb-dot.r{background:#E0695A;} .tb-dot.y{background:#E0B23E;} .tb-dot.g{background:#56B27A;}
+.tb-theme{width:24px; height:24px; border-radius:7px; display:grid; place-items:center; color:var(--ink-3); transition:all var(--t-fast);}
+.tb-theme:hover{color:var(--ink); background:var(--surface-3);}
+
+/* range slider */
+input[type=range]{-webkit-appearance:none; appearance:none; height:8px; border-radius:99px;
+  background:linear-gradient(90deg,#7b8a99,#6b8fa8,#5faa86,#86b15f,#c99a3d,#b24e3d); outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:22px; height:22px; border-radius:50%;
+  background:var(--surface); border:3px solid var(--brand); box-shadow:var(--shadow-2); cursor:pointer; transition:transform var(--t-fast);}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.12);}
+input[type=range]::-moz-range-thumb{width:20px; height:20px; border-radius:50%; background:var(--surface); border:3px solid var(--brand); cursor:pointer;}
+
+/* breathing / timer ring */
+.bigring{width:230px; height:230px; border-radius:50%; position:relative; display:grid; place-items:center; margin:0 auto;
+  background:radial-gradient(circle at 50% 40%, var(--brand-soft), transparent 72%);}
+.bigring .core{width:200px; height:200px; border-radius:50%;
+  background:radial-gradient(circle at 50% 38%, var(--surface) 0%, var(--surface-2) 70%);
+  border:1px solid var(--line); box-shadow:inset 0 2px 10px rgba(0,0,0,.04), var(--shadow-2);
+  display:grid; place-items:center; transition:transform 1s cubic-bezier(.4,0,.2,1);}
+.bigring .num{font-family:var(--font-display); font-size:52px; font-weight:500; line-height:1;}
+.bigring .ph{font-size:13px; color:var(--ink-2); margin-top:8px; letter-spacing:.04em;}
+.ctl{width:46px; height:46px; border-radius:50%; display:grid; place-items:center; background:var(--surface);
+  border:1px solid var(--line); box-shadow:var(--shadow-1); color:var(--ink-2); transition:all var(--t-fast);}
+.ctl:hover{border-color:var(--brand-line); color:var(--ink); transform:translateY(-1px);}
+.ctl.main{width:58px; height:58px; background:var(--brand); color:var(--brand-ink); border-color:transparent;}
+.ctl.main:hover{background:var(--brand-strong);}
+
+/* routine checkbox */
+.rt-cb{width:22px; height:22px; border-radius:7px; border:2px solid var(--line); flex:none; display:grid; place-items:center;
+  color:var(--brand-ink); background:var(--surface); transition:all var(--t-fast);}
+.rt-cb.on{background:var(--brand); border-color:var(--brand);}
+.rt-row:hover{background:var(--surface-2);}
+
+/* dbt skill card */
+.dbt-card{position:relative; overflow:hidden;}
+.dbt-card .bar{height:7px; width:64px; border-radius:99px; margin-bottom:14px;}
+.dbt-card .meta{display:flex; align-items:center; gap:14px; margin-top:14px; font-size:12.5px; color:var(--ink-3);}
+.dbt-card .meta .pl{color:var(--brand); font-weight:600; display:inline-flex; align-items:center; gap:5px; cursor:pointer;}
+.need-card{border-left:3px solid var(--brand); cursor:pointer;}
+
+/* stepper */
+.stepper{display:flex; align-items:center; justify-content:space-between; max-width:620px; margin:8px auto 28px; position:relative;}
+.stepper .line{position:absolute; left:8%; right:8%; top:9px; height:2px; background:var(--line);}
+.stepper .line .fill{height:100%; background:var(--brand); transition:width var(--t-slow);}
+.stepper .stp{display:flex; flex-direction:column; align-items:center; gap:8px; position:relative; z-index:1;}
+.stepper .stp i{width:18px; height:18px; border-radius:50%; background:var(--surface-3); border:2px solid var(--line); transition:all var(--t);}
+.stepper .stp.done i,.stepper .stp.active i{background:var(--brand); border-color:var(--brand);}
+.stepper .stp span{font-size:12px; color:var(--ink-3); font-weight:500;}
+.stepper .stp.active span{color:var(--ink); font-weight:600;}
+
+/* patient row */
+.prow{display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:var(--r-md); transition:background var(--t-fast); cursor:pointer; border:1px solid transparent;}
+.prow:hover{background:var(--surface-2); border-color:var(--line);}
+.avatar{width:40px; height:40px; border-radius:12px; flex:none; display:grid; place-items:center; font-weight:700; font-size:13.5px; color:#fff;}
+
+.screen{padding:24px; min-height:520px; background:
+  radial-gradient(900px 500px at 50% -20%, var(--surface-2), transparent 70%);
+  animation:scrnIn var(--t) both;}
+@keyframes scrnIn{from{opacity:0;} to{opacity:1;}}
+
+/* ============================================================
+   Reusable primitives
+   ============================================================ */
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg);
+  box-shadow:var(--shadow-1); transition:transform var(--t), box-shadow var(--t), border-color var(--t);}
+.card.pad{padding:20px;}
+.card.hov:hover{transform:translateY(-3px); box-shadow:var(--shadow-2); border-color:var(--brand-line);}
+
+.eyebrow{font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3);}
+.h-serif{font-family:var(--font-display); font-weight:600; letter-spacing:-.015em;}
+
+.badge{display:inline-flex; align-items:center; gap:5px; padding:4px 11px; border-radius:var(--r-pill);
+  font-size:11.5px; font-weight:600; letter-spacing:.01em; background:var(--surface-3); color:var(--ink-2);}
+.badge.brand{background:var(--brand-soft); color:var(--brand);}
+.badge.accent{background:var(--accent-soft); color:var(--accent);}
+.badge.gold{background:var(--gold-soft); color:var(--gold);}
+.badge.rose{background:var(--rose-soft); color:var(--rose);}
+.badge .dt{width:6px; height:6px; border-radius:50%; background:currentColor;}
+[data-theme="dark"] .badge.brand{color:var(--mind);}
+
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:11px 20px;
+  border-radius:var(--r-pill); font-size:13.5px; font-weight:600; letter-spacing:.005em;
+  transition:transform var(--t-fast), box-shadow var(--t-fast), background var(--t-fast), border-color var(--t-fast);
+  border:1px solid transparent;}
+.btn:active{transform:translateY(1px) scale(.99);}
+.btn--primary{background:var(--brand); color:var(--brand-ink); box-shadow:var(--shadow-1);}
+.btn--primary:hover{background:var(--brand-strong); box-shadow:var(--shadow-2);}
+.btn--ghost{background:var(--surface); border-color:var(--line); color:var(--ink);}
+.btn--ghost:hover{border-color:var(--brand-line); background:var(--surface-2);}
+.btn--soft{background:var(--brand-soft); color:var(--brand);}
+.btn--soft:hover{background:var(--brand-line); color:var(--brand-ink);}
+.btn:disabled{opacity:.5; cursor:not-allowed; transform:none;}
+
+.input{width:100%; padding:12px 14px; font-size:13.5px; color:var(--ink); background:var(--surface-2);
+  border:1px solid var(--line); border-radius:var(--r-md); transition:border var(--t-fast), box-shadow var(--t-fast);}
+.input::placeholder{color:var(--ink-3);}
+.input:focus{outline:none; border-color:var(--brand-line); box-shadow:0 0 0 3px var(--brand-soft);}
+textarea.input{resize:none; line-height:1.55;}
+.field-lbl{font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:7px; display:block;}
+.field-lbl span{color:var(--ink-3); font-weight:450;}
+
+.tabs{display:flex; gap:4px; padding:5px; background:var(--surface-2); border:1px solid var(--line);
+  border-radius:var(--r-pill);}
+.tabs button{padding:8px 16px; font-size:13px; font-weight:600; color:var(--ink-2); border-radius:var(--r-pill);
+  transition:all var(--t-fast); white-space:nowrap;}
+.tabs button[aria-selected="true"]{background:var(--brand); color:var(--brand-ink); box-shadow:var(--shadow-1);}
+
+.fchip{padding:8px 15px; font-size:12.5px; font-weight:600; color:var(--ink-2); border-radius:var(--r-pill);
+  background:var(--surface-2); border:1px solid var(--line); transition:all var(--t-fast);}
+.fchip:hover{border-color:var(--brand-line); color:var(--ink);}
+.fchip[aria-pressed="true"]{background:var(--brand); color:var(--brand-ink); border-color:transparent;}
+
+.empty{display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+  padding:50px 24px; gap:10px;}
+.empty .ico{width:64px; height:64px; border-radius:18px; display:grid; place-items:center;
+  background:var(--brand-soft); color:var(--brand); margin-bottom:6px;}
+.empty .ico svg{width:30px; height:30px;}
+.empty h3{font-family:var(--font-display); font-size:20px; font-weight:600; margin:0;}
+.empty p{font-size:13.5px; color:var(--ink-2); margin:0; max-width:34ch; line-height:1.5;}
+
+.grid{display:grid; gap:14px;}
+.cols-2{grid-template-columns:1fr 1fr;}
+.cols-3{grid-template-columns:repeat(3,1fr);}
+.cols-4{grid-template-columns:repeat(4,1fr);}
+@media(max-width:880px){.cols-4{grid-template-columns:1fr 1fr;} .cols-3{grid-template-columns:1fr 1fr;}}
+
+/* progress ring */
+.ring{--p:0; --sz:54px; --tk:6px; width:var(--sz); height:var(--sz); border-radius:50%; flex:none;
+  background:conic-gradient(var(--brand) calc(var(--p)*1%), var(--ring-track) 0);
+  display:grid; place-items:center; transition:background var(--t-slow);}
+.ring::before{content:""; position:absolute; width:calc(var(--sz) - var(--tk)*2); height:calc(var(--sz) - var(--tk)*2);
+  border-radius:50%; background:var(--surface);}
+.ring{position:relative;}
+.ring span{position:relative; font-size:12px; font-weight:700; color:var(--brand);}
+
+.dots{display:flex; gap:5px;}
+.dots i{width:8px; height:8px; border-radius:50%; background:var(--line); transition:background var(--t-fast);}
+.dots i.on{background:var(--brand);}
+.dots i.miss{background:var(--rose);}
+
+/* toast */
+.toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0;
+  background:var(--ink); color:var(--surface); padding:12px 20px; border-radius:var(--r-pill);
+  font-size:13px; font-weight:500; box-shadow:var(--shadow-3); z-index:60; pointer-events:none;
+  transition:opacity var(--t), transform var(--t); display:flex; gap:9px; align-items:center;}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+.toast svg{width:16px; height:16px; color:var(--brand);}
+
+/* modal */
+.modal-bg{position:fixed; inset:0; background:rgba(20,18,14,.5); backdrop-filter:blur(3px);
+  display:grid; place-items:center; z-index:50; opacity:0; pointer-events:none; transition:opacity var(--t);}
+.modal-bg.show{opacity:1; pointer-events:auto;}
+.modal{width:min(560px,92vw); background:var(--surface); border:1px solid var(--line); border-radius:var(--r-xl);
+  box-shadow:var(--shadow-3); transform:scale(.96); transition:transform var(--t); overflow:hidden;}
+.modal-bg.show .modal{transform:none;}
+
+@media(max-width:960px){
+  .app{grid-template-columns:1fr;}
+  .nav{position:fixed; z-index:40; width:300px; height:100%; transform:translateX(-100%); transition:transform var(--t);}
+  .nav.open{transform:none;}
+  .menu-fab{position:fixed; top:16px; left:16px; z-index:30; width:42px; height:42px; border-radius:12px;
+    background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow-2); display:grid; place-items:center;}
+}
+.menu-fab{display:none;}
+@media(max-width:960px){.menu-fab{display:grid;} .stage{padding-top:70px;}}
+
+/* ---------- HUB: patients ---------- */
+.phead{display:flex; align-items:center; gap:14px; padding:0 16px 8px; font-size:11px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3); font-weight:600; border-bottom:1px solid var(--line);}
+.phead>span:first-child{padding-left:60px;}
+.plist{display:flex; flex-direction:column; gap:2px; margin-top:8px;}
+.pstatus{width:9px; height:9px; border-radius:50%; background:var(--brand); flex:none; box-shadow:0 0 0 3px var(--brand-soft);}
+.pcol-mail{width:230px;}
+.pcol-trend{width:90px; display:grid; place-items:center;}
+.pcol-use{width:60px; display:grid; place-items:center;}
+.prow-x{width:30px; height:30px; border-radius:9px; display:grid; place-items:center; color:var(--ink-3);
+  background:none; border:1px solid transparent; flex:none; transition:all var(--t-fast);}
+.prow-x:hover{color:var(--rose); background:var(--rose-soft);}
+@media(max-width:820px){ .pcol-mail{display:none;} .phead .pcol-mail{display:none;} }
+
+/* ---------- HUB: detail ---------- */
+.hub-tabs button{font-size:12px; padding:8px 12px;}
+.hub-grid{display:grid; grid-template-columns:300px 1fr; gap:16px; align-items:start;}
+.hub-form{display:flex; flex-direction:column; gap:10px;}
+.hub-panel{min-height:230px;}
+@media(max-width:760px){ .hub-grid{grid-template-columns:1fr;} }
+
+/* ---------- HUB: global texts ---------- */
+.tg-body{display:flex; flex-direction:column; gap:0; padding-bottom:0;}
+.tg-top{display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding-bottom:16px; border-bottom:1px solid var(--line);}
+.tg-list{display:flex; flex-direction:column; gap:8px; padding:14px 2px; max-height:430px; overflow-y:auto;}
+.tg-row{display:flex; align-items:center; gap:16px; padding:12px 14px; border-radius:var(--r-md);
+  background:var(--surface-2); border:1px solid var(--line); transition:border-color var(--t-fast);}
+.tg-row.dirty{border-color:var(--brand-line); box-shadow:0 0 0 3px var(--brand-soft);}
+.tg-label{width:150px; flex:none;}
+.tg-mod{font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600;}
+.tg-name{font-size:13.5px; font-weight:600; margin-top:2px;}
+.tg-input{flex:1; min-width:120px;}
+.tg-meta{display:flex; align-items:center; gap:10px; flex:none;}
+.tg-count{font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums; min-width:48px; text-align:right;}
+.tg-foot{display:flex; align-items:center; gap:10px; padding:14px 2px 4px; border-top:1px solid var(--line); margin-top:auto;}
+@media(max-width:680px){ .tg-row{flex-wrap:wrap;} .tg-label{width:100%;} .tg-meta{margin-left:auto;} }
+</style>
+</head>
+<body>
+<button class="menu-fab" id="menuFab" aria-label="Menú">
+  <svg viewBox="0 0 24 24" width="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+</button>
+<div class="app">
+  <!-- NAVIGATOR -->
+  <aside class="nav" id="nav">
+    <div class="nav__brand">
+      <div class="brandmark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9.5 3.5a3 3 0 0 0-3 3 3 3 0 0 0-1.5 5.6A3 3 0 0 0 6.5 18 3 3 0 0 0 12 19.5V4.2a3 3 0 0 0-2.5-.7Z"/>
+          <path d="M14.5 3.5a3 3 0 0 1 3 3 3 3 0 0 1 1.5 5.6A3 3 0 0 1 17.5 18 3 3 0 0 1 12 19.5"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand__name">Neuro<b>Mood</b></div>
+        <div class="brand__sub">Mockup interactivo</div>
+      </div>
+    </div>
+
+    <div class="seg" role="tablist" aria-label="Producto">
+      <button id="segSuite" aria-pressed="true">Suite · Paciente</button>
+      <button id="segHub" aria-pressed="false">Hub · Clínico</button>
+    </div>
+
+    <div class="nav__search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="navSearch" type="text" placeholder="Buscar pantalla…" />
+    </div>
+
+    <div class="nav__list" id="navList"></div>
+
+    <div class="nav__foot">
+      <button class="themetoggle" id="themeToggle">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <span id="themeLabel">Tema claro</span>
+        <span class="dot" aria-hidden="true"></span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- STAGE -->
+  <main class="stage" id="stage">
+    <div class="stage__top">
+      <div>
+        <h1 class="stage__title" id="sTitle">Home</h1>
+        <p class="stage__desc" id="sDesc"></p>
+      </div>
+      <div class="stage__meta" id="sMeta"></div>
+    </div>
+    <div id="windowMount"></div>
+  </main>
+</div>
+<div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg><span id="toastMsg"></span></div>
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+
+<script>
+/* ============================================================================
+   NeuroMood — interactive mockup engine
+   ============================================================================ */
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const el = (t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e;};
+const esc = s => String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+/* ---------- icon set ---------- */
+const I = {
+  home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h14V9"/>',
+  mood:'<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
+  breath:'<path d="M12 3v6M12 3 9.5 5.5M12 3l2.5 2.5"/><circle cx="12" cy="14" r="6"/>',
+  brain:'<path d="M9.5 3.5a3 3 0 0 0-3 3 3 3 0 0 0-1.5 5.6A3 3 0 0 0 6.5 18 3 3 0 0 0 12 19.5V4.2a3 3 0 0 0-2.5-.7Z"/><path d="M14.5 3.5a3 3 0 0 1 3 3 3 3 0 0 1 1.5 5.6A3 3 0 0 1 17.5 18 3 3 0 0 1 12 19.5"/>',
+  activity:'<circle cx="12" cy="5" r="2.4"/><path d="M9 21v-6l-2-2 1-5 4 2 3 1"/><path d="m9 13 4 1 1 7"/>',
+  bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+  check:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  timer:'<circle cx="12" cy="13" r="8"/><path d="M12 13V9M9 2h6M19 6l-1.5 1.5"/>',
+  spark:'<path d="m12 3 1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M5 18l.7 1.8L7.5 20l-1.8.7L5 22l-.7-1.3L2.5 20l1.8-.2z"/>',
+  users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M16 6a3 3 0 0 1 0 5.6M21 20c0-2.6-1.4-4.2-3.5-4.8"/>',
+  user:'<circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.6 3-5.5 7-5.5s7 1.9 7 5.5"/>',
+  text:'<path d="M5 7h14M5 12h14M5 17h9"/>',
+  key:'<circle cx="8" cy="15" r="4"/><path d="m11 12 8-8 2 2-2 2 2 2-2 2-2-2-3 3"/>',
+  shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+  smile:'<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
+  flower:'<circle cx="12" cy="12" r="2.5"/><path d="M12 9.5C12 7 13 5 15 5s2 3 0 4.5M12 14.5C12 17 11 19 9 19s-2-3 0-4.5M9.5 12C7 12 5 11 5 9s3-2 4.5 0M14.5 12c2.5 0 4.5 1 4.5 3s-3 2-4.5 0"/>',
+  doc:'<path d="M14 3v5h5"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M8 13h8M8 17h6"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>',
+  arrow:'<path d="M19 12H5M12 19l-7-7 7-7"/>',
+};
+const svg = (p,w=18)=>`<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+
+/* ---------- toast / modal ---------- */
+let toastT;
+function toast(msg){
+  $('#toastMsg').textContent = msg; const t=$('#toast'); t.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200);
+}
+function openModal(html){ $('#modal').innerHTML=html; $('#modalBg').classList.add('show'); }
+function closeModal(){ $('#modalBg').classList.remove('show'); }
+$('#modalBg').addEventListener('click',e=>{ if(e.target===$('#modalBg')) closeModal(); });
+
+/* ---------- breadcrumb / titlebar builder ---------- */
+function titlebar({icon,title,crumb,back}={}){
+  return `<div class="titlebar">
+    ${back?`<button class="back" data-back="${esc(back)}" title="Atrás">${svg(I.arrow,17)}</button>`:''}
+    ${icon?`<span class="tb-ic">${svg(I[icon]||icon,18)}</span>`:''}
+    <span class="tb-title">${esc(title||'')}</span>
+    ${crumb?`<span class="tb-crumb">/&nbsp; ${esc(crumb)}</span>`:''}
+    <div class="tb-right">
+      <button class="tb-theme" data-theme-toggle title="Cambiar tema">${svg(document.documentElement.dataset.theme==='dark'?I.sun:I.moon,16)}</button>
+      <div class="tb-dots"><span class="tb-dot g"></span><span class="tb-dot y"></span><span class="tb-dot r"></span></div>
+    </div>
+  </div>`;
+}
+
+/* progress ring helper (svg, animatable) */
+function ringSVG(pct,{size=58,stroke=6,color='var(--brand)',label}={}){
+  const r=(size-stroke)/2, c=2*Math.PI*r, off=c*(1-pct/100);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="transform:rotate(-90deg)">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--ring-track)" stroke-width="${stroke}"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}"
+      stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"
+      style="transition:stroke-dashoffset .6s cubic-bezier(.32,.72,.24,1)"/>
+    ${label!=null?`<text x="50%" y="52%" text-anchor="middle" dominant-baseline="middle" transform="rotate(90 ${size/2} ${size/2})" font-size="${size*0.26}" font-weight="700" fill="${color}" font-family="var(--font-body)">${label}</text>`:''}
+  </svg>`;
+}
+
+/* ============================================================================
+   SCREEN REGISTRY
+   Each screen: {id, group, product, title, desc, icon, narrow?, states?, render(state)}
+   render returns innerHTML of .window; optional mount(root,state) wires events.
+   ============================================================================ */
+const SCREENS = {};
+function defScreen(o){ SCREENS[o.id]=o; }
+
+/* ===== boot state ===== */
+let CURRENT='home';
+let CURRENT_STATE=null;
+const groupsOrder = {
+  suite:['Acceso','Inicio','Bienestar','Cognitivo','Hábitos','Habilidades DBT'],
+  hub:['Pacientes','Seguimiento','Configuración'],
+};
+
+/* ---------- theme ---------- */
+function setTheme(t){
+  document.documentElement.dataset.theme=t;
+  $('#themeLabel').textContent = t==='dark'?'Tema oscuro':'Tema claro';
+  $('#themeIcon').innerHTML = t==='dark'?I.moon:I.sun;
+  render(); // re-render to refresh titlebar icon & charts
+}
+$('#themeToggle').addEventListener('click',()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-theme-toggle]')) setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+  const back=e.target.closest('[data-back]'); if(back) go(back.dataset.back);
+});
+
+/* ---------- product switch ---------- */
+function setProduct(p){
+  document.documentElement.dataset.product=p;
+  $('#segSuite').setAttribute('aria-pressed', p==='suite');
+  $('#segHub').setAttribute('aria-pressed', p==='hub');
+  buildNav();
+  const first=Object.values(SCREENS).find(s=>s.product===p);
+  if(first) go(first.id);
+}
+$('#segSuite').addEventListener('click',()=>setProduct('suite'));
+$('#segHub').addEventListener('click',()=>setProduct('hub'));
+
+/* ---------- navigator ---------- */
+function buildNav(filter=''){
+  const p=document.documentElement.dataset.product;
+  const list=$('#navList'); list.innerHTML='';
+  const f=filter.trim().toLowerCase();
+  groupsOrder[p].forEach(g=>{
+    const items=Object.values(SCREENS).filter(s=>s.product===p && s.group===g
+      && (!f || (s.title+' '+(s.desc||'')+' '+(s.navItems||[]).map(n=>n.label).join(' ')).toLowerCase().includes(f)));
+    if(!items.length) return;
+    const grp=el('div','nav__group');
+    grp.appendChild(el('div','nav__group-h',`<span>${g}</span><hr>`));
+    items.forEach(s=>{
+      // a screen may expose multiple nav entries (state variants)
+      const entries = s.navItems || [{id:s.id,label:s.title,tag:s.tag}];
+      entries.forEach(ent=>{
+        if(f && !((ent.label+' '+(s.desc||'')).toLowerCase().includes(f))) {
+          // keep if screen matched generally
+        }
+        const it=el('button','nav__item');
+        it.innerHTML=`<span class="ic">${svg(I[s.icon]||s.icon,17)}</span><span class="lbl">${esc(ent.label)}</span>${ent.tag?`<span class="tag">${esc(ent.tag)}</span>`:''}`;
+        it.dataset.id=s.id; it.dataset.state=ent.state||'';
+        if(CURRENT===s.id && (CURRENT_STATE||'')===(ent.state||'')) it.classList.add('is-active');
+        it.addEventListener('click',()=>{ go(s.id, ent.state||null); if(window.innerWidth<=960) $('#nav').classList.remove('open'); });
+        grp.appendChild(it);
+      });
+    });
+    list.appendChild(grp);
+  });
+}
+$('#navSearch').addEventListener('input',e=>buildNav(e.target.value));
+$('#menuFab').addEventListener('click',()=>$('#nav').classList.toggle('open'));
+
+/* ---------- navigation ---------- */
+function go(id, state=null){
+  if(!SCREENS[id]) return;
+  CURRENT=id; CURRENT_STATE=state;
+  render();
+  buildNav($('#navSearch').value);
+  $('#stage').scrollTop=0;
+}
+function render(){
+  const s=SCREENS[CURRENT]; if(!s) return;
+  $('#sTitle').textContent=s.title;
+  $('#sDesc').textContent=s.desc||'';
+  // state chips in stage meta
+  const meta=$('#sMeta'); meta.innerHTML='';
+  if(s.states && s.states.length>1){
+    const wrap=el('div','chip-state');
+    s.states.forEach(st=>{
+      const b=el('button',null,st.label); b.setAttribute('aria-pressed', (CURRENT_STATE||s.states[0].id)===st.id);
+      b.addEventListener('click',()=>{ CURRENT_STATE=st.id; render(); buildNav($('#navSearch').value); });
+      wrap.appendChild(b);
+    });
+    meta.appendChild(wrap);
+  }
+  const mount=$('#windowMount');
+  const win=el('div','window'+(s.narrow?' narrow':''));
+  win.innerHTML=s.render(CURRENT_STATE || (s.states?s.states[0].id:null));
+  mount.innerHTML=''; mount.appendChild(win);
+  if(s.mount) s.mount(win, CURRENT_STATE || (s.states?s.states[0].id:null));
+}
+</script>
+<script>
+/* ============================================================================
+   SUITE SCREENS  (patient side)
+   ============================================================================ */
+
+/* ---------- shared: feature card for home ---------- */
+function homeCard({icon,cat,catClass,title,sub,badge,badgeClass,target}){
+  return `<button class="card hov pad hcard" data-go="${target||''}" style="text-align:left; display:flex; flex-direction:column; gap:8px; min-height:148px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+      <span style="color:var(--${catClass||'brand'}); display:grid; place-items:center; width:32px; height:32px; background:var(--surface-3); border-radius:10px;">${svg(I[icon]||icon,18)}</span>
+      <span class="badge ${badgeClass||''}">${esc(cat)}</span>
+    </div>
+    <div>
+      <div class="h-serif" style="font-size:16.5px; line-height:1.2;">${esc(title)}</div>
+      <div style="font-size:12.5px; color:var(--ink-3); margin-top:3px;">${esc(sub)}</div>
+    </div>
+    <span class="badge ${badgeClass||''}" style="margin-top:auto;"><span class="dt"></span>${esc(badge)}</span>
+  </button>`;
+}
+
+/* ===================== HOME ===================== */
+defScreen({
+  id:'home', product:'suite', group:'Inicio', title:'Home', icon:'home',
+  desc:'Panel de bienestar del paciente con puntaje del día y accesos a cada herramienta.',
+  states:[{id:'score',label:'Con puntaje'},{id:'noscore',label:'Sin puntaje'}],
+  navItems:[{id:'home',label:'Home',tag:'inicio'}],
+  render(st){
+    const noScore = st==='noscore';
+    const cards=[
+      homeCard({icon:'mood',cat:'Bienestar',catClass:'brand',title:'Termómetro emocional',sub:'Registro emocional diario',badge:noScore?'Sin registro hoy':'10/10',badgeClass:noScore?'':'brand',target:'animo'}),
+      homeCard({icon:'breath',cat:'Calma',catClass:'mind',title:'Guía de respiración',sub:'Técnicas de calma 4·7·8',badge:'Activo',badgeClass:'brand',target:'respiracion'}),
+      homeCard({icon:'brain',cat:'Cognitivo',catClass:'efect',title:'Registro de pensamientos',sub:'Trabajo con pensamientos automáticos',badge:'En progreso',badgeClass:'gold',target:'registro'}),
+      homeCard({icon:'check',cat:'Hábitos',catClass:'brand',title:'Checklist de rutina',sub:'Tu rutina del día',badge:'60% hoy',badgeClass:'brand',target:'rutina'}),
+      homeCard({icon:'activity',cat:'Acción',catClass:'accent',title:'Activación conductual',sub:'Sugerencias para activarte',badge:'3 sugeridas',badgeClass:'accent',target:'actividades'}),
+      homeCard({icon:'timer',cat:'Enfoque',catClass:'gold',title:'Temporizador',sub:'Sesiones de foco',badge:'45 min hoy',badgeClass:'gold',target:'timer'}),
+      homeCard({icon:'bell',cat:'Diario',catClass:'brand',title:'Recordatorios',sub:'Avisos de bienestar',badge:'2 / 5 listos',badgeClass:'accent',target:'avisos'}),
+      homeCard({icon:'spark',cat:'Habilidades',catClass:'efect',title:'Habilidades DBT',sub:'Práctica guiada breve',badge:'4 familias',badgeClass:'brand',target:'dbtnow'}),
+    ].join('');
+    return titlebar({icon:'home',title:'NeuroMood Suite'}) + `<div class="screen">
+      <div class="card pad" style="margin-bottom:18px; background:linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%); position:relative; overflow:hidden;">
+        <div style="position:absolute; right:-30px; top:-40px; width:200px; height:200px; border-radius:50%; background:radial-gradient(circle, var(--brand-soft), transparent 70%); pointer-events:none;"></div>
+        <div class="eyebrow">Bienvenida</div>
+        <div class="h-serif" style="font-size:30px; margin:6px 0 16px;">Buenas noches, Juan</div>
+        ${noScore?`
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="font-size:13.5px; color:var(--ink-2);">Aún no registraste tu ánimo hoy.</div>
+            <button class="btn btn--primary" data-go="animo">Registrar ahora</button>
+          </div>`:`
+          <div style="display:flex; align-items:baseline; gap:10px;">
+            <span class="h-serif" style="font-size:40px; color:var(--brand); line-height:1;">10</span>
+            <span style="font-size:14px; color:var(--ink-3);">/ 10</span>
+            <span class="badge brand" style="margin-left:4px;">▲ 0.8 vs semana</span>
+          </div>
+          <div style="height:8px; border-radius:99px; background:var(--surface-3); margin-top:14px; overflow:hidden;">
+            <div style="height:100%; width:100%; background:linear-gradient(90deg, var(--brand), var(--mind)); border-radius:99px;"></div>
+          </div>`}
+      </div>
+      <div class="grid cols-4">${cards}</div>
+    </div>`;
+  },
+  mount(root){ root.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{const t=b.dataset.go; if(t)go(t);})); }
+});
+
+/* ===================== ANIMO (mood) ===================== */
+const MOOD_DATA = [6,7,5,8,7,9,8];
+let moodCurrent=null;
+defScreen({
+  id:'animo', product:'suite', group:'Bienestar', title:'Termómetro emocional', icon:'mood',
+  desc:'Escala emocional 1–10 con tendencia de los últimos días.',
+  navItems:[{id:'animo',label:'Termómetro emocional'}],
+  render(){
+    return titlebar({icon:'mood',title:'Termómetro emocional',back:'home'}) + `<div class="screen">
+      <div class="grid cols-2" style="grid-template-columns:0.9fr 1.1fr; align-items:start;">
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div class="card pad">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div class="eyebrow">Escala emocional</div>
+              <div class="h-serif" id="moodVal" style="font-size:22px; color:var(--ink-3);">— / 10</div>
+            </div>
+            <div style="margin:22px 4px 6px;">
+              <input id="moodSlider" type="range" min="1" max="10" step="1" value="5" style="width:100%;">
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--ink-3); padding:0 2px;">
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<span>${n}</span>`).join('')}
+            </div>
+            <button class="btn btn--primary" id="moodSave" style="width:100%; margin-top:18px;" disabled>Guardar registro</button>
+          </div>
+          <div class="card pad" style="display:flex; align-items:center; gap:14px;">
+            <span style="width:42px;height:42px;border-radius:12px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;">${svg(I.spark,20)}</span>
+            <div><div style="font-size:13px;font-weight:600;">Progreso 7 días</div>
+            <div class="h-serif" style="font-size:18px;color:var(--brand);">7 días seguidos</div>
+            <div style="font-size:12px;color:var(--ink-3);">con registro esta semana</div></div>
+          </div>
+          <div class="card pad" style="display:flex; align-items:center; gap:14px;">
+            <span style="width:42px;height:42px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;">${svg(I.spark,20)}</span>
+            <div><div style="font-size:13px;font-weight:600;">Progreso 30 días</div>
+            <div class="h-serif" style="font-size:18px;color:var(--accent);">12 días</div>
+            <div style="font-size:12px;color:var(--ink-3);">con registro este mes</div></div>
+          </div>
+        </div>
+        <div class="card pad">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div class="eyebrow">Últimos días</div>
+            <div class="tabs" id="moodRange"><button aria-selected="true">7 días</button><button>30 días</button></div>
+          </div>
+          <div id="moodChart" style="height:300px;"></div>
+        </div>
+      </div>
+    </div>`;
+  },
+  mount(root){
+    const slider=$('#moodSlider',root), val=$('#moodVal',root), save=$('#moodSave',root);
+    const grad=['#7b8a99','#8a7d99','#6b8fa8','#5fa0a8','#5faa86','#86b15f','#b8b14f','#c99a3d','#cc8246','#b24e3d'];
+    function paint(){
+      const v=+slider.value;
+      slider.style.accentColor = grad[v-1];
+      val.textContent = moodCurrent==null && !slider.dataset.touched ? '— / 10' : v+' / 10';
+    }
+    slider.addEventListener('input',()=>{ slider.dataset.touched='1'; moodCurrent=+slider.value; save.disabled=false; paint(); });
+    paint();
+    drawMoodChart(root,7);
+    save.addEventListener('click',()=>{ toast('Registro guardado · '+slider.value+'/10'); save.disabled=true; });
+    $$('#moodRange button',root).forEach((b,i)=>b.addEventListener('click',()=>{
+      $$('#moodRange button',root).forEach(x=>x.setAttribute('aria-selected','false'));
+      b.setAttribute('aria-selected','true'); drawMoodChart(root, i===0?7:30);
+    }));
+  }
+});
+function drawMoodChart(root,days){
+  const host=$('#moodChart',root); if(!host) return;
+  const data = days===7?MOOD_DATA:Array.from({length:30},(_,i)=>4+Math.round(3*Math.sin(i/3)+Math.random()*2));
+  const W=host.clientWidth||520, H=300, pl=28,pr=10,pt=14,pb=26;
+  const iw=W-pl-pr, ih=H-pt-pb, n=data.length;
+  const x=i=>pl + (n===1?iw/2:iw*i/(n-1));
+  const y=v=>pt + ih*(1-(v-0)/10);
+  let line='', area='';
+  data.forEach((v,i)=>{ line+=(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)+' '; });
+  area = line + `L${x(n-1).toFixed(1)} ${(pt+ih)} L${x(0).toFixed(1)} ${(pt+ih)} Z`;
+  const labels = days===7?['L','M','M','J','V','S','D']:[];
+  host.innerHTML = `<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="overflow:visible">
+    <defs><linearGradient id="mg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--brand)" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="var(--brand)" stop-opacity="0.02"/></linearGradient></defs>
+    ${[0,5,10].map(g=>`<line x1="${pl}" x2="${W-pr}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)" stroke-dasharray="3 4"/><text x="${pl-8}" y="${y(g)+4}" text-anchor="end" font-size="11" fill="var(--ink-3)">${g}</text>`).join('')}
+    <path d="${area}" fill="url(#mg)"/>
+    <path d="${line}" fill="none" stroke="var(--brand)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+    ${days===7?data.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="4" fill="var(--surface)" stroke="var(--brand)" stroke-width="2.2"/>`).join(''):''}
+    ${labels.map((l,i)=>`<text x="${x(i)}" y="${H-6}" text-anchor="middle" font-size="11" fill="var(--ink-3)">${l}</text>`).join('')}
+  </svg>`;
+}
+</script>
+<script>
+/* ===================== RESPIRACIÓN (breathing) ===================== */
+const BREATH_PHASES=[{k:'Inhalá',s:4},{k:'Mantené',s:7},{k:'Exhalá',s:8}];
+let breathTimer=null, breathState={running:false,phase:0,left:4,cycles:0,elapsed:0,preset:5};
+defScreen({
+  id:'respiracion', product:'suite', group:'Bienestar', title:'Guía de respiración', icon:'breath',
+  desc:'Respiración 4·7·8 animada con presets de duración y conteo de ciclos.',
+  states:[{id:'idle',label:'En reposo'},{id:'running',label:'En curso'},{id:'paused',label:'Pausado'}],
+  navItems:[{id:'respiracion',label:'Guía de respiración'}],
+  render(st){
+    return titlebar({icon:'breath',title:'Guía de respiración animada',back:'home'}) + `<div class="screen">
+      <div style="display:flex; justify-content:center; gap:8px; margin-bottom:6px;">
+        <div class="chip-state" id="brPreset">
+          <button data-m="3">3 min</button><button data-m="5" aria-pressed="true">5 min</button><button data-m="10">10 min</button>
+        </div>
+      </div>
+      <div class="bigring" id="brRing" style="margin:18px auto 6px;">
+        <div class="core"><div style="text-align:center;"><div class="num" id="brNum">4</div><div class="ph" id="brPh">Inhalá</div></div></div>
+      </div>
+      <div style="display:flex; justify-content:center; gap:8px; margin:6px 0 18px;">
+        <span class="badge brand">Inhalá 4s</span><span class="badge gold">Mantené 7s</span><span class="badge accent">Exhalá 8s</span>
+      </div>
+      <div style="display:flex; justify-content:center; align-items:center; gap:16px;">
+        <button class="ctl" id="brReset" title="Reiniciar">${svg('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',20)}</button>
+        <button class="ctl main" id="brPlay" title="Iniciar / pausar">${svg('<polygon points="6 4 20 12 6 20"/>',22)}</button>
+        <button class="ctl" id="brStop" title="Detener">${svg('<rect x="6" y="6" width="12" height="12" rx="2"/>',20)}</button>
+      </div>
+      <div class="grid cols-3" style="margin-top:24px;">
+        <div class="card pad"><div class="eyebrow">Patrón</div><div class="h-serif" style="font-size:24px; margin-top:4px;">4·7·8</div></div>
+        <div class="card pad"><div class="eyebrow">Crono</div><div class="h-serif" id="brCrono" style="font-size:24px; margin-top:4px;">00:00</div></div>
+        <div class="card pad"><div class="eyebrow">Ciclos</div><div class="h-serif" id="brCycles" style="font-size:24px; margin-top:4px;">0</div></div>
+      </div>
+    </div>`;
+  },
+  mount(root,st){
+    stopBreath();
+    breathState={running:false,phase:0,left:4,cycles:0,elapsed:0,preset:breathState.preset};
+    const ring=$('#brRing',root), core=root.querySelector('.core'), num=$('#brNum',root), ph=$('#brPh',root);
+    const play=$('#brPlay',root);
+    const upd=()=>{
+      num.textContent=Math.ceil(breathState.left);
+      const P=BREATH_PHASES[breathState.phase]; ph.textContent=P.k;
+      core.style.transform = breathState.phase===0?'scale(1.12)':breathState.phase===1?'scale(1.12)':'scale(0.86)';
+      $('#brCrono',root).textContent=fmt(breathState.elapsed);
+      $('#brCycles',root).textContent=breathState.cycles;
+      play.innerHTML = breathState.running?svg('<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>',22):svg('<polygon points="6 4 20 12 6 20"/>',22);
+    };
+    const tick=()=>{
+      breathState.left-=0.1; breathState.elapsed+=0.1;
+      if(breathState.left<=0){
+        breathState.phase=(breathState.phase+1)%3;
+        if(breathState.phase===0) breathState.cycles++;
+        breathState.left=BREATH_PHASES[breathState.phase].s;
+      }
+      upd();
+    };
+    const start=()=>{ breathState.running=true; stopBreath(); breathTimer=setInterval(tick,100); upd(); };
+    play.addEventListener('click',()=>{ breathState.running?(breathState.running=false,stopBreath(),upd()):start(); });
+    $('#brReset',root).addEventListener('click',()=>{ stopBreath(); breathState={running:false,phase:0,left:4,cycles:0,elapsed:0,preset:breathState.preset}; core.style.transform='scale(1)'; upd(); });
+    $('#brStop',root).addEventListener('click',()=>{ stopBreath(); breathState.running=false; breathState.phase=0; breathState.left=4; core.style.transform='scale(1)'; upd(); });
+    $$('#brPreset button',root).forEach(b=>b.addEventListener('click',()=>{ $$('#brPreset button',root).forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); breathState.preset=+b.dataset.m; }));
+    if(st==='running'){ start(); }
+    else if(st==='paused'){ breathState.left=4; breathState.elapsed=92; breathState.cycles=4; breathState.phase=0; breathState.running=false; core.style.transform='scale(1.12)'; }
+    upd();
+  }
+});
+function stopBreath(){ if(breathTimer){clearInterval(breathTimer); breathTimer=null;} }
+function fmt(s){ s=Math.floor(s); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+
+/* ===================== TIMER ===================== */
+let timerInt=null, timerState={running:false,left:25*60,total:25*60,mode:'Lectura'};
+defScreen({
+  id:'timer', product:'suite', group:'Hábitos', title:'Temporizador', icon:'timer',
+  desc:'Sesiones de enfoque con presets y modos de trabajo.',
+  states:[{id:'idle',label:'En reposo'},{id:'running',label:'En curso'},{id:'paused',label:'Pausado'},{id:'empty',label:'Sin actividades'}],
+  navItems:[{id:'timer',label:'Temporizador'}],
+  render(st){
+    if(st==='empty'){
+      return titlebar({icon:'timer',title:'Temporizador de actividades',back:'home'}) + `<div class="screen"><div class="empty">
+        <div class="ico">${svg(I.timer,30)}</div><h3>Sin actividades asignadas</h3>
+        <p>Tu terapeuta todavía no cargó sesiones de enfoque. Las verás acá cuando estén disponibles.</p></div></div>`;
+    }
+    return titlebar({icon:'timer',title:'Temporizador de actividades',back:'home'}) + `<div class="screen" style="display:flex; flex-direction:column; align-items:center;">
+      <div class="bigring" id="tmRing" style="margin:26px auto 6px;"><div class="core"><div class="h-serif" id="tmNum" style="font-size:46px;">25:00</div></div></div>
+      <span class="badge brand" id="tmStatus" style="margin:10px 0 18px;">${st==='running'?'Sesión en curso':st==='paused'?'En pausa':'Lista para empezar'}</span>
+      <div style="display:flex; align-items:center; gap:16px; margin-bottom:18px;">
+        <button class="ctl" id="tmReset">${svg('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',20)}</button>
+        <button class="ctl main" id="tmPlay">${svg('<polygon points="6 4 20 12 6 20"/>',22)}</button>
+        <button class="ctl" id="tmSkip">${svg('<polygon points="5 4 15 12 5 20"/><line x1="19" y1="5" x2="19" y2="19"/>',20)}</button>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+        ${['5 min','25 min','45 min'].map((m,i)=>`<button class="fchip" data-min="${[5,25,45][i]}" ${i===1?'aria-pressed="true"':''}>${m}</button>`).join('')}
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:10px;">
+        ${['Lectura','Pausa activa','Trabajo profundo'].map((m,i)=>`<button class="fchip" data-mode="${m}" ${i===0?'aria-pressed="true"':''}>${m}</button>`).join('')}
+      </div>
+    </div>`;
+  },
+  mount(root,st){
+    if(st==='empty') return;
+    clearInterval(timerInt);
+    let presets={running:25*60,paused:33*60,idle:25*60};
+    timerState={running:false,left:st==='paused'?15*60+12:25*60,total:25*60,mode:'Lectura'};
+    const num=$('#tmNum',root), play=$('#tmPlay',root), status=$('#tmStatus',root);
+    const upd=()=>{ num.textContent=fmt(timerState.left);
+      play.innerHTML=timerState.running?svg('<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>',22):svg('<polygon points="6 4 20 12 6 20"/>',22);
+      status.textContent=timerState.running?'Sesión en curso':(timerState.left<timerState.total?'En pausa':'Lista para empezar'); };
+    const start=()=>{ timerState.running=true; clearInterval(timerInt); timerInt=setInterval(()=>{ if(timerState.left>0){timerState.left--; upd();} else {clearInterval(timerInt); timerState.running=false; toast('Sesión completada · '+timerState.mode); upd();} },1000); upd(); };
+    play.addEventListener('click',()=>{ timerState.running?(timerState.running=false,clearInterval(timerInt),upd()):start(); });
+    $('#tmReset',root).addEventListener('click',()=>{ clearInterval(timerInt); timerState.running=false; timerState.left=timerState.total; upd(); });
+    $('#tmSkip',root).addEventListener('click',()=>{ clearInterval(timerInt); timerState.running=false; timerState.left=0; upd(); });
+    $$('[data-min]',root).forEach(b=>b.addEventListener('click',()=>{ $$('[data-min]',root).forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); clearInterval(timerInt); timerState.running=false; timerState.total=+b.dataset.min*60; timerState.left=timerState.total; upd(); }));
+    $$('[data-mode]',root).forEach(b=>b.addEventListener('click',()=>{ $$('[data-mode]',root).forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); timerState.mode=b.dataset.mode; }));
+    upd();
+    if(st==='running') start();
+  }
+});
+
+/* ===================== RUTINA (routine) ===================== */
+const ROUTINE={
+  Mañana:[{t:'Meditación 10 min',d:1},{t:'Desayuno saludable',d:1},{t:'Revisión de agenda',d:1}],
+  Tarde:[{t:'Almuerzo',d:1},{t:'Respiración 5 min',d:1},{t:'Caminata',d:1},{t:'Registro de ánimo',d:0},{t:'Lectura 15 min',d:0}],
+  Noche:[{t:'Bajar luces y pantallas',d:0},{t:'Preparar descanso',d:0}],
+};
+defScreen({
+  id:'rutina', product:'suite', group:'Hábitos', title:'Checklist de rutina', icon:'check',
+  desc:'Rutina diaria por franjas con progreso por bloque.',
+  states:[{id:'default',label:'Con tareas'},{id:'add',label:'Agregar tarea'},{id:'done',label:'100% completa'},{id:'empty',label:'Sin tareas'}],
+  navItems:[{id:'rutina',label:'Checklist de rutina'}],
+  render(st){
+    if(st==='empty'){
+      return titlebar({icon:'check',title:'Checklist de rutina diaria',back:'home'}) + `<div class="screen"><div class="empty">
+        <div class="ico">${svg(I.check,30)}</div><h3>Sin tareas asignadas</h3>
+        <p>Cuando tu terapeuta asigne una rutina, tus tareas del día aparecerán organizadas por franja.</p></div></div>`;
+    }
+    const data=JSON.parse(JSON.stringify(ROUTINE));
+    if(st==='done') Object.values(data).forEach(arr=>arr.forEach(x=>x.d=1));
+    const blocks=Object.entries(data).map(([k,items],bi)=>{
+      const done=items.filter(x=>x.d).length, pct=items.length?Math.round(done/items.length*100):0;
+      const icon=k==='Mañana'?I.sun:k==='Tarde'?I.smile:I.moon;
+      return `<div class="card pad" style="align-self:start;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+          <span style="color:var(--accent)">${svg(icon,18)}</span>
+          <span class="h-serif" style="font-size:16px; flex:1;">${k}</span>
+          <span style="font-size:12px; color:var(--ink-3); font-weight:600;">${done}/${items.length}</span>
+          <span style="position:relative; display:grid; place-items:center;">${ringSVG(pct,{size:40,stroke:4,label:pct+'%'})}</span>
+        </div>
+        ${items.map((x,i)=>`<label class="rt-row" data-b="${bi}" data-i="${i}" style="display:flex; align-items:center; gap:11px; padding:8px 4px; cursor:pointer; border-radius:8px;">
+          <span class="rt-cb ${x.d?'on':''}">${x.d?svg('<path d="M5 12l4 4 10-10"/>',14):''}</span>
+          <span class="rt-t" style="font-size:13.5px; ${x.d?'text-decoration:line-through; color:var(--ink-3);':''}">${esc(x.t)}</span>
+        </label>`).join('')}
+        ${st==='add'&&k==='Mañana'?`<div style="display:flex; gap:8px; margin-top:8px;"><input class="input" id="rtNew" placeholder="Nueva tarea…" style="padding:9px 12px;"><button class="btn btn--primary" id="rtAdd" style="padding:9px 14px;">+</button></div>`:''}
+      </div>`;
+    }).join('');
+    const allDone = st==='done';
+    return titlebar({icon:'check',title:'Checklist de rutina diaria',back:'home'}) + `<div class="screen">
+      <div class="card pad" id="rtSummary" style="display:flex; align-items:center; gap:18px; margin-bottom:18px; background:linear-gradient(135deg,var(--surface),var(--surface-2));">
+        <span style="position:relative; display:grid; place-items:center;">${ringSVG(allDone?100:60,{size:64,stroke:7,label:(allDone?100:60)+'%'})}</span>
+        <div><div class="eyebrow">Progreso del día</div>
+        <div class="h-serif" id="rtSumTitle" style="font-size:19px; margin-top:4px;">${allDone?'10 de 10 tareas completadas':'6 de 10 tareas completadas'}</div>
+        <div style="font-size:13px; color:var(--ink-2);">${allDone?'¡Día completo! Buen trabajo sosteniendo tu rutina.':'Vas por buen camino, seguí así.'}</div></div>
+      </div>
+      <div class="grid cols-3" style="align-items:start;">${blocks}</div>
+    </div>`;
+  },
+  mount(root,st){
+    root.querySelectorAll('.rt-row').forEach(row=>row.addEventListener('click',e=>{
+      e.preventDefault();
+      const cb=row.querySelector('.rt-cb'), t=row.querySelector('.rt-t');
+      const on=cb.classList.toggle('on');
+      cb.innerHTML = on?svg('<path d="M5 12l4 4 10-10"/>',14):'';
+      t.style.textDecoration=on?'line-through':''; t.style.color=on?'var(--ink-3)':'';
+      recalcRoutine(root);
+    }));
+    const add=$('#rtAdd',root);
+    if(add) add.addEventListener('click',()=>{ const v=$('#rtNew',root).value.trim(); if(v){ toast('Tarea agregada: '+v); $('#rtNew',root).value=''; } });
+  }
+});
+function recalcRoutine(root){
+  let total=0,done=0;
+  root.querySelectorAll('.rt-row').forEach(r=>{ total++; if(r.querySelector('.rt-cb').classList.contains('on'))done++; });
+  const pct=total?Math.round(done/total*100):0;
+  // update per-block rings
+  const blocks={};
+  root.querySelectorAll('.rt-row').forEach(r=>{ const b=r.dataset.b; blocks[b]=blocks[b]||{t:0,d:0}; blocks[b].t++; if(r.querySelector('.rt-cb').classList.contains('on'))blocks[b].d++; });
+  // redraw summary
+  const sum=$('#rtSummary',root);
+  if(sum){ sum.querySelector('svg').outerHTML=ringSVG(pct,{size:64,stroke:7,label:pct+'%'});
+    $('#rtSumTitle',root).textContent=`${done} de ${total} tareas completadas`; }
+}
+</script>
+<script>
+/* ===================== ACTIVIDADES (behavioral activation) ===================== */
+const ACTS=[
+  {cat:'Física',cl:'mind',title:'Caminata 20 min',d:'Salir a caminar activa el sistema nervioso y mejora el ánimo de forma significativa.',dots:[1,0,0]},
+  {cat:'Placer',cl:'accent',title:'Escuchar música',d:'Armá una playlist de canciones que te gusten. El placer musical activa circuitos de recompensa.',dots:[1,1,1]},
+  {cat:'Social',cl:'mind',title:'Llamar a alguien',d:'El contacto social, aunque breve, reduce el aislamiento percibido.',dots:[1,1,'done']},
+  {cat:'Maestría',cl:'gold',title:'Diario de 5 min',d:'Escribí 3 cosas que funcionaron hoy, aunque sean pequeñas.',dots:[1,1,1]},
+];
+const ACT_CATS=['Todas','Autocuidado','Física','Cognitiva','Placer','Social','Maestría'];
+defScreen({
+  id:'actividades', product:'suite', group:'Cognitivo', title:'Activación conductual', icon:'activity',
+  desc:'Sugerencias de actividades por familia, con registro de “lo hice / no pude”.',
+  states:[{id:'default',label:'Sugerencias'},{id:'filtered',label:'Filtrado'},{id:'marked',label:'Marcada'},{id:'empty',label:'Vacío'}],
+  navItems:[{id:'actividades',label:'Activación conductual'}],
+  render(st){
+    if(st==='empty'){
+      return titlebar({icon:'activity',title:'Asistente de activación conductual',back:'home'}) + `<div class="screen"><div class="empty">
+        <div class="ico">${svg(I.activity,30)}</div><h3>Sin sugerencias</h3>
+        <p>Tu terapeuta aún no cargó actividades para este estado de ánimo. Volvé a revisar más tarde.</p></div></div>`;
+    }
+    let acts=ACTS.slice();
+    const activeCat = st==='filtered'?'Física':'Todas';
+    if(st==='filtered') acts=acts.filter(a=>a.cat==='Física');
+    if(st==='marked'){ acts=ACTS.map((a,i)=>i===0?{...a,dots:[1,1,'done']}:a); }
+    const cards=acts.map((a,i)=>{
+      const marked = a.dots[2]==='done';
+      return `<div class="card hov pad">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <span style="color:var(--${a.cl}); width:30px;height:30px;display:grid;place-items:center;background:var(--surface-3);border-radius:9px;">${svg(I.activity,17)}</span>
+          <span class="badge ${a.cl==='mind'?'brand':a.cl==='accent'?'accent':a.cl==='gold'?'gold':'rose'}">${a.cat}</span>
+        </div>
+        <div class="h-serif" style="font-size:16px; margin:12px 0 6px;">${esc(a.title)}</div>
+        <p style="font-size:13px; color:var(--ink-2); line-height:1.5; margin:0 0 16px; min-height:42px;">${esc(a.d)}</p>
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <span class="dots">${a.dots.map(d=>`<i class="${d===1?'on':d==='done'?'on':''}"></i>`).join('')}</span>
+          <div style="display:flex; gap:8px;">
+            ${marked?`<span class="badge brand"><span class="dt"></span>Hecho</span>`:`<button class="btn btn--ghost act-no" style="padding:8px 14px;">No pude</button><button class="btn btn--soft act-yes" style="padding:8px 16px;">Hice</button>`}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    return titlebar({icon:'activity',title:'Asistente de activación conductual',back:'home'}) + `<div class="screen">
+      <div class="card pad" style="margin-bottom:16px;">
+        <div class="eyebrow">Categorías</div>
+        <div class="h-serif" style="font-size:17px; margin:4px 0 14px;">Elegí una familia de actividades</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          ${ACT_CATS.map(c=>`<button class="fchip" data-cat="${c}" ${c===activeCat?'aria-pressed="true"':''}>${c}</button>`).join('')}
+        </div>
+      </div>
+      <div class="grid cols-2" id="actGrid">${cards}</div>
+      <div style="text-align:center; font-size:12.5px; color:var(--ink-3); margin-top:16px;">${acts.length} actividades sugeridas</div>
+    </div>`;
+  },
+  mount(root){
+    $$('[data-cat]',root).forEach(b=>b.addEventListener('click',()=>{ $$('[data-cat]',root).forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); toast('Filtro: '+b.dataset.cat); }));
+    root.querySelectorAll('.act-yes').forEach(b=>b.addEventListener('click',e=>{ const card=e.target.closest('.card'); card.querySelector('.dots').innerHTML='<i class="on"></i><i class="on"></i><i class="on"></i>'; b.parentElement.outerHTML='<span class="badge brand"><span class="dt"></span>Hecho</span>'; toast('¡Bien! Actividad registrada'); }));
+    root.querySelectorAll('.act-no').forEach(b=>b.addEventListener('click',()=>toast('Registrado: no pude esta vez')));
+  }
+});
+
+/* ===================== AVISOS (reminders) ===================== */
+const AVISOS=[
+  {t:'Medicación matutina',c:'Salud',h:'08:00',freq:'Lun a Vie',cl:'rose',state:'done',ico:'key'},
+  {t:'Respiración 5 min',c:'Calma',h:'10:30',freq:'Todos los días',cl:'mind',state:'done',ico:'breath'},
+  {t:'Registro de ánimo',c:'Recordatorio',h:'14:00',freq:'Todos los días',cl:'brand',state:'today',ico:'bell'},
+  {t:'Rutina de tarde',c:'Recordatorio',h:'18:00',freq:'Lun a Vie',cl:'brand',state:'active',ico:'bell'},
+  {t:'Técnica de relajación',c:'Recordatorio',h:'21:00',freq:'Todos los días',cl:'brand',state:'today',ico:'bell'},
+];
+defScreen({
+  id:'avisos', product:'suite', group:'Hábitos', title:'Recordatorios de bienestar', icon:'bell',
+  desc:'Avisos del día con filtros, búsqueda y marcado de completados.',
+  states:[{id:'all',label:'Todos'},{id:'active',label:'Activos'},{id:'today',label:'Hoy'},{id:'search',label:'Búsqueda'},{id:'empty',label:'Vacío'}],
+  navItems:[{id:'avisos',label:'Recordatorios de bienestar'}],
+  render(st){
+    if(st==='empty'){
+      return titlebar({icon:'bell',title:'Recordatorios de bienestar',back:'home'}) + `<div class="screen"><div class="empty">
+        <div class="ico">${svg(I.bell,30)}</div><h3>Sin recordatorios</h3>
+        <p>No tenés avisos configurados todavía. Tu terapeuta puede asignarte recordatorios de bienestar.</p></div></div>`;
+    }
+    let items=AVISOS.slice();
+    if(st==='active') items=items.filter(a=>a.state!=='done');
+    if(st==='today') items=items.filter(a=>a.state==='today'||a.state==='active');
+    if(st==='search') items=items.filter(a=>a.t.toLowerCase().includes('respir'));
+    const rows=items.map(a=>{
+      const badge = a.state==='done'?'<span class="badge brand"><span class="dt"></span>Completado</span>'
+        : a.state==='today'?'<span class="badge gold"><span class="dt"></span>Hoy</span>'
+        : '<span class="badge accent"><span class="dt"></span>Activo</span>';
+      return `<div class="card pad av-row" style="display:flex; align-items:center; gap:14px; margin-bottom:10px;">
+        <span style="color:var(--${a.cl}); width:34px;height:34px;display:grid;place-items:center;background:var(--surface-3);border-radius:10px;flex:none;">${svg(I[a.ico]||I.bell,17)}</span>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:14px; font-weight:600;">${esc(a.t)}</div>
+          <div style="font-size:12.5px; color:var(--ink-3); margin-top:2px;"><span style="color:var(--${a.cl}); font-weight:600;">${a.c}</span> · ${a.h} · ${a.freq}</div>
+        </div>
+        ${badge}
+        ${a.state!=='done'?`<button class="btn btn--ghost av-do" style="padding:8px 16px;">Completar</button>`:''}
+      </div>`;
+    }).join('');
+    return titlebar({icon:'bell',title:'Recordatorios de bienestar',back:'home'}) + `<div class="screen">
+      <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap;">
+        <div class="tabs" id="avFilter">
+          <button data-f="all" ${st==='all'||st==='search'?'aria-selected="true"':''}>Todos</button>
+          <button data-f="active" ${st==='active'?'aria-selected="true"':''}>Activos</button>
+          <button data-f="today" ${st==='today'?'aria-selected="true"':''}>Hoy</button>
+        </div>
+        <div class="nav__search" style="flex:1; margin:0; max-width:320px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="avSearch" placeholder="Buscar recordatorio…" value="${st==='search'?'respir':''}">
+        </div>
+      </div>
+      <div id="avList">${rows||`<div class="empty"><div class="ico">${svg(I.bell,30)}</div><h3>Nada por aquí</h3><p>No hay recordatorios para este filtro.</p></div>`}</div>
+    </div>`;
+  },
+  mount(root){
+    $$('#avFilter button',root).forEach(b=>b.addEventListener('click',()=>{ CURRENT_STATE=b.dataset.f; render(); buildNav($('#navSearch').value); }));
+    root.querySelectorAll('.av-do').forEach(b=>b.addEventListener('click',e=>{ const row=e.target.closest('.av-row'); row.querySelectorAll('.badge')[0].outerHTML='<span class="badge brand"><span class="dt"></span>Completado</span>'; b.remove(); toast('Recordatorio completado'); }));
+    const s=$('#avSearch',root);
+    if(s) s.addEventListener('input',()=>{ root.querySelectorAll('.av-row').forEach(r=>{ r.style.display = r.textContent.toLowerCase().includes(s.value.toLowerCase())?'':'none'; }); });
+  }
+});
+</script>
+<script>
+/* ===================== DBT ===================== */
+const DBT_FAMILIES={Mindfulness:'mind',Tolerancia:'toler',Regulación:'regul',Efectividad:'efect'};
+const DBT_SKILLS=[
+  {t:'Observar y describir',f:'Mindfulness',d:'Notar sensaciones, pensamientos y entorno sin intentar corregirlos.',min:2},
+  {t:'Mente sabia',f:'Mindfulness',d:'Pausa guiada para integrar emoción, hechos y objetivo del momento.',min:2},
+  {t:'STOP',f:'Tolerancia',d:'Hacé una pausa antes de actuar impulsivamente.',min:2},
+  {t:'Autocalma con los sentidos',f:'Tolerancia',d:'Elegí estímulos seguros de tu vista, oído, tacto, olfato o gusto.',min:3},
+  {t:'Verificar los hechos',f:'Regulación',d:'Separar hechos observables, interpretación y emoción.',min:2},
+  {t:'Acción opuesta',f:'Regulación',d:'Actuar de forma contraria al impulso cuando no coincide con los hechos.',min:3},
+  {t:'DEAR MAN',f:'Efectividad',d:'Estructura para expresar asertivamente una necesidad o pedido.',min:3},
+  {t:'GIVE / FAST',f:'Efectividad',d:'Checklist para cuidar la relación y mantener el autorrespeto.',min:2},
+];
+const DBT_NEEDS=[
+  {f:'Mindfulness',cl:'mind',t:'Volver al presente',d:'Mindfulness: pausar, enfocar y notar el aquí y ahora.',ico:'brain'},
+  {f:'Tolerancia',cl:'toler',t:'Atravesar un momento intenso',d:'Tolerancia: superar la crisis sin empeorar la situación.',ico:'shield'},
+  {f:'Regulación',cl:'regul',t:'Regular una emoción',d:'Regulación: entender y suavizar sentimientos desbordantes.',ico:'smile'},
+  {f:'Efectividad',cl:'efect',t:'Comunicarme con claridad',d:'Efectividad: pedir límites o dialogar con autorrespeto.',ico:'flower'},
+];
+function dbtFrame(tab){
+  return titlebar({icon:'spark',title:'Habilidades DBT',back:'home'}) + `<div class="screen">
+    <div class="seg" style="max-width:240px; margin:0 0 18px;" id="dbtTab">
+      <button data-t="now" aria-pressed="${tab==='now'}">Ahora</button>
+      <button data-t="lib" aria-pressed="${tab==='lib'}">Biblioteca</button>
+    </div>
+    <div id="dbtBody">${tab==='now'?dbtNowBody():dbtLibBody('Todas')}</div>
+  </div>`;
+}
+function dbtNowBody(){
+  return `<div class="h-serif" style="font-size:18px; margin-bottom:14px;">¿Qué necesitás en este momento?</div>
+    <div class="grid cols-2">${DBT_NEEDS.map(n=>`<div class="card hov pad need-card" data-skill="${n.f}" style="border-left-color:var(--${n.cl});">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <span style="color:var(--${n.cl}); width:32px;height:32px;display:grid;place-items:center;background:var(--surface-3);border-radius:10px;">${svg(I[n.ico],18)}</span>
+        <span class="badge" style="background:var(--surface-3); color:var(--${n.cl});">${n.f}</span>
+      </div>
+      <div class="h-serif" style="font-size:17px; margin-bottom:6px;">${esc(n.t)}</div>
+      <p style="font-size:13px; color:var(--ink-2); margin:0; line-height:1.5;">${esc(n.d)}</p>
+    </div>`).join('')}</div>`;
+}
+function dbtLibBody(filter){
+  const fams=['Todas',...Object.keys(DBT_FAMILIES)];
+  const skills = filter==='Todas'?DBT_SKILLS:DBT_SKILLS.filter(s=>s.f===filter);
+  return `<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;" id="dbtFilter">
+      ${fams.map(f=>`<button class="fchip" data-f="${f}" ${f===filter?'aria-pressed="true"':''}>${f==='Todas'?'Todas':f}</button>`).join('')}
+    </div>
+    <div class="grid cols-3">${skills.map(s=>`<div class="card hov pad dbt-card" data-skill="${s.f}">
+      <div class="bar" style="background:var(--${DBT_FAMILIES[s.f]});"></div>
+      <div class="h-serif" style="font-size:16px;">${esc(s.t)}</div>
+      <p style="font-size:12.5px; color:var(--ink-2); line-height:1.5; margin:8px 0 0; min-height:54px;">${esc(s.d)}</p>
+      <div class="meta"><span>${svg('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 11h16"/>',14)} ${s.min} min</span>
+      <span class="pl dbt-practice">${svg('<path d="M5 12l4 4L19 6"/>',13)} Práctica guiada</span></div>
+    </div>`).join('')}</div>`;
+}
+function dbtWire(root){
+  $$('#dbtTab button',root).forEach(b=>b.addEventListener('click',()=>{
+    $$('#dbtTab button',root).forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true');
+    $('#dbtBody',root).innerHTML = b.dataset.t==='now'?dbtNowBody():dbtLibBody('Todas'); dbtWire(root);
+  }));
+  const fil=$('#dbtFilter',root);
+  if(fil) $$('button',fil).forEach(b=>b.addEventListener('click',()=>{ $('#dbtBody',root).innerHTML=dbtLibBody(b.dataset.f); dbtWire(root); }));
+  root.querySelectorAll('[data-skill]').forEach(c=>c.addEventListener('click',e=>{ if(e.target.closest('.dbt-practice')||e.target.closest('.need-card')||e.target.closest('.dbt-card')) openDBTPractice(c.dataset.skill); }));
+}
+defScreen({ id:'dbtnow', product:'suite', group:'Habilidades DBT', title:'Habilidades DBT · Ahora', icon:'spark',
+  desc:'Entrada por necesidad: elegí qué te pasa ahora y recibí una práctica guiada breve.',
+  navItems:[{id:'dbtnow',label:'DBT · Ahora'}],
+  render(){return dbtFrame('now');}, mount(root){dbtWire(root);} });
+defScreen({ id:'dbtlib', product:'suite', group:'Habilidades DBT', title:'Habilidades DBT · Biblioteca', icon:'spark',
+  desc:'Catálogo de las cuatro familias DBT, filtrable por categoría.',
+  navItems:[{id:'dbtlib',label:'DBT · Biblioteca'}],
+  render(){return dbtFrame('lib');}, mount(root){dbtWire(root);} });
+
+const STOP_STEPS=[
+  {h:'S — Stop (Frená)',d:'Detené lo que estás haciendo. No actúes todavía. Quedate quieto un momento.'},
+  {h:'T — Tomá distancia (Take a step back)',d:'Alejate física o mentalmente de la situación. Respirá profundamente y recordá que es una emoción pasajera.'},
+  {h:'O — Observá',d:'Notá qué está pasando dentro y fuera: pensamientos, sensaciones, el contexto, sin juzgarlos.'},
+  {h:'P — Procedé con conciencia',d:'Elegí una respuesta alineada con tus objetivos y valores, no con el impulso del momento.'},
+];
+function openDBTPractice(fam){
+  let step=0;
+  const render=()=>{
+    const s=STOP_STEPS[step];
+    $('#modal').innerHTML=`${titlebar({icon:'spark',title:'Habilidades DBT'})}
+    <div class="screen" style="min-height:auto; padding:24px;">
+      <div class="eyebrow" style="text-align:center;">STOP · ${esc(fam)}</div>
+      <div class="h-serif" style="text-align:center; font-size:13px; color:var(--ink-3); margin:8px 0 18px;">Paso ${step+1} de 4</div>
+      <div style="display:flex; gap:7px; justify-content:center; margin-bottom:22px;">
+        ${STOP_STEPS.map((_,i)=>`<span style="width:9px;height:9px;border-radius:50%;background:${i<=step?'var(--brand)':'var(--line)'}"></span>`).join('')}
+      </div>
+      <div class="card pad" style="min-height:160px; display:flex; flex-direction:column; justify-content:center; text-align:center;">
+        <div class="h-serif" style="font-size:19px; margin-bottom:14px;">${esc(s.h)}</div>
+        <p style="font-size:14px; color:var(--ink-2); line-height:1.6; max-width:42ch; margin:0 auto;">${esc(s.d)}</p>
+      </div>
+      <p style="font-size:11.5px; color:var(--ink-3); text-align:center; margin:16px 0 18px;">Esta habilidad es un apoyo inmediato. <span style="color:var(--rose);">Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.</span></p>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="btn btn--ghost" id="dbtExit">Salir</button>
+        <div style="flex:1;"></div>
+        <button class="btn btn--ghost" id="dbtPrev" ${step===0?'disabled':''}>Anterior</button>
+        <button class="btn btn--primary" id="dbtNext">${step===3?'Finalizar':'Siguiente'}</button>
+      </div>
+    </div>`;
+    $('#dbtExit').onclick=closeModal;
+    $('#dbtPrev').onclick=()=>{ if(step>0){step--; render();} };
+    $('#dbtNext').onclick=()=>{ if(step<3){step++; render();} else {closeModal(); toast('Práctica completada · '+fam);} };
+  };
+  render(); $('#modalBg').classList.add('show');
+}
+
+/* ===================== REGISTRO (CBT thought record) ===================== */
+const CBT_STEPS=['Situación','Emoción','Pensamiento','Respuesta'];
+const EMOTIONS=['Ansiedad','Tristeza','Enojo','Culpa','Miedo','Vergüenza','Frustración','Otro'];
+let cbtStep=0;
+defScreen({
+  id:'registro', product:'suite', group:'Cognitivo', title:'Registro de pensamientos (TCC)', icon:'brain',
+  desc:'Registro cognitivo en 4 pasos con detección de distorsiones y tips terapéuticos.',
+  states:[{id:'s0',label:'Situación'},{id:'s1',label:'Emoción'},{id:'s1otro',label:'Emoción · Otro'},{id:'s2',label:'Distorsiones'},{id:'s3',label:'Respuesta'},{id:'ok',label:'Éxito'}],
+  navItems:[{id:'registro',label:'Registro de pensamientos (TCC)'}],
+  render(st){
+    const map={s0:0,s1:1,s1otro:1,s2:2,s3:3,ok:4};
+    cbtStep = map[st]??0;
+    const shown=Math.min(cbtStep,3);
+    const fillPct = (shown/(CBT_STEPS.length-1))*100;
+    const stepper=`<div class="stepper"><div class="line"><div class="fill" style="width:${cbtStep>=4?100:fillPct}%"></div></div>
+      ${CBT_STEPS.map((s,i)=>`<div class="stp ${i<shown||cbtStep>=4?'done':''} ${i===shown&&cbtStep<4?'active':''}"><i></i><span>${s}</span></div>`).join('')}</div>`;
+    let body='';
+    if(st==='ok'){
+      body=`<div class="card pad" style="text-align:center; padding:46px 24px;">
+        <div style="width:60px;height:60px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;margin:0 auto 18px;">${svg('<path d="M5 12l4 4L19 6"/>',30)}</div>
+        <div class="h-serif" style="font-size:22px; margin-bottom:8px;">Registro guardado</div>
+        <p style="font-size:14px; color:var(--ink-2); max-width:34ch; margin:0 auto;">Buen trabajo al identificar y cuestionar el pensamiento.</p>
+      </div>
+      <div style="display:flex; margin-top:20px;"><button class="btn btn--ghost" data-cbt="prev">Anterior</button><div style="flex:1"></div><button class="btn btn--ghost" disabled>Guardar</button></div>`;
+    } else if(st==='s0'){
+      body=`<div class="card pad">
+        <div class="h-serif" style="font-size:17px;">Situación</div>
+        <p style="font-size:13px; color:var(--ink-2); margin:4px 0 14px;">¿Qué pasó? Describí el momento de forma concreta y objetiva.</p>
+        <textarea class="input" rows="5" placeholder="Ej: En la reunión me preguntaron por el reporte y no supe qué responder…"></textarea>
+        <div style="font-size:12px; color:var(--ink-3); margin-top:8px;">0 / 500</div>
+      </div>${cbtNav(0)}`;
+    } else if(st==='s1'||st==='s1otro'){
+      body=`<div class="card pad">
+        <div class="h-serif" style="font-size:17px;">Emoción</div>
+        <p style="font-size:13px; color:var(--ink-2); margin:4px 0 16px;">¿Qué sentiste? Elegí la emoción más intensa y su nivel.</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;">
+          ${EMOTIONS.map(e=>`<button class="fchip emo" data-e="${e}" ${ (st==='s1otro'&&e==='Otro')||(st==='s1'&&e==='Ansiedad')?'aria-pressed="true"':''}>${e}</button>`).join('')}
+        </div>
+        ${st==='s1otro'?`<input class="input" placeholder="Nombrá tu emoción…" style="margin-bottom:18px;">`:''}
+        <div class="field-lbl">Intensidad <span>(0–100)</span></div>
+        <input type="range" min="0" max="100" value="70" style="width:100%; background:linear-gradient(90deg,var(--brand),var(--accent));">
+      </div>${cbtNav(1)}`;
+    } else if(st==='s2'){
+      body=`<div style="display:grid; grid-template-columns:1.4fr 1fr; gap:18px; align-items:start;">
+        <div class="card pad">
+          <div class="h-serif" style="font-size:17px;">Pensamiento automático</div>
+          <p style="font-size:13px; color:var(--ink-2); margin:4px 0 12px;">¿Qué pensaste en ese momento? Escribilo tal como apareció.</p>
+          <textarea class="input" rows="4">Nunca voy a poder cumplir con los plazos; siempre fallo y todo va a salir mal.</textarea>
+          <div style="font-size:12px; color:var(--ink-3); margin-top:8px;">78 / 500</div>
+          <div class="field-lbl" style="margin-top:16px;">Posibles distorsiones detectadas</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <span class="badge rose">${svg('<path d="M12 2 2 20h20z"/><path d="M12 9v5M12 17h.01"/>',13)} Catastrofización</span>
+            <span class="badge rose">${svg('<path d="M12 2 2 20h20z"/><path d="M12 9v5M12 17h.01"/>',13)} Sobregeneralización</span>
+          </div>
+        </div>
+        <div class="card pad" style="background:var(--gold-soft); border-color:transparent;">
+          <div style="display:flex; gap:10px;">
+            <span style="color:var(--gold)">${svg('<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12c1 1 1 2 1 3h6c0-1 0-2 1-3a7 7 0 0 0-4-12z"/>',20)}</span>
+            <div><div style="font-size:13px; font-weight:700; margin-bottom:6px;">Tip terapéutico</div>
+            <p style="font-size:13px; color:var(--ink-2); line-height:1.55; margin:0;">Los pensamientos no son hechos. Preguntate: ¿qué evidencia tengo? ¿qué le dirías a un amigo en esta situación?</p></div>
+          </div>
+        </div>
+      </div>${cbtNav(2)}`;
+    } else { // s3
+      body=`<div class="card pad">
+        <div class="h-serif" style="font-size:17px;">Respuesta alternativa</div>
+        <p style="font-size:13px; color:var(--ink-2); margin:4px 0 14px;">Reformulá el pensamiento de forma más equilibrada y realista.</p>
+        <textarea class="input" rows="5">He cumplido plazos antes. Este es un proyecto difícil, pero puedo pedir ayuda y dividirlo en pasos más chicos.</textarea>
+        <div style="font-size:12px; color:var(--ink-3); margin-top:8px;">118 / 500</div>
+      </div>${cbtNav(3)}`;
+    }
+    return titlebar({icon:'brain',title:'Registro de pensamientos (TCC)',back:'home'}) + `<div class="screen">${stepper}${body}</div>`;
+  },
+  mount(root){
+    root.querySelectorAll('[data-cbt]').forEach(b=>b.addEventListener('click',()=>{
+      const order=['s0','s1','s2','s3','ok'];
+      let cur=order[Math.min(cbtStep,4)];
+      let idx=order.indexOf(cur);
+      if(b.dataset.cbt==='next') idx=Math.min(idx+1,4); else idx=Math.max(idx-1,0);
+      CURRENT_STATE=order[idx]; render(); buildNav($('#navSearch').value);
+    }));
+    root.querySelectorAll('.emo').forEach(b=>b.addEventListener('click',()=>{ root.querySelectorAll('.emo').forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); if(b.dataset.e==='Otro'){CURRENT_STATE='s1otro'; render(); buildNav($('#navSearch').value);} }));
+  }
+});
+function cbtNav(step){
+  return `<div style="display:flex; align-items:center; margin-top:20px;">
+    <button class="btn btn--ghost" data-cbt="prev" ${step===0?'disabled':''}>Anterior</button>
+    <div style="flex:1"></div>
+    <button class="btn btn--primary" data-cbt="next">${step===3?'Guardar registro':'Siguiente'}</button>
+  </div>`;
+}
+</script>
+<script>
+/* ===================== ONBOARDING / ACCESO ===================== */
+function authBody(mode){
+  const err = mode==='error';
+  const rec = mode==='recover';
+  return titlebar({icon:'brain',title:'NeuroMood',crumb:'Configuración inicial'}) + `<div class="screen" style="padding:26px 28px;">
+    <div style="display:flex; align-items:center; gap:11px; margin-bottom:6px;">
+      <div class="brandmark">${svg(I.brain,20)}</div>
+      <div class="h-serif" style="font-size:21px;">Neuro<span style="color:var(--brand)">Mood</span> <span style="font-style:italic; color:var(--ink-3);">Suite</span></div>
+    </div>
+    <p style="font-size:13px; color:var(--ink-2); margin:0 0 18px;">Vinculá tu cuenta de NeuroMood. Tus datos se mantienen cifrados y bajo tu control.</p>
+    <div class="field-lbl">Nombre <span>*</span></div>
+    <input class="input ${err?'':''}" placeholder="Tu nombre" style="margin-bottom:14px; ${err?'border-color:var(--rose); box-shadow:0 0 0 3px var(--rose-soft);':''}">
+    <div class="field-lbl">Correo electrónico <span>*</span></div>
+    <input class="input" placeholder="correo@ejemplo.com" style="margin-bottom:14px; ${rec?'border-color:var(--brand-line); box-shadow:0 0 0 3px var(--brand-soft);':''}">
+    <div class="field-lbl">Contraseña <span>* (mín. 6 caracteres)</span></div>
+    <input class="input" type="password" placeholder="Contraseña de tu cuenta NeuroMood" style="margin-bottom:16px;">
+    <div class="card" style="background:var(--surface-2); padding:14px 16px; max-height:150px; overflow:auto; margin-bottom:6px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+        <span style="color:var(--brand)">${svg(I.shield,16)}</span><span style="font-size:12.5px; font-weight:700;">Privacidad y consentimiento</span>
+      </div>
+      <p style="font-size:12px; color:var(--ink-2); line-height:1.55; margin:0 0 8px;">NeuroMood Suite es una herramienta digital complementaria de bienestar: registro emocional, organización de hábitos y apoyo personal.</p>
+      <p style="font-size:12px; color:var(--ink-2); line-height:1.55; margin:0;">No realiza diagnósticos ni reemplaza la evaluación, seguimiento o intervención de profesionales de la salud habilitados.</p>
+    </div>
+    <label style="display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--ink-2); padding:10px 2px; cursor:pointer;">
+      <span class="rt-cb" id="obTerms" style="width:20px;height:20px;"></span> Acepto los términos y la política de privacidad
+    </label>
+    ${err?`<p style="font-size:12px; color:var(--rose); margin:2px 0 0;">Completá tu nombre para crear la cuenta.</p>`:''}
+    ${rec?`<p style="font-size:12px; color:var(--accent); margin:2px 0 0;">Escribí tu email arriba y tocá de nuevo para recuperar la contraseña.</p>`:''}
+    <div style="display:flex; align-items:center; gap:10px; margin-top:16px;">
+      <button class="btn btn--ghost" style="padding:9px 0; background:none; border:none; color:var(--brand); font-size:12.5px;">¿Olvidaste tu contraseña?</button>
+      <div style="flex:1"></div>
+      <button class="btn btn--ghost" id="obCreate">Crear cuenta</button>
+      <button class="btn btn--primary" id="obLogin" disabled>Iniciar sesión</button>
+    </div>
+  </div>`;
+}
+defScreen({ id:'onboarding', product:'suite', group:'Acceso', title:'Onboarding', icon:'shield', narrow:true,
+  desc:'Creación de cuenta con consentimiento informado. Estados normal y error.',
+  states:[{id:'normal',label:'Normal'},{id:'error',label:'Error'}],
+  navItems:[{id:'onboarding',label:'Onboarding'}],
+  render(st){return authBody(st==='error'?'error':'normal');},
+  mount(root,st){ wireAuth(root,st==='error'); }
+});
+defScreen({ id:'recuperar', product:'suite', group:'Acceso', title:'Recuperar acceso', icon:'key', narrow:true,
+  desc:'Flujo de recuperación de contraseña: email requerido.',
+  navItems:[{id:'recuperar',label:'Recuperar acceso'}],
+  render(){return authBody('recover');}, mount(root){ wireAuth(root,false); }
+});
+function wireAuth(root,err){
+  const cb=$('#obTerms',root), login=$('#obLogin',root);
+  if(cb) cb.parentElement.addEventListener('click',e=>{ e.preventDefault(); const on=cb.classList.toggle('on'); cb.innerHTML=on?svg('<path d="M5 12l4 4 10-10"/>',13):''; login.disabled=!on; });
+  if(login) login.addEventListener('click',()=>{ toast('Sesión iniciada'); setProduct('suite'); go('home'); });
+  const create=$('#obCreate',root); if(create) create.addEventListener('click',()=>toast('Cuenta creada · revisá tu correo'));
+}
+</script>
+<script>
+/* ============================================================================
+   HUB SCREENS  (clinician side)
+   ============================================================================ */
+
+/* ---------- patient data ---------- */
+const PATIENTS = [
+  { id:'ana',    initials:'AM', color:'var(--accent)', name:'Ana Martínez',   mail:'ana.martinez@ejemplo.com', last:'hace 2 días', next:'vie 16:00', trend:[5,6,6,7,6,8,7], use:75 },
+  { id:'juan',   initials:'JR', color:'var(--brand)',  name:'Juan Rodríguez', mail:'juanr@ejemplo.com',        last:'hace 5 días', next:'vie 16:00', trend:[4,4,5,4,6,5,6], use:50 },
+  { id:'carmen', initials:'CL', color:'var(--brand)',  name:'Carmen López',   mail:'carmen.lopez@ejemplo.com', last:'ayer',        next:'vie 16:00', trend:[6,6,7,7,8,8,9], use:88 },
+  { id:'pedro',  initials:'PS', color:'var(--brand)',  name:'Pedro Sánchez',  mail:'pedrosanchez@ejemplo.com', last:'hace 3 días', next:'vie 16:00', trend:[4,5,5,6,6,6,7], use:62 },
+  { id:'laura',  initials:'LG', color:'var(--brand)',  name:'Laura Gómez',    mail:'lauragomez@ejemplo.com',   last:'hoy',         next:'vie 16:00', trend:[5,6,6,7,8,8,9], use:94 },
+];
+let HUB_PATIENT = 'ana';
+
+/* tiny sparkline */
+function sparkline(data,{w=78,h=30,color='var(--brand)'}={}){
+  const min=Math.min(...data), max=Math.max(...data), span=(max-min)||1;
+  const pts=data.map((v,i)=>{
+    const x=(i/(data.length-1))*(w-4)+2;
+    const y=h-2-((v-min)/span)*(h-8);
+    return [x,y];
+  });
+  const d=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const last=pts[pts.length-1];
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none" style="overflow:visible">
+    <path d="${d}" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.6" fill="${color}"/>
+  </svg>`;
+}
+
+/* ===================== PACIENTES ===================== */
+defScreen({
+  id:'pacientes', product:'hub', group:'Pacientes', title:'Pacientes', icon:'users',
+  desc:'Lista activa de pacientes vinculados con su correo, ánimo de 7 días y uso por paciente.',
+  states:[{id:'list',label:'Lista activa'},{id:'empty',label:'Vacío'}],
+  navItems:[{id:'pacientes',label:'Lista de pacientes',tag:'5'}],
+  render(st){
+    const empty = st==='empty';
+    const count = empty?0:PATIENTS.length;
+    const head = `${titlebar({icon:'brain',title:'NeuroMood Hub',crumb:'Pacientes'})}
+    <div class="screen">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:18px;">
+        <h2 class="h-serif" style="font-size:20px; margin:0;">Lista activa</h2>
+        <span class="badge brand" style="font-weight:600;">${count} paciente${count===1?'':'s'}</span>
+        <span style="font-size:12.5px; color:var(--ink-3);">Mail, ánimo de 7 días y uso por paciente</span>
+        <div style="flex:1"></div>
+        <button class="btn btn--ghost" data-go="textos">${svg(I.text,15)} Textos globales</button>
+      </div>`;
+    if(empty){
+      return head+`
+      <div class="empty" style="padding:46px 20px;">
+        <div class="ico">${svg(I.users,30)}</div>
+        <h3>Sin pacientes vinculados</h3>
+        <p>Cuando un paciente complete el alta desde la Suite, aparecerá acá automáticamente.</p>
+      </div></div>`;
+    }
+    const rows = PATIENTS.map(p=>`
+      <div class="prow" data-patient="${p.id}">
+        <span class="pstatus"></span>
+        <span class="avatar" style="background:${p.color}">${p.initials}</span>
+        <div style="min-width:150px;">
+          <div style="font-weight:600; font-size:14px;">${esc(p.name)}</div>
+          <div style="font-size:12px; color:var(--ink-3); margin-top:2px;">Último registro: ${esc(p.last)}</div>
+        </div>
+        <div class="pcol-mail">
+          <div style="font-size:13px; color:var(--ink-2);">${esc(p.mail)}</div>
+          <div style="font-size:12px; color:var(--ink-3); margin-top:2px;">Próxima: ${esc(p.next)}</div>
+        </div>
+        <div style="flex:1"></div>
+        <div class="pcol-trend" title="Ánimo últimos 7 días">${sparkline(p.trend)}</div>
+        <div class="pcol-use">${ringSVG(p.use,{size:46,stroke:5,color:'var(--gold)',label:p.use+'%'})}</div>
+        <button class="prow-x" data-unlink title="Desvincular">${svg('<path d="M6 6l12 12M18 6 6 18"/>',15)}</button>
+      </div>`).join('');
+    return head+`
+      <div class="phead">
+        <span style="flex:1">Paciente</span>
+        <span class="pcol-mail">Mail</span>
+        <span class="pcol-trend" style="text-align:center">Ánimo 7d</span>
+        <span class="pcol-use" style="text-align:center">Uso</span>
+        <span style="width:30px"></span>
+      </div>
+      <div class="plist">${rows}</div>
+    </div>`;
+  },
+  mount(root){
+    $$('.prow',root).forEach(r=>{
+      r.addEventListener('click',e=>{
+        if(e.target.closest('[data-unlink]')) return;
+        HUB_PATIENT=r.dataset.patient; go('detalle');
+      });
+    });
+    $$('[data-unlink]',root).forEach(x=>x.addEventListener('click',e=>{
+      e.stopPropagation(); toast('Paciente desvinculado (demo)');
+    }));
+    $$('[data-go]',root).forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
+  }
+});
+
+/* ===================== DETALLE ===================== */
+const HUB_TABS = [
+  { id:'recordatorios', label:'Recordatorios de Bienestar' },
+  { id:'timer',         label:'Temporizador de Actividades' },
+  { id:'rutina',        label:'Checklist de Rutina Diaria' },
+  { id:'activacion',    label:'Asistente de Activación Conductual' },
+];
+let HUB_TAB = 'recordatorios';
+
+function hubTabForm(tab){
+  if(tab==='recordatorios') return `
+    <input class="input" placeholder="Hora (HH:MM, ej: 08:30)" />
+    <textarea class="input" rows="3" placeholder="Mensaje del recordatorio (máx 150)"></textarea>
+    <button class="btn btn--primary" data-add style="width:100%; margin-top:2px;">Agregar</button>
+    <button class="btn btn--ghost" data-ia style="width:100%;">${svg(I.spark,15)} Completar con IA</button>`;
+  if(tab==='timer') return `
+    <input class="input" placeholder="Nombre (ej: Pomodoro)" />
+    <input class="input" placeholder="Minutos (1–180)" />
+    <input class="input" placeholder="Categoría (ej: Estudio)" />
+    <button class="btn btn--primary" data-add style="width:100%; margin-top:2px;">Agregar actividad</button>
+    <button class="btn btn--ghost" data-ia style="width:100%;">${svg(I.spark,15)} Completar con IA</button>`;
+  if(tab==='rutina') return `
+    <input class="input" placeholder="Descripción de la tarea (máx 100)" />
+    <select class="input"><option>Mañana</option><option>Tarde</option><option>Noche</option></select>
+    <button class="btn btn--primary" data-add style="width:100%; margin-top:2px;">Asignar tarea</button>
+    <button class="btn btn--ghost" data-ia style="width:100%;">${svg(I.spark,15)} Completar con IA</button>`;
+  /* activacion */
+  return `
+    <input class="input" placeholder="Nombre (ej: Caminata corta, máx 50)" />
+    <input class="input" placeholder="Descripción (ej: 15 min de aire fresco)" />
+    <select class="input"><option>Autocuidado</option><option>Social</option><option>Físico</option><option>Placer</option><option>Logro</option></select>
+    <label style="font-size:12px; color:var(--ink-3); margin-top:2px;">Rango de ánimo en el que se sugiere</label>
+    <div style="display:flex; gap:8px;">
+      <select class="input" style="flex:1"><option>Mín: 1</option><option>Mín: 2</option><option>Mín: 3</option></select>
+      <select class="input" style="flex:1"><option>Máx: 10</option><option>Máx: 8</option><option>Máx: 6</option></select>
+    </div>
+    <button class="btn btn--primary" data-add style="width:100%; margin-top:2px;">Agregar actividad</button>
+    <button class="btn btn--ghost" data-ia style="width:100%;">${svg(I.spark,15)} Completar con IA</button>`;
+}
+function hubTabPanel(tab){
+  const map = {
+    recordatorios:['Recordatorios del paciente','Sin recordatorios asignados aún.'],
+    timer:['Temporizadores del paciente','Este paciente todavía no tiene temporizadores propios.'],
+    rutina:['Tareas del paciente','Sin tareas asignadas aún.'],
+    activacion:['Actividades del paciente','Sin actividades personalizadas aún.'],
+  };
+  const [title,emptyMsg]=map[tab];
+  return `
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px;">
+      <h3 class="h-serif" style="font-size:17px; margin:0;">${title}</h3>
+      <button class="btn btn--ghost" data-reset style="font-size:12px; padding:8px 12px;">Restablecer por defecto</button>
+    </div>
+    <div class="empty" style="padding:40px 16px; border:1px dashed var(--line); border-radius:var(--r-md);">
+      <p style="color:var(--ink-3);">${emptyMsg}</p>
+    </div>`;
+}
+
+defScreen({
+  id:'detalle', product:'hub', group:'Pacientes', title:'Detalle de paciente', icon:'user',
+  desc:'Ficha clínica con pestañas de seguimiento, formularios de asignación y resumen con IA.',
+  navItems:[{id:'detalle',label:'Detalle de paciente'}],
+  render(){
+    const p = PATIENTS.find(x=>x.id===HUB_PATIENT)||PATIENTS[0];
+    const tabs = HUB_TABS.map(t=>`<button data-tab="${t.id}" aria-selected="${t.id===HUB_TAB}">${t.label}</button>`).join('');
+    return `${titlebar({title:p.name, back:'pacientes'})}
+    <div class="screen">
+      <div class="card pad" style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+        <span class="avatar" style="background:${p.color}; width:52px; height:52px; border-radius:15px; font-size:17px;">${p.initials}</span>
+        <div>
+          <div style="font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); font-weight:600;">Paciente</div>
+          <div class="h-serif" style="font-size:21px; line-height:1.1;">${esc(p.name)}</div>
+          <div style="font-size:12.5px; color:var(--ink-3); margin-top:2px;">Seguimiento profesional</div>
+        </div>
+        <div style="flex:1"></div>
+        <button class="btn btn--primary" data-export>${svg(I.doc,15)} Exportar PDF</button>
+        <button class="btn btn--ghost" data-ia-summary>${svg(I.spark,15)} Resumen IA</button>
+      </div>
+
+      <div class="tabs hub-tabs" style="margin:16px 0; flex-wrap:wrap;">${tabs}</div>
+
+      <div class="hub-grid">
+        <div class="card pad hub-form">${hubTabForm(HUB_TAB)}</div>
+        <div class="card pad hub-panel">${hubTabPanel(HUB_TAB)}</div>
+      </div>
+    </div>`;
+  },
+  mount(root){
+    $$('[data-tab]',root).forEach(b=>b.addEventListener('click',()=>{ HUB_TAB=b.dataset.tab; render(); }));
+    const wire=()=>{
+      const add=$('[data-add]',root), ia=$('[data-ia]',root), reset=$('[data-reset]',root);
+      if(add) add.addEventListener('click',()=>toast('Elemento asignado al paciente'));
+      if(ia) ia.addEventListener('click',()=>toast('Sugerencias generadas con IA'));
+      if(reset) reset.addEventListener('click',()=>toast('Restablecido por defecto'));
+    };
+    wire();
+    const exp=$('[data-export]',root); if(exp) exp.addEventListener('click',()=>toast('Generando PDF del paciente…'));
+    const sum=$('[data-ia-summary]',root);
+    if(sum) sum.addEventListener('click',()=>{
+      const p = PATIENTS.find(x=>x.id===HUB_PATIENT)||PATIENTS[0];
+      openModal(`
+        <div style="font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); font-weight:600;">${esc(p.name)}</div>
+        <h3 class="h-serif" style="font-size:21px; margin:4px 0 14px;">Resumen IA</h3>
+        <p style="font-size:13.5px; color:var(--ink-2); line-height:1.6; margin:0 0 12px;">Resumen de evidencia (muestra QA).</p>
+        <p style="font-size:13.5px; color:var(--ink-2); line-height:1.6; margin:0;">El paciente muestra adherencia irregular al registro de ánimo y respiración. Se observan distorsiones cognitivas recurrentes (catastrofización). Sugerencia: reforzar TCC y activación conductual.</p>
+        <div style="display:flex; justify-content:flex-end; margin-top:22px;">
+          <button class="btn btn--primary" data-close>Cerrar</button>
+        </div>`);
+      $('[data-close]',$('#modal')).addEventListener('click',closeModal);
+    });
+  }
+});
+
+/* ===================== TEXTOS GLOBALES ===================== */
+const GLOBAL_TEXTS = [
+  ['Chrome','Nombre de la app','NeuroMood Suite',40],
+  ['Home','Rótulo de bienvenida','Bienvenida',32],
+  ['Home','Saludo de mañana','Buenos días,',32],
+  ['Home','Saludo de tarde','Buenas tardes,',32],
+  ['Home','Saludo de noche','Buenas noches,',32],
+  ['Home','Subtítulo de módulos','Elegí un módulo para registrar cómo venís y sostener tu rutina.',96],
+  ['Ánimo','Título','Termómetro emocional',40],
+  ['Ánimo','Ayuda del deslizador','Deslizá para registrar cómo te sentís hoy del 1 al 10.',96],
+  ['Ánimo','Confirmación','Tu ánimo de hoy quedó guardado.',64],
+  ['Respiración','Título','Guía de respiración',40],
+  ['Respiración','Fase inhalar','Inhalá',24],
+  ['Respiración','Fase mantener','Mantené',24],
+  ['Respiración','Fase exhalar','Exhalá',24],
+  ['Registro','Título','Registro de pensamiento',48],
+  ['Registro','Paso situación','¿Qué situación lo disparó?',64],
+  ['Registro','Paso emoción','¿Qué emoción sentiste?',64],
+  ['Registro','Mensaje de cierre','Reformulaste tu pensamiento. Buen trabajo.',96],
+  ['Actividades','Título','Activación conductual',40],
+  ['Actividades','Vacío','Todavía no registraste actividades hoy.',96],
+  ['Avisos','Título','Recordatorios',40],
+  ['Avisos','Filtro hoy','Hoy',16],
+  ['Avisos','Vacío','No tenés recordatorios activos.',64],
+  ['Rutina','Título','Rutina diaria',40],
+  ['Rutina','Bloque mañana','Mañana',24],
+  ['Rutina','Bloque tarde','Tarde',24],
+  ['Rutina','Bloque noche','Noche',24],
+  ['Timer','Título','Temporizador',40],
+  ['Timer','Listo','¡Tiempo cumplido!',48],
+  ['DBT','Título biblioteca','Biblioteca de habilidades',48],
+  ['DBT','Familia mindfulness','Atención plena',32],
+  ['DBT','Familia tolerancia','Tolerancia al malestar',32],
+  ['DBT','Familia regulación','Regulación emocional',32],
+  ['DBT','Familia efectividad','Efectividad interpersonal',32],
+];
+const TEXT_MODULES = ['Todos los módulos', ...[...new Set(GLOBAL_TEXTS.map(t=>t[0]))]];
+let TG_FILTER='Todos los módulos', TG_SEARCH='', TG_DIRTY=new Set();
+
+defScreen({
+  id:'textos', product:'hub', group:'Configuración', title:'Textos globales', icon:'text',
+  desc:'Editor de los textos visibles en la Suite, con buscador, filtro por módulo y contador de caracteres.',
+  navItems:[{id:'textos',label:'Textos globales de Suite',tag:'145'}],
+  render(){
+    return `${titlebar({icon:'text',title:'Textos globales de Suite'})}
+    <div class="screen tg-body">
+      <div class="tg-top">
+        <h2 class="h-serif" style="font-size:19px; margin:0; white-space:nowrap;">Textos globales</h2>
+        <div class="nav__search tg-search" style="margin:0; flex:1; min-width:160px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="tgSearch" type="text" placeholder="Buscar textos…" value="${esc(TG_SEARCH)}"/>
+        </div>
+        <select class="input" id="tgFilter" style="width:auto;">
+          ${TEXT_MODULES.map(m=>`<option ${m===TG_FILTER?'selected':''}>${esc(m)}</option>`).join('')}
+        </select>
+        <span class="badge brand" style="font-weight:600;">145 textos</span>
+      </div>
+      <div class="tg-list" id="tgList"></div>
+      <div class="tg-foot">
+        <span id="tgStatus" style="font-size:12.5px; color:var(--ink-3);">Sin cambios</span>
+        <div style="flex:1"></div>
+        <button class="btn btn--ghost" id="tgResetAll">Restaurar todos</button>
+        <button class="btn btn--primary" id="tgSave" disabled>Guardar cambios</button>
+      </div>
+    </div>`;
+  },
+  mount(root){
+    const listEl=$('#tgList',root), status=$('#tgStatus',root), save=$('#tgSave',root);
+    function refreshStatus(){
+      const n=TG_DIRTY.size;
+      status.textContent = n? `${n} cambio${n===1?'':'s'} sin guardar` : 'Sin cambios';
+      save.disabled = n===0;
+    }
+    function paint(){
+      const f=TG_SEARCH.trim().toLowerCase();
+      const rows=GLOBAL_TEXTS.filter(t=>
+        (TG_FILTER==='Todos los módulos'||t[0]===TG_FILTER) &&
+        (!f || (t[0]+' '+t[1]+' '+t[2]).toLowerCase().includes(f))
+      );
+      if(!rows.length){ listEl.innerHTML=`<div class="empty" style="padding:40px;"><div class="ico">${svg(I.text,28)}</div><h3>Sin resultados</h3><p>Probá con otro término o módulo.</p></div>`; return; }
+      listEl.innerHTML=rows.map(t=>{
+        const key=t[0]+'·'+t[1];
+        return `<div class="tg-row" data-key="${esc(key)}">
+          <div class="tg-label">
+            <div class="tg-mod">${esc(t[0])}</div>
+            <div class="tg-name">${esc(t[1])}</div>
+          </div>
+          <input class="input tg-input" data-max="${t[3]}" maxlength="${t[3]}" value="${esc(t[2])}"/>
+          <div class="tg-meta">
+            <span class="tg-count">${t[2].length} / ${t[3]}</span>
+            <button class="btn btn--ghost tg-restore" data-orig="${esc(t[2])}" style="padding:7px 12px; font-size:12px;">Restaurar</button>
+          </div>
+        </div>`;
+      }).join('');
+      $$('.tg-input',listEl).forEach(inp=>{
+        const row=inp.closest('.tg-row'), key=row.dataset.key, orig=$('.tg-restore',row).dataset.orig, count=$('.tg-count',row);
+        inp.addEventListener('input',()=>{
+          count.textContent=`${inp.value.length} / ${inp.dataset.max}`;
+          if(inp.value!==orig) TG_DIRTY.add(key); else TG_DIRTY.delete(key);
+          row.classList.toggle('dirty', inp.value!==orig);
+          refreshStatus();
+        });
+        $('.tg-restore',row).addEventListener('click',()=>{
+          inp.value=orig; count.textContent=`${orig.length} / ${inp.dataset.max}`;
+          TG_DIRTY.delete(key); row.classList.remove('dirty'); refreshStatus();
+        });
+      });
+    }
+    $('#tgSearch',root).addEventListener('input',e=>{ TG_SEARCH=e.target.value; paint(); });
+    $('#tgFilter',root).addEventListener('change',e=>{ TG_FILTER=e.target.value; paint(); });
+    $('#tgResetAll',root).addEventListener('click',()=>{ TG_DIRTY.clear(); paint(); refreshStatus(); toast('Textos restaurados'); });
+    save.addEventListener('click',()=>{ TG_DIRTY.clear(); paint(); refreshStatus(); toast('Cambios guardados'); });
+    paint(); refreshStatus();
+  }
+});
+
+/* ============================================================================
+   BOOT
+   ============================================================================ */
+setTheme('light');
+document.documentElement.dataset.product='suite';
+buildNav();
+go('home');
+</script>
+</body>
+</html>
