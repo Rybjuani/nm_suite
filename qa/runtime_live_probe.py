@@ -49,14 +49,15 @@ _DEFAULT_OUT = _PROJ / "qa" / "_runtime_probe"
 _RES = os.environ.get("NM_PROBE_RES", "960x600")
 _THEME_MAP = {"light": "light_hybrid", "dark": "dark_hybrid"}
 
-# Vistas runtime-críticas (la matriz exhaustiva es trabajo de capture_v8.py).
-# Hub post-reestructura v1.0: nav runtime de 3 lugares (Inicio/Pacientes/
-# Ajustes) + detalle con tabs Plan terapéutico e IA
-# (las ex-vistas top-level presets/textos/ia/personalizacion ya no existen).
+# Vistas runtime-críticas únicas (la matriz exhaustiva es trabajo de capture_v8.py).
+# Hub post-reestructura: Pacientes y Detalle son las superficies runtime con
+# ciclo de vida propio. Los subestados del plan, Textos globales y Resumen IA se
+# validan en capture_v8.py porque requieren interacción específica y no deben
+# duplicarse como rutas top-level del smoke.
 _VIEWS = {
     "suite": ["home", "animo", "respiracion", "timer", "avisos",
               "registro", "rutina", "actividades", "dbt"],
-    "hub": ["dashboard", "pacientes", "detalle", "detalle_plan", "detalle_ia"],
+    "hub": ["pacientes", "detalle"],
 }
 _SPEC = {
     "suite": ("app.main_qt", "NeuroMoodApp", "Suite"),

@@ -30,6 +30,7 @@ Hallazgos de la auditoría que enmarcan el trabajo:
 - **Fase 0 — DONE** (`ba1bc28`): `V3_LIFT` + recalibración de sombra de card en `theme.py`; helper `paint_card_lift` en `theme_qt.py`; lift aplicado a la familia `NMCard`. 225 tests verdes, 0 ruff nuevos.
 - **Fase 1 — HECHA** (`7352652` + revisita Codex): se conservó lo válido de la primera pasada y se profundizó con libertad de layout en Home, TCC, Ánimo, Rutina y DBT. Checkpoint Suite completo: 82 capturas claro/oscuro generadas, 0 fallos técnicos; flags parciales solo en estados QA dependientes de datos/duplicados (`home-no-score`, `animo-note-filled`, `rutina-add-task`).
 - **Fase 2 — HECHA** (Codex): se conservó lo válido de la pasada Hub (título serif en Textos globales, jerarquía en detalle, filas asignadas unificadas, recetas QA para Textos globales y Resumen IA) y se profundizó corrigiendo el vacío interno de Pacientes y Plan terapéutico. Checkpoint Hub completo: 18 capturas claro/oscuro generadas, 0 fallos técnicos.
+- **Fase 3 — HECHA** (Codex): regresión V8 completa regenerada (100 capturas, 0 fallos técnicos) y `docs/QA_V8_BASELINE_MATRIX.md` actualizado. Smoke runtime completo: 22 OK, 0 defects, 0 failed.
 
 **Esta revisión del plan** retira la restricción de densidad → **Fase 1 se revisita con libertad** para atacar los gigantismos / vacíos que esa restricción había frenado, y la libertad aplica también a Fase 2 (Hub) y al cierre.
 
@@ -92,7 +93,7 @@ Aplica la misma latitud: corregir gigantismos/voids/compresión del Hub (p.ej. l
 
 ---
 
-## Fase 3 — Regresión y evidencia
+## Fase 3 — Regresión y evidencia  ✅ HECHA
 
 - Regenerar V8 completo y confirmar 0 fallos / 0 duplicados.
 - Revisión final pantalla‑a‑pantalla, claro y oscuro: polish aplicado + layout sano (sin gigantismo/void/compresión) + inventario funcional intacto. El mockup se usa como referencia estética, no como geometría a calcar.
