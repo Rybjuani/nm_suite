@@ -313,8 +313,15 @@ def test_window_chrome_matches_mockup_titlebar_contract(qtbot) -> None:
 
 def test_patient_row_premium_matches_mockup_prow_contract(qtbot) -> None:
     from shared.components.patient import (
+        NMAreaSparkline,
         NMPatientRowPremium,
         NMSparkline,
+        _NM_AREA_SPARK_DOT_MAX_POINTS,
+        _NM_AREA_SPARK_DOT_RADIUS,
+        _NM_AREA_SPARK_GRID_VALUES,
+        _NM_AREA_SPARK_MAX_H,
+        _NM_AREA_SPARK_MIN_H,
+        _NM_AREA_SPARK_STROKE_W,
         _NM_PATIENT_AVATAR_RADIUS,
         _NM_PATIENT_AVATAR_SIZE,
         _NM_PATIENT_RING_COL_W,
@@ -331,6 +338,19 @@ def test_patient_row_premium_matches_mockup_prow_contract(qtbot) -> None:
     qtbot.addWidget(spark)
     assert spark.width() == _NM_PATIENT_SPARKLINE_W == 78
     assert spark.height() == _NM_PATIENT_SPARKLINE_H == 30
+
+    area = NMAreaSparkline(
+        [2, 4, 5, 7, 6, 8, 9],
+        labels=["L", "M", "M", "J", "V", "S", "D"],
+        modo="light_hybrid",
+    )
+    qtbot.addWidget(area)
+    assert area.minimumHeight() == _NM_AREA_SPARK_MIN_H == 74
+    assert area.maximumHeight() == _NM_AREA_SPARK_MAX_H == 82
+    assert _NM_AREA_SPARK_GRID_VALUES == (0, 5, 10)
+    assert _NM_AREA_SPARK_STROKE_W == 2.0
+    assert _NM_AREA_SPARK_DOT_RADIUS == 3.0
+    assert _NM_AREA_SPARK_DOT_MAX_POINTS == 7
 
     row = NMPatientRowPremium(
         "Ana Martinez",
@@ -357,3 +377,11 @@ def test_patient_row_premium_matches_mockup_prow_contract(qtbot) -> None:
 
     source = __import__("inspect").getsource(NMPatientRowPremium._apply_theme)
     assert 'v3c("surface2", self._modo).name()' in source
+
+    area_source = __import__("inspect").getsource(NMAreaSparkline.paintEvent)
+    assert "for value in _NM_AREA_SPARK_GRID_VALUES" in area_source
+    assert "min(10.0, max(0.0, float(v)))" in area_source
+    assert 'v3c("moodGradFrom", self._modo)' in area_source
+    assert 'v3c("moodGradMid", self._modo)' in area_source
+    assert 'v3c("moodGradTo", self._modo)' in area_source
+    assert "draw_dots = n <= _NM_AREA_SPARK_DOT_MAX_POINTS" in area_source

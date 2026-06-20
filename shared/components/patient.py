@@ -39,7 +39,6 @@ from shared.theme_qt import (
     qfont,
     qcolor_to_rgba_css,
     v3c,
-    colors,
 )
 from shared.components.rings import NMModuleRing
 from shared.components.session import _rgba
@@ -69,6 +68,16 @@ _NM_PATIENT_RING_SIZE = 46
 _NM_PATIENT_RING_COL_W = 60
 _NM_PATIENT_UNLINK_SIZE = 30
 _NM_PATIENT_UNLINK_RADIUS = 9
+_NM_AREA_SPARK_MIN_H = 74
+_NM_AREA_SPARK_MAX_H = 82
+_NM_AREA_SPARK_GRID_VALUES = (0, 5, 10)
+_NM_AREA_SPARK_PAD_L = 24
+_NM_AREA_SPARK_PAD_R = 6
+_NM_AREA_SPARK_TOP_PAD = 8
+_NM_AREA_SPARK_LABEL_H = 16
+_NM_AREA_SPARK_STROKE_W = 2.0
+_NM_AREA_SPARK_DOT_RADIUS = 3.0
+_NM_AREA_SPARK_DOT_MAX_POINTS = 7
 
 
 class NMPatientRow(QFrame):
@@ -284,10 +293,11 @@ class NMSparkline(QWidget):
 class NMAreaSparkline(QWidget):
     """Area sparkline grande para la card de animo del Hub Dashboard (capture 03).
 
-    A diferencia de :class:`NMSparkline` (polyline inline 90x28), este pinta:
-      - area rellena con gradiente teal que se desvanece hacia abajo;
-      - linea con marcadores circulares en cada punto;
-      - area suave sin guias tecnicas punteadas;
+    A diferencia de :class:`NMSparkline` (polyline inline 78x30), este pinta:
+      - area rellena con gradiente brand que se desvanece hacia abajo;
+      - linea con gradiente de animo;
+      - guias 0/5/10 como el chart del mockup;
+      - marcadores circulares en series semanales;
       - etiquetas de eje X (dias) debajo del grafico.
 
     Ancho expansible, alto compacto para no romper la politica fit-first.
@@ -304,8 +314,8 @@ class NMAreaSparkline(QWidget):
         self._data: list[float] = [float(v) for v in (data or [])]
         self._labels: list[str] = list(labels) if labels else []
         self._modo = norm_modo(modo or _tm().modo)
-        self.setMinimumHeight(74)
-        self.setMaximumHeight(82)
+        self.setMinimumHeight(_NM_AREA_SPARK_MIN_H)
+        self.setMaximumHeight(_NM_AREA_SPARK_MAX_H)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         _tm().theme_changed.connect(self._on_theme)
@@ -326,43 +336,52 @@ class NMAreaSparkline(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        stroke = v3c("teal", self._modo)
-        axis_c = v3c("mute", self._modo)
         pw, ph = self.width(), self.height()
 
-        axis_h = 16 if self._labels else 0
-        pad_x = 4
-        top_pad = 6
-        plot_h = ph - axis_h - top_pad
-        eff_w = pw - pad_x * 2
+        axis_h = _NM_AREA_SPARK_LABEL_H if self._labels else 4
+        plot_left = _NM_AREA_SPARK_PAD_L
+        plot_right = pw - _NM_AREA_SPARK_PAD_R
+        top_pad = _NM_AREA_SPARK_TOP_PAD
+        plot_h = max(1, ph - axis_h - top_pad - 2)
+        eff_w = max(1, plot_right - plot_left)
 
-        vals = self._data
+        vals = [min(10.0, max(0.0, float(v))) for v in self._data]
         n = len(vals)
-        mn, mx = min(vals), max(vals)
-        # Margen vertical para que picos/valles no toquen los bordes.
-        span = (mx - mn) if mx > mn else 1.0
-        lo = mn - span * 0.25
-        hi = mx + span * 0.25
-        vspan = hi - lo
 
         def _xy(idx: int, val: float) -> tuple[float, float]:
-            x = pad_x + idx * eff_w / max(n - 1, 1)
-            y = top_pad + plot_h - (val - lo) / vspan * plot_h
+            x = plot_left + idx * eff_w / max(n - 1, 1)
+            y = top_pad + plot_h - (val / 10.0) * plot_h
             return x, y
 
         pts = [_xy(i, v) for i, v in enumerate(vals)]
+        baseline_y = top_pad + plot_h
+
+        grid_c = v3c("line", self._modo)
+        grid_c.setAlpha(70 if "dark" in self._modo else 92)
+        label_c = v3c("text3", self._modo)
+        painter.setFont(qfont("size_caption_xs", weight=500))
+        for value in _NM_AREA_SPARK_GRID_VALUES:
+            y_grid = top_pad + plot_h - (value / 10.0) * plot_h
+            painter.setPen(QPen(grid_c, 1))
+            painter.drawLine(plot_left, int(round(y_grid)), plot_right, int(round(y_grid)))
+            painter.setPen(label_c)
+            painter.drawText(
+                QRectF(0, y_grid - 8, plot_left - 5, 16),
+                Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+                str(value),
+            )
 
         # Area rellena con gradiente que se desvanece hacia la baseline.
         area = QPainterPath()
-        area.moveTo(pts[0][0], top_pad + plot_h)
+        area.moveTo(pts[0][0], baseline_y)
         for x, y in pts:
             area.lineTo(x, y)
-        area.lineTo(pts[-1][0], top_pad + plot_h)
+        area.lineTo(pts[-1][0], baseline_y)
         area.closeSubpath()
-        grad = QLinearGradient(0, top_pad, 0, top_pad + plot_h)
-        top_c = QColor(stroke)
-        top_c.setAlpha(70)
-        bot_c = QColor(stroke)
+        grad = QLinearGradient(0, top_pad, 0, baseline_y)
+        top_c = v3c("brand", self._modo)
+        top_c.setAlpha(62 if "dark" in self._modo else 48)
+        bot_c = v3c("brand", self._modo)
         bot_c.setAlpha(0)
         grad.setColorAt(0.0, top_c)
         grad.setColorAt(1.0, bot_c)
@@ -375,30 +394,35 @@ class NMAreaSparkline(QWidget):
         line.moveTo(pts[0][0], pts[0][1])
         for x, y in pts[1:]:
             line.lineTo(x, y)
-        line_pen = QPen(QColor(stroke))
-        line_pen.setWidthF(2.0)
+        line_grad = QLinearGradient(plot_left, 0, plot_right, 0)
+        line_grad.setColorAt(0.0, v3c("moodGradFrom", self._modo))
+        line_grad.setColorAt(0.50, v3c("moodGradMid", self._modo))
+        line_grad.setColorAt(1.0, v3c("moodGradTo", self._modo))
+        line_pen = QPen(QBrush(line_grad), _NM_AREA_SPARK_STROKE_W)
         line_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         line_pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
         painter.setPen(line_pen)
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawPath(line)
 
-        # Marcadores circulares (relleno = surface, borde = stroke).
-        surface_c = QColor(colors(self._modo)["bg_surface"])
-        for x, y in pts:
-            painter.setPen(QPen(QColor(stroke), 1.6))
-            painter.setBrush(surface_c)
-            painter.drawEllipse(QPointF(x, y), 3.0, 3.0)
+        draw_dots = n <= _NM_AREA_SPARK_DOT_MAX_POINTS
+        if draw_dots:
+            dot_border = v3c("brand", self._modo)
+            dot_fill = v3c("surface", self._modo)
+            for x, y in pts:
+                painter.setPen(QPen(dot_border, 1.6))
+                painter.setBrush(dot_fill)
+                painter.drawEllipse(QPointF(x, y), _NM_AREA_SPARK_DOT_RADIUS, _NM_AREA_SPARK_DOT_RADIUS)
 
         # Etiquetas de eje X (dias).
         if self._labels:
-            painter.setPen(QColor(axis_c))
+            painter.setPen(label_c)
             f = qfont("size_caption_xs")
             painter.setFont(f)
             label_y = ph - axis_h
             n_lab = len(self._labels)
             for i, lab in enumerate(self._labels):
-                cx = pad_x + i * eff_w / max(n_lab - 1, 1)
+                cx = plot_left + i * eff_w / max(n_lab - 1, 1)
                 painter.drawText(
                     QRectF(cx - 14, label_y, 28, axis_h),
                     Qt.AlignmentFlag.AlignCenter,
