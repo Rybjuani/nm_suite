@@ -475,7 +475,9 @@ class _ResumenCard(NMCard):
 
         self._rows["situacion"][1].setText(_snip(situacion, 90))
         self._rows["emocion"][1].setText(emocion)
-        intensidad_txt = f"{intensidad}/10" if intensidad is not None else "—"
+        # Mostrar intensidad en escala 0-100 (mockup TCC línea 1235: "Intensidad (0–100)").
+        # Persistencia interna: 0-10; visualización: 0-100.
+        intensidad_txt = f"{int(intensidad * 10)}/100" if intensidad is not None else "—"
         self._rows["intensidad"][1].setText(intensidad_txt)
         self._rows["pensamiento"][1].setText(_snip(pensamiento, 90))
         self._rows["distorsiones"][1].setText(_snip(distorsiones, 100))
@@ -922,14 +924,16 @@ class ModuloRegistroTCC(NMModule):
         layout.addLayout(grid)
 
         # Intensidad: header + NMHeatBar.
-        # El heatbar arranca en el medio (5/10) y ese mismo 5 es el valor que se
-        # persiste si el usuario no lo toca (ver _guardar). Mostrar "—/10" mientras
-        # el indicador ya está posado en el medio y la barra rotulaba "50%" era la
-        # contradicción de escala de la auditoría (P0 #5): un único rótulo /10
-        # accesible (QLabel) es ahora la fuente de verdad.
+        # Mockup TCC línea 1235-1236:
+        #   <div class="field-lbl">Intensidad <span>(0–100)</span></div>
+        #   <input type="range" min="0" max="100" value="70"
+        #     style="background:linear-gradient(90deg,var(--brand),var(--accent));">
+        # Slider visual 0–100 con gradiente brand→accent (NO arcoíris genérico).
+        # Internamente se persiste intensidad 0-10 (div por 10 en _on_intensidad_heat).
         _intens_init = self._data.get("intensidad")
         _intens_val = _intens_init if _intens_init is not None else 5
-        _intens_lbl = f"Intensidad: {_intens_val}/10"
+        _intens_visual = int(_intens_val * 10)  # 0-10 → 0-100 visual
+        _intens_lbl = f"Intensidad: {_intens_visual} (0–100)"
         self._lbl_intensidad_header = QLabel(_intens_lbl)
         self._lbl_intensidad_header.setFont(
             qfont("size_small", weight=TYPOGRAPHY["weight_semibold"])
@@ -941,7 +945,11 @@ class ModuloRegistroTCC(NMModule):
         layout.addWidget(self._lbl_intensidad_header)
 
         self._heat_bar = NMHeatBar(
-            value=int((_intens_init or 5) * 10), modo=self._modo, parent=page
+            value=int((_intens_init or 5) * 10),
+            modo=self._modo,
+            gradient="brand_accent",  # mockup TCC: linear-gradient(90deg, brand, accent)
+            value_max=100,            # mockup TCC: min=0 max=100 (escala visual)
+            parent=page,
         )
         self._heat_bar.value_changed.connect(self._on_intensidad_heat)
         layout.addWidget(self._heat_bar)
@@ -1199,9 +1207,13 @@ class ModuloRegistroTCC(NMModule):
         self._on_intensidad(round(value / 10))
 
     def _on_intensidad(self, value: int):
+        # value viene en escala 0-10 (div por 10 en _on_intensidad_heat).
+        # Persistimos 0-10, pero el label muestra el valor visual 0-100
+        # (mockup TCC línea 1235: "Intensidad (0–100)").
         self._data["intensidad"] = value
         try:
-            self._lbl_intensidad_header.setText(f"Intensidad: {value}/10")
+            visual_value = int(value * 10)  # 0-10 → 0-100
+            self._lbl_intensidad_header.setText(f"Intensidad: {visual_value} (0–100)")
         except Exception:
             _log.exception("Operation failed")
         if hasattr(self, "_resumen"):

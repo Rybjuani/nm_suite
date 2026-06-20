@@ -964,15 +964,21 @@ class NMStepper(QWidget):
 
 
 class NMHeatBar(QWidget):
-    """Barra de intensidad con gradiente arcoíris canónico del mockup.
+    """Barra de intensidad con gradiente configurable.
 
-    Implementa el slider del mockup (neuromood-mockup.html línea 200):
-      track 8px height, r-pill, linear-gradient(90deg,
-        #7b8a99, #6b8fa8, #5faa86, #86b15f, #c99a3d, #b24e3d)
-      thumb 22x22 surface bg + 3px brand border + shadow-2
+    Implementa el slider del mockup (neuromood-mockup.html línea 199-204):
+      track 8px height, r-pill, thumb 22x22 surface bg + 3px brand border + shadow-2.
 
-    Arrastrar o hacer click mueve el indicador.
-    Emite value_changed(int) con valor 0-100.
+    El gradiente del track es configurable via ``gradient``:
+      - "rainbow" (default): arcoíris 6-stop canónico (línea 200), usado por
+        el slider de Ánimo (que NO overridea el background en el HTML).
+      - "brand_accent": linear-gradient(90deg, var(--brand), var(--accent)),
+        usado por el slider de TCC (HTML línea 1236 overridea el background).
+
+    El rango visual también es configurable via ``value_max``:
+      - Ánimo: 1..10 (slider HTML min=1 max=10)
+      - TCC: 0..100 (slider HTML min=0 max=100, línea 1235-1236)
+    El widget emite value_changed(int) con valor 0..value_max.
     """
 
     value_changed = pyqtSignal(int)
@@ -987,10 +993,19 @@ class NMHeatBar(QWidget):
         ("#b24e3d", 1.00),
     )
 
-    def __init__(self, value: int = 50, modo: str = None, parent=None):
+    def __init__(
+        self,
+        value: int = 50,
+        modo: str = None,
+        gradient: str = "rainbow",
+        value_max: int = 100,
+        parent=None,
+    ):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
-        self._value = max(0, min(100, value))
+        self._value_max = max(1, int(value_max))
+        self._value = max(0, min(self._value_max, int(value)))
+        self._gradient = gradient if gradient in ("rainbow", "brand_accent") else "rainbow"
         self._dragging = False
         self.setFixedHeight(40)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -1003,12 +1018,18 @@ class NMHeatBar(QWidget):
         return self._value
 
     def set_value(self, v: int):
-        self._value = max(0, min(100, v))
+        self._value = max(0, min(self._value_max, v))
         self.update()
 
     def _color_at(self, t: float) -> QColor:
-        """Color del arcoíris canónico en la posición t (0..1)."""
+        """Color del gradiente en la posición t (0..1) según modo."""
         t = max(0.0, min(1.0, t))
+        if self._gradient == "brand_accent":
+            # linear-gradient(90deg, var(--brand), var(--accent))
+            return QColor(interpolate_color(
+                C("primary", self._modo), C("accent", self._modo), t
+            ))
+        # rainbow 6-stop
         for i in range(len(self._RAINBOW_STOPS) - 1):
             (c0, p0), (c1, p1) = self._RAINBOW_STOPS[i], self._RAINBOW_STOPS[i + 1]
             if p0 <= t <= p1:
@@ -1035,7 +1056,7 @@ class NMHeatBar(QWidget):
         margin = 16
         usable = self.width() - margin * 2
         t = max(0.0, min(1.0, (x - margin) / usable))
-        new_v = int(t * 100)
+        new_v = int(t * self._value_max)
         if new_v != self._value:
             self._value = new_v
             self.update()
@@ -1056,17 +1077,23 @@ class NMHeatBar(QWidget):
         gy = (h - gh) // 2
         gw = w - margin * 2
 
-        # Track 8px con gradiente arcoíris 6-stop canónico.
+        # Track 8px con gradiente configurable.
         groove_rect = QRectF(margin, gy, gw, gh)
         grad = QLinearGradient(margin, 0, margin + gw, 0)
-        for hex_c, pos in self._RAINBOW_STOPS:
-            grad.setColorAt(pos, QColor(hex_c))
+        if self._gradient == "brand_accent":
+            # Mockup TCC línea 1236: linear-gradient(90deg, var(--brand), var(--accent))
+            grad.setColorAt(0.0, QColor(C("primary", self._modo)))
+            grad.setColorAt(1.0, QColor(C("accent", self._modo)))
+        else:
+            # Mockup base línea 200: arcoíris 6-stop
+            for hex_c, pos in self._RAINBOW_STOPS:
+                grad.setColorAt(pos, QColor(hex_c))
         path = QPainterPath()
         path.addRoundedRect(groove_rect, gh / 2, gh / 2)
         p.fillPath(path, grad)
 
         # Thumb 22x22: surface bg + 3px brand border + shadow-2.
-        t = self._value / 100.0
+        t = self._value / float(self._value_max)
         hx = margin + t * gw
         cy = gy + gh / 2
         thumb_r = 11  # diameter 22 / 2
@@ -1083,9 +1110,6 @@ class NMHeatBar(QWidget):
         p.setBrush(QBrush(surface))
         p.setPen(QPen(brand, 3))
         p.drawEllipse(QPointF(hx, cy), thumb_r, thumb_r)
-
-        # El valor vive en el QLabel "Intensidad: N/10" (accesible al lector de
-        # pantalla y en la misma escala /10).
 
         p.restore()
         p.end()

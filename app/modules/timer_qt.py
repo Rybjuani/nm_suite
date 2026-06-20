@@ -339,9 +339,10 @@ class ModuloTimer(NMModule):
         cent_lay.addStretch(1)
 
         # Canvas: bigring 230×230 (mockup canónico línea 207), con inner core
-        # 200×200 + número central 52px font-display. NMFocusArc ahora implementa
-        # el contrato .bigring/.core/.num del mockup al pie de la letra.
-        self._canvas = NMFocusArc(size=230, modo=self._modo)
+        # 200×200 + número central 46px font-display (mockup línea 861:
+        # <div class="h-serif" id="tmNum" style="font-size:46px;">). El CSS base
+        # pide 52px (.bigring .num), pero el Timer overridea inline a 46px.
+        self._canvas = NMFocusArc(size=230, modo=self._modo, num_size=46)
         self._canvas.set_data(0.0, self._format_time(self._remaining_sec))
         cent_lay.addWidget(self._canvas, alignment=Qt.AlignmentFlag.AlignHCenter)
 

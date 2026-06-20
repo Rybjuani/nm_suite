@@ -516,6 +516,7 @@ class _SuggestedCard(NMCard):
             t("text.module.actividades.btn_done_state", "Hecho"),
             tone="brand",
             modo=self._modo,
+            with_dot=True,  # mockup línea 1005: <span class="badge brand"><span class="dt"></span>Hecho</span>
         )
         self._done_badge.hide()
         footer.addWidget(self._done_badge)

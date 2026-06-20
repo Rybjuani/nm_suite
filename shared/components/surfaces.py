@@ -233,8 +233,12 @@ class NMBadge(QLabel):
 
     Implementa ``.badge`` del mockup (líneas 265-271):
       - pill 4×11 padding, soft bg + colored text
-      - dot 6px ``.dt`` delante del texto (currentColor) en tonos brand/accent/
-        gold/rose/positive/completed/patient/warning/danger — no en neutral.
+      - dot 6px ``.dt`` delante del texto (currentColor) — OPT-IN, solo donde
+        el HTML específico del mockup incluye ``<span class="dt">``:
+          · home card state badge (línea 643)
+          · actividades "Hecho" badge (línea 1005)
+          · avisos estado badges Completado/Hoy/Activo (líneas 1053-1055)
+        Todos los demás badges del mockup NO llevan dot.
 
     Args:
         text:   Etiqueta. Puede incluir un símbolo unicode a la izquierda.
@@ -242,7 +246,8 @@ class NMBadge(QLabel):
                 ``"gold"`` / ``"rose"`` / ``"positive"`` / ``"completed"`` /
                 ``"patient"`` / ``"warning"`` / ``"danger"`` / ``"critical"``.
         modo:   Override; ``None`` = sigue ThemeManager.
-        with_dot:  Forzar dot on/off. Por defecto: on para tonos no-neutral.
+        with_dot:  Activa el dot 6px prefijo. **Default: False** (opt-in).
+                Pasar ``True`` solo donde el HTML del mockup lo requiere.
         parent: parent widget.
 
     Para añadir ícono SVG real, usar ``NMIcon`` en un layout horizontal y
@@ -250,8 +255,14 @@ class NMBadge(QLabel):
     pero la composición externa es más mantenible.
     """
 
-    # Tonos que llevan el dot 6px del mockup (todos los semánticos; no neutral).
-    _TONES_WITH_DOT = frozenset({
+    # Tonos que pueden llevar el dot 6px del mockup (todos los semánticos; no neutral).
+    # Pero el dot es OPT-IN: solo se activa donde el HTML específico del mockup
+    # incluye <span class="dt">. Audit HTML mockup:
+    #   - línea 643: home card state badge (con dot)
+    #   - línea 1005: actividades "Hecho" badge (con dot)
+    #   - líneas 1053-1055: avisos estado Completado/Hoy/Activo (con dot)
+    # Todos los demás badges del mockup NO llevan dot.
+    _TONES_ELIGIBLE_FOR_DOT = frozenset({
         "brand", "info", "accent", "gold", "rose",
         "positive", "completed", "patient", "warning", "warn",
         "danger", "critical",
@@ -262,16 +273,15 @@ class NMBadge(QLabel):
         text: str = "",
         tone: str = "neutral",
         modo: str | None = None,
-        with_dot: bool | None = None,
+        with_dot: bool = False,
         parent=None,
     ):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._tone = tone if tone in _BADGE_TONE_TO_KEY else "neutral"
-        # with_dot: None = automático (según tone), True/False = forzado.
-        self._with_dot = (
-            with_dot if with_dot is not None else (self._tone in self._TONES_WITH_DOT)
-        )
+        # with_dot es OPT-IN (default False). Solo se activa donde el HTML
+        # del mockup específicamente incluye <span class="dt">.
+        self._with_dot = bool(with_dot)
         self._bare_text = ""  # texto sin dot (para re-render en theme change)
         self.setObjectName("NMBadge")
         self.setFont(v3_font("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
@@ -287,10 +297,7 @@ class NMBadge(QLabel):
     def set_tone(self, tone: str):
         if tone in _BADGE_TONE_TO_KEY:
             self._tone = tone
-            if tone not in self._TONES_WITH_DOT:
-                self._with_dot = False
-            elif self._with_dot is None:
-                self._with_dot = True
+            # No auto-activar dot al cambiar tone (es opt-in explícito).
             self._render_text(self._bare_text)
             self._apply_style()
 

@@ -124,17 +124,30 @@ class NMFocusArc(QWidget):
       - contenedor 230×230 con radial-gradient brand-soft
       - inner core 200×200 con radial-gradient surface→surface-2,
         border 1px line, inset shadow + shadow-2
-      - número central 52px font-display weight 500
+      - número central: 52px font-display weight 500 por defecto (mockup
+        línea 213 .bigring .num), pero configurable via ``num_size``:
+          · Timer (mockup línea 861): overridea a 46px con style inline
+            → pasar ``num_size=46``
+          · Respiración: usa el default 52px (.bigring .num del CSS base)
       - arco de progreso brand + glow (extensión runtime sobre el mockup)
       - pulse/blink animados (extensión runtime)
     """
 
-    def __init__(self, size: int = 230, modo: str = None, parent=None):
+    def __init__(
+        self,
+        size: int = 230,
+        modo: str = None,
+        num_size: int | None = None,
+        parent=None,
+    ):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._pct = 0.0
         self._time_text = "25:00"
         self._state_text = "listo"
+        # num_size: None = default 52px (mockup .bigring .num línea 213),
+        # int = override (Timer pasa 46px según mockup línea 861).
+        self._num_size_override = num_size
         # Efectos animados
         self._pulse_intensity = 0.0   # 0..1 — modula aura y glow mientras corre
         self._blink_on = True          # False = frame apagado en los últimos 10s
@@ -314,10 +327,15 @@ class NMFocusArc(QWidget):
         )
 
         # ── Tiempo central: siempre 100% opacidad para ser legible ───────────
-        # Mockup línea 213: font-display 52px weight 500.
-        # Para size=230 → 52px exacto; para otros sizes, escala proporcional.
+        # Mockup línea 213: font-display 52px weight 500 (.bigring .num default).
+        # Timer overridea a 46px (mockup línea 861 style="font-size:46px").
+        # Si _num_size_override es None, usar 52px escalado proporcionalmente
+        # al tamaño del widget. Si es int, usar ese valor absoluto.
         p.setOpacity(1.0)
-        time_pt = max(20, int(w * (52.0 / 230.0)))
+        if self._num_size_override is not None:
+            time_pt = int(self._num_size_override)
+        else:
+            time_pt = max(20, int(w * (52.0 / 230.0)))
         p.setPen(v3c("text", self._modo))
         try:
             from shared.theme_qt import v3_font as _v3_font
