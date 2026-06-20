@@ -4,12 +4,10 @@ app/modules/timer_qt.py — Timer de enfoque v3 (PyQt6)
 Estructura según design_handoff_neuromood_v3 (Suite > Timer):
 
   Header        eyebrow + nombre de actividad
-  2-col main    LEFT: BIG NMFocusArc (340, stroke 14, mono MM:SS)
-                       + chip "Sesión en curso" / "Listo para empezar"
+  2-col main    LEFT: BIG NMFocusArc (MM:SS)
+                       + chip "Sesión en curso" / "Lista para empezar"
                        + 3 NMPlayButton (refresh / play|pause / skip)
-                RIGHT rail: NMCard "DETALLES DE SESIÓN" con NMInput +
-                            chips preset (5/10/25/45/custom)
-                            NMCard "SESIONES DE HOY" con lista del día
+                       + chips de duración y modo
 
 LÓGICA DE NEGOCIO PRESERVADA EXACTA:
   _tick() (1s), _save_session() (INSERT INTO actividades_temporizador),
@@ -102,6 +100,11 @@ except ImportError:
     from shared.visual_qa import visual_qa_enabled, timer_sessions
 
 from shared.remote_config import t
+
+
+def _duration_chip_label(secs: int) -> str:
+    minutes = max(1, int(round(secs / 60)))
+    return f"{minutes} min"
 
 
 def _preset_from_row(row) -> tuple[str, int, str, str] | None:
@@ -346,10 +349,10 @@ class ModuloTimer(NMModule):
         cent_lay.addWidget(self._canvas, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         # State chip
-        self._state_chip = QLabel(t("text.module.timer.ready_state", "Listo para empezar"))
-        self._state_chip.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_semibold"]))
+        self._state_chip = QLabel(t("text.module.timer.ready_state", "Lista para empezar"))
+        self._state_chip.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
         self._state_chip.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._state_chip.setContentsMargins(V3_SP["lg"], V3_SP["xs"], V3_SP["lg"], V3_SP["xs"])
+        self._state_chip.setContentsMargins(V3_SP["md"], V3_SP["xs"], V3_SP["md"], V3_SP["xs"])
         cent_lay.addWidget(self._state_chip, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         # Controls
@@ -398,32 +401,50 @@ class ModuloTimer(NMModule):
         input_container_lay.setContentsMargins(0, 0, 0, 0)
         input_container_lay.addLayout(input_row)
         cent_lay.addWidget(self._input_container)
+        self._input_container.hide()
 
-        # Preset chips row (envuelto en un container para poder ocultarlo
-        # en el empty state). 2026-06: agrupado en _chip_container.
-        # (2026-06: setFixedSize(76,28) removido → los chips usan su sizeHint
-        # y se expanden con el card. "Trabajo profundo" antes se cortaba a
-        # "abajo profund..." por el ancho fijo de 76px.)
+        # Chips de duración + modo, separados como en el mockup. La actividad
+        # seleccionada sigue escribiéndose en _ent_actividad para preservar la
+        # persistencia existente.
         chips_row = QHBoxLayout()
         chips_row.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         chips_row.setSpacing(6)
+        self._duration_chip_btns: list[tuple[NMButtonOutline, int]] = []
+        duration_seconds = sorted({secs for _, secs, *_ in self._presets})
+        for secs in duration_seconds[:8]:
+            btn = NMButtonOutline(_duration_chip_label(secs), modo=self._modo, toggleable=False, size="sm")
+            btn.setFixedHeight(32)
+            btn.setMinimumWidth(64)
+            btn.clicked.connect(lambda _, s=secs: self._select_duration(s))
+            chips_row.addWidget(btn, 0, Qt.AlignmentFlag.AlignVCenter)
+            self._duration_chip_btns.append((btn, secs))
+        self._duration_chip_container = QWidget()
+        self._duration_chip_container.setStyleSheet("background: transparent;")
+        duration_chip_container_lay = QHBoxLayout(self._duration_chip_container)
+        duration_chip_container_lay.setContentsMargins(0, 0, 0, 0)
+        duration_chip_container_lay.addLayout(chips_row)
+        cent_lay.addWidget(self._duration_chip_container)
+
+        mode_chips_row = QHBoxLayout()
+        mode_chips_row.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        mode_chips_row.setSpacing(8)
         self._chip_btns: list[tuple[NMButtonOutline, int]] = []
         for label, secs, description, categoria in self._presets[:8]:
             btn = NMButtonOutline(label, modo=self._modo, toggleable=False, size="sm")
-            btn.setMinimumHeight(28)
-            btn.setMinimumWidth(76)
+            btn.setFixedHeight(34)
+            btn.setMinimumWidth(max(76, min(150, 20 + len(label) * 9)))
             if description:
                 btn.setToolTip(description)
             btn.clicked.connect(
                 lambda _, n=label, s=secs, c=categoria: self._select_preset(n, s, c)
             )
-            chips_row.addWidget(btn, 0, Qt.AlignmentFlag.AlignVCenter)
+            mode_chips_row.addWidget(btn, 0, Qt.AlignmentFlag.AlignVCenter)
             self._chip_btns.append((btn, secs))
         self._chip_container = QWidget()
         self._chip_container.setStyleSheet("background: transparent;")
         chip_container_lay = QHBoxLayout(self._chip_container)
         chip_container_lay.setContentsMargins(0, 0, 0, 0)
-        chip_container_lay.addLayout(chips_row)
+        chip_container_lay.addLayout(mode_chips_row)
         cent_lay.addWidget(self._chip_container)
 
         # 2026-06: siempre crear el _empty_state canónico (oculto por
@@ -448,7 +469,6 @@ class ModuloTimer(NMModule):
             parent=cent_container,
         )
         self._empty_state.hide()
-        cent_lay.addStretch(1)
         cent_lay.addWidget(self._empty_state)
         cent_lay.addStretch(1)
 
@@ -460,7 +480,7 @@ class ModuloTimer(NMModule):
             )
             self._ent_actividad.setText(init_preset[0])
             self._current_categoria = init_preset[3]
-            self._highlight_preset(self._total_sec)
+            self._highlight_preset(self._total_sec, init_preset[0])
         else:
             # Sin actividad asignada (regla clínica 2026-06): el paciente ve
             # el mensaje de empty state, los controles quedan deshabilitados
@@ -474,7 +494,7 @@ class ModuloTimer(NMModule):
             # que NO contribuyan al sizeHint del layout — sin esto, el
             # NMEmptyState quedaba estirado en lugar de compacto.)
             for w in (self._canvas, self._state_chip,
-                      self._input_container, self._chip_container):
+                      self._input_container, self._duration_chip_container, self._chip_container):
                 w.setMaximumSize(0, 0)
                 w.hide()
             self._btn_reset.setEnabled(False)
@@ -519,21 +539,13 @@ class ModuloTimer(NMModule):
         self._apply_state_chip_style()
 
     def _apply_state_chip_style(self):
-        is_active = self._running and not self._paused
-        if is_active:
-            color = v3c("teal", self._modo).name()
-            # Soft background for active state (handoff §4.4)
-            qc = QColor(color)
-            bg = f"rgba({qc.red()},{qc.green()},{qc.blue()},28)"
-            self._state_chip.setStyleSheet(
-                f"color: {color}; background: {bg}; border-radius: 10px; "
-                f"padding: 4px 14px; font-weight: 500;"
-            )
-        else:
-            color = v3c("ink_secondary", self._modo).name()
-            self._state_chip.setStyleSheet(
-                f"color: {color}; background: transparent; padding: 4px 0;"
-            )
+        color = v3c("primary", self._modo).name()
+        qc = QColor(color)
+        bg = f"rgba({qc.red()},{qc.green()},{qc.blue()},24)"
+        self._state_chip.setStyleSheet(
+            f"color: {color}; background: {bg}; border-radius: 10px; "
+            f"padding: 4px 12px; font-weight: 600;"
+        )
 
     def _on_theme(self, modo: str) -> None:
         super()._on_theme(modo)
@@ -547,6 +559,15 @@ class ModuloTimer(NMModule):
 
     # ── Presets ──────────────────────────────────────────────────────────────
 
+    def _select_duration(self, secs: int):
+        if self._running:
+            return
+        preset = next((preset for preset in self._presets if preset[1] == secs), None)
+        if preset is None:
+            return
+        name, seconds, _description, categoria = preset
+        self._select_preset(name, seconds, categoria)
+
     def _select_preset(self, name: str, secs: int, categoria: str = ""):
         if self._running:
             return
@@ -554,12 +575,17 @@ class ModuloTimer(NMModule):
         self._remaining_sec = secs
         self._ent_actividad.setText(name)
         self._current_categoria = categoria
-        self._highlight_preset(secs)
+        self._highlight_preset(secs, name)
         self._update_canvas()
 
-    def _highlight_preset(self, selected: int):
-        for btn, secs in self._chip_btns:
+    def _highlight_preset(self, selected: int, selected_name: str = ""):
+        for btn, secs in getattr(self, "_duration_chip_btns", []):
             btn.set_active(secs == selected)
+        for btn, secs in self._chip_btns:
+            if selected_name:
+                btn.set_active(btn.text() == selected_name)
+            else:
+                btn.set_active(secs == selected)
 
     # ── Display ──────────────────────────────────────────────────────────────
 
@@ -577,9 +603,9 @@ class ModuloTimer(NMModule):
         elif self._running and not self._paused:
             state = t("text.module.timer.running_state", "Sesión en curso")
         elif self._paused:
-            state = "Pausado"
+            state = t("text.module.timer.paused_state", "En pausa")
         else:
-            state = t("text.module.timer.ready_state", "Listo para empezar")
+            state = t("text.module.timer.ready_state", "Lista para empezar")
 
         # Handoff §5.5: focus timer digits in Newsreader display
         time_str = self._format_time(self._remaining_sec)

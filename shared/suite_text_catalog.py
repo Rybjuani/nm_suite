@@ -360,8 +360,9 @@ _add("text.module.actividades.btn_done_state", "Activación", "Estado hecho", "H
 
 # Timer
 _add("text.module.timer.eyebrow", "Temporizador", "Título del módulo oculto", "Timer de enfoque", 40)
-_add("text.module.timer.ready_state", "Temporizador", "Estado listo", "Listo para empezar", 44)
+_add("text.module.timer.ready_state", "Temporizador", "Estado listo", "Lista para empezar", 44)
 _add("text.module.timer.running_state", "Temporizador", "Estado en curso", "Sesión en curso", 40)
+_add("text.module.timer.paused_state", "Temporizador", "Estado pausado", "En pausa", 24)
 _add(
     "text.module.timer.empty_title",
     "Temporizador",

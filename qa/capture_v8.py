@@ -1199,6 +1199,8 @@ def _timer_force_empty(win, qapp, action):
         target._canvas.set_data(0.0, "—:—")
     if hasattr(target, '_input_container'):
         target._input_container.hide()
+    if hasattr(target, '_duration_chip_container'):
+        target._duration_chip_container.hide()
     if hasattr(target, '_chip_container'):
         target._chip_container.hide()
     if hasattr(target, '_cent_lay'):

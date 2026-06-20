@@ -275,7 +275,7 @@ class NMFocusArc(QWidget):
 
         # ── Tiempo central: siempre 100% opacidad para ser legible ───────────
         p.setOpacity(1.0)
-        time_pt = max(16, int(w * 0.15))
+        time_pt = max(16, int(w * 0.20))
         p.setPen(v3c("text", self._modo))
         try:
             from shared.theme_qt import v3_font as _v3_font
