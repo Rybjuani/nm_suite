@@ -4,8 +4,7 @@ app/modules/rutina_qt.py — Rutina del día v3 (PyQt6)
 Estructura según design_handoff_neuromood_v3 (Suite > Rutina):
 
   Header        eyebrow
-  Hero card     Ring grande del día (120) + título + descripción +
-                NMButton gradient "Nueva tarea" (asume sección horaria actual)
+  Hero card     Ring grande del día (64) + título + descripción
   3-col grid    3 _SectionCard (Mañana / Tarde / Noche):
                   • Header: NMIcon temático + label + ring chico + counter "N/M"
                   • Body: lista de NMCustomCheck (tareas)
@@ -104,7 +103,7 @@ from shared.remote_config import t
 # v3: SVG icons en lugar de fa5s
 SECCIONES = [
     ("manana", "text.module.rutina.section_morning", "Mañana", "sun"),
-    ("tarde", "text.module.rutina.section_afternoon", "Tarde", "spark"),
+    ("tarde", "text.module.rutina.section_afternoon", "Tarde", "smile"),
     ("noche", "text.module.rutina.section_night", "Noche", "moon"),
 ]
 
@@ -133,7 +132,7 @@ class _HeroDayCard(NMCard):
         lay.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], V3_SP["sm"])
         lay.setSpacing(V3_SP["md"])
 
-        self._ring = NMModuleRing(size=72, pct=0.0, modo=self._modo)
+        self._ring = NMModuleRing(size=64, pct=0.0, modo=self._modo)
         lay.addWidget(self._ring, alignment=Qt.AlignmentFlag.AlignVCenter)
 
         col = QVBoxLayout()
