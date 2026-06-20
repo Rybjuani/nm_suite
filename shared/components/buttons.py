@@ -712,6 +712,9 @@ class NMSearchInput(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
         self.setMinimumHeight(_NM_CONTROL_HEIGHT)
         self.setMaximumHeight(_NM_CONTROL_HEIGHT)
+        # Reservar 3px de margen en los 4 lados para que el halo del focus
+        # ring (brand-soft 3px) no se recorte por los bounds del widget.
+        self.setContentsMargins(3, 3, 3, 3)
         self.setAccessibleName("Buscar")
 
         lay = QHBoxLayout(self)
@@ -779,13 +782,33 @@ class NMSearchInput(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         r = float(_NM_CONTROL_RADIUS)
-        rect = QRectF(0.5, 0.5, self.width() - 1, self.height() - 1)
+        # El widget tiene contentsMargins(3,3,3,3) para alojar el halo del focus.
+        # El rect interior (donde va el input + borde) empieza en (3,3).
+        rect = QRectF(3.5, 3.5, self.width() - 7, self.height() - 7)
         bg = v3c("surface_2", self._modo)
         focused = self._edit.hasFocus()
-        border = v3c("accent" if focused else "border", self._modo)
-        p.setBrush(QBrush(bg))
-        p.setPen(QPen(border, 1.5 if focused else 1.0))
-        p.drawRoundedRect(rect, r, r)
+        # Mockup canónico (.input:focus línea 290):
+        #   border-color: var(--brand-line); box-shadow: 0 0 0 3px var(--brand-soft)
+        # Qt no soporta box-shadow multicapa; aproximamos con dos pases:
+        #   1. halo outer 3px brand-soft (rect expandido 3px)
+        #   2. borde 1px brand-line (sobre el halo)
+        if focused:
+            brand_soft = QColor(v3c("primary_soft", self._modo))
+            brand_line = QColor(v3c("brandLine", self._modo))
+            # Halo: rounded rect más grande con brand-soft
+            halo_rect = rect.adjusted(-3, -3, 3, 3)
+            p.setBrush(QBrush(brand_soft))
+            p.setPen(Qt.PenStyle.NoPen)
+            p.drawRoundedRect(halo_rect, r + 3, r + 3)
+            # Borde brand-line 1px sobre el halo
+            p.setBrush(QBrush(bg))
+            p.setPen(QPen(brand_line, 1.0))
+            p.drawRoundedRect(rect, r, r)
+        else:
+            border = v3c("border", self._modo)
+            p.setBrush(QBrush(bg))
+            p.setPen(QPen(border, 1.0))
+            p.drawRoundedRect(rect, r, r)
         p.end()
 
     def focusInEvent(self, event):
