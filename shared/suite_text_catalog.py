@@ -221,9 +221,9 @@ _add(
     "Respiración 4-7-8",
     44,
 )
-_add("text.module.respiracion.phase_inhale", "Respiración", "Chip inhalar", "Inhala 4s", 24)
-_add("text.module.respiracion.phase_hold", "Respiración", "Chip mantener", "Mantiene 7s", 24)
-_add("text.module.respiracion.phase_exhale", "Respiración", "Chip exhalar", "Exhala 8s", 24)
+_add("text.module.respiracion.phase_inhale", "Respiración", "Chip inhalar", "Inhalá 4s", 24)
+_add("text.module.respiracion.phase_hold", "Respiración", "Chip mantener", "Mantené 7s", 24)
+_add("text.module.respiracion.phase_exhale", "Respiración", "Chip exhalar", "Exhalá 8s", 24)
 _add("text.module.respiracion.reset_btn", "Respiración", "Botón reiniciar", "Reiniciar", 28)
 _add("text.module.respiracion.start_btn", "Respiración", "Botón iniciar", "Iniciar", 28)
 _add("text.module.respiracion.pause_btn", "Respiración", "Botón pausar", "Pausar", 28)

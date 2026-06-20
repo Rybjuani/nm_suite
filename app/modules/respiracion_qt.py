@@ -49,9 +49,9 @@ from PyQt6.QtWidgets import (
 try:
     from shared.components import (
         NMModule,
-        NMButton,
         NMButtonOutline,
         NMCard,
+        NMPlayButton,
         NMRingPulse,
         NMChip,
     )
@@ -75,9 +75,9 @@ except ImportError:
         sys.path.insert(0, _dir)
     from shared.components import (
         NMModule,
-        NMButton,
         NMButtonOutline,
         NMCard,
+        NMPlayButton,
         NMRingPulse,
         NMChip,
     )
@@ -668,15 +668,15 @@ class ModuloRespiracion(NMModule):
         self._chips_layout.setSpacing(6)
 
         self._chip_inhala = NMChip(
-            t("text.module.respiracion.phase_inhale", "Inhala 4s"),
+            t("text.module.respiracion.phase_inhale", "Inhalá 4s"),
             variant="default", size="sm", modo=self._modo, parent=self
         )
         self._chip_manten = NMChip(
-            t("text.module.respiracion.phase_hold", "Mantiene 7s"),
+            t("text.module.respiracion.phase_hold", "Mantené 7s"),
             variant="default", size="sm", modo=self._modo, parent=self
         )
         self._chip_exhala = NMChip(
-            t("text.module.respiracion.phase_exhale", "Exhala 8s"),
+            t("text.module.respiracion.phase_exhale", "Exhalá 8s"),
             variant="default", size="sm", modo=self._modo, parent=self
         )
 
@@ -685,31 +685,25 @@ class ModuloRespiracion(NMModule):
         self._chips_layout.addWidget(self._chip_exhala)
         circle_container.addLayout(self._chips_layout)
 
-        # Controles Play/Pause/Stop (using NMButton)
+        # Controles circulares del mockup: reset/play/stop sin texto visible.
         ctrl_row = QHBoxLayout()
         ctrl_row.setAlignment(Qt.AlignmentFlag.AlignCenter)
         ctrl_row.setSpacing(V3_SP["md"])
 
-        self._btn_reset = NMButton(
-            t("text.module.respiracion.reset_btn", "Reiniciar"),
-            variant="secondary", size="md", parent=self, width=100
-        )
+        self._btn_reset = NMPlayButton(icon_name="refresh", size="md", modo=self._modo, parent=self)
+        self._btn_reset.setToolTip(t("text.module.respiracion.reset_btn", "Reiniciar"))
+        self._btn_reset.setAccessibleName(t("text.module.respiracion.reset_btn", "Reiniciar"))
         self._btn_reset.clicked.connect(self._stop)
         ctrl_row.addWidget(self._btn_reset)
 
-        # P2.E: botón Iniciar/Pausar a escala del producto (md, no lg) — antes se
-        # veía gigante y rompía la jerarquía visual junto al orb.
-        self._btn_play = NMButton(
-            t("text.module.respiracion.start_btn", "Iniciar"),
-            variant="gradient", size="md", parent=self, width=120
-        )
+        self._btn_play = NMPlayButton(icon_name="play", size="lg", modo=self._modo, parent=self)
+        self._set_play_control("play", t("text.module.respiracion.start_btn", "Iniciar"))
         self._btn_play.clicked.connect(self._toggle_play_pause)
         ctrl_row.addWidget(self._btn_play)
 
-        self._btn_stop = NMButton(
-            t("text.module.respiracion.stop_btn", "Detener"),
-            variant="secondary", size="md", parent=self, width=100
-        )
+        self._btn_stop = NMPlayButton(icon_name="stop", size="md", modo=self._modo, parent=self)
+        self._btn_stop.setToolTip(t("text.module.respiracion.stop_btn", "Detener"))
+        self._btn_stop.setAccessibleName(t("text.module.respiracion.stop_btn", "Detener"))
         self._btn_stop.clicked.connect(self._stop)
         ctrl_row.addWidget(self._btn_stop)
 
@@ -742,7 +736,7 @@ class ModuloRespiracion(NMModule):
         pat_lay.setSpacing(2)
         self._pattern_eyebrow = QLabel(t("text.module.respiracion.pattern_label", "Patrón"))
         self._pattern_eyebrow.setFont(eyebrow_font())
-        self._pattern_title = QLabel("4-7-8")
+        self._pattern_title = QLabel("4·7·8")
         self._pattern_title.setFont(val_font)
         pat_lay.addWidget(self._pattern_eyebrow)
         pat_lay.addWidget(self._pattern_title)
@@ -843,6 +837,11 @@ class ModuloRespiracion(NMModule):
 
     # ── controles ────────────────────────────────────────────────────────────
 
+    def _set_play_control(self, icon_name: str, label: str) -> None:
+        self._btn_play.set_icon(icon_name)
+        self._btn_play.setToolTip(label)
+        self._btn_play.setAccessibleName(label)
+
     def _toggle_play_pause(self):
         """Toggle único entre play / pause / resume."""
         if not self._running:
@@ -861,7 +860,7 @@ class ModuloRespiracion(NMModule):
         self._phase_idx = 0
         self._phase_ms = 0
         self._last_phase_idx = -1
-        self._btn_play.setText(t("text.module.respiracion.pause_btn", "Pausar"))
+        self._set_play_control("pause", t("text.module.respiracion.pause_btn", "Pausar"))
         self._tick()
 
     def _pause(self):
@@ -869,12 +868,12 @@ class ModuloRespiracion(NMModule):
             return
         if self._paused:
             self._paused = False
-            self._btn_play.setText(t("text.module.respiracion.pause_btn", "Pausar"))
+            self._set_play_control("pause", t("text.module.respiracion.pause_btn", "Pausar"))
             self._circle._start_rendering()
             self._tick()
         else:
             self._paused = True
-            self._btn_play.setText(t("text.module.respiracion.resume_btn", "Reanudar"))
+            self._set_play_control("play", t("text.module.respiracion.resume_btn", "Reanudar"))
             if self._timer_id:
                 self._timer_id.stop()
                 self._timer_id = None
@@ -887,7 +886,7 @@ class ModuloRespiracion(NMModule):
             self._save_session()
         self._running = False
         self._paused = False
-        self._btn_play.setText(t("text.module.respiracion.start_btn", "Iniciar"))
+        self._set_play_control("play", t("text.module.respiracion.start_btn", "Iniciar"))
         self._circle.reset_idle()
         self._session_lbl.setText("00:00")
         if hasattr(self, "_ciclos_value_lbl"):
@@ -995,7 +994,7 @@ class ModuloRespiracion(NMModule):
         self._circle.reset_idle()
         self._update_phase_chips(None)
         self._session_lbl.setText("00:00")
-        self._btn_play.setText(t("text.module.respiracion.start_btn", "Iniciar"))
+        self._set_play_control("play", t("text.module.respiracion.start_btn", "Iniciar"))
 
     # ── DB (preservado exacto) ───────────────────────────────────────────────
 
