@@ -151,3 +151,41 @@ def test_toast_matches_mockup_pill_contract(qtbot) -> None:
     assert "_NM_TOAST_SHADOW_PAD" in source
     assert "drawRect(QRectF(0, 0, 4" not in source
     assert _NM_TOAST_SLIDE_PX == 20
+
+
+def test_dialog_matches_mockup_modal_contract(qtbot) -> None:
+    from PyQt6.QtWidgets import QWidget
+    from shared.components.dialogs import (
+        NMDialog,
+        _NM_MODAL_ANIM_MS,
+        _NM_MODAL_MAX_WIDTH,
+        _NM_MODAL_SCALE_FROM,
+        _NM_MODAL_SCRIM_RGBA,
+        _NM_MODAL_WIDTH_RATIO,
+    )
+
+    host = QWidget()
+    host.resize(520, 360)
+    qtbot.addWidget(host)
+    dialog = NMDialog("Confirmar", modo="light_hybrid", parent=host)
+    qtbot.addWidget(dialog)
+
+    assert _NM_MODAL_MAX_WIDTH == 560
+    assert _NM_MODAL_WIDTH_RATIO == 0.92
+    assert _NM_MODAL_SCRIM_RGBA == (20, 18, 14, 128)
+    assert _NM_MODAL_SCALE_FROM == 0.96
+    assert _NM_MODAL_ANIM_MS == 240
+    assert dialog._dialog_width == 560
+    assert dialog._effective_panel_width() == int(host.width() * 0.92)
+
+    dialog._set_panel_scale(1.0)
+    assert dialog._panel.width() == int(host.width() * 0.92)
+    assert dialog._panel.graphicsEffect() is not None
+    assert "border-radius: 28px" in dialog._panel.styleSheet()
+
+    primary = dialog.add_footer_button("Guardar", role="primary")
+    assert "background: #2e5d43" in primary.styleSheet()
+    assert "color: #f7f3ea" in primary.styleSheet()
+
+    source = __import__("inspect").getsource(NMDialog.paintEvent)
+    assert "QColor(*_NM_MODAL_SCRIM_RGBA)" in source

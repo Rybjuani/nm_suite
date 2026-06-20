@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import (
+    QEasingCurve,
+    QPropertyAnimation,
     Qt,
+    pyqtProperty,
     pyqtSignal,
 )
 from PyQt6.QtGui import (
@@ -28,7 +31,9 @@ from shared.theme_qt import (
     V3_SP,
     eyebrow_font,
     norm_modo,
+    qcolor_to_rgba_css,
     qfont,
+    shadow_3,
     v3c,
 )
 from shared.components.buttons import (
@@ -42,6 +47,13 @@ from shared.components.buttons import (
 
 def _tm() -> ThemeManager:
     return ThemeManager.instance()
+
+
+_NM_MODAL_MAX_WIDTH = 560
+_NM_MODAL_WIDTH_RATIO = 0.92
+_NM_MODAL_SCRIM_RGBA = (20, 18, 14, 128)
+_NM_MODAL_SCALE_FROM = 0.96
+_NM_MODAL_ANIM_MS = 240
 
 
 class NMDialog(QWidget):
@@ -63,10 +75,17 @@ class NMDialog(QWidget):
 
     closed = pyqtSignal()
 
-    def __init__(self, title: str = "", modo: str = None, width: int = 480, parent=None):
+    def __init__(
+        self,
+        title: str = "",
+        modo: str = None,
+        width: int = _NM_MODAL_MAX_WIDTH,
+        parent=None,
+    ):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._dialog_width = width
+        self._panel_scale = 1.0
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
         # Overlay full-cover sobre el padre
         if parent is not None:
@@ -124,6 +143,21 @@ class NMDialog(QWidget):
         self._apply_theme(self._modo)
         self.hide()
 
+    def _effective_panel_width(self) -> int:
+        if self.parent() is not None and self.parent().width() > 0:
+            max_for_parent = int(self.parent().width() * _NM_MODAL_WIDTH_RATIO)
+            return max(280, min(self._dialog_width, max_for_parent))
+        return self._dialog_width
+
+    def _get_panel_scale(self) -> float:
+        return self._panel_scale
+
+    def _set_panel_scale(self, value: float) -> None:
+        self._panel_scale = max(_NM_MODAL_SCALE_FROM, min(1.0, float(value)))
+        self._panel.setFixedWidth(int(self._effective_panel_width() * self._panel_scale))
+
+    panel_scale = pyqtProperty(float, _get_panel_scale, _set_panel_scale)
+
     # ── API ──────────────────────────────────────────────────────────────────
 
     def set_title(self, text: str):
@@ -157,9 +191,17 @@ class NMDialog(QWidget):
     def show_centered(self):
         if self.parent() is not None:
             self.setGeometry(self.parent().rect())
+        self._set_panel_scale(_NM_MODAL_SCALE_FROM)
         self.show()
         self.raise_()
         self.setFocus(Qt.FocusReason.PopupFocusReason)
+        anim = QPropertyAnimation(self, b"panel_scale", self)
+        anim.setDuration(_NM_MODAL_ANIM_MS)
+        anim.setStartValue(_NM_MODAL_SCALE_FROM)
+        anim.setEndValue(1.0)
+        anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        anim.start()
+        self._panel_anim = anim
 
     # ── Eventos ──────────────────────────────────────────────────────────────
 
@@ -185,15 +227,7 @@ class NMDialog(QWidget):
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        # Backdrop semitransparente, theme-aware: en light un scrim negro duro se
-        # ve roto (feedback). En dark mantenemos negro; en light usamos la tinta
-        # profunda del tema a baja alpha para atenuar sin ennegrecer.
-        if "dark" in self._modo:
-            scrim = QColor(0, 0, 0, 150)
-        else:
-            ink = v3c("text", self._modo)
-            scrim = QColor(ink.red(), ink.green(), ink.blue(), 90)
-        p.fillRect(self.rect(), scrim)
+        p.fillRect(self.rect(), QColor(*_NM_MODAL_SCRIM_RGBA))
         # El panel se pinta como QFrame con su stylesheet
         p.end()
 
@@ -203,11 +237,12 @@ class NMDialog(QWidget):
         self._modo = norm_modo(modo)
         is_dark = "dark" in self._modo
         bg = v3c("surfaceSolid" if is_dark else "surface", self._modo).name()
-        border = C("border", self._modo)
+        border = qcolor_to_rgba_css(v3c("line", self._modo))
         self._panel.setStyleSheet(
             f"QFrame {{ background-color: {bg}; "
             f"border: 1px solid {border}; border-radius: {V3_RD['xl']}px; }}"
         )
+        self._panel.setGraphicsEffect(shadow_3(self._modo, self._panel))
         self._title.setStyleSheet(
             f"color: {v3c('text', self._modo).name()}; background: transparent;"
         )
@@ -221,29 +256,26 @@ class NMDialog(QWidget):
         self._style_footer()
 
     def _style_footer(self):
-        accent = v3c("accent", self._modo).name()
+        primary = v3c("primary", self._modo).name()
+        primary_hover = v3c("brandStrong", self._modo).name()
         danger = v3c("danger", self._modo).name()
-        text_on_acc = v3c("primary_ink", self._modo).name()
+        text_on_primary = v3c("primary_ink", self._modo).name()
         text = v3c("text", self._modo).name()
         text_muted = v3c("text2", self._modo).name()
-        accent_soft = v3c("accentSoft", self._modo)
-        soft = (
-            f"rgba({accent_soft.red()},{accent_soft.green()},"
-            f"{accent_soft.blue()},{accent_soft.alpha()})"
-        )
+        soft = qcolor_to_rgba_css(v3c("primarySoft", self._modo))
         for btn in self._footer_buttons:
             role = btn.property("nm_role") or "secondary"
             btn.setFont(qfont(_NM_CONTROL_FONT, weight=_NM_CONTROL_WEIGHT))
             if role == "primary":
                 btn.setStyleSheet(
-                    f"QPushButton {{ background: {accent}; color: {text_on_acc}; "
+                    f"QPushButton {{ background: {primary}; color: {text_on_primary}; "
                     f"border: none; border-radius: {_NM_CONTROL_PILL_RADIUS}px; "
                     f"padding: 0 14px; min-height: {_NM_CONTROL_HEIGHT}px; }}"
-                    f"QPushButton:hover {{ background: {v3c('cyan', self._modo).name()}; }}"
+                    f"QPushButton:hover {{ background: {primary_hover}; }}"
                 )
             elif role == "danger":
                 btn.setStyleSheet(
-                    f"QPushButton {{ background: {danger}; color: {text_on_acc}; "
+                    f"QPushButton {{ background: {danger}; color: {text_on_primary}; "
                     f"border: none; border-radius: {_NM_CONTROL_PILL_RADIUS}px; "
                     f"padding: 0 14px; min-height: {_NM_CONTROL_HEIGHT}px; }}"
                     f"QPushButton:hover {{ background: {v3c('warm', self._modo).name()}; }}"
@@ -257,10 +289,10 @@ class NMDialog(QWidget):
                 )
             else:  # secondary
                 btn.setStyleSheet(
-                    f"QPushButton {{ background: {soft}; color: {accent}; "
+                    f"QPushButton {{ background: {soft}; color: {primary}; "
                     f"border: none; border-radius: {_NM_CONTROL_PILL_RADIUS}px; "
                     f"padding: 0 14px; min-height: {_NM_CONTROL_HEIGHT}px; }}"
-                    f"QPushButton:hover {{ background: {v3c('tealSoftSolid' if 'dark' in self._modo else 'tealSoft', self._modo).name()}; }}"
+                    f"QPushButton:hover {{ background: {qcolor_to_rgba_css(v3c('brandLine', self._modo))}; }}"
                 )
 
 
