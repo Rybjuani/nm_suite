@@ -441,8 +441,8 @@ class ModuloAnimo(NMModule):
         self._slider_eyebrow.setFont(eyebrow_font())
         slider_head.addWidget(self._slider_eyebrow)
         slider_head.addStretch()
-        # 4.1: arranca en "—/10" (muted) hasta el primer movimiento del slider.
-        self._slider_score = QLabel("—/10")
+        # 4.1: arranca en "— / 10" (muted) hasta el primer movimiento del slider.
+        self._slider_score = QLabel("— / 10")
         self._slider_score.setFont(qfont_mono(11, bold=True))
         slider_head.addWidget(self._slider_score)
         slider_lay.addLayout(slider_head)
@@ -526,10 +526,10 @@ class ModuloAnimo(NMModule):
                 lbl.setStyleSheet(f"color: {text2}; background: transparent;")
 
         if hasattr(self, "_slider_score"):
-            # 4.1: si el slider no fue tocado, mostrar "—/10" muted; si fue
+            # 4.1: si el slider no fue tocado, mostrar "— / 10" muted; si fue
             # tocado, mostrar el puntaje real en color accent.
             if not getattr(self, "_slider_touched", False):
-                self._slider_score.setText("—/10")
+                self._slider_score.setText("— / 10")
                 self._slider_score.setFont(qfont_mono(11, bold=True))
                 self._slider_score.setStyleSheet(
                     f"color: {v3c('textMuted', self._modo).name()}; background: transparent;"
@@ -538,7 +538,7 @@ class ModuloAnimo(NMModule):
                 score = self.puntaje
                 if score is None and hasattr(self, "_v3_slider"):
                     score = self._v3_slider.level()
-                self._slider_score.setText(f"{score}/10")
+                self._slider_score.setText(f"{score} / 10")
                 # Polish visual: score seteado en serif teal (presencia del
                 # registro, frame del prototipo) en lugar de mono plano.
                 self._slider_score.setFont(
@@ -593,7 +593,7 @@ class ModuloAnimo(NMModule):
         if hasattr(self, "_v3_slider"):
             self._v3_slider.set_subtitle(message)
         if hasattr(self, "_slider_score"):
-            self._slider_score.setText(f"{self.puntaje}/10")
+            self._slider_score.setText(f"{self.puntaje} / 10")
             self._slider_score.setStyleSheet(
                 f"color: {v3c('accent', self._modo).name()}; background: transparent;"
             )
@@ -696,7 +696,7 @@ class ModuloAnimo(NMModule):
                 self._btn_reg.play_success()
             NMToast.display(
                 self.window(),
-                f"Registro guardado. Tu ánimo de hoy: {puntaje_wellbeing}/10.",
+                f"Registro guardado · {puntaje_wellbeing}/10",
                 variant="success",
                 duration_ms=1800,
             )
@@ -728,7 +728,7 @@ class ModuloAnimo(NMModule):
                 self._btn_reg.play_success()
             NMToast.display(
                 self.window(),
-                f"Registro guardado. Tu ánimo de hoy: {puntaje_wellbeing}/10.",
+                f"Registro guardado · {puntaje_wellbeing}/10",
                 variant="success",
             )
         except Exception:
