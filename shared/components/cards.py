@@ -175,17 +175,14 @@ class NMCard(QFrame):
                 sc = v3c("teal", self._modo)
                 sc.setAlpha(s["color"][3])  # 76 from token
         else:
-            # Standard card shadow — reads from V3_SHADOWS card bucket
-            if is_dark:
-                s = V3_SHADOWS["dark"]["card"]
-                self._card_shadow.setBlurRadius(s["blur"])  # 30
-                self._card_shadow.setOffset(*s["offset"])  # (0, 10)
-                sc = QColor(*s["color"])  # rgba(0,0,0,115)
-            else:
-                s = V3_SHADOWS["light"]["card"]
-                self._card_shadow.setBlurRadius(s["blur"])  # 12
-                self._card_shadow.setOffset(*s["offset"])  # (0, 4)
-                sc = QColor(*s["color"])  # rgba(15,23,42,13)
+            # Mockup `.card` REPOSA en shadow-1 (sutil); shadow-2 era solo el
+            # hover (`.card.hov:hover`), que el runtime no aplica. Antes la card
+            # usaba el bucket "card" (peso shadow-2: blur 28/32, offset 10) y
+            # flotaba más que el mockup. Ahora usa shadow_1 (blur 6/2, offset 2/1).
+            s = V3_SHADOWS["dark" if is_dark else "light"]["shadow_1"]
+            self._card_shadow.setBlurRadius(s["blur"])
+            self._card_shadow.setOffset(*s["offset"])
+            sc = QColor(*s["color"])
         self._card_shadow.setColor(sc)
         self.setGraphicsEffect(self._card_shadow)
 

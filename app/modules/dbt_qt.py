@@ -103,6 +103,9 @@ _DBT_SKILL_BAR_W = 7
 _DBT_SKILL_BAR_H = 64
 _DBT_SKILL_BAR_X = 14
 _DBT_SKILL_BAR_Y = 16
+# Barra horizontal superior de la dbt-card (mockup `.dbt-card .bar`: 64×7 r99).
+_DBT_SKILL_BAR_TOP_W = 64
+_DBT_SKILL_BAR_TOP_H = 7
 _DBT_NEED_BORDER_W = 5
 _DBT_NEED_BORDER_Y = 14
 _DBT_NEED_BORDER_RADIUS = 2.5
@@ -417,9 +420,12 @@ class _SkillCard(NMCard):
         self.setProperty("dbt_family", skill["family"])
         
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(30, 16, 16, 16)
+        # Mockup `.dbt-card .bar` es una barra HORIZONTAL arriba (64×7, margin-
+        # bottom 14), no una barra vertical a la izquierda. El margen superior
+        # deja sitio para la barra (16 y + 7 alto + 14 gap ≈ 37); sin sangría izq.
+        lay.setContentsMargins(16, 37, 16, 16)
         lay.setSpacing(8)
-        
+
         family_title = _DBT_FAMILY_LONG_TITLES.get(skill["family"], "")
         
         self.family_lbl = QLabel(family_title.upper())
@@ -462,11 +468,11 @@ class _SkillCard(NMCard):
         p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(v3c(self._family_color_key, self._modo))
-        bar_h = min(_DBT_SKILL_BAR_H, max(24, self.height() - _DBT_SKILL_BAR_Y * 2))
+        # Barra HORIZONTAL superior 64×7 r99 (mockup `.dbt-card .bar`).
         p.drawRoundedRect(
-            QRectF(_DBT_SKILL_BAR_X, _DBT_SKILL_BAR_Y, _DBT_SKILL_BAR_W, bar_h),
-            _DBT_SKILL_BAR_W / 2,
-            _DBT_SKILL_BAR_W / 2,
+            QRectF(16, 16, _DBT_SKILL_BAR_TOP_W, _DBT_SKILL_BAR_TOP_H),
+            _DBT_SKILL_BAR_TOP_H / 2,
+            _DBT_SKILL_BAR_TOP_H / 2,
         )
         p.end()
         
