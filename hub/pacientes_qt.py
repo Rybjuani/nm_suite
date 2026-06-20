@@ -117,7 +117,7 @@ class DetallePacienteView(QWidget):
         text_col.setContentsMargins(0, 0, 0, 0)
         text_col.setSpacing(2)
 
-        self._lbl_eyebrow = QLabel("Paciente")
+        self._lbl_eyebrow = QLabel("Paciente".upper())
         self._lbl_eyebrow.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
         text_col.addWidget(self._lbl_eyebrow)
 
@@ -125,7 +125,7 @@ class DetallePacienteView(QWidget):
         # + 3 chips; los labels ceden con "…" en vez de empujar los chips a
         # geometrías bajo-mínimo (Qt los superpone físicamente en ese caso).
         self._lbl_name = NMElidedLabel(self._nombre)
-        self._lbl_name.setFont(v3_font("size_h2", weight=600, serif=True))
+        self._lbl_name.setFont(v3_font("size_h1", weight=600, serif=True))
         text_col.addWidget(self._lbl_name)
 
         # Texto corto: "del paciente" era redundante (eyebrow PACIENTE + nombre

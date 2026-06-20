@@ -602,8 +602,31 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "capture", "view": "detalle-plan-activacion"}],
         },
 
-        # NOTA: no existen recetas "ia*" — IAAssistantView fue eliminada en la
-        # reestructura v1.0; el asistente IA fue consolidado en el Plan terapéutico.
+        # 2026-06: Textos globales de Suite — vista navegable de personalización
+        # (buscador + filtro por módulo + filas editables). Antes faltaba en V8.
+        "textos-globales": {
+            "label": "Textos globales de Suite (personalizacion)",
+            "parent": None,
+            "actions": [{"action": "call", "func": "_hub_open_textos_globales"},
+                        {"action": "drain", "cycles": 8},
+                        {"action": "capture", "view": "textos-globales"}],
+        },
+
+        # 2026-06: Dialogo "Resumen IA" del detalle. En runtime depende de un
+        # proveedor IA; aqui se abre con texto de muestra parcheando exec()->show()
+        # para evidenciar el UI del modal sin red.
+        "detalle-resumen-ia": {
+            "label": "Detalle > dialogo Resumen IA (muestra)",
+            "parent": "detalle",
+            "actions": [{"action": "navigate", "view": "detalle"},
+                        {"action": "call", "func": "_detalle_open_resumen_ia_dialog"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture_child", "prefix": "detalle-resumen-ia"},
+                        {"action": "close_child"}],
+        },
+
+        # NOTA: IAAssistantView (vista global IA) fue eliminada en la
+        # reestructura v1.0; el asistente IA vive como dialogo del detalle.
 
         # editor-tcc-template ELIMINADA (editor demolido, user feedback).
     },
@@ -1277,6 +1300,59 @@ def _clear_hub_patients(win, qapp, action):
         win._pacientes = []
     if hasattr(win, '_refresh_all_views'):
         win._refresh_all_views(force_recreate=True)
+    _drain(qapp, cycles=6)
+
+
+@_register_helper
+def _hub_open_textos_globales(win, qapp, action):
+    """Abre la vista navegable 'Textos globales de Suite' en el Hub.
+
+    La vista se construye lazy dentro de _refresh_all_views; en QA mode ya esta
+    creada al cargar los pacientes demo, pero nos defendemos forzando el refresh
+    si el atributo no existiera.
+    """
+    view = getattr(win, "_view_textos_globales", None)
+    cache = getattr(win, "_views_cache", {}) or {}
+    if view is None or "textos_globales" not in cache:
+        if hasattr(win, "_refresh_all_views"):
+            try:
+                win._refresh_all_views()
+            except Exception:
+                pass
+    if hasattr(win, "_open_global_texts"):
+        win._open_global_texts()
+    elif hasattr(win, "_on_nav"):
+        win._on_nav("textos_globales")
+    _drain(qapp, cycles=6)
+
+
+@_register_helper
+def _detalle_open_resumen_ia_dialog(win, qapp, action):
+    """Abre el dialogo 'Resumen IA' del detalle con texto de muestra.
+
+    En runtime el dialogo se alimenta de un proveedor IA (red); para evidencia
+    visual offline invocamos _show_resumen_dialog con texto muestra. Como ese
+    metodo termina con dialog.exec() (modal bloqueante), parcheamos
+    QDialog.exec -> show() solo durante la llamada para no congelar el harness.
+    """
+    from PyQt6.QtWidgets import QDialog
+    det = win._stack.currentWidget() if hasattr(win, "_stack") else None
+    if det is None or not hasattr(det, "_show_resumen_dialog"):
+        return
+    sample = (
+        "Resumen de evidencia (muestra QA).\n\n"
+        "El paciente muestra adherencia irregular al registro de animo y "
+        "respiracion. Se observan distorsiones cognitivas recurrentes "
+        "(catastrofizacion). Sugerencia: reforzar TCC y activacion conductual."
+    )
+    _orig_exec = QDialog.exec
+    QDialog.exec = lambda self, *a, **k: (self.show(), 0)[1]
+    try:
+        det._show_resumen_dialog(sample)
+    except Exception:
+        pass
+    finally:
+        QDialog.exec = _orig_exec
     _drain(qapp, cycles=6)
 
 

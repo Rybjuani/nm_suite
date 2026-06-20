@@ -2,3 +2,4 @@
 
 - Fase 0 — Foundation: ✅ HECHA
 - Fase 1 — Consumidores Suite: ✅ HECHA
+- Fase 2 — Consumidores Hub: ✅ HECHA
