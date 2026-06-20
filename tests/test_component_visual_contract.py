@@ -41,3 +41,51 @@ def test_mood_slider_internal_uses_shared_mockup_slider_qss(qtbot) -> None:
     assert "stop:1 #b24e3d" in qss
     assert "width: 22px" in qss
     assert "border: 3px solid #2E5D43" in qss
+
+
+def test_routine_checkbox_matches_mockup_rt_cb_contract(qtbot) -> None:
+    from shared.components.session import (
+        NMCustomCheck,
+        _NM_RT_CHECK_RADIUS,
+        _NM_RT_CHECK_SIZE,
+        _NMAnimCheckBox,
+    )
+
+    check = NMCustomCheck("Tarea", checked=True, modo="light_hybrid")
+    qtbot.addWidget(check)
+
+    assert _NM_RT_CHECK_SIZE == 22
+    assert _NM_RT_CHECK_RADIUS == 7
+    assert check._box.width() == 22
+    assert check._box.height() == 22
+
+    source = __import__("inspect").getsource(_NMAnimCheckBox.paintEvent)
+    assert 'v3c("primary" if self._checked else "line", self._modo)' in source
+    assert 'v3c("primary" if self._checked else "surface", self._modo)' in source
+    assert 'v3c("primary_ink", self._modo)' in source
+
+
+def test_stepper_matches_mockup_line_and_dot_contract(qtbot) -> None:
+    from shared.components.feedback import (
+        NMStepper,
+        _NM_STEPPER_DOT_SIZE,
+        _NM_STEPPER_LINE_INSET,
+        _NM_STEPPER_LINE_Y,
+        _NM_STEPPER_MAX_WIDTH,
+    )
+
+    stepper = NMStepper(["Situación", "Emoción", "Pensamiento", "Respuesta"], modo="dark_hybrid")
+    qtbot.addWidget(stepper)
+    stepper.set_step(2)
+
+    assert _NM_STEPPER_MAX_WIDTH == 620
+    assert _NM_STEPPER_LINE_INSET == 0.08
+    assert _NM_STEPPER_LINE_Y == 9.0
+    assert _NM_STEPPER_DOT_SIZE == 18
+    assert stepper.height() == 56
+
+    source = __import__("inspect").getsource(NMStepper.paintEvent)
+    assert 'v3c("line", self._modo)' in source
+    assert 'v3c("primary", self._modo)' in source
+    assert 'v3c("surface3", self._modo)' in source
+    assert "weight=600 if i == self._current else 500" in source

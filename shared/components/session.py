@@ -74,17 +74,21 @@ def _rgba(hex_color: str, alpha: float) -> str:
 # ═══════════════════════════════════════════════════════════════════════════════
 # NMCustomCheck / NMActivityCard / Timer helpers
 
+_NM_RT_CHECK_SIZE = 22
+_NM_RT_CHECK_RADIUS = 7
+_NM_RT_CHECK_BORDER = 2.0
+
 
 class _NMAnimCheckBox(QWidget):
-    """Caja 20×20 con checkmark que se dibuja progresivamente (220ms OutCubic).
+    """Caja 22×22 con checkmark que se dibuja progresivamente (220ms OutCubic).
 
     Uso interno de NMCustomCheck. No usar directamente.
     """
 
-    # Geometría del checkmark en espacio 20×20
-    _P0 = (4.0, 11.0)   # inicio (izquierda)
-    _P1 = (8.0, 15.0)   # vértice inferior (punto de quiebre)
-    _P2 = (16.0, 5.0)   # final (derecha arriba)
+    # Geometría del checkmark del mockup `.rt-cb` (path M5 12l4 4 10-10).
+    _P0 = (5.0, 12.0)   # inicio (izquierda)
+    _P1 = (9.0, 16.0)   # vértice inferior (punto de quiebre)
+    _P2 = (19.0, 6.0)   # final (derecha arriba)
 
     import math as _math
     _SEG1 = _math.sqrt((_P1[0]-_P0[0])**2 + (_P1[1]-_P0[1])**2)  # ≈ 5.66
@@ -98,7 +102,7 @@ class _NMAnimCheckBox(QWidget):
         self._checked = False
         self._draw_t = 0.0
         self._anim: QPropertyAnimation | None = None
-        self.setFixedSize(20, 20)
+        self.setFixedSize(_NM_RT_CHECK_SIZE, _NM_RT_CHECK_SIZE)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
 
     # ── pyqtProperty animable ─────────────────────────────────────────────────
@@ -164,17 +168,22 @@ class _NMAnimCheckBox(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        border_col = v3c("teal" if self._checked else "borderStrong", self._modo)
-        bg_col = QColor(v3c("teal", self._modo)) if self._checked else QColor(0, 0, 0, 0)
+        border_col = v3c("primary" if self._checked else "line", self._modo)
+        bg_col = v3c("primary" if self._checked else "surface", self._modo)
 
-        p.setPen(QPen(border_col, 2.0))
+        p.setPen(QPen(border_col, _NM_RT_CHECK_BORDER))
         p.setBrush(QBrush(bg_col))
-        p.drawRoundedRect(QRectF(1, 1, 18, 18), 5, 5)
+        box_rect = QRectF(
+            _NM_RT_CHECK_BORDER / 2,
+            _NM_RT_CHECK_BORDER / 2,
+            _NM_RT_CHECK_SIZE - _NM_RT_CHECK_BORDER,
+            _NM_RT_CHECK_SIZE - _NM_RT_CHECK_BORDER,
+        )
+        p.drawRoundedRect(box_rect, _NM_RT_CHECK_RADIUS, _NM_RT_CHECK_RADIUS)
 
         if self._checked and self._draw_t > 0.001:
-            ink = v3c("bg", self._modo)
-            # Trazo más grueso en light: el bg del botón es más claro, necesita más peso
-            ck_width = 2.0 if "dark" in self._modo else 2.5
+            ink = v3c("primary_ink", self._modo)
+            ck_width = 2.2
             pen = QPen(ink, ck_width, Qt.PenStyle.SolidLine,
                        Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
             p.setPen(pen)

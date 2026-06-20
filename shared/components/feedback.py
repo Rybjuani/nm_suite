@@ -838,8 +838,17 @@ class NMWaveChart(QWidget):
         p.end()
 
 
+_NM_STEPPER_MAX_WIDTH = 620
+_NM_STEPPER_LINE_INSET = 0.08
+_NM_STEPPER_LINE_Y = 9.0
+_NM_STEPPER_LINE_HEIGHT = 2.0
+_NM_STEPPER_DOT_SIZE = 18
+_NM_STEPPER_DOT_RADIUS = _NM_STEPPER_DOT_SIZE / 2
+_NM_STEPPER_LABEL_GAP = 8
+
+
 class NMStepper(QWidget):
-    """Stepper horizontal de N pasos con dots de 10px, línea de 2px y labels de 12px 700."""
+    """Stepper horizontal del mockup: línea brand, dots de 18px y labels de 12px."""
 
     def __init__(self, steps: list[str], modo: str = None, parent=None):
         super().__init__(parent)
@@ -852,6 +861,10 @@ class NMStepper(QWidget):
         _tm().theme_changed.connect(self._apply_theme)
 
     def set_step(self, idx: int):
+        if not self._steps:
+            self._current = 0
+            self.update()
+            return
         self._current = max(0, min(len(self._steps) - 1, idx))
         self.update()
 
@@ -870,49 +883,69 @@ class NMStepper(QWidget):
             p.end()
             return
 
-        w, _h = self.width(), self.height()
-        circle_r = 5
-        cy = 16
-        step_w = w / n
+        w = float(self.width())
+        inner_w = min(w, float(_NM_STEPPER_MAX_WIDTH))
+        inner_left = (w - inner_w) / 2
+        line_left = inner_left + inner_w * _NM_STEPPER_LINE_INSET
+        line_right = inner_left + inner_w * (1 - _NM_STEPPER_LINE_INSET)
+        cy = _NM_STEPPER_LINE_Y
+
+        if n > 1 and line_right > line_left:
+            track_pen = QPen(v3c("line", self._modo), _NM_STEPPER_LINE_HEIGHT)
+            track_pen.setCapStyle(Qt.PenCapStyle.FlatCap)
+            p.setPen(track_pen)
+            p.drawLine(QPointF(line_left, cy), QPointF(line_right, cy))
+
+            fill_t = self._current / max(1, n - 1)
+            fill_right = line_left + (line_right - line_left) * fill_t
+            fill_pen = QPen(v3c("primary", self._modo), _NM_STEPPER_LINE_HEIGHT)
+            fill_pen.setCapStyle(Qt.PenCapStyle.FlatCap)
+            p.setPen(fill_pen)
+            p.drawLine(QPointF(line_left, cy), QPointF(fill_right, cy))
+
+        step_w = inner_w / n
 
         for i, label in enumerate(self._steps):
-            cx = int(step_w * i + step_w / 2)
-
-            # Connector line (2px line)
-            if i > 0:
-                prev_cx = int(step_w * (i - 1) + step_w / 2)
-                if i <= self._current:
-                    p.setPen(QPen(QColor(v3c("primary", self._modo)), 2))
-                else:
-                    p.setPen(QPen(QColor(v3c("borderSolid", self._modo)), 2))
-                line_gap = 2
-                start_x = prev_cx + circle_r + line_gap
-                end_x = cx - circle_r - line_gap
-                if end_x > start_x:
-                    p.drawLine(start_x, cy, end_x, cy)
+            if n == 1:
+                cx = inner_left + inner_w / 2
+            else:
+                cx = line_left + (i / (n - 1)) * (line_right - line_left)
 
             # Circle / Dot
             if i <= self._current:
-                p.setBrush(QBrush(QColor(v3c("primary", self._modo))))
-                p.setPen(Qt.PenStyle.NoPen)
-                p.drawEllipse(QPointF(cx, cy), circle_r, circle_r)
+                p.setBrush(QBrush(v3c("primary", self._modo)))
+                p.setPen(QPen(v3c("primary", self._modo), 2))
             else:
-                p.setBrush(QBrush(QColor(v3c("surface2", self._modo))))
-                p.setPen(QPen(QColor(v3c("borderSolid", self._modo)), 1))
-                p.drawEllipse(QPointF(cx, cy), circle_r, circle_r)
+                p.setBrush(QBrush(v3c("surface3", self._modo)))
+                p.setPen(QPen(v3c("line", self._modo), 2))
+            dot_rect = QRectF(
+                cx - _NM_STEPPER_DOT_RADIUS,
+                cy - _NM_STEPPER_DOT_RADIUS,
+                _NM_STEPPER_DOT_SIZE,
+                _NM_STEPPER_DOT_SIZE,
+            )
+            p.drawEllipse(dot_rect)
 
             # Label below dot — elidido a su columna: un paso largo (texto
             # configurable desde el Hub) colisionaba con los vecinos.
             col_txt = (
-                v3c("text", self._modo) if i == self._current else v3c("ink_secondary", self._modo)
+                v3c("text", self._modo) if i == self._current else v3c("text3", self._modo)
             )
-            p.setPen(QColor(col_txt))
-            _f = qfont("size_caption", weight=700)
+            p.setPen(col_txt)
+            _f = qfont("size_caption", weight=600 if i == self._current else 500)
             p.setFont(_f)
             _fm = QFontMetrics(_f)
             _elided = _fm.elidedText(label, Qt.TextElideMode.ElideRight, int(step_w - 8))
+            label_x = max(inner_left, cx - step_w / 2)
+            if label_x + step_w > inner_left + inner_w:
+                label_x = inner_left + inner_w - step_w
             p.drawText(
-                QRectF(cx - step_w / 2 + 4, cy + circle_r + 6, step_w - 8, 20),
+                QRectF(
+                    label_x + 4,
+                    cy + _NM_STEPPER_DOT_RADIUS + _NM_STEPPER_LABEL_GAP,
+                    step_w - 8,
+                    20,
+                ),
                 Qt.AlignmentFlag.AlignCenter,
                 _elided,
             )
