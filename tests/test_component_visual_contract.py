@@ -89,3 +89,28 @@ def test_stepper_matches_mockup_line_and_dot_contract(qtbot) -> None:
     assert 'v3c("primary", self._modo)' in source
     assert 'v3c("surface3", self._modo)' in source
     assert "weight=600 if i == self._current else 500" in source
+
+
+def test_empty_state_matches_mockup_icon_and_title_contract(qtbot) -> None:
+    from shared.components.overlays import (
+        NMEmptyState,
+        _NM_EMPTY_ICON_CHIP_RADIUS,
+        _NM_EMPTY_ICON_CHIP_SIZE,
+        _NM_EMPTY_ICON_SIZE,
+        _NM_EMPTY_TITLE_SIZE,
+    )
+
+    empty = NMEmptyState("timer", "Sin actividades", "Tu terapeuta enviara actividades pronto.")
+    qtbot.addWidget(empty)
+
+    assert _NM_EMPTY_ICON_CHIP_SIZE == 64
+    assert _NM_EMPTY_ICON_CHIP_RADIUS == 18
+    assert _NM_EMPTY_ICON_SIZE == 30
+    assert _NM_EMPTY_TITLE_SIZE == 20
+    assert empty._icon_chip.width() == 64
+    assert empty._icon_chip.height() == 64
+    assert empty._icon_lbl.width() == 30
+    assert empty._icon_lbl.height() == 30
+    assert empty._title_lbl.font().pixelSize() == 20
+    assert empty._title_lbl.font().weight() >= 600
+    assert "border-radius: 18px" in empty._icon_chip.styleSheet()

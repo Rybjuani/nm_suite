@@ -50,11 +50,17 @@ def _tm() -> ThemeManager:
     return ThemeManager.instance()
 
 
+_NM_EMPTY_ICON_CHIP_SIZE = 64
+_NM_EMPTY_ICON_CHIP_RADIUS = 18
+_NM_EMPTY_ICON_SIZE = 30
+_NM_EMPTY_TITLE_SIZE = 20
+
+
 class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
     """Widget de estado vacío con icono, título y subtítulo (runtime spec §2.11).
 
-    Icono 48px dentro de chip PRIMARY_SOFT 64×64 r18.
-    Título en display-m serif. Subtítulo body MUTE.
+    Icono 30px dentro de chip PRIMARY_SOFT 64×64 r18.
+    Título serif 20/600. Subtítulo body MUTE.
     Acepta hasta 2 CTAs opcionales (``cta_primary`` / ``cta_secondary``).
     """
 
@@ -87,21 +93,23 @@ class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
 
         # Chip contenedor del icono (64×64, PRIMARY_SOFT bg, r18)
         self._icon_chip = QFrame()
-        self._icon_chip.setFixedSize(64, 64)
+        self._icon_chip.setFixedSize(_NM_EMPTY_ICON_CHIP_SIZE, _NM_EMPTY_ICON_CHIP_SIZE)
         self._icon_chip.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         chip_lay = QHBoxLayout(self._icon_chip)
-        chip_lay.setContentsMargins(8, 8, 8, 8)
+        chip_lay.setContentsMargins(0, 0, 0, 0)
         self._icon_lbl = QLabel()
-        self._icon_lbl.setFixedSize(48, 48)
+        self._icon_lbl.setFixedSize(_NM_EMPTY_ICON_SIZE, _NM_EMPTY_ICON_SIZE)
         self._icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._icon_lbl.setStyleSheet("background: transparent;")
-        chip_lay.addWidget(self._icon_lbl)
+        chip_lay.addWidget(self._icon_lbl, 0, Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self._icon_chip, alignment=Qt.AlignmentFlag.AlignCenter)
 
         layout.addSpacing(V3_SP["sm"])
 
         self._title_lbl = QLabel(title)
-        self._title_lbl.setFont(v3_font("size_display_m", "weight_medium", serif=True))
+        self._title_lbl.setFont(
+            v3_font(_NM_EMPTY_TITLE_SIZE, "weight_semibold", serif=True)
+        )
         self._title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._title_lbl.setWordWrap(True)
         layout.addWidget(self._title_lbl)
@@ -140,16 +148,18 @@ class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         c = colors(self._modo)
-        # Chip: PRIMARY_SOFT bg con radio moderado
-        primary_c = v3c("primary", self._modo)
-        primary_c.setAlphaF(0.10)
-        bg_css = f"rgba({primary_c.red()},{primary_c.green()},{primary_c.blue()},25)"
+        # Chip: brand-soft del mockup (primarySoft) con r18.
+        bg_css = qcolor_to_rgba_css(v3c("primarySoft", self._modo))
         self._icon_chip.setStyleSheet(
-            f"QFrame {{ background-color: {bg_css}; border-radius: 12px; }}"
+            f"QFrame {{ background-color: {bg_css}; "
+            f"border-radius: {_NM_EMPTY_ICON_CHIP_RADIUS}px; }}"
         )
-        icon_col = QColor(c["accent"])
-        icon_col.setAlphaF(0.8)
-        self._icon_lbl.setPixmap(nm_icon(self._icon_key, icon_col, size=48).pixmap(48, 48))
+        icon_col = v3c("primary", self._modo)
+        self._icon_lbl.setPixmap(
+            nm_icon(self._icon_key, icon_col, size=_NM_EMPTY_ICON_SIZE).pixmap(
+                _NM_EMPTY_ICON_SIZE, _NM_EMPTY_ICON_SIZE
+            )
+        )
         self._title_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
         self._subtitle_lbl.setStyleSheet(
             f"color: {C('mute', self._modo)}; background: transparent;"
