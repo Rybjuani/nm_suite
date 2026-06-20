@@ -485,6 +485,11 @@ class ModuloRutina(NMModule):
         if label is not None:
             label.setWordWrap(False)
             label.setFont(qfont("size_caption"))
+        # Re-aplicar tema después de cambiar font/wordwrap del label:
+        # _apply_theme setea el stylesheet con text-decoration: line-through
+        # (cuando checked=True) — sin este re-apply, setFont pisa el stylesheet
+        # y el tachado desaparece visualmente.
+        cb._apply_theme(cb._modo)
         return cb
 
     def resizeEvent(self, event):
