@@ -98,9 +98,33 @@ def test_runtime_tokens_are_mockup_adn_values():
     assert theme.V3_DARK["accent"] == "#E0996A"
     assert theme.V3_RADIUS["card"] == 22
     assert theme.V3_RADIUS["input"] == 16
+    assert theme.LAYOUT["radius_card"] == 22
+    assert theme.LAYOUT["radius_input"] == 16
     assert theme.TRANSITIONS == {"fast": 140, "normal": 240, "slow": 480}
     assert theme.TYPOGRAPHY["font_family_fallback_chain"][0] == "Inter"
     assert theme.TYPOGRAPHY["font_serif_fallback_chain"][0] == "Fraunces"
+
+
+def test_qss_generators_use_mockup_control_contract():
+    from PyQt6.QtGui import QPalette
+    from shared import theme_qt
+
+    base = theme_qt.stylesheet_base("dark_hybrid")
+    slider = theme_qt.stylesheet_slider("light_hybrid")
+    lineedit = theme_qt.stylesheet_lineedit("light_hybrid")
+    tabs = theme_qt.stylesheet_tabwidget_segmented("dark_hybrid")
+    palette = theme_qt.app_palette("dark_hybrid")
+
+    assert "padding: 11px 20px" in base
+    assert "border-radius: 21px" in base
+    assert "background-color: #56D9A6" in base
+    assert "stop:0 #7b8a99" in slider
+    assert "stop:1 #b24e3d" in slider
+    assert "border: 3px solid #2E5D43" in slider
+    assert "border-radius: 16px" in lineedit
+    assert "border-color: rgba(46,93,67,0.28)" in lineedit
+    assert "background: #56d9a6" in tabs
+    assert palette.color(QPalette.ColorRole.Highlight).name().upper() == "#56D9A6"
 
 
 def test_visual_density_contract_keeps_hub_compact_and_scoped():

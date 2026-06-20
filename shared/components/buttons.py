@@ -57,8 +57,8 @@ def _tm() -> ThemeManager:
 
 
 # Controles runtime: compacto/sobrio, sin variante grande por defecto.
-_NM_CONTROL_HEIGHT = 36
-_NM_CONTROL_COMPACT_HEIGHT = 32
+_NM_CONTROL_HEIGHT = 42
+_NM_CONTROL_COMPACT_HEIGHT = 34
 _NM_CONTROL_RADIUS = LAYOUT["radius_input"]
 _NM_CONTROL_PILL_RADIUS = _NM_CONTROL_HEIGHT // 2
 _NM_CONTROL_FONT = "size_body"
@@ -66,8 +66,8 @@ _NM_CONTROL_FONT = "size_body"
 # de-negritado): el user feedback pidió confirmar que TODOS los botones se lean en
 # negrita; a 500 (medium) quedaban demasiado livianos.
 _NM_CONTROL_WEIGHT = TYPOGRAPHY["weight_semibold"]
-_NM_TAB_HEIGHT = 32
-_NM_TAB_RADIUS = 16
+_NM_TAB_HEIGHT = 38
+_NM_TAB_RADIUS = 19
 _NM_TAB_FONT = "size_caption"
 _NM_BUTTON_HEIGHT = {
     "sm": _NM_CONTROL_COMPACT_HEIGHT,

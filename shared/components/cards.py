@@ -285,12 +285,12 @@ class NMCard(QFrame):
             p.setBrush(QBrush(accent))
             p.drawRoundedRect(QRectF(0, 12, 3, max(18, h - 24)), 1.5, 1.5)
 
-        # Border: 'primary' if active, 'borderStrong' on hover, else 'border'
+        # Border: active/hover follows the mockup card.hov brand-line.
         if self._active:
             border_c = v3c("primary", self._modo)
             pen = QPen(border_c, 2)
         elif self._hover and self.isEnabled() and not self._disabled:
-            border_c = v3c("borderStrong", self._modo)
+            border_c = v3c("brandLine", self._modo)
             pen = QPen(border_c, 1)
         else:
             border_c = v3c("border", self._modo)

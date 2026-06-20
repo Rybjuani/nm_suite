@@ -174,7 +174,8 @@ FOCUS_RING_STYLE = """
     QSpinBox:focus,
     QDateEdit:focus,
     QTimeEdit:focus {{
-        border: 1px solid {accent};
+        border: 1px solid {line};
+        background-color: {soft_bg};
     }}
 """
 
@@ -231,7 +232,10 @@ def fx(key: str, modo: str) -> float | int:
 
 
 def focus_ring_stylesheet(modo: str) -> str:
-    return FOCUS_RING_STYLE.format(accent=C("accent", modo))
+    return FOCUS_RING_STYLE.format(
+        line=C("brandLine", modo),
+        soft_bg=C("primary_soft", modo),
+    )
 
 
 def apply_chart_theme(modo: str):
@@ -981,19 +985,27 @@ def stylesheet_hidden_scrollbar(modo: str = "dark_hybrid") -> str:
     return _clinical_scrollbar_qss(modo)
 
 
-_NM_CONTROL_HEIGHT = 36
-_NM_CONTROL_COMPACT_HEIGHT = 32
-_NM_CONTROL_INNER_HEIGHT = 24
-_NM_CONTROL_PAD_X = 12
-_NM_CONTROL_PAD_Y = 5
+_NM_CONTROL_HEIGHT = 42
+_NM_CONTROL_COMPACT_HEIGHT = 34
+_NM_CONTROL_INNER_HEIGHT = 32
+_NM_CONTROL_PAD_X = 14
+_NM_CONTROL_PAD_Y = 9
 _NM_CONTROL_RADIUS = LAYOUT["radius_input"]
 _NM_CONTROL_FONT = TYPOGRAPHY["size_body"]
 # Botones (QPushButton global) en negrita: semibold 600 para que el texto de
 # todos los botones se lea en negrita (pedido user feedback), no medium 500.
 _NM_CONTROL_WEIGHT = TYPOGRAPHY["weight_semibold"]
-_NM_TAB_HEIGHT = 32
-_NM_TAB_RADIUS = 16
-_NM_TAB_FONT = TYPOGRAPHY["size_caption"]
+_NM_TAB_HEIGHT = 38
+_NM_TAB_RADIUS = V3_RADIUS["pill"]
+_NM_TAB_FONT = TYPOGRAPHY["size_body"]
+
+
+_MOOD_SLIDER_GRADIENT = (
+    "qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+    "stop:0 #7b8a99, stop:0.12 #8a7d99, stop:0.24 #6b8fa8, "
+    "stop:0.36 #5fa0a8, stop:0.48 #5faa86, stop:0.60 #86b15f, "
+    "stop:0.72 #b8b14f, stop:0.84 #c99a3d, stop:0.92 #cc8246, stop:1 #b24e3d)"
+)
 
 
 def stylesheet_base(modo: str = "dark_hybrid") -> str:
@@ -1010,7 +1022,7 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
     QWidget {{
         background-color: {c["bg_primary"]};
         color: {c["text_primary"]};
-        selection-background-color: {c["accent"]};
+        selection-background-color: {c["primary"]};
         selection-color: {c["text_on_accent"]};
     }}
     QToolTip {{
@@ -1026,16 +1038,17 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
         color: {c["text_primary"]};
         border: 1px solid {c.get("border_card", c["border"])};
         border-radius: {_NM_CONTROL_HEIGHT // 2}px;
-        padding: 0 14px;
-        min-height: {_NM_CONTROL_HEIGHT}px;
+        padding: 11px 20px;
+        min-height: {_NM_CONTROL_INNER_HEIGHT}px;
         font-weight: {_NM_CONTROL_WEIGHT};
+        font-size: {TYPOGRAPHY["size_body"]}px;
     }}
     QPushButton:hover {{
-        background-color: {c["primary_soft"]};
-        border-color: {c.get("border_strong", c.get("border_card", c["border"]))};
+        background-color: {c["bg_input"]};
+        border-color: {c["brandLine"]};
     }}
     QPushButton:pressed {{
-        background-color: {c["bg_elevated"]};
+        background-color: {c["primary_soft"]};
     }}
     QPushButton:disabled {{
         color: {c["text_tertiary"]};
@@ -1046,6 +1059,25 @@ def stylesheet_base(modo: str = "dark_hybrid") -> str:
         min-height: {_NM_CONTROL_COMPACT_HEIGHT}px;
         border-radius: {_NM_CONTROL_COMPACT_HEIGHT // 2}px;
         padding: 0 12px;
+    }}
+    QPushButton[variant="primary"], QPushButton[variant="gradient"], QPushButton[variant="filled"] {{
+        background-color: {c["primary"]};
+        color: {c["primary_ink"]};
+        border-color: {c["primary"]};
+    }}
+    QPushButton[variant="primary"]:hover, QPushButton[variant="gradient"]:hover, QPushButton[variant="filled"]:hover {{
+        background-color: {c["brandStrong"]};
+        border-color: {c["brandStrong"]};
+    }}
+    QPushButton[variant="soft"] {{
+        background-color: {c["primary_soft"]};
+        color: {c["primary"]};
+        border-color: transparent;
+    }}
+    QPushButton[variant="ghost"] {{
+        background-color: {c["bg_surface"]};
+        color: {c["text_primary"]};
+        border-color: {c.get("border_card", c["border"])};
     }}
     QTableView, QTableWidget, QListWidget {{
         background-color: {c["bg_surface"]};
@@ -1104,38 +1136,37 @@ def stylesheet_scrollarea(modo: str = "dark_hybrid") -> str:
 
 
 def stylesheet_slider(modo: str = "dark_hybrid") -> str:
-    """QSlider horizontal plano (runtime): recorrido `primary` sólido sobre
-    track neutro, handle blanco. El groove-gradiente firma anterior leía técnico."""
+    """QSlider horizontal del mockup: track emocional arcoíris y thumb brand."""
     modo = norm_modo(modo)
     c = colors(modo)
     return f"""
     QSlider::groove:horizontal {{
-        height: 6px;
-        background: {c["progress_track"]};
-        border-radius: 3px;
+        height: 8px;
+        background: {_MOOD_SLIDER_GRADIENT};
+        border-radius: 4px;
         margin: 0 8px;
     }}
     QSlider::handle:horizontal {{
-        background: {c["text_on_accent"]};
-        border: 2px solid {c["bg_elevated"]};
-        width: 20px;
-        height: 20px;
-        margin: -7px -4px;
-        border-radius: 10px;
+        background: {c["bg_surface"]};
+        border: 3px solid {c["primary"]};
+        width: 22px;
+        height: 22px;
+        margin: -8px -5px;
+        border-radius: 11px;
     }}
     QSlider::handle:horizontal:hover {{
-        border-color: {c["primary"]};
+        border-color: {c["brandStrong"]};
     }}
     QSlider::sub-page:horizontal {{
-        background: {c["primary"]};
-        border-radius: 3px;
-        height: 6px;
+        background: {_MOOD_SLIDER_GRADIENT};
+        border-radius: 4px;
+        height: 8px;
         margin: 0 8px;
     }}
     QSlider::add-page:horizontal {{
         background: {c["progress_track"]};
-        border-radius: 3px;
-        height: 6px;
+        border-radius: 4px;
+        height: 8px;
         margin: 0 8px;
     }}
     """
@@ -1171,17 +1202,18 @@ def stylesheet_tabwidget_segmented(modo: str = "dark_hybrid") -> str:
     }}
     QTabBar {{
         background: {seg_bg};
-        border-radius: {_NM_TAB_RADIUS}px;
+        border: 1px solid {c.get("border_card", c["border"])};
+        border-radius: {_NM_TAB_HEIGHT // 2}px;
         qproperty-drawBase: 0;
     }}
     QTabBar::tab {{
         background: transparent;
         color: {c["text_secondary"]};
-        min-height: {_NM_TAB_HEIGHT - 8}px;
-        padding: 4px 14px;
-        margin: 3px 2px;
+        min-height: {_NM_TAB_HEIGHT - 12}px;
+        padding: 6px 16px;
+        margin: 4px 2px;
         border: none;
-        border-radius: {_NM_TAB_RADIUS - 3}px;
+        border-radius: {(_NM_TAB_HEIGHT - 8) // 2}px;
         font-size: {_NM_TAB_FONT}px;
         font-weight: {_NM_CONTROL_WEIGHT};
     }}
@@ -1209,14 +1241,15 @@ def stylesheet_lineedit(modo: str = "dark_hybrid") -> str:
         padding: {_NM_CONTROL_PAD_Y}px {_NM_CONTROL_PAD_X}px;
         min-height: {_NM_CONTROL_INNER_HEIGHT}px;
         font-size: {_NM_CONTROL_FONT}px;
-        selection-background-color: {c["accent"]};
+        selection-background-color: {c["primary"]};
         selection-color: {c["text_on_accent"]};
     }}
     QLineEdit::placeholder {{
         color: {c["text_tertiary"]};
     }}
     QLineEdit:focus {{
-        border-color: {c["border_focus"]};
+        border-color: {c["brandLine"]};
+        background-color: {c["bg_surface"]};
     }}
     """
 
@@ -1233,11 +1266,12 @@ def stylesheet_textedit(modo: str = "dark_hybrid") -> str:
         border-radius: {_NM_CONTROL_RADIUS}px;
         padding: {_NM_CONTROL_PAD_Y}px {_NM_CONTROL_PAD_X}px;
         font-size: {_NM_CONTROL_FONT}px;
-        selection-background-color: {c["accent"]};
+        selection-background-color: {c["primary"]};
         selection-color: {c["text_on_accent"]};
     }}
     QTextEdit:focus, QPlainTextEdit:focus {{
-        border-color: {c["border_focus"]};
+        border-color: {c["brandLine"]};
+        background-color: {c["bg_surface"]};
     }}
     """
 
@@ -1285,7 +1319,8 @@ def stylesheet_combobox(modo: str = "dark_hybrid") -> str:
         min-height: {_NM_CONTROL_INNER_HEIGHT}px;
     }}
     QComboBox:focus {{
-        border-color: {c["border_focus"]};
+        border-color: {c["brandLine"]};
+        background-color: {c["bg_surface"]};
     }}
     QComboBox::drop-down {{
         border: none;
@@ -1323,7 +1358,8 @@ def stylesheet_timeedit(modo: str = "dark_hybrid") -> str:
         min-height: {_NM_CONTROL_INNER_HEIGHT}px;
     }}
     QTimeEdit:focus {{
-        border-color: {c["border_focus"]};
+        border-color: {c["brandLine"]};
+        background-color: {c["bg_surface"]};
     }}
     QTimeEdit::up-button, QTimeEdit::down-button {{
         width: 0;
@@ -1346,7 +1382,8 @@ def stylesheet_dateedit(modo: str = "dark_hybrid") -> str:
         min-height: {_NM_CONTROL_INNER_HEIGHT}px;
     }}
     QDateEdit:focus {{
-        border-color: {c["border_focus"]};
+        border-color: {c["brandLine"]};
+        background-color: {c["bg_surface"]};
     }}
     QDateEdit::drop-down {{
         border: none;
@@ -1383,7 +1420,8 @@ def stylesheet_spinbox(modo: str = "dark_hybrid") -> str:
         min-height: {_NM_CONTROL_INNER_HEIGHT}px;
     }}
     QSpinBox:focus {{
-        border-color: {c["border_focus"]};
+        border-color: {c["brandLine"]};
+        background-color: {c["bg_surface"]};
     }}
     QSpinBox::up-button, QSpinBox::down-button {{
         width: 18px;
@@ -1423,7 +1461,7 @@ def app_palette(modo: str = "dark_hybrid") -> QPalette:
     elev = QColor(c["bg_elevated"])
     tp = QColor(c["text_primary"])
     QColor(c["text_secondary"])
-    acc = QColor(c["accent"])
+    acc = QColor(c["primary"])
     brdr = QColor(c.get("border_card", c["border"]))
     dis = QColor(c["text_tertiary"])
 

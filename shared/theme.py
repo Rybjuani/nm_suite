@@ -429,9 +429,9 @@ LAYOUT = {
     "gap_elements": 10,
     # Botones pill (v3) — pill buttons
     "radius_button": 999,
-    "radius_card": 16,
-    "radius_modal": 22,
-    "radius_input": 12,
+    "radius_card": 22,
+    "radius_modal": 28,
+    "radius_input": 16,
     "radius_badge": 999,
     "radius_pill": 999,
     "radius_small": 8,

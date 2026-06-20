@@ -200,6 +200,35 @@ ICON_BODIES: dict[str, str] = {
 }
 
 
+# Set canónico del mockup (`neuromood-mockup.html`, const I). Se aplica como
+# overlay para conservar aliases históricos y, a la vez, renderizar las claves
+# usadas por las pantallas con paths idénticos a la fuente visual.
+MOCKUP_ICON_BODIES: dict[str, str] = {
+    "home": '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h14V9"/>',
+    "mood": '<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
+    "breath": '<path d="M12 3v6M12 3 9.5 5.5M12 3l2.5 2.5"/><circle cx="12" cy="14" r="6"/>',
+    "brain": '<path d="M9.5 3.5a3 3 0 0 0-3 3 3 3 0 0 0-1.5 5.6A3 3 0 0 0 6.5 18 3 3 0 0 0 12 19.5V4.2a3 3 0 0 0-2.5-.7Z"/><path d="M14.5 3.5a3 3 0 0 1 3 3 3 3 0 0 1 1.5 5.6A3 3 0 0 1 17.5 18 3 3 0 0 1 12 19.5"/>',
+    "activity": '<circle cx="12" cy="5" r="2.4"/><path d="M9 21v-6l-2-2 1-5 4 2 3 1"/><path d="m9 13 4 1 1 7"/>',
+    "bell": '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+    "check": '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+    "timer": '<circle cx="12" cy="13" r="8"/><path d="M12 13V9M9 2h6M19 6l-1.5 1.5"/>',
+    "spark": '<path d="m12 3 1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M5 18l.7 1.8L7.5 20l-1.8.7L5 22l-.7-1.3L2.5 20l1.8-.2z"/>',
+    "users": '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M16 6a3 3 0 0 1 0 5.6M21 20c0-2.6-1.4-4.2-3.5-4.8"/>',
+    "user": '<circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.6 3-5.5 7-5.5s7 1.9 7 5.5"/>',
+    "text": '<path d="M5 7h14M5 12h14M5 17h9"/>',
+    "key": '<circle cx="8" cy="15" r="4"/><path d="m11 12 8-8 2 2-2 2 2 2-2 2-2-2-3 3"/>',
+    "shield": '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+    "smile": '<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
+    "flower": '<circle cx="12" cy="12" r="2.5"/><path d="M12 9.5C12 7 13 5 15 5s2 3 0 4.5M12 14.5C12 17 11 19 9 19s-2-3 0-4.5M9.5 12C7 12 5 11 5 9s3-2 4.5 0M14.5 12c2.5 0 4.5 1 4.5 3s-3 2-4.5 0"/>',
+    "doc": '<path d="M14 3v5h5"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M8 13h8M8 17h6"/>',
+    "sun": '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    "moon": '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>',
+    "arrow": '<path d="M19 12H5M12 19l-7-7 7-7"/>',
+}
+
+ICON_BODIES.update(MOCKUP_ICON_BODIES)
+
+
 # ── Cache de pixmaps por (name, color, size) ─────────────────────────────────
 _PIXMAP_CACHE: dict[tuple, QPixmap] = {}
 _CACHE_LIMIT = 256

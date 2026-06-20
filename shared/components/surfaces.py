@@ -98,7 +98,11 @@ class NMDivider(QWidget):
 
 _BADGE_TONE_TO_KEY = {
     "neutral": "text2",  # ink-2: borde y texto
-    "info": "accent",  # primary (sage/lavender)
+    "brand": "primary",
+    "info": "primary",
+    "accent": "accent",
+    "gold": "gold",
+    "rose": "rose",
     "positive": "success",
     "completed": "success",  # variante literal de la lámina de componentes
     "patient": "teal",  # identificación de paciente sin inventar semántica clínica
@@ -106,6 +110,21 @@ _BADGE_TONE_TO_KEY = {
     "warning": "warning",  # alias
     "danger": "danger",
     "critical": "danger",
+}
+
+_BADGE_TONE_TO_SOFT_KEY = {
+    "brand": "primary_soft",
+    "info": "primary_soft",
+    "accent": "accentSoft",
+    "gold": "goldSoft",
+    "rose": "roseSoft",
+    "positive": "successSoft",
+    "completed": "successSoft",
+    "patient": "tealSoft",
+    "warn": "warningSoft",
+    "warning": "warningSoft",
+    "danger": "dangerSoft",
+    "critical": "dangerSoft",
 }
 
 
@@ -248,25 +267,18 @@ class NMBadge(QLabel):
     def _apply_style(self):
         key = _BADGE_TONE_TO_KEY[self._tone]
         color_hex = C(key, self._modo)
-        # Badge informativo: más rectangular y quieto que tabs/filtros/chips.
-        # Esto evita que estados clínicos parezcan navegación pulsable.
-        fc = QColor(color_hex)
-        fc.setAlpha(28 if "dark" in self._modo else 24)
-        bg_css = f"rgba({fc.red()},{fc.green()},{fc.blue()},{fc.alpha()})"
-        border_alpha = QColor(color_hex)
-        border_alpha.setAlpha(46 if "dark" in self._modo else 38)
-        border_css = (
-            f"rgba({border_alpha.red()},{border_alpha.green()},"
-            f"{border_alpha.blue()},{border_alpha.alpha()})"
-        )
-        self._pill_r_applied = 7
+        if self._tone == "neutral":
+            bg_css = C("surface3", self._modo)
+        else:
+            bg_css = C(_BADGE_TONE_TO_SOFT_KEY.get(self._tone, "primary_soft"), self._modo)
+        self._pill_r_applied = 11
         self.setStyleSheet(f"""
             NMBadge {{
                 color: {color_hex};
                 background-color: {bg_css};
-                border: 1px solid {border_css};
+                border: 1px solid transparent;
                 border-radius: {self._pill_r_applied}px;
-                padding: 3px 9px;
+                padding: 4px 11px;
                 min-height: 22px;
             }}
         """)
