@@ -27,3 +27,17 @@ def test_card_hover_border_uses_brand_line() -> None:
     )
 
     assert 'v3c("brandLine", self._modo)' in source
+
+
+def test_mood_slider_internal_uses_shared_mockup_slider_qss(qtbot) -> None:
+    from shared.components.mood import NMMoodSlider
+
+    slider = NMMoodSlider(modo="light_hybrid")
+    qtbot.addWidget(slider)
+
+    qss = slider._slider.styleSheet()
+    assert "height: 8px" in qss
+    assert "stop:0 #7b8a99" in qss
+    assert "stop:1 #b24e3d" in qss
+    assert "width: 22px" in qss
+    assert "border: 3px solid #2E5D43" in qss

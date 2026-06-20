@@ -44,6 +44,7 @@ from shared.theme_qt import (
     v3_font,
     qcolor_to_rgba_css,
     sp,
+    stylesheet_slider,
 )
 
 
@@ -372,51 +373,7 @@ class NMMoodSlider(QFrame):
         # Colores del tema
         text_primary = v3c("text", self._modo)
         text_secondary = v3c("text2", self._modo)
-        surface = v3c("surface", self._modo)
-        surface2 = v3c("surface2", self._modo)
-        v3c("line", self._modo)
-
-        # Track neutral (sin fill cuando null)
-        track_inactive = QColor(surface2)
-        track_inactive.setAlpha(100)
-
-        if self._has_value and self._slider.value() > 0:
-            # Track fill con color del mood palette
-            mood = get_mood(self._slider.value())
-            track_fill = QColor(mood["from"])
-            track_fill.setAlpha(180)
-            thumb_color = mood["from"]
-        else:
-            # Estado null: sin fill
-            track_fill = QColor(surface2)
-            track_fill.setAlpha(0)
-            thumb_color = QColor(text_secondary).name()
-
-        # Slider QSS
-        self._slider.setStyleSheet(f"""
-            QSlider#MoodSliderInternal {{
-                background: transparent;
-            }}
-            QSlider#MoodSliderInternal::groove:horizontal {{
-                border: none;
-                height: 6px;
-                background: rgba({track_inactive.red()},{track_inactive.green()},{track_inactive.blue()},{track_inactive.alpha()});
-                border-radius: 3px;
-                margin: 10px 0;
-            }}
-            QSlider#MoodSliderInternal::groove:horizontal::sub-page {{
-                background: rgba({track_fill.red()},{track_fill.green()},{track_fill.blue()},{track_fill.alpha()});
-                border-radius: 3px;
-            }}
-            QSlider#MoodSliderInternal::handle:horizontal {{
-                background: {thumb_color};
-                border: 2px solid {surface};
-                width: 20px;
-                height: 20px;
-                margin: -7px 0;
-                border-radius: 10px;
-            }}
-        """)
+        self._slider.setStyleSheet(stylesheet_slider(self._modo))
 
         # Label de estado
         self._state_label.setStyleSheet(f"color: {text_secondary.name()}; background: transparent;")
