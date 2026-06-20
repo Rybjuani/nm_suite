@@ -3,15 +3,30 @@ from __future__ import annotations
 from pathlib import Path
 
 
+# Vistas que existen en la app pero NO en el mockup: extras deliberados que el
+# plan manda conservar (más completos que el mockup) y por eso no tienen target
+# de fidelidad. Mantener esta lista explícita evita que un recipe huérfano pase
+# inadvertido, sin exigir un target inexistente.
+#   - ('suite', 'dbt-history'): tab Historial de DBT — "Conservar tab Historial
+#     (extra app)" (PLAN_MIGRACION_UI.md, sección de huecos/diferencias).
+_APP_EXTRA_RECIPES_WITHOUT_MOCKUP = {
+    ("suite", "dbt-history"),
+}
+
+
 def test_mockup_targets_cover_capture_v8_recipes() -> None:
     from qa.capture_mockup import MOCKUP_TARGETS
     from qa.capture_v8 import _RECIPES
 
-    expected = {
+    all_recipes = {
         (app, view)
         for app, recipes in _RECIPES.items()
         for view in recipes
     }
+    # Los extras de la app deben seguir existiendo como recipes (la lista no se
+    # vuelve stale), pero se excluyen de la cobertura de targets del mockup.
+    assert _APP_EXTRA_RECIPES_WITHOUT_MOCKUP <= all_recipes
+    expected = all_recipes - _APP_EXTRA_RECIPES_WITHOUT_MOCKUP
     actual = {(target.app, target.view) for target in MOCKUP_TARGETS}
 
     assert actual == expected

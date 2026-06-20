@@ -247,13 +247,9 @@ def test_window_chrome_matches_mockup_titlebar_contract(qtbot) -> None:
         _NM_CHROME_GAP,
         _NM_CHROME_ICON_SIZE,
         _NM_CHROME_PAD_X,
-        _NM_CHROME_THEME_DOT_H,
-        _NM_CHROME_THEME_DOT_W,
         _NM_CHROME_THEME_ICON_SIZE,
-        _NM_CHROME_THEME_KNOB_SIZE,
-        _NM_CHROME_THEME_TOGGLE_GAP,
         _NM_CHROME_THEME_TOGGLE_H,
-        _NM_CHROME_THEME_TOGGLE_PAD_X,
+        _NM_CHROME_THEME_TOGGLE_RADIUS,
         _NM_CHROME_THEME_TOGGLE_W,
         _NM_CHROME_WIN_DOT_COLORS,
         _NM_CHROME_WIN_DOT_GAP,
@@ -280,14 +276,13 @@ def test_window_chrome_matches_mockup_titlebar_contract(qtbot) -> None:
     assert chrome._ctx_back.height() == 26
     assert _NM_CHROME_BACK_RADIUS == 8
     assert chrome._ctx_icon.width() == _NM_CHROME_ICON_SIZE == 18
-    assert chrome._btn_theme.width() == _NM_CHROME_THEME_TOGGLE_W == 132
-    assert chrome._btn_theme.height() == _NM_CHROME_THEME_TOGGLE_H == 30
-    assert _NM_CHROME_THEME_TOGGLE_PAD_X == 12
-    assert _NM_CHROME_THEME_TOGGLE_GAP == 9
+    # Theme toggle = `.tb-theme` canónico del titlebar (mockup línea 195):
+    # botón glifo 24×24 r7, solo sol/luna 16px — NO la píldora label+dot de la
+    # `.themetoggle` de la cáscara web (que el plan dice no replicar).
+    assert chrome._btn_theme.width() == _NM_CHROME_THEME_TOGGLE_W == 24
+    assert chrome._btn_theme.height() == _NM_CHROME_THEME_TOGGLE_H == 24
+    assert _NM_CHROME_THEME_TOGGLE_RADIUS == 7
     assert _NM_CHROME_THEME_ICON_SIZE == 16
-    assert _NM_CHROME_THEME_DOT_W == 34
-    assert _NM_CHROME_THEME_DOT_H == 18
-    assert _NM_CHROME_THEME_KNOB_SIZE == 14
 
     assert chrome._win_controls.layout().spacing() == _NM_CHROME_WIN_DOT_GAP == 8
     assert chrome._btn_min.width() == _NM_CHROME_WIN_DOT_SIZE == 13
@@ -309,9 +304,12 @@ def test_window_chrome_matches_mockup_titlebar_contract(qtbot) -> None:
     assert "_NM_CHROME_WIN_DOT_OPACITY" in btn_source
 
     toggle_source = __import__("inspect").getsource(_ChromeThemeToggle.paintEvent)
+    # Glifo solo: fondo surface-3 únicamente en hover, icono faint→ink; sin
+    # píldora (dot/knob). Mockup `.tb-theme` / `.tb-theme:hover`.
     assert 'v3c("surface3", self._modo)' in toggle_source
-    assert 'v3c("brand" if is_dark else "line", self._modo)' in toggle_source
-    assert "knob_x = dot_x + 2 + (16 if is_dark else 0)" in toggle_source
+    assert 'icon_name = "sun" if is_dark else "moon"' in toggle_source
+    assert 'v3c("ink" if hovered else "faint", self._modo)' in toggle_source
+    assert "knob_x" not in toggle_source
 
 
 def test_patient_row_premium_matches_mockup_prow_contract(qtbot) -> None:

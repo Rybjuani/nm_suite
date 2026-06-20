@@ -224,6 +224,7 @@ def apply_child_window_chrome(
     title: str,
     modo: str = "dark_hybrid",
     *,
+    subtitle: str | None = None,
     show_theme_toggle: bool = False,
     show_maximize: bool = True,
 ):
@@ -242,6 +243,7 @@ def apply_child_window_chrome(
     window.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Window)
     chrome = NMWindowChrome(
         title=title,
+        subtitle=subtitle,
         modo=modo,
         show_theme_toggle=show_theme_toggle,
         show_maximize=show_maximize,

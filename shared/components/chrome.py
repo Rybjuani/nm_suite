@@ -46,14 +46,13 @@ _NM_CHROME_STATUS_GAP = 14
 _NM_CHROME_BACK_SIZE = 26
 _NM_CHROME_BACK_RADIUS = 8
 _NM_CHROME_ICON_SIZE = 18
-_NM_CHROME_THEME_TOGGLE_W = 132
-_NM_CHROME_THEME_TOGGLE_H = 30
-_NM_CHROME_THEME_TOGGLE_PAD_X = 12
-_NM_CHROME_THEME_TOGGLE_GAP = 9
+# Theme toggle = `.tb-theme` canónico del titlebar del mockup (línea 195):
+# botón glifo 24×24 r7, solo sol/luna 16px, color ink-3 (hover ink + surface-3).
+# NO es la `.themetoggle` de la cáscara web (label + píldora) — esa no se replica.
+_NM_CHROME_THEME_TOGGLE_W = 24
+_NM_CHROME_THEME_TOGGLE_H = 24
+_NM_CHROME_THEME_TOGGLE_RADIUS = 7
 _NM_CHROME_THEME_ICON_SIZE = 16
-_NM_CHROME_THEME_DOT_W = 34
-_NM_CHROME_THEME_DOT_H = 18
-_NM_CHROME_THEME_KNOB_SIZE = 14
 _NM_CHROME_WIN_DOT_SIZE = 13
 _NM_CHROME_WIN_DOT_GAP = 8
 _NM_CHROME_WIN_DOT_OPACITY = 0.55
@@ -125,7 +124,12 @@ class _ChromeWinBtn(QPushButton):
 
 
 class _ChromeThemeToggle(QPushButton):
-    """Theme toggle pill with the mockup track/dot contract."""
+    """Botón glifo sol/luna del titlebar canónico (`.tb-theme`, mockup línea 195).
+
+    24×24 r7, solo el glifo (16px): luna en claro, sol en oscuro. Hover: color
+    ink + fondo surface-3. Sin label ni píldora (eso era la `.themetoggle` de la
+    cáscara web, que el plan dice NO replicar).
+    """
 
     def __init__(self, modo: str, parent=None):
         super().__init__(parent)
@@ -149,45 +153,23 @@ class _ChromeThemeToggle(QPushButton):
 
         hovered = self.underMouse()
         is_dark = "dark" in self._modo
-        rect = QRectF(0.5, 0.5, self.width() - 1, self.height() - 1)
-        radius = self.height() / 2
 
-        p.setPen(QPen(v3c("brandLine" if hovered else "line", self._modo), 1))
-        p.setBrush(v3c("surface3", self._modo))
-        p.drawRoundedRect(rect, radius, radius)
+        # Fondo solo en hover (surface-3), radio 7 — `.tb-theme:hover`.
+        if hovered:
+            rect = QRectF(0.5, 0.5, self.width() - 1, self.height() - 1)
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(v3c("surface3", self._modo))
+            p.drawRoundedRect(
+                rect, _NM_CHROME_THEME_TOGGLE_RADIUS, _NM_CHROME_THEME_TOGGLE_RADIUS
+            )
 
+        # Glifo: luna en claro, sol en oscuro (mockup: dark→sun, light→moon).
         icon_name = "sun" if is_dark else "moon"
-        icon_color = v3c("ink" if hovered else "ink_2", self._modo)
+        icon_color = v3c("ink" if hovered else "faint", self._modo)
         icon = nm_icon(icon_name, icon_color, size=_NM_CHROME_THEME_ICON_SIZE)
-        ix = _NM_CHROME_THEME_TOGGLE_PAD_X
+        ix = (self.width() - _NM_CHROME_THEME_ICON_SIZE) // 2
         iy = (self.height() - _NM_CHROME_THEME_ICON_SIZE) // 2
         p.drawPixmap(ix, iy, icon.pixmap(_NM_CHROME_THEME_ICON_SIZE, _NM_CHROME_THEME_ICON_SIZE))
-
-        text = "Oscuro" if is_dark else "Claro"
-        text_x = ix + _NM_CHROME_THEME_ICON_SIZE + _NM_CHROME_THEME_TOGGLE_GAP
-        dot_x = self.width() - _NM_CHROME_THEME_TOGGLE_PAD_X - _NM_CHROME_THEME_DOT_W
-        text_rect = QRectF(
-            text_x,
-            0,
-            max(0, dot_x - text_x - _NM_CHROME_THEME_TOGGLE_GAP),
-            self.height(),
-        )
-        p.setFont(qfont(13, weight=500))
-        p.setPen(icon_color)
-        p.drawText(text_rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, text)
-
-        dot_y = (self.height() - _NM_CHROME_THEME_DOT_H) / 2
-        dot_rect = QRectF(dot_x, dot_y, _NM_CHROME_THEME_DOT_W, _NM_CHROME_THEME_DOT_H)
-        p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(v3c("brand" if is_dark else "line", self._modo))
-        p.drawRoundedRect(dot_rect, _NM_CHROME_THEME_DOT_H / 2, _NM_CHROME_THEME_DOT_H / 2)
-
-        knob_x = dot_x + 2 + (16 if is_dark else 0)
-        knob_y = dot_y + 2
-        p.setBrush(v3c("surface", self._modo))
-        p.drawEllipse(
-            QRectF(knob_x, knob_y, _NM_CHROME_THEME_KNOB_SIZE, _NM_CHROME_THEME_KNOB_SIZE)
-        )
         p.end()
 
     def enterEvent(self, event):

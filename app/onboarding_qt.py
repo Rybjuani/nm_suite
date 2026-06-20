@@ -160,7 +160,11 @@ class OnboardingDialog(QDialog):
 
             chrome = apply_child_window_chrome(
                 self,
-                title="NeuroMood · Configuración inicial",
+                # Mockup titlebar: tb-title "NeuroMood" (bold) + tb-crumb
+                # "/ Configuración inicial" (ink-3). Antes se pasaba combinado con
+                # "·" en un solo título → no coincidía con el target.
+                title="NeuroMood",
+                subtitle="Configuración inicial",
                 modo=self._modo,
                 show_theme_toggle=True,
                 # Ventana de tamaño fijo: solo "—" minimizar y "✕" cerrar.
@@ -235,7 +239,10 @@ class OnboardingDialog(QDialog):
         form_widget = QWidget()
         form_widget.setStyleSheet("background: transparent;")
         form_lay = QVBoxLayout(form_widget)
-        is_compact = self.height() <= 600
+        # El target canónico es 520×600 y usa el espaciado COMPLETO del mockup
+        # (.screen padding 26×28, sub mb18, inputs mb14). El modo compacto (tighter)
+        # se reserva para ventanas genuinamente bajas (<560) cerca del mínimo 520.
+        is_compact = self.height() < 560
         # Márgenes generosos full-bleed (la ventana es la card): aire lateral
         # premium sin doble borde.
         # Mockup .screen padding:26px 28px — top margin reducido para compensar
@@ -245,7 +252,8 @@ class OnboardingDialog(QDialog):
             form_lay.setContentsMargins(20, 10, 20, 4)
             form_lay.setSpacing(4)
         else:
-            form_lay.setContentsMargins(28, 14, 28, 8)
+            # Mockup .screen padding:26px 28px.
+            form_lay.setContentsMargins(28, 24, 28, 8)
             form_lay.setSpacing(6)
 
         # ── Brandmark canónico + título "NeuroMood Suite" ────────────────────
@@ -327,6 +335,7 @@ class OnboardingDialog(QDialog):
                 f" <span style='color:{fb_text}; font-style:italic;'>Suite</span>"
             )
         title_lbl = QLabel(title_html)
+        self._title_lbl = title_lbl  # ref para repintar spans en toggle de tema
         title_lbl.setTextFormat(Qt.TextFormat.RichText)
         if self._has_theme:
             # Mockup: font-size 21px, h-serif (Fraunces), weight 600 (h-serif default).
@@ -368,7 +377,7 @@ class OnboardingDialog(QDialog):
             sub.setStyleSheet(f"color: {self._fallback_color('ink_secondary')};")
         form_lay.addWidget(sub)
 
-        form_lay.addSpacing(2 if is_compact else 8)
+        form_lay.addSpacing(10 if is_compact else 18)  # mockup: sub margin 0 0 18px
 
         # ── Nombre ────────────────────────────────────────────────────────────
         form_lay.addWidget(self._lbl(suite_t("text.onboarding.name_label", "Nombre *"), is_compact))
@@ -377,7 +386,7 @@ class OnboardingDialog(QDialog):
             self._name.setMinimumHeight(34)
         form_lay.addWidget(self._name)
 
-        form_lay.addSpacing(0 if is_compact else 4)
+        form_lay.addSpacing(8 if is_compact else 14)  # mockup: input margin-bottom 14px
 
         # ── Email ─────────────────────────────────────────────────────────────
         form_lay.addWidget(
@@ -391,7 +400,7 @@ class OnboardingDialog(QDialog):
             self._email.setMinimumHeight(34)
         form_lay.addWidget(self._email)
 
-        form_lay.addSpacing(0 if is_compact else 4)
+        form_lay.addSpacing(8 if is_compact else 14)  # mockup: input margin-bottom 14px
 
         # ── Contraseña ────────────────────────────────────────────────────────
         form_lay.addWidget(
@@ -411,14 +420,17 @@ class OnboardingDialog(QDialog):
 
         # (Hint "Se usa Supabase Auth..." eliminado — feedback owner v1.0:
         # información técnica interna, no aporta al usuario.)
-        form_lay.addSpacing(2 if is_compact else 8)
+        form_lay.addSpacing(10 if is_compact else 16)  # mockup: password margin-bottom 16px
 
         # ── Consentimiento: card secundaria ADN con shield icon ─────────────
         consent_card = QFrame()
         consent_card.setObjectName("ConsentCard")
         if self._has_theme:
             is_dark = "dark" in self._modo
-            bg_col = self._t["surface"] if is_dark else self._t["input"]
+            # Mockup: card de consentimiento = <div class="card"
+            # style="background:var(--surface-2)"> — surface-2 en ambos temas
+            # (antes usaba surface/input → un escalón de color distinto al target).
+            bg_col = self._t["surface2"]
             border_c = self._t["v3c"]("border", self._modo)
             border_css = (
                 f"rgba({border_c.red()},{border_c.green()},{border_c.blue()},45)"
@@ -503,19 +515,28 @@ class OnboardingDialog(QDialog):
         else:
             consent_txt.setStyleSheet(f"color: {self._fallback_color('ink_secondary')};")
         cc_body.setWidget(consent_txt)
-        # Área de lectura GRANDE (feedback owner v1.0): mínimo 4-6 líneas
-        # completas y EXPANDIBLE — absorbe el espacio que antes moría en
-        # stretches arriba/abajo de la card. La base mínima alineada a líneas
-        # enteras evita que el piso del visor corte una línea a la mitad.
-        _lines = 4 if is_compact else 6
-        _view_h = consent_txt.fontMetrics().lineSpacing() * _lines
-        cc_body.setMinimumHeight(_view_h)
+        # Mockup: card con max-height:150px y overflow:auto — alto FIJO; el texto
+        # legal completo (más largo que los 2 párrafos resumen del mockup) hace
+        # scroll dentro. Antes la card era EXPANDING y empujaba el footer fuera
+        # del layout del target. El visor llena la altura de la card.
         cc_body.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
         cc_lay.addWidget(cc_body, stretch=1)
-        cc_lay.addSpacing(4)
 
+        # Alto = mockup max-height:150px como MÁXIMO; la card absorbe el sobrante
+        # del form (stretch + sizePolicy Expanding) y se encoge lo necesario para
+        # que el footer (botones de acceso) quede SIEMPRE visible a 520×600 —
+        # prioridad UX sobre el recorte del target. El texto legal completo hace
+        # scroll dentro. min bajo para que nunca empuje al checkbox/footer.
+        consent_card.setMaximumHeight(132 if is_compact else 150)
+        consent_card.setMinimumHeight(60)
+        consent_card.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
+
+        # ── Checkbox de aceptación: FUERA de la card (mockup: <label> hermano
+        # del <div class="card">, no anidado). ──────────────────────────────
         # Split checkbox and text to ensure full word wrapping and accessibility.
         # Mockup línea 1313: <span class="rt-cb" id="obTerms" style="width:20px;height:20px;"></span>
         # Usamos QCheckBox nativo con QSS para aproximar rt-cb 20×20 r7 border 2px line.
@@ -532,7 +553,6 @@ class OnboardingDialog(QDialog):
                 f"rgba({border_c.red()},{border_c.green()},{border_c.blue()},{border_c.alpha()})"
             )
             primary_c = self._t["primary"]
-            primary_ink_c = self._t["primary_ink"]
             self._consent_check.setStyleSheet(
                 f"""
                 QCheckBox {{
@@ -576,11 +596,13 @@ class OnboardingDialog(QDialog):
             consent_lbl.setFont(consent_font)
             consent_lbl.setStyleSheet("background: transparent;")
         consent_row.addWidget(consent_lbl, stretch=1)
-        cc_lay.addLayout(consent_row)
 
-        # El consentimiento absorbe el alto sobrante (contenido top-aligned,
-        # sin stretches muertos arriba/abajo — feedback owner v1.0).
+        # Card de consentimiento (alto fijo) + checkbox debajo, como hermanos
+        # en el flujo (mockup), no anidados. El contenido queda top-aligned y
+        # el footer se mantiene fijo abajo vía el stretch del form_widget.
         form_lay.addWidget(consent_card, stretch=1)
+        form_lay.addSpacing(2 if is_compact else 4)  # mockup label padding ~10px 2px
+        form_lay.addLayout(consent_row)
 
         card_lay.addWidget(form_widget, stretch=1)
 
@@ -707,7 +729,7 @@ class OnboardingDialog(QDialog):
                         f"border: 1px solid {border_css}; border-radius: {card_radius}px; }}"
                     )
                 elif name == "ConsentCard":
-                    bg_col = t["surface"] if is_dark else t["input"]
+                    bg_col = t["surface2"]
                     cc_border = (
                         f"rgba({border_c.red()},{border_c.green()},{border_c.blue()},45)"
                         if is_dark else "rgba(28,34,24,0.10)"
@@ -738,18 +760,29 @@ class OnboardingDialog(QDialog):
                 name = lbl.objectName()
                 if name in role_color:
                     lbl.setStyleSheet(f"color: {role_color[name]}; background: transparent;")
-                elif lbl.text() == "Bienvenido a NeuroMood":
-                    lbl.setStyleSheet(f"color: {t['text']}; background: transparent;")
-                elif lbl.text() == suite_t("text.onboarding.title_suffix", "Suite"):
-                    lbl.setStyleSheet(f"color: {t['primary']}; background: transparent;")
         except Exception:
             pass
-        # Error + link de recuperación.
+        # Título de 3 spans "NeuroMood Suite": el rich-text fija los colores brand/
+        # ink-3 al construirse; sin reconstruir el HTML, "Mood" quedaba con el verde
+        # del tema anterior tras el toggle (bug de hot-reload).
+        try:
+            if hasattr(self, "_title_lbl"):
+                ink_c = t["text"]
+                brand_c = t["primary"]
+                ink3_c = t["text3"]
+                self._title_lbl.setText(
+                    f"<span style='color:{ink_c};'>Neuro</span>"
+                    f"<span style='color:{brand_c};'>Mood</span>"
+                    f" <span style='color:{ink3_c}; font-style:italic;'>Suite</span>"
+                )
+        except Exception:
+            pass
+        # Error + link de recuperación (mockup: "¿Olvidaste...?" = color brand).
         try:
             if hasattr(self, "_error_lbl"):
                 self._error_lbl.setStyleSheet(f"color: {t['danger']}; background: transparent;")
             if hasattr(self, "_forgot_link"):
-                link_color = t["v3c"]("aqua", self._modo).name()
+                link_color = t["primary"]
                 self._forgot_link.setText(
                     f'<a href="#" style="color:{link_color}; text-decoration:none;">'
                     f"{suite_t('text.onboarding.forgot_password', '¿Olvidaste tu contraseña?')}</a>"
