@@ -2254,6 +2254,10 @@ def eyebrow_font() -> QFont:
     f = v3_font("size_eyebrow", TYPOGRAPHY["weight_semibold"])
     f.setWeight(QFont.Weight(TYPOGRAPHY["weight_semibold"]))
     f.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 116)
+    # Mockup `.eyebrow` lleva text-transform:uppercase. Lo aplica la fuente
+    # (no muta el texto) para que TODOS los eyebrows queden en mayúsculas, no
+    # solo los que hacían `.upper()` a mano (p.ej. Home).
+    f.setCapitalization(QFont.Capitalization.AllUppercase)
     return f
 
 

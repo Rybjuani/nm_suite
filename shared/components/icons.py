@@ -22,7 +22,7 @@ from PyQt6.QtWidgets import (
 
 from shared.theme import TYPOGRAPHY
 from shared.theme_manager import ThemeManager
-from shared.theme_qt import V3_SP, nm_icon, norm_modo, qfont, v3c
+from shared.theme_qt import V3_SP, eyebrow_font, nm_icon, norm_modo, qfont, v3c
 
 try:
     from shared.icons_svg import has_icon as _has_v3_icon, nm_svg_pixmap as _nm_svg_pixmap
@@ -157,7 +157,9 @@ class NMSectionHeader(QWidget):
         top = QHBoxLayout()
         top.setSpacing(V3_SP["sm"])
         self._eyebrow = QLabel(eyebrow or "")
-        self._eyebrow.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
+        # eyebrow_font = 11px tracked + AllUppercase (mockup `.eyebrow`), en vez
+        # del caption_xs sin tracking ni mayúsculas que se usaba antes.
+        self._eyebrow.setFont(eyebrow_font())
         top.addWidget(self._eyebrow)
         top.addStretch()
         self._action_btn: QPushButton | None = None

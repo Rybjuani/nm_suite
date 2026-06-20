@@ -48,6 +48,7 @@ try:
     from shared.theme_qt import (
         norm_modo,
         qfont,
+        v3_font,
         qfont_mono,
         interpolate_color,
         v3c,
@@ -83,6 +84,7 @@ except ImportError:
     from shared.theme_qt import (
         norm_modo,
         qfont,
+        v3_font,
         qfont_mono,
         interpolate_color,
         v3c,
@@ -469,9 +471,9 @@ class _SuggestedCard(NMCard):
         top.addWidget(self._chip)
         lay.addLayout(top)
 
-        # Título + descripción
+        # Título + descripción — mockup act-card: `.h-serif` 16px (Fraunces).
         self._title_lbl = QLabel(self._nombre)
-        self._title_lbl.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_semibold"]))
+        self._title_lbl.setFont(v3_font(16, weight=600, serif=True))
         self._title_lbl.setWordWrap(True)
         self._title_lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         lay.addWidget(self._title_lbl)
