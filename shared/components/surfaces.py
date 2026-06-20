@@ -229,13 +229,20 @@ class NMChip(QFrame):
 
 
 class NMBadge(QLabel):
-    """Pill semántica del runtime spec §4.4.
+    """Pill semántica del runtime spec §4.4 + mockup canónico.
+
+    Implementa ``.badge`` del mockup (líneas 265-271):
+      - pill 4×11 padding, soft bg + colored text
+      - dot 6px ``.dt`` delante del texto (currentColor) en tonos brand/accent/
+        gold/rose/positive/completed/patient/warning/danger — no en neutral.
 
     Args:
         text:   Etiqueta. Puede incluir un símbolo unicode a la izquierda.
-        tone:   ``"neutral"`` / ``"info"`` / ``"completed"`` /
-                ``"warning"`` / ``"critical"`` / ``"patient"``.
+        tone:   ``"neutral"`` / ``"brand"`` / ``"info"`` / ``"accent"`` /
+                ``"gold"`` / ``"rose"`` / ``"positive"`` / ``"completed"`` /
+                ``"patient"`` / ``"warning"`` / ``"danger"`` / ``"critical"``.
         modo:   Override; ``None`` = sigue ThemeManager.
+        with_dot:  Forzar dot on/off. Por defecto: on para tonos no-neutral.
         parent: parent widget.
 
     Para añadir ícono SVG real, usar ``NMIcon`` en un layout horizontal y
@@ -243,26 +250,79 @@ class NMBadge(QLabel):
     pero la composición externa es más mantenible.
     """
 
-    def __init__(self, text: str = "", tone: str = "neutral", modo: str | None = None, parent=None):
-        super().__init__(text, parent)
+    # Tonos que llevan el dot 6px del mockup (todos los semánticos; no neutral).
+    _TONES_WITH_DOT = frozenset({
+        "brand", "info", "accent", "gold", "rose",
+        "positive", "completed", "patient", "warning", "warn",
+        "danger", "critical",
+    })
+
+    def __init__(
+        self,
+        text: str = "",
+        tone: str = "neutral",
+        modo: str | None = None,
+        with_dot: bool | None = None,
+        parent=None,
+    ):
+        super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._tone = tone if tone in _BADGE_TONE_TO_KEY else "neutral"
+        # with_dot: None = automático (según tone), True/False = forzado.
+        self._with_dot = (
+            with_dot if with_dot is not None else (self._tone in self._TONES_WITH_DOT)
+        )
+        self._bare_text = ""  # texto sin dot (para re-render en theme change)
         self.setObjectName("NMBadge")
         self.setFont(v3_font("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setMinimumHeight(22)
         self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         self.setContentsMargins(0, 0, 0, 0)
+        # Seteo inicial del texto (con dot si corresponde)
+        self._render_text(text)
         self._apply_style()
         _tm().theme_changed.connect(self._apply_theme)
 
     def set_tone(self, tone: str):
         if tone in _BADGE_TONE_TO_KEY:
             self._tone = tone
+            if tone not in self._TONES_WITH_DOT:
+                self._with_dot = False
+            elif self._with_dot is None:
+                self._with_dot = True
+            self._render_text(self._bare_text)
             self._apply_style()
+
+    def set_with_dot(self, enabled: bool):
+        self._with_dot = bool(enabled)
+        self._render_text(self._bare_text)
+        self._apply_style()
 
     def tone(self) -> str:
         return self._tone
+
+    def _render_text(self, text: str):
+        """Renderiza el texto del QLabel con o sin dot según _with_dot."""
+        self._bare_text = text
+        if self._with_dot:
+            key = _BADGE_TONE_TO_KEY[self._tone]
+            color_hex = C(key, self._modo)
+            # Rich text con span circular inline-block (Qt soporta CSS limitado).
+            # Usamos table-cell para mejor alineación vertical del dot.
+            dot_html = (
+                f"<span style='display:inline-block; width:6px; height:6px;"
+                f" border-radius:3px; background:{color_hex};"
+                f" margin-right:5px; vertical-align:middle;'></span>"
+            )
+            # Escapar entidades HTML del texto del usuario para evitar parse issues.
+            from html import escape
+            safe_text = escape(text)
+            self.setTextFormat(Qt.TextFormat.RichText)
+            super().setText(dot_html + safe_text)
+        else:
+            self.setTextFormat(Qt.TextFormat.PlainText)
+            super().setText(text)
 
     def _apply_style(self):
         key = _BADGE_TONE_TO_KEY[self._tone]
@@ -282,29 +342,26 @@ class NMBadge(QLabel):
                 min-height: 22px;
             }}
         """)
-        # Un badge nunca debe renderizar texto recortado ni pisarse con su
-        # vecina. Medir con QFontMetrics y NO con sizeHint(): el sizeHint del
-        # QLabel depende de que el QSS esté "polished", y cuando la pill se
-        # re-estila después del primer layout (theme apply) el mínimo crecía
-        # tarde — el widget se ensanchaba sin que el QHBoxLayout reposicionara
-        # a los hermanos → pills superpuestas (bug real: "Sin alerta activa"
-        # pisada por "Progreso 5d" en el hero del detalle del Hub).
         self._sync_min_width()
 
     def _sync_min_width(self):
         fm = QFontMetrics(self.font())
-        self.setMinimumWidth(fm.horizontalAdvance(self.text()) + 20)
+        # Medir solo el texto bare (sin HTML del dot) para que el ancho sea real.
+        dot_w = 11 if self._with_dot else 0  # 6px dot + 5px margin
+        self.setMinimumWidth(fm.horizontalAdvance(self._bare_text) + 20 + dot_w)
         self.updateGeometry()
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
 
     def setText(self, text: str):  # noqa: N802 — override de QLabel
-        super().setText(text)
+        self._render_text(text)
         self._sync_min_width()
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
+        # Re-render para que el dot tome el color del nuevo tema.
+        self._render_text(self._bare_text)
         self._apply_style()
 
 

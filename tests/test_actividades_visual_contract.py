@@ -30,7 +30,9 @@ def test_actividad_card_actions_and_done_badge_match_mockup(qtbot, monkeypatch) 
     assert card._btn_yes.text() == "Hice"
     assert card._btn_no.variant() == "secondary"
     assert card._btn_yes.variant() == "secondary"
-    assert card._done_badge.text() == "Hecho"
+    # NMBadge ahora renderiza dot 6px prefijo en tono brand → el texto bare
+    # se preserva en `_bare_text`; `.text()` devuelve rich text.
+    assert card._done_badge._bare_text == "Hecho"
     assert card._done_badge.tone() == "brand"
     assert card._done_badge.isHidden()
 
@@ -39,7 +41,7 @@ def test_actividad_card_actions_and_done_badge_match_mockup(qtbot, monkeypatch) 
     assert card._btn_no.isHidden()
     assert card._btn_yes.isHidden()
     assert not card._done_badge.isHidden()
-    assert card._done_badge.text() == "Hecho"
+    assert card._done_badge._bare_text == "Hecho"
 
 
 def test_actividades_filters_are_mockup_fchips_and_count_is_visible(qtbot, monkeypatch) -> None:
