@@ -56,6 +56,20 @@ _PATIENT_AVATAR_PAIRS = [
     ("accent", "violet"),
 ]
 
+_NM_PATIENT_ROW_HEIGHT = 70
+_NM_PATIENT_ROW_PAD_X = 16
+_NM_PATIENT_ROW_PAD_Y = 14
+_NM_PATIENT_ROW_GAP = 14
+_NM_PATIENT_AVATAR_SIZE = 40
+_NM_PATIENT_AVATAR_RADIUS = 12
+_NM_PATIENT_SPARKLINE_W = 78
+_NM_PATIENT_SPARKLINE_H = 30
+_NM_PATIENT_TREND_COL_W = 90
+_NM_PATIENT_RING_SIZE = 46
+_NM_PATIENT_RING_COL_W = 60
+_NM_PATIENT_UNLINK_SIZE = 30
+_NM_PATIENT_UNLINK_RADIUS = 9
+
 
 class NMPatientRow(QFrame):
     """Fila de paciente del Hub con avatar e indicador de adherencia."""
@@ -177,7 +191,7 @@ class NMPatientRow(QFrame):
 class NMSparkline(QWidget):
     """Inline sparkline — polyline for up to N data points (mood 7d, etc.).
 
-    • Fixed size (default 90×28).
+    • Fixed size (default 78×30, matching Hub `.pcol-trend`).
     • None / 0 values treated as gaps (segment breaks).
     • Color auto-selects `danger` token when last value drops ≥2 vs first
       (descending trend), otherwise uses `primary` token.
@@ -187,8 +201,8 @@ class NMSparkline(QWidget):
         self,
         data: list | None = None,
         color: str | None = None,
-        w: int = 90,
-        h: int = 28,
+        w: int = _NM_PATIENT_SPARKLINE_W,
+        h: int = _NM_PATIENT_SPARKLINE_H,
         modo: str = None,
         parent=None,
     ):
@@ -241,7 +255,7 @@ class NMSparkline(QWidget):
             return x, y
 
         pen = QPen(stroke)
-        pen.setWidthF(1.8)
+        pen.setWidthF(2.0)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
         painter.setPen(pen)
@@ -432,12 +446,17 @@ class NMPatientRowPremium(QFrame):
         self._name_hash = sum(ord(c) for c in (name or "?")) % len(_PATIENT_AVATAR_PAIRS)
         self.setObjectName("NMPatientRowPremium")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setFixedHeight(58)
+        self.setFixedHeight(_NM_PATIENT_ROW_HEIGHT)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(14, 7, 14, 7)
-        lay.setSpacing(12)
+        lay.setContentsMargins(
+            _NM_PATIENT_ROW_PAD_X,
+            _NM_PATIENT_ROW_PAD_Y,
+            _NM_PATIENT_ROW_PAD_X,
+            _NM_PATIENT_ROW_PAD_Y,
+        )
+        lay.setSpacing(_NM_PATIENT_ROW_GAP)
 
         # Status dot
         self._status_dot = QLabel()
@@ -445,12 +464,12 @@ class NMPatientRowPremium(QFrame):
         self._status_dot.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lay.addWidget(self._status_dot, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        # Avatar circular initials (28x28 px)
+        # Avatar rounded initials (40x40, r12) — Hub `.avatar`.
         initials = "".join(part[:1] for part in (name or "?").split()[:2]).upper()
         self._avatar = QLabel(initials or "P")
-        self._avatar.setFixedSize(28, 28)
+        self._avatar.setFixedSize(_NM_PATIENT_AVATAR_SIZE, _NM_PATIENT_AVATAR_SIZE)
         self._avatar.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._avatar.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
+        self._avatar.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_bold"]))
         lay.addWidget(self._avatar, 0, Qt.AlignmentFlag.AlignVCenter)
 
         # Patient identity column
@@ -488,19 +507,15 @@ class NMPatientRowPremium(QFrame):
         self._sparkline = None
         if mood_data:
             self._sparkline = NMSparkline(data=mood_data, modo=self._modo)
-            self._sparkline.setFixedSize(64, 22)
             lay.addWidget(self._sparkline, 0, Qt.AlignmentFlag.AlignVCenter)
         else:
-            lay.addSpacing(64)
+            lay.addSpacing(_NM_PATIENT_TREND_COL_W)
 
-        # Adherence ring — en columna fija de 56px para alinear con el header
-        # "USO" y dejar aire respecto del borde derecho. 36px: a 30 el "NN%"
-        # interior quedaba comprimido contra el arco (el propio componente avisa
-        # que <32px el label es ilegible); 36 da aire al porcentaje sin romper
-        # la altura de fila (58px, área útil 44px).
-        self._ring = NMModuleRing(size=36, pct=pct, modo=self._modo)
+        self._ring = NMModuleRing(
+            size=_NM_PATIENT_RING_SIZE, pct=pct, modo=self._modo, color_key="gold"
+        )
         _ring_wrap = QWidget()
-        _ring_wrap.setFixedWidth(56)
+        _ring_wrap.setFixedWidth(_NM_PATIENT_RING_COL_W)
         _ring_wl = QHBoxLayout(_ring_wrap)
         _ring_wl.setContentsMargins(0, 0, 0, 0)
         _ring_wl.addWidget(self._ring, 0, Qt.AlignmentFlag.AlignCenter)
@@ -513,7 +528,7 @@ class NMPatientRowPremium(QFrame):
         if on_unlink is not None:
             self._btn_unlink = QToolButton()
             self._btn_unlink.setObjectName("NMRowUnlink")
-            self._btn_unlink.setFixedSize(26, 26)
+            self._btn_unlink.setFixedSize(_NM_PATIENT_UNLINK_SIZE, _NM_PATIENT_UNLINK_SIZE)
             self._btn_unlink.setCursor(Qt.CursorShape.PointingHandCursor)
             self._btn_unlink.setToolTip("Quitar paciente del Hub")
             self._btn_unlink.setAccessibleName(f"Quitar a {self._full_name} del Hub")
@@ -599,21 +614,21 @@ class NMPatientRowPremium(QFrame):
         border = (
             _rgba(C("accent", self._modo), 0.38)
             if self._selected
-            else qcolor_to_rgba_css(v3c("borderSoft", self._modo))
+            else "transparent"
         )
-        hover_bg = _rgba(C("teal", self._modo), 0.07 if is_dark else 0.05)
+        hover_bg = v3c("surface2", self._modo).name()
         self.setStyleSheet(
             f"QFrame#NMPatientRowPremium {{ background: {bg}; border: 1px solid {border}; "
             f"border-left: 3px solid {C('accent', self._modo) if self._selected else border}; "
             f"border-radius: 12px; }}"
             f"QFrame#NMPatientRowPremium:hover {{ background: {hover_bg}; "
-            f"border-color: {_rgba(C('teal', self._modo), 0.42)}; }}"
+            f"border-color: {qcolor_to_rgba_css(v3c('line', self._modo))}; }}"
         )
         k1, k2 = _PATIENT_AVATAR_PAIRS[self._name_hash]
         self._avatar.setStyleSheet(
             f"QLabel {{ background: qlineargradient(x1:0,y1:0,x2:1,y2:1, "
             f"stop:0 {C(k1, self._modo)}, stop:1 {C(k2, self._modo)}); "
-            f"color: white; border-radius: 12px; "
+            f"color: white; border-radius: {_NM_PATIENT_AVATAR_RADIUS}px; "
             f"border: 1px solid {_rgba('#ffffff', 0.22 if is_dark else 0.42)}; }}"
         )
         self._name.setStyleSheet(
@@ -648,7 +663,7 @@ class NMPatientRowPremium(QFrame):
             self._btn_unlink.setIconSize(QSize(13, 13))
             self._btn_unlink.setStyleSheet(
                 "QToolButton#NMRowUnlink { background: transparent; border: none; "
-                "border-radius: 13px; }"
+                f"border-radius: {_NM_PATIENT_UNLINK_RADIUS}px; }}"
                 f"QToolButton#NMRowUnlink:hover {{ "
                 f"background: {_rgba(C('danger', self._modo), 0.18)}; }}"
             )

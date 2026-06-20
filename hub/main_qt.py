@@ -73,6 +73,11 @@ from shared.components import (
     NMBadge,
     NMPageHeader,
 )
+from shared.components.patient import (
+    _NM_PATIENT_RING_COL_W,
+    _NM_PATIENT_TREND_COL_W,
+    _NM_PATIENT_UNLINK_SIZE,
+)
 from shared.visual_qa import visual_qa_enabled, hub_patients
 
 _sb_create = None
@@ -384,15 +389,17 @@ class PacientesView(QWidget):
                 "background: transparent;"
             )
             if is_metric:
-                # Ancho coherente con las columnas de la fila (sparkline 60 / ring),
+                # Ancho coherente con las columnas de la fila (sparkline / ring),
                 # texto centrado sobre su columna.
-                lbl.setFixedWidth(64 if "Ánimo" in text else 56)
+                lbl.setFixedWidth(
+                    _NM_PATIENT_TREND_COL_W if "Ánimo" in text else _NM_PATIENT_RING_COL_W
+                )
                 lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 th_lay.addWidget(lbl)
             else:
                 th_lay.addWidget(lbl, stretch=stretch)
-        # Columna de la X de desvincular (26px en la fila), sin título.
-        th_lay.addSpacing(26)
+        # Columna de la X de desvincular, sin título.
+        th_lay.addSpacing(_NM_PATIENT_UNLINK_SIZE)
         tc_lay.addWidget(table_header)
 
         self._rows_scroll = QScrollArea()

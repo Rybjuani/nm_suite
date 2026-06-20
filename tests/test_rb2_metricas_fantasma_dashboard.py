@@ -122,12 +122,15 @@ def test_patient_row_premium_passes_unknown_pct_to_ring(qtbot):
     class _FakeRing(QWidget):
         instances = []
 
-        def __init__(self, size=56, pct=0.0, modo=None, show_label=True, parent=None):
+        def __init__(
+            self, size=56, pct=0.0, modo=None, show_label=True, color_key="primary", parent=None
+        ):
             super().__init__(parent)
             self.size_arg = size
             self.pct_arg = pct
             self.modo_arg = modo
             self.show_label_arg = show_label
+            self.color_key_arg = color_key
             self.setFixedSize(size, size)
             _FakeRing.instances.append(self)
 

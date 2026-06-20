@@ -351,6 +351,7 @@ class NMModuleRing(QWidget):
         pct: float | None = 0.0,
         modo: str = None,
         show_label: bool = True,
+        color_key: str = "primary",
         parent=None,
     ):
         super().__init__(parent)
@@ -358,6 +359,7 @@ class NMModuleRing(QWidget):
         self._pct = _clamp_optional_pct(pct)
         self._size = size
         self._show_label = bool(show_label)
+        self._color_key = color_key or "primary"
         self.setFixedSize(size, size)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
         _tm().theme_changed.connect(self._apply_theme)
@@ -394,7 +396,7 @@ class NMModuleRing(QWidget):
         if self._pct is not None and self._pct > 0.001:
             p.setPen(
                 QPen(
-                    v3c("primary", self._modo),
+                    v3c(self._color_key, self._modo),
                     pen_w,
                     Qt.PenStyle.SolidLine,
                     Qt.PenCapStyle.FlatCap,
@@ -410,7 +412,7 @@ class NMModuleRing(QWidget):
 
         # Texto centrado (solo si show_label=True; tamaños chicos no lo pintan)
         if self._show_label:
-            p.setPen(v3c("primary", self._modo))
+            p.setPen(v3c(self._color_key, self._modo))
             p.setFont(qfont_mono(12 if s >= 50 else max(9, int(s * 0.20)), bold=True))
             label = "—" if self._pct is None else f"{int(self._pct * 100)}%"
             p.drawText(QRectF(0, 0, s, s), Qt.AlignmentFlag.AlignCenter, label)

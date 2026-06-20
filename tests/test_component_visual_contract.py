@@ -200,11 +200,12 @@ def test_module_ring_matches_mockup_conic_contract(qtbot) -> None:
     assert NMModuleRing.DEFAULT_SIZE == 54
     assert ring.width() == 54
     assert ring.height() == 54
+    assert ring._color_key == "primary"
     assert _ring_stroke(54) == 6
 
     source = __import__("inspect").getsource(NMModuleRing.paintEvent)
     assert 'v3c("ringTrack", self._modo)' in source
-    assert 'v3c("primary", self._modo)' in source
+    assert "v3c(self._color_key, self._modo)" in source
     assert 'v3c("surface", self._modo)' in source
     assert "_paint_v3_arc" not in source
 
@@ -231,3 +232,51 @@ def test_play_button_matches_mockup_ctl_contract(qtbot) -> None:
     assert 'v3c("brandStrong" if self._hover else "primary", self._modo)' in source
     assert 'v3c("brandLine" if self._hover else "line", self._modo)' in source
     assert '"primary_ink" if is_main' in source
+
+
+def test_patient_row_premium_matches_mockup_prow_contract(qtbot) -> None:
+    from shared.components.patient import (
+        NMPatientRowPremium,
+        NMSparkline,
+        _NM_PATIENT_AVATAR_RADIUS,
+        _NM_PATIENT_AVATAR_SIZE,
+        _NM_PATIENT_RING_COL_W,
+        _NM_PATIENT_RING_SIZE,
+        _NM_PATIENT_ROW_GAP,
+        _NM_PATIENT_ROW_HEIGHT,
+        _NM_PATIENT_SPARKLINE_H,
+        _NM_PATIENT_SPARKLINE_W,
+        _NM_PATIENT_TREND_COL_W,
+        _NM_PATIENT_UNLINK_SIZE,
+    )
+
+    spark = NMSparkline([5, 6, 7], modo="light_hybrid")
+    qtbot.addWidget(spark)
+    assert spark.width() == _NM_PATIENT_SPARKLINE_W == 78
+    assert spark.height() == _NM_PATIENT_SPARKLINE_H == 30
+
+    row = NMPatientRowPremium(
+        "Ana Martinez",
+        subtitle="ana@example.com",
+        mood_data=[5, 6, 6, 7, 8, 7, 9],
+        pct=0.75,
+        modo="light_hybrid",
+        on_unlink=lambda: None,
+    )
+    qtbot.addWidget(row)
+
+    assert row.height() == _NM_PATIENT_ROW_HEIGHT == 70
+    assert row.layout().spacing() == _NM_PATIENT_ROW_GAP == 14
+    assert row._avatar.width() == _NM_PATIENT_AVATAR_SIZE == 40
+    assert row._avatar.height() == _NM_PATIENT_AVATAR_SIZE
+    assert f"border-radius: {_NM_PATIENT_AVATAR_RADIUS}px" in row._avatar.styleSheet()
+    assert row._sparkline.width() == 78
+    assert row._sparkline.height() == 30
+    assert row._ring.width() == _NM_PATIENT_RING_SIZE == 46
+    assert row._ring._color_key == "gold"
+    assert row._btn_unlink.width() == _NM_PATIENT_UNLINK_SIZE == 30
+    assert _NM_PATIENT_TREND_COL_W == 90
+    assert _NM_PATIENT_RING_COL_W == 60
+
+    source = __import__("inspect").getsource(NMPatientRowPremium._apply_theme)
+    assert 'v3c("surface2", self._modo).name()' in source
