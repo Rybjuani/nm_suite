@@ -180,8 +180,8 @@ FOCUS_RING_STYLE = """
 """
 
 # WCAG AA ratios (texto sobre canvas, tokens runtime):
-# dark:  tinta #ECECFB sobre canvas #07091A — contraste alto, OK
-# dark:  lavanda #A99CFF sobre canvas #07091A — AA OK para texto grande/CTA
+# dark:  tinta #E8EAF1 sobre canvas #0E121C — contraste alto, OK
+# dark:  mint #56D9A6 sobre canvas #0E121C — AA OK para texto grande/CTA
 # light: tinta #1C2218 sobre canvas #F4EFE5 — contraste alto, OK
 
 MODULE_ICONS = {
