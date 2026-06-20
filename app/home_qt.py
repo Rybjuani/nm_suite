@@ -559,11 +559,12 @@ class _HeroBienestar(QFrame):
     """
 
     def __init__(
-        self, modo: str, get_status_fn, username: str = "", parent=None
+        self, modo: str, get_status_fn, username: str = "", on_module_open=None, parent=None
     ):
         super().__init__(parent)
         self._modo = norm_modo(modo)
         self._get_status = get_status_fn or (lambda mid: "")
+        self._on_module_open = on_module_open or (lambda _mid: None)
         # Nombre capitalizado (Fase 7): el saludo "Hola, juan" salía en minúscula
         # cuando el nombre venía así de la cuenta. Tomamos el primer nombre y
         # capitalizamos para un saludo prolijo ("Hola, Juan"). Guarda anti-split
@@ -628,12 +629,21 @@ class _HeroBienestar(QFrame):
         self._msg = QLabel(
             t(
                 "text.home.empty_message",
-                "Aquí tienes tu espacio personal. Arriba están tus módulos recomendados.",
+                "Aún no registraste tu ánimo hoy.",
             )
         )
         self._msg.setFont(qfont("size_small"))
         empty_lay.addWidget(self._msg)
         empty_lay.addStretch()
+        self._empty_cta = NMButton(
+            t("text.home.empty_cta", "Registrar ánimo"),
+            variant="secondary",
+            size="sm",
+            width=136,
+            modo=self._modo,
+        )
+        self._empty_cta.clicked.connect(lambda: self._on_module_open("animo"))
+        empty_lay.addWidget(self._empty_cta)
         self._stack.addWidget(self._empty_page)
 
         # ── Filled page ──
@@ -679,10 +689,10 @@ class _HeroBienestar(QFrame):
         w, h = float(self.width()), float(self.height())
         rect = QRectF(0, 0, w, h)
 
-        # Handoff §5.2: linear-gradient(135deg, var(--primary-soft), var(--surface))
+        # Mockup Home: linear-gradient(135deg, surface -> surface-2).
         grad = QLinearGradient(0, 0, w, h)
-        c1 = v3c("primary_soft", self._modo)
-        c2 = v3c("surface", self._modo)
+        c1 = v3c("surface", self._modo)
+        c2 = v3c("surface2", self._modo)
         grad.setColorAt(0.0, c1)
         grad.setColorAt(1.0, c2)
 
@@ -719,6 +729,10 @@ class _HeroBienestar(QFrame):
         self._score.setStyleSheet(f"color: {accent.name()}; background: transparent;")
         self._score_unit.setStyleSheet(f"color: {muted.name()}; background: transparent;")
         self._msg.setStyleSheet(f"color: {text2.name()}; background: transparent;")
+        if hasattr(self, "_empty_cta"):
+            self._empty_cta._apply_theme(self._modo)
+        if hasattr(self, "_progress_bar"):
+            self._progress_bar._apply_theme(self._modo)
 
 
     def _parse_score(self, text: str):
@@ -750,16 +764,18 @@ class _HeroBienestar(QFrame):
 
         self._stack.setCurrentIndex(1)
 
-        if score == int(score):
-            self._score.setText(str(int(score)))
-        else:
-            self._score.setText(f"{score:.1f}".replace(".", ","))
+        self._score.setText(f"{score:.1f}")
 
         delta = 0.8 if visual_qa_enabled() else None
         if delta is not None:
-            self._delta_lbl.setText(f"  ↑ {delta:.1f}")
+            self._delta_lbl.setText(f"▲ {delta:.1f} vs semana")
+            delta_c = v3c("mind", self._modo)
+            delta_bg = QColor(delta_c)
+            delta_bg.setAlpha(36)
             self._delta_lbl.setStyleSheet(
-                f"color: {v3c('teal', self._modo).name()}; background: transparent;"
+                f"color: {delta_c.name()}; "
+                f"background: rgba({delta_bg.red()},{delta_bg.green()},{delta_bg.blue()},{delta_bg.alpha()}); "
+                "border-radius: 10px; padding: 2px 8px;"
             )
             self._delta_lbl.show()
         else:
@@ -913,6 +929,7 @@ class HomeView(QWidget):
             self._modo,
             self._get_status,
             username=self._username,
+            on_module_open=self._open_cb,
             parent=content,
         )
         # Hero compacto (score Display M + sin cartel de estado): tope 148 —
