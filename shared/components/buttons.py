@@ -1008,6 +1008,23 @@ class NMTabs(QWidget):
                         "padding: 4px 10px; border-radius: 0px; }}"
                         f"QPushButton:hover {{ color: {text}; }}"
                     )
+            elif self._variant == "filter":
+                # .fchip canónico (mockup línea 301-304):
+                #   padding 8×15px, font-size 12.5px, r-pill, surface-2 bg, line border
+                #   activo: brand bg + brand-ink + transparent border
+                if checked:
+                    b.setStyleSheet(
+                        f"QPushButton {{ background: {primary}; color: {primary_ink}; "
+                        f"border: 1px solid transparent; padding: 8px 15px; "
+                        f"font-size: 12.5px; border-radius: 999px; }}"
+                    )
+                else:
+                    b.setStyleSheet(
+                        f"QPushButton {{ background: {surface_2}; color: {text_muted}; "
+                        f"border: 1px solid {soft_css}; padding: 8px 15px; "
+                        f"font-size: 12.5px; border-radius: 999px; }}"
+                        f"QPushButton:hover {{ color: {text}; border-color: {strong_css}; }}"
+                    )
             elif checked:
                 b.setStyleSheet(
                     f"QPushButton {{ background: {primary}; color: {primary_ink}; "
@@ -1015,7 +1032,7 @@ class NMTabs(QWidget):
                     f"border-radius: {_NM_TAB_RADIUS - 3}px; }}"
                 )
             else:
-                bg = "transparent" if self._variant == "filter" else surface_2
+                bg = surface_2
                 b.setStyleSheet(
                     f"QPushButton {{ background: {bg}; color: {text_muted}; "
                     f"border: 1px solid {soft_css}; padding: 4px 14px; "
