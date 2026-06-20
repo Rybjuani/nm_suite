@@ -964,13 +964,28 @@ class NMStepper(QWidget):
 
 
 class NMHeatBar(QWidget):
-    """Barra de intensidad con gradiente dinámico frío→tibio→caliente.
+    """Barra de intensidad con gradiente arcoíris canónico del mockup.
+
+    Implementa el slider del mockup (neuromood-mockup.html línea 200):
+      track 8px height, r-pill, linear-gradient(90deg,
+        #7b8a99, #6b8fa8, #5faa86, #86b15f, #c99a3d, #b24e3d)
+      thumb 22x22 surface bg + 3px brand border + shadow-2
 
     Arrastrar o hacer click mueve el indicador.
     Emite value_changed(int) con valor 0-100.
     """
 
     value_changed = pyqtSignal(int)
+
+    # 6-stop arcoíris canónico (mismo contrato que _MoodTrackBar en mood.py).
+    _RAINBOW_STOPS = (
+        ("#7b8a99", 0.00),
+        ("#6b8fa8", 0.20),
+        ("#5faa86", 0.40),
+        ("#86b15f", 0.60),
+        ("#c99a3d", 0.80),
+        ("#b24e3d", 1.00),
+    )
 
     def __init__(self, value: int = 50, modo: str = None, parent=None):
         super().__init__(parent)
@@ -991,18 +1006,15 @@ class NMHeatBar(QWidget):
         self._value = max(0, min(100, v))
         self.update()
 
-    def _ramp(self) -> tuple[str, str, str]:
-        """Rampa frío→tibio→caliente desde TOKENS por modo (runtime: los hex
-        web genéricos #3b82f6/#8b5cf6/#ef4444 estaban fuera de la paleta)."""
-        cold = C("tcc_heat_cold", self._modo)
-        hot = C("tcc_heat_hot", self._modo)
-        return cold, blend_color(cold, hot, 0.5), hot
-
     def _color_at(self, t: float) -> QColor:
-        cold, mid, hot = self._ramp()
-        if t <= 0.5:
-            return QColor(interpolate_color(cold, mid, t * 2))
-        return QColor(interpolate_color(mid, hot, (t - 0.5) * 2))
+        """Color del arcoíris canónico en la posición t (0..1)."""
+        t = max(0.0, min(1.0, t))
+        for i in range(len(self._RAINBOW_STOPS) - 1):
+            (c0, p0), (c1, p1) = self._RAINBOW_STOPS[i], self._RAINBOW_STOPS[i + 1]
+            if p0 <= t <= p1:
+                local_t = (t - p0) / (p1 - p0) if p1 > p0 else 0.0
+                return QColor(interpolate_color(c0, c1, local_t))
+        return QColor(self._RAINBOW_STOPS[-1][0])
 
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -1040,30 +1052,40 @@ class NMHeatBar(QWidget):
 
         w, h = self.width(), self.height()
         margin = 16
-        gh = 8
+        gh = 8  # track height canónica (mockup línea 199)
         gy = (h - gh) // 2
         gw = w - margin * 2
 
+        # Track 8px con gradiente arcoíris 6-stop canónico.
         groove_rect = QRectF(margin, gy, gw, gh)
-        cold, mid, hot = self._ramp()
         grad = QLinearGradient(margin, 0, margin + gw, 0)
-        grad.setColorAt(0.0, QColor(cold))
-        grad.setColorAt(0.5, QColor(mid))
-        grad.setColorAt(1.0, QColor(hot))
+        for hex_c, pos in self._RAINBOW_STOPS:
+            grad.setColorAt(pos, QColor(hex_c))
         path = QPainterPath()
         path.addRoundedRect(groove_rect, gh / 2, gh / 2)
         p.fillPath(path, grad)
 
+        # Thumb 22x22: surface bg + 3px brand border + shadow-2.
         t = self._value / 100.0
         hx = margin + t * gw
-        hc = self._color_at(t)
-        p.setPen(QPen(QColor(C("text_on_accent", self._modo)), 2))
-        p.setBrush(QBrush(hc))
-        p.drawEllipse(QPointF(hx, gy + gh / 2), 10, 10)
+        cy = gy + gh / 2
+        thumb_r = 11  # diameter 22 / 2
+        brand = QColor(C("primary", self._modo))
+        surface = QColor(C("surface", self._modo))
+
+        # Sombra (shadow-2 approximation: 0 4px 12px rgba(0,0,0,.18))
+        shadow = QColor(0, 0, 0, 46)
+        p.setBrush(QBrush(shadow))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawEllipse(QPointF(hx, cy + 2), thumb_r + 2, thumb_r + 2)
+
+        # Borde brand 3px
+        p.setBrush(QBrush(surface))
+        p.setPen(QPen(brand, 3))
+        p.drawEllipse(QPointF(hx, cy), thumb_r, thumb_r)
 
         # El valor vive en el QLabel "Intensidad: N/10" (accesible al lector de
-        # pantalla y en la misma escala /10). El antiguo caption "N%" pintado acá
-        # era texto no accesible y en otra escala → contradicción de la auditoría.
+        # pantalla y en la misma escala /10).
 
         p.restore()
         p.end()
