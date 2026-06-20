@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from PyQt6.QtCore import QEasingCurve, QPointF, QPropertyAnimation, QRectF, Qt, pyqtProperty
 from PyQt6.QtGui import QBrush, QColor, QPaintEvent, QPainter, QPen
-from PyQt6.QtWidgets import QAbstractButton, QComboBox, QGraphicsDropShadowEffect, QPushButton
+from PyQt6.QtWidgets import QAbstractButton, QComboBox, QPushButton
 
 from shared.theme_manager import ThemeManager
 from shared.theme_qt import focus_ring_stylesheet, norm_modo, qfont, stylesheet_combobox, v3_shadow, v3c
@@ -138,7 +138,7 @@ class NMPlayButton(QPushButton):
         modo:      override de tema.
     """
 
-    _SIZE_MAP = {"sm": 40, "md": 48, "lg": 56}
+    _SIZE_MAP = {"sm": 40, "md": 46, "lg": 58}
 
     def __init__(self, icon_name: str = "play", size: str = "md", modo: str = None, parent=None):
         super().__init__(parent)
@@ -153,8 +153,7 @@ class NMPlayButton(QPushButton):
         self.setFlat(True)
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         self._disabled = False
-        self._card_shadow = None
-        self._apply_shadow()
+        self._apply_theme(self._modo)
         _tm().theme_changed.connect(self._apply_theme)
 
     # ── API ──────────────────────────────────────────────────────────────────
@@ -195,32 +194,40 @@ class NMPlayButton(QPushButton):
         is_dark = "dark" in self._modo
         d = self.width()
         rect = QRectF(1, 1, d - 2, d - 2)
+        is_main = self._size_key == "lg"
 
         # Background surface (elevated en hover)
-        surf_key = (
-            "elevatedSolid"
-            if (self._hover and is_dark)
-            else "elevated"
-            if self._hover
-            else "surfaceSolid"
-            if is_dark
-            else "surface"
-        )
-        bg = v3c(surf_key, self._modo)
+        if is_main:
+            bg = v3c("brandStrong" if self._hover else "primary", self._modo)
+        else:
+            surf_key = (
+                "elevatedSolid"
+                if (self._hover and is_dark)
+                else "elevated"
+                if self._hover
+                else "surfaceSolid"
+                if is_dark
+                else "surface"
+            )
+            bg = v3c(surf_key, self._modo)
         p.setBrush(QBrush(bg))
         p.setPen(Qt.PenStyle.NoPen)
         p.drawEllipse(rect)
 
         # Border sutil
-        border_key = "borderStrong" if self._hover else "borderSoft"
-        p.setPen(QPen(v3c(border_key, self._modo), 1))
+        if is_main:
+            border = QColor(0, 0, 0, 0)
+        else:
+            border = v3c("brandLine" if self._hover else "line", self._modo)
+        p.setPen(QPen(border, 1))
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawEllipse(QRectF(0.5, 0.5, d - 1, d - 1))
 
         # Icono SVG centrado
         if _nm_svg_pixmap is not None and _has_v3_icon(self._icon_name):
-            icon_size = max(14, int(d * 0.45))
-            color = v3c("text", self._modo).name()
+            icon_size = 22 if is_main else 20
+            color_key = "primary_ink" if is_main else ("text" if self._hover else "text2")
+            color = v3c(color_key, self._modo).name()
             pix = _nm_svg_pixmap(self._icon_name, color, icon_size)
             if pix is not None and not pix.isNull():
                 px = (d - icon_size) // 2
@@ -230,21 +237,12 @@ class NMPlayButton(QPushButton):
     # ── theme ────────────────────────────────────────────────────────────────
 
     def _apply_shadow(self):
-        eff = v3_shadow("sm", self._modo, parent=self)
+        eff = v3_shadow("shadow_1", self._modo, parent=self)
         self.setGraphicsEffect(eff)
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         self.setStyleSheet(focus_ring_stylesheet(self._modo))
         if not self._disabled and self.isEnabled():
-            if self._card_shadow is None:
-                self._card_shadow = QGraphicsDropShadowEffect(self)
-            is_dark = "dark" in self._modo
-            self._card_shadow.setBlurRadius(30 if is_dark else 12)
-            self._card_shadow.setOffset(0, 10 if is_dark else 4)
-            sc = v3c("teal", self._modo) if is_dark else QColor(15, 23, 42, 13)
-            if is_dark:
-                sc.setAlpha(115)
-            self._card_shadow.setColor(sc)
-            self.setGraphicsEffect(self._card_shadow)
+            self._apply_shadow()
         self.update()

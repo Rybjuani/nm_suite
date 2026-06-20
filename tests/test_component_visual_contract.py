@@ -207,3 +207,27 @@ def test_module_ring_matches_mockup_conic_contract(qtbot) -> None:
     assert 'v3c("primary", self._modo)' in source
     assert 'v3c("surface", self._modo)' in source
     assert "_paint_v3_arc" not in source
+
+
+def test_play_button_matches_mockup_ctl_contract(qtbot) -> None:
+    from shared.components.inputs import NMPlayButton
+
+    neutral = NMPlayButton(icon_name="refresh", size="md", modo="light_hybrid")
+    main = NMPlayButton(icon_name="play", size="lg", modo="light_hybrid")
+    qtbot.addWidget(neutral)
+    qtbot.addWidget(main)
+
+    assert NMPlayButton._SIZE_MAP["md"] == 46
+    assert NMPlayButton._SIZE_MAP["lg"] == 58
+    assert neutral.width() == 46
+    assert neutral.height() == 46
+    assert main.width() == 58
+    assert main.height() == 58
+    assert neutral.graphicsEffect() is not None
+    assert main.graphicsEffect() is not None
+
+    source = __import__("inspect").getsource(NMPlayButton.paintEvent)
+    assert 'self._size_key == "lg"' in source
+    assert 'v3c("brandStrong" if self._hover else "primary", self._modo)' in source
+    assert 'v3c("brandLine" if self._hover else "line", self._modo)' in source
+    assert '"primary_ink" if is_main' in source
