@@ -189,3 +189,21 @@ def test_dialog_matches_mockup_modal_contract(qtbot) -> None:
 
     source = __import__("inspect").getsource(NMDialog.paintEvent)
     assert "QColor(*_NM_MODAL_SCRIM_RGBA)" in source
+
+
+def test_module_ring_matches_mockup_conic_contract(qtbot) -> None:
+    from shared.components.rings import NMModuleRing, _ring_stroke
+
+    ring = NMModuleRing(modo="light_hybrid")
+    qtbot.addWidget(ring)
+
+    assert NMModuleRing.DEFAULT_SIZE == 54
+    assert ring.width() == 54
+    assert ring.height() == 54
+    assert _ring_stroke(54) == 6
+
+    source = __import__("inspect").getsource(NMModuleRing.paintEvent)
+    assert 'v3c("ringTrack", self._modo)' in source
+    assert 'v3c("primary", self._modo)' in source
+    assert 'v3c("surface", self._modo)' in source
+    assert "_paint_v3_arc" not in source

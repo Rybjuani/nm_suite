@@ -54,14 +54,11 @@ def _paint_module_ring(qtbot, pct):
     ring = NMModuleRing(size=56, pct=pct)
     qtbot.addWidget(ring)
 
-    with (
-        mock.patch("shared.components.rings.QPainter", _FakePainter),
-        mock.patch("shared.components.rings._paint_v3_arc") as arc_mock,
-    ):
+    with mock.patch("shared.components.rings.QPainter", _FakePainter):
         ring.paintEvent(None)
 
     assert _FakePainter.instance is not None
-    return ring, _FakePainter.instance, arc_mock
+    return ring, _FakePainter.instance
 
 
 def _painted_labels(painter: _FakePainter) -> list[str]:
@@ -99,23 +96,23 @@ def test_module_ring_clamps_above_one_pct(qtbot):
 
 
 def test_module_ring_paint_unknown_draws_dash_label(qtbot):
-    _ring, painter, _arc_mock = _paint_module_ring(qtbot, None)
+    _ring, painter = _paint_module_ring(qtbot, None)
 
     assert _painted_labels(painter) == ["—"]
 
 
 def test_module_ring_paint_unknown_skips_progress_arc(qtbot):
-    _ring, _painter, arc_mock = _paint_module_ring(qtbot, None)
+    _ring, painter = _paint_module_ring(qtbot, None)
 
-    arc_mock.assert_not_called()
+    assert painter.draw_arcs == []
 
 
 def test_module_ring_paint_numeric_draws_percent_and_arc(qtbot):
-    _ring, painter, arc_mock = _paint_module_ring(qtbot, 0.75)
+    _ring, painter = _paint_module_ring(qtbot, 0.75)
 
     assert _painted_labels(painter) == ["75%"]
-    arc_mock.assert_called_once()
-    assert arc_mock.call_args.args[3] == -270.0
+    assert len(painter.draw_arcs) == 1
+    assert painter.draw_arcs[0][0][2] == int(-270.0 * 16)
 
 
 def test_patient_row_premium_passes_unknown_pct_to_ring(qtbot):

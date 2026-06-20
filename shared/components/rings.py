@@ -24,13 +24,14 @@ def _ring_stroke(size: int) -> int:
     """Stroke proporcional al tamaño (README v3).
 
     ≤ 40       → 3-4
-    60-100     → 5-8
+    41-60      → 6      (mockup `.ring` 54×54 / tk 6)
+    61-100     → 6-8
     ≥ 100      → 10-14   (340 → 14)
     """
     if size <= 40:
         return max(3, round(size * 0.085))
     if size <= 60:
-        return 5
+        return 6
     if size <= 80:
         return 6
     if size <= 100:
@@ -335,18 +336,18 @@ class NMCycleRing(QWidget):
 
 
 class NMModuleRing(QWidget):
-    """Arco circular de progreso para cards de módulo del Hub.
-
-    Color semántico: ≥80%→teal, 50-79%→accent, <50%→violet (via ring_color()).
+    """Ring de progreso de módulo, equivalente al CSS `.ring` del mockup.
 
     ``show_label``: si True (default), pinta "NN%" centrado. En tamaños pequeños
     (<32px) el label es ilegible — usar show_label=False y delegar el % a una
     chip/badge externa.
     """
 
+    DEFAULT_SIZE = 54
+
     def __init__(
         self,
-        size: int = 56,
+        size: int = DEFAULT_SIZE,
         pct: float | None = 0.0,
         modo: str = None,
         show_label: bool = True,
@@ -377,26 +378,40 @@ class NMModuleRing(QWidget):
         s = self._size
         cx, cy = s / 2, s / 2
         pen_w = _ring_stroke(s)
-        r_arc = s / 2 - pen_w - 1
+        r_arc = s / 2 - pen_w / 2 - 0.5
         arc_rect = QRectF(cx - r_arc, cy - r_arc, r_arc * 2, r_arc * 2)
 
         # (F2 runtime: el glow radial teal detrás del arco fue eliminado —
         # el anillo se sostiene solo con track + arco firma, sin halo.)
 
-        # Track sutil (borderSoft v3 — TODOS los rings usan el mismo lenguaje)
-        track_c = v3c("borderSoft", self._modo)
+        # Track exacto del mockup: var(--ring-track).
+        track_c = v3c("ringTrack", self._modo)
         p.setPen(QPen(track_c, pen_w, Qt.PenStyle.SolidLine, Qt.PenCapStyle.FlatCap))
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawEllipse(QPointF(cx, cy), r_arc, r_arc)
 
-        # Arco progreso con gradient firma v3 (uniforme entre rings)
+        # Arco progreso con brand sólido, equivalente a conic-gradient(var(--brand)).
         if self._pct is not None and self._pct > 0.001:
-            _paint_v3_arc(p, arc_rect, 90.0, -360.0 * self._pct, pen_w, self._modo)
+            p.setPen(
+                QPen(
+                    v3c("primary", self._modo),
+                    pen_w,
+                    Qt.PenStyle.SolidLine,
+                    Qt.PenCapStyle.FlatCap,
+                )
+            )
+            p.drawArc(arc_rect, int(90.0 * 16), int(-360.0 * self._pct * 16))
+
+        # Centro superficie, como `.ring::before`.
+        inner_r = max(0.0, s / 2 - pen_w)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(v3c("surface", self._modo)))
+        p.drawEllipse(QPointF(cx, cy), inner_r, inner_r)
 
         # Texto centrado (solo si show_label=True; tamaños chicos no lo pintan)
         if self._show_label:
-            p.setPen(v3c("text", self._modo))
-            p.setFont(qfont_mono(max(9, int(s * 0.20)), bold=False))
+            p.setPen(v3c("primary", self._modo))
+            p.setFont(qfont_mono(12 if s >= 50 else max(9, int(s * 0.20)), bold=True))
             label = "—" if self._pct is None else f"{int(self._pct * 100)}%"
             p.drawText(QRectF(0, 0, s, s), Qt.AlignmentFlag.AlignCenter, label)
 
