@@ -391,6 +391,13 @@ _add("text.module.avisos.filter_all", "Recordatorios", "Filtro todos", "Todos", 
 _add("text.module.avisos.filter_active", "Recordatorios", "Filtro activos", "Activos", 24)
 _add("text.module.avisos.filter_today", "Recordatorios", "Filtro hoy", "Hoy", 20)
 _add(
+    "text.module.avisos.search_placeholder",
+    "Recordatorios",
+    "Placeholder búsqueda",
+    "Buscar recordatorio…",
+    56,
+)
+_add(
     "text.module.avisos.empty_title",
     "Recordatorios",
     "Título sin recordatorios",

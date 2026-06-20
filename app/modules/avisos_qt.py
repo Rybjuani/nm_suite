@@ -4,8 +4,7 @@ app/modules/avisos_qt.py — Recordatorios v3 (PyQt6)
 Estructura según design_handoff_neuromood_v3 (Suite > Recordatorios):
 
   Header        eyebrow
-  Search card   NMCard con NMInput búsqueda + 3 step pills filtro
-                ("Todos / Activos / Hoy")
+  Search row    3 step pills filtro ("Todos / Activos / Hoy") + búsqueda
   Grid 3-col    _ReminderCardV3 (NMCard) con NMIcon grande coloreado por
                 categoría inferida + chip cat + nombre + hora chip mono +
                 frecuencia + status badge + NMButton "Completar"
@@ -47,6 +46,7 @@ try:
         NMButtonOutline,
         NMCard,
         NMInput,
+        NMSearchInput,
         NMToggle,
         NMToast,
         NMProgressBar,
@@ -85,6 +85,7 @@ except ImportError:
         NMButton,
         NMCard,
         NMInput,
+        NMSearchInput,
         NMToast,
         NMProgressBar,
         NMEmptyState,
@@ -496,10 +497,9 @@ class ModuloAvisos(NMModule):
         header_row.addStretch()
         lay.addLayout(header_row)
 
-        # 2. P2.H: solo filter pills (la card de búsqueda se eliminó por
-        # limpieza: con filtros todos/activos/hoy y lista corta no aporta).
+        # 2. Filtros + búsqueda, como el mockup de Recordatorios.
         # Polish visual: pills agrupadas en un track segmentado (surface2 +
-        # radio pill), igual al frame de Avisos del prototipo.
+        # radio pill), con search compacto a la derecha.
         self._filter_segment = QFrame()
         self._filter_segment.setObjectName("FilterSegment")
         self._filter_segment.setStyleSheet(self._segment_qss(self._modo))
@@ -521,7 +521,15 @@ class ModuloAvisos(NMModule):
         filter_row = QHBoxLayout()
         filter_row.setSpacing(V3_SP["sm"])
         filter_row.addWidget(self._filter_segment)
-        filter_row.addStretch()
+        self._search_input = NMSearchInput(
+            t("text.module.avisos.search_placeholder", "Buscar recordatorio…"),
+            modo=self._modo,
+        )
+        self._search_input.setMinimumWidth(220)
+        self._search_input.setMaximumWidth(340)
+        self._search_input.text_changed.connect(self._on_search)
+        self._search_edit = self._search_input._edit
+        filter_row.addWidget(self._search_input, stretch=1)
         lay.addLayout(filter_row)
 
         # 3. Vertical list with scroll
@@ -577,6 +585,8 @@ class ModuloAvisos(NMModule):
             pill._refresh()
         if hasattr(self, "_filter_segment"):
             self._filter_segment.setStyleSheet(self._segment_qss(self._modo))
+        if hasattr(self, "_search_input"):
+            self._search_input._apply_theme(self._modo)
         self._load_reminders()
         self.update()
 
