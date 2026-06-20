@@ -385,3 +385,58 @@ def test_patient_row_premium_matches_mockup_prow_contract(qtbot) -> None:
     assert 'v3c("moodGradMid", self._modo)' in area_source
     assert 'v3c("moodGradTo", self._modo)' in area_source
     assert "draw_dots = n <= _NM_AREA_SPARK_DOT_MAX_POINTS" in area_source
+
+
+def test_dbt_cards_match_mockup_family_bar_contract(qtbot) -> None:
+    from app.modules.dbt_qt import (
+        _DBT_FAMILY_COLOR_KEYS,
+        _DBT_NEED_BORDER_W,
+        _DBT_SKILL_BAR_H,
+        _DBT_SKILL_BAR_W,
+        _NeedCard,
+        _SkillCard,
+        _dbt_family_soft_css,
+    )
+
+    need = _NeedCard(
+        "Volver al presente",
+        "Pausar, enfocar y notar el aqui y ahora.",
+        "mindfulness",
+        "mind",
+        modo="light_hybrid",
+    )
+    qtbot.addWidget(need)
+    assert need.layout().contentsMargins().left() == 20
+    assert need._family_color_key == "mind"
+    assert _DBT_NEED_BORDER_W == 5
+
+    skill = _SkillCard(
+        {
+            "family": "distress_tolerance",
+            "title": "STOP",
+            "summary": "Pausa guiada para atravesar un momento intenso.",
+            "duration_min": 2,
+        },
+        modo="light_hybrid",
+    )
+    qtbot.addWidget(skill)
+    assert skill.layout().contentsMargins().left() == 30
+    assert skill._family_color_key == "toler"
+    assert _DBT_SKILL_BAR_W == 7
+    assert _DBT_SKILL_BAR_H == 64
+    assert _DBT_FAMILY_COLOR_KEYS == {
+        "mindfulness": "mind",
+        "distress_tolerance": "toler",
+        "emotion_regulation": "regul",
+        "interpersonal_effectiveness": "efect",
+    }
+    assert _dbt_family_soft_css("emotion_regulation", "light_hybrid").startswith("rgba(")
+
+    need_source = __import__("inspect").getsource(_NeedCard.paintEvent)
+    assert "_DBT_NEED_BORDER_W" in need_source
+    assert "v3c(self._family_color_key, self._modo)" in need_source
+
+    skill_source = __import__("inspect").getsource(_SkillCard.paintEvent)
+    assert "_DBT_SKILL_BAR_W" in skill_source
+    assert "_DBT_SKILL_BAR_H" in skill_source
+    assert "v3c(self._family_color_key, self._modo)" in skill_source

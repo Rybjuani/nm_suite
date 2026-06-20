@@ -79,6 +79,43 @@ except ImportError:
 
 _log = logging.getLogger(__name__)
 
+_DBT_FAMILY_TITLES = {
+    "mindfulness": "Mindfulness",
+    "distress_tolerance": "Tolerancia",
+    "emotion_regulation": "Regulación",
+    "interpersonal_effectiveness": "Efectividad",
+}
+_DBT_FAMILY_LONG_TITLES = {
+    "mindfulness": "Mindfulness",
+    "distress_tolerance": "Tolerancia al malestar",
+    "emotion_regulation": "Regulación emocional",
+    "interpersonal_effectiveness": "Efectividad interpersonal",
+}
+_DBT_FAMILY_COLOR_KEYS = {
+    "mindfulness": "mind",
+    "distress_tolerance": "toler",
+    "emotion_regulation": "regul",
+    "interpersonal_effectiveness": "efect",
+}
+_DBT_SKILL_BAR_W = 7
+_DBT_SKILL_BAR_H = 64
+_DBT_SKILL_BAR_X = 14
+_DBT_SKILL_BAR_Y = 16
+_DBT_NEED_BORDER_W = 5
+_DBT_NEED_BORDER_Y = 14
+_DBT_NEED_BORDER_RADIUS = 2.5
+
+
+def _dbt_family_color_key(family: str) -> str:
+    return _DBT_FAMILY_COLOR_KEYS.get(family, "text")
+
+
+def _dbt_family_soft_css(family: str, modo: str, alpha: float = 0.14) -> str:
+    c = QColor(v3c(_dbt_family_color_key(family), modo))
+    c.setAlphaF(max(0.0, min(1.0, alpha)))
+    return qcolor_to_rgba_css(c)
+
+
 # Catálogo MVP: 8 habilidades divididas en 4 familias
 DBT_SKILLS = {
     "mind_observe": {
@@ -280,18 +317,19 @@ class _NeedCard(NMCard):
     """Tarjeta de necesidad cotidiana en la vista Ahora."""
     
     def __init__(self, title: str, subtitle: str, family: str, icon_name: str, modo: str = None, parent=None):
-        super().__init__(parent=parent, modo=modo, clickable=True, glow=True)
+        super().__init__(parent=parent, modo=modo, clickable=True, glow=False)
         self._family = family
         self._icon_name = icon_name
         self._title = title
         self._subtitle = subtitle
+        self._family_color_key = _dbt_family_color_key(family)
         self.setProperty("dbt_family", family)
         self.setMinimumHeight(144)
         self.setMaximumHeight(162)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(16, 14, 16, 14)
+        lay.setContentsMargins(20, 14, 16, 14)
         lay.setSpacing(10)
         lay.setAlignment(Qt.AlignmentFlag.AlignTop)
         
@@ -302,12 +340,7 @@ class _NeedCard(NMCard):
         header.addWidget(self.icon_label, alignment=Qt.AlignmentFlag.AlignTop)
         header.addStretch()
         
-        family_title = {
-            "mindfulness": "Mindfulness",
-            "distress_tolerance": "Tolerancia",
-            "emotion_regulation": "Regulación",
-            "interpersonal_effectiveness": "Efectividad"
-        }.get(family, "")
+        family_title = _DBT_FAMILY_TITLES.get(family, "")
         
         self.chip_label = QLabel(family_title)
         self.chip_label.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
@@ -335,6 +368,20 @@ class _NeedCard(NMCard):
         lay.addStretch(1)
         
         self._apply_theme(self._modo)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(v3c(self._family_color_key, self._modo))
+        h = max(24, self.height() - _DBT_NEED_BORDER_Y * 2)
+        p.drawRoundedRect(
+            QRectF(0, _DBT_NEED_BORDER_Y, _DBT_NEED_BORDER_W, h),
+            _DBT_NEED_BORDER_RADIUS,
+            _DBT_NEED_BORDER_RADIUS,
+        )
+        p.end()
         
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
@@ -342,28 +389,17 @@ class _NeedCard(NMCard):
         
         from shared.icons_svg import nm_svg_pixmap
         
-        family_color_key = {
-            "mindfulness": "teal",
-            "distress_tolerance": "danger",
-            "emotion_regulation": "amber",
-            "interpersonal_effectiveness": "primary"
-        }.get(self._family, "text")
+        family_color_key = _dbt_family_color_key(self._family)
+        self._family_color_key = family_color_key
         
         icon_color = v3c(family_color_key, self._modo).name()
         self.icon_label.setPixmap(nm_svg_pixmap(self._icon_name, color=icon_color, size=24))
         
-        soft_color_key = {
-            "primary": "primary_soft",
-            "teal": "tealSoft",
-            "danger": "dangerSoft",
-            "amber": "amberSoft"
-        }.get(family_color_key, "borderSoft")
-        
-        chip_bg = qcolor_to_rgba_css(v3c(soft_color_key, self._modo))
+        chip_bg = _dbt_family_soft_css(self._family, self._modo)
         self.chip_label.setStyleSheet(
             f"color: {icon_color}; "
             f"background: {chip_bg}; "
-            "border-radius: 7px; border: 1px solid rgba(255,255,255,0.06);"
+            f"border-radius: 7px; border: 1px solid {_dbt_family_soft_css(self._family, self._modo, 0.28)};"
         )
         self.title_label.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
         self.subtitle_label.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()}; background: transparent;")
@@ -373,19 +409,16 @@ class _SkillCard(NMCard):
     """Tarjeta de presentación de habilidad en la Biblioteca."""
     
     def __init__(self, skill: dict, modo: str = None, parent=None):
-        super().__init__(parent=parent, modo=modo, clickable=True, glow=True)
+        super().__init__(parent=parent, modo=modo, clickable=True, glow=False)
         self._skill = skill
+        self._family_color_key = _dbt_family_color_key(skill["family"])
+        self.setProperty("dbt_family", skill["family"])
         
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(16, 16, 16, 16)
+        lay.setContentsMargins(30, 16, 16, 16)
         lay.setSpacing(8)
         
-        family_title = {
-            "mindfulness": "Mindfulness",
-            "distress_tolerance": "Tolerancia al malestar",
-            "emotion_regulation": "Regulación emocional",
-            "interpersonal_effectiveness": "Efectividad interpersonal"
-        }.get(skill["family"], "")
+        family_title = _DBT_FAMILY_LONG_TITLES.get(skill["family"], "")
         
         self.family_lbl = QLabel(family_title.upper())
         self.family_lbl.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
@@ -419,37 +452,40 @@ class _SkillCard(NMCard):
         lay.addLayout(info_lay)
         
         self._apply_theme(self._modo)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(v3c(self._family_color_key, self._modo))
+        bar_h = min(_DBT_SKILL_BAR_H, max(24, self.height() - _DBT_SKILL_BAR_Y * 2))
+        p.drawRoundedRect(
+            QRectF(_DBT_SKILL_BAR_X, _DBT_SKILL_BAR_Y, _DBT_SKILL_BAR_W, bar_h),
+            _DBT_SKILL_BAR_W / 2,
+            _DBT_SKILL_BAR_W / 2,
+        )
+        p.end()
         
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         super()._apply_theme(self._modo)
         
-        family_color_key = {
-            "mindfulness": "teal",
-            "distress_tolerance": "danger",
-            "emotion_regulation": "amber",
-            "interpersonal_effectiveness": "primary"
-        }.get(self._skill["family"], "text")
+        family_color_key = _dbt_family_color_key(self._skill["family"])
+        self._family_color_key = family_color_key
         
         color_val = v3c(family_color_key, self._modo).name()
-        soft_color_key = {
-            "primary": "primary_soft",
-            "teal": "tealSoft",
-            "danger": "dangerSoft",
-            "amber": "amberSoft"
-        }.get(family_color_key, "borderSoft")
-        
-        chip_bg = v3c(soft_color_key, self._modo).name()
+        chip_bg = _dbt_family_soft_css(self._skill["family"], self._modo)
         
         self.family_lbl.setStyleSheet(
             f"color: {color_val}; "
             f"background: {chip_bg}; "
-            "border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);"
+            f"border-radius: 4px; border: 1px solid {_dbt_family_soft_css(self._skill['family'], self._modo, 0.28)};"
         )
         self.title_lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
         self.summary_lbl.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()};")
         self.dur_lbl.setStyleSheet(f"color: {v3c('ink_secondary', self._modo).name()};")
-        self.guide_lbl.setStyleSheet(f"color: {v3c('teal', self._modo).name()};")
+        self.guide_lbl.setStyleSheet(f"color: {v3c(family_color_key, self._modo).name()};")
 
 
 class _StepProgressIndicator(QWidget):
