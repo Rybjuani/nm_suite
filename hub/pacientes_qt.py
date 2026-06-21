@@ -11,7 +11,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
-    QDialog,
     QScrollArea,
     QFrame,
     QSizePolicy,
@@ -24,11 +23,11 @@ try:
         NMAvatar,
         NMBadge,
         NMButton,
-        NMDialogScaffold,
         NMElidedLabel,
         NMToast,
         ThemeManager,
     )
+    from shared.components.dialogs import NMDialog
     from shared.theme_qt import (
         norm_modo,
         qfont,
@@ -38,7 +37,6 @@ try:
     )
     from shared.qt_thread import run_on_gui
     from shared.theme import TYPOGRAPHY
-    from shared.adaptive_layout_qt import window_edge_radius
 except ImportError:
     import os
     import sys
@@ -50,11 +48,11 @@ except ImportError:
         NMAvatar,
         NMBadge,
         NMButton,
-        NMDialogScaffold,
         NMElidedLabel,
         NMToast,
         ThemeManager,
     )
+    from shared.components.dialogs import NMDialog
     from shared.theme_qt import (
         norm_modo,
         qfont,
@@ -64,7 +62,6 @@ except ImportError:
     )
     from shared.qt_thread import run_on_gui
     from shared.theme import TYPOGRAPHY
-    from shared.adaptive_layout_qt import window_edge_radius
 
 _log = logging.getLogger("NeuroMoodHub.Pacientes")
 
@@ -364,40 +361,23 @@ class DetallePacienteView(QWidget):
         self._btn_resumen_ia.setEnabled(True)
         self._btn_resumen_ia.setText("Resumen IA")
 
-        dialog = QDialog(self.window())
-        dialog.setWindowTitle("Resumen IA")
-        dialog.setModal(True)
-        is_dark = "dark" in self._modo
-        card_bg = v3c("surfaceSolid" if is_dark else "surface", self._modo).name()
-        _bc = v3c("borderStrong" if is_dark else "border", self._modo)
-        try:
-            radius = window_edge_radius()
-        except Exception:
-            radius = 12
-        dialog.setStyleSheet(
-            f"QDialog {{ background: {card_bg}; border: 1px solid "
-            f"rgba({_bc.red()},{_bc.green()},{_bc.blue()},{_bc.alpha()}); "
-            f"border-radius: {radius}px; }}"
-        )
-        dialog.setFixedWidth(480)
-        dialog.setMinimumHeight(320)
-
-        root = QVBoxLayout(dialog)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(0)
-        scaffold = NMDialogScaffold(
-            title="Resumen IA",
-            eyebrow=self._nombre,
-            modo=self._modo,
-            parent=dialog,
-        )
-        root.addWidget(scaffold)
+        host = self.window() or self
+        dialog = NMDialog("Resumen IA", modo=self._modo, width=480, parent=host)
+        self._resumen_dialog = dialog
+        dialog.closed.connect(lambda: setattr(self, "_resumen_dialog", None))
 
         body = QWidget()
         body.setStyleSheet("background: transparent;")
         bl = QVBoxLayout(body)
-        bl.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], V3_SP["lg"])
-        bl.setSpacing(V3_SP["sm"])
+        bl.setContentsMargins(0, 0, 0, 0)
+        bl.setSpacing(V3_SP["md"])
+
+        patient_lbl = QLabel(self._nombre)
+        patient_lbl.setFont(qfont("size_caption", weight=600))
+        patient_lbl.setStyleSheet(
+            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
+        )
+        bl.addWidget(patient_lbl)
 
         tb = QTextBrowser()
         tb.setPlainText(text)
@@ -407,18 +387,13 @@ class DetallePacienteView(QWidget):
             f"QTextBrowser {{ background: transparent; color: {v3c('text', self._modo).name()}; "
             f"border: none; font-size: 13px; }}"
         )
+        tb.setMinimumHeight(220)
         tb.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         bl.addWidget(tb, 1)
 
-        close_row = QHBoxLayout()
-        close_row.addStretch()
-        btn_close = NMButton("Cerrar", modo=self._modo, size="sm", width=90)
-        btn_close.clicked.connect(dialog.accept)
-        close_row.addWidget(btn_close)
-        bl.addLayout(close_row)
-
-        scaffold.set_body(body)
-        dialog.exec()
+        dialog.set_body_widget(body)
+        dialog.add_footer_button("Cerrar", role="ghost", callback=dialog.close)
+        dialog.show_centered()
 
     def _on_resumen_ia_error(self, msg: str):
         self._btn_resumen_ia.setEnabled(True)

@@ -162,3 +162,51 @@ def test_hub_config_textos_has_search_and_filter(qtbot) -> None:
     assert hasattr(view, "_search")
     assert hasattr(view, "_section_filter")
     assert view._section_filter.count() > 1
+
+
+# ── E4-H-MODALES: Resumen IA / PDF ────────────────────────────────────────
+
+
+def test_hub_resumen_ia_uses_nm_dialog_overlay(qtbot, monkeypatch) -> None:
+    """E4-H-MODALES: Resumen IA usa el modal canonico con scrim/scale, no QDialog nativo."""
+    from PyQt6.QtWidgets import QTextBrowser, QWidget
+    import hub.plan_terapeutico as plan_module
+    from hub.pacientes_qt import DetallePacienteView
+    from shared.components.dialogs import NMDialog, _NM_MODAL_SCALE_FROM
+
+    class _FakePlan(QWidget):
+        def __init__(self, *args, **kwargs):
+            super().__init__()
+
+    monkeypatch.setattr(plan_module, "PlanTerapeuticoTab", _FakePlan)
+
+    view = DetallePacienteView(
+        modo="light_hybrid",
+        sb=_fake_sb(),
+        paciente_id="test-001",
+        paciente_nombre="Ana Martínez",
+    )
+    view.resize(760, 520)
+    qtbot.addWidget(view)
+    view.show()
+
+    view._btn_resumen_ia.setEnabled(False)
+    view._btn_resumen_ia.setText("Generando...")
+    view._show_resumen_dialog("Texto de prueba IA")
+
+    dialog = view._resumen_dialog
+    assert isinstance(dialog, NMDialog)
+    assert dialog.parent() is view.window()
+    assert dialog.isVisible()
+    assert dialog._dialog_width == 480
+    assert dialog._panel_scale == _NM_MODAL_SCALE_FROM
+    assert view._btn_resumen_ia.isEnabled()
+    assert view._btn_resumen_ia.text() == "Resumen IA"
+
+    text_browser = dialog.findChild(QTextBrowser)
+    assert text_browser is not None
+    assert text_browser.toPlainText() == "Texto de prueba IA"
+
+    dialog.close()
+    qtbot.wait(20)
+    assert view._resumen_dialog is None
