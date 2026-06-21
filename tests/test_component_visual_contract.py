@@ -74,6 +74,27 @@ def test_button_keeps_contract_height_under_global_pushbutton_qss(qtbot, qapp) -
         qapp.setStyleSheet(old_qss)
 
 
+def test_play_button_keeps_contract_size_under_global_pushbutton_qss(qtbot, qapp) -> None:
+    from shared.components.inputs import NMPlayButton
+
+    old_qss = qapp.styleSheet()
+    try:
+        qapp.setStyleSheet("QPushButton { padding: 11px 20px; min-height: 32px; }")
+        for size, expected in (("md", 46), ("lg", 58)):
+            btn = NMPlayButton(size=size, modo="dark_hybrid")
+            qtbot.addWidget(btn)
+            btn.show()
+            qtbot.wait(20)
+            assert btn.width() == expected, (
+                f"NMPlayButton(size={size!r}) width {btn.width()} != {expected} bajo QSS global"
+            )
+            assert btn.height() == expected, (
+                f"NMPlayButton(size={size!r}) height {btn.height()} != {expected} bajo QSS global"
+            )
+    finally:
+        qapp.setStyleSheet(old_qss)
+
+
 def test_tabs_pill_paints_mockup_container_and_brand_selection(qtbot) -> None:
     import inspect
 

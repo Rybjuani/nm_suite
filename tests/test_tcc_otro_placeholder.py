@@ -44,25 +44,28 @@ def tcc_modulo(qapp):
     from app.modules.registro_tcc_qt import ModuloRegistroTCC
 
     load_fonts()
+    old_qss = qapp.styleSheet()
     qapp.setStyleSheet(stylesheet_base("dark_hybrid"))
+    try:
+        mod = ModuloRegistroTCC(modo="dark_hybrid", show_header=False)
+        mod.resize(QSize(960, 600))
+        mod.show()
+        for _ in range(20):
+            qapp.processEvents()
 
-    mod = ModuloRegistroTCC(modo="dark_hybrid", show_header=False)
-    mod.resize(QSize(960, 600))
-    mod.show()
-    for _ in range(20):
+        mod._txt_situacion.setPlainText("Estaba en una reunion y me senti incomodo")
+        mod._next_step()
+        for _ in range(20):
+            qapp.processEvents()
+            time.sleep(0.01)
+
+        yield mod
+
+        mod.close()
+        mod.deleteLater()
         qapp.processEvents()
-
-    mod._txt_situacion.setPlainText("Estaba en una reunion y me senti incomodo")
-    mod._next_step()
-    for _ in range(20):
-        qapp.processEvents()
-        time.sleep(0.01)
-
-    yield mod
-
-    mod.close()
-    mod.deleteLater()
-    qapp.processEvents()
+    finally:
+        qapp.setStyleSheet(old_qss)
 
 
 def _click_tile_otro(mod) -> None:

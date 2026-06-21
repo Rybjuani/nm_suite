@@ -153,6 +153,7 @@ class NMPlayButton(QPushButton):
         self.setFlat(True)
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         self._disabled = False
+        self.setObjectName("NMPlayButton")
         self._apply_theme(self._modo)
         _tm().theme_changed.connect(self._apply_theme)
 
@@ -171,7 +172,7 @@ class NMPlayButton(QPushButton):
             self._size_key = size
             d = self._SIZE_MAP[size]
             self.setFixedSize(d, d)
-            self.update()
+            self._apply_theme(self._modo)
 
     # ── eventos ──────────────────────────────────────────────────────────────
 
@@ -242,7 +243,12 @@ class NMPlayButton(QPushButton):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        self.setStyleSheet(focus_ring_stylesheet(self._modo))
+        d = self._SIZE_MAP[self._size_key]
+        self.setStyleSheet(
+            focus_ring_stylesheet(self._modo)
+            + f"QPushButton#NMPlayButton {{ min-height: {d}px; max-height: {d}px; padding: 0px; border: none; }}"
+        )
+        self.setFixedSize(d, d)
         if not self._disabled and self.isEnabled():
             self._apply_shadow()
         self.update()
