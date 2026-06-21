@@ -62,6 +62,33 @@ Captura tecnica actual (`qa/nm_capturas_actualizadas/CAPTURE_MANIFEST.json`):
 Esto significa que la app renderiza capturas no-blancas/no-duplicadas, pero ninguna pantalla
 alcanza fidelidad suficiente contra el mockup canonico.
 
+### Vigencia de las capturas completas
+
+Durante los bloques posteriores se verifico que `qa/nm_capturas_actualizadas` habia sido
+generado contra un commit anterior (`1bfba84`) y no contra el codigo actual. Por lo tanto:
+
+- El reporte full en `qa/_fidelity_current` es valido para auditar el metodo previo, probar
+  los falsos positivos y dimensionar deuda visual historica.
+- No debe usarse como certificacion final del estado actual despues de nuevos commits.
+- Cada bloque corregido debe recapturarse en fresco con `qa/capture_v8.py` y medirse con
+  `qa/diff_fidelity.py`; al final de una fase hace falta una recaptura completa de los 96
+  targets.
+
+## Bloques corregidos tras la auditoria
+
+| Bloque | Captura fresca | Resultado endurecido | Evidencia |
+|---|---|---|---|
+| Chrome Suite/Hub: icono de marca canonico | `qa/_captures_block_chrome_home` | Home seguia FAIL | Se reemplazo el logo multicolor por iconos `home`/`brain` del mockup. |
+| Chrome Suite/Hub: titlebar 48px | `qa/_captures_block_chrome_height_home` | Home seguia FAIL | El titlebar paso al alto del `.titlebar` canonico. |
+| Home: ritmo vertical | `qa/_captures_block_home_layout` | Home seguia FAIL | Home score mejoro a SSIM `0.66026` dark / `0.66040` light. |
+| Home: cards + fixture QA | `qa/_captures_block_home_cards` | Home seguia FAIL | Textos/badges/icon box alineados; Home score mejoro a SSIM `0.67851` dark / `0.67435` light. |
+| Home: barra del hero | `qa/_captures_block_home_hero_bar` | Home seguia FAIL | Barra 8px con fill `brand->mind`; Home score subio a SSIM `0.68378` dark / `0.67964` light. |
+
+Deuda Home restante tras estos bloques: aun no alcanza el gate compuesto. En la variante
+score quedan diferencias de tipografia fina, distribucion vertical de cards, radios/sombras,
+blob radial del hero y algunos offsets de badges. La variante no-score requiere recaptura
+fresca despues de la correccion de fixtures.
+
 ## Deuda visual por fase y pantalla
 
 ### Fase 0 - Targets & tooling
