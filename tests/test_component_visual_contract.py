@@ -81,6 +81,18 @@ def test_mood_slider_internal_uses_shared_mockup_slider_qss(qtbot) -> None:
     assert "border: 3px solid #2E5D43" in qss
 
 
+def test_v3_mood_slider_thumb_uses_mockup_brand_contract() -> None:
+    import inspect
+
+    from shared.components.mood import _MoodTrackBar
+
+    source = inspect.getsource(_MoodTrackBar.paintEvent)
+    assert 'v3c("brand", _tm().modo)' in source
+    assert 'v3c("brandSoft", _tm().modo)' in source
+    assert "p.drawEllipse(QPointF(x, center_y), 11, 11)" in source
+    assert "QPen(QColor(lv_color), 3)" not in source
+
+
 def test_routine_checkbox_matches_mockup_rt_cb_contract(qtbot) -> None:
     from shared.components.session import (
         NMCustomCheck,

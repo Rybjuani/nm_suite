@@ -605,23 +605,16 @@ class _MoodTrackBar(QWidget):
         positions = self._dot_positions()
         for i, x in enumerate(positions):
             n = i + 1
-            lv_color = get_mood(n)["to"]
             if n == self._level and not self._unset:
-                # Halo exterior
-                halo = QColor(lv_color)
-                halo.setAlpha(64)
+                brand = v3c("brand", _tm().modo)
+                halo = QColor(v3c("brandSoft", _tm().modo))
                 p.setPen(Qt.PenStyle.NoPen)
                 p.setBrush(QBrush(halo))
                 p.drawEllipse(QPointF(x, center_y), 14, 14)
-                # Halo intermedio
-                halo2 = QColor(lv_color)
-                halo2.setAlpha(110)
-                p.setBrush(QBrush(halo2))
-                p.drawEllipse(QPointF(x, center_y), 10, 10)
-                # Dot blanco con borde
+                # Mockup range thumb: 22x22, blanco/surface, borde brand 3px.
                 p.setBrush(QBrush(QColor("#ffffff")))
-                p.setPen(QPen(QColor(lv_color), 3))
-                p.drawEllipse(QPointF(x, center_y), 8, 8)
+                p.setPen(QPen(brand, 3))
+                p.drawEllipse(QPointF(x, center_y), 11, 11)
             else:
                 p.setPen(Qt.PenStyle.NoPen)
                 p.setBrush(QBrush(QColor(255, 255, 255, 180)))
