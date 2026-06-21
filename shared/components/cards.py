@@ -6,6 +6,7 @@ from PyQt6 import sip
 from PyQt6.QtCore import (
     QAbstractAnimation,
     QEasingCurve,
+    QPoint,
     QPropertyAnimation,
     QRectF,
     QSequentialAnimationGroup,
@@ -76,6 +77,12 @@ def _tm() -> ThemeManager:
 # ── NMCard ────────────────────────────────────────────────────────────────────
 
 
+# Hover-lift de la card interactiva — mockup `.card.hov:hover` (línea 260):
+# translateY(-3px). Solo en hover real; el at-rest queda idéntico (el harness
+# QA captura en reposo, así que el gate estático no se ve afectado).
+_NM_CARD_HOVER_LIFT_PX = 3
+
+
 class NMCard(QFrame):
     """
     Card v3 — superficie limpia con border ``borderSoft`` y radius 18.
@@ -127,6 +134,8 @@ class NMCard(QFrame):
         self._success_anim: QSequentialAnimationGroup | None = None
         self._scale_anim: QPropertyAnimation | None = None
         self._card_shadow: QGraphicsDropShadowEffect | None = None
+        self._lift_anim: QPropertyAnimation | None = None
+        self._lift_base_y: int | None = None
 
         self.setObjectName("NMCard")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
@@ -175,10 +184,10 @@ class NMCard(QFrame):
                 sc = v3c("teal", self._modo)
                 sc.setAlpha(s["color"][3])  # 76 from token
         else:
-            # Mockup `.card` REPOSA en shadow-1 (sutil); shadow-2 era solo el
-            # hover (`.card.hov:hover`), que el runtime no aplica. Antes la card
-            # usaba el bucket "card" (peso shadow-2: blur 28/32, offset 10) y
-            # flotaba más que el mockup. Ahora usa shadow_1 (blur 6/2, offset 2/1).
+            # Mockup `.card` REPOSA en shadow-1 (sutil); shadow-2 es el hover
+            # (`.card.hov:hover`), que ahora sí aplica `_set_hover_shadow`. Este
+            # método fija el reposo: shadow_1 (blur 6/2, offset 2/1). Antes la
+            # card usaba el bucket "card" (shadow-2) y flotaba más que el mockup.
             s = V3_SHADOWS["dark" if is_dark else "light"]["shadow_1"]
             self._card_shadow.setBlurRadius(s["blur"])
             self._card_shadow.setOffset(*s["offset"])
@@ -186,19 +195,85 @@ class NMCard(QFrame):
         self._card_shadow.setColor(sc)
         self.setGraphicsEffect(self._card_shadow)
 
-    # ── hover (solo cambia el color del border, sin escalado) ─────────────────
+    # ── hover (mockup `.card.hov:hover`: lift -3px + shadow-2 + brand-line) ────
+
+    def _hover_lift_eligible(self) -> bool:
+        # El mockup aplica `.card.hov` solo a cards interactivas; las cards de
+        # info estáticas (no clickables) no se levantan. Las `glow` conservan su
+        # halo (no se les pisa la sombra).
+        return (
+            self._clickable
+            and not self._glow
+            and not self._disabled
+            and self.isEnabled()
+        )
 
     def enterEvent(self, event: QEnterEvent):
-        # F2 runtime: hover NO agranda la sombra (la card no "se levanta");
-        # el feedback es el borde (border → borderStrong en paintEvent).
+        # Hover real: la card se levanta (translateY -3px), la sombra pasa a
+        # shadow-2 y el borde a brand-line (este último en paintEvent). En reposo
+        # —estado que captura el harness QA— nada de esto aplica.
         self._hover = True
+        if self._hover_lift_eligible():
+            self._set_hover_shadow(True)
+            self._animate_lift(True)
         self.update()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
         self._hover = False
+        if self._hover_lift_eligible():
+            self._set_hover_shadow(False)
+            self._animate_lift(False)
         self.update()
         super().leaveEvent(event)
+
+    def _set_hover_shadow(self, lifted: bool):
+        """Swap shadow-1 (reposo) ↔ shadow-2 (hover) — mockup `.card.hov`."""
+        if self._card_shadow is None or self._glow or self._disabled:
+            return
+        if lifted:
+            is_dark = "dark" in self._modo
+            s = V3_SHADOWS["dark" if is_dark else "light"]["shadow_2"]
+            self._card_shadow.setBlurRadius(s["blur"])
+            self._card_shadow.setOffset(*s["offset"])
+            self._card_shadow.setColor(QColor(*s["color"]))
+        else:
+            self._apply_card_shadow()  # restaura shadow-1 de reposo
+
+    def _animate_lift(self, lifted: bool):
+        """translateY(-3px) en hover vía animación de pos (curva/duración `--t`).
+
+        El plan sanciona event-filter + animación de pos para el lift; se captura
+        la ``y`` de reposo en el primer hover y se restaura al salir.
+        """
+        cur = self.pos()
+        if lifted:
+            if self._lift_base_y is None:
+                self._lift_base_y = cur.y()
+            target_y = self._lift_base_y - _NM_CARD_HOVER_LIFT_PX
+        else:
+            if self._lift_base_y is None:
+                return  # nunca se levantó: nada que restaurar
+            target_y = self._lift_base_y
+            self._lift_base_y = None
+        if self._lift_anim is not None:
+            try:
+                if not sip.isdeleted(self._lift_anim):
+                    self._lift_anim.stop()
+            except RuntimeError:
+                pass
+            self._lift_anim = None
+        anim = QPropertyAnimation(self, b"pos", self)
+        self._lift_anim = anim
+        anim.setDuration(ANIM["medium"])  # `--t` 240ms
+        anim.setStartValue(cur)
+        anim.setEndValue(QPoint(cur.x(), target_y))
+        anim.setEasingCurve(EASE_OUT)
+        anim.finished.connect(
+            lambda a=anim: setattr(self, "_lift_anim", None)
+            if self._lift_anim is a else None
+        )
+        anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
 
     # ── click (v3 no aplica scale a cards en press; solo se emite clicked) ────
 

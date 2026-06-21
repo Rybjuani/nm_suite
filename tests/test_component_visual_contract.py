@@ -241,6 +241,63 @@ def test_dialog_matches_mockup_modal_contract(qtbot) -> None:
     assert "QColor(*_NM_MODAL_SCRIM_RGBA)" in source
 
 
+def test_card_hover_lift_matches_mockup(qtbot) -> None:
+    # Mockup `.card.hov:hover` (línea 260): translateY(-3px) + shadow-2 +
+    # brand-line. Solo en hover real; el reposo (lo que captura el harness QA)
+    # queda idéntico.
+    from PyQt6.QtCore import QEvent, QPointF
+    from PyQt6.QtGui import QEnterEvent
+    from shared.components.cards import NMCard, _NM_CARD_HOVER_LIFT_PX
+    from shared.theme import V3_SHADOWS
+
+    rest_blur = V3_SHADOWS["light"]["shadow_1"]["blur"]
+    hover_blur = V3_SHADOWS["light"]["shadow_2"]["blur"]
+    assert _NM_CARD_HOVER_LIFT_PX == 3
+    assert hover_blur > rest_blur  # shadow-2 más prominente que shadow-1
+
+    card = NMCard(clickable=True, modo="light_hybrid")
+    qtbot.addWidget(card)
+
+    # Reposo: shadow-1, sin lift.
+    assert card._hover is False
+    assert card._lift_base_y is None
+    assert card._card_shadow.blurRadius() == rest_blur
+
+    base_y = card.pos().y()
+    pt = QPointF(5.0, 5.0)
+    card.enterEvent(QEnterEvent(pt, pt, pt))
+
+    # Hover: lift -3px + shadow-2.
+    assert card._hover is True
+    assert card._card_shadow.blurRadius() == hover_blur
+    assert card._lift_anim is not None
+    assert card._lift_anim.endValue().y() == base_y - _NM_CARD_HOVER_LIFT_PX
+
+    card.leaveEvent(QEvent(QEvent.Type.Leave))
+
+    # Al salir: vuelve a reposo (shadow-1).
+    assert card._hover is False
+    assert card._card_shadow.blurRadius() == rest_blur
+
+
+def test_card_non_clickable_does_not_lift(qtbot) -> None:
+    # `.card` sin `.hov` (info estática) no se levanta en hover.
+    from PyQt6.QtCore import QPointF
+    from PyQt6.QtGui import QEnterEvent
+    from shared.components.cards import NMCard
+    from shared.theme import V3_SHADOWS
+
+    rest_blur = V3_SHADOWS["light"]["shadow_1"]["blur"]
+    card = NMCard(clickable=False, modo="light_hybrid")
+    qtbot.addWidget(card)
+
+    pt = QPointF(5.0, 5.0)
+    card.enterEvent(QEnterEvent(pt, pt, pt))
+
+    assert card._lift_base_y is None
+    assert card._card_shadow.blurRadius() == rest_blur
+
+
 def test_module_ring_matches_mockup_conic_contract(qtbot) -> None:
     from shared.components.rings import NMModuleRing, _ring_stroke
 
