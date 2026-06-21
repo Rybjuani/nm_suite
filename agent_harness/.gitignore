@@ -1,0 +1,42 @@
+# .gitignore
+
+# Evidencia pesada de episodios
+episodes/*/evidence/*.png
+episodes/*/evidence/*.jpg
+episodes/*/evidence/*.bmp
+episodes/*/evidence/*.gif
+episodes/*/evidence/*.zip
+episodes/*/evidence/*.exe
+episodes/*/evidence/*.msi
+
+# Logs de ejecución
+episodes/*/logs/*.log
+
+# Diffs temporales
+episodes/*/diffs/*.patch
+
+# Artifacts
+*.zip
+*.exe
+*.msi
+*.tar.gz
+*.7z
+
+# Capturas temporales
+*_temp.png
+*_temp.jpg
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Archivos prohibidos de contexto global
+AGENTS.md
+AI_CONTEXT.md
+MEMORY.md
+CONTEXT.md
+KNOWLEDGE_BASE.md
