@@ -54,6 +54,9 @@ _NM_EMPTY_ICON_CHIP_SIZE = 64
 _NM_EMPTY_ICON_CHIP_RADIUS = 18
 _NM_EMPTY_ICON_SIZE = 30
 _NM_EMPTY_TITLE_SIZE = 20
+# Mockup `.empty p { max-width: 34ch }` ≈ 300px a 13.5px Inter. Ancho fijo para
+# que el subtítulo wordwrap respete heightForWidth (ver nota en __init__).
+_NM_EMPTY_SUBTITLE_WIDTH = 300
 
 
 class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
@@ -122,12 +125,21 @@ class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
         sub_font = v3_font("size_body", weight=TYPOGRAPHY["weight_regular"])
         sub_font.setPointSizeF(13.5)
         self._subtitle_lbl.setFont(sub_font)
-        # Aproximación: 34ch × ~7px/ch = 240px max-width (varía con fuente,
-        # pero suficiente para que el párrafo no se estire a todo el ancho).
-        self._subtitle_lbl.setMaximumWidth(34 * 7)
-        self._subtitle_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # Un QLabel wordwrap añadido a un QVBoxLayout CON alignment colapsa a su
+        # sizeHint de una línea (Qt no llama heightForWidth en items alineados):
+        # el subtítulo largo quedaba recortado a la primera línea ("Tu terapeuta…").
+        # Fix: ancho fijo (34ch del mockup) + centrado vía HBox con stretches, así
+        # heightForWidth produce la altura multi-línea real y el texto no se corta.
+        self._subtitle_lbl.setFixedWidth(_NM_EMPTY_SUBTITLE_WIDTH)
+        self._subtitle_lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         self._subtitle_lbl.setWordWrap(True)
-        layout.addWidget(self._subtitle_lbl, alignment=Qt.AlignmentFlag.AlignCenter)
+        self._subtitle_lbl.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+        _sub_row = QHBoxLayout()
+        _sub_row.setContentsMargins(0, 0, 0, 0)
+        _sub_row.addStretch(1)
+        _sub_row.addWidget(self._subtitle_lbl)
+        _sub_row.addStretch(1)
+        layout.addLayout(_sub_row)
 
         # CTAs opcionales
         if cta_primary or cta_secondary:
