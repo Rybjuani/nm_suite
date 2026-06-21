@@ -254,7 +254,7 @@ class TextosGlobalesSuiteView(QWidget):
         self._content.setStyleSheet("background: transparent;")
         self._list_lay = QVBoxLayout(self._content)
         self._list_lay.setContentsMargins(0, 0, 0, V3_SP["sm"])
-        self._list_lay.setSpacing(V3_SP["xs"])
+        self._list_lay.setSpacing(V3_SP["md"] + 2)
         self._list_lay.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._scroll.setWidget(self._content)
         root.addWidget(self._scroll, stretch=1)

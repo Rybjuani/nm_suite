@@ -6,11 +6,13 @@ from PyQt6 import sip
 from PyQt6.QtCore import (
     QAbstractAnimation,
     QEasingCurve,
+    QEvent,
     QPoint,
     QPropertyAnimation,
     QRectF,
     QSequentialAnimationGroup,
     Qt,
+    QTimer,
     pyqtSignal,
 )
 from PyQt6.QtGui import (
@@ -146,6 +148,7 @@ class NMCard(QFrame):
         self._card_shadow: QGraphicsDropShadowEffect | None = None
         self._lift_anim: QPropertyAnimation | None = None
         self._lift_base_y: int | None = None
+        self._padding_sync_queued = False
 
         self.setObjectName("NMCard")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
@@ -162,6 +165,32 @@ class NMCard(QFrame):
             self._apply_card_shadow()
 
         _tm().theme_changed.connect(self._apply_theme)
+        self._queue_padding_sync()
+
+    def setLayout(self, layout):
+        super().setLayout(layout)
+        self._queue_padding_sync()
+
+    def _queue_padding_sync(self) -> None:
+        if self._padding_sync_queued:
+            return
+        self._padding_sync_queued = True
+        QTimer.singleShot(0, self._sync_layout_padding)
+
+    def _sync_layout_padding(self) -> None:
+        self._padding_sync_queued = False
+        lay = self.layout()
+        if lay is None:
+            return
+        m = lay.contentsMargins()
+        current = (m.left(), m.top(), m.right(), m.bottom())
+        if current != _NM_CARD_PADDED_MARGINS:
+            lay.setContentsMargins(*_NM_CARD_PADDED_MARGINS)
+
+    def event(self, event):
+        if event.type() in (QEvent.Type.Show, QEvent.Type.LayoutRequest):
+            self._queue_padding_sync()
+        return super().event(event)
 
     # ── sombra v3 (extraída para reutilizar desde init / theme / glow) ──────
 

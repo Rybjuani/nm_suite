@@ -1213,6 +1213,7 @@ class ModuloDBT(NMModule):
         self._practice_view = None
         self._closure_view = None
         self._modal_scrim = None
+        self._modal_background_controls_hidden = False
 
         # Navigation track
         self._on_tab_changed(0, t("text.module.dbt.tab_now", "Ahora"))
@@ -1222,7 +1223,8 @@ class ModuloDBT(NMModule):
             self._cleanup_practice_flow()
             
         self._view_stack.setCurrentIndex(idx)
-        self._tabs.show()
+        if not self._modal_background_controls_hidden:
+            self._tabs.show()
         
         if idx == 1:
             self._filter_library()
@@ -1403,13 +1405,21 @@ class ModuloDBT(NMModule):
                 
     def _show_modal(self, content, max_width: int):
         """Muestra `content` en el overlay modal (scrim + card centrada),
-        dejando la biblioteca/tabs visibles y dimmed detrás (mockup `.modal-bg`)."""
+        dejando el fondo dimmed sin controles interactivos visibles detrás."""
+        self._set_modal_background_controls_visible(False)
         if self._modal_scrim is None:
             self._modal_scrim = _PracticeModalScrim(self._content, self._modo)
         self._modal_scrim.set_content(content, max_width)
         self._modal_scrim.setGeometry(self._content.rect())
         self._modal_scrim.show()
         self._modal_scrim.raise_()
+
+    def _set_modal_background_controls_visible(self, visible: bool):
+        self._modal_background_controls_hidden = not visible
+        for attr in ("_tabs", "_family_tabs"):
+            widget = getattr(self, attr, None)
+            if widget is not None:
+                widget.setVisible(visible)
 
     def start_practice(self, skill: dict):
         self._cleanup_practice_flow()
@@ -1425,13 +1435,13 @@ class ModuloDBT(NMModule):
         self._practice_view.setMaximumWidth(560)
         self._practice_view.cancelled.connect(self._on_practice_cancelled)
         self._practice_view.finished.connect(self._on_practice_finished)
-        # Mockup: la práctica es un MODAL sobre la biblioteca dimmed, no un
-        # reemplazo full-screen. Las tabs y el view_stack quedan visibles detrás.
+        # La práctica es un MODAL sobre la biblioteca dimmed, no un reemplazo
+        # full-screen. Los controles de fondo se ocultan mientras el scrim está
+        # activo para no dejar botones visualmente tapados/no clickeables.
         self._show_modal(self._practice_view, 560)
 
     def _on_practice_cancelled(self):
-        # Tabs/view_stack nunca se ocultaron (quedaron dimmed bajo el scrim);
-        # solo cerramos el modal y restauramos la tab de origen.
+        # Cerramos el modal y restauramos la tab de origen.
         self._cleanup_practice_flow()
         self._tabs.set_current(self._origin_view)
 
@@ -1505,6 +1515,7 @@ class ModuloDBT(NMModule):
             self._modal_scrim.hide()
             self._modal_scrim.deleteLater()
             self._modal_scrim = None
+        self._set_modal_background_controls_visible(True)
         self._practice_view = None
         self._closure_view = None
             

@@ -210,6 +210,21 @@ def test_card_primitive_matches_mockup_radius_and_padding_contract(qtbot) -> Non
     assert "else _NM_CARD_RADIUS" in source
 
 
+def test_card_primitive_normalizes_direct_layout_padding(qtbot) -> None:
+    from PyQt6.QtWidgets import QVBoxLayout
+    from shared.components.cards import NMCard, _NM_CARD_PADDED_MARGINS
+
+    card = NMCard(modo="light_hybrid")
+    qtbot.addWidget(card)
+    lay = QVBoxLayout(card)
+    lay.setContentsMargins(6, 4, 6, 4)
+    card.show()
+    qtbot.wait(50)
+
+    margins = card.layout().contentsMargins()
+    assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == _NM_CARD_PADDED_MARGINS
+
+
 def test_mood_slider_internal_uses_shared_mockup_slider_qss(qtbot) -> None:
     from shared.components.mood import NMMoodSlider
 
@@ -699,3 +714,31 @@ def test_dbt_cards_match_mockup_family_bar_contract(qtbot) -> None:
     assert "_DBT_SKILL_BAR_TOP_W" in skill_source
     assert "_DBT_SKILL_BAR_TOP_H" in skill_source
     assert "v3c(self._family_color_key, self._modo)" in skill_source
+
+
+def test_dbt_modal_hides_background_controls_until_closed(qtbot) -> None:
+    from app.modules.dbt_qt import DBT_SKILLS, ModuloDBT
+
+    module = ModuloDBT(modo="light_hybrid")
+    qtbot.addWidget(module)
+    module.resize(960, 556)
+    module.show()
+    module._tabs.set_current(1)
+    qtbot.wait(50)
+
+    assert module._tabs.isVisibleTo(module)
+    assert module._family_tabs.isVisibleTo(module)
+
+    module.start_practice(DBT_SKILLS["distress_stop"])
+    qtbot.wait(50)
+
+    assert module._modal_scrim is not None
+    assert not module._tabs.isVisibleTo(module)
+    assert not module._family_tabs.isVisibleTo(module)
+
+    module._on_practice_cancelled()
+    qtbot.wait(50)
+
+    assert module._modal_scrim is None
+    assert module._tabs.isVisibleTo(module)
+    assert module._family_tabs.isVisibleTo(module)
