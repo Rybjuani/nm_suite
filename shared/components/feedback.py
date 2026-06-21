@@ -138,27 +138,23 @@ class NMProgressBar(QWidget):
     def paintEvent(self, event: QPaintEvent):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        c = colors(self._modo)
         r = self._bar_h // 2
         w = self.width()
         h = self.height()
         rect = QRectF(0, 0, w, h)
 
-        # Track
-        p.setBrush(QBrush(QColor(c["progress_track"])))
+        # Mockup Home hero: surface-3 track with brand -> mind fill.
+        p.setBrush(QBrush(v3c("surface3", self._modo)))
         p.setPen(Qt.PenStyle.NoPen)
         p.drawRoundedRect(rect, r, r)
 
-        # Fill — barra sólida continua con caps redondeados (runtime).
-        # El dithering de puntitos anterior se leía "técnico/punteado" — el
-        # user feedback lo marcó como random design en el informe v1.0 final.
-        # F5 runtime: fill `primary` SÓLIDO sobre track neutro (lo lineal
-        # va plano; el gradiente firma queda solo en lo circular/identitario).
-        # (El shimmer fue eliminado en F2.)
         fill_w = w * self._value
         if fill_w > 0:
             fill_rect = QRectF(0, 0, fill_w, h)
-            p.setBrush(QBrush(v3c("primary", self._modo)))
+            grad = QLinearGradient(0, 0, w, 0)
+            grad.setColorAt(0.0, v3c("brand", self._modo))
+            grad.setColorAt(1.0, v3c("mind", self._modo))
+            p.setBrush(QBrush(grad))
             p.setPen(Qt.PenStyle.NoPen)
             p.drawRoundedRect(fill_rect, r, r)
 

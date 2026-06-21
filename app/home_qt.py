@@ -721,7 +721,7 @@ class _HeroBienestar(QFrame):
         filled_lay.addLayout(score_row)
 
         # Progress bar — dithered density gradient (reemplaza los QFrames raw)
-        self._progress_bar = NMProgressBar(height=4, modo=self._modo)
+        self._progress_bar = NMProgressBar(height=8, modo=self._modo)
         filled_lay.addWidget(self._progress_bar)
 
         self._stack.addWidget(self._filled_page)

@@ -39,6 +39,7 @@ def test_home_hero_filled_state_matches_mockup_score_and_delta(qtbot, monkeypatc
     assert hero._score_unit.text() == "/ 10"
     assert hero._delta_lbl.text() == "▲ 0.8 vs semana"
     assert "border-radius: 10px" in hero._delta_lbl.styleSheet()
+    assert hero._progress_bar.height() == 8
 
 
 def test_home_view_vertical_rhythm_matches_mockup(qtbot, monkeypatch) -> None:
