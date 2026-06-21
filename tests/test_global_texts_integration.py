@@ -204,6 +204,28 @@ def _tcc_next_button(qapp) -> str:
     return module._btn_next.text()
 
 
+def test_global_texts_dirty_row_matches_mockup_visual_state(qapp):
+    import inspect
+
+    from hub.config_global_texts import TextosGlobalesSuiteView, _TextEntryRow
+
+    view = TextosGlobalesSuiteView(modo="light_hybrid", sb=_FakeSupabase())
+    qapp.processEvents()
+
+    row = view._rows_by_key["text.home.module.timer.card_title"]
+    assert not row._dirty
+
+    row.set_value("Timer editable")
+    view._update_pending_state()
+    qapp.processEvents()
+
+    assert row._dirty
+    assert row._radius_override == 16
+    source = inspect.getsource(_TextEntryRow.paintEvent)
+    assert 'v3c("brandLine", self._modo)' in source
+    assert 'v3c("brandSoft", self._modo)' in inspect.getsource(_TextEntryRow._apply_dirty_shadow)
+
+
 @pytest.mark.parametrize(
     ("label", "key", "replacement", "reader"),
     [

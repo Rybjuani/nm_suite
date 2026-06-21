@@ -8,10 +8,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import QRectF, Qt, pyqtSignal
+from PyQt6.QtGui import QPainter, QPen
 from PyQt6.QtWidgets import (
     QComboBox,
     QFrame,
+    QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
     QScrollArea,
@@ -45,11 +47,13 @@ class _TextEntryRow(NMCard):
     changed = pyqtSignal()
 
     def __init__(self, entry: SuiteTextEntry, modo: str, parent=None):
-        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
+        self._dirty = False
+        super().__init__(parent=parent, modo=modo, clickable=False, glow=False, radius=16)
         self.entry = entry
         self._modo = norm_modo(modo)
         self._build()
         self._apply_row_theme()
+        self._apply_dirty_shadow()
 
     def _build(self) -> None:
         lay = QHBoxLayout(self)
@@ -127,6 +131,14 @@ class _TextEntryRow(NMCard):
         self.set_value("")
         self.changed.emit()
 
+    def set_dirty(self, dirty: bool) -> None:
+        dirty = bool(dirty)
+        if dirty == self._dirty:
+            return
+        self._dirty = dirty
+        self._apply_dirty_shadow()
+        self.update()
+
     def matches(self, query: str, section: str) -> bool:
         if section and self.entry.section != section:
             return False
@@ -160,10 +172,34 @@ class _TextEntryRow(NMCard):
             f"color: {v3c('text2', self._modo).name()}; background: transparent;"
         )
 
+    def _apply_dirty_shadow(self) -> None:
+        if not self._dirty:
+            self._apply_card_shadow()
+            return
+        if self._card_shadow is None:
+            self._card_shadow = QGraphicsDropShadowEffect(self)
+        glow = v3c("brandSoft", self._modo)
+        self._card_shadow.setBlurRadius(10)
+        self._card_shadow.setOffset(0, 0)
+        self._card_shadow.setColor(glow)
+        self.setGraphicsEffect(self._card_shadow)
+
+    def paintEvent(self, event) -> None:
+        super().paintEvent(event)
+        if not self._dirty:
+            return
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.setPen(QPen(v3c("brandLine", self._modo), 1.0))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawRoundedRect(QRectF(0.5, 0.5, self.width() - 1, self.height() - 1), 16, 16)
+        p.end()
+
     def apply_theme(self, modo: str) -> None:
         self._modo = norm_modo(modo)
         self._apply_theme(self._modo)
         self._apply_row_theme()
+        self._apply_dirty_shadow()
         self._sync_counter()
 
 
@@ -349,6 +385,9 @@ class TextosGlobalesSuiteView(QWidget):
     def _update_pending_state(self) -> None:
         if not hasattr(self, "_save"):
             return
+        for row in self._rows:
+            original = self._original_values.get(row.entry.key, "")
+            row.set_dirty(row.effective_value() != original)
         invalid = bool(self._invalid_rows())
         pending = self.has_pending_changes()
         if invalid:
