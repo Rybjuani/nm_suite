@@ -40,6 +40,25 @@ def test_badge_primitive_supports_mockup_tones(qtbot) -> None:
     assert "font-size: 11.5px" in qss
 
 
+def test_input_focus_uses_mockup_brand_line_and_soft_halo(qtbot) -> None:
+    import inspect
+
+    from shared.components.buttons import NMInput, NMTextArea
+
+    line = NMInput("Buscar", modo="light_hybrid")
+    area = NMTextArea("Mensaje", modo="light_hybrid")
+    qtbot.addWidget(line)
+    qtbot.addWidget(area)
+
+    assert "QLineEdit:focus" in line.styleSheet()
+    assert "rgba(46, 93, 67, 71)" in line.styleSheet()
+    assert "QTextEdit:focus" in area.styleSheet()
+    assert "rgba(46, 93, 67, 71)" in area.styleSheet()
+
+    assert 'v3c("brandSoft", self._modo)' in inspect.getsource(NMInput.focusInEvent)
+    assert 'v3c("brandSoft", self._modo)' in inspect.getsource(NMTextArea.focusInEvent)
+
+
 def test_card_hover_border_uses_brand_line() -> None:
     source = __import__("inspect").getsource(
         __import__("shared.components.cards", fromlist=["NMCard"]).NMCard.paintEvent

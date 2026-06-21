@@ -599,11 +599,8 @@ class NMInput(QLineEdit):
         text_c = v3c("text", self._modo)
         faint_c = v3c("faint", self._modo)
         border_c = v3c("border", self._modo)
-        # Foco suave: accent con alpha (no a plena intensidad) — borde fino
-        # y calmo, alineado al patrón de Recordatorios (user feedback).
-        focus_c = v3c("accent", self._modo)  # teal (light) / purple (dark)
-        focus_c.setAlpha(160)
-        acc_c = v3c("accent", self._modo)
+        focus_c = v3c("brandLine", self._modo)
+        acc_c = v3c("brand", self._modo)
         if self._error_message:
             border_c = v3c("danger", self._modo)
             focus_c = border_c
@@ -662,21 +659,16 @@ class NMInput(QLineEdit):
                     border: 1px solid {qcolor_to_rgba_css(focus_c)};
                     background-color: {bg_c.name()};
                 }}
-                {focus_ring_stylesheet(self._modo)}
             """)
 
     def focusInEvent(self, event):
-        """Enciende glow suave alrededor del input en el color del accent."""
+        """Enciende halo brand-soft alrededor del input enfocado."""
         super().focusInEvent(event)
-        is_dark = "dark" in self._modo
         if self._focus_glow is None:
             self._focus_glow = QGraphicsDropShadowEffect(self)
-        self._focus_glow.setBlurRadius(12 if is_dark else 10)
+        self._focus_glow.setBlurRadius(10)
         self._focus_glow.setOffset(0, 0)
-        gc = v3c("accent", self._modo)
-        # Glow contenido en ambos temas (user feedback: el resplandor fuerte se
-        # leía duro, no UI).
-        gc.setAlpha(70 if is_dark else 50)
+        gc = v3c("brandSoft", self._modo)
         self._focus_glow.setColor(gc)
         self.setGraphicsEffect(self._focus_glow)
 
@@ -915,6 +907,7 @@ class NMTextArea(QTextEdit):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._max_length = max_length
+        self._focus_glow: QGraphicsDropShadowEffect | None = None
         # font_key configurable: el contenido generado por IA usa "size_small"
         # (más compacto, pedido user feedback) sin afectar el resto de los text areas.
         self._font_key = font_key if font_key in TYPOGRAPHY else _NM_CONTROL_FONT
@@ -953,13 +946,9 @@ class NMTextArea(QTextEdit):
         text_col = v3c("text", self._modo).name()
         placeholder = v3c("faint", self._modo).name()
         border = C("border", self._modo)
-        focus_col = v3c("accent", self._modo).name()
+        focus_col = v3c("brand", self._modo).name()
         sel_text = v3c("primary_ink", self._modo).name()
-        # Foco fino y suave (1px, accent con alpha) — el 1.5px a plena
-        # intensidad se leía duro/grueso (informe user feedback: alinear al
-        # borde verde suave de Recordatorios).
-        _focus_soft = QColor(v3c("accent", self._modo))
-        _focus_soft.setAlpha(150)
+        focus_border = v3c("brandLine", self._modo)
         # Scrollbar canónica (clínica, neutra): un QTextEdit con stylesheet
         # propio pierde el QScrollBar global y caía al nativo de Qt (las "muchas
         # scrollbars que violan el runtime" en el tab IA). La apendamos al QSS.
@@ -970,7 +959,7 @@ class NMTextArea(QTextEdit):
             f"border: 1px solid {border}; border-radius: {_NM_CONTROL_RADIUS}px; "
             f"padding: 8px 12px; font-size: {TYPOGRAPHY[self._font_key]}px; "
             f"selection-background-color: {focus_col}; selection-color: {sel_text}; }}"
-            f"QTextEdit:focus {{ border: 1px solid {qcolor_to_rgba_css(_focus_soft)}; }}"
+            f"QTextEdit:focus {{ border: 1px solid {qcolor_to_rgba_css(focus_border)}; }}"
             + _clinical_scrollbar_qss(self._modo)
         )
         # Solo el placeholder en color faint (vía palette). Antes se pintaba el
@@ -979,6 +968,20 @@ class NMTextArea(QTextEdit):
         _pal = self.palette()
         _pal.setColor(QPalette.ColorRole.PlaceholderText, QColor(placeholder))
         self.setPalette(_pal)
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        if self._focus_glow is None:
+            self._focus_glow = QGraphicsDropShadowEffect(self)
+        self._focus_glow.setBlurRadius(10)
+        self._focus_glow.setOffset(0, 0)
+        self._focus_glow.setColor(v3c("brandSoft", self._modo))
+        self.setGraphicsEffect(self._focus_glow)
+
+    def focusOutEvent(self, event):
+        super().focusOutEvent(event)
+        self.setGraphicsEffect(None)
+        self._focus_glow = None
 
 
 # ── NMTabs ───────────────────────────────────────────────────────────────────
