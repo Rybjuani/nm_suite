@@ -74,3 +74,43 @@ def test_dbt_step_title_uses_serif_font(qtbot, monkeypatch) -> None:
     assert FONT_SERIF.lower() in font.family().lower() or font.family().lower() in FONT_SERIF.lower(), (
         f"step_title_lbl debe usar familia serif ({FONT_SERIF}), got {font.family()!r}"
     )
+
+
+def test_dbt_need_card_title_uses_serif_font(qtbot, monkeypatch) -> None:
+    """E3-S-DBT: NeedCard título usa h-serif (mockup línea 1124, size_h4 serif)."""
+    _use_default_texts(monkeypatch)
+    import shared.fonts as _fonts_mod
+    from app.modules.dbt_qt import _NeedCard
+
+    card = _NeedCard(
+        "Volver al presente",
+        "Mindfulness: pausar y notar el presente.",
+        "mindfulness",
+        "mind",
+        modo="light_hybrid",
+    )
+    qtbot.addWidget(card)
+
+    font_serif = _fonts_mod.FONT_SERIF
+    font = card.title_label.font()
+    assert (
+        font_serif.lower() in font.family().lower()
+        or font.family().lower() in font_serif.lower()
+    ), f"NeedCard title debe ser serif ({font_serif}), got {font.family()!r}"
+
+
+def test_dbt_skill_card_title_uses_serif_font(qtbot, monkeypatch) -> None:
+    """E3-S-DBT: SkillCard título usa h-serif (mockup línea 1136, size_h4 serif)."""
+    _use_default_texts(monkeypatch)
+    import shared.fonts as _fonts_mod
+    from app.modules.dbt_qt import DBT_SKILLS, _SkillCard
+
+    card = _SkillCard(DBT_SKILLS["distress_stop"], modo="light_hybrid")
+    qtbot.addWidget(card)
+
+    font_serif = _fonts_mod.FONT_SERIF
+    font = card.title_lbl.font()
+    assert (
+        font_serif.lower() in font.family().lower()
+        or font.family().lower() in font_serif.lower()
+    ), f"SkillCard title debe ser serif ({font_serif}), got {font.family()!r}"
