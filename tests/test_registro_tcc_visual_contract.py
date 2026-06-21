@@ -130,3 +130,26 @@ def test_registro_tcc_visual_source_uses_mockup_rose_and_gold() -> None:
 
     assert 'v3c("rose", self._modo)' in distortions_source
     assert "goldSoft" in tip_paint_source
+
+
+def test_registro_tcc_stepper_widget_has_4_steps_and_titles_match(qtbot, monkeypatch) -> None:
+    """E3-S-TCC: NMStepper cargado con 4 pasos y títulos del template (mockup línea 1210)."""
+    _use_mockup_defaults(monkeypatch)
+
+    from app.modules.registro_tcc_qt import ModuloRegistroTCC
+
+    module = ModuloRegistroTCC(show_header=False, modo="light_hybrid")
+    qtbot.addWidget(module)
+
+    assert len(module._stepper._steps) == 4
+    assert module._stepper._steps == ["Situación", "Emoción", "Pensamiento", "Respuesta"]
+    assert module._stepper._current == 0
+
+
+def test_registro_tcc_step_title_uses_serif_source() -> None:
+    """E3-S-TCC: _make_title usa v3_font serif para los h-serif 17px del mockup (líneas 1222,1229,1241,1261)."""
+    import inspect
+    from app.modules import registro_tcc_qt
+
+    source = inspect.getsource(registro_tcc_qt.ModuloRegistroTCC._make_title)
+    assert "serif=True" in source
