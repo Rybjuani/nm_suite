@@ -26,6 +26,9 @@ _DEFAULT_TARGETS = _PROJ / "qa" / "_mockup_targets"
 _DEFAULT_ACTUALS = _PROJ / "qa" / "_captures_v8"
 _DEFAULT_OUT = _PROJ / "qa" / "_fidelity_diff"
 _NAME_RE = re.compile(r"^(suite|hub)-(.+)-(light|dark)-(\d+x\d+)\.png$")
+_DEFAULT_MIN_SSIM = 0.92
+_DEFAULT_MAX_MEAN_ABS_DIFF = 0.035
+_DEFAULT_MAX_CHANGED_PIXEL_RATIO = 0.08
 
 
 @dataclass(frozen=True)
@@ -39,6 +42,13 @@ class CaptureName:
     @property
     def key(self) -> tuple[str, str, str, str]:
         return (self.app, self.view, self.theme, self.resolution)
+
+
+@dataclass(frozen=True)
+class FidelityThresholds:
+    min_ssim: float = _DEFAULT_MIN_SSIM
+    max_mean_abs_diff: float = _DEFAULT_MAX_MEAN_ABS_DIFF
+    max_changed_pixel_ratio: float = _DEFAULT_MAX_CHANGED_PIXEL_RATIO
 
 
 def parse_capture_name(path: Path) -> CaptureName | None:
@@ -57,6 +67,26 @@ def _index_images(root: Path) -> dict[tuple[str, str, str, str], CaptureName]:
         parsed = parse_capture_name(path)
         if parsed:
             indexed[parsed.key] = parsed
+    return indexed
+
+
+def _load_capture_manifest(actual_dir: Path) -> dict[tuple[str, str, str, str], dict]:
+    manifest_path = actual_dir / "CAPTURE_MANIFEST.json"
+    if not manifest_path.exists():
+        return {}
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+    indexed: dict[tuple[str, str, str, str], dict] = {}
+    for result in manifest.get("results", []):
+        fname = result.get("file")
+        if not fname:
+            continue
+        parsed = parse_capture_name(Path(str(fname)))
+        if parsed:
+            indexed[parsed.key] = result
     return indexed
 
 
@@ -112,6 +142,48 @@ def _metrics(target: Image.Image, actual: Image.Image) -> dict[str, float | str 
     }
 
 
+def _threshold_failures(
+    metrics: dict[str, float | str | bool],
+    thresholds: FidelityThresholds,
+) -> list[str]:
+    failures: list[str] = []
+    if metrics.get("size_mismatch"):
+        failures.append("size_mismatch")
+    if float(metrics.get("ssim", 0.0)) < thresholds.min_ssim:
+        failures.append(f"ssim<{thresholds.min_ssim:g}")
+    if float(metrics.get("mean_abs_diff", 1.0)) > thresholds.max_mean_abs_diff:
+        failures.append(f"mad>{thresholds.max_mean_abs_diff:g}")
+    if float(metrics.get("changed_pixel_ratio", 1.0)) > thresholds.max_changed_pixel_ratio:
+        failures.append(f"changed>{thresholds.max_changed_pixel_ratio:g}")
+    return failures
+
+
+def _capture_evidence_failures(manifest_result: dict | None) -> list[str]:
+    if not manifest_result:
+        return []
+    failures: list[str] = []
+    if manifest_result.get("technical_capture_valid") is False:
+        failures.append("capture_technical_invalid")
+    if manifest_result.get("state_evidence_valid") is False:
+        failures.append("capture_state_not_product_evidence")
+    return failures
+
+
+def _acceptance_status(
+    metrics: dict[str, float | str | bool],
+    thresholds: FidelityThresholds,
+    manifest_result: dict | None,
+) -> tuple[str, list[str]]:
+    metric_failures = _threshold_failures(metrics, thresholds)
+    evidence_failures = _capture_evidence_failures(manifest_result)
+    failures = metric_failures + evidence_failures
+    if metric_failures:
+        return "FAIL", failures
+    if evidence_failures:
+        return "PARTIAL_CAPTURE_EVIDENCE", failures
+    return "PASS", failures
+
+
 def _label(draw: ImageDraw.ImageDraw, x: int, text: str) -> None:
     try:
         font = ImageFont.load_default()
@@ -155,7 +227,7 @@ def _matches_filters(parsed: CaptureName, app: str | None, view: str, theme: str
     return True
 
 
-def _write_reports(rows: list[dict], out_dir: Path) -> dict[str, str]:
+def _write_reports(rows: list[dict], out_dir: Path, thresholds: FidelityThresholds) -> dict[str, str]:
     out_dir.mkdir(parents=True, exist_ok=True)
     csv_path = out_dir / "FIDELITY_REPORT.csv"
     md_path = out_dir / "FIDELITY_REPORT.md"
@@ -173,6 +245,11 @@ def _write_reports(rows: list[dict], out_dir: Path) -> dict[str, str]:
         "max_abs_diff",
         "changed_pixel_ratio",
         "size_mismatch",
+        "acceptance_failures",
+        "capture_status",
+        "capture_technical_valid",
+        "capture_state_valid",
+        "capture_evidence_flags",
         "target_file",
         "actual_file",
         "diff_file",
@@ -187,6 +264,12 @@ def _write_reports(rows: list[dict], out_dir: Path) -> dict[str, str]:
         "# Fidelity diff report",
         "",
         f"Generated: {_dt.datetime.now().isoformat(timespec='seconds')}",
+        "",
+        "Acceptance gate:",
+        f"- SSIM >= {thresholds.min_ssim:g}",
+        f"- mean_abs_diff <= {thresholds.max_mean_abs_diff:g}",
+        f"- changed_pixel_ratio <= {thresholds.max_changed_pixel_ratio:g}",
+        "- capture manifest evidence, when present, must be technically valid and state-valid",
         "",
         "| Status | App | View | Theme | Res | SSIM | MAD | Changed | Diff |",
         "|---|---|---|---|---|---:|---:|---:|---|",
@@ -219,11 +302,13 @@ def compare(
     app: str | None,
     view: str,
     theme: str,
-    fail_under: float,
+    thresholds: FidelityThresholds,
     write_images: bool,
+    use_capture_manifest: bool = True,
 ) -> tuple[int, list[dict], dict[str, str]]:
     targets = _index_images(target_dir)
     actuals = _index_images(actual_dir)
+    manifest = _load_capture_manifest(actual_dir) if use_capture_manifest else {}
     rows: list[dict] = []
 
     for key in sorted(targets):
@@ -246,15 +331,24 @@ def compare(
 
         target_img = _load_rgb(target.path)
         actual_img = _load_rgb(actual.path)
-        row.update(_metrics(target_img, actual_img))
-        row["status"] = "PASS" if float(row["ssim"]) >= fail_under else "FAIL"
+        metrics = _metrics(target_img, actual_img)
+        row.update(metrics)
+        manifest_result = manifest.get(key)
+        if manifest_result:
+            row["capture_status"] = manifest_result.get("capture_status", "")
+            row["capture_technical_valid"] = manifest_result.get("technical_capture_valid", "")
+            row["capture_state_valid"] = manifest_result.get("state_evidence_valid", "")
+            row["capture_evidence_flags"] = ",".join(manifest_result.get("evidence_flags") or [])
+        status, acceptance_failures = _acceptance_status(metrics, thresholds, manifest_result)
+        row["status"] = status
+        row["acceptance_failures"] = ",".join(acceptance_failures)
         if write_images:
             diff_path = out_dir / f"{target.app}-{target.view}-{target.theme}-{target.resolution}-diff.png"
             _write_diff_image(target_img, actual_img, diff_path)
             row["diff_file"] = str(diff_path)
         rows.append(row)
 
-    report_paths = _write_reports(rows, out_dir)
+    report_paths = _write_reports(rows, out_dir, thresholds)
     failures = sum(1 for row in rows if row.get("status") != "PASS")
     return failures, rows, report_paths
 
@@ -267,9 +361,17 @@ def main() -> int:
     parser.add_argument("--app", choices=["suite", "hub"])
     parser.add_argument("--view", default="")
     parser.add_argument("--theme", choices=["light", "dark", "both"], default="both")
-    parser.add_argument("--fail-under", type=float, default=0.92)
+    parser.add_argument("--fail-under", type=float, default=_DEFAULT_MIN_SSIM)
+    parser.add_argument("--max-mean-abs-diff", type=float, default=_DEFAULT_MAX_MEAN_ABS_DIFF)
+    parser.add_argument("--max-changed-pixel-ratio", type=float, default=_DEFAULT_MAX_CHANGED_PIXEL_RATIO)
+    parser.add_argument("--ignore-capture-manifest", action="store_true")
     parser.add_argument("--no-images", action="store_true", help="Skip side-by-side diff images")
     args = parser.parse_args()
+    thresholds = FidelityThresholds(
+        min_ssim=args.fail_under,
+        max_mean_abs_diff=args.max_mean_abs_diff,
+        max_changed_pixel_ratio=args.max_changed_pixel_ratio,
+    )
 
     failures, rows, report_paths = compare(
         Path(args.target_dir),
@@ -278,19 +380,28 @@ def main() -> int:
         app=args.app,
         view=args.view,
         theme=args.theme,
-        fail_under=args.fail_under,
+        thresholds=thresholds,
         write_images=not args.no_images,
+        use_capture_manifest=not args.ignore_capture_manifest,
     )
 
     compared = sum(1 for row in rows if row.get("status") in {"PASS", "FAIL"})
     missing = sum(1 for row in rows if row.get("status") == "MISSING_ACTUAL")
+    partial = sum(1 for row in rows if row.get("status") == "PARTIAL_CAPTURE_EVIDENCE")
     passed = sum(1 for row in rows if row.get("status") == "PASS")
 
     print("=" * 60)
     print("FIDELITY DIFF")
+    print(
+        "Gate:                "
+        f"SSIM>={thresholds.min_ssim:g}, "
+        f"MAD<={thresholds.max_mean_abs_diff:g}, "
+        f"Changed<={thresholds.max_changed_pixel_ratio:g}"
+    )
     print(f"Targets considered: {len(rows)}")
     print(f"Compared:           {compared}")
     print(f"Passed:             {passed}")
+    print(f"Partial evidence:   {partial}")
     print(f"Missing actuals:    {missing}")
     print(f"Failures:           {failures}")
     print(f"Report:             {report_paths['markdown']}")
