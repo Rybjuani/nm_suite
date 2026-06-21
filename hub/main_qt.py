@@ -75,6 +75,7 @@ from shared.components import (
 )
 from shared.components.patient import (
     _NM_PATIENT_RING_COL_W,
+    _NM_PATIENT_ROW_HEIGHT,
     _NM_PATIENT_TREND_COL_W,
     _NM_PATIENT_UNLINK_SIZE,
 )
@@ -642,8 +643,9 @@ class PacientesView(QWidget):
             self._table_card.setMaximumHeight(520)
             return
         visible = min(len(rows), self._rows_limit)
-        # Header/meta + columnas + filas premium de 58px + espaciado fino.
-        target_h = min(520, max(252, 94 + visible * 60))
+        # Overhead fijo (roster_meta ~34 + col-header ~24 + margins 8 + spacing 4 + buffer 10)
+        # más _NM_PATIENT_ROW_HEIGHT (70px) por fila real. Cap de 520px.
+        target_h = min(520, max(252, 80 + visible * _NM_PATIENT_ROW_HEIGHT))
         self._table_card.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum
         )
