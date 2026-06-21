@@ -182,3 +182,85 @@ No avanzar una pantalla como "fiel" hasta que:
 2. `qa/diff_fidelity.py` pase con el gate compuesto.
 3. Cualquier excepcion por limitacion Qt quede documentada junto al diff y no oculte deuda de
    layout, color, texto o estado.
+
+## Re-auditoria 2026-06-21 (HEAD 51f4448)
+
+Se ejecuto una re-auditoria completa del estado del repo contra el plan. Se
+regeneraron en fresco:
+
+- `qa/_mockup_targets/` con Playwright contra HEAD 51f4448 (96 targets).
+- `qa/_captures_v8_fresh/` con `qa/capture_v8.py --all` contra HEAD 51f4448 (98 capturas).
+- `qa/_fidelity_fresh/FIDELITY_REPORT.md` con gate endurecido y `scikit-image` real.
+
+Los reportes previos (`qa/_fidelity_current`, `qa/_fidelity_selfcheck`) quedan
+marcados como STALE: estaban generados contra commits anteriores
+(`1bfba84` y `0fcb0cc6` respectivamente, ~36 y ~61 commits detras de HEAD).
+
+### Resultado fresco: 0/96 PASS
+
+Todas las pantallas siguen fallando el gate compuesto. Mejoras vs. reporte stale:
+
+| Pantalla | SSIM stale (light) | SSIM fresh (light) | Δ |
+|---|---:|---:|---:|
+| suite-home | 0.63826 | 0.67784 | +0.040 |
+| suite-onboarding | 0.51055 | 0.65935 | +0.149 |
+| suite-onboarding-error | 0.49946 | 0.62322 | +0.124 |
+| suite-recuperar-acceso | 0.48811 | 0.63360 | +0.145 |
+| suite-animo | 0.77772 | 0.78917 | +0.011 |
+
+Los commits recientes (c9281c8, 5253532, 3e3a546, e765b84, 893df68, da356df,
+5e9f318, 492695b, f28497a) mejoraron SSIM pero ninguna pantalla cruza el gate.
+
+### Hallazgos estructurales nuevos (no detectados antes)
+
+1. **Suite empty states sin surface card**: `suite-rutina-empty`,
+   `suite-actividades-empty`, `suite-avisos-empty` estan renderizando sobre
+   `bg` directo en vez de sobre `surface` (card). El mockup envuelve el empty
+   state en un card `surface`. Diferencia de color dominante:
+   - Target top color (light): `#FBF8F1` (`surface`)
+   - Actual top color (light): `#E9E3D6` (`bg`)
+   Esto explica el patron de "SSIM alto (0.91-0.95) pero changed_pixel_ratio
+   alto (0.85-0.92)" en los empty states light. `suite-timer-empty` y
+   `hub-pacientes-empty` SI tienen el surface card y por eso pasan cerca del
+   gate.
+
+2. **dbt-practice-stop y dbt-practice-closure en light tienen MAD=0.22**:
+   es 6x el threshold. SSIM 0.75 pero MAD y changed catastroficos. Indica
+   un popup/modal con color de fondo radicalmente distinto al mockup (probable
+   scrim solido sobre fondo claro).
+
+3. ** patron light vs dark sistematico**: en casi todas las pantallas,
+   `changed_pixel_ratio` en light es 3-5x mayor que en dark. Esto sugiere
+   que las diferencias de anti-aliasing/color en superficies claras son mas
+   visibles que en oscuras. NO es ruido: en light, los empty states con
+   card faltante generan 91% de pixeles cambiados; en dark, 8% (porque
+   `bg` y `surface` en dark comparten mas luminancia).
+
+4. **`qa/_fidelity_selfcheck` sigue siendo autocomparacion**: confirmado
+   96 filas con `target_file == actual_file` y SSIM=1.0 trivial. NO es
+   evidencia de fidelidad. Deberia eliminarse o renombrarse a `selfcheck`
+   para evitar confusion.
+
+5. **Capturas stale no purgadas**: `qa/_mockup_verify/`,
+   `qa/_mockup_verify2/`, `qa/_captures_v8/` (default output dir de
+   `diff_fidelity.py`) siguen en el repo. `docs/CAPTURE_MANIFEST_SUMMARY.md`
+   no fue actualizado. FASE 5 (regresion) no cerro.
+
+6. **Tests visuales siguen siendo estructurales**: `tests/*_visual_contract.py`
+   validan texto, tamaños, QSS substrings y comportamiento. NO validan
+   pixel-diff. Pasan 278/278 tests pero el gate visual sigue 0/96. Esto
+   confirma que los tests no son proxy de fidelidad.
+
+### Plan de correccion (en orden del plan)
+
+- FASE 0: purgar stale artifacts + eliminar/renombrar `_fidelity_selfcheck`
+  + aceptar `_captures_v8_fresh` como baseline actual.
+- FASE 1: ya completo (tokens, fuentes, QSS, iconos al mockup). Solo
+  verificacion.
+- FASE 2: fix primitivas no abordadas — empty state card wrapper, hover-lift
+  de cards, ajustes finos de tabs/fchips/patient rows.
+- FASE 3: Suite pantalla por pantalla en orden plan (Acceso → Home → Animo
+  → Respiracion → TCC → Activacion → Recordatorios → Rutina → Temporizador
+  → DBT).
+- FASE 4: Hub pantalla por pantalla (Pacientes → Detalle → Textos globales).
+- FASE 5: recaptura completa fresca + cierre.
