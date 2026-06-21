@@ -6,25 +6,35 @@ Continuación local con Claude Code desde `origin/main` actual.
 
 ## 1. SHA actual y sincronización
 
-**HEAD de `origin/main`:** `6bb732b948fc1935dc9fbbb7c66e74b2dccf1231`
+**HEAD de `origin/main`:** `0eeeeab` (commit que añade este handoff).
+**Último fix de código:** `6bb732b` (NMShellContent). No son lo mismo: `0eeeeab` es solo doc, no toca código.
 
 ```bash
-# Clonar fresco o sincronizar clone existente
+# Clonar fresco
 git clone https://github.com/Rybjuani/nm_suite.git
 cd nm_suite
+
+# O sincronizar clone existente de forma segura (sin --hard que descarta cambios locales sin aviso)
 git fetch origin
 git checkout main
-git reset --hard origin/main
-git log --oneline -1   # debe mostrar 6bb732b
+git pull --ff-only origin main
+git log --oneline -1   # debe mostrar 0eeeeab
+git log --oneline -5  # verificación: 0eeeeab, 6bb732b, c96c406, fd0c5be, 6dd49bb
 ```
 
-Commits de la auditoría (4, en orden cronológico, todos en `origin/main`):
+**Notas sobre la sincronización:**
+- `git pull --ff-only` falla si hay divergencia local en vez de hacer merge/rebase silencioso. Es lo que queremos: si hay commits locales no pusheados, hay que resolverlos explícitamente.
+- Si `--ff-only` falla con "fatal: Not possible to fast-forward", inspeccionar `git log origin/main..HEAD` y `git log HEAD..origin/main` antes de decidir merge/rebase/reset.
+- **NO usar `git reset --hard origin/main`** salvo en un clone descartable; descarta cambios sin confirmación.
+
+Commits de la auditoría (5, en orden cronológico, todos en `origin/main`):
 
 ```
 6dd49bb  audit(fase0): re-auditoria HEAD 51f4448 + targets/captures frescos
 fd0c5be  chore(qa): purgar artifacts stale (FASE 0/5 cleanup)
 c96c406  fix(fase2/primitives): NMModule._content pinta surface real via QSS
 6bb732b  fix(fase2/shell): NMShellContent pinta surface real via QSS (app + hub)
+0eeeeab  docs(handoff): handoff técnico para continuar localmente con Claude Code  ← HEAD
 ```
 
 Punto de partida de la auditoría: `51f4448` ("Document confirmed GLM fixes").
@@ -60,17 +70,42 @@ Tests: **278/278 pasan** después de cada commit. ruff: ok.
 
 ## 4. Deuda pendiente por fase (en orden del plan)
 
-### FASE 0 — Targets & tooling: ✅ CERRADA
-- Targets Playwright regenerados contra HEAD `6bb732b` (96 PNGs).
-- `qa/diff_fidelity.py` ya tiene gate endurecido (SSIM + MAD + changed_ratio + capture manifest evidence).
-- `tests/test_mockup_qa_tools.py` y `tests/test_capture_v8_evidence.py` cubren el gate.
+> ⚠️ **Aclaración crítica sobre FASE 0 y FASE 1**: los checkmarks ✅ indican que hay commits y tests que sugieren cierre, **NO que estén verificadamente cerradas**. Antes de continuar a FASE 2+, verificar contra repo + plan + mockup con estos comandos:
+>
+> ```bash
+> # FASE 0 — verificar que targets estén frescos y el gate funcione
+> cat qa/_mockup_targets/MOCKUP_TARGET_MANIFEST.json | grep -E '"commit"|"success"'
+> # commit debe ser el SHA actual de HEAD; success debe ser 96
+>
+> .venv/bin/python -m pytest tests/test_mockup_qa_tools.py tests/test_capture_v8_evidence.py -v
+> # ambos deben pasar
+>
+> # FASE 1 — verificar tokens contra mockup canónico (líneas 15-67 de neuromood-mockup.html)
+> .venv/bin/python -m pytest tests/test_token_parity.py tests/test_no_legacy_visuals.py tests/test_fonts.py -v
+> # verificar manualmente que V3_LIGHT/V3_DARK coinciden con :root del mockup
+> .venv/bin/python -c "from shared.theme import V3_LIGHT, V3_DARK; print('light brand', V3_LIGHT['brand']); print('dark brand', V3_DARK['brand'])"
+> # light brand debe ser #2E5D43, dark brand debe ser #56D9A6 (mockup líneas 35, 57)
+>
+> # Verificar fuentes cargadas
+> .venv/bin/python -c "import os; os.environ['QT_QPA_PLATFORM']='offscreen'; from PyQt6.QtWidgets import QApplication; app=QApplication([]); from shared.fonts import load_fonts, FONT_SERIF, FONT_SANS; load_fonts(); print('serif:', FONT_SERIF, 'sans:', FONT_SANS)"
+> # serif debe ser Fraunces, sans debe ser Inter
+> ```
+>
+> Si cualquiera de estos falla o no coincide, **FASE 0/1 NO está cerrada** — investigar antes de avanzar.
 
-### FASE 1 — Base compartida (tokens/fuentes/QSS/iconos): ✅ CERRADA
-- `shared/theme.py`: `V3_LIGHT` y `V3_DARK` con valores exactos del mockup.
+### FASE 0 — Targets & tooling: ✅ APARENTEMENTE CERRADA (verificar antes de avanzar)
+- Targets Playwright regenerados contra HEAD (96 PNGs) en commit `6dd49bb`. Verificar frescura con `MOCKUP_TARGET_MANIFEST.json.git.commit`.
+- `qa/diff_fidelity.py` ya tiene gate endurecido (SSIM + MAD + changed_ratio + capture manifest evidence) desde commit `c707e28`.
+- `tests/test_mockup_qa_tools.py` y `tests/test_capture_v8_evidence.py` cubren el gate.
+- **No asumir cerrada**: validar con los comandos de la nota ⚠️ arriba antes de continuar.
+
+### FASE 1 — Base compartida (tokens/fuentes/QSS/iconos): ✅ APARENTEMENTE CERRADA (verificar antes de avanzar)
+- `shared/theme.py`: `V3_LIGHT` y `V3_DARK` con valores que coinciden con el mockup canónico (verificado en `tests/test_token_parity.py::test_runtime_tokens_are_mockup_adn_values`).
 - `shared/fonts.py`: carga Inter + Fraunces (presentes en `assets/fonts/`).
 - `shared/icons_svg.py`: set `I` del mockup empaquetado.
-- `tests/test_token_parity.py` y `tests/test_no_legacy_visuals.py` validan ADN nuevo.
+- `tests/test_token_parity.py` y `tests/test_no_legacy_visuals.py` validan ADN nuevo (excluyen valores legacy `#F4EFE5`, `#305A48`, `#07091A`, `#A99CFF`, `Manrope`, `Newsreader`).
 - `tests/test_fonts.py`: 10 tests pasan.
+- **No asumir cerrada**: validar tokens contra `neuromood-mockup.html` líneas 15-67 y fuentes cargadas en runtime con los comandos de la nota ⚠️ arriba.
 
 ### FASE 2 — Primitivas (fidelidad QPainter/QSS): 🚧 EN PROGRESO (3/8 grupos)
 - ✅ Empty states con surface card (`c96c406`).
@@ -284,9 +319,12 @@ export NM_VISUAL_QA=1
 **Objetivo:** confirmar que el fix de `6bb732b` funciona como se espera antes de avanzar.
 
 ```bash
-# 1. Sincronizar
-git checkout main && git pull origin main
-git log --oneline -1   # 6bb732b
+# 1. Sincronizar (ff-only para detectar divergencia local)
+git fetch origin
+git checkout main
+git pull --ff-only origin main
+git log --oneline -1   # 0eeeeab (HEAD actual)
+git log --oneline -5   # 0eeeeab, 6bb732b, c96c406, fd0c5be, 6dd49bb
 
 # 2. Limpiar working tree
 git checkout -- qa/_fidelity_fresh/
