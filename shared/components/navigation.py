@@ -1324,22 +1324,21 @@ class NMModule(ThemeAwareWidgetMixin, QWidget):
 
 
 class _ChromeLogoMark(QLabel):
-    """Logo icon mark que usa el asset real de la marca mediante nm_logo_pixmap."""
+    """Icono simple del titlebar canónico (`.tb-ic` del mockup)."""
 
-    def __init__(self, modo: str, parent=None):
+    def __init__(self, modo: str, icon_name: str = "home", parent=None):
         super().__init__(parent)
         self._modo = norm_modo(modo)
+        self._icon_name = icon_name or "home"
         self.setScaledContents(False)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self.setFixedSize(20, 20)
+        self.setFixedSize(18, 18)
         self._apply_theme(self._modo)
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        from shared.assets import nm_logo_pixmap
-
-        pm = nm_logo_pixmap(self._modo, tipo="icon", width=20, height=20)
-        self.setPixmap(pm)
+        icon = nm_icon(self._icon_name, v3c("accent", self._modo), size=18)
+        self.setPixmap(icon.pixmap(18, 18))
         self.update()
 

@@ -271,6 +271,13 @@ def test_window_chrome_matches_mockup_titlebar_contract(qtbot) -> None:
     assert margins.left() == _NM_CHROME_PAD_X == 16
     assert margins.right() == 16
     assert chrome.layout().spacing() == _NM_CHROME_GAP == 10
+    assert chrome._mark._icon_name == "home"
+    assert chrome._mark.width() == 18
+    assert chrome._mark.height() == 18
+
+    hub_chrome = NMWindowChrome(title="NeuroMood Hub", modo="light_hybrid", height=38)
+    qtbot.addWidget(hub_chrome)
+    assert hub_chrome._mark._icon_name == "brain"
 
     assert chrome._ctx_back.width() == _NM_CHROME_BACK_SIZE == 26
     assert chrome._ctx_back.height() == 26

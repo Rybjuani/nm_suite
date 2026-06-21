@@ -248,7 +248,8 @@ class NMWindowChrome(QWidget):
         title_l = QHBoxLayout(title_wrap)
         title_l.setContentsMargins(0, 0, 0, 0)
         title_l.setSpacing(_NM_CHROME_TITLE_GAP)
-        self._mark = _ChromeLogoMark(self._modo, self)
+        mark_icon = "brain" if "hub" in (self._title or "").lower() else "home"
+        self._mark = _ChromeLogoMark(self._modo, mark_icon, self)
         title_l.addWidget(self._mark, 0, Qt.AlignmentFlag.AlignVCenter)
         self._lbl_title = QLabel(self._title)
         title_l.addWidget(self._lbl_title, 0, Qt.AlignmentFlag.AlignVCenter)
