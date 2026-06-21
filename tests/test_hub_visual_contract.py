@@ -121,3 +121,44 @@ def test_hub_detalle_plan_tabs_match_mockup(qtbot) -> None:
     assert tab._tabs.count() == 4
     actual = [tab._tabs.tabText(i) for i in range(tab._tabs.count())]
     assert actual == expected
+
+
+# ── E4-H-CONFIG: Textos globales ──────────────────────────────────────────
+
+
+def test_hub_config_textos_title_is_serif(qtbot) -> None:
+    """E4-H-CONFIG: 'Textos globales' usa h-serif ~19-20px (mockup línea 1602)."""
+    import shared.fonts as _fonts_mod
+    from hub.config_global_texts import TextosGlobalesSuiteView
+
+    view = TextosGlobalesSuiteView(modo="light_hybrid", sb=None)
+    qtbot.addWidget(view)
+
+    font_serif = _fonts_mod.FONT_SERIF
+    font = view._title_lbl.font()
+    assert (
+        font_serif.lower() in font.family().lower()
+        or font.family().lower() in font_serif.lower()
+    ), f"_title_lbl debe ser serif ({font_serif}), got {font.family()!r}"
+
+
+def test_hub_config_textos_save_starts_disabled(qtbot) -> None:
+    """E4-H-CONFIG: 'Guardar cambios' arranca deshabilitado (mockup línea 1617: disabled)."""
+    from hub.config_global_texts import TextosGlobalesSuiteView
+
+    view = TextosGlobalesSuiteView(modo="light_hybrid", sb=None)
+    qtbot.addWidget(view)
+
+    assert not view._save.isEnabled()
+
+
+def test_hub_config_textos_has_search_and_filter(qtbot) -> None:
+    """E4-H-CONFIG: vista tiene NMSearchInput + filtro de módulos (mockup líneas 1603-1609)."""
+    from hub.config_global_texts import TextosGlobalesSuiteView
+
+    view = TextosGlobalesSuiteView(modo="light_hybrid", sb=None)
+    qtbot.addWidget(view)
+
+    assert hasattr(view, "_search")
+    assert hasattr(view, "_section_filter")
+    assert view._section_filter.count() > 1

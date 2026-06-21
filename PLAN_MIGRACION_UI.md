@@ -1,5 +1,9 @@
 # Plan de migración UI · NeuroMood Suite + Hub → mockup canónico
 
+> ⚠️ **SUPERADO por [`PLAN_MIGRACION_UI_V2.md`](PLAN_MIGRACION_UI_V2.md)** (raíz). Este
+> documento se conserva como histórico / fuente del postmortem (§3 del V2). El ADN, fuentes,
+> QSS e íconos que describe ya están implementados; usar el V2 para ejecutar.
+
 ## Contexto
 
 `neuromood-mockup.html` (raíz, 1680 líneas) es la **única fuente de verdad** visual.
