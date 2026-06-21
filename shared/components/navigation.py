@@ -1270,9 +1270,14 @@ class NMModule(ThemeAwareWidgetMixin, QWidget):
 
         # Contenido del modulo (build_ui lo llena) con centrado UI
         self._content = QWidget()
+        self._content.setObjectName("NMModuleContent")
         self._content.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         # Runtime spec §2: opaque background para que el stacked widget no
         # muestre contenido anterior a través del módulo activo.
+        # Importante: el QSS global (stylesheet_base) setea `QWidget { background-color: bg }`
+        # que pisa cualquier QPalette. Para garantizar surface real (mockup .screen),
+        # aplicamos QSS explícito con id específico — sin esto, los empty states
+        # de Rutina/Actividades/Avisos muestran `bg` en vez de `surface`.
         self._content.setAutoFillBackground(True)
         _surf = v3c("surface", self._modo)
         _pal = QPalette()
@@ -1290,6 +1295,21 @@ class NMModule(ThemeAwareWidgetMixin, QWidget):
         self.build_ui()
 
     def _apply_content_bg(self):
+        """Aplica fondo surface vía QSS (no palette — el QSS global pisa palette).
+
+        El mockup canónico envuelve el contenido de cada pantalla en `.screen`
+        que pinta surface con un radial-gradient sutil de surface-2 al top.
+        Aproximamos con surface sólido + objetoNombre específico para mayor
+        especificidad que el `QWidget {}` global.
+        """
+        surf = v3c("surface", self._modo).name()
+        # Importante: usar el objectName para specificity — `#NMModuleContent`
+        # tiene mayor precedencia que `QWidget` global, pero menor que estilos
+        # inline. Esto permite que widgets hijos con `background: transparent`
+        # sigan mostrando el surface a través.
+        self._content.setStyleSheet(
+            f"QWidget#NMModuleContent {{ background-color: {surf}; }}"
+        )
         self._content.update()
 
     def paintEvent(self, event):
