@@ -40,6 +40,7 @@ def _tm() -> ThemeManager:
 
 
 _NM_CHROME_PAD_X = 16
+_NM_CHROME_HEIGHT = 44
 _NM_CHROME_GAP = 10
 _NM_CHROME_TITLE_GAP = 8
 _NM_CHROME_STATUS_GAP = 14
@@ -192,7 +193,7 @@ class _ChromeThemeToggle(QPushButton):
 
 
 class NMWindowChrome(QWidget):
-    """Barra de título custom (runtime spec WindowChrome). Altura canónica 48 px.
+    """Barra de título custom (runtime spec WindowChrome). Altura canónica 44 px.
 
     - Drag a mover: mantiene lógica mousePressEvent/mouseMoveEvent.
     - Doble clic → maximizar/restaurar.
@@ -211,7 +212,7 @@ class NMWindowChrome(QWidget):
         show_theme_toggle: bool = False,
         show_maximize: bool = True,
         modo: str = "dark_hybrid",
-        height: int = 48,
+        height: int = _NM_CHROME_HEIGHT,
         parent=None,
     ):
         super().__init__(parent)

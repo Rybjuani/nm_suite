@@ -70,6 +70,9 @@ _NM_CONTROL_WEIGHT = TYPOGRAPHY["weight_semibold"]
 _NM_TAB_HEIGHT = 38
 _NM_TAB_RADIUS = 19
 _NM_TAB_FONT = "size_caption"
+_NM_TAB_CONTAINER_PAD = 5
+_NM_TAB_CONTAINER_GAP = 4
+_NM_TAB_PILL_BUTTON_HEIGHT = 30
 _NM_BUTTON_HEIGHT = {
     "sm": _NM_CONTROL_COMPACT_HEIGHT,
     "md": _NM_CONTROL_HEIGHT,
@@ -1033,6 +1036,7 @@ class NMTabs(QWidget):
     """
 
     changed = pyqtSignal(int, str)  # index, label
+    _PAINTED_CONTAINER_VARIANTS = ("pill", "seg")
 
     def __init__(
         self,
@@ -1064,9 +1068,21 @@ class NMTabs(QWidget):
         self._btns.clear()
         # Crear
         _is_seg = self._variant == "seg"
+        _is_pill = self._variant == "pill"
         # `.seg` del mockup: contenedor con padding 4; segmentos flex:1 (ancho
         # igual) y SIN stretch final. El resto de variantes mantienen su layout.
-        self._lay.setContentsMargins(4, 4, 4, 4) if _is_seg else self._lay.setContentsMargins(0, 0, 0, 0)
+        if _is_seg:
+            self._lay.setContentsMargins(4, 4, 4, 4)
+        elif _is_pill:
+            self._lay.setContentsMargins(
+                _NM_TAB_CONTAINER_PAD,
+                _NM_TAB_CONTAINER_PAD,
+                _NM_TAB_CONTAINER_PAD,
+                _NM_TAB_CONTAINER_PAD,
+            )
+        else:
+            self._lay.setContentsMargins(0, 0, 0, 0)
+        self._lay.setSpacing(_NM_TAB_CONTAINER_GAP if _is_pill else V3_SP["xs"])
         for i, label in enumerate(self._labels):
             btn = QPushButton(label)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1075,7 +1091,7 @@ class NMTabs(QWidget):
             btn.clicked.connect(lambda _=False, idx=i: self.set_current(idx))
             self._lay.addWidget(btn, 1 if _is_seg else 0)
             self._btns.append(btn)
-        if not _is_seg:
+        if not _is_seg and not _is_pill:
             self._lay.addStretch()
 
     def set_labels(self, labels: list[str]):
@@ -1113,7 +1129,10 @@ class NMTabs(QWidget):
             f"{border_strong.blue()},{max(border_strong.alpha(), 48)})"
         )
         for i, b in enumerate(self._btns):
-            b.setMinimumHeight(_NM_TAB_HEIGHT)
+            if self._variant == "pill":
+                b.setFixedHeight(_NM_TAB_PILL_BUTTON_HEIGHT)
+            else:
+                b.setMinimumHeight(_NM_TAB_HEIGHT)
             b.setFont(qfont(_NM_TAB_FONT, weight=_NM_CONTROL_WEIGHT))
             checked = i == self._current
             if self._variant == "underline":
@@ -1166,28 +1185,27 @@ class NMTabs(QWidget):
             elif checked:
                 b.setStyleSheet(
                     f"QPushButton {{ background: {primary}; color: {primary_ink}; "
-                    f"border: none; padding: 4px 14px; "
-                    f"border-radius: {_NM_TAB_RADIUS - 3}px; }}"
+                    f"border: none; padding: 0px 16px; "
+                    "font-size: 13px; border-radius: 999px; }}"
                 )
             else:
-                bg = surface_2
                 b.setStyleSheet(
-                    f"QPushButton {{ background: {bg}; color: {text_muted}; "
-                    f"border: 1px solid {soft_css}; padding: 4px 14px; "
-                    f"border-radius: {_NM_TAB_RADIUS - 3}px; }}"
-                    f"QPushButton:hover {{ color: {text}; border-color: {strong_css}; }}"
+                    f"QPushButton {{ background: transparent; color: {text_muted}; "
+                    "border: none; padding: 0px 16px; font-size: 13px; "
+                    "border-radius: 999px; }}"
+                    f"QPushButton:hover {{ color: {text}; background: {surface_2}; }}"
                 )
 
     def paintEvent(self, event):
-        # Solo la variante "seg" pinta contenedor (mockup `.seg`: fondo surface-3,
-        # borde line sutil, radio pill). El resto de variantes no tienen caja.
-        if self._variant != "seg":
+        # `.tabs` y `.seg` del mockup pintan una píldora contenedora.
+        if self._variant not in self._PAINTED_CONTAINER_VARIANTS:
             return
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         rect = QRectF(0.5, 0.5, self.width() - 1, self.height() - 1)
         radius = self.height() / 2
-        p.setBrush(QBrush(v3c("surface3", self._modo)))
+        bg_key = "surface_2" if self._variant == "pill" else "surface3"
+        p.setBrush(QBrush(v3c(bg_key, self._modo)))
         p.setPen(QPen(v3c("border", self._modo), 1))
         p.drawRoundedRect(rect, radius, radius)
         p.end()

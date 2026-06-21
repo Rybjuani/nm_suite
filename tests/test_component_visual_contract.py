@@ -74,6 +74,38 @@ def test_button_keeps_contract_height_under_global_pushbutton_qss(qtbot, qapp) -
         qapp.setStyleSheet(old_qss)
 
 
+def test_tabs_pill_paints_mockup_container_and_brand_selection(qtbot) -> None:
+    import inspect
+
+    from shared.components.buttons import (
+        NMTabs,
+        _NM_TAB_CONTAINER_GAP,
+        _NM_TAB_CONTAINER_PAD,
+        _NM_TAB_PILL_BUTTON_HEIGHT,
+    )
+
+    tabs = NMTabs(["Todas", "Mindfulness", "Tolerancia"], variant="pill", modo="light_hybrid")
+    qtbot.addWidget(tabs)
+    tabs.set_current(1)
+
+    margins = tabs.layout().contentsMargins()
+    assert margins.left() == _NM_TAB_CONTAINER_PAD == 5
+    assert margins.top() == 5
+    assert tabs.layout().spacing() == _NM_TAB_CONTAINER_GAP == 4
+    assert all(btn.height() == _NM_TAB_PILL_BUTTON_HEIGHT == 30 for btn in tabs._btns)
+
+    selected_qss = tabs._btns[1].styleSheet()
+    rest_qss = tabs._btns[0].styleSheet()
+    assert tabs._PAINTED_CONTAINER_VARIANTS == ("pill", "seg")
+    assert "background: #2e5d43" in selected_qss
+    assert "color: #f7f3ea" in selected_qss
+    assert "background: transparent" in rest_qss
+
+    source = inspect.getsource(NMTabs.paintEvent)
+    assert "self._PAINTED_CONTAINER_VARIANTS" in source
+    assert '"surface_2" if self._variant == "pill" else "surface3"' in source
+
+
 def test_badge_primitive_supports_mockup_tones(qtbot) -> None:
     from shared.components.surfaces import NMBadge
 
@@ -399,6 +431,7 @@ def test_window_chrome_matches_mockup_titlebar_contract(qtbot) -> None:
         _NM_CHROME_BACK_RADIUS,
         _NM_CHROME_BACK_SIZE,
         _NM_CHROME_GAP,
+        _NM_CHROME_HEIGHT,
         _NM_CHROME_ICON_SIZE,
         _NM_CHROME_PAD_X,
         _NM_CHROME_THEME_ICON_SIZE,
@@ -419,7 +452,7 @@ def test_window_chrome_matches_mockup_titlebar_contract(qtbot) -> None:
     )
     qtbot.addWidget(chrome)
     chrome.set_module_context("Respiracion", "breath")
-    assert chrome.height() == 48
+    assert chrome.height() == _NM_CHROME_HEIGHT == 44
 
     margins = chrome.layout().contentsMargins()
     assert margins.left() == _NM_CHROME_PAD_X == 16
