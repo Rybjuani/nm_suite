@@ -9,7 +9,7 @@ import datetime
 import uuid
 import logging
 
-from PyQt6.QtCore import Qt, pyqtSignal, QSize, QRectF
+from PyQt6.QtCore import Qt, pyqtSignal, QSize, QRectF, QEvent
 from PyQt6.QtGui import QPainter, QBrush, QPen, QColor, QPainterPath
 from PyQt6.QtWidgets import (
     QWidget,
@@ -1081,6 +1081,80 @@ class _PracticeClosure(QWidget):
         self.saved.emit(self._antes, self._despues, self._resultado, "")
 
 
+class _PracticeModalScrim(QWidget):
+    """Overlay modal del flujo DBT (mockup `.modal-bg` + `.modal`).
+
+    Pinta el scrim `rgba(20,18,14,.5)` sobre el módulo (biblioteca dimmed detrás)
+    y centra una card `surface` (r-xl 28) que aloja el contenido de práctica/
+    cierre. Antes la práctica REEMPLAZABA la pantalla full-screen sin scrim → el
+    fondo quedaba claro vs el target oscuro del mockup (MAD 0.23). El overlay
+    sigue el geometry del padre vía eventFilter.
+    """
+
+    _SCRIM_RGBA = (20, 18, 14, 128)  # mockup `.modal-bg` rgba(20,18,14,.5)
+
+    def __init__(self, parent: QWidget, modo: str):
+        super().__init__(parent)
+        self._modo = norm_modo(modo)
+        self._content: QWidget | None = None
+        # No pinta fondo opaco: el fillRect translúcido del paintEvent oscurece
+        # el contenido que quedó debajo (efecto scrim).
+        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
+        parent.installEventFilter(self)
+        self.setGeometry(parent.rect())
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(24, 24, 24, 24)
+        root.addStretch()
+        row = QHBoxLayout()
+        row.addStretch()
+        self._card = QFrame()
+        self._card.setObjectName("DBTModalCard")
+        self._card_lay = QVBoxLayout(self._card)
+        self._card_lay.setContentsMargins(0, 0, 0, 0)
+        self._card_lay.setSpacing(0)
+        row.addWidget(self._card)
+        row.addStretch()
+        root.addLayout(row)
+        root.addStretch()
+        self._apply_card_style()
+
+    def _apply_card_style(self):
+        surf = v3c("surface", self._modo).name()
+        b = v3c("line", self._modo)
+        self._card.setStyleSheet(
+            f"QFrame#DBTModalCard {{ background: {surf}; "
+            f"border: 1px solid rgba({b.red()},{b.green()},{b.blue()},{b.alpha()}); "
+            f"border-radius: 28px; }}"  # mockup `.modal` r-xl
+        )
+
+    def set_content(self, content: QWidget, max_width: int):
+        if content is self._content:
+            return
+        if self._content is not None:
+            self._card_lay.removeWidget(self._content)
+            self._content.hide()
+        self._content = content
+        content.setParent(self._card)
+        self._card.setMaximumWidth(max_width)
+        self._card_lay.addWidget(content)
+        content.show()
+
+    def apply_theme(self, modo: str):
+        self._modo = norm_modo(modo)
+        self._apply_card_style()
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.fillRect(self.rect(), QColor(*self._SCRIM_RGBA))
+
+    def eventFilter(self, obj, event):
+        if obj is self.parent() and event.type() == QEvent.Type.Resize:
+            self.setGeometry(self.parent().rect())
+        return False
+
+
 class ModuloDBT(NMModule):
     """Módulo de Habilidades DBT — NeuroMood Suite."""
     
@@ -1138,7 +1212,8 @@ class ModuloDBT(NMModule):
         
         self._practice_view = None
         self._closure_view = None
-        
+        self._modal_scrim = None
+
         # Navigation track
         self._on_tab_changed(0, t("text.module.dbt.tab_now", "Ahora"))
         
@@ -1326,48 +1401,52 @@ class ModuloDBT(NMModule):
                 card.clicked.connect(lambda s=skill: self.start_practice(s))
                 self._library_flow.addWidget(card)
                 
+    def _show_modal(self, content, max_width: int):
+        """Muestra `content` en el overlay modal (scrim + card centrada),
+        dejando la biblioteca/tabs visibles y dimmed detrás (mockup `.modal-bg`)."""
+        if self._modal_scrim is None:
+            self._modal_scrim = _PracticeModalScrim(self._content, self._modo)
+        self._modal_scrim.set_content(content, max_width)
+        self._modal_scrim.setGeometry(self._content.rect())
+        self._modal_scrim.show()
+        self._modal_scrim.raise_()
+
     def start_practice(self, skill: dict):
         self._cleanup_practice_flow()
-        self._tabs.hide()
-        
+
         # Cache origin tab to return correctly
         self._origin_view = self._tabs.current()
         self._current_skill_id = skill["id"]
         self._current_family = skill["family"]
         # RA-5: cachear la version canónica de DBT_SKILLS. Default 1 si falta.
         self._current_skill_version = skill.get("version", 1)
-        
+
         self._practice_view = _SkillPracticeView(skill, modo=self._modo, parent=self)
         self._practice_view.setMaximumWidth(560)
         self._practice_view.cancelled.connect(self._on_practice_cancelled)
         self._practice_view.finished.connect(self._on_practice_finished)
-        self._main_layout.addWidget(self._practice_view, 1, Qt.AlignmentFlag.AlignHCenter)
-        
-        self._view_stack.hide()
-        self._practice_view.show()
-        
+        # Mockup: la práctica es un MODAL sobre la biblioteca dimmed, no un
+        # reemplazo full-screen. Las tabs y el view_stack quedan visibles detrás.
+        self._show_modal(self._practice_view, 560)
+
     def _on_practice_cancelled(self):
+        # Tabs/view_stack nunca se ocultaron (quedaron dimmed bajo el scrim);
+        # solo cerramos el modal y restauramos la tab de origen.
         self._cleanup_practice_flow()
-        self._tabs.show()
-        self._view_stack.show()
         self._tabs.set_current(self._origin_view)
-        
+
     def _on_practice_finished(self, started_at: datetime.datetime):
         self._started_at = started_at
-        self._tabs.hide()
-        
+
         skill = DBT_SKILLS.get(self._current_skill_id)
         skill_title = skill["title"] if skill else ""
-        
+
         self._closure_view = _PracticeClosure(skill_title, modo=self._modo, parent=self)
         self._closure_view.setMaximumWidth(864)
         self._closure_view.saved.connect(self._on_practice_saved)
-        
-        self._main_layout.addWidget(self._closure_view, 1, Qt.AlignmentFlag.AlignHCenter)
-        if self._practice_view:
-            self._practice_view.hide()
-        self._closure_view.show()
-        
+        # El cierre reemplaza a la práctica DENTRO del mismo modal (scrim sigue).
+        self._show_modal(self._closure_view, 864)
+
     def _on_practice_saved(self, antes, despues, resultado, nota):
         # Calculate duration
         dur_seg = 0
@@ -1409,10 +1488,8 @@ class ModuloDBT(NMModule):
             NMToast.display(self, "No se pudo guardar la práctica.", variant="error")
             
         self._cleanup_practice_flow()
-        self._tabs.show()
-        self._view_stack.show()
         self._tabs.set_current(0)
-        
+
     def _get_need_text(self, family: str) -> str:
         return {
             "mindfulness": "Volver al presente",
@@ -1422,16 +1499,14 @@ class ModuloDBT(NMModule):
         }.get(family, "")
         
     def _cleanup_practice_flow(self):
-        if self._practice_view:
-            self._practice_view.hide()
-            self._main_layout.removeWidget(self._practice_view)
-            self._practice_view.deleteLater()
-            self._practice_view = None
-        if self._closure_view:
-            self._closure_view.hide()
-            self._main_layout.removeWidget(self._closure_view)
-            self._closure_view.deleteLater()
-            self._closure_view = None
+        # El scrim es dueño de la card y del contenido (práctica/cierre) como
+        # hijos; al borrarlo se destruyen con él. Solo anulamos las referencias.
+        if self._modal_scrim is not None:
+            self._modal_scrim.hide()
+            self._modal_scrim.deleteLater()
+            self._modal_scrim = None
+        self._practice_view = None
+        self._closure_view = None
             
     def get_card_status(self) -> str:
         today_str = datetime.date.today().isoformat()
@@ -1492,6 +1567,8 @@ class ModuloDBT(NMModule):
                     child._apply_theme(self._modo)
                 
         # Forward theme calls to active practice flows
+        if getattr(self, "_modal_scrim", None) is not None:
+            self._modal_scrim.apply_theme(self._modo)
         if hasattr(self, "_practice_view") and self._practice_view:
             if hasattr(self._practice_view, "_apply_theme"):
                 self._practice_view._apply_theme(self._modo)
