@@ -83,6 +83,10 @@ generado contra un commit anterior (`1bfba84`) y no contra el codigo actual. Por
 | Home: ritmo vertical | `qa/_captures_block_home_layout` | Home seguia FAIL | Home score mejoro a SSIM `0.66026` dark / `0.66040` light. |
 | Home: cards + fixture QA | `qa/_captures_block_home_cards` | Home seguia FAIL | Textos/badges/icon box alineados; Home score mejoro a SSIM `0.67851` dark / `0.67435` light. |
 | Home: barra del hero | `qa/_captures_block_home_hero_bar` | Home seguia FAIL | Barra 8px con fill `brand->mind`; Home score subio a SSIM `0.68378` dark / `0.67964` light. |
+| F2 botones: `.btn--soft` | `qa/_captures_block_buttons_actividades` | Actividades seguia FAIL | `NMButton` soporta `soft`; Actividades usa `ghost`/`soft`. SSIM `0.68200` dark / `0.69674` light. |
+| F2 focus/input | `qa/_captures_block_focus_textos` | Textos seguia FAIL | `NMInput`/`NMTextArea` usan `brand-line` + halo `brand-soft`. SSIM `0.61929` dark / `0.63264` light. |
+| F2 slider Animo | `qa/_captures_block_slider_animo` | Animo seguia FAIL | Thumb activo 22px con borde `brand`. SSIM `0.76828` dark / `0.78618` light. |
+| F4 Textos Globales dirty | `qa/_captures_block_textos_dirty` | Textos seguia FAIL | Fila dirty pinta borde `brand-line` + halo `brand-soft`. SSIM default `0.61886` dark / `0.63223` light. |
 
 Deuda Home restante tras estos bloques: aun no alcanza el gate compuesto. En la variante
 score quedan diferencias de tipografia fina, distribucion vertical de cards, radios/sombras,
@@ -106,13 +110,14 @@ Hallazgos confirmados:
   o de texto; no sustituyen el diff pixel/manifest. Los tests nuevos de QA evitan falsos
   positivos del gate, pero aun falta cobertura visual fuerte por componente/pantalla.
 - F2 botones: `NMButton` no tenia variante `soft`; el mockup exige `.btn--soft` en acciones
-  como `Actividades > Hice`.
-- F2 focus/input: `NMSearchInput` ya pinta halo `brand-soft`, pero `NMInput` y `NMTextArea`
-  siguen usando foco/glow `accent`; el mockup exige `brand-line` + `brand-soft`.
-- F2 slider: `stylesheet_slider()` ya usa thumb 22px con borde brand, pero el slider custom
-  de Animo (`_MoodTrackBar`) conserva thumb activo 16px con borde por color de nivel.
-- F4 Textos Globales: `tg-row.dirty` esta confirmado como faltante; el mockup exige
-  `brand-line` + glow `brand-soft` cuando una fila queda modificada.
+  como `Actividades > Hice`. Confirmado y corregido.
+- F2 focus/input: `NMSearchInput` ya pintaba halo `brand-soft`, pero `NMInput` y
+  `NMTextArea` seguian usando foco/glow `accent`. Confirmado y corregido.
+- F2 slider: `stylesheet_slider()` ya usaba thumb 22px con borde brand, pero el slider custom
+  de Animo (`_MoodTrackBar`) conservaba thumb activo 16px con borde por color de nivel.
+  Confirmado y corregido.
+- F4 Textos Globales: `tg-row.dirty` estaba confirmado como faltante; el mockup exige
+  `brand-line` + glow `brand-soft` cuando una fila queda modificada. Confirmado y corregido.
 
 Hallazgos parcialmente confirmados o superados por cambios posteriores:
 
@@ -139,8 +144,10 @@ Deuda transversal observada en muchas pantallas:
   pesos de fuente y jerarquia de etiquetas producen cambios masivos aunque los tokens base
   existan.
 - Cards, badges, chips, vacios y rows necesitan ajuste fino de paddings, alturas y texto real.
-- F2 confirmada: falta cerrar `.btn--soft`, foco `brand-line/brand-soft` en `NMInput` y
-  `NMTextArea`, y el thumb canonico del slider custom de Animo.
+- F2 ya corregida en los puntos destacados por GLM: `.btn--soft`, foco
+  `brand-line/brand-soft` en `NMInput`/`NMTextArea`, y thumb canonico del slider custom
+  de Animo. Siguen pendientes otras primitivas no abordadas en este bloque (por ejemplo
+  hover-lift de cards y ajustes finos de tabs/fchips/patient rows).
 - Los estados empty son peligrosos: son los mas parecidos por estructura, pero fallan por
   color/espaciado de superficie y no deben usarse como prueba de fidelidad global.
 
