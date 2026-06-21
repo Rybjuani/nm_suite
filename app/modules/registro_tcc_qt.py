@@ -685,6 +685,7 @@ class ModuloRegistroTCC(NMModule):
         # texto suelto, no como botón (Fase 8). Ahora secondary → borde visible
         # y jerarquía clara frente al CTA primario de la derecha.
         nav_layout = QHBoxLayout()
+        nav_layout.setContentsMargins(0, 0, 0, 0)
         nav_layout.setSpacing(V3_SP["sm"])
         self._btn_prev = NMButton(
             t("text.module.registro.prev_btn", "Anterior"),

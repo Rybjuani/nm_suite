@@ -41,6 +41,61 @@ def test_registro_tcc_stepper_otro_and_final_cta_match_mockup(qtbot, monkeypatch
     assert module._btn_next.text() == "Guardar registro"
 
 
+def test_registro_tcc_response_cta_stays_inside_card_after_mouse_navigation(
+    qtbot, monkeypatch
+) -> None:
+    _use_mockup_defaults(monkeypatch)
+    monkeypatch.setenv("NM_VISUAL_QA", "1")
+    monkeypatch.setenv("NM_TEST_FORCE_CLOSE", "1")
+
+    from PyQt6.QtCore import QPoint, QRect, Qt
+    from PyQt6.QtTest import QTest
+
+    from app.main_qt import NeuroMoodApp
+
+    window = NeuroMoodApp()
+    qtbot.addWidget(window)
+    window.resize(960, 600)
+    window.show()
+    window._apply_theme("dark_hybrid")
+    window._open_module("registro")
+    qtbot.wait(80)
+    module = window._current_module
+
+    module._txt_situacion.setPlainText("Discusión breve por tiempos de entrega.")
+    QTest.mouseClick(module._btn_next, Qt.MouseButton.LeftButton)
+    qtbot.wait(120)
+
+    module._emotion_tiles[0].clicked.emit()
+    QTest.mouseClick(module._btn_next, Qt.MouseButton.LeftButton)
+    qtbot.wait(120)
+
+    module._txt_pensamiento.setPlainText(
+        "Nunca voy a poder resolver esto y todo va a salir mal."
+    )
+    QTest.mouseClick(module._btn_next, Qt.MouseButton.LeftButton)
+    qtbot.wait(160)
+
+    assert module._step == 3
+    assert module._btn_next.text() == "Guardar registro"
+
+    viewport = QRect(QPoint(0, 0), window.size())
+    button_rect = QRect(module._btn_next.mapTo(window, QPoint(0, 0)), module._btn_next.size())
+    effective_clip = QRect(viewport)
+    parent = module._btn_next.parentWidget()
+    while parent is not None:
+        parent_rect = QRect(parent.mapTo(window, QPoint(0, 0)), parent.size())
+        effective_clip = effective_clip.intersected(parent_rect)
+        parent = parent.parentWidget()
+
+    assert viewport.contains(button_rect.topLeft())
+    assert viewport.contains(button_rect.bottomRight())
+    assert viewport.contains(button_rect.center())
+    assert effective_clip.contains(button_rect.topLeft())
+    assert effective_clip.contains(button_rect.bottomRight())
+    assert effective_clip.contains(button_rect.center())
+
+
 def test_registro_tcc_distortion_and_tip_tones_match_mockup(qtbot, monkeypatch) -> None:
     _use_mockup_defaults(monkeypatch)
 

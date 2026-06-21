@@ -11,6 +11,7 @@ from PyQt6.QtCore import (
     QSequentialAnimationGroup,
     QSize,
     Qt,
+    pyqtProperty,
     pyqtSignal,
 )
 from PyQt6.QtGui import (
@@ -75,12 +76,37 @@ _NM_BUTTON_HEIGHT = {
     "lg": _NM_CONTROL_HEIGHT,
 }
 _NM_BUTTON_FONT = {"sm": "size_caption", "md": _NM_CONTROL_FONT, "lg": _NM_CONTROL_FONT}
+_NM_BUTTON_QSS_SELECTOR = ", ".join(
+    f"QPushButton#NMButton_{variant}"
+    for variant in ("gradient", "secondary", "ghost", "soft", "danger")
+)
 _NM_BUTTON_VARIANT_ALIASES = {
     "primary": "gradient",
     "filled": "gradient",
     "outline": "secondary",
     "destructive": "danger",
 }
+
+
+def _nm_button_stylesheet(modo: str, height: int) -> str:
+    return (
+        focus_ring_stylesheet(modo)
+        + f"""
+    {_NM_BUTTON_QSS_SELECTOR} {{
+        background: transparent;
+        border: none;
+        padding: 0px;
+        min-height: {height}px;
+        max-height: {height}px;
+    }}
+    {_NM_BUTTON_QSS_SELECTOR}:hover,
+    {_NM_BUTTON_QSS_SELECTOR}:pressed,
+    {_NM_BUTTON_QSS_SELECTOR}:disabled {{
+        background: transparent;
+        border: none;
+    }}
+    """
+    )
 
 
 class NMButton(QPushButton):
@@ -123,14 +149,14 @@ class NMButton(QPushButton):
         self._size = size if size in ("sm", "md", "lg") else "md"
         self._hover = False
         self._pressed = False
+        self._press_scale = 1.0
         self._success_anim: QSequentialAnimationGroup | None = None
         self._scale_anim: QPropertyAnimation | None = None
-        self._base_geom = None
         self._btn_shadow: QGraphicsDropShadowEffect | None = None
 
         self.setObjectName(f"NMButton_{self._variant}")
-        eff_height = height if height is not None else _NM_BUTTON_HEIGHT[self._size]
-        self.setFixedHeight(eff_height)
+        self._button_height = height if height is not None else _NM_BUTTON_HEIGHT[self._size]
+        self.setFixedHeight(self._button_height)
         if width:
             self.setMinimumWidth(width)
         self.setFont(qfont(_NM_BUTTON_FONT[self._size], weight=_NM_CONTROL_WEIGHT))
@@ -139,7 +165,7 @@ class NMButton(QPushButton):
         self.setFlat(True)
         self.setAccessibleName(text)
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
-        self.setStyleSheet(focus_ring_stylesheet(self._modo))
+        self._apply_button_stylesheet()
 
         self._apply_btn_shadow()
         _tm().theme_changed.connect(self._apply_theme)
@@ -151,6 +177,7 @@ class NMButton(QPushButton):
         if canonical in ("gradient", "secondary", "ghost", "soft", "danger"):
             self._variant = canonical
             self.setObjectName(f"NMButton_{self._variant}")
+            self._apply_button_stylesheet()
             self._apply_btn_shadow()
             self.update()
 
@@ -160,8 +187,10 @@ class NMButton(QPushButton):
     def set_size(self, size: str):
         if size in ("sm", "md", "lg") and size != self._size:
             self._size = size
-            self.setFixedHeight(_NM_BUTTON_HEIGHT[size])
+            self._button_height = _NM_BUTTON_HEIGHT[size]
+            self.setFixedHeight(self._button_height)
             self.setFont(qfont(_NM_BUTTON_FONT[size], weight=_NM_CONTROL_WEIGHT))
+            self._apply_button_stylesheet()
             self.update()
 
     # ── paint ─────────────────────────────────────────────────────────────────
@@ -170,10 +199,10 @@ class NMButton(QPushButton):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        h = self.height()
-        r = min(LAYOUT["radius_button"], h // 2)
-        w = self.width()
-        rect = QRectF(self.rect())
+        full_rect = QRectF(self.rect())
+        rect = self._paint_rect(full_rect)
+        h = rect.height()
+        r = min(float(LAYOUT["radius_button"]), h / 2)
         path = QPainterPath()
         path.addRoundedRect(rect, r, r)
         is_dark = "dark" in self._modo
@@ -218,7 +247,7 @@ class NMButton(QPushButton):
             border_col = v3c(border_key, self._modo)
             p.setPen(QPen(border_col, 1))
             p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawRoundedRect(QRectF(0.5, 0.5, w - 1, h - 1), r, r)
+            p.drawRoundedRect(rect.adjusted(0.5, 0.5, -0.5, -0.5), r, r)
 
             text_color = v3c("text", self._modo)
 
@@ -248,7 +277,7 @@ class NMButton(QPushButton):
             border_col = v3c(border_key, self._modo)
             p.setPen(QPen(border_col, 1))
             p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawRoundedRect(QRectF(0.5, 0.5, w - 1, h - 1), r, r)
+            p.drawRoundedRect(rect.adjusted(0.5, 0.5, -0.5, -0.5), r, r)
 
             text_color = v3c("danger", self._modo)
 
@@ -266,7 +295,7 @@ class NMButton(QPushButton):
             border_col = v3c("brandLine" if (self._hover or self._pressed) else "border", self._modo)
             p.setPen(QPen(border_col, 1))
             p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawRoundedRect(QRectF(0.5, 0.5, w - 1, h - 1), r, r)
+            p.drawRoundedRect(rect.adjusted(0.5, 0.5, -0.5, -0.5), r, r)
             # Text: lift to `text` on hover/press for clear feedback
             text_color = (
                 v3c("text", self._modo)
@@ -306,18 +335,7 @@ class NMButton(QPushButton):
         super().mouseReleaseEvent(event)
 
     def _animate_press_scale(self, scale: float):
-        """Scale 0.97 ↔ 1.0 (100ms) — spec README v3 para botones."""
-        if scale < 1.0:
-            self._base_geom = self.geometry()
-        base = self._base_geom or self.geometry()
-        if not base or base.isNull():
-            return
-        if scale >= 1.0:
-            target = base
-        else:
-            dw = int(base.width() * (1.0 - scale) / 2)
-            dh = int(base.height() * (1.0 - scale) / 2)
-            target = base.adjusted(dw, dh, -dw, -dh)
+        """Scale visual 0.99 ↔ 1.0 sin mutar la geometría que controla el layout."""
         if self._scale_anim:
             try:
                 if not sip.isdeleted(self._scale_anim):
@@ -325,25 +343,43 @@ class NMButton(QPushButton):
             except RuntimeError:
                 pass
             self._scale_anim = None
-        anim = QPropertyAnimation(self, b"geometry", self)
+        anim = QPropertyAnimation(self, b"press_scale", self)
         self._scale_anim = anim
         anim.setDuration(100)
-        anim.setStartValue(self.geometry())
-        anim.setEndValue(target)
+        anim.setStartValue(self._press_scale)
+        anim.setEndValue(float(scale))
         anim.setEasingCurve(EASE_OUT)
         anim.finished.connect(
             lambda a=anim: setattr(self, "_scale_anim", None)
             if self._scale_anim is a else None
         )
         anim.start(QAbstractAnimation.DeletionPolicy.DeleteWhenStopped)
-        if scale >= 1.0:
-            self._base_geom = None
+
+    def _get_press_scale(self) -> float:
+        return self._press_scale
+
+    def _set_press_scale(self, value: float):
+        self._press_scale = max(0.96, min(1.0, float(value)))
+        self.update()
+
+    press_scale = pyqtProperty(float, _get_press_scale, _set_press_scale)
+
+    def _paint_rect(self, rect: QRectF) -> QRectF:
+        if self._press_scale >= 0.999:
+            return rect
+        dx = rect.width() * (1.0 - self._press_scale) / 2.0
+        dy = rect.height() * (1.0 - self._press_scale) / 2.0
+        return rect.adjusted(dx, dy, -dx, -dy)
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        self.setStyleSheet(focus_ring_stylesheet(self._modo))
+        self._apply_button_stylesheet()
         self._apply_btn_shadow()
         self.update()
+
+    def _apply_button_stylesheet(self):
+        self.setFixedHeight(self._button_height)
+        self.setStyleSheet(_nm_button_stylesheet(self._modo, self._button_height))
 
     def _apply_btn_shadow(self):
         if not self.isEnabled():

@@ -681,15 +681,6 @@ class _HeroBienestar(QFrame):
         self._msg.setFont(qfont("size_small"))
         empty_lay.addWidget(self._msg)
         empty_lay.addStretch()
-        self._empty_cta = NMButton(
-            t("text.home.empty_cta", "Registrar ánimo"),
-            variant="secondary",
-            size="sm",
-            width=136,
-            modo=self._modo,
-        )
-        self._empty_cta.clicked.connect(lambda: self._on_module_open("animo"))
-        empty_lay.addWidget(self._empty_cta)
         self._stack.addWidget(self._empty_page)
 
         # ── Filled page ──
@@ -776,8 +767,6 @@ class _HeroBienestar(QFrame):
         self._score.setStyleSheet(f"color: {brand.name()}; background: transparent;")
         self._score_unit.setStyleSheet(f"color: {muted.name()}; background: transparent;")
         self._msg.setStyleSheet(f"color: {text2.name()}; background: transparent;")
-        if hasattr(self, "_empty_cta"):
-            self._empty_cta._apply_theme(self._modo)
         if hasattr(self, "_progress_bar"):
             self._progress_bar._apply_theme(self._modo)
 

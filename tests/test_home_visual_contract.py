@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-def test_home_hero_empty_state_matches_mockup_cta(qtbot) -> None:
+def test_home_hero_empty_state_does_not_revive_removed_cta(qtbot) -> None:
     from app.home_qt import _HeroBienestar
 
     opened: list[str] = []
@@ -15,10 +15,8 @@ def test_home_hero_empty_state_matches_mockup_cta(qtbot) -> None:
 
     assert hero._stack.currentIndex() == 0
     assert hero._msg.text() == "Aún no registraste tu ánimo hoy."
-    assert hero._empty_cta.text() == "Registrar ánimo"
-
-    hero._empty_cta.click()
-    assert opened == ["animo"]
+    assert not hasattr(hero, "_empty_cta")
+    assert opened == []
 
 
 def test_home_hero_filled_state_matches_mockup_score_and_delta(qtbot, monkeypatch) -> None:

@@ -24,6 +24,56 @@ def test_button_primitive_supports_mockup_soft_variant(qtbot) -> None:
     assert 'v3c("brand", self._modo)' in source
 
 
+def test_button_press_animation_does_not_mutate_layout_geometry(qtbot) -> None:
+    from PyQt6.QtCore import Qt
+    from PyQt6.QtTest import QTest
+    from PyQt6.QtWidgets import QHBoxLayout, QWidget
+
+    from shared.components.buttons import NMButton
+
+    host = QWidget()
+    lay = QHBoxLayout(host)
+    btn = NMButton("Siguiente", variant="gradient", modo="dark_hybrid", width=160)
+    lay.addWidget(btn)
+    qtbot.addWidget(host)
+    host.resize(240, 80)
+    host.show()
+    qtbot.wait(50)
+
+    before = btn.geometry()
+    QTest.mousePress(btn, Qt.MouseButton.LeftButton)
+    qtbot.wait(140)
+    assert btn.geometry() == before
+
+    QTest.mouseRelease(btn, Qt.MouseButton.LeftButton)
+    qtbot.wait(140)
+    assert btn.geometry() == before
+
+
+def test_button_keeps_contract_height_under_global_pushbutton_qss(qtbot, qapp) -> None:
+    from PyQt6.QtWidgets import QHBoxLayout, QWidget
+
+    from shared.components.buttons import NMButton, _NM_CONTROL_HEIGHT
+
+    old_qss = qapp.styleSheet()
+    try:
+        qapp.setStyleSheet("QPushButton { padding: 11px 20px; min-height: 32px; }")
+        host = QWidget()
+        lay = QHBoxLayout(host)
+        btn = NMButton("Guardar registro", variant="gradient", modo="dark_hybrid", width=160)
+        lay.addWidget(btn)
+        qtbot.addWidget(host)
+        host.resize(240, 80)
+        host.show()
+        qtbot.wait(50)
+
+        assert btn.height() == _NM_CONTROL_HEIGHT
+        assert btn.minimumHeight() == _NM_CONTROL_HEIGHT
+        assert btn.maximumHeight() == _NM_CONTROL_HEIGHT
+    finally:
+        qapp.setStyleSheet(old_qss)
+
+
 def test_badge_primitive_supports_mockup_tones(qtbot) -> None:
     from shared.components.surfaces import NMBadge
 
