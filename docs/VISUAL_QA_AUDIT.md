@@ -89,6 +89,40 @@ score quedan diferencias de tipografia fina, distribucion vertical de cards, rad
 blob radial del hero y algunos offsets de badges. La variante no-score requiere recaptura
 fresca despues de la correccion de fixtures.
 
+## Insumo externo GLM verificado
+
+Se incorporo `C:\Users\nosom\Desktop\Informe.md` como insumo externo read-only. No se asume
+correcto: se cruzo contra repo, `PLAN_MIGRACION_UI.md` y `neuromood-mockup.html`.
+
+Hallazgos confirmados:
+
+- `_fidelity_selfcheck` no certifica fidelidad: `qa/_fidelity_selfcheck/FIDELITY_REPORT.json`
+  tiene 96 filas y en las 96 `target_file == actual_file`. Es una autocomparacion
+  mockup-vs-mockup, por eso SSIM=1.0/MAD=0.0 es trivial y no debe usarse como evidencia.
+- Targets stale: `qa/_mockup_targets/MOCKUP_TARGET_MANIFEST.json` fue generado en commit
+  `0fcb0cc6...`. Ademas `qa/nm_capturas_actualizadas` tambien quedo stale frente al codigo
+  actual. Se requiere recaptura completa fresca antes de cierre de fase.
+- Tests visuales debiles: varios `tests/*_visual_contract.py` son contratos estructurales
+  o de texto; no sustituyen el diff pixel/manifest. Los tests nuevos de QA evitan falsos
+  positivos del gate, pero aun falta cobertura visual fuerte por componente/pantalla.
+- F2 botones: `NMButton` no tenia variante `soft`; el mockup exige `.btn--soft` en acciones
+  como `Actividades > Hice`.
+- F2 focus/input: `NMSearchInput` ya pinta halo `brand-soft`, pero `NMInput` y `NMTextArea`
+  siguen usando foco/glow `accent`; el mockup exige `brand-line` + `brand-soft`.
+- F2 slider: `stylesheet_slider()` ya usa thumb 22px con borde brand, pero el slider custom
+  de Animo (`_MoodTrackBar`) conserva thumb activo 16px con borde por color de nivel.
+- F4 Textos Globales: `tg-row.dirty` esta confirmado como faltante; el mockup exige
+  `brand-line` + glow `brand-soft` cuando una fila queda modificada.
+
+Hallazgos parcialmente confirmados o superados por cambios posteriores:
+
+- Home hero bar, colores de badges y fixtures QA ya fueron corregidos en los commits
+  posteriores a la auditoria inicial; no se arrastran como deuda abierta en esos terminos.
+- Slider global QSS no mantiene los 10 stops denunciados por GLM; ese punto aplica al
+  componente custom de Animo, no al QSS global actual.
+- Divergencias Hub/Suite listadas por GLM quedan como backlog a verificar por fase. Solo se
+  integran como deuda abierta cuando hay evidencia local o coinciden con el plan.
+
 ## Deuda visual por fase y pantalla
 
 ### Fase 0 - Targets & tooling
@@ -105,6 +139,8 @@ Deuda transversal observada en muchas pantallas:
   pesos de fuente y jerarquia de etiquetas producen cambios masivos aunque los tokens base
   existan.
 - Cards, badges, chips, vacios y rows necesitan ajuste fino de paddings, alturas y texto real.
+- F2 confirmada: falta cerrar `.btn--soft`, foco `brand-line/brand-soft` en `NMInput` y
+  `NMTextArea`, y el thumb canonico del slider custom de Animo.
 - Los estados empty son peligrosos: son los mas parecidos por estructura, pero fallan por
   color/espaciado de superficie y no deben usarse como prueba de fidelidad global.
 
@@ -129,7 +165,7 @@ Deuda transversal observada en muchas pantallas:
 |---|---|---:|---|
 | Pacientes | list, empty | 0.722-0.883 | Rows/sparkline/ring/header difieren; list y empty tienen `REQUIRES_DATA_STATE`. |
 | Detalle | recordatorios, timer, rutina, activacion, resumen IA | 0.675-0.737 | Hero, tabs planas, grid form/panel y modal IA no alcanzan el mockup. |
-| Textos globales | default | 0.593-0.595 | Mayor deuda Hub: toolbar, lista, inputs, contadores y footer no coinciden. |
+| Textos globales | default | 0.593-0.595 | Mayor deuda Hub: toolbar, lista, inputs, contadores, footer y estado `tg-row.dirty` no coinciden. |
 
 ## Criterio de avance
 
