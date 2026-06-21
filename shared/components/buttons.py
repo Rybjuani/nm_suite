@@ -32,6 +32,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QSizePolicy,
     QTextEdit,
     QWidget,
 )
@@ -73,6 +74,9 @@ _NM_TAB_FONT = "size_caption"
 _NM_TAB_CONTAINER_PAD = 5
 _NM_TAB_CONTAINER_GAP = 4
 _NM_TAB_PILL_BUTTON_HEIGHT = 30
+_NM_SEARCH_MARGIN = 3
+_NM_SEARCH_INNER_HEIGHT = _NM_CONTROL_HEIGHT - (_NM_SEARCH_MARGIN * 2)
+_NM_SEARCH_CLEAR_SIZE = 22
 _NM_BUTTON_HEIGHT = {
     "sm": _NM_CONTROL_COMPACT_HEIGHT,
     "md": _NM_CONTROL_HEIGHT,
@@ -796,11 +800,15 @@ class NMSearchInput(QWidget):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
-        self.setMinimumHeight(_NM_CONTROL_HEIGHT)
-        self.setMaximumHeight(_NM_CONTROL_HEIGHT)
+        self.setFixedHeight(_NM_CONTROL_HEIGHT)
         # Reservar 3px de margen en los 4 lados para que el halo del focus
         # ring (brand-soft 3px) no se recorte por los bounds del widget.
-        self.setContentsMargins(3, 3, 3, 3)
+        self.setContentsMargins(
+            _NM_SEARCH_MARGIN,
+            _NM_SEARCH_MARGIN,
+            _NM_SEARCH_MARGIN,
+            _NM_SEARCH_MARGIN,
+        )
         self.setAccessibleName("Buscar")
 
         lay = QHBoxLayout(self)
@@ -815,6 +823,8 @@ class NMSearchInput(QWidget):
         self._edit.setPlaceholderText(placeholder)
         self._edit.setFrame(False)
         self._edit.setFont(qfont(_NM_CONTROL_FONT))
+        self._edit.setFixedHeight(_NM_SEARCH_INNER_HEIGHT)
+        self._edit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         # Texto centrado verticalmente: sin margen de texto propio el QLineEdit
         # frameless dejaba el placeholder/valor pegado abajo del campo. Margen 0
         # + alineación VCenter en el layout lo centran de forma estable con
@@ -825,7 +835,8 @@ class NMSearchInput(QWidget):
         lay.addWidget(self._edit, stretch=1, alignment=Qt.AlignmentFlag.AlignVCenter)
 
         self._clear_btn = QPushButton("")
-        self._clear_btn.setFixedSize(22, 22)
+        self._clear_btn.setFixedSize(_NM_SEARCH_CLEAR_SIZE, _NM_SEARCH_CLEAR_SIZE)
+        self._clear_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self._clear_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._clear_btn.setFlat(True)
         self._clear_btn.clicked.connect(lambda: self._edit.setText(""))
@@ -911,11 +922,21 @@ class NMSearchInput(QWidget):
         c_placeholder = v3c("faint", self._modo).name()
         self._edit.setStyleSheet(
             f"QLineEdit {{ background: transparent; border: none; "
-            f"color: {c_text}; padding: 6px 4px; "
+            f"color: {c_text}; padding: 0 4px; "
+            f"min-height: {_NM_SEARCH_INNER_HEIGHT}px; "
+            f"max-height: {_NM_SEARCH_INNER_HEIGHT}px; "
             f"font-size: {TYPOGRAPHY['size_body']}px; }}"
             f"QLineEdit::placeholder {{ color: {c_placeholder}; }}"
         )
-        self._clear_btn.setStyleSheet("QPushButton { background: transparent; border: none; }")
+        self._clear_btn.setStyleSheet(
+            "QPushButton { "
+            "background: transparent; border: none; padding: 0px; "
+            f"min-width: {_NM_SEARCH_CLEAR_SIZE}px; "
+            f"max-width: {_NM_SEARCH_CLEAR_SIZE}px; "
+            f"min-height: {_NM_SEARCH_CLEAR_SIZE}px; "
+            f"max-height: {_NM_SEARCH_CLEAR_SIZE}px; "
+            "}"
+        )
         self._render_icons()
         # Forzar repintado de border via focus event listener
         self._edit.installEventFilter(self) if not hasattr(self, "_filt") else None

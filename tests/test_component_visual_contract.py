@@ -141,6 +141,41 @@ def test_input_focus_uses_mockup_brand_line_and_soft_halo(qtbot) -> None:
     assert 'v3c("brandSoft", self._modo)' in inspect.getsource(NMTextArea.focusInEvent)
 
 
+def test_search_input_children_stay_inside_mockup_control_height(qtbot, qapp) -> None:
+    from shared.components.buttons import (
+        NMSearchInput,
+        _NM_CONTROL_HEIGHT,
+        _NM_SEARCH_CLEAR_SIZE,
+        _NM_SEARCH_INNER_HEIGHT,
+        _NM_SEARCH_MARGIN,
+    )
+
+    old_qss = qapp.styleSheet()
+    try:
+        qapp.setStyleSheet(
+            "QPushButton { padding: 11px 20px; min-height: 32px; } "
+            "QLineEdit { padding: 8px 10px; min-height: 32px; }"
+        )
+        search = NMSearchInput("Buscar textos", modo="light_hybrid")
+        qtbot.addWidget(search)
+        search.set_text("texto")
+        search.resize(340, _NM_CONTROL_HEIGHT)
+        search.show()
+        qtbot.wait(50)
+
+        assert search.height() == _NM_CONTROL_HEIGHT == 42
+        assert _NM_SEARCH_MARGIN == 3
+        assert search._edit.height() == _NM_SEARCH_INNER_HEIGHT == 36
+        assert search._clear_btn.width() == _NM_SEARCH_CLEAR_SIZE == 22
+        assert search._clear_btn.height() == 22
+        assert search._edit.geometry().top() >= 0
+        assert search._edit.geometry().bottom() < search.height()
+        assert search._clear_btn.geometry().top() >= 0
+        assert search._clear_btn.geometry().bottom() < search.height()
+    finally:
+        qapp.setStyleSheet(old_qss)
+
+
 def test_card_hover_border_uses_brand_line() -> None:
     source = __import__("inspect").getsource(
         __import__("shared.components.cards", fromlist=["NMCard"]).NMCard.paintEvent
