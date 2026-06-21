@@ -8,6 +8,22 @@ def test_button_primitive_uses_mockup_control_height() -> None:
     assert _NM_CONTROL_COMPACT_HEIGHT == 34
 
 
+def test_button_primitive_supports_mockup_soft_variant(qtbot) -> None:
+    import inspect
+
+    from shared.components.buttons import NMButton
+
+    btn = NMButton("Hice", variant="soft", modo="light_hybrid", size="sm")
+    qtbot.addWidget(btn)
+
+    assert btn.variant() == "soft"
+    source = inspect.getsource(NMButton.paintEvent)
+    assert 'self._variant == "soft"' in source
+    assert 'v3c("brandSoft", self._modo)' in source
+    assert 'v3c("brandLine", self._modo)' in source
+    assert 'v3c("brand", self._modo)' in source
+
+
 def test_badge_primitive_supports_mockup_tones(qtbot) -> None:
     from shared.components.surfaces import NMBadge
 

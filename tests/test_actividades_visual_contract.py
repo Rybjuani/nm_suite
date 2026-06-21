@@ -28,8 +28,8 @@ def test_actividad_card_actions_and_done_badge_match_mockup(qtbot, monkeypatch) 
 
     assert card._btn_no.text() == "No pude"
     assert card._btn_yes.text() == "Hice"
-    assert card._btn_no.variant() == "secondary"
-    assert card._btn_yes.variant() == "secondary"
+    assert card._btn_no.variant() == "ghost"
+    assert card._btn_yes.variant() == "soft"
     # NMBadge ahora renderiza dot 6px prefijo en tono brand → el texto bare
     # se preserva en `_bare_text`; `.text()` devuelve rich text.
     assert card._done_badge._bare_text == "Hecho"

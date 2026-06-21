@@ -29,13 +29,13 @@ def test_respiracion_sin_bpm_biometrico_simulado():
 
 
 def test_actividades_hice_jerarquia_equivalente():
-    """F10: 'Hice' dejó de ser variant=primary; mismo peso que 'No pude'."""
+    """Mockup: 'No pude' es ghost y 'Hice' es soft, no primary dominante."""
     src = _src("app/modules/actividades_qt.py")
     assert 't("text.module.actividades.btn_done", "Hice")' in src
     assert 't("text.module.actividades.btn_not_done", "No pude")' in src
-    assert 'variant="secondary"' in src.split('t("text.module.actividades.btn_done", "Hice")')[1][:180]
+    assert 'variant="soft"' in src.split('t("text.module.actividades.btn_done", "Hice")')[1][:180]
     assert (
-        'variant="secondary"'
+        'variant="ghost"'
         in src.split('t("text.module.actividades.btn_not_done", "No pude")')[1][:180]
     )
     assert 'variant="primary"' not in src.split('t("text.module.actividades.btn_done", "Hice")')[1][:180]

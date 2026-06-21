@@ -100,8 +100,8 @@ class NMButton(QPushButton):
         modo:    override de tema; ``None`` = sigue ThemeManager
         width:   minWidth (compatibility, default 180)
         height:  fixedHeight; ``None`` = derivado de ``size``
-        variant: ``"gradient"`` (primary teal→violet) | ``"secondary"``
-                 (surface + border) | ``"ghost"`` (transparente)
+        variant: ``"gradient"`` (primary brand) | ``"secondary"``
+                 (surface + border) | ``"ghost"`` | ``"soft"``
         size:    ``"sm"`` / ``"md"`` / ``"lg"``
     """
 
@@ -118,7 +118,7 @@ class NMButton(QPushButton):
         super().__init__(text, parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._variant = _NM_BUTTON_VARIANT_ALIASES.get(variant, variant)
-        if self._variant not in ("gradient", "secondary", "ghost", "danger"):
+        if self._variant not in ("gradient", "secondary", "ghost", "soft", "danger"):
             self._variant = "gradient"
         self._size = size if size in ("sm", "md", "lg") else "md"
         self._hover = False
@@ -148,7 +148,7 @@ class NMButton(QPushButton):
 
     def set_variant(self, variant: str):
         canonical = _NM_BUTTON_VARIANT_ALIASES.get(variant, variant)
-        if canonical in ("gradient", "secondary", "ghost", "danger"):
+        if canonical in ("gradient", "secondary", "ghost", "soft", "danger"):
             self._variant = canonical
             self.setObjectName(f"NMButton_{self._variant}")
             self._apply_btn_shadow()
@@ -222,6 +222,20 @@ class NMButton(QPushButton):
 
             text_color = v3c("text", self._modo)
 
+        elif self._variant == "soft":
+            if self._pressed and self.isEnabled():
+                bg_col = v3c("brandLine", self._modo)
+            elif self._hover and self.isEnabled():
+                bg_col = v3c("brandLine", self._modo)
+            else:
+                bg_col = v3c("brandSoft", self._modo)
+            p.fillPath(path, QBrush(bg_col))
+            text_color = (
+                v3c("brandInk", self._modo)
+                if (self._hover or self._pressed) and self.isEnabled()
+                else v3c("brand", self._modo)
+            )
+
         elif self._variant in ("danger", "destructive"):
             bg_col = v3c("dangerSoftSolid", self._modo)
             if self._pressed and self.isEnabled():
@@ -245,8 +259,14 @@ class NMButton(QPushButton):
                 bg_c.setAlpha(90 if is_dark else 100)
                 p.fillPath(path, QBrush(bg_c))
             elif self._hover and self.isEnabled():
-                bg_col = v3c("borderSoft", self._modo)
+                bg_col = v3c("surface2", self._modo)
                 p.fillPath(path, QBrush(bg_col))
+            else:
+                p.fillPath(path, QBrush(v3c("surface", self._modo)))
+            border_col = v3c("brandLine" if (self._hover or self._pressed) else "border", self._modo)
+            p.setPen(QPen(border_col, 1))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawRoundedRect(QRectF(0.5, 0.5, w - 1, h - 1), r, r)
             # Text: lift to `text` on hover/press for clear feedback
             text_color = (
                 v3c("text", self._modo)
@@ -274,7 +294,7 @@ class NMButton(QPushButton):
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton and self.isEnabled():
             self._pressed = True
-            self._animate_press_scale(0.97)
+            self._animate_press_scale(0.99)
             self.update()
         super().mousePressEvent(event)
 
