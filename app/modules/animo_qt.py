@@ -443,7 +443,7 @@ class ModuloAnimo(NMModule):
         slider_head.addStretch()
         # 4.1: arranca en "— / 10" (muted) hasta el primer movimiento del slider.
         self._slider_score = QLabel("— / 10")
-        self._slider_score.setFont(qfont_mono(11, bold=True))
+        self._slider_score.setFont(v3_font("size_h3", weight=TYPOGRAPHY["weight_semibold"], serif=True))
         slider_head.addWidget(self._slider_score)
         slider_lay.addLayout(slider_head)
 
@@ -530,7 +530,7 @@ class ModuloAnimo(NMModule):
             # tocado, mostrar el puntaje real en color accent.
             if not getattr(self, "_slider_touched", False):
                 self._slider_score.setText("— / 10")
-                self._slider_score.setFont(qfont_mono(11, bold=True))
+                self._slider_score.setFont(v3_font("size_h3", weight=TYPOGRAPHY["weight_semibold"], serif=True))
                 self._slider_score.setStyleSheet(
                     f"color: {v3c('textMuted', self._modo).name()}; background: transparent;"
                 )

@@ -56,6 +56,19 @@ def test_respiracion_matches_mockup_idle_contract(qtbot, monkeypatch) -> None:
     assert module._btn_stop.height() == 46
 
 
+def test_respiracion_breath_circle_is_248px(qtbot, monkeypatch) -> None:
+    """E3-S-BIENESTAR: orb de respiración fijado en 248×248 (canvas v3, bigring idle fix)."""
+    _use_default_texts(monkeypatch)
+
+    from app.modules.respiracion_qt import ModuloRespiracion
+
+    module = ModuloRespiracion(show_header=False, modo="light_hybrid")
+    qtbot.addWidget(module)
+
+    assert module._circle.width() == 248
+    assert module._circle.height() == 248
+
+
 def test_respiracion_play_control_icons_follow_runtime_state(qtbot, monkeypatch) -> None:
     _use_default_texts(monkeypatch)
 

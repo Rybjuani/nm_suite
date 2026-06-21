@@ -52,6 +52,24 @@ def test_timer_idle_chips_and_status_badge_match_mockup(qtbot, monkeypatch) -> N
     assert mode_active == {"Lectura": True, "Pausa activa": False, "Trabajo profundo": False}
 
 
+def test_timer_focus_arc_size_and_num_match_mockup(qtbot, monkeypatch) -> None:
+    """E3-S-BIENESTAR: bigring 230×230 + num override 46px (mockup líneas 344/861)."""
+    _use_default_texts(monkeypatch)
+
+    from app.modules import timer_qt
+    from app.modules.timer_qt import ModuloTimer
+
+    monkeypatch.setattr(timer_qt, "_load_presets", _assigned_presets)
+
+    module = ModuloTimer(show_header=False, modo="light_hybrid")
+    qtbot.addWidget(module)
+
+    assert module._canvas.width() == 230
+    assert module._canvas.height() == 230
+    assert module._canvas._num_size_override == 46
+    assert module._canvas._time_text == "25:00"
+
+
 def test_timer_duration_mode_and_pause_state_stay_in_sync(qtbot, monkeypatch) -> None:
     _use_default_texts(monkeypatch)
 
