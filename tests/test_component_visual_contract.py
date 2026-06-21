@@ -289,9 +289,11 @@ def test_window_chrome_matches_mockup_titlebar_contract(qtbot) -> None:
     assert chrome._btn_max.width() == 13
     assert chrome._btn_close.width() == 13
     assert _NM_CHROME_WIN_DOT_OPACITY == 0.55
+    # Semáforo del mockup `.tb-dots`: verde, amarillo, rojo (izq→der). Los dots se
+    # añaden en orden min→max→close, así que min=verde, max=amarillo, close=rojo.
     assert _NM_CHROME_WIN_DOT_COLORS == {
-        "min": "#E0B23E",
-        "max": "#56B27A",
+        "min": "#56B27A",
+        "max": "#E0B23E",
         "close": "#E0695A",
     }
 
@@ -392,8 +394,8 @@ def test_dbt_cards_match_mockup_family_bar_contract(qtbot) -> None:
     from app.modules.dbt_qt import (
         _DBT_FAMILY_COLOR_KEYS,
         _DBT_NEED_BORDER_W,
-        _DBT_SKILL_BAR_H,
-        _DBT_SKILL_BAR_W,
+        _DBT_SKILL_BAR_TOP_H,
+        _DBT_SKILL_BAR_TOP_W,
         _NeedCard,
         _SkillCard,
         _dbt_family_soft_css,
@@ -421,10 +423,11 @@ def test_dbt_cards_match_mockup_family_bar_contract(qtbot) -> None:
         modo="light_hybrid",
     )
     qtbot.addWidget(skill)
-    assert skill.layout().contentsMargins().left() == 30
+    # Mockup `.dbt-card` = `.card.pad` (20px) con barra HORIZONTAL superior 64×7.
+    assert skill.layout().contentsMargins().left() == 20
     assert skill._family_color_key == "toler"
-    assert _DBT_SKILL_BAR_W == 7
-    assert _DBT_SKILL_BAR_H == 64
+    assert _DBT_SKILL_BAR_TOP_W == 64
+    assert _DBT_SKILL_BAR_TOP_H == 7
     assert _DBT_FAMILY_COLOR_KEYS == {
         "mindfulness": "mind",
         "distress_tolerance": "toler",
@@ -438,6 +441,6 @@ def test_dbt_cards_match_mockup_family_bar_contract(qtbot) -> None:
     assert "v3c(self._family_color_key, self._modo)" in need_source
 
     skill_source = __import__("inspect").getsource(_SkillCard.paintEvent)
-    assert "_DBT_SKILL_BAR_W" in skill_source
-    assert "_DBT_SKILL_BAR_H" in skill_source
+    assert "_DBT_SKILL_BAR_TOP_W" in skill_source
+    assert "_DBT_SKILL_BAR_TOP_H" in skill_source
     assert "v3c(self._family_color_key, self._modo)" in skill_source

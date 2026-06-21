@@ -107,6 +107,14 @@ FASES = [
     ("Mantiene", 7),
     ("Exhala", 8),
 ]
+# Etiquetas de fase mostradas en el ring (mockup `.bigring .ph`: "Inhalá" /
+# "Mantené" / "Exhalá", acentuadas). Las claves internas (sin tilde) se conservan
+# para lógica/DB; el display se acentúa para fidelidad con el mockup.
+FASE_DISPLAY = {
+    "Inhala": "Inhalá",
+    "Mantiene": "Mantené",
+    "Exhala": "Exhalá",
+}
 CICLO_TOTAL = sum(f[1] for f in FASES)
 
 PRESETS = [
@@ -217,6 +225,10 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         self._session_progress = 0.0
         self._center_text = ""
         self._phase_text = ""
+        # Sesión activa = partículas en órbita + render timer. Se separa de la
+        # presencia de texto para poder mostrar el idle estático del mockup
+        # (num "4" + "Inhalá") sin disparar la animación.
+        self._session_active = False
 
         # Animaciones
         self._anim_radius: QPropertyAnimation | None = None
@@ -287,6 +299,7 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         self._phase_text = phase_text
 
     def animate_phase(self, phase_idx: int, phase_dur_s: int, expanding):
+        self._session_active = True
         self._start_rendering()
         dur = phase_dur_s * 1000
 
@@ -397,6 +410,7 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
                 pass
             self._anim_undulation = None
         self._stop_rendering()
+        self._session_active = False
         self._circle_radius = float(_R_MIN)
         self._glow_alpha = 76
         self._text_opacity = 1.0
@@ -406,6 +420,19 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         self._phase_text = ""
         self._undulation_amp = 0.0
         self._orbit_speed_mult = 1.0
+        self.update()
+
+    def set_idle_preview(self, center_text: str, phase_text: str) -> None:
+        """Idle estático del mockup: muestra el primer paso (num + fase) dentro del
+        ring SIN animar (sin partículas ni render timer).
+
+        Delega en ``reset_idle`` para detener cualquier animación en curso (radio,
+        glow, undulación) y dejar el círculo en reposo; luego fija el texto del
+        primer paso. Así parar una sesión activa detiene la animación igual que antes.
+        """
+        self.reset_idle()
+        self._center_text = center_text
+        self._phase_text = phase_text
         self.update()
 
     def _on_render_tick(self) -> None:
@@ -423,7 +450,7 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
 
     def showEvent(self, event):
         super().showEvent(event)
-        if self._phase_text or self._center_text:
+        if self._session_active:
             self._start_rendering()
 
     def hideEvent(self, event):
@@ -439,7 +466,7 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
 
         cx = cy = self.width() / 2.0
         r = self._circle_radius
-        active = bool(self._phase_text or self._center_text)
+        active = self._session_active
 
         # 1. Aurora bloom — 3 capas de gradiente radial
         self._draw_aurora_bloom(p, cx, cy, r)
@@ -779,6 +806,18 @@ class ModuloRespiracion(NMModule):
         # Ring pulse — overlay de finalización de sesión
         self._ring_pulse = NMRingPulse(self._content, modo=self._modo)
 
+        # Estado de reposo del mockup: el ring abre mostrando el primer paso
+        # ("4" / "Inhalá") en vez de un círculo vacío.
+        self._show_idle_preview()
+
+    def _show_idle_preview(self) -> None:
+        """Reposo del mockup: el ring muestra el primer paso (num + fase) estático."""
+        first_name, first_dur = FASES[0]
+        self._circle.set_idle_preview(
+            str(first_dur), FASE_DISPLAY.get(first_name, first_name)
+        )
+        self._update_phase_chips(None)
+
     def _relayout_main_grid(self):
         pass
 
@@ -887,11 +926,10 @@ class ModuloRespiracion(NMModule):
         self._running = False
         self._paused = False
         self._set_play_control("play", t("text.module.respiracion.start_btn", "Iniciar"))
-        self._circle.reset_idle()
+        self._show_idle_preview()
         self._session_lbl.setText("00:00")
         if hasattr(self, "_ciclos_value_lbl"):
             self._ciclos_value_lbl.setText("—")
-        self._update_phase_chips(None)
 
     def _update_phase_chips(self, phase_idx: int | None):
         if not hasattr(self, "_chip_inhala"):
@@ -941,7 +979,7 @@ class ModuloRespiracion(NMModule):
                 phase_progress=phase_progress,
                 session_progress=session_progress,
                 center_text=str(secs_left),
-                phase_text=phase_name,
+                phase_text=FASE_DISPLAY.get(phase_name, phase_name),
                 phase_idx=self._phase_idx,
             )
 
@@ -991,8 +1029,7 @@ class ModuloRespiracion(NMModule):
         self._save_session()
         if hasattr(self, "_ring_pulse"):
             self._ring_pulse.launch()
-        self._circle.reset_idle()
-        self._update_phase_chips(None)
+        self._show_idle_preview()
         self._session_lbl.setText("00:00")
         self._set_play_control("play", t("text.module.respiracion.start_btn", "Iniciar"))
 

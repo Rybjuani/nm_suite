@@ -641,7 +641,8 @@ class _HeroBienestar(QFrame):
         root.addLayout(top)
 
         self._hero_title = QLabel(self._greeting_text())
-        self._hero_title.setFont(v3_font("size_display_m", weight=TYPOGRAPHY["weight_semibold"], serif=True))
+        # Mockup hero: `.h-serif` 30px (saludo contextual). size_display_l = 30.
+        self._hero_title.setFont(v3_font("size_display_l", weight=TYPOGRAPHY["weight_semibold"], serif=True))
         root.addWidget(self._hero_title)
 
         # Stacked area for empty vs filled
@@ -750,7 +751,7 @@ class _HeroBienestar(QFrame):
         # Try to use Newsreader for name
         from shared.theme_qt import v3_font
 
-        self._hero_title.setFont(v3_font("size_display_m", weight=600, serif=True))
+        self._hero_title.setFont(v3_font("size_display_l", weight=600, serif=True))
 
         # Mockup: número del hero en color brand (verde/menta), no accent (cobre).
         self._score.setStyleSheet(f"color: {brand.name()}; background: transparent;")

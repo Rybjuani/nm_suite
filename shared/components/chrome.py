@@ -56,9 +56,12 @@ _NM_CHROME_THEME_ICON_SIZE = 16
 _NM_CHROME_WIN_DOT_SIZE = 13
 _NM_CHROME_WIN_DOT_GAP = 8
 _NM_CHROME_WIN_DOT_OPACITY = 0.55
+# Orden visual del mockup `.tb-dots` (línea 194): verde, amarillo, rojo de
+# izquierda a derecha. Los botones se añaden en orden min(izq) → max → close(der),
+# así que min=verde, max=amarillo, close=rojo para replicar el semáforo del mockup.
 _NM_CHROME_WIN_DOT_COLORS = {
-    "min": "#E0B23E",
-    "max": "#56B27A",
+    "min": "#56B27A",
+    "max": "#E0B23E",
     "close": "#E0695A",
 }
 
