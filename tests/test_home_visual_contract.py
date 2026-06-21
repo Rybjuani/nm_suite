@@ -39,3 +39,24 @@ def test_home_hero_filled_state_matches_mockup_score_and_delta(qtbot, monkeypatc
     assert hero._score_unit.text() == "/ 10"
     assert hero._delta_lbl.text() == "▲ 0.8 vs semana"
     assert "border-radius: 10px" in hero._delta_lbl.styleSheet()
+
+
+def test_home_view_vertical_rhythm_matches_mockup(qtbot, monkeypatch) -> None:
+    from app.home_qt import HomeView
+
+    monkeypatch.setenv("NM_VISUAL_QA", "1")
+    view = HomeView(modo="light_hybrid", username="Alex")
+    qtbot.addWidget(view)
+
+    content = view.layout().itemAt(0).widget()
+    content_lay = content.layout()
+    margins = content_lay.contentsMargins()
+
+    assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == (
+        24,
+        24,
+        24,
+        12,
+    )
+    assert view._hero.maximumHeight() == 178
+    assert content_lay.itemAt(1).spacerItem().sizeHint().height() == 18

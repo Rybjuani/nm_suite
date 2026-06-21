@@ -949,9 +949,8 @@ class HomeView(QWidget):
         content.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
 
         content_lay = QVBoxLayout(content)
-        # Márgenes verticales recortados: liberan altura para que la fila inferior
-        # (chart + Resumen Semanal, stretch=1) no quede comprimida a 960×600 (BL-03).
-        content_lay.setContentsMargins(24, 14, 24, 12)
+        # Mockup `.screen`: 24px de padding antes del hero.
+        content_lay.setContentsMargins(24, 24, 24, 12)
         content_lay.setSpacing(0)
 
         self._hero = _HeroBienestar(
@@ -961,17 +960,16 @@ class HomeView(QWidget):
             on_module_open=self._open_cb,
             parent=content,
         )
-        # Hero compacto (score Display M + sin cartel de estado): tope 148 —
-        # el alto liberado lo absorben las cards de módulo (feedback owner).
+        # Mockup Home: hero desde y=72 hasta ~250 a 960x600.
         # Bienvenida PRIMERO (decisión owner): el hero de bienestar abre el Home.
-        self._hero.setMaximumHeight(148)
+        self._hero.setMaximumHeight(178)
         self._hero.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
         self._session_card = _ProximaSesionCard(self._modo, parent=content)
         self._session_card.hide()
         content_lay.addWidget(self._hero, stretch=1)
-        content_lay.addSpacing(V3_SP["md"])
+        content_lay.addSpacing(18)
 
         # P2.C: cards de "Progreso de Ánimo" y "Resumen Semanal" removidas.
         # El espacio liberado se usa para agrandar las 8 cards de módulo (la grilla
