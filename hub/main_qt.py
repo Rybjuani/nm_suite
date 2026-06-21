@@ -34,7 +34,7 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QDialog,
 )
-from PyQt6.QtCore import Qt, QTimer, QRectF, pyqtSignal, QSettings
+from PyQt6.QtCore import QEvent, QPoint, QRect, Qt, QTimer, QRectF, pyqtSignal, QSettings
 from PyQt6.QtGui import QIcon, QPainter, QBrush, QLinearGradient
 from PyQt6 import sip
 
@@ -299,6 +299,7 @@ class PacientesView(QWidget):
         self._on_global_texts = on_global_texts
         self._sb = sb
         self._rows_limit: int = 40
+        self._patient_row_widgets: list[QWidget] = []
         self._setup()
 
     def _setup(self):
@@ -409,6 +410,10 @@ class PacientesView(QWidget):
         self._rows_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._rows_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self._rows_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        self._rows_scroll.verticalScrollBar().valueChanged.connect(
+            lambda _value: self._queue_row_control_visibility_refresh()
+        )
+        self._rows_scroll.viewport().installEventFilter(self)
         self._rows_w = QWidget()
         self._rows_w.setStyleSheet("background: transparent;")
         self._table_lay = QVBoxLayout(self._rows_w)
@@ -429,6 +434,7 @@ class PacientesView(QWidget):
             w = item.widget()
             if w:
                 w.deleteLater()
+        self._patient_row_widgets = []
 
         rows = list(self._pacientes)
         self._update_roster_meta(rows)
@@ -443,6 +449,7 @@ class PacientesView(QWidget):
                 parent=self._table_card,
             )
             self._table_lay.addWidget(empty)
+            self._queue_row_control_visibility_refresh()
             return
 
         # Hay filas: el header de columnas vuelve a tener sentido.
@@ -504,6 +511,7 @@ class PacientesView(QWidget):
             row.setToolTip(_tip)
             row.clicked.connect(lambda _pid=pid, _n=nombre: self._on_select(_pid, _n))
             self._table_lay.addWidget(row)
+            self._patient_row_widgets.append(row)
 
         if rows_pendientes:
             btn_more = NMButton(
@@ -527,7 +535,50 @@ class PacientesView(QWidget):
             _ml.addWidget(btn_more)
             _ml.addStretch()
             self._table_lay.addWidget(_more_wrap)
+        self._queue_row_control_visibility_refresh()
         return
+
+    def eventFilter(self, obj, event) -> bool:
+        if (
+            hasattr(self, "_rows_scroll")
+            and obj is self._rows_scroll.viewport()
+            and event.type()
+            in (QEvent.Type.Resize, QEvent.Type.Show, QEvent.Type.Move)
+        ):
+            self._queue_row_control_visibility_refresh()
+        return super().eventFilter(obj, event)
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        self._queue_row_control_visibility_refresh()
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._queue_row_control_visibility_refresh()
+
+    def _queue_row_control_visibility_refresh(self) -> None:
+        if hasattr(self, "_rows_scroll"):
+            QTimer.singleShot(0, self._refresh_row_control_visibility)
+
+    def _refresh_row_control_visibility(self) -> None:
+        if not hasattr(self, "_rows_scroll") or not hasattr(self, "_rows_w"):
+            return
+        viewport = self._rows_scroll.viewport()
+        view_rect = QRect(viewport.rect())
+        view_rect.moveTopLeft(self._rows_w.mapFrom(viewport, QPoint(0, 0)))
+        top = view_rect.top()
+        bottom = view_rect.bottom()
+        live_rows: list[QWidget] = []
+        for row in self._patient_row_widgets:
+            if sip.isdeleted(row):
+                continue
+            live_rows.append(row)
+            row_rect = row.geometry()
+            row_fully_inside = row_rect.top() >= top and row_rect.bottom() <= bottom
+            setter = getattr(row, "set_action_controls_visible", None)
+            if callable(setter):
+                setter(row.isVisible() and row_fully_inside)
+        self._patient_row_widgets = live_rows
 
     def _confirm_unlink(self, pid: str, nombre: str, email: str = ""):
         """Confirma y desvincula al paciente del Hub (patients.unlinked=true).

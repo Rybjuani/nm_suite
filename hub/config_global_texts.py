@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from PyQt6.QtCore import QRectF, Qt, pyqtSignal
+from PyQt6.QtCore import QEvent, QPoint, QRect, QRectF, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QPainter, QPen
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -48,12 +48,14 @@ class _TextEntryRow(NMCard):
 
     def __init__(self, entry: SuiteTextEntry, modo: str, parent=None):
         self._dirty = False
+        self._interactive_controls_visible = True
         super().__init__(parent=parent, modo=modo, clickable=False, glow=False, radius=16)
         self.entry = entry
         self._modo = norm_modo(modo)
         self._build()
         self._apply_row_theme()
         self._apply_dirty_shadow()
+        QTimer.singleShot(0, self._stabilize_height)
 
     def _build(self) -> None:
         lay = QHBoxLayout(self)
@@ -105,6 +107,22 @@ class _TextEntryRow(NMCard):
         lay.addLayout(side)
 
         self._sync_counter()
+
+    def _stabilize_height(self) -> None:
+        self.setMinimumHeight(max(self.minimumHeight(), self.sizeHint().height()))
+
+    def set_interactive_controls_visible(self, visible: bool) -> None:
+        visible = bool(visible)
+        if visible == self._interactive_controls_visible:
+            return
+        self._interactive_controls_visible = visible
+        self.editor.setVisible(visible)
+        self._restore_btn.setVisible(visible)
+        if not visible:
+            if self.editor.hasFocus():
+                self.editor.clearFocus()
+            if self._restore_btn.hasFocus():
+                self._restore_btn.clearFocus()
 
     def value(self) -> str:
         if isinstance(self.editor, NMTextArea):
@@ -257,6 +275,10 @@ class TextosGlobalesSuiteView(QWidget):
         self._list_lay.setSpacing(V3_SP["md"] + 2)
         self._list_lay.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._scroll.setWidget(self._content)
+        self._scroll.verticalScrollBar().valueChanged.connect(
+            lambda _value: self._queue_row_control_visibility_refresh()
+        )
+        self._scroll.viewport().installEventFilter(self)
         root.addWidget(self._scroll, stretch=1)
 
         for entry in suite_text_entries():
@@ -284,6 +306,24 @@ class TextosGlobalesSuiteView(QWidget):
 
         self._apply_filters()
         self._update_pending_state()
+
+    def eventFilter(self, obj, event) -> bool:
+        if (
+            hasattr(self, "_scroll")
+            and obj is self._scroll.viewport()
+            and event.type()
+            in (QEvent.Type.Resize, QEvent.Type.Show, QEvent.Type.Move)
+        ):
+            self._queue_row_control_visibility_refresh()
+        return super().eventFilter(obj, event)
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        self._queue_row_control_visibility_refresh()
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._queue_row_control_visibility_refresh()
 
     def _restore_all_rows(self) -> None:
         nm_confirm(
@@ -347,10 +387,30 @@ class TextosGlobalesSuiteView(QWidget):
         for row in self._rows:
             is_visible = row.matches(query, section)
             row.setVisible(is_visible)
+            if not is_visible:
+                row.set_interactive_controls_visible(False)
             if is_visible:
                 visible += 1
         suffix = "s" if visible != 1 else ""
         self._count.setText(f"{visible} texto{suffix}")
+        self._queue_row_control_visibility_refresh()
+
+    def _queue_row_control_visibility_refresh(self) -> None:
+        if hasattr(self, "_scroll"):
+            QTimer.singleShot(0, self._refresh_row_control_visibility)
+
+    def _refresh_row_control_visibility(self) -> None:
+        if not hasattr(self, "_scroll") or not hasattr(self, "_content"):
+            return
+        viewport = self._scroll.viewport()
+        view_rect = QRect(viewport.rect())
+        view_rect.moveTopLeft(self._content.mapFrom(viewport, QPoint(0, 0)))
+        top = view_rect.top()
+        bottom = view_rect.bottom()
+        for row in self._rows:
+            row_rect = row.geometry()
+            row_fully_inside = row_rect.top() >= top and row_rect.bottom() <= bottom
+            row.set_interactive_controls_visible(row.isVisible() and row_fully_inside)
 
     def _current_effective_values(self) -> dict[str, str]:
         values: dict[str, str] = {}

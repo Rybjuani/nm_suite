@@ -184,3 +184,50 @@ def test_pacientes_view_uses_real_adherence_only(qtbot, monkeypatch):
     assert _FakeRow.instances[0].kwargs["last_activity"] == "Sin registros"
     assert _FakeRow.instances[0].kwargs["next_session"] == ""
     assert _FakeRow.instances[0].kwargs["mood_data"] is None
+
+
+def test_pacientes_view_hides_unlink_action_on_partial_rows(qtbot, qapp):
+    from PyQt6.QtCore import QPoint, QRect
+
+    import hub.main_qt as main_qt
+
+    pacientes = [
+        {
+            "patient_id": f"p-{idx}",
+            "patient_name": f"Paciente {idx}",
+            "email": f"paciente{idx}@example.com",
+            "last_sync_date": "2026-06-21",
+            "adherence": 0.7,
+            "mood_data_7d": [5, 6, 6, 7, 7, 8, 8],
+        }
+        for idx in range(8)
+    ]
+    view = main_qt.PacientesView(
+        modo="dark_hybrid",
+        pacientes=pacientes,
+        on_select=lambda *_args: None,
+        on_refresh=lambda: None,
+    )
+    qtbot.addWidget(view)
+    view.resize(960, 600)
+    view.show()
+    for _ in range(8):
+        qapp.processEvents()
+
+    viewport = view._rows_scroll.viewport()
+    view_rect = QRect(viewport.rect())
+    view_rect.moveTopLeft(view._rows_w.mapFrom(viewport, QPoint(0, 0)))
+    full_rows = []
+    partial_rows = []
+    for row in view._patient_row_widgets:
+        rect = row.geometry()
+        fully_inside = rect.top() >= view_rect.top() and rect.bottom() <= view_rect.bottom()
+        if fully_inside:
+            full_rows.append(row)
+        elif rect.intersects(view_rect):
+            partial_rows.append(row)
+
+    assert full_rows
+    assert partial_rows
+    assert full_rows[0]._btn_unlink.isVisible()
+    assert all(not row._btn_unlink.isVisible() for row in partial_rows)

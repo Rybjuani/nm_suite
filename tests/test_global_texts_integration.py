@@ -102,6 +102,11 @@ def _sync_fake_hub_config(sb: _FakeSupabase) -> None:
     _importar_hub_config(sb, "patient-fase5")
 
 
+def _drain_events(qapp, cycles: int = 6) -> None:
+    for _ in range(cycles):
+        qapp.processEvents()
+
+
 def _count_sensitive_tables() -> dict[str, int]:
     from shared.db import obtener_conexion
 
@@ -224,6 +229,32 @@ def test_global_texts_dirty_row_matches_mockup_visual_state(qapp):
     source = inspect.getsource(_TextEntryRow.paintEvent)
     assert 'v3c("brandLine", self._modo)' in source
     assert 'v3c("brandSoft", self._modo)' in inspect.getsource(_TextEntryRow._apply_dirty_shadow)
+
+
+def test_global_texts_offscreen_rows_do_not_expose_controls(qapp):
+    from hub.config_global_texts import TextosGlobalesSuiteView
+
+    view = TextosGlobalesSuiteView(modo="light_hybrid", sb=_FakeSupabase())
+    view.resize(960, 600)
+    view.show()
+    _drain_events(qapp)
+
+    first_row = view._rows[0]
+    offscreen_row = next(
+        row for row in view._rows if row.geometry().top() > view._scroll.viewport().height()
+    )
+
+    assert first_row.editor.isVisible()
+    assert first_row._restore_btn.isVisible()
+    assert not offscreen_row.editor.isVisible()
+    assert not offscreen_row._restore_btn.isVisible()
+
+    view._scroll.verticalScrollBar().setValue(offscreen_row.geometry().top())
+    _drain_events(qapp)
+
+    assert offscreen_row.editor.isVisible()
+    assert offscreen_row._restore_btn.isVisible()
+    view.close()
 
 
 @pytest.mark.parametrize(

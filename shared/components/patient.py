@@ -472,6 +472,7 @@ class NMPatientRowPremium(QFrame):
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setFixedHeight(_NM_PATIENT_ROW_HEIGHT)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self._action_controls_visible = True
 
         lay = QHBoxLayout(self)
         lay.setContentsMargins(
@@ -592,6 +593,16 @@ class NMPatientRowPremium(QFrame):
     def set_selected(self, selected: bool):
         self._selected = selected
         self._apply_theme(self._modo)
+
+    def set_action_controls_visible(self, visible: bool) -> None:
+        visible = bool(visible)
+        if visible == self._action_controls_visible:
+            return
+        self._action_controls_visible = visible
+        if self._btn_unlink is not None:
+            self._btn_unlink.setVisible(visible)
+            if not visible and self._btn_unlink.hasFocus():
+                self._btn_unlink.clearFocus()
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.pos()):
