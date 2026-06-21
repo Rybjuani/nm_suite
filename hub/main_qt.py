@@ -337,7 +337,7 @@ class PacientesView(QWidget):
         roster_meta.setContentsMargins(2, 0, 2, 0)
         roster_meta.setSpacing(V3_SP["sm"])
         self._table_title = QLabel("Lista activa")
-        self._table_title.setFont(qfont("size_small", weight=_TY["weight_bold"]))
+        self._table_title.setFont(qfont("size_h1", weight=_TY["weight_semibold"]))
         self._table_title.setStyleSheet(
             f"color: {v3c('text', self._modo).name()}; background: transparent;"
         )
