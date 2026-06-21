@@ -317,7 +317,35 @@ def test_stepper_matches_mockup_line_and_dot_contract(qtbot) -> None:
     assert 'v3c("line", self._modo)' in source
     assert 'v3c("primary", self._modo)' in source
     assert 'v3c("surface3", self._modo)' in source
+    assert 'v3c("text", self._modo)' in source
+    assert 'v3c("text3", self._modo)' in source
     assert "weight=600 if i == self._current else 500" in source
+
+
+def test_stepper_done_active_states_tcc_contract(qtbot) -> None:
+    """Contrato TCC: set_step() avanza _current y done/active se distinguen."""
+    from shared.components.feedback import NMStepper
+
+    steps = ["Situación", "Emoción", "Pensamiento", "Respuesta"]
+    stepper = NMStepper(steps, modo="light_hybrid")
+    qtbot.addWidget(stepper)
+
+    assert stepper._current == 0
+
+    stepper.set_step(1)
+    assert stepper._current == 1
+
+    stepper.set_step(3)
+    assert stepper._current == 3
+
+    stepper.set_step(0)
+    assert stepper._current == 0
+
+    # set_step clamps: out-of-range no rompe el widget
+    stepper.set_step(99)
+    assert stepper._current == len(steps) - 1
+    stepper.set_step(-1)
+    assert stepper._current == 0
 
 
 def test_empty_state_matches_mockup_icon_and_title_contract(qtbot) -> None:
