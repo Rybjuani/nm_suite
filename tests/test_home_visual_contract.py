@@ -99,3 +99,36 @@ def test_visual_qa_home_statuses_match_mockup() -> None:
     assert module_status("timer") == "45 min hoy"
     assert module_status("avisos") == "2 / 5 listos"
     assert module_status("dbt") == "4 familias"
+
+
+def test_home_module_card_title_uses_serif_font(qtbot) -> None:
+    """E3-S-HOME: card title usa Fraunces (.h-serif mockup línea 640)."""
+    from shared.fonts import FONT_SERIF
+    from app.home_qt import ModuleCard, module_configs
+
+    cfg = next(c for c in module_configs() if c["id"] == "animo")
+    card = ModuleCard(cfg, 0, "light_hybrid", on_click=lambda _: None, get_status_fn=lambda _: "")
+    qtbot.addWidget(card)
+
+    font = card._title_lbl.font()
+    assert FONT_SERIF.lower() in font.family().lower() or font.family().lower() in FONT_SERIF.lower(), (
+        f"card title debe usar serif ({FONT_SERIF}), got {font.family()!r}"
+    )
+    assert font.pixelSize() == 16
+
+
+def test_home_grid_is_4_columns_at_960px(qtbot, monkeypatch) -> None:
+    """E3-S-HOME: grilla 4 columnas a 960px (mockup cols-4)."""
+    monkeypatch.setenv("NM_VISUAL_QA", "1")
+    from app.home_qt import HomeView
+
+    view = HomeView(modo="light_hybrid", username="Test")
+    qtbot.addWidget(view)
+    view.resize(960, 600)
+    view.show()
+    qtbot.wait(30)
+
+    # resizeEvent debe haber actualizado _grid_cols a 4
+    assert view._grid_cols == 4
+    # y la grilla tiene columnCount==4
+    assert view._grid.columnCount() == 4
