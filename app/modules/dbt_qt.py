@@ -846,7 +846,7 @@ class _SkillPracticeView(QWidget):
         self.step_card_lay.setSpacing(8)
 
         self.step_title_lbl = QLabel()
-        self.step_title_lbl.setFont(v3_font("size_h4", weight=TYPOGRAPHY["weight_bold"]))
+        self.step_title_lbl.setFont(v3_font("size_h4", weight=TYPOGRAPHY["weight_bold"], serif=True))
         self.step_card_lay.addWidget(self.step_title_lbl)
 
         self.step_body_lbl = QLabel()

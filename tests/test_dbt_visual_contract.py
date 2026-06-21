@@ -56,3 +56,21 @@ def test_dbt_stop_practice_uses_modal_stepper_contract(qtbot, monkeypatch) -> No
     practice._next_step()
 
     assert practice.progress_lbl.text() == "Paso 2 de 4"
+
+
+def test_dbt_step_title_uses_serif_font(qtbot, monkeypatch) -> None:
+    """E2-SERIF-TITLES: el headline del paso DBT usa Fraunces (h-serif mockup línea 1178)."""
+    _use_default_texts(monkeypatch)
+    from shared.fonts import FONT_SERIF
+    from app.modules.dbt_qt import DBT_SKILLS, ModuloDBT
+
+    module = ModuloDBT(show_header=False, modo="light_hybrid")
+    qtbot.addWidget(module)
+
+    module.start_practice(DBT_SKILLS["distress_stop"])
+    practice = module._practice_view
+
+    font = practice.step_title_lbl.font()
+    assert FONT_SERIF.lower() in font.family().lower() or font.family().lower() in FONT_SERIF.lower(), (
+        f"step_title_lbl debe usar familia serif ({FONT_SERIF}), got {font.family()!r}"
+    )
