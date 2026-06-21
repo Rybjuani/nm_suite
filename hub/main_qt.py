@@ -838,7 +838,9 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         # se redistribuye a Pacientes (más filas visibles) y Plan Terapéutico
         # (más alto para el form + lista).
         content = QWidget(central)
-        content.setStyleSheet("background: transparent;")
+        content.setObjectName("NMHubShellContent")
+        content.setStyleSheet(self._shell_content_qss(self._modo))
+        self._content_widget = content
         outer_layout.addWidget(content, 1)
         rl = QVBoxLayout(content)
         # M3 premium: aire inferior/derecho para que ninguna vista quede
@@ -1159,11 +1161,21 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
             self._chrome._apply_theme(self._modo)
         if hasattr(self, "_header"):
             self._header._apply_theme(self._modo)
+        # Re-aplicar QSS del content widget con el surface del modo actual
+        # (el QSS incluye el hex literal, hay que refrescarlo en cada switch).
+        if hasattr(self, "_content_widget"):
+            self._content_widget.setStyleSheet(self._shell_content_qss(self._modo))
         # M3 F2: propagar el cambio de tema de forma no destructiva a todas las vistas
         if hasattr(self, "_views_cache"):
             for name, w in self._views_cache.items():
                 if w and not sip.isdeleted(w):
                     _apply_theme_tree(w, self._modo)
+
+    @staticmethod
+    def _shell_content_qss(modo: str) -> str:
+        """QSS para el content widget: pinta surface (mockup .window bg)."""
+        surf_hex = v3c("surface", modo).name()
+        return f"QWidget#NMHubShellContent {{ background-color: {surf_hex}; }}"
 
     # ── DWM shadow + resize handles (frameless) ───────────────────────────────
 

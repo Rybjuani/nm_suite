@@ -77,6 +77,7 @@ from shared.theme_qt import (
     app_palette,
     stylesheet_base,
     norm_modo,
+    v3c,
 )
 from shared.adaptive_layout_qt import configure_adaptive_window, install_transient_qt_window_guard
 from shared.components import (
@@ -216,8 +217,17 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         main_layout.addWidget(self._chrome)
 
         # ── Fila de contenido: área derecha toma todo el ancho ─────────────────
+        # Mockup canónico: `.window { background: var(--surface) }` — todo el
+        # área debajo del titlebar es surface (no bg). Antes `content` era
+        # transparente, lo que dejaba ver el gradiente bg del shell en los
+        # márgenes/padding donde el módulo no cubría. Esto generaba el patrón
+        # sistemático "light theme changed_pixel_ratio 3-5x mayor que dark"
+        # porque en light bg vs surface difieren ~22/canal (>12 threshold) y
+        # en dark solo ~11/canal (<12 threshold).
         content = QWidget(central)
-        content.setStyleSheet("background: transparent;")
+        content.setObjectName("NMShellContent")
+        content.setStyleSheet(self._shell_content_qss(self._modo))
+        self._content_widget = content
         content_lay = QHBoxLayout(content)
         content_lay.setContentsMargins(0, 0, 0, 0)
         content_lay.setSpacing(0)
@@ -355,12 +365,22 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
             cw.set_shell_modo(self._modo)
         if hasattr(self, "_chrome"):
             self._chrome._apply_theme(self._modo)
+        # Re-aplicar QSS del content widget con el surface del modo actual
+        # (el QSS incluye el hex literal, hay que refrescarlo en cada switch).
+        if hasattr(self, "_content_widget"):
+            self._content_widget.setStyleSheet(self._shell_content_qss(self._modo))
         if hasattr(self, "_home"):
             self._home._apply_theme(self._modo)
             self._home.refresh_statuses()
         if self._current_module is not None:
             if hasattr(self._current_module, "_on_theme"):
                 self._current_module._on_theme(self._modo)
+
+    @staticmethod
+    def _shell_content_qss(modo: str) -> str:
+        """QSS para el content widget: pinta surface (mockup .window bg)."""
+        surf_hex = v3c("surface", modo).name()
+        return f"QWidget#NMShellContent {{ background-color: {surf_hex}; }}"
 
     def _apply_initial_style(self):
         QApplication.instance().setPalette(app_palette(self._modo))
