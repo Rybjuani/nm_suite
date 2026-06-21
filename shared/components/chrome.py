@@ -192,7 +192,7 @@ class _ChromeThemeToggle(QPushButton):
 
 
 class NMWindowChrome(QWidget):
-    """Barra de título custom (runtime spec WindowChrome). Altura por defecto 38 px (Suite); Hub pasa height=32.
+    """Barra de título custom (runtime spec WindowChrome). Altura canónica 48 px.
 
     - Drag a mover: mantiene lógica mousePressEvent/mouseMoveEvent.
     - Doble clic → maximizar/restaurar.
@@ -211,7 +211,7 @@ class NMWindowChrome(QWidget):
         show_theme_toggle: bool = False,
         show_maximize: bool = True,
         modo: str = "dark_hybrid",
-        height: int = 38,
+        height: int = 48,
         parent=None,
     ):
         super().__init__(parent)

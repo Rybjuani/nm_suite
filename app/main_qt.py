@@ -3,7 +3,7 @@ app/main_qt.py — NeuroMood Plataforma Paciente (PyQt6 entry point)
 
 Layout:
     QMainWindow
-    ├── NMWindowChrome (titlebar 38px; lleva back + título de módulo, BL-07)
+    ├── NMWindowChrome (titlebar 48px; lleva back + título de módulo, BL-07)
     └── NMFadeWidget (contenido principal)
         ├── HomeView
         └── módulos cargados dinámicamente

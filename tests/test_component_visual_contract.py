@@ -262,10 +262,10 @@ def test_window_chrome_matches_mockup_titlebar_contract(qtbot) -> None:
         subtitle="Pacientes",
         show_theme_toggle=True,
         modo="light_hybrid",
-        height=38,
     )
     qtbot.addWidget(chrome)
     chrome.set_module_context("Respiracion", "breath")
+    assert chrome.height() == 48
 
     margins = chrome.layout().contentsMargins()
     assert margins.left() == _NM_CHROME_PAD_X == 16
@@ -275,7 +275,7 @@ def test_window_chrome_matches_mockup_titlebar_contract(qtbot) -> None:
     assert chrome._mark.width() == 18
     assert chrome._mark.height() == 18
 
-    hub_chrome = NMWindowChrome(title="NeuroMood Hub", modo="light_hybrid", height=38)
+    hub_chrome = NMWindowChrome(title="NeuroMood Hub", modo="light_hybrid")
     qtbot.addWidget(hub_chrome)
     assert hub_chrome._mark._icon_name == "brain"
 

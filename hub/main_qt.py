@@ -818,13 +818,12 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         outer_layout.setContentsMargins(0, 0, 0, 0)
         outer_layout.setSpacing(0)
 
-        # ── Chrome Hub: 32 px (6 px menos que Suite — densidad Hub). ─────────
+        # ── Chrome Hub: titlebar canónico del mockup. ────────────────────────
         self._chrome = NMWindowChrome(
             title="NeuroMood Hub",
             subtitle=self._view_title(self._current_view),
             modo=self._modo,
             show_theme_toggle=True,
-            height=32,
             parent=central,
         )
         outer_layout.addWidget(self._chrome)
