@@ -149,6 +149,32 @@ def test_card_hover_border_uses_brand_line() -> None:
     assert 'v3c("brandLine", self._modo)' in source
 
 
+def test_card_primitive_matches_mockup_radius_and_padding_contract(qtbot) -> None:
+    import inspect
+
+    from PyQt6.QtWidgets import QVBoxLayout
+    from shared.components.cards import (
+        NMCard,
+        _NM_CARD_PAD,
+        _NM_CARD_PADDED_MARGINS,
+        _NM_CARD_RADIUS,
+    )
+
+    card = NMCard(modo="light_hybrid")
+    qtbot.addWidget(card)
+    lay = QVBoxLayout(card)
+    lay.setContentsMargins(*_NM_CARD_PADDED_MARGINS)
+
+    assert _NM_CARD_RADIUS == 22
+    assert _NM_CARD_PAD == 20
+    assert _NM_CARD_PADDED_MARGINS == (20, 20, 20, 20)
+    margins = card.layout().contentsMargins()
+    assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == (20, 20, 20, 20)
+
+    source = inspect.getsource(NMCard.paintEvent)
+    assert "else _NM_CARD_RADIUS" in source
+
+
 def test_mood_slider_internal_uses_shared_mockup_slider_qss(qtbot) -> None:
     from shared.components.mood import NMMoodSlider
 

@@ -81,18 +81,28 @@ def _tm() -> ThemeManager:
 # translateY(-3px). Solo en hover real; el at-rest queda idéntico (el harness
 # QA captura en reposo, así que el gate estático no se ve afectado).
 _NM_CARD_HOVER_LIFT_PX = 3
+_NM_CARD_RADIUS = V3_RD["card"]
+_NM_CARD_PAD = PAD_CARD
+_NM_CARD_PADDED_MARGINS = (
+    _NM_CARD_PAD,
+    _NM_CARD_PAD,
+    _NM_CARD_PAD,
+    _NM_CARD_PAD,
+)
 
 
 class NMCard(QFrame):
     """
-    Card v3 — superficie limpia con border ``borderSoft`` y radius 18.
+    Card v3 — superficie limpia con border ``borderSoft`` y radius 22.
 
-    Spec del README v3:
+    Spec del mockup v3:
       - Surface ``v3c("surface")`` (o ``surfaceSolid`` en dark para QSS).
-      - Border 1px ``borderSoft`` → cambia a ``borderStrong`` en hover.
+      - Border 1px ``borderSoft`` -> cambia a ``borderStrong`` en hover.
+      - Radius ``--r-lg`` = 22px.
+      - Padding de cards con contenido: ``.card.pad`` = 20px.
       - Sin scale ni desplazamiento horizontal en press (eso es de botones).
       - ``glow=True``: halo teal concéntrico alrededor + (solo dark)
-        overlay gradient teal→violet al 10% de opacidad.
+        overlay gradient teal->violet al 10% de opacidad.
 
     Args:
         accent_color: Hex que tiñe el halo si ``glow=True`` (default = teal).
@@ -328,7 +338,7 @@ class NMCard(QFrame):
         r = (
             self._radius_override
             if getattr(self, "_radius_override", None) is not None
-            else V3_RD["card"]  # 18px — UI Hub card radius
+            else _NM_CARD_RADIUS
         )
         w, h = self.width(), self.height()
         rect = QRectF(0, 0, w, h)
