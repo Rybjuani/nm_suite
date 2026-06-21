@@ -420,6 +420,53 @@ def test_dialog_matches_mockup_modal_contract(qtbot) -> None:
     assert "QColor(*_NM_MODAL_SCRIM_RGBA)" in source
 
 
+def test_toast_show_toast_makes_it_visible_with_opacity(qtbot) -> None:
+    """show_toast() hace visible el toast y arranca la animación de opacidad."""
+    from PyQt6.QtWidgets import QWidget
+    from shared.components.feedback import NMToast
+
+    host = QWidget()
+    host.resize(520, 320)
+    qtbot.addWidget(host)
+    host.show()
+
+    toast = NMToast(host, "Guardado", duration_ms=4000)
+    toast.show_toast()
+    qtbot.wait(50)
+
+    assert toast.isVisible(), "NMToast debe ser visible tras show_toast()"
+    assert toast._opacity > 0.0, "opacidad debe avanzar pasados 50ms"
+
+
+def test_dialog_show_centered_then_close_lifecycle(qtbot) -> None:
+    """show_centered() arranca en 0.96 y llega a 1.0; close() oculta y emite closed."""
+    from PyQt6.QtWidgets import QWidget
+    from shared.components.dialogs import NMDialog, _NM_MODAL_SCALE_FROM
+
+    host = QWidget()
+    host.resize(520, 360)
+    qtbot.addWidget(host)
+    host.show()
+
+    # No qtbot.addWidget(dialog): es child de host y se limpia con él.
+    dialog = NMDialog("Confirmar", modo="light_hybrid", parent=host)
+
+    closed_received = []
+    dialog.closed.connect(lambda: closed_received.append(True))
+
+    dialog.show_centered()
+    assert dialog.isVisible(), "NMDialog debe ser visible tras show_centered()"
+    assert dialog._panel_scale == _NM_MODAL_SCALE_FROM
+
+    qtbot.wait(300)
+    assert dialog._panel_scale == 1.0, "panel_scale debe llegar a 1.0 tras 240ms"
+
+    dialog.close()
+    qtbot.wait(20)
+    assert not dialog.isVisible(), "NMDialog debe ocultarse tras close()"
+    assert closed_received, "señal closed debe haberse emitido"
+
+
 def test_card_hover_lift_matches_mockup(qtbot) -> None:
     # Mockup `.card.hov:hover` (línea 260): translateY(-3px) + shadow-2 +
     # brand-line. Solo en hover real; el reposo (lo que captura el harness QA)
