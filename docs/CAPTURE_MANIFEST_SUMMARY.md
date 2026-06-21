@@ -1,57 +1,45 @@
-# Resumen Manifest V8 — Estado Post-Fases 0-2
+# Resumen Manifest V8 — Estado Post-Auditoria 2026-06-21
 
-Manifest completo (gitignored): `qa/_captures_v8/CAPTURE_MANIFEST.json`
-Comando para regenerar: `python qa/capture_v8.py --all --no-clean`
+Manifest completo (gitignored): `qa/_captures_v8_fresh/CAPTURE_MANIFEST.json`
+Comando para regenerar: `python qa/capture_v8.py --all --clean --out-dir qa/_captures_v8_fresh`
 
-## Ultima Ejecucion
+## Ultima Ejecucion (fresca)
 
-- Fecha: 2026-06-14T19:23:30 (post-fix chrome parametrico — Suite=38px, Hub=32px)
+- Fecha: 2026-06-21T02:34:12 (HEAD 51f4448, post-auditoria)
 - Harness: `qa/capture_v8.py`
-- Total recetas: 66 × 2 temas = 132 capturas esperadas
-- Resultado: 132/132 generadas, 0 fallos, 0 duplicados
-- unique_hash_count: 132 (sin duplicados)
-- Duracion: 423.7s
+- Total recetas: 49 × 2 temas = 98 capturas esperadas
+- Resultado: 98/98 generadas, 0 fallos tecnicos
+- State-valid: 92/98 (6 marcan `REQUIRES_DATA_STATE` por dependencia de datos
+  reales — pacientes/detalle en Hub)
+- Duracion: ~5-6 min
 
 ## Distribucion Por Estado
 
 | Estado | Count | Descripcion |
 |---|---|---|
-| CAPTURED_VALID | 106 | Estado correcto reproducible en headless |
-| REQUIRES_DATA_STATE | 16 | Necesita datos Supabase reales (dashboard, pacientes y variantes) |
-| REQUIRES_RUNTIME | 8 | No capturable headless (privacy-lock, pin-setup, settings-overlay, editor) |
-| WRONG_VIEW | 2 | home-settings-open: overlay transitorio no capturado desde main-window |
+| CAPTURED_VALID + state_valid | 92 | Estado correcto reproducible en headless |
+| REQUIRES_DATA_STATE | 6 | Necesita datos Supabase reales (detalle hub) |
 
-## Comparacion Baseline F0 vs Post-F1+F2
+## Diferencia vs Mockup (gate endurecido)
 
-- Baseline Fase 0: `qa/_baseline_f0_phase01/` (132 PNGs, pre-Fase 1)
-- Capturas actuales: `qa/_captures_v8/` (132 PNGs, post-Fases 1+2, re-run 2026-06-14T19:21)
-- Archivos cambiados: **57/132**
-- Archivos sin cambio: **75/132**
+- Targets Playwright: 96 (48 vistas × 2 temas) en `qa/_mockup_targets/`
+- Diff: `qa/_fidelity_fresh/FIDELITY_REPORT.md`
+- Gate: SSIM>=0.92, MAD<=0.035, changed_pixel_ratio<=0.08
+- Resultado: 0/96 PASS — ninguna pantalla cruza el gate compuesto
 
-### Patron de cambios
-- **57 cambiados** = capturas Hub (densidad compacta Fase 1 + chrome 32px Fase 2).
-  Todos los Hub excepto REQUIRES_RUNTIME.
-- **75 sin cambio** = capturas Suite (densidad `suite_comfortable` codifica valores
-  ya presentes en la base; headless no detecta diferencia) + REQUIRES_RUNTIME/WRONG_VIEW.
+## Purgado de artifacts stale (post-auditoria)
 
-### Archivos sin cambio — muestra representativa
-- `hub-editor-text-overrides-dark/light` (REQUIRES_RUNTIME)
-- `suite-pin-setup-dark/light` (REQUIRES_RUNTIME)
-- `suite-privacy-lock-light` (REQUIRES_RUNTIME)
-- `suite-home-settings-open-dark/light` (WRONG_VIEW / bloqueado)
-- Resto: vistas Suite sin cambio visual detectable en headless.
+Se eliminaron del repo:
+- `qa/_mockup_verify/` (4 archivos — capturas previas a V8)
+- `qa/_mockup_verify2/` (177 archivos — capturas pre-migracion UI)
+- `qa/_fidelity_current/` (3 archivos — reporte contra commit 1bfba84, stale)
+- `qa/_fidelity_selfcheck/` (3 archivos — autocomparacion mockup-vs-mockup, trivial)
 
-### Por fase
-- **Fase 1 (Suite):** 0 cambios detectables en headless — valores comfortable
-  coinciden con defaults previos del stylesheet.
-- **Fase 1 (Hub):** ~55 cambios — densidad compacta scoped a `#HubMain`.
-- **Fase 2 (Hub):** incluida en los mismos 57 — chrome 32px + sidebar compacta.
+Estos artifacts estaban referenciados en docs/previos como evidencia de fidelidad
+pero NO eran válidos: los primeros por stale, el último por ser una comparacion
+tautologica (target==actual → SSIM=1.0 trivial).
 
-### Nota: run invalida previa
-El diff anterior (pre-fix chrome) mostraba 125 cambiados porque Suite estaba
-regresada a 32px chrome, inflando los cambios. El dato valido es 57/132.
+## Deuda visual abierta
 
-## Deuda De Capturas
-- Suite: re-run completado (19:21). Suite en 38px, igual que baseline F0.
-- Hub: capturas correctas post-Fase-2 (chrome 32px, sidebar compacta).
-- 8 vistas Fase 2 inspeccionadas manualmente (ver `FASE2_HUB_SHELL.md`).
+Ver `docs/VISUAL_QA_AUDIT.md` seccion "Re-auditoria 2026-06-21" para el detalle
+completo de deuda por pantalla y los hallazgos estructurales nuevos.

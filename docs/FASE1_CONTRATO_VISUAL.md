@@ -1,36 +1,18 @@
 # Fase 1 - Contrato Visual Y Densidades
 
 ## Baseline De Comparacion
-- Baseline Fase 0: `qa/_baseline_f0_phase01` (132 PNGs — directorio canónico, gitignored).
-- Manifest activo: `qa/_captures_v8/CAPTURE_MANIFEST.json` — generado 2026-06-14T19:23:30, 132 capturas, 0 fallos, 0 duplicados, unique_hash_count=132.
-- Regenerar con: `python qa/capture_v8.py --all --no-clean`
-- Matriz versionable: `docs/QA_V8_BASELINE_MATRIX.md`.
-- Capturas post-Fase-2: 132/132, 0 fallos, state_valid=106, REQUIRES_DATA_STATE=16, REQUIRES_RUNTIME=8, WRONG_VIEW=2.
-- Estado global visual: parcial — 14 filas inspeccionadas; 118 pendientes de revision visual PNG.
+- Manifest activo: `qa/_captures_v8_fresh/CAPTURE_MANIFEST.json` — generado 2026-06-21T02:34:12 contra HEAD 51f4448.
+- Regenerar con: `python qa/capture_v8.py --all --clean --out-dir qa/_captures_v8_fresh`
+- Targets canónicos del mockup: `qa/_mockup_targets/` (96 PNGs, regenerados con Playwright contra HEAD 51f4448).
+- Diff de fidelidad fresco: `qa/_fidelity_fresh/FIDELITY_REPORT.md` (gate: SSIM>=0.92, MAD<=0.035, changed<=0.08).
+- Resumen versionable: `docs/CAPTURE_MANIFEST_SUMMARY.md`.
+- Capturas frescas: 98/98, 0 fallos tecnicos, 92 state-valid, 6 `REQUIRES_DATA_STATE`.
+- Estado global visual: 0/96 PASS en el gate endurecido. Ver `docs/VISUAL_QA_AUDIT.md` para deuda por pantalla.
 
-## Comparacion F0 Baseline vs F1+F2
-
-Hash diff (MD5) entre `qa/_baseline_f0_phase01/` (132 PNGs) y `qa/_captures_v8/`
-(132 PNGs, run 2026-06-14T19:23:30, Suite=38px, Hub=32px):
-
-- **57/132 cambiados** — capturas Hub afectadas por densidad compacta (Fase 1) y
-  chrome 32px + sidebar compacta (Fase 2).
-- **75/132 sin cambio** — capturas Suite (densidad `suite_comfortable` codifica
-  valores ya presentes en el stylesheet base; headless no detecta diferencia visual)
-  + archivos REQUIRES_RUNTIME/WRONG_VIEW que producen output identico en ambas runs.
-
-Capturas Hub vs Suite: Hub tiene ~55 capturas efectivas; todos los Hub excepto
-`hub-editor-text-overrides` (REQUIRES_RUNTIME) aparecen en el grupo cambiado.
-Suite tiene ~77 capturas; ninguna registra cambio visible en headless post-Fase-1.
-
-Nota: un run previo con Suite regresada a 32px (bug chrome global) habia mostrado
-125 cambiados. Ese dato era invalido; 57 es el valor correcto post-fix.
-
-Comandos para reproducir:
-```
-python qa/capture_v8.py --all --no-clean
-# Luego comparar con _baseline_f0_phase01/ via hash MD5
-```
+Nota: los artifacts `qa/_baseline_f0_phase01/`, `qa/_captures_v8/` (default dir),
+`qa/_mockup_verify/`, `qa/_mockup_verify2/`, `qa/_fidelity_current/`,
+`qa/_fidelity_selfcheck/` y `qa/nm_capturas_actualizadas/` fueron purgados el
+2026-06-21 por ser stale o autocomparacion trivial. No volver a referenciarlos.
 
 ## Densidades
 - Suite: `suite_comfortable`.
