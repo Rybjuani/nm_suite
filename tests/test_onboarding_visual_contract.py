@@ -30,3 +30,24 @@ def test_onboarding_name_error_copy_matches_mockup(qtbot) -> None:
 
     # Mockup onboarding error línea 1315: "Completá tu nombre para crear la cuenta."
     assert dialog._error_lbl.text() == "Completá tu nombre para crear la cuenta."
+
+
+def test_onboarding_narrow_520_default_size() -> None:
+    """E3-S-ACCESO: ventana arranca en 520×600 (mockup narrow:true línea 1325)."""
+    from PyQt6.QtCore import QSize
+    from app.onboarding_qt import OnboardingDialog
+
+    import inspect
+    source = inspect.getsource(OnboardingDialog._configure_responsive_window)
+    assert "520" in source
+    assert "600" in source
+
+
+def test_onboarding_consent_card_uses_legal_disclaimer_text() -> None:
+    """E3-S-ACCESO: el texto de consentimiento viene de legal_contract, no de un placeholder."""
+    from shared.legal_contract import LEGAL_DISCLAIMER_TEXT
+    from app.onboarding_qt import _CONSENT_TEXT
+
+    assert _CONSENT_TEXT is LEGAL_DISCLAIMER_TEXT or _CONSENT_TEXT == LEGAL_DISCLAIMER_TEXT
+    assert "herramienta digital complementaria de bienestar" in _CONSENT_TEXT
+    assert len(_CONSENT_TEXT) > 200
