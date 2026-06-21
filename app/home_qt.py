@@ -57,8 +57,6 @@ try:
         colors,
         norm_modo,
         qfont,
-        interpolate_color,
-        gradient_colors,
         ThemeAwareWidgetMixin,
         SessionColor,
         aura_opacity,
@@ -91,8 +89,6 @@ except ImportError:
         C,
         norm_modo,
         qfont,
-        interpolate_color,
-        gradient_colors,
         ThemeAwareWidgetMixin,
         SessionColor,
         v3c,
@@ -134,6 +130,7 @@ MODULES_CONFIG = [
         "desc": "Registro emocional diario",
         "chip": "Bienestar",
         "cat_tone": "brand",
+        "badge_tone": "brand",
     },
     {
         "id": "respiracion",
@@ -143,6 +140,7 @@ MODULES_CONFIG = [
         "desc": "Técnicas de calma 4·7·8",
         "chip": "Calma",
         "cat_tone": "mind",
+        "badge_tone": "brand",
     },
     {
         "id": "registro",
@@ -152,6 +150,7 @@ MODULES_CONFIG = [
         "desc": "Trabajo con pensamientos automáticos",
         "chip": "Cognitivo",
         "cat_tone": "efect",
+        "badge_tone": "gold",
     },
     {
         "id": "rutina",
@@ -161,6 +160,7 @@ MODULES_CONFIG = [
         "desc": "Tu rutina del día",
         "chip": "Hábitos",
         "cat_tone": "brand",
+        "badge_tone": "brand",
     },
     {
         "id": "actividades",
@@ -170,6 +170,7 @@ MODULES_CONFIG = [
         "desc": "Sugerencias para activarte",
         "chip": "Acción",
         "cat_tone": "accent",
+        "badge_tone": "accent",
     },
     {
         "id": "timer",
@@ -179,6 +180,7 @@ MODULES_CONFIG = [
         "desc": "Sesiones de foco",
         "chip": "Enfoque",
         "cat_tone": "gold",
+        "badge_tone": "gold",
     },
     {
         "id": "avisos",
@@ -188,6 +190,7 @@ MODULES_CONFIG = [
         "desc": "Avisos de bienestar",
         "chip": "Diario",
         "cat_tone": "brand",
+        "badge_tone": "accent",
     },
     {
         "id": "dbt",
@@ -197,6 +200,7 @@ MODULES_CONFIG = [
         "desc": "Práctica guiada breve",
         "chip": "Habilidades",
         "cat_tone": "efect",
+        "badge_tone": "brand",
     },
 ]
 
@@ -218,11 +222,35 @@ def module_configs() -> list[dict]:
     return configs
 
 
-def _dot_color(idx: int, modo: str) -> str:
-    """Color degradado teal→violet según posición del módulo."""
-    grad = gradient_colors(norm_modo(modo))
-    t = idx / max(len(MODULES_CONFIG) - 1, 1)
-    return interpolate_color(grad[0], grad[-1], t)
+_TONE_COLOR_KEYS = {
+    "brand": "brand",
+    "mind": "mind",
+    "efect": "efect",
+    "accent": "accent",
+    "gold": "gold",
+    "rose": "rose",
+}
+
+_TONE_SOFT_KEYS = {
+    "brand": "brandSoft",
+    "mind": "brandSoft",
+    "efect": "brandSoft",
+    "accent": "accentSoft",
+    "gold": "goldSoft",
+    "rose": "roseSoft",
+}
+
+
+def _tone_color(tone: str, modo: str) -> QColor:
+    return v3c(_TONE_COLOR_KEYS.get(tone, "brand"), modo)
+
+
+def _tone_soft(tone: str, modo: str) -> QColor:
+    return v3c(_TONE_SOFT_KEYS.get(tone, "brandSoft"), modo)
+
+
+def _rgba(c: QColor) -> str:
+    return f"rgba({c.red()},{c.green()},{c.blue()},{c.alpha()})"
 
 
 # ── ModuleCard ────────────────────────────────────────────────────────────────
@@ -238,7 +266,7 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._modo = norm_modo(modo)
         self._on_click = on_click
         self._get_status = get_status_fn
-        self._accent = _dot_color(idx, modo)
+        self._accent = _tone_color(self._config.get("cat_tone", "brand"), self._modo).name()
         self._hover = False
         self._disabled = False
         self._disabled_reason = ""
@@ -246,9 +274,8 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._shadow: QGraphicsDropShadowEffect | None = None
         self._fade_eff: QGraphicsOpacityEffect | None = None
 
-        # Altura cómoda: las cards no deben crecer hasta crear un vacío central
-        # entre descripción y estado.
-        self.setMinimumHeight(156)
+        # Mockup homeCard: min-height:148px; el contenido puede crecer hasta 190.
+        self.setMinimumHeight(148)
         self.setMaximumHeight(190)
         self.setMinimumWidth(0)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
@@ -287,13 +314,18 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         # Top row: icon + chip
         top = QHBoxLayout()
         top.setContentsMargins(0, 0, 0, 0)
-        top.setSpacing(4)
+        top.setSpacing(8)
+        self._icon_box = QFrame(self)
+        self._icon_box.setFixedSize(32, 32)
+        icon_lay = QHBoxLayout(self._icon_box)
+        icon_lay.setContentsMargins(0, 0, 0, 0)
+        icon_lay.setSpacing(0)
         self._icon = NMIcon(self._config["icon_v3"], size=18, color=self._accent, modo=self._modo)
-        top.addWidget(self._icon)
+        icon_lay.addWidget(self._icon, 0, Qt.AlignmentFlag.AlignCenter)
+        top.addWidget(self._icon_box)
         top.addStretch()
         self._chip = QLabel(self._config.get("chip", ""))
         self._chip.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
-        self._chip.setContentsMargins(5, 1, 5, 1)
         top.addWidget(self._chip)
         layout.addLayout(top)
 
@@ -313,93 +345,81 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         self._desc_lbl.setStyleSheet("background: transparent;")
         layout.addWidget(self._desc_lbl)
 
-        # Bottom row: badge + ring (size 22)
-        bottom = QHBoxLayout()
-        bottom.setContentsMargins(0, 0, 0, 0)
-        bottom.setSpacing(4)
+        self._badge_wrap = QFrame(self)
+        self._badge_wrap.setFixedHeight(23)
+        self._badge_wrap.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        badge_lay = QHBoxLayout(self._badge_wrap)
+        badge_lay.setContentsMargins(11, 0, 11, 0)
+        badge_lay.setSpacing(5)
+        self._badge_dot = QFrame(self._badge_wrap)
+        self._badge_dot.setFixedSize(6, 6)
+        badge_lay.addWidget(self._badge_dot, 0, Qt.AlignmentFlag.AlignVCenter)
         self._badge = QLabel("")
         self._badge.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
-        self._badge.setContentsMargins(6, 2, 6, 2)
-        bottom.addWidget(self._badge)
-        bottom.addStretch()
+        badge_lay.addWidget(self._badge, 0, Qt.AlignmentFlag.AlignVCenter)
+        badge_lay.addStretch()
         self._ring = NMModuleRing(size=22, pct=0.0, modo=self._modo, show_label=False)
         self._ring.hide()
-        bottom.addWidget(self._ring)
         # Mockup homeCard: la badge de estado lleva `margin-top:auto` → se ancla al
-        # PIE de la card. El stretch va ANTES de la fila (antes estaba después, lo
-        # que la pegaba al subtítulo dejando hueco abajo).
+        # PIE de la card y se estira al ancho disponible.
         layout.addStretch(1)
-        layout.addLayout(bottom)
+        layout.addWidget(self._badge_wrap)
 
         self._apply_styles()
         self._refresh_status()
         self._set_shadow_state(False)
 
     def _apply_styles(self):
-        is_dark = "dark" in self._modo
         self._title_lbl.setStyleSheet(
             f"color: {v3c('text', self._modo).name()}; background: transparent;"
         )
         self._desc_lbl.setStyleSheet(
             f"color: {v3c('textMuted', self._modo).name()}; background: transparent;"
         )
-        # Chip bg: warm tint in light, purple tint in dark.
-        accent = v3c("accent", self._modo)
-        if is_dark:
-            chip_bg = v3c("accentSoft", self._modo)
-        else:
-            # Warm sand tint instead of cold mint — more coherent with ivory palette
-            chip_bg = v3c("accentSoft", self._modo)
+        icon_bg = v3c("surface3", self._modo)
+        self._icon_box.setStyleSheet(
+            f"background-color: {icon_bg.name()}; border-radius: 10px;"
+        )
+
+        badge_tone = self._config.get("badge_tone", "brand")
+        accent = _tone_color(badge_tone, self._modo)
+        chip_bg = _tone_soft(badge_tone, self._modo)
         self._chip.setStyleSheet(
             f"color: {accent.name()}; "
-            f"background-color: rgba({chip_bg.red()},{chip_bg.green()},{chip_bg.blue()},{chip_bg.alpha()}); "
-            f"border-radius: 6px;"
+            f"background-color: {_rgba(chip_bg)}; "
+            "border-radius: 11px; padding: 4px 11px;"
         )
 
     # ── status badge ──────────────────────────────────────────────────────────
 
-    def _pill_style(self, color_hex: str, alpha_bg: float = 0.14) -> str:
-        c = QColor(color_hex)
-        a = int(alpha_bg * 255)
-        return (
-            f"color: {color_hex}; "
-            f"background-color: rgba({c.red()},{c.green()},{c.blue()},{a}); "
-            f"border-radius: 8px; padding: 2px 6px;"
+    def _apply_status_badge_style(self, tone: str):
+        color = _tone_color(tone, self._modo)
+        bg = _tone_soft(tone, self._modo)
+        self._badge_wrap.setStyleSheet(
+            f"background-color: {_rgba(bg)}; border-radius: 11px;"
+        )
+        self._badge_dot.setStyleSheet(
+            f"background-color: {color.name()}; border-radius: 3px;"
+        )
+        self._badge.setStyleSheet(
+            f"color: {color.name()}; background: transparent;"
         )
 
     def _refresh_status(self):
         status = self._get_status(self._config["id"])
         if self._disabled:
             self._badge.setText("No disponible")
-            self._badge.setStyleSheet(self._pill_style(C("warning", self._modo)))
+            self._apply_status_badge_style("gold")
+            self._badge_wrap.show()
             self._ring.set_pct(0.0)
             return
         if status:
-            mid = self._config["id"]
-            low = status.lower()
-            if "completo" in low:
-                color = C("success", self._modo)
-            elif "progreso" in low or "listos" in low or "/" in status:
-                color = C("warning", self._modo)
-            elif mid == "avisos":
-                color = C("warning", self._modo)
-            elif mid == "timer":
-                color = C("accent", self._modo)
-            elif mid == "rutina":
-                color = (
-                    C("success", self._modo)
-                    if status.startswith("✓")
-                    else C("warning", self._modo)
-                    if "/" in status
-                    else C("teal", self._modo)
-                )
-            else:
-                color = C("teal", self._modo)
             self._badge.setText(status)
-            self._badge.setStyleSheet(self._pill_style(color))
+            self._apply_status_badge_style(self._config.get("badge_tone", "brand"))
+            self._badge_wrap.show()
         else:
             self._badge.setText("")
-            self._badge.setStyleSheet("background: transparent;")
+            self._badge_wrap.hide()
         self._update_ring(status)
 
     def _update_ring(self, status: str = None):
@@ -539,9 +559,8 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        self._accent = _dot_color(self._idx, self._modo)
-        self._icon._color = self._accent
-        self._icon._render()
+        self._accent = _tone_color(self._config.get("cat_tone", "brand"), self._modo).name()
+        self._icon.set_color(self._accent)
         self._apply_styles()
         self._ring._modo = self._modo
         self._ring.update()
@@ -990,11 +1009,9 @@ class HomeView(QWidget):
         self._sync_availability()
         self._rebuild_grid()
 
-        # SIN stretch final (feedback owner v1.0 r3): hero y cards absorben
-        # TODO el alto disponible (máximos 192/256 cubren de sobra el contrato
-        # 960×600 e incluso 1366×768) — el pie queda lleno, no "con resto".
+        # Sin stretch final: en el mockup el espacio vertical lo consumen hero y
+        # grilla; no queda un pie vacío debajo de la segunda fila.
         content_lay.addLayout(self._grid, stretch=0)
-        content_lay.addStretch(1)
 
         root.addWidget(content, stretch=1)
 

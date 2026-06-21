@@ -30,10 +30,11 @@ def module_status(module_id: str) -> str:
         "animo": "10/10",  # score del día (mismo formato real "N/10"): ejercita el hero filled
         "respiracion": "Activo",
         "registro": "En progreso",
-        "rutina": "Completo",
-        "actividades": "3 hoy",
+        "rutina": "60% hoy",
+        "actividades": "3 sugeridas",
         "timer": "45 min hoy",
-        "avisos": "2/5 listos",
+        "avisos": "2 / 5 listos",
+        "dbt": "4 familias",
     }.get(module_id, "")
 
 
