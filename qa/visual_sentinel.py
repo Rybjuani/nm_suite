@@ -86,8 +86,9 @@ _PROJ = Path(__file__).resolve().parent.parent
 if str(_PROJ) not in sys.path:
     sys.path.insert(0, str(_PROJ))
 
-# --- Aislamiento QA: offscreen + datos demo + DB temporal --------------------
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+# --- Aislamiento QA: datos demo + DB temporal --------------------------------
+# QT_QPA_PLATFORM se configura en _configure_platform() / main() para usar
+# la plataforma nativa en Windows (evita render tofu/cuadrados en offscreen).
 os.environ.setdefault("NM_VISUAL_QA", "1")
 os.environ.setdefault("NM_VISUAL_QA_NAME", "Juan Cruz")
 
@@ -118,6 +119,8 @@ _BLANK_MEAN_LO = 0.015
 _FLAT_STDDEV = 0.004
 _DUP_PHASH_DISTANCE = 5
 _OVERLAP_MIN_RATIO = 0.45
+
+_FONT_DIAG_CACHE: dict | None = None
 
 # Caps del crawler (mode-dependientes).
 _DEFAULT_MAX_STATES = 70
@@ -221,6 +224,108 @@ def _drain(qapp, cycles: int = 8, pause: float = 0.025) -> None:
         time.sleep(pause)
         qapp.processEvents()
         QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+
+
+def _configure_platform(mode: str = "auto") -> None:
+    """Configura QT_QPA_PLATFORM ANTES de crear QApplication.
+
+    Debe llamarse desde main() antes de cualquier instanciacion Qt.
+    Si QT_QPA_PLATFORM ya esta seteado externamente (conftest.py, CI, usuario),
+    lo respeta sin sobreescribir.
+
+    mode="auto"      Windows sin CI → nativo (DirectWrite, render correcto);
+                     Linux/Mac sin DISPLAY, o CI → offscreen.
+    mode="native"    Deja que Qt elija su plataforma nativa.
+    mode="offscreen" Fuerza offscreen (headless, CI).
+    """
+    if os.environ.get("QT_QPA_PLATFORM"):
+        return  # respeta seteo externo (conftest.py, CI, usuario)
+    if mode == "offscreen":
+        os.environ["QT_QPA_PLATFORM"] = "offscreen"
+        return
+    if mode == "native":
+        return  # Qt elige su backend nativo
+    # auto: nativo en Windows sin CI, offscreen en el resto
+    _ci = ("CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL", "TF_BUILD",
+           "BUILDKITE", "CIRCLECI", "TRAVIS")
+    if sys.platform == "win32" and not any(os.environ.get(v) for v in _ci):
+        return  # Windows sin CI → plataforma nativa (DirectWrite)
+    os.environ["QT_QPA_PLATFORM"] = "offscreen"
+
+
+def _font_diagnostics(qapp) -> dict:
+    """Diagnostico de fuentes post-carga. Detecta render roto en offscreen/Windows.
+
+    Resultado incluido en el manifest y usado por el guardrail FONT_RENDER_BROKEN.
+    """
+    from PyQt6.QtGui import QFontInfo, QFont, QFontMetrics
+
+    try:
+        platform = qapp.platformName()
+    except Exception:
+        platform = os.environ.get("QT_QPA_PLATFORM", "unknown")
+
+    try:
+        import shared.fonts as _sf
+        sans = _sf.FONT_SANS
+        serif = _sf.FONT_SERIF
+        mono = _sf.FONT_MONO
+        available = list(_sf._AVAILABLE_FAMILIES)
+    except Exception as exc:
+        sans = serif = mono = f"<error: {exc}>"
+        available = []
+
+    try:
+        app_font = qapp.font()
+        app_font_family = app_font.family()
+        resolved_family = QFontInfo(app_font).family()
+    except Exception:
+        app_font_family = resolved_family = "<error>"
+
+    # Verificar metricas de glyphs de strings clave del ADN visual
+    test_strings = {
+        "NeuroMood": "NeuroMood",
+        "Ánimo": "Ánimo",          # Ánimo
+        "Respiración": "Respiración",  # Respiración
+    }
+    glyph_ok: dict[str, bool] = {}
+    metrics_broken = False
+    try:
+        fm = QFontMetrics(QFont(sans, 14))
+        for name, text in test_strings.items():
+            ok = all(fm.horizontalAdvance(ch) > 0 for ch in text)
+            glyph_ok[name] = ok
+            if not ok:
+                metrics_broken = True
+    except Exception as exc:
+        glyph_ok = {"error": str(exc)}
+        metrics_broken = True
+
+    # En Windows + offscreen, Qt no usa DirectWrite y el render suele producir tofu
+    on_windows_offscreen = sys.platform == "win32" and platform == "offscreen"
+    font_render_suspect = metrics_broken or on_windows_offscreen
+
+    warnings: list[str] = []
+    if on_windows_offscreen:
+        warnings.append(
+            "Windows + offscreen: font render puede producir cuadrados/tofu. "
+            "Use --platform native o --platform auto para capturas canonicas."
+        )
+    if metrics_broken:
+        warnings.append(f"Metricas de glyphs rotas para familia '{sans}': {glyph_ok}")
+
+    return {
+        "platform": platform,
+        "app_font_family": app_font_family,
+        "app_font_resolved": resolved_family,
+        "available_families": available,
+        "sans": sans,
+        "serif": serif,
+        "mono": mono,
+        "glyph_metrics_ok": glyph_ok,
+        "font_render_suspect": font_render_suspect,
+        "warnings": warnings,
+    }
 
 
 def _ensure_isolated_db() -> Path | None:
@@ -699,6 +804,11 @@ def _instantiate(app_key: str, modo: str, res: str = _RESOLUTION):
         load_fonts()
     except Exception:
         pass
+    global _FONT_DIAG_CACHE
+    if _FONT_DIAG_CACHE is None:
+        _FONT_DIAG_CACHE = _font_diagnostics(qapp)
+        for _diag_warn in _FONT_DIAG_CACHE.get("warnings", []):
+            print(f"[SENTINEL FONT] {_diag_warn}", file=sys.stderr)
     try:
         from shared.theme_qt import stylesheet_base, app_palette
         qapp.setPalette(app_palette(modo))
@@ -769,7 +879,6 @@ def crawl_app(app_key: str, modo: str, opts: dict,
     omitted: list[dict] = []
     seen_sig: dict[str, str] = {}      # sig -> screen_id
     used_screen_ids: set[str] = set()
-    used_labels: dict[str, int] = {}
 
     def _log_omit(rec):
         omitted.append(rec)
@@ -1547,6 +1656,39 @@ def _check_long_tab_labels(st, c, states, reg) -> list[dict]:
     return out
 
 
+def _check_font_render_broken(states: list[CapturedState],
+                              font_diag: dict | None) -> list[Finding]:
+    """Guardrail P0: bloquea el resultado si el render de fuentes es defectuoso.
+
+    Se activa cuando se detecta Windows + offscreen (Qt no usa DirectWrite en ese
+    modo y produce cuadrados/tofu) o cuando las metricas de glyphs del ADN visual
+    estan rotas (NeuroMood, Animo, Respiracion). Un resultado PASS con capturas
+    tofu no es evidencia valida.
+    """
+    if not font_diag or not font_diag.get("font_render_suspect"):
+        return []
+    warnings_txt = " ".join(font_diag.get("warnings", []))
+    first_sid = states[0].screen_id if states else "global"
+    return [Finding(
+        contract_id="font_render_guardrail",
+        severity="P0",
+        flag="FONT_RENDER_BROKEN",
+        screen_id=first_sid,
+        theme="global",
+        message=(
+            "Render de fuentes defectuoso: capturas pueden contener tofu/cuadrados. "
+            + warnings_txt
+        ),
+        detail={
+            "platform": font_diag.get("platform"),
+            "sans": font_diag.get("sans"),
+            "available_families": font_diag.get("available_families"),
+            "glyph_metrics_ok": font_diag.get("glyph_metrics_ok"),
+            "warnings": font_diag.get("warnings"),
+        },
+    )]
+
+
 _CHECKS: dict[str, Callable[..., list[dict]]] = {
     "blank_or_flat": _check_blank_or_flat,
     "duplicate_suspect": _check_duplicate,
@@ -2094,6 +2236,12 @@ def _cmd_audit(args) -> int:
     findings = _run_contracts(all_states, contracts, reg)
     findings += _check_stale(all_states, reg)
     findings += _check_obsolete_recipe_refs(reg)
+    findings += _check_font_render_broken(all_states, _FONT_DIAG_CACHE)
+    if _FONT_DIAG_CACHE:
+        log(f"[SENTINEL FONT] platform={_FONT_DIAG_CACHE.get('platform')} "
+            f"sans={_FONT_DIAG_CACHE.get('sans')} "
+            f"available={len(_FONT_DIAG_CACHE.get('available_families', []))} families "
+            f"suspect={_FONT_DIAG_CACHE.get('font_render_suspect')}")
 
     coverage = _compute_coverage(all_states, discovered_ids, reg)
     matrix = _build_coverage_matrix(all_states, graphs, findings)
@@ -2123,6 +2271,7 @@ def _cmd_audit(args) -> int:
                             for s in ("P0", "P1", "P2", "P3")},
         "discovered_state_ids": discovered_ids,
         "states": [_state_to_dict(s) for s in all_states], "run_meta": run_meta,
+        "font_diagnostics": _FONT_DIAG_CACHE or {},
     }
     (out_dirs["latest"] / "manifest.json").write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -2175,7 +2324,7 @@ def _cmd_capture(args) -> int:
     screen_id = _resolve_screen(args.app, args.screen)
     app_key = screen_id.split(":")[0]
     opts = _crawl_opts(False)
-    print(f"[SENTINEL] capture targeted (sin resultado general)")
+    print("[SENTINEL] capture targeted (sin resultado general)")
     node = _find_node_by_screen(app_key, screen_id, themes[0], opts, out_dirs)
     if node is None:
         print(f"[ERROR] screen '{screen_id}' no descubierto por el crawler. Use --list.")
@@ -2297,6 +2446,11 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Auditor visual canonico, independiente y autodescubrible.",
     )
     p.add_argument("--list", action="store_true", help="Listar estados descubiertos")
+    p.add_argument(
+        "--platform", choices=["offscreen", "native", "auto"], default="auto",
+        help=("Plataforma Qt para capturas: auto usa native en Windows sin CI "
+              "(evita tofu/cuadrados), offscreen en CI/headless (default: auto)"),
+    )
     sub = p.add_subparsers(dest="command")
 
     sub.add_parser("list", help="Listar estados descubiertos").set_defaults(func=_cmd_list)
@@ -2337,6 +2491,7 @@ def _build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
+    _configure_platform(getattr(args, "platform", "auto"))  # antes de cualquier Qt
     if getattr(args, "list", False):
         return _cmd_list(args)
     func = getattr(args, "func", None)

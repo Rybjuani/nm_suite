@@ -375,8 +375,8 @@ def test_enumerate_finds_safe_click_and_skips_destructive(qapp):
     actions = _enumerate_safe_actions(root, [], {"max_branch": 20},
                                       log_omitted=omitted.append)
     labels = [a["label"] for a in actions if a["kind"] == "click"]
-    assert any("iniciar" in l for l in labels)
-    assert all("eliminar" not in l for l in labels)
+    assert any("iniciar" in lbl for lbl in labels)
+    assert all("eliminar" not in lbl for lbl in labels)
     assert any(o["reason"] == "destructive-text" for o in omitted)
     root.deleteLater()
 
@@ -464,11 +464,14 @@ def test_crawler_discovers_distinct_states_synthetic(qapp):
         lay = QVBoxLayout(root)
         toggle = QPushButton("Revelar panel")
         stack = QStackedWidget()
-        page0 = QWidget(); page0.setLayout(QVBoxLayout(page0))
+        page0 = QWidget()
+        page0.setLayout(QVBoxLayout(page0))
         page0.layout().addWidget(QLabel("estado base"))
-        page1 = QWidget(); page1.setLayout(QVBoxLayout(page1))
+        page1 = QWidget()
+        page1.setLayout(QVBoxLayout(page1))
         page1.layout().addWidget(QLabel("estado revelado"))
-        stack.addWidget(page0); stack.addWidget(page1)
+        stack.addWidget(page0)
+        stack.addWidget(page1)
         lay.addWidget(toggle)
         lay.addWidget(stack)
         toggle.clicked.connect(lambda: stack.setCurrentIndex(
@@ -504,13 +507,16 @@ def test_crawler_detects_loop_visual(qapp):
                                     _build_widget_tree, _structural_hash)
 
     def build():
-        root = QWidget(); root.resize(300, 200)
+        root = QWidget()
+        root.resize(300, 200)
         lay = QVBoxLayout(root)
         tog = QPushButton("toggle")
         lbl = QLabel("off")
         tog.clicked.connect(lambda: lbl.setText("on" if lbl.text() == "off" else "off"))
-        lay.addWidget(tog); lay.addWidget(lbl)
-        root.show(); qapp.processEvents()
+        lay.addWidget(tog)
+        lay.addWidget(lbl)
+        root.show()
+        qapp.processEvents()
         return root
 
     opts = {"max_branch": 20, "max_states": 50, "max_depth": 4}
@@ -538,22 +544,29 @@ def test_crawler_discovers_stack_pages_synthetic(qapp):
                                     _build_widget_tree, _structural_hash)
 
     def build():
-        root = QWidget(); root.resize(400, 300)
+        root = QWidget()
+        root.resize(400, 300)
         lay = QVBoxLayout(root)
         stack = QStackedWidget()
         for txt in ("paso 0", "paso 1", "paso 2"):
-            p = QWidget(); p.setLayout(QVBoxLayout(p))
+            p = QWidget()
+            p.setLayout(QVBoxLayout(p))
             p.layout().addWidget(QLabel(txt))
             stack.addWidget(p)
-        row = QWidget(); row.setLayout(QHBoxLayout(row))
-        nxt = QPushButton("Siguiente"); prev = QPushButton("Anterior")
+        row = QWidget()
+        row.setLayout(QHBoxLayout(row))
+        nxt = QPushButton("Siguiente")
+        prev = QPushButton("Anterior")
         nxt.clicked.connect(lambda: stack.setCurrentIndex(
             min(stack.currentIndex() + 1, stack.count() - 1)))
         prev.clicked.connect(lambda: stack.setCurrentIndex(
             max(stack.currentIndex() - 1, 0)))
-        row.layout().addWidget(prev); row.layout().addWidget(nxt)
-        lay.addWidget(stack); lay.addWidget(row)
-        root.show(); qapp.processEvents()
+        row.layout().addWidget(prev)
+        row.layout().addWidget(nxt)
+        lay.addWidget(stack)
+        lay.addWidget(row)
+        root.show()
+        qapp.processEvents()
         return root
 
     opts = {"max_branch": 20, "max_states": 50, "max_depth": 4}
