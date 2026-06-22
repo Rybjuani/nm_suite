@@ -308,12 +308,12 @@ validación mínima · criterio de corte · entregable · handoff.
 - **Corte:** probe sin `DEFECTS_FOUND` para las vistas del cluster; deuda residual listada.
 - **Handoff:** ledger de defectos cerrados/abiertos por pantalla.
 
-### OLA 1 — Primitivas compartidas seguras  *(mayormente CERRADA)*
+### OLA 1 — Primitivas compartidas seguras  *(CERRADA por E5)*
 - **Objetivo:** alinear componentes base con efecto sistémico sin tocar pantallas locales.
 - **Cubre:** titlebar/chrome, botones, tabs/pills/fchips, inputs, empty states,
   overlays/toasts/modales, stepper, slider, checkbox, cards (si la primitiva es segura).
-- **Estado:** botones/tabs/badge/card/search/empty/chrome ya contract-locked. **Resto real:**
-  slider arcoíris, toast timing, modal scale, stepper estados, sparkline área.
+- **Estado:** botones/tabs/badge/card/search/empty/chrome, slider, toast/modal, stepper y
+  sparkline quedaron contract-locked o aceptados bajo recetas Qt estables al cierre E5.
 - **Validación:** test de contrato por primitiva (extender `test_component_visual_contract.py`),
   ambos temas.
 - **Corte:** contrato verde + no rompe consumidores (probe).
