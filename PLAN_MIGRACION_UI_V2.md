@@ -499,6 +499,8 @@ Cierre asistido: `agent_harness\scripts\close_episode.ps1` + `summarize_diff.ps1
   evidence, 92 failures por umbrales SSIM/MAD no-gate ya documentados en §10.2.
 - **Terminado operativo:** probe OK en las 22 vistas (light+dark) + suite de contratos verde
   + cero legacy + capturas finales completas + revisión visual técnica sin deuda accionable.
+- **Revalidado post-refresh/docs:** `a809ad1` -> runtime probe 22/22 y `pytest tests/`
+  317/317, sin deuda nueva para abrir backlog.
 
 ---
 *Fin de `PLAN_MIGRACION_UI_V2.md`. Supera a `PLAN_MIGRACION_UI.md` (histórico).*
