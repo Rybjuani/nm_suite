@@ -95,14 +95,17 @@ def test_play_button_keeps_contract_size_under_global_pushbutton_qss(qtbot, qapp
         qapp.setStyleSheet(old_qss)
 
 
-def test_tabs_pill_paints_mockup_container_and_brand_selection(qtbot) -> None:
+def test_tabs_pill_paints_container_with_soft_selected_state(qtbot) -> None:
     import inspect
+
+    from PyQt6.QtWidgets import QSizePolicy
 
     from shared.components.buttons import (
         NMTabs,
         _NM_TAB_CONTAINER_GAP,
         _NM_TAB_CONTAINER_PAD,
         _NM_TAB_PILL_BUTTON_HEIGHT,
+        _NM_TAB_PILL_BUTTON_RADIUS,
     )
 
     tabs = NMTabs(["Todas", "Mindfulness", "Tolerancia"], variant="pill", modo="light_hybrid")
@@ -114,12 +117,20 @@ def test_tabs_pill_paints_mockup_container_and_brand_selection(qtbot) -> None:
     assert margins.top() == 5
     assert tabs.layout().spacing() == _NM_TAB_CONTAINER_GAP == 4
     assert all(btn.height() == _NM_TAB_PILL_BUTTON_HEIGHT == 30 for btn in tabs._btns)
+    assert all(
+        btn.sizePolicy().horizontalPolicy() == QSizePolicy.Policy.Minimum
+        for btn in tabs._btns
+    )
 
     selected_qss = tabs._btns[1].styleSheet()
     rest_qss = tabs._btns[0].styleSheet()
+    selected_qss_lower = selected_qss.lower()
     assert tabs._PAINTED_CONTAINER_VARIANTS == ("pill", "seg")
-    assert "background: #2e5d43" in selected_qss
-    assert "color: #f7f3ea" in selected_qss
+    assert "background: #fbf8f1" in selected_qss_lower
+    assert "color: #2e5d43" in selected_qss_lower
+    assert "border: 1px solid rgba(46, 93, 67, 71)" in selected_qss
+    assert f"border-radius: {_NM_TAB_PILL_BUTTON_RADIUS}px" in selected_qss
+    assert "background: #2e5d43" not in selected_qss_lower
     assert "background: transparent" in rest_qss
 
     source = inspect.getsource(NMTabs.paintEvent)
@@ -127,8 +138,43 @@ def test_tabs_pill_paints_mockup_container_and_brand_selection(qtbot) -> None:
     assert '"surface_2" if self._variant == "pill" else "surface3"' in source
 
 
+def test_tabs_variants_have_role_specific_density_and_selection(qtbot) -> None:
+    from PyQt6.QtWidgets import QSizePolicy
+
+    from shared.components.buttons import (
+        NMTabs,
+        _NM_TAB_FILTER_BUTTON_HEIGHT,
+        _NM_TAB_FILTER_BUTTON_RADIUS,
+        _NM_TAB_SEG_BUTTON_HEIGHT,
+        _NM_TAB_SEG_BUTTON_RADIUS,
+    )
+
+    filter_tabs = NMTabs(["Todas", "Activas"], variant="filter", modo="light_hybrid")
+    qtbot.addWidget(filter_tabs)
+    filter_tabs.set_current(1)
+
+    assert all(btn.height() == _NM_TAB_FILTER_BUTTON_HEIGHT == 32 for btn in filter_tabs._btns)
+    assert "background: #2e5d43" in filter_tabs._btns[1].styleSheet().lower()
+    assert f"border-radius: {_NM_TAB_FILTER_BUTTON_RADIUS}px" in filter_tabs._btns[1].styleSheet()
+
+    seg_tabs = NMTabs(["Ahora", "Biblioteca", "Historial"], variant="seg", modo="light_hybrid")
+    qtbot.addWidget(seg_tabs)
+    seg_tabs.set_current(1)
+
+    assert all(btn.height() == _NM_TAB_SEG_BUTTON_HEIGHT == 30 for btn in seg_tabs._btns)
+    assert all(
+        btn.sizePolicy().horizontalPolicy() == QSizePolicy.Policy.Expanding
+        for btn in seg_tabs._btns
+    )
+    selected_qss = seg_tabs._btns[1].styleSheet()
+    assert "background: #fbf8f1" in selected_qss.lower()
+    assert "border: 1px solid rgba(46, 93, 67, 71)" in selected_qss
+    assert f"border-radius: {_NM_TAB_SEG_BUTTON_RADIUS}px" in selected_qss
+    assert "background: #2e5d43" not in selected_qss.lower()
+
+
 def test_badge_primitive_supports_mockup_tones(qtbot) -> None:
-    from shared.components.surfaces import NMBadge
+    from shared.components.surfaces import NMBadge, _NM_BADGE_MIN_HEIGHT, _NM_BADGE_RADIUS
 
     badge = NMBadge("Estado", tone="gold", modo="light_hybrid")
     qtbot.addWidget(badge)
@@ -136,8 +182,9 @@ def test_badge_primitive_supports_mockup_tones(qtbot) -> None:
     qss = badge.styleSheet()
     assert "color: #C2912F" in qss
     assert "background-color: rgba(194,145,47,0.16)" in qss
-    # Mockup línea 265: .badge { border-radius: var(--r-pill) } = 999px (r-pill)
-    assert "border-radius: 999px" in qss
+    assert _NM_BADGE_MIN_HEIGHT == 22
+    assert _NM_BADGE_RADIUS == 11
+    assert f"border-radius: {_NM_BADGE_RADIUS}px" in qss
     assert "padding: 4px 11px" in qss
     # Mockup línea 266: font-size: 11.5px
     assert "font-size: 11.5px" in qss

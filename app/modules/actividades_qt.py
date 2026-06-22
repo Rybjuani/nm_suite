@@ -467,7 +467,8 @@ class _SuggestedCard(NMCard):
         top.addStretch()
         self._chip = QLabel(_category_label(self._categoria))
         self._chip.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
-        self._chip.setContentsMargins(6, 1, 6, 1)
+        self._chip.setMinimumHeight(20)
+        self._chip.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         top.addWidget(self._chip)
         lay.addLayout(top)
 
@@ -545,7 +546,8 @@ class _SuggestedCard(NMCard):
         bg_rgba = f"rgba({qc.red()},{qc.green()},{qc.blue()},36)"
         self._chip.setText(_category_label(self._categoria))
         self._chip.setStyleSheet(
-            f"color: {cat_color}; background: {bg_rgba}; border-radius: 10px;"
+            f"color: {cat_color}; background: {bg_rgba}; border-radius: 10px; "
+            f"padding: 2px 8px; min-height: 20px;"
         )
         self._title_lbl.setStyleSheet(
             f"color: {v3c('text', self._modo).name()}; background: transparent;"

@@ -74,6 +74,11 @@ _NM_TAB_FONT = "size_caption"
 _NM_TAB_CONTAINER_PAD = 5
 _NM_TAB_CONTAINER_GAP = 4
 _NM_TAB_PILL_BUTTON_HEIGHT = 30
+_NM_TAB_FILTER_BUTTON_HEIGHT = 32
+_NM_TAB_SEG_BUTTON_HEIGHT = 30
+_NM_TAB_PILL_BUTTON_RADIUS = _NM_TAB_PILL_BUTTON_HEIGHT // 2
+_NM_TAB_FILTER_BUTTON_RADIUS = _NM_TAB_FILTER_BUTTON_HEIGHT // 2
+_NM_TAB_SEG_BUTTON_RADIUS = _NM_TAB_SEG_BUTTON_HEIGHT // 2
 _NM_SEARCH_MARGIN = 3
 _NM_SEARCH_INNER_HEIGHT = _NM_CONTROL_HEIGHT - (_NM_SEARCH_MARGIN * 2)
 _NM_SEARCH_CLEAR_SIZE = 22
@@ -1082,10 +1087,13 @@ class NMTabs(QWidget):
         self._apply_theme(self._modo)
 
     def _build_buttons(self):
-        # Limpiar
-        for b in self._btns:
-            b.setParent(None)
-            b.deleteLater()
+        # Limpiar widgets y stretches previos; set_labels() puede reconstruir.
+        while self._lay.count():
+            item = self._lay.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(None)
+                widget.deleteLater()
         self._btns.clear()
         # Crear
         _is_seg = self._variant == "seg"
@@ -1106,13 +1114,17 @@ class NMTabs(QWidget):
         self._lay.setSpacing(_NM_TAB_CONTAINER_GAP if _is_pill else V3_SP["xs"])
         for i, label in enumerate(self._labels):
             btn = QPushButton(label)
+            if _is_seg:
+                btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            else:
+                btn.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setFlat(True)
             btn.setCheckable(True)
             btn.clicked.connect(lambda _=False, idx=i: self.set_current(idx))
             self._lay.addWidget(btn, 1 if _is_seg else 0)
             self._btns.append(btn)
-        if not _is_seg and not _is_pill:
+        if not _is_seg:
             self._lay.addStretch()
 
     def set_labels(self, labels: list[str]):
@@ -1138,9 +1150,12 @@ class NMTabs(QWidget):
         primary_ink = v3c("primary_ink", self._modo).name()
         text = v3c("text", self._modo).name()
         text_muted = v3c("text2", self._modo).name()
+        brand = v3c("brand", self._modo).name()
+        surface = v3c("surface", self._modo).name()
         surface_2 = v3c("surface_2", self._modo).name()
         border = v3c("border", self._modo)
         border_strong = v3c("borderStrong", self._modo)
+        brand_line = qcolor_to_rgba_css(v3c("brandLine", self._modo))
         soft_css = (
             f"rgba({border.red()},{border.green()},"
             f"{border.blue()},{max(border.alpha(), 24)})"
@@ -1152,6 +1167,10 @@ class NMTabs(QWidget):
         for i, b in enumerate(self._btns):
             if self._variant == "pill":
                 b.setFixedHeight(_NM_TAB_PILL_BUTTON_HEIGHT)
+            elif self._variant == "filter":
+                b.setFixedHeight(_NM_TAB_FILTER_BUTTON_HEIGHT)
+            elif self._variant == "seg":
+                b.setFixedHeight(_NM_TAB_SEG_BUTTON_HEIGHT)
             else:
                 b.setMinimumHeight(_NM_TAB_HEIGHT)
             b.setFont(qfont(_NM_TAB_FONT, weight=_NM_CONTROL_WEIGHT))
@@ -1172,19 +1191,23 @@ class NMTabs(QWidget):
                     )
             elif self._variant == "filter":
                 # .fchip canónico (mockup línea 301-304):
-                #   padding 8×15px, font-size 12.5px, r-pill, surface-2 bg, line border
-                #   activo: brand bg + brand-ink + transparent border
+                #   32px de alto, font-size 12.5px, r-pill, surface-2 bg, line border
+                #   activo: brand bg + brand-ink + transparent border.
                 if checked:
                     b.setStyleSheet(
                         f"QPushButton {{ background: {primary}; color: {primary_ink}; "
-                        f"border: 1px solid transparent; padding: 8px 15px; "
-                        f"font-size: 12.5px; border-radius: 999px; }}"
+                        f"border: 1px solid transparent; padding: 0px 15px; "
+                        f"font-size: 12.5px; border-radius: {_NM_TAB_FILTER_BUTTON_RADIUS}px; "
+                        f"min-height: {_NM_TAB_FILTER_BUTTON_HEIGHT}px; "
+                        f"max-height: {_NM_TAB_FILTER_BUTTON_HEIGHT}px; }}"
                     )
                 else:
                     b.setStyleSheet(
                         f"QPushButton {{ background: {surface_2}; color: {text_muted}; "
-                        f"border: 1px solid {soft_css}; padding: 8px 15px; "
-                        f"font-size: 12.5px; border-radius: 999px; }}"
+                        f"border: 1px solid {soft_css}; padding: 0px 15px; "
+                        f"font-size: 12.5px; border-radius: {_NM_TAB_FILTER_BUTTON_RADIUS}px; "
+                        f"min-height: {_NM_TAB_FILTER_BUTTON_HEIGHT}px; "
+                        f"max-height: {_NM_TAB_FILTER_BUTTON_HEIGHT}px; }}"
                         f"QPushButton:hover {{ color: {text}; border-color: {strong_css}; }}"
                     )
             elif self._variant == "seg":
@@ -1192,29 +1215,36 @@ class NMTabs(QWidget):
                 # superficie elevada (surface + ink), NO brand; resto transparente.
                 if checked:
                     b.setStyleSheet(
-                        f"QPushButton {{ background: {v3c('surface', self._modo).name()}; "
-                        f"color: {text}; border: none; padding: 7px 0; "
-                        f"font-size: 12.5px; border-radius: 999px; }}"
+                        f"QPushButton {{ background: {surface}; "
+                        f"color: {text}; border: 1px solid {brand_line}; padding: 0px 12px; "
+                        f"font-size: 12.5px; border-radius: {_NM_TAB_SEG_BUTTON_RADIUS}px; "
+                        f"min-height: {_NM_TAB_SEG_BUTTON_HEIGHT}px; "
+                        f"max-height: {_NM_TAB_SEG_BUTTON_HEIGHT}px; }}"
                     )
                 else:
                     b.setStyleSheet(
                         f"QPushButton {{ background: transparent; color: {text_muted}; "
-                        f"border: none; padding: 7px 0; font-size: 12.5px; "
-                        f"border-radius: 999px; }}"
+                        f"border: 1px solid transparent; padding: 0px 12px; "
+                        f"font-size: 12.5px; border-radius: {_NM_TAB_SEG_BUTTON_RADIUS}px; "
+                        f"min-height: {_NM_TAB_SEG_BUTTON_HEIGHT}px; "
+                        f"max-height: {_NM_TAB_SEG_BUTTON_HEIGHT}px; }}"
                         f"QPushButton:hover {{ color: {text}; }}"
                     )
             elif checked:
                 b.setStyleSheet(
-                    f"QPushButton {{ background: {primary}; color: {primary_ink}; "
-                    f"border: none; padding: 0px 16px; "
-                    "font-size: 13px; border-radius: 999px; }}"
+                    f"QPushButton {{ background: {surface}; color: {brand}; "
+                    f"border: 1px solid {brand_line}; padding: 0px 16px; "
+                    f"font-size: 13px; border-radius: {_NM_TAB_PILL_BUTTON_RADIUS}px; "
+                    f"min-height: {_NM_TAB_PILL_BUTTON_HEIGHT}px; "
+                    f"max-height: {_NM_TAB_PILL_BUTTON_HEIGHT}px; }}"
                 )
             else:
                 b.setStyleSheet(
                     f"QPushButton {{ background: transparent; color: {text_muted}; "
-                    "border: none; padding: 0px 16px; font-size: 13px; "
-                    "border-radius: 999px; }}"
-                    f"QPushButton:hover {{ color: {text}; background: {surface_2}; }}"
+                    f"border: 1px solid transparent; padding: 0px 16px; font-size: 13px; "
+                    f"border-radius: {_NM_TAB_PILL_BUTTON_RADIUS}px; min-height: {_NM_TAB_PILL_BUTTON_HEIGHT}px; "
+                    f"max-height: {_NM_TAB_PILL_BUTTON_HEIGHT}px; }}"
+                    f"QPushButton:hover {{ color: {text}; background: {surface}; }}"
                 )
 
     def paintEvent(self, event):

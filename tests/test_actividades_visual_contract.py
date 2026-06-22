@@ -35,6 +35,10 @@ def test_actividad_card_actions_and_done_badge_match_mockup(qtbot, monkeypatch) 
     assert card._done_badge._bare_text == "Hecho"
     assert card._done_badge.tone() == "brand"
     assert card._done_badge.isHidden()
+    chip_qss = card._chip.styleSheet()
+    assert "border-radius: 10px" in chip_qss
+    assert "padding: 2px 8px" in chip_qss
+    assert "min-height: 20px" in chip_qss
 
     card.set_completed(True)
 

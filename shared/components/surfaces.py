@@ -127,6 +127,9 @@ _BADGE_TONE_TO_SOFT_KEY = {
     "critical": "dangerSoft",
 }
 
+_NM_BADGE_MIN_HEIGHT = 22
+_NM_BADGE_RADIUS = _NM_BADGE_MIN_HEIGHT // 2
+
 
 class NMChip(QFrame):
     """NMChip F1 Polish V2."""
@@ -286,7 +289,7 @@ class NMBadge(QLabel):
         self.setObjectName("NMBadge")
         self.setFont(v3_font("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.setMinimumHeight(22)
+        self.setMinimumHeight(_NM_BADGE_MIN_HEIGHT)
         self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         self.setContentsMargins(0, 0, 0, 0)
         # Seteo inicial del texto (con dot si corresponde)
@@ -338,8 +341,9 @@ class NMBadge(QLabel):
             bg_css = C("surface3", self._modo)
         else:
             bg_css = C(_BADGE_TONE_TO_SOFT_KEY.get(self._tone, "primary_soft"), self._modo)
-        # Mockup línea 265: .badge { border-radius: var(--r-pill) = 999px; font-size: 11.5px; padding: 4px 11px }
-        self._pill_r_applied = 999  # r-pill canónico (era 11)
+        # Qt no redondea de forma fiable QPushButton/QLabel con radios
+        # "infinitos"; aplicamos el radio real para el alto canónico.
+        self._pill_r_applied = _NM_BADGE_RADIUS
         self.setStyleSheet(f"""
             NMBadge {{
                 color: {color_hex};
@@ -348,7 +352,7 @@ class NMBadge(QLabel):
                 border-radius: {self._pill_r_applied}px;
                 padding: 4px 11px;
                 font-size: 11.5px;
-                min-height: 22px;
+                min-height: {_NM_BADGE_MIN_HEIGHT}px;
             }}
         """)
         self._sync_min_width()

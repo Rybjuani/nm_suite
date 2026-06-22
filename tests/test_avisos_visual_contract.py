@@ -46,6 +46,7 @@ def test_avisos_filters_and_search_are_visible_and_drive_state(qtbot, monkeypatc
     _use_default_texts(monkeypatch)
 
     from app.modules import avisos_qt
+    from app.modules.avisos_qt import _AVISOS_FILTER_PILL_HEIGHT, _AVISOS_FILTER_PILL_RADIUS
 
     monkeypatch.setattr(avisos_qt, "visual_qa_enabled", lambda: True)
     monkeypatch.setattr(
@@ -64,6 +65,12 @@ def test_avisos_filters_and_search_are_visible_and_drive_state(qtbot, monkeypatc
     assert module._filter_pills["todos"].text() == "Todos"
     assert module._filter_pills["activos"].text() == "Activos"
     assert module._filter_pills["hoy"].text() == "Hoy"
+    active_qss = module._filter_pills["todos"].styleSheet()
+    assert module._filter_pills["todos"].height() == _AVISOS_FILTER_PILL_HEIGHT == 32
+    assert "background: #fbf8f1" in active_qss.lower()
+    assert "border: 1px solid rgba(46, 93, 67, 71)" in active_qss
+    assert f"border-radius: {_AVISOS_FILTER_PILL_RADIUS}px" in active_qss
+    assert "background: #2e5d43" not in active_qss.lower()
     assert module._search_input.text() == ""
     assert module._search_input._edit.placeholderText() == "Buscar recordatorio…"
     assert module._search_edit is module._search_input._edit

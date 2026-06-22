@@ -64,6 +64,7 @@ try:
         norm_modo,
         qfont,
         qfont_mono,
+        qcolor_to_rgba_css,
         v3c,
         V3_SP,
         V3_RD,
@@ -240,6 +241,10 @@ def _load_support_messages() -> dict[str, list[str]]:
 
 # ── _StepPill (filtro tabs) ─────────────────────────────────────────────────
 
+_AVISOS_FILTER_PILL_HEIGHT = 32
+_AVISOS_FILTER_PILL_RADIUS = _AVISOS_FILTER_PILL_HEIGHT // 2
+_AVISOS_FILTER_PILL_CONTENT_HEIGHT = _AVISOS_FILTER_PILL_HEIGHT - 2
+
 
 class _StepPill(QPushButton):
     """Step pill toggleable — usado para tabs filtro (Todos/Activos/Hoy).
@@ -254,11 +259,12 @@ class _StepPill(QPushButton):
         self._modo = norm_modo(modo)
         self._active = active
         self._segmented = segmented
-        self.setFixedHeight(36)
-        self.setMinimumWidth(80)
+        self.setFixedHeight(_AVISOS_FILTER_PILL_HEIGHT)
+        self.setMinimumWidth(70)
+        self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setAccessibleName(label)
-        self.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_semibold"]))
+        self.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
         self._refresh()
 
     def set_active(self, active: bool):
@@ -267,32 +273,42 @@ class _StepPill(QPushButton):
             self._refresh()
 
     def _refresh(self):
-        if self._active:
-            # Activo = relleno primary + tinta invertida (pill segmentada).
+        height = _AVISOS_FILTER_PILL_CONTENT_HEIGHT
+        radius = _AVISOS_FILTER_PILL_RADIUS
+        brand_line = qcolor_to_rgba_css(v3c("brandLine", self._modo))
+        if self._active and self._segmented:
+            self.setStyleSheet(
+                f"QPushButton {{ background: {v3c('surface', self._modo).name()}; "
+                f"color: {v3c('text', self._modo).name()}; "
+                f"border: 1px solid {brand_line}; border-radius: {radius}px; "
+                f"padding: 0px 14px; min-height: {height}px; max-height: {height}px; }}"
+            )
+        elif self._active:
             _p = QColor(v3c("primary", self._modo))
             self.setStyleSheet(
                 f"QPushButton {{ background: {_p.name()}; "
                 f"color: {v3c('primary_ink', self._modo).name()}; "
-                f"border: none; border-radius: 16px; "
-                f"padding: 0 16px; min-height: 32px; }}"
+                f"border: 1px solid transparent; border-radius: {radius}px; "
+                f"padding: 0px 14px; min-height: {height}px; max-height: {height}px; }}"
             )
         elif self._segmented:
             # Inactivo dentro del track segmentado: transparente, sin borde.
             self.setStyleSheet(
                 f"QPushButton {{ background: transparent; "
                 f"color: {v3c('text2', self._modo).name()}; "
-                f"border: none; border-radius: 16px; "
-                f"padding: 0 16px; min-height: 32px; }}"
+                f"border: 1px solid transparent; border-radius: {radius}px; "
+                f"padding: 0px 14px; min-height: {height}px; max-height: {height}px; }}"
                 f"QPushButton:hover {{ "
                 f"color: {v3c('text', self._modo).name()}; "
-                f"background: {v3c('primary_soft', self._modo)}; }}"
+                f"background: {v3c('surface', self._modo).name()}; }}"
             )
         else:
             self.setStyleSheet(
                 f"QPushButton {{ background: transparent; "
                 f"color: {v3c('text2', self._modo).name()}; "
                 f"border: 1px solid {C('borderSoft', self._modo)}; "
-                f"border-radius: 16px; padding: 0 14px; min-height: 32px; }}"
+                f"border-radius: {radius}px; padding: 0px 14px; "
+                f"min-height: {height}px; max-height: {height}px; }}"
                 f"QPushButton:hover {{ "
                 f"border-color: {v3c('teal', self._modo).name()}; "
                 f"color: {v3c('text', self._modo).name()}; }}"
@@ -514,7 +530,7 @@ class ModuloAvisos(NMModule):
         ):
             pill = _StepPill(label, active=(key == "todos"), modo=self._modo, segmented=True)
             pill.setMinimumWidth(70)
-            pill.setFixedHeight(32)
+            pill.setFixedHeight(_AVISOS_FILTER_PILL_HEIGHT)
             pill.clicked.connect(lambda _, k=key: self._on_filter_changed(k))
             self._filter_pills[key] = pill
             seg_lay.addWidget(pill)
