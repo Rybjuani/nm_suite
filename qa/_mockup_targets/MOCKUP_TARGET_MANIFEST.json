@@ -1,19 +1,19 @@
 {
   "harness": "capture_mockup.py",
-  "generated_at": "2026-06-21T02:23:08",
+  "generated_at": "2026-06-21T21:13:48",
   "git": {
-    "commit": "51f4448c8319bed17652d49c300cacd3a57c95ab",
+    "commit": "a5138d41bc5a68b40a4629023187c14bc5a9c44a",
     "branch": "main"
   },
   "mockup": "neuromood-mockup.html",
   "command": [
-    "qa/capture_mockup.py",
+    "qa\\capture_mockup.py",
     "--all",
     "--theme",
     "both",
     "--clean"
   ],
-  "output_dir": "/home/z/my-project/work/nm_suite/qa/_mockup_targets",
+  "output_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_targets",
   "targets": 48,
   "themes": [
     "light",
@@ -21,14 +21,14 @@
   ],
   "success": 96,
   "failed": 0,
-  "elapsed_seconds": 88.8,
+  "elapsed_seconds": 139.0,
   "matrix_paths": {
-    "csv": "/home/z/my-project/work/nm_suite/qa/_mockup_targets/MOCKUP_TARGET_MATRIX.csv",
-    "markdown": "/home/z/my-project/work/nm_suite/qa/_mockup_targets/MOCKUP_TARGET_MATRIX.md"
+    "csv": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_targets\\MOCKUP_TARGET_MATRIX.csv",
+    "markdown": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_targets\\MOCKUP_TARGET_MATRIX.md"
   },
   "results": [
     {
-      "file": "qa/_mockup_targets/suite-home-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-home-light-960x600.png",
       "app": "suite",
       "view": "home",
       "file_view": "home",
@@ -40,7 +40,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-home-no-score-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-home-no-score-light-960x600.png",
       "app": "suite",
       "view": "home-no-score",
       "file_view": "home-no-score",
@@ -52,7 +52,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-onboarding-light-520x600.png",
+      "file": "qa\\_mockup_targets\\suite-onboarding-light-520x600.png",
       "app": "suite",
       "view": "onboarding",
       "file_view": "onboarding",
@@ -64,7 +64,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-onboarding-error-light-520x600.png",
+      "file": "qa\\_mockup_targets\\suite-onboarding-error-light-520x600.png",
       "app": "suite",
       "view": "onboarding-error",
       "file_view": "onboarding-error",
@@ -76,7 +76,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-recuperar-acceso-light-520x600.png",
+      "file": "qa\\_mockup_targets\\suite-recuperar-acceso-light-520x600.png",
       "app": "suite",
       "view": "recuperar-acceso",
       "file_view": "recuperar-acceso",
@@ -88,7 +88,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-animo-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-animo-light-960x600.png",
       "app": "suite",
       "view": "animo",
       "file_view": "animo",
@@ -100,7 +100,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-respiracion-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-respiracion-light-960x600.png",
       "app": "suite",
       "view": "respiracion",
       "file_view": "respiracion",
@@ -112,7 +112,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-respiracion-preset-3min-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-respiracion-preset-3min-light-960x600.png",
       "app": "suite",
       "view": "respiracion-preset-3min",
       "file_view": "respiracion-preset-3min",
@@ -124,7 +124,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-respiracion-preset-10min-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-respiracion-preset-10min-light-960x600.png",
       "app": "suite",
       "view": "respiracion-preset-10min",
       "file_view": "respiracion-preset-10min",
@@ -136,7 +136,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-respiracion-running-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-respiracion-running-light-960x600.png",
       "app": "suite",
       "view": "respiracion-running",
       "file_view": "respiracion-running",
@@ -148,7 +148,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-respiracion-paused-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-respiracion-paused-light-960x600.png",
       "app": "suite",
       "view": "respiracion-paused",
       "file_view": "respiracion-paused",
@@ -160,7 +160,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-registro-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-registro-light-960x600.png",
       "app": "suite",
       "view": "registro",
       "file_view": "registro",
@@ -172,7 +172,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-registro-step1-emotion-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-registro-step1-emotion-light-960x600.png",
       "app": "suite",
       "view": "registro-step1-emotion",
       "file_view": "registro-step1-emotion",
@@ -184,7 +184,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-registro-step1-emotion-otro-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-registro-step1-emotion-otro-light-960x600.png",
       "app": "suite",
       "view": "registro-step1-emotion-otro",
       "file_view": "registro-step1-emotion-otro",
@@ -196,7 +196,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-registro-step2-distortions-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-registro-step2-distortions-light-960x600.png",
       "app": "suite",
       "view": "registro-step2-distortions",
       "file_view": "registro-step2-distortions",
@@ -208,7 +208,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-registro-step3-filled-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-registro-step3-filled-light-960x600.png",
       "app": "suite",
       "view": "registro-step3-filled",
       "file_view": "registro-step3-filled",
@@ -220,7 +220,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-registro-success-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-registro-success-light-960x600.png",
       "app": "suite",
       "view": "registro-success",
       "file_view": "registro-success",
@@ -232,7 +232,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-rutina-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-rutina-light-960x600.png",
       "app": "suite",
       "view": "rutina",
       "file_view": "rutina",
@@ -244,7 +244,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-rutina-add-task-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-rutina-add-task-light-960x600.png",
       "app": "suite",
       "view": "rutina-add-task",
       "file_view": "rutina-add-task",
@@ -256,7 +256,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-rutina-all-completed-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-rutina-all-completed-light-960x600.png",
       "app": "suite",
       "view": "rutina-all-completed",
       "file_view": "rutina-all-completed",
@@ -268,7 +268,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-rutina-empty-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-rutina-empty-light-960x600.png",
       "app": "suite",
       "view": "rutina-empty",
       "file_view": "rutina-empty",
@@ -280,7 +280,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-actividades-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-actividades-light-960x600.png",
       "app": "suite",
       "view": "actividades",
       "file_view": "actividades",
@@ -292,7 +292,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-actividades-filtered-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-actividades-filtered-light-960x600.png",
       "app": "suite",
       "view": "actividades-filtered",
       "file_view": "actividades-filtered",
@@ -304,7 +304,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-actividades-marked-hice-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-actividades-marked-hice-light-960x600.png",
       "app": "suite",
       "view": "actividades-marked-hice",
       "file_view": "actividades-marked-hice",
@@ -316,7 +316,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-actividades-empty-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-actividades-empty-light-960x600.png",
       "app": "suite",
       "view": "actividades-empty",
       "file_view": "actividades-empty",
@@ -328,7 +328,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-avisos-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-avisos-light-960x600.png",
       "app": "suite",
       "view": "avisos",
       "file_view": "avisos",
@@ -340,7 +340,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-avisos-filter-activos-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-avisos-filter-activos-light-960x600.png",
       "app": "suite",
       "view": "avisos-filter-activos",
       "file_view": "avisos-filter-activos",
@@ -352,7 +352,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-avisos-search-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-avisos-search-light-960x600.png",
       "app": "suite",
       "view": "avisos-search",
       "file_view": "avisos-search",
@@ -364,7 +364,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-avisos-empty-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-avisos-empty-light-960x600.png",
       "app": "suite",
       "view": "avisos-empty",
       "file_view": "avisos-empty",
@@ -376,7 +376,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-avisos-completed-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-avisos-completed-light-960x600.png",
       "app": "suite",
       "view": "avisos-completed",
       "file_view": "avisos-completed",
@@ -388,7 +388,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-timer-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-timer-light-960x600.png",
       "app": "suite",
       "view": "timer",
       "file_view": "timer",
@@ -400,7 +400,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-timer-running-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-timer-running-light-960x600.png",
       "app": "suite",
       "view": "timer-running",
       "file_view": "timer-running",
@@ -412,7 +412,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-timer-paused-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-timer-paused-light-960x600.png",
       "app": "suite",
       "view": "timer-paused",
       "file_view": "timer-paused",
@@ -424,7 +424,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-timer-empty-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-timer-empty-light-960x600.png",
       "app": "suite",
       "view": "timer-empty",
       "file_view": "timer-empty",
@@ -436,7 +436,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-timer-preset-5min-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-timer-preset-5min-light-960x600.png",
       "app": "suite",
       "view": "timer-preset-5min",
       "file_view": "timer-preset-5min",
@@ -448,7 +448,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-timer-preset-45min-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-timer-preset-45min-light-960x600.png",
       "app": "suite",
       "view": "timer-preset-45min",
       "file_view": "timer-preset-45min",
@@ -460,7 +460,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-dbt-now-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-dbt-now-light-960x600.png",
       "app": "suite",
       "view": "dbt-now",
       "file_view": "dbt-now",
@@ -472,7 +472,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-dbt-library-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-dbt-library-light-960x600.png",
       "app": "suite",
       "view": "dbt-library",
       "file_view": "dbt-library",
@@ -484,7 +484,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-dbt-practice-stop-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-dbt-practice-stop-light-960x600.png",
       "app": "suite",
       "view": "dbt-practice-stop",
       "file_view": "dbt-practice-stop",
@@ -496,7 +496,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-dbt-practice-closure-light-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-dbt-practice-closure-light-960x600.png",
       "app": "suite",
       "view": "dbt-practice-closure",
       "file_view": "dbt-practice-closure",
@@ -508,7 +508,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-pacientes-light-960x600.png",
+      "file": "qa\\_mockup_targets\\hub-pacientes-light-960x600.png",
       "app": "hub",
       "view": "pacientes",
       "file_view": "pacientes",
@@ -520,7 +520,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-pacientes-empty-light-960x600.png",
+      "file": "qa\\_mockup_targets\\hub-pacientes-empty-light-960x600.png",
       "app": "hub",
       "view": "pacientes-empty",
       "file_view": "pacientes-empty",
@@ -532,7 +532,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-detalle-light-960x600.png",
+      "file": "qa\\_mockup_targets\\hub-detalle-light-960x600.png",
       "app": "hub",
       "view": "detalle",
       "file_view": "detalle",
@@ -544,7 +544,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-detalle-plan-timer-light-960x600.png",
+      "file": "qa\\_mockup_targets\\hub-detalle-plan-timer-light-960x600.png",
       "app": "hub",
       "view": "detalle-plan-timer",
       "file_view": "detalle-plan-timer",
@@ -556,7 +556,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-detalle-plan-rutina-light-960x600.png",
+      "file": "qa\\_mockup_targets\\hub-detalle-plan-rutina-light-960x600.png",
       "app": "hub",
       "view": "detalle-plan-rutina",
       "file_view": "detalle-plan-rutina",
@@ -568,7 +568,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-detalle-plan-activacion-light-960x600.png",
+      "file": "qa\\_mockup_targets\\hub-detalle-plan-activacion-light-960x600.png",
       "app": "hub",
       "view": "detalle-plan-activacion",
       "file_view": "detalle-plan-activacion",
@@ -580,7 +580,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-detalle-resumen-ia-0-light-480x325.png",
+      "file": "qa\\_mockup_targets\\hub-detalle-resumen-ia-0-light-480x325.png",
       "app": "hub",
       "view": "detalle-resumen-ia",
       "file_view": "detalle-resumen-ia-0",
@@ -592,7 +592,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-textos-globales-light-960x600.png",
+      "file": "qa\\_mockup_targets\\hub-textos-globales-light-960x600.png",
       "app": "hub",
       "view": "textos-globales",
       "file_view": "textos-globales",
@@ -604,7 +604,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-home-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-home-dark-960x600.png",
       "app": "suite",
       "view": "home",
       "file_view": "home",
@@ -616,7 +616,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-home-no-score-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-home-no-score-dark-960x600.png",
       "app": "suite",
       "view": "home-no-score",
       "file_view": "home-no-score",
@@ -628,7 +628,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-onboarding-dark-520x600.png",
+      "file": "qa\\_mockup_targets\\suite-onboarding-dark-520x600.png",
       "app": "suite",
       "view": "onboarding",
       "file_view": "onboarding",
@@ -640,7 +640,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-onboarding-error-dark-520x600.png",
+      "file": "qa\\_mockup_targets\\suite-onboarding-error-dark-520x600.png",
       "app": "suite",
       "view": "onboarding-error",
       "file_view": "onboarding-error",
@@ -652,7 +652,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-recuperar-acceso-dark-520x600.png",
+      "file": "qa\\_mockup_targets\\suite-recuperar-acceso-dark-520x600.png",
       "app": "suite",
       "view": "recuperar-acceso",
       "file_view": "recuperar-acceso",
@@ -664,7 +664,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-animo-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-animo-dark-960x600.png",
       "app": "suite",
       "view": "animo",
       "file_view": "animo",
@@ -676,7 +676,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-respiracion-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-respiracion-dark-960x600.png",
       "app": "suite",
       "view": "respiracion",
       "file_view": "respiracion",
@@ -688,7 +688,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-respiracion-preset-3min-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-respiracion-preset-3min-dark-960x600.png",
       "app": "suite",
       "view": "respiracion-preset-3min",
       "file_view": "respiracion-preset-3min",
@@ -700,7 +700,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-respiracion-preset-10min-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-respiracion-preset-10min-dark-960x600.png",
       "app": "suite",
       "view": "respiracion-preset-10min",
       "file_view": "respiracion-preset-10min",
@@ -712,7 +712,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-respiracion-running-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-respiracion-running-dark-960x600.png",
       "app": "suite",
       "view": "respiracion-running",
       "file_view": "respiracion-running",
@@ -724,7 +724,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-respiracion-paused-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-respiracion-paused-dark-960x600.png",
       "app": "suite",
       "view": "respiracion-paused",
       "file_view": "respiracion-paused",
@@ -736,7 +736,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-registro-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-registro-dark-960x600.png",
       "app": "suite",
       "view": "registro",
       "file_view": "registro",
@@ -748,7 +748,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-registro-step1-emotion-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-registro-step1-emotion-dark-960x600.png",
       "app": "suite",
       "view": "registro-step1-emotion",
       "file_view": "registro-step1-emotion",
@@ -760,7 +760,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-registro-step1-emotion-otro-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-registro-step1-emotion-otro-dark-960x600.png",
       "app": "suite",
       "view": "registro-step1-emotion-otro",
       "file_view": "registro-step1-emotion-otro",
@@ -772,7 +772,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-registro-step2-distortions-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-registro-step2-distortions-dark-960x600.png",
       "app": "suite",
       "view": "registro-step2-distortions",
       "file_view": "registro-step2-distortions",
@@ -784,7 +784,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-registro-step3-filled-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-registro-step3-filled-dark-960x600.png",
       "app": "suite",
       "view": "registro-step3-filled",
       "file_view": "registro-step3-filled",
@@ -796,7 +796,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-registro-success-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-registro-success-dark-960x600.png",
       "app": "suite",
       "view": "registro-success",
       "file_view": "registro-success",
@@ -808,7 +808,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-rutina-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-rutina-dark-960x600.png",
       "app": "suite",
       "view": "rutina",
       "file_view": "rutina",
@@ -820,7 +820,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-rutina-add-task-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-rutina-add-task-dark-960x600.png",
       "app": "suite",
       "view": "rutina-add-task",
       "file_view": "rutina-add-task",
@@ -832,7 +832,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-rutina-all-completed-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-rutina-all-completed-dark-960x600.png",
       "app": "suite",
       "view": "rutina-all-completed",
       "file_view": "rutina-all-completed",
@@ -844,7 +844,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-rutina-empty-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-rutina-empty-dark-960x600.png",
       "app": "suite",
       "view": "rutina-empty",
       "file_view": "rutina-empty",
@@ -856,7 +856,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-actividades-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-actividades-dark-960x600.png",
       "app": "suite",
       "view": "actividades",
       "file_view": "actividades",
@@ -868,7 +868,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-actividades-filtered-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-actividades-filtered-dark-960x600.png",
       "app": "suite",
       "view": "actividades-filtered",
       "file_view": "actividades-filtered",
@@ -880,7 +880,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-actividades-marked-hice-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-actividades-marked-hice-dark-960x600.png",
       "app": "suite",
       "view": "actividades-marked-hice",
       "file_view": "actividades-marked-hice",
@@ -892,7 +892,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-actividades-empty-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-actividades-empty-dark-960x600.png",
       "app": "suite",
       "view": "actividades-empty",
       "file_view": "actividades-empty",
@@ -904,7 +904,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-avisos-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-avisos-dark-960x600.png",
       "app": "suite",
       "view": "avisos",
       "file_view": "avisos",
@@ -916,7 +916,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-avisos-filter-activos-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-avisos-filter-activos-dark-960x600.png",
       "app": "suite",
       "view": "avisos-filter-activos",
       "file_view": "avisos-filter-activos",
@@ -928,7 +928,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-avisos-search-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-avisos-search-dark-960x600.png",
       "app": "suite",
       "view": "avisos-search",
       "file_view": "avisos-search",
@@ -940,7 +940,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-avisos-empty-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-avisos-empty-dark-960x600.png",
       "app": "suite",
       "view": "avisos-empty",
       "file_view": "avisos-empty",
@@ -952,7 +952,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-avisos-completed-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-avisos-completed-dark-960x600.png",
       "app": "suite",
       "view": "avisos-completed",
       "file_view": "avisos-completed",
@@ -964,7 +964,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-timer-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-timer-dark-960x600.png",
       "app": "suite",
       "view": "timer",
       "file_view": "timer",
@@ -976,7 +976,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-timer-running-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-timer-running-dark-960x600.png",
       "app": "suite",
       "view": "timer-running",
       "file_view": "timer-running",
@@ -988,7 +988,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-timer-paused-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-timer-paused-dark-960x600.png",
       "app": "suite",
       "view": "timer-paused",
       "file_view": "timer-paused",
@@ -1000,7 +1000,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-timer-empty-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-timer-empty-dark-960x600.png",
       "app": "suite",
       "view": "timer-empty",
       "file_view": "timer-empty",
@@ -1012,7 +1012,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-timer-preset-5min-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-timer-preset-5min-dark-960x600.png",
       "app": "suite",
       "view": "timer-preset-5min",
       "file_view": "timer-preset-5min",
@@ -1024,7 +1024,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-timer-preset-45min-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-timer-preset-45min-dark-960x600.png",
       "app": "suite",
       "view": "timer-preset-45min",
       "file_view": "timer-preset-45min",
@@ -1036,7 +1036,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-dbt-now-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-dbt-now-dark-960x600.png",
       "app": "suite",
       "view": "dbt-now",
       "file_view": "dbt-now",
@@ -1048,7 +1048,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-dbt-library-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-dbt-library-dark-960x600.png",
       "app": "suite",
       "view": "dbt-library",
       "file_view": "dbt-library",
@@ -1060,7 +1060,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-dbt-practice-stop-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-dbt-practice-stop-dark-960x600.png",
       "app": "suite",
       "view": "dbt-practice-stop",
       "file_view": "dbt-practice-stop",
@@ -1072,7 +1072,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/suite-dbt-practice-closure-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\suite-dbt-practice-closure-dark-960x600.png",
       "app": "suite",
       "view": "dbt-practice-closure",
       "file_view": "dbt-practice-closure",
@@ -1084,7 +1084,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-pacientes-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\hub-pacientes-dark-960x600.png",
       "app": "hub",
       "view": "pacientes",
       "file_view": "pacientes",
@@ -1096,7 +1096,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-pacientes-empty-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\hub-pacientes-empty-dark-960x600.png",
       "app": "hub",
       "view": "pacientes-empty",
       "file_view": "pacientes-empty",
@@ -1108,7 +1108,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-detalle-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\hub-detalle-dark-960x600.png",
       "app": "hub",
       "view": "detalle",
       "file_view": "detalle",
@@ -1120,7 +1120,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-detalle-plan-timer-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\hub-detalle-plan-timer-dark-960x600.png",
       "app": "hub",
       "view": "detalle-plan-timer",
       "file_view": "detalle-plan-timer",
@@ -1132,7 +1132,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-detalle-plan-rutina-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\hub-detalle-plan-rutina-dark-960x600.png",
       "app": "hub",
       "view": "detalle-plan-rutina",
       "file_view": "detalle-plan-rutina",
@@ -1144,7 +1144,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-detalle-plan-activacion-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\hub-detalle-plan-activacion-dark-960x600.png",
       "app": "hub",
       "view": "detalle-plan-activacion",
       "file_view": "detalle-plan-activacion",
@@ -1156,7 +1156,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-detalle-resumen-ia-0-dark-480x325.png",
+      "file": "qa\\_mockup_targets\\hub-detalle-resumen-ia-0-dark-480x325.png",
       "app": "hub",
       "view": "detalle-resumen-ia",
       "file_view": "detalle-resumen-ia-0",
@@ -1168,7 +1168,7 @@
       "success": true
     },
     {
-      "file": "qa/_mockup_targets/hub-textos-globales-dark-960x600.png",
+      "file": "qa\\_mockup_targets\\hub-textos-globales-dark-960x600.png",
       "app": "hub",
       "view": "textos-globales",
       "file_view": "textos-globales",

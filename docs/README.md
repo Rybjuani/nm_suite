@@ -14,9 +14,13 @@ Evidencia de cierre:
 - `capture_v8.py --all --theme both` -> 98 capturas, 0 failed.
 - `pytest tests/` -> 317 passed.
 - Barrido visual tecnico de las capturas finales -> sin deuda accionable.
+- `qa/_mockup_targets/` esta versionado como referencia canonica y fue regenerado contra
+  `a5138d4` con `capture_mockup.py --all --theme both --clean`.
 
 `qa/diff_fidelity.py` sigue siendo una senal auxiliar, no un gate final: sus umbrales
 SSIM/MAD son utiles para comparar tendencias, pero no declaran deuda por si solos.
+Los reportes de diff generados (`qa/_fidelity_diff/`, `qa/_fidelity_fresh/`) son
+artefactos efimeros y no deben versionarse como estado vigente.
 
 ## Documentos historicos
 

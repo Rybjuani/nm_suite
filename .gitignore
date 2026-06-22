@@ -90,6 +90,7 @@ qa/e2e/.last_backup_path
 qa/e2e/.preexisting_suffix
 qa/_captures*/
 qa/_fidelity_diff/
+qa/_fidelity_fresh/
 qa/_db_host.txt
 qa/_ghost_stack_probe.log
 qa/_runtime_probe/
