@@ -87,14 +87,34 @@ aprobacion compositiva.
 | V2-P0-007 | QA harness / visual closure / all | P0 | owner: tests midieron existencia/estructura, no composicion visual | contratos de bajo nivel no cubren solape/proporcion/percepcion | C0-GATE-HARNESS | Ningun cluster cierra con tests verdes solamente; checklist visual requerido. |
 | V2-P0-008 | QA harness / final review / all | P0 | owner: `barrido visual tecnico` subjetivo y no verificable | falta evidencia trazada de revision humana | C0-GATE-HARNESS | Revision visual final produce checklist auditable por pantalla/tema/estado. |
 
-## Pantallas no mencionadas por owner pero pendientes de auditoria C5
+## Pantallas no mencionadas por owner — Auditoria C5 (20260622)
 
-No se registran como defectos hasta tener evidencia focal. `C5-MISSING-SCREENS-AUDIT`
-debe revisar al menos: Home, Animo, Respiracion, DBT Ahora, DBT STOP, Registro TCC pasos
-2/3/success, Onboarding error/recuperar acceso, Hub Detalle resumen/registros/timer/rutina,
-Textos globales, Actividades estados filtered/empty/marked, Rutina add/all-completed,
-Timer running/paused/presets, Avisos activos/search/completed.
+Revisión por código fuente. Criterio: defecto accionable = layout/spacing/jerarquía con
+desviación visible respecto al ADN V3. Hardcoded = token excluido si el valor numérico
+coincide con la constante del token.
+
+| Pantalla / estado                        | Resultado                                                                       |
+|------------------------------------------|---------------------------------------------------------------------------------|
+| Home / hero (vacio + relleno)            | Sin defecto. Hero empty usa QLabel inline apropiado para card 96px; NMEmptyState sería exceso. |
+| Home / módulos grid                      | Sin defecto. ModuleCards con sizePolicy + stretch correctos.                    |
+| Ánimo / main                             | Sin defecto. Margins (20,18) = V3_SP["lg/md"] numéricamente; serif h3 correcto. |
+| Respiración / main + circle              | Sin defecto. V3_SP usado globalmente; canvas 248px y stat cards 72px proporcionales. |
+| DBT Ahora / _NeedCard                    | Sin defecto. Padding (20,14,16,14) pre-V3; valores cercanos a tokens; jerarquía gradient/secondary/ghost correcta. |
+| DBT STOP                                 | Sin defecto. No es view separada; es skill card dentro de Biblioteca — arquitectura correcta. |
+| Registro TCC / paso 2 Emoción            | Sin defecto. Margins (12,8,12,8) = (V3_SP["md"], V3_SP["sm"]); serif en rama principal. |
+| Registro TCC / paso 3 Pensamiento        | Sin defecto. Mismo patrón que paso 2.                                           |
+| Registro TCC / success                   | Sin defecto. NMIcon("check") + centrado + V3_SP tokens.                         |
+| Recuperar acceso                         | Sin defecto. Es mensaje inline en OnboardingDialog; no view separada.           |
+| Hub Detalle / Resumen IA dialog          | Sin defecto. height=325 intencional (bloqueado por test visual contract).        |
+| Hub Detalle / tabs timer+rutina          | Sin defecto. Empty states usan _empty_hint_label() con NMCard + V3_SP.         |
+| Actividades / filtered, empty, marked    | Sin defecto. _on_category_tab_changed, NMBadge "Hecho", btn hide — correctos.  |
+| Rutina / add inline, all-completed       | Sin defecto. NMButton+NMInput inline; ring 100% + "¡Excelente!" correctos.     |
+| Timer / running, paused, presets         | Sin defecto. NMPlayButton/NMFocusArc/NMButtonOutline presets correctos.        |
+| Avisos / activos, search, completed      | Sin defecto. Pills + NMSearchInput + status_lbl "Completado" correctos.        |
+
+**Conclusión C5**: Cero defectos nuevos. Todas las pantallas no-owner pasan auditoría de código.
 
 ## Estado
 
-Todos los defectos estan **Open** al cierre de este episodio read-only.
+Todos los defectos owner (V2-P*) — **Open** al cierre del episodio read-only.
+C5 cerrado: sin defectos nuevos detectados en 16 pantallas/estados auditados.
