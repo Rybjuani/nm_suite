@@ -25,7 +25,6 @@ MOVED_COMPONENT_MODULES = {
     "NMEmptyState": "shared.components.overlays",
     "NMFadeWidget": "shared.components.core",
     "NMFocusArc": "shared.components.rings",
-    "NMFormPanel": "shared.components.cards",
     "NMHeatBar": "shared.components.feedback",
     "NMInput": "shared.components.buttons",
     "NMModule": "shared.components.navigation",
@@ -34,16 +33,13 @@ MOVED_COMPONENT_MODULES = {
     "NMPatientRowPremium": "shared.components.patient",
     "NMPlayButton": "shared.components.inputs",
     "NMProgressBar": "shared.components.feedback",
-    "NMProgressLine": "shared.components.feedback",
     "NMRingPulse": "shared.components.feedback",
     "NMSearchInput": "shared.components.buttons",
     "NMSegmentedChoice": "shared.components.buttons",
-    "NMSkeleton": "shared.components.feedback",
     "NMStepper": "shared.components.feedback",
     "NMTabs": "shared.components.buttons",
     "NMTextArea": "shared.components.buttons",
     "NMToast": "shared.components.feedback",
-    "NMToggle": "shared.components.inputs",
     "NMWaveChart": "shared.components.feedback",
     "NMWindowChrome": "shared.components.chrome",
     "ThemeManager": "shared.theme_manager",
@@ -65,7 +61,6 @@ EXPECTED_PUBLIC_COMPONENT_SYMBOLS = {
     "NMEmptyState",
     "NMFadeWidget",
     "NMFocusArc",
-    "NMFormPanel",
     "NMHeatBar",
     "NMIcon",
     "NMInput",
@@ -75,17 +70,14 @@ EXPECTED_PUBLIC_COMPONENT_SYMBOLS = {
     "NMPatientRowPremium",
     "NMPlayButton",
     "NMProgressBar",
-    "NMProgressLine",
     "NMRingPulse",
     "NMSearchInput",
     "NMSectionHeader",
     "NMSegmentedChoice",
-    "NMSkeleton",
     "NMStepper",
     "NMTabs",
     "NMTextArea",
     "NMToast",
-    "NMToggle",
     "NMWaveChart",
     "NMWindowChrome",
     "ThemeManager",
@@ -123,7 +115,7 @@ def test_public_component_symbols_are_reexported_from_both_paths():
     components = importlib.import_module("shared.components")
     facade = importlib.import_module("shared.components_qt")
 
-    assert len(EXPECTED_PUBLIC_COMPONENT_SYMBOLS) == 39
+    assert len(EXPECTED_PUBLIC_COMPONENT_SYMBOLS) == 35
     assert set(facade.__all__) == EXPECTED_PUBLIC_COMPONENT_SYMBOLS
     assert set(components.__all__) == EXPECTED_PUBLIC_COMPONENT_SYMBOLS
     assert EXPECTED_PUBLIC_COMPONENT_SYMBOLS <= set(components.__all__)
