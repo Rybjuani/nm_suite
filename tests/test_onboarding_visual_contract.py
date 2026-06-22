@@ -51,3 +51,17 @@ def test_onboarding_consent_card_uses_legal_disclaimer_text() -> None:
     assert _CONSENT_TEXT is LEGAL_DISCLAIMER_TEXT or _CONSENT_TEXT == LEGAL_DISCLAIMER_TEXT
     assert "herramienta digital complementaria de bienestar" in _CONSENT_TEXT
     assert len(_CONSENT_TEXT) > 200
+
+
+def test_onboarding_compact_visual_contract_keeps_consent_integrated(qtbot) -> None:
+    from app.onboarding_qt import OnboardingDialog
+
+    dialog = OnboardingDialog()
+    qtbot.addWidget(dialog)
+
+    assert dialog._name.height() == 36
+    assert dialog._email.height() == 36
+    assert dialog._code.height() == 36
+    assert dialog._consent_check.parentWidget().objectName() == "ConsentCard"
+    assert dialog._consent_check.width() == 22
+    assert dialog._consent_check.height() == 22

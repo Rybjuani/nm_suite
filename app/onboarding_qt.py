@@ -20,7 +20,7 @@ import sys
 from datetime import datetime, timezone
 
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -55,6 +55,52 @@ _SUITE_VERSION = SUITE_VERSION
 _CONSENT_SCOPE = CONSENT_SCOPE
 _DISCLAIMER_TEXT_HASH = DISCLAIMER_TEXT_HASH
 _PRIVACY_TEXT_HASH = PRIVACY_TEXT_HASH
+
+
+class _ConsentCheckBox(QCheckBox):
+    """Checkbox legal pintado para asegurar check visible en light/dark."""
+
+    def __init__(self, modo: str = "light_hybrid", parent=None):
+        super().__init__(parent)
+        self._modo = modo
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFixedSize(22, 22)
+        self.setStyleSheet("QCheckBox { background: transparent; spacing: 0px; }")
+
+    def set_modo(self, modo: str) -> None:
+        self._modo = modo
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        try:
+            from shared.theme_qt import norm_modo, v3c
+            modo = norm_modo(self._modo)
+            primary = v3c("primary", modo)
+            surface = v3c("surface", modo)
+            border = v3c("borderStrong" if self.hasFocus() else "border", modo)
+            ink = v3c("primary_ink", modo)
+        except Exception:
+            primary = QColor("#2E5D43")
+            surface = QColor("#FBF8F1")
+            border = QColor("#D8D0C0")
+            ink = QColor("#F7F3EA")
+
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect = self.rect().adjusted(1, 1, -1, -1)
+        p.setPen(QPen(primary if self.isChecked() else border, 2))
+        p.setBrush(QBrush(primary if self.isChecked() else surface))
+        p.drawRoundedRect(rect, 7, 7)
+
+        if self.isChecked():
+            path = QPainterPath()
+            path.moveTo(6.0, 11.5)
+            path.lineTo(9.4, 15.0)
+            path.lineTo(16.4, 7.2)
+            p.setPen(QPen(ink, 2.2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawPath(path)
+        p.end()
 
 
 def _is_windows_11_or_newer() -> bool:
@@ -100,6 +146,8 @@ class OnboardingDialog(QDialog):
         # encuentra layout y deja la barra huérfana fuera de él → ventana
         # frameless sin titlebar usable, barra flotando sobre el contenido.
         self._apply_window_chrome()
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setFocus()
 
     def _init_theme(self):
         try:
@@ -242,7 +290,7 @@ class OnboardingDialog(QDialog):
         # El target canónico es 520×600 y usa el espaciado COMPLETO del mockup
         # (.screen padding 26×28, sub mb18, inputs mb14). El modo compacto (tighter)
         # se reserva para ventanas genuinamente bajas (<560) cerca del mínimo 520.
-        is_compact = self.height() < 560
+        is_compact = self.width() <= 560 or self.height() < 620
         # Márgenes generosos full-bleed (la ventana es la card): aire lateral
         # premium sin doble borde.
         # Mockup .screen padding:26px 28px — top margin reducido para compensar
@@ -383,7 +431,7 @@ class OnboardingDialog(QDialog):
         form_lay.addWidget(self._lbl(suite_t("text.onboarding.name_label", "Nombre *"), is_compact))
         self._name = NMInput(suite_t("text.onboarding.name_placeholder", "Tu nombre"), modo=self._modo)
         if is_compact:
-            self._name.setMinimumHeight(34)
+            self._name.setFixedHeight(36)
         form_lay.addWidget(self._name)
 
         form_lay.addSpacing(8 if is_compact else 14)  # mockup: input margin-bottom 14px
@@ -397,7 +445,7 @@ class OnboardingDialog(QDialog):
             modo=self._modo,
         )
         if is_compact:
-            self._email.setMinimumHeight(34)
+            self._email.setFixedHeight(36)
         form_lay.addWidget(self._email)
 
         form_lay.addSpacing(8 if is_compact else 14)  # mockup: input margin-bottom 14px
@@ -415,7 +463,7 @@ class OnboardingDialog(QDialog):
         )
         self._code.setEchoMode(NMInput.EchoMode.Password)
         if is_compact:
-            self._code.setMinimumHeight(34)
+            self._code.setFixedHeight(36)
         form_lay.addWidget(self._code)
 
         # (Hint "Se usa Supabase Auth..." eliminado — feedback owner v1.0:
@@ -453,7 +501,7 @@ class OnboardingDialog(QDialog):
         cc_lay = QVBoxLayout(consent_card)
         if is_compact:
             cc_lay.setContentsMargins(12, 8, 12, 8)
-            cc_lay.setSpacing(6)
+            cc_lay.setSpacing(5)
         else:
             cc_lay.setContentsMargins(16, 12, 16, 12)
             cc_lay.setSpacing(6)
@@ -520,61 +568,26 @@ class OnboardingDialog(QDialog):
         # scroll dentro. Antes la card era EXPANDING y empujaba el footer fuera
         # del layout del target. El visor llena la altura de la card.
         cc_body.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
+        cc_body.setMinimumHeight(52 if is_compact else 64)
+        cc_body.setMaximumHeight(56 if is_compact else 76)
         cc_lay.addWidget(cc_body, stretch=1)
 
-        # Alto = mockup max-height:150px como MÁXIMO; la card absorbe el sobrante
-        # del form (stretch + sizePolicy Expanding) y se encoge lo necesario para
-        # que el footer (botones de acceso) quede SIEMPRE visible a 520×600 —
-        # prioridad UX sobre el recorte del target. El texto legal completo hace
-        # scroll dentro. min bajo para que nunca empuje al checkbox/footer.
-        consent_card.setMaximumHeight(132 if is_compact else 150)
-        consent_card.setMinimumHeight(60)
+        # Alto deliberado: legal completo con scroll local visible. El checkbox
+        # vive dentro del bloque para que consentimiento y aceptación no parezcan
+        # piezas sueltas.
+        consent_card.setMinimumHeight(144 if is_compact else 164)
+        consent_card.setMaximumHeight(150 if is_compact else 176)
         consent_card.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
 
-        # ── Checkbox de aceptación: FUERA de la card (mockup: <label> hermano
-        # del <div class="card">, no anidado). ──────────────────────────────
-        # Split checkbox and text to ensure full word wrapping and accessibility.
-        # Mockup línea 1313: <span class="rt-cb" id="obTerms" style="width:20px;height:20px;"></span>
-        # Usamos QCheckBox nativo con QSS para aproximar rt-cb 20×20 r7 border 2px line.
-        # El QCheckBox nativo del target tiene este look; _NMAnimCheckBox no lo replicaba.
+        # ── Checkbox de aceptación dentro de la card legal ─────────────────
         consent_row = QHBoxLayout()
         consent_row.setContentsMargins(0, 0, 0, 0)
         consent_row.setSpacing(9)  # mockup: gap:9px
-        self._consent_check = QCheckBox()
-        self._consent_check.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._consent_check.setFixedSize(20, 20)
-        if self._has_theme:
-            border_c = self._t["v3c"]("border", self._modo)
-            border_css = (
-                f"rgba({border_c.red()},{border_c.green()},{border_c.blue()},{border_c.alpha()})"
-            )
-            primary_c = self._t["primary"]
-            self._consent_check.setStyleSheet(
-                f"""
-                QCheckBox {{
-                    background: transparent;
-                    spacing: 0px;
-                }}
-                QCheckBox::indicator {{
-                    width: 20px;
-                    height: 20px;
-                    border: 2px solid {border_css};
-                    border-radius: 7px;
-                    background: {self._t['surface']};
-                }}
-                QCheckBox::indicator:checked {{
-                    background: {primary_c};
-                    border-color: {primary_c};
-                    image: none;
-                }}
-                """
-            )
-        else:
-            self._consent_check.setStyleSheet("QCheckBox { background: transparent; }")
+        self._consent_check = _ConsentCheckBox(self._modo)
         consent_row.addWidget(self._consent_check, alignment=Qt.AlignmentFlag.AlignTop)
 
         consent_lbl = QLabel("Acepto los términos y la política de privacidad")
@@ -597,12 +610,9 @@ class OnboardingDialog(QDialog):
             consent_lbl.setStyleSheet("background: transparent;")
         consent_row.addWidget(consent_lbl, stretch=1)
 
-        # Card de consentimiento (alto fijo) + checkbox debajo, como hermanos
-        # en el flujo (mockup), no anidados. El contenido queda top-aligned y
-        # el footer se mantiene fijo abajo vía el stretch del form_widget.
-        form_lay.addWidget(consent_card, stretch=1)
-        form_lay.addSpacing(2 if is_compact else 4)  # mockup label padding ~10px 2px
-        form_lay.addLayout(consent_row)
+        cc_lay.insertLayout(1, consent_row)
+
+        form_lay.addWidget(consent_card, stretch=0)
 
         card_lay.addWidget(form_widget, stretch=1)
 
@@ -745,6 +755,11 @@ class OnboardingDialog(QDialog):
             from shared.theme_qt import stylesheet_scrollarea
             for sa in self.findChildren(QScrollArea):
                 sa.setStyleSheet(stylesheet_scrollarea(self._modo))
+        except Exception:
+            pass
+        try:
+            if hasattr(self, "_consent_check") and hasattr(self._consent_check, "set_modo"):
+                self._consent_check.set_modo(self._modo)
         except Exception:
             pass
         # Labels crudos por rol (objectName) + títulos.

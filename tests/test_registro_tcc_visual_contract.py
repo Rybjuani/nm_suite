@@ -146,6 +146,30 @@ def test_registro_tcc_stepper_widget_has_4_steps_and_titles_match(qtbot, monkeyp
     assert module._stepper._current == 0
 
 
+def test_registro_tcc_emotion_tiles_separate_icon_label_and_selected_state(
+    qtbot, monkeypatch
+) -> None:
+    _use_mockup_defaults(monkeypatch)
+
+    from app.modules.registro_tcc_qt import ModuloRegistroTCC
+
+    module = ModuloRegistroTCC(show_header=False, modo="light_hybrid")
+    qtbot.addWidget(module)
+
+    tile = module._emotion_tiles[0]
+    assert tile.minimumHeight() == 68
+    assert tile.maximumHeight() == 74
+    assert tile._icon.width() == 22
+    assert tile._icon.height() == 22
+    assert tile._lbl.minimumHeight() == 18
+
+    tile.set_selected(True)
+
+    assert tile.is_selected()
+    assert tile._active
+    assert not tile._glow
+
+
 def test_registro_tcc_step_title_uses_serif_source() -> None:
     """E3-S-TCC: _make_title usa v3_font serif para los h-serif 17px del mockup (líneas 1222,1229,1241,1261)."""
     import inspect

@@ -363,29 +363,31 @@ class _EmotionTile(NMCard):
         self._icon_name = icon_name
         self._color_token = color_token
         self._selected = False
-        self.setMinimumHeight(72)
+        self.setMinimumHeight(68)
+        self.setMaximumHeight(74)
         self._build()
 
     def _build(self):
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(V3_SP["sm"], V3_SP["xs"], V3_SP["sm"], V3_SP["xs"])
-        lay.setSpacing(V3_SP["xs"] + 2)
+        lay.setContentsMargins(V3_SP["sm"], V3_SP["sm"], V3_SP["sm"], V3_SP["sm"])
+        lay.setSpacing(5)
         lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._icon = NMIcon(self._icon_name, size=28, color_key=self._color_token, modo=self._modo)
+        self._icon = NMIcon(self._icon_name, size=20, color_key=self._color_token, modo=self._modo)
+        self._icon.setFixedSize(22, 22)
         lay.addWidget(self._icon, alignment=Qt.AlignmentFlag.AlignCenter)
         self._lbl = QLabel(self._label_text)
         self._lbl.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_semibold"]))
         self._lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._lbl.setMinimumHeight(18)
+        self._lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         lay.addWidget(self._lbl)
         self._apply_tile_styles()
 
     def set_selected(self, selected: bool):
         if selected != self._selected:
             self._selected = selected
-            # set_glow toma el accent del tile como halo color
-            if selected:
-                self.set_accent(v3c(self._color_token, self._modo).name())
-            self.set_glow(selected)
+            self.set_glow(False)
+            self.set_active(selected)
             self._apply_tile_styles()
 
     def is_selected(self) -> bool:
@@ -628,8 +630,8 @@ class ModuloRegistroTCC(NMModule):
         outer.addWidget(body)
 
         lay = QVBoxLayout(body)
-        lay.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], V3_SP["sm"])
-        lay.setSpacing(V3_SP["sm"])
+        lay.setContentsMargins(V3_SP["lg"], 0, V3_SP["lg"], V3_SP["sm"])
+        lay.setSpacing(V3_SP["xs"])
 
         # 1. Eyebrow + Stepper
         self._eyebrow = QLabel(t("text.module.registro.eyebrow", "Registro TCC"))
@@ -689,8 +691,8 @@ class ModuloRegistroTCC(NMModule):
         nav_layout.setSpacing(V3_SP["sm"])
         self._btn_prev = NMButton(
             t("text.module.registro.prev_btn", "Anterior"),
-            parent=self._content, modo=self._modo, variant="secondary", size="md",
-            width=120,
+            parent=self._content, modo=self._modo, variant="secondary", size="sm",
+            width=112,
         )
         self._btn_prev.clicked.connect(self._prev_step)
         nav_layout.addWidget(self._btn_prev)
@@ -700,8 +702,8 @@ class ModuloRegistroTCC(NMModule):
             parent=self._content,
             modo=self._modo,
             variant="gradient",
-            size="md",
-            width=160,
+            size="sm",
+            width=140,
         )
         self._btn_next.clicked.connect(self._next_step)
         nav_layout.addWidget(self._btn_next)
@@ -953,7 +955,13 @@ class ModuloRegistroTCC(NMModule):
             parent=page,
         )
         self._heat_bar.value_changed.connect(self._on_intensidad_heat)
-        layout.addWidget(self._heat_bar)
+        heat_row = QHBoxLayout()
+        heat_row.setContentsMargins(0, 0, 0, 0)
+        heat_row.addStretch(1)
+        self._heat_bar.setMaximumWidth(720)
+        heat_row.addWidget(self._heat_bar, stretch=1)
+        heat_row.addStretch(1)
+        layout.addLayout(heat_row)
         layout.addStretch()
         self._pages.append(page)
 

@@ -11,7 +11,7 @@ def _use_default_texts(monkeypatch) -> None:
     )
 
 
-def test_dbt_tabs_preserve_history_extra_and_stack(qtbot, monkeypatch) -> None:
+def test_dbt_tabs_remove_history_from_ui_v2(qtbot, monkeypatch) -> None:
     _use_default_texts(monkeypatch)
 
     from app.modules.dbt_qt import ModuloDBT
@@ -19,14 +19,14 @@ def test_dbt_tabs_preserve_history_extra_and_stack(qtbot, monkeypatch) -> None:
     module = ModuloDBT(show_header=False, modo="light_hybrid")
     qtbot.addWidget(module)
 
-    assert module._tabs._labels == ["Ahora", "Biblioteca", "Historial"]
-    assert module._view_stack.count() == 3
+    assert module._tabs._labels == ["Ahora", "Biblioteca"]
+    assert module._view_stack.count() == 2
+    assert not hasattr(module, "_view_historial")
+    assert not hasattr(module, "_history_lay")
 
-    module._tabs.set_current(2)
+    module._tabs.set_current(1)
 
-    assert module._view_stack.currentIndex() == 2
-    assert hasattr(module, "_history_lay")
-    assert module._history_lay.count() > 0
+    assert module._view_stack.currentIndex() == 1
 
 
 def test_dbt_stop_practice_uses_modal_stepper_contract(qtbot, monkeypatch) -> None:

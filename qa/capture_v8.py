@@ -258,14 +258,6 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "dbt-library"}],
         },
-        "dbt-history": {
-            "label": "DBT Historial - extra app conservado",
-            "parent": "dbt-now",
-            "actions": [{"action": "navigate", "view": "dbt"},
-                        {"action": "call", "func": "_dbt_select_tab_history"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "dbt-history"}],
-        },
         "dbt-practice-stop": {
             "label": "DBT Práctica - paso intermedio de STOP",
             "parent": "dbt-now",
@@ -1071,15 +1063,6 @@ def _dbt_select_tab_library(win, qapp, action):
     if target is not None:
         target._tabs.set_current(1)
     _drain(qapp, cycles=4)
-
-
-@_register_helper
-def _dbt_select_tab_history(win, qapp, action):
-    target = _module_target(win)
-    if target is not None:
-        target._tabs.set_current(2)
-    _drain(qapp, cycles=4)
-
 
 
 @_register_helper

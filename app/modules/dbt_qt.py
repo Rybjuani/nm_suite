@@ -1,6 +1,6 @@
 """
 app/modules/dbt_qt.py — Módulo Habilidades DBT (PyQt6)
-Práctica guiada de habilidades DBT con tres vistas principales: Ahora, Biblioteca e Historial.
+Práctica guiada de habilidades DBT con vistas Ahora y Biblioteca.
 """
 
 import os
@@ -36,7 +36,6 @@ try:
         NMToast,
         ThemeManager,
         NMCard,
-        NMEmptyState,
         NMTabs,
     )
     from shared.theme_qt import (
@@ -49,7 +48,6 @@ try:
         LAYOUT,
         stylesheet_scrollarea,
     )
-    from shared.components.layout import FlowLayout
     from shared.db import conexion
 except ImportError:
     # Fallback paths
@@ -63,7 +61,6 @@ except ImportError:
         NMToast,
         ThemeManager,
         NMCard,
-        NMEmptyState,
         NMTabs,
     )
     from shared.theme_qt import (
@@ -76,7 +73,6 @@ except ImportError:
         LAYOUT,
         stylesheet_scrollarea,
     )
-    from shared.components.layout import FlowLayout
     from shared.db import conexion
 
 _log = logging.getLogger(__name__)
@@ -99,13 +95,10 @@ _DBT_FAMILY_COLOR_KEYS = {
     "emotion_regulation": "regul",
     "interpersonal_effectiveness": "efect",
 }
-_DBT_SKILL_BAR_W = 7
-_DBT_SKILL_BAR_H = 64
-_DBT_SKILL_BAR_X = 14
-_DBT_SKILL_BAR_Y = 16
-# Barra horizontal superior de la dbt-card (mockup `.dbt-card .bar`: 64×7 r99).
-_DBT_SKILL_BAR_TOP_W = 64
-_DBT_SKILL_BAR_TOP_H = 7
+_DBT_SKILL_BAR_TOP_W = 54
+_DBT_SKILL_BAR_TOP_H = 5
+_DBT_LIBRARY_CARD_MIN_H = 116
+_DBT_LIBRARY_CARD_MAX_H = 122
 _DBT_NEED_BORDER_W = 5
 _DBT_NEED_BORDER_Y = 14
 _DBT_NEED_BORDER_RADIUS = 2.5
@@ -418,13 +411,20 @@ class _SkillCard(NMCard):
         self._skill = skill
         self._family_color_key = _dbt_family_color_key(skill["family"])
         self.setProperty("dbt_family", skill["family"])
+        self.setMinimumHeight(_DBT_LIBRARY_CARD_MIN_H)
+        self.setMaximumHeight(_DBT_LIBRARY_CARD_MAX_H)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         
         lay = QVBoxLayout(self)
-        # Mockup `.dbt-card` = `.card.pad` (padding 20px) con una barra HORIZONTAL
-        # arriba (64×7, margin-bottom 14), no una barra vertical a la izquierda.
-        # El margen superior deja sitio para la barra: 20 pad + 7 alto + 14 gap = 41.
-        lay.setContentsMargins(20, 41, 20, 20)
-        lay.setSpacing(8)
+        lay.setContentsMargins(20, 20, 20, 18)
+        lay.setSpacing(5)
+
+        self.family_bar = QFrame()
+        self.family_bar.setObjectName("DbtSkillFamilyBar")
+        self.family_bar.setFixedSize(_DBT_SKILL_BAR_TOP_W, _DBT_SKILL_BAR_TOP_H)
+        self.family_bar.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        lay.addWidget(self.family_bar, alignment=Qt.AlignmentFlag.AlignLeft)
+        lay.addSpacing(3)
 
         family_title = _DBT_FAMILY_LONG_TITLES.get(skill["family"], "")
         
@@ -439,15 +439,17 @@ class _SkillCard(NMCard):
         self.title_lbl = QLabel(skill["title"])
         self.title_lbl.setFont(v3_font("size_h4", weight=TYPOGRAPHY["weight_bold"], serif=True))
         self.title_lbl.setWordWrap(True)
+        self.title_lbl.setMaximumHeight(34)
         lay.addWidget(self.title_lbl)
         
         self.summary_lbl = QLabel(skill["summary"])
         self.summary_lbl.setFont(qfont("size_small"))
         self.summary_lbl.setWordWrap(True)
+        self.summary_lbl.setMaximumHeight(46)
         lay.addWidget(self.summary_lbl)
         
         info_lay = QHBoxLayout()
-        info_lay.setSpacing(12)
+        info_lay.setSpacing(14)
 
         # Duración: icono calendario SVG + "N min" (mockup `.dbt-card .meta`).
         # Antes era el emoji "⏱" que no está en las fuentes cargadas → tofu (▯).
@@ -471,21 +473,6 @@ class _SkillCard(NMCard):
         
         self._apply_theme(self._modo)
 
-    def paintEvent(self, event):
-        super().paintEvent(event)
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(v3c(self._family_color_key, self._modo))
-        # Barra HORIZONTAL superior 64×7 r99 (mockup `.dbt-card .bar`), alineada
-        # al padding 20px de la card (`.card.pad`).
-        p.drawRoundedRect(
-            QRectF(20, 20, _DBT_SKILL_BAR_TOP_W, _DBT_SKILL_BAR_TOP_H),
-            _DBT_SKILL_BAR_TOP_H / 2,
-            _DBT_SKILL_BAR_TOP_H / 2,
-        )
-        p.end()
-        
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         super()._apply_theme(self._modo)
@@ -501,8 +488,12 @@ class _SkillCard(NMCard):
             f"background: {chip_bg}; "
             f"border-radius: 4px; border: 1px solid {_dbt_family_soft_css(self._skill['family'], self._modo, 0.28)};"
         )
+        self.family_bar.setStyleSheet(
+            f"QFrame#DbtSkillFamilyBar {{ background: {color_val}; "
+            f"border-radius: {_DBT_SKILL_BAR_TOP_H // 2}px; }}"
+        )
         self.title_lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-        self.summary_lbl.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()};")
+        self.summary_lbl.setStyleSheet(f"color: {v3c('text2', self._modo).name()};")
         self.dur_lbl.setStyleSheet(f"color: {v3c('ink_secondary', self._modo).name()};")
         # Icono calendario recoloreado al tema (ink-3 / faint, como el texto meta).
         from shared.icons_svg import nm_svg_pixmap
@@ -512,84 +503,6 @@ class _SkillCard(NMCard):
         # Mockup `.dbt-card .meta .pl{color:var(--brand)}` — "Práctica guiada" SIEMPRE
         # en brand, no en el color de la familia (antes salía cobre/rojo por card).
         self.guide_lbl.setStyleSheet(f"color: {v3c('brand', self._modo).name()};")
-
-
-def _row_get(row, key: str, default=""):
-    try:
-        value = row[key]
-    except Exception:
-        value = default
-    return default if value is None else value
-
-
-class _HistoryPracticeCard(NMCard):
-    """Registro compacto de una práctica DBT guardada."""
-
-    def __init__(self, record, modo: str = None, parent=None):
-        super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
-        self._record = record
-        self._family = str(_row_get(record, "familia", ""))
-        self._family_color_key = _dbt_family_color_key(self._family)
-        self.setProperty("dbt_family", self._family)
-
-        skill_id = str(_row_get(record, "skill_id", ""))
-        skill = DBT_SKILLS.get(skill_id, {})
-        title = skill.get("title") or skill_id or "Práctica DBT"
-        need = str(_row_get(record, "necesidad", "")) or _DBT_FAMILY_LONG_TITLES.get(self._family, "")
-        result = {
-            "ayudo": "Me ayudó",
-            "parcial": "Un poco",
-            "no_esta_vez": "No esta vez",
-            "sin_evaluar": "Sin evaluar",
-        }.get(str(_row_get(record, "resultado", "")), "Sin evaluar")
-        fecha = str(_row_get(record, "fecha", ""))
-        hora = str(_row_get(record, "hora", ""))[:5]
-        try:
-            dur_min = max(0, int(_row_get(record, "duracion_seg", 0)) // 60)
-        except Exception:
-            dur_min = 0
-        meta = " · ".join(part for part in [fecha, hora, f"{dur_min} min" if dur_min else ""] if part)
-
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(30, 14, 16, 14)
-        lay.setSpacing(6)
-
-        self.title_lbl = QLabel(title)
-        self.title_lbl.setFont(v3_font("size_h4", weight=TYPOGRAPHY["weight_bold"], serif=True))
-        lay.addWidget(self.title_lbl)
-
-        self.need_lbl = QLabel(need)
-        self.need_lbl.setFont(qfont("size_small"))
-        self.need_lbl.setWordWrap(True)
-        lay.addWidget(self.need_lbl)
-
-        self.meta_lbl = QLabel(f"{meta} · {result}" if meta else result)
-        self.meta_lbl.setFont(qfont("size_caption"))
-        lay.addWidget(self.meta_lbl)
-
-        self._apply_theme(self._modo)
-
-    def paintEvent(self, event):
-        super().paintEvent(event)
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(v3c(self._family_color_key, self._modo))
-        bar_h = min(48, max(24, self.height() - _DBT_SKILL_BAR_Y * 2))
-        p.drawRoundedRect(
-            QRectF(_DBT_SKILL_BAR_X, _DBT_SKILL_BAR_Y, _DBT_SKILL_BAR_W, bar_h),
-            _DBT_SKILL_BAR_W / 2,
-            _DBT_SKILL_BAR_W / 2,
-        )
-        p.end()
-
-    def _apply_theme(self, modo: str):
-        self._modo = norm_modo(modo)
-        super()._apply_theme(self._modo)
-        self._family_color_key = _dbt_family_color_key(self._family)
-        self.title_lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-        self.need_lbl.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()};")
-        self.meta_lbl.setStyleSheet(f"color: {v3c(self._family_color_key, self._modo).name()};")
 
 
 class _StepProgressIndicator(QWidget):
@@ -651,9 +564,9 @@ class _DistressRatingButton(QPushButton):
         self._hover = False
         self._active = False
         
-        self.setFixedSize(36, 36)
+        self.setFixedSize(32, 32)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_bold"]))
+        self.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         
@@ -727,9 +640,9 @@ class _ServiceOptionButton(QPushButton):
         self._active = False
         
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_bold"]))
+        self.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.setMinimumHeight(36)
+        self.setMinimumHeight(34)
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         
     def set_active(self, active: bool):
@@ -763,9 +676,10 @@ class _ServiceOptionButton(QPushButton):
         
         if self._active:
             color_solid = v3c(color_token, self._modo)
-            bg_color = color_solid
+            bg_color = QColor(color_solid)
+            bg_color.setAlpha(42 if is_dark else 34)
             border_color = color_solid
-            text_color = QColor("#FFFFFF") if self._key != "sin_evaluar" else v3c("primary_ink", self._modo)
+            text_color = color_solid
         elif self._hover:
             bg_color = v3c("elevatedSolid" if is_dark else "elevated", self._modo)
             border_color = v3c("borderStrong", self._modo)
@@ -955,11 +869,11 @@ class _PracticeClosure(QWidget):
         
     def _setup_ui(self):
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(24, 16, 24, 16)
-        lay.setSpacing(10)
+        lay.setContentsMargins(24, 18, 24, 18)
+        lay.setSpacing(8)
 
         self.title_lbl = QLabel(f"Finalizar práctica: {self._skill_title}")
-        self.title_lbl.setFont(v3_font("size_h3", weight=TYPOGRAPHY["weight_bold"], serif=True))
+        self.title_lbl.setFont(v3_font("size_h4", weight=TYPOGRAPHY["weight_bold"], serif=True))
         lay.addWidget(self.title_lbl)
 
         # Antes
@@ -974,12 +888,14 @@ class _PracticeClosure(QWidget):
 
         self.antes_buttons = []
         antes_lay = QHBoxLayout()
-        antes_lay.setSpacing(4)
+        antes_lay.setSpacing(6)
+        antes_lay.addStretch(1)
         for i in range(11):
             btn = _DistressRatingButton(i, parent=self, modo=self._modo)
             btn.clicked.connect(lambda checked=False, val=i: self._select_antes(val))
             antes_lay.addWidget(btn)
             self.antes_buttons.append(btn)
+        antes_lay.addStretch(1)
         lay.addLayout(antes_lay)
 
         # Despues
@@ -994,12 +910,14 @@ class _PracticeClosure(QWidget):
 
         self.despues_buttons = []
         despues_lay = QHBoxLayout()
-        despues_lay.setSpacing(4)
+        despues_lay.setSpacing(6)
+        despues_lay.addStretch(1)
         for i in range(11):
             btn = _DistressRatingButton(i, parent=self, modo=self._modo)
             btn.clicked.connect(lambda checked=False, val=i: self._select_despues(val))
             despues_lay.addWidget(btn)
             self.despues_buttons.append(btn)
+        despues_lay.addStretch(1)
         lay.addLayout(despues_lay)
 
         # Resultado
@@ -1019,6 +937,7 @@ class _PracticeClosure(QWidget):
         ]
         for val, label in options:
             btn = _ServiceOptionButton(val, label, parent=self, modo=self._modo)
+            btn.setMinimumWidth(150 if val == "sin_evaluar" else 104)
             btn.clicked.connect(lambda checked=False, v=val: self._select_resultado(v))
             res_lay.addWidget(btn)
             self.res_buttons[val] = btn
@@ -1035,7 +954,7 @@ class _PracticeClosure(QWidget):
         btn_lay.addStretch()
         self.btn_save = NMButton(
             t("text.module.dbt.save_practice_btn", "Guardar práctica"),
-            parent=self, variant="gradient", size="md"
+            parent=self, variant="gradient", size="sm", width=180
         )
         self.btn_save.clicked.connect(self._save_practice)
         btn_lay.addWidget(self.btn_save)
@@ -1091,7 +1010,7 @@ class _PracticeModalScrim(QWidget):
     sigue el geometry del padre vía eventFilter.
     """
 
-    _SCRIM_RGBA = (20, 18, 14, 128)  # mockup `.modal-bg` rgba(20,18,14,.5)
+    _SCRIM_RGBA = (20, 18, 14, 104)  # softer scrim; visual focus without hardening bg
 
     def __init__(self, parent: QWidget, modo: str):
         super().__init__(parent)
@@ -1188,27 +1107,25 @@ class ModuloDBT(NMModule):
             [
                 t("text.module.dbt.tab_now", "Ahora"),
                 t("text.module.dbt.tab_library", "Biblioteca"),
-                t("text.module.dbt.tab_history", "Historial"),
             ],
             variant="seg",  # mockup `.seg`: contenedor surface-3, segmento sel = surface elevado
             modo=self._modo,
             parent=self,
         )
         self._tabs.changed.connect(self._on_tab_changed)
-        self._main_layout.addWidget(self._tabs)
+        self._tabs.setMaximumWidth(640)
+        self._main_layout.addWidget(self._tabs, alignment=Qt.AlignmentFlag.AlignHCenter)
         
         # View stacked widget
         self._view_stack = QStackedWidget()
         self._main_layout.addWidget(self._view_stack)
         
-        # 3 main views
+        # 2 main views: Historial fue removido de UI V2 por decision owner.
         self._view_ahora = self._build_view_ahora()
         self._view_biblioteca = self._build_view_biblioteca()
-        self._view_historial = self._build_view_historial()
 
         self._view_stack.addWidget(self._view_ahora)
         self._view_stack.addWidget(self._view_biblioteca)
-        self._view_stack.addWidget(self._view_historial)
         
         self._practice_view = None
         self._closure_view = None
@@ -1228,8 +1145,6 @@ class ModuloDBT(NMModule):
         
         if idx == 1:
             self._filter_library()
-        elif idx == 2:
-            self._load_history()
             
     def on_enter(self):
         super().on_enter()
@@ -1309,86 +1224,29 @@ class ModuloDBT(NMModule):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         self._biblioteca_scroll = scroll
         
         self._library_container = QWidget()
         self._library_container.setStyleSheet("background: transparent;")
-        self._library_flow = FlowLayout(self._library_container, spacing=16)
+        self._library_grid = QGridLayout(self._library_container)
+        self._library_grid.setContentsMargins(0, 0, 8, 0)
+        self._library_grid.setHorizontalSpacing(16)
+        self._library_grid.setVerticalSpacing(16)
+        self._library_grid.setAlignment(Qt.AlignmentFlag.AlignTop)
+        for col in range(3):
+            self._library_grid.setColumnStretch(col, 1)
         
         scroll.setWidget(self._library_container)
         lay.addWidget(scroll)
         
         return widget
 
-    def _build_view_historial(self) -> QWidget:
-        widget = QWidget()
-        lay = QVBoxLayout(widget)
-        lay.setContentsMargins(0, 0, 0, 0)
-        lay.setSpacing(12)
-
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-        self._historial_scroll = scroll
-
-        self._history_container = QWidget()
-        self._history_container.setStyleSheet("background: transparent;")
-        self._history_lay = QVBoxLayout(self._history_container)
-        self._history_lay.setContentsMargins(0, 0, 0, 0)
-        self._history_lay.setSpacing(10)
-        self._history_lay.setAlignment(Qt.AlignmentFlag.AlignTop)
-
-        scroll.setWidget(self._history_container)
-        lay.addWidget(scroll)
-        return widget
-
-    def _load_history(self):
-        if not hasattr(self, "_history_lay"):
-            return
-        while self._history_lay.count():
-            item = self._history_lay.takeAt(0)
-            w = item.widget()
-            if w:
-                w.setParent(None)
-                w.deleteLater()
-
-        rows = []
-        try:
-            with conexion() as conn:
-                rows = conn.execute(
-                    "SELECT fecha, hora, skill_id, familia, necesidad, resultado, duracion_seg "
-                    "FROM dbt_practicas "
-                    "ORDER BY created_at DESC, fecha DESC, hora DESC "
-                    "LIMIT 12"
-                ).fetchall()
-        except Exception as exc:
-            _log.warning("No se pudo cargar historial DBT: %s", exc)
-
-        if not rows:
-            empty = NMEmptyState(
-                "spark",
-                t("text.module.dbt.history_empty_title", "Sin prácticas guardadas"),
-                t(
-                    "text.module.dbt.history_empty_desc",
-                    "Cuando completes una habilidad, va a aparecer acá.",
-                ),
-                parent=self._history_container,
-            )
-            self._history_lay.addWidget(empty)
-            self._history_lay.addStretch(1)
-            return
-
-        for row in rows:
-            card = _HistoryPracticeCard(row, modo=self._modo, parent=self._history_container)
-            self._history_lay.addWidget(card)
-        self._history_lay.addStretch(1)
-        
     def _filter_library(self, *args):
         # Clear existing
-        while self._library_flow.count():
-            item = self._library_flow.takeAt(0)
+        while self._library_grid.count():
+            item = self._library_grid.takeAt(0)
             w = item.widget()
             if w:
                 w.deleteLater()
@@ -1397,11 +1255,14 @@ class ModuloDBT(NMModule):
         tab_idx = self._family_tabs.current()
         family_filter = [None, "mindfulness", "distress_tolerance", "emotion_regulation", "interpersonal_effectiveness"][tab_idx]
         
+        visible_idx = 0
         for skill_id, skill in DBT_SKILLS.items():
             if family_filter is None or skill["family"] == family_filter:
                 card = _SkillCard(skill, modo=self._modo, parent=self._library_container)
                 card.clicked.connect(lambda s=skill: self.start_practice(s))
-                self._library_flow.addWidget(card)
+                row, col = divmod(visible_idx, 3)
+                self._library_grid.addWidget(card, row, col)
+                visible_idx += 1
                 
     def _show_modal(self, content, max_width: int):
         """Muestra `content` en el overlay modal (scrim + card centrada),
@@ -1452,10 +1313,10 @@ class ModuloDBT(NMModule):
         skill_title = skill["title"] if skill else ""
 
         self._closure_view = _PracticeClosure(skill_title, modo=self._modo, parent=self)
-        self._closure_view.setMaximumWidth(864)
+        self._closure_view.setMaximumWidth(760)
         self._closure_view.saved.connect(self._on_practice_saved)
         # El cierre reemplaza a la práctica DENTRO del mismo modal (scrim sigue).
-        self._show_modal(self._closure_view, 864)
+        self._show_modal(self._closure_view, 760)
 
     def _on_practice_saved(self, antes, despues, resultado, nota):
         # Calculate duration
@@ -1542,8 +1403,6 @@ class ModuloDBT(NMModule):
         # Style scroll areas dynamically on theme change
         if hasattr(self, "_biblioteca_scroll") and self._biblioteca_scroll:
             self._biblioteca_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
-        if hasattr(self, "_historial_scroll") and self._historial_scroll:
-            self._historial_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         # Trigger theme re-apply for all internal views
         if hasattr(self, "_view_ahora"):
             # Recurse children manually
@@ -1572,11 +1431,6 @@ class ModuloDBT(NMModule):
             if hasattr(self, "_family_tabs"):
                 self._family_tabs._apply_theme(self._modo)
 
-        if hasattr(self, "_view_historial"):
-            for child in self._view_historial.findChildren(NMCard):
-                if hasattr(child, "_apply_theme"):
-                    child._apply_theme(self._modo)
-                
         # Forward theme calls to active practice flows
         if getattr(self, "_modal_scrim", None) is not None:
             self._modal_scrim.apply_theme(self._modo)

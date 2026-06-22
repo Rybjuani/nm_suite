@@ -3,15 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 
-# Vistas que existen en la app pero NO en el mockup: extras deliberados que el
-# plan manda conservar (más completos que el mockup) y por eso no tienen target
-# de fidelidad. Mantener esta lista explícita evita que un recipe huérfano pase
-# inadvertido, sin exigir un target inexistente.
-#   - ('suite', 'dbt-history'): tab Historial de DBT — "Conservar tab Historial
-#     (extra app)" (PLAN_MIGRACION_UI.md, sección de huecos/diferencias).
-_APP_EXTRA_RECIPES_WITHOUT_MOCKUP = {
-    ("suite", "dbt-history"),
-}
+_APP_EXTRA_RECIPES_WITHOUT_MOCKUP: set[tuple[str, str]] = set()
 
 
 def test_mockup_targets_cover_capture_v8_recipes() -> None:

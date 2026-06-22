@@ -808,6 +808,8 @@ def test_patient_row_premium_matches_mockup_prow_contract(qtbot) -> None:
 def test_dbt_cards_match_mockup_family_bar_contract(qtbot) -> None:
     from app.modules.dbt_qt import (
         _DBT_FAMILY_COLOR_KEYS,
+        _DBT_LIBRARY_CARD_MAX_H,
+        _DBT_LIBRARY_CARD_MIN_H,
         _DBT_NEED_BORDER_W,
         _DBT_SKILL_BAR_TOP_H,
         _DBT_SKILL_BAR_TOP_W,
@@ -838,11 +840,17 @@ def test_dbt_cards_match_mockup_family_bar_contract(qtbot) -> None:
         modo="light_hybrid",
     )
     qtbot.addWidget(skill)
-    # Mockup `.dbt-card` = `.card.pad` (20px) con barra HORIZONTAL superior 64×7.
+    # Barra horizontal de familia vive en layout para no pisar el titulo.
     assert skill.layout().contentsMargins().left() == 20
     assert skill._family_color_key == "toler"
-    assert _DBT_SKILL_BAR_TOP_W == 64
-    assert _DBT_SKILL_BAR_TOP_H == 7
+    assert _DBT_SKILL_BAR_TOP_W == 54
+    assert _DBT_SKILL_BAR_TOP_H == 5
+    assert _DBT_LIBRARY_CARD_MIN_H == 116
+    assert _DBT_LIBRARY_CARD_MAX_H == 122
+    assert skill.family_bar.width() == 54
+    assert skill.family_bar.height() == 5
+    assert skill.minimumHeight() == 116
+    assert skill.maximumHeight() == 122
     assert _DBT_FAMILY_COLOR_KEYS == {
         "mindfulness": "mind",
         "distress_tolerance": "toler",
@@ -855,10 +863,9 @@ def test_dbt_cards_match_mockup_family_bar_contract(qtbot) -> None:
     assert "_DBT_NEED_BORDER_W" in need_source
     assert "v3c(self._family_color_key, self._modo)" in need_source
 
-    skill_source = __import__("inspect").getsource(_SkillCard.paintEvent)
-    assert "_DBT_SKILL_BAR_TOP_W" in skill_source
+    skill_source = __import__("inspect").getsource(_SkillCard._apply_theme)
+    assert "DbtSkillFamilyBar" in skill_source
     assert "_DBT_SKILL_BAR_TOP_H" in skill_source
-    assert "v3c(self._family_color_key, self._modo)" in skill_source
 
 
 def test_dbt_modal_hides_background_controls_until_closed(qtbot) -> None:
