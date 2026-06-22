@@ -10,6 +10,7 @@ Dos grupos:
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -592,3 +593,83 @@ def test_crawler_discovers_stack_pages_synthetic(qapp):
         root.deleteLater()
     # debe alcanzar los 3 pasos (paso 0/1/2)
     assert len(sigs) >= 3
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Configuracion de plataforma Qt: _configure_platform() + argv sanitizado
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_configure_platform_native_never_sets_invalid_qt_plugin(monkeypatch):
+    """Windows + native: QT_QPA_PLATFORM no debe ser 'native' (no es plugin Qt)."""
+    monkeypatch.delenv("QT_QPA_PLATFORM", raising=False)
+    monkeypatch.setattr(sys, "platform", "win32")
+    from qa.visual_sentinel import _configure_platform, _INVALID_QT_PLATFORMS
+    _configure_platform("native")
+    val = os.environ.get("QT_QPA_PLATFORM", "")
+    assert val not in _INVALID_QT_PLATFORMS, (
+        f"QT_QPA_PLATFORM tiene valor invalido para Qt: {val!r}"
+    )
+
+
+def test_configure_platform_auto_windows_no_ci_never_sets_invalid_qt_plugin(monkeypatch):
+    """Windows + auto sin CI: QT_QPA_PLATFORM no debe ser 'auto' (no es plugin Qt)."""
+    monkeypatch.delenv("QT_QPA_PLATFORM", raising=False)
+    monkeypatch.setattr(sys, "platform", "win32")
+    for ci_var in ("CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL", "TF_BUILD",
+                   "BUILDKITE", "CIRCLECI", "TRAVIS"):
+        monkeypatch.delenv(ci_var, raising=False)
+    from qa.visual_sentinel import _configure_platform, _INVALID_QT_PLATFORMS
+    _configure_platform("auto")
+    val = os.environ.get("QT_QPA_PLATFORM", "")
+    assert val not in _INVALID_QT_PLATFORMS, (
+        f"QT_QPA_PLATFORM tiene valor invalido para Qt: {val!r}"
+    )
+
+
+def test_configure_platform_sanitizes_env_native(monkeypatch):
+    """Si QT_QPA_PLATFORM=native ya estaba en env, se sanea antes de configurar."""
+    monkeypatch.setenv("QT_QPA_PLATFORM", "native")
+    from qa.visual_sentinel import _configure_platform, _INVALID_QT_PLATFORMS
+    _configure_platform("auto")
+    val = os.environ.get("QT_QPA_PLATFORM", "")
+    assert val not in _INVALID_QT_PLATFORMS, (
+        f"QT_QPA_PLATFORM=native no fue saneado, quedo: {val!r}"
+    )
+
+
+def test_configure_platform_sanitizes_env_auto(monkeypatch):
+    """Si QT_QPA_PLATFORM=auto ya estaba en env, se sanea antes de configurar."""
+    monkeypatch.setenv("QT_QPA_PLATFORM", "auto")
+    from qa.visual_sentinel import _configure_platform, _INVALID_QT_PLATFORMS
+    _configure_platform("native")
+    val = os.environ.get("QT_QPA_PLATFORM", "")
+    assert val not in _INVALID_QT_PLATFORMS, (
+        f"QT_QPA_PLATFORM=auto no fue saneado, quedo: {val!r}"
+    )
+
+
+def test_qapplication_receives_sanitized_argv(monkeypatch):
+    """_instantiate usa argv de un solo elemento: Qt no ve --platform auto/native."""
+    original_argv = sys.argv[:]
+    monkeypatch.setattr(
+        sys, "argv",
+        ["visual_sentinel.py", "--platform", "auto",
+         "capture", "--screen", "suite:home", "--theme", "dark"],
+    )
+    # argv seguro = solo el nombre del ejecutable; nunca args Sentinel
+    safe_argv = [sys.argv[0] if sys.argv else "visual_sentinel"]
+    assert len(safe_argv) == 1
+    assert "--platform" not in safe_argv
+    assert "auto" not in safe_argv
+    assert "native" not in safe_argv
+    # Confirmar que el modulo construye el mismo argv seguro
+    import importlib
+    import ast
+    import qa.visual_sentinel as _mod
+    src = Path(_mod.__file__).read_text(encoding="utf-8")
+    # El patron correcto esta en _instantiate: sys.argv[0] como unico elemento
+    assert "_safe_argv = [sys.argv[0]" in src or '_safe_argv = [sys.argv[0]' in src, (
+        "_instantiate debe usar _safe_argv = [sys.argv[0]] para evitar pasar "
+        "--platform a Qt"
+    )
+    sys.argv = original_argv

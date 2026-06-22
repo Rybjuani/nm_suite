@@ -122,6 +122,11 @@ _OVERLAP_MIN_RATIO = 0.45
 
 _FONT_DIAG_CACHE: dict | None = None
 
+# Valores del argumento --platform que son conceptos del Sentinel, NO plugins Qt.
+# Qt acepta: offscreen, windows, minimal (en Windows), xcb/cocoa en otros OS.
+# 'native' y 'auto' nunca deben llegar a Qt como valor de QT_QPA_PLATFORM.
+_INVALID_QT_PLATFORMS: frozenset[str] = frozenset({"native", "auto"})
+
 # Caps del crawler (mode-dependientes).
 _DEFAULT_MAX_STATES = 70
 _DEFAULT_MAX_DEPTH = 4
@@ -230,26 +235,42 @@ def _configure_platform(mode: str = "auto") -> None:
     """Configura QT_QPA_PLATFORM ANTES de crear QApplication.
 
     Debe llamarse desde main() antes de cualquier instanciacion Qt.
-    Si QT_QPA_PLATFORM ya esta seteado externamente (conftest.py, CI, usuario),
-    lo respeta sin sobreescribir.
 
-    mode="auto"      Windows sin CI → nativo (DirectWrite, render correcto);
-                     Linux/Mac sin DISPLAY, o CI → offscreen.
-    mode="native"    Deja que Qt elija su plataforma nativa.
-    mode="offscreen" Fuerza offscreen (headless, CI).
+    IMPORTANTE: 'native' y 'auto' son modos del Sentinel, NO plugins Qt validos.
+    En Windows el plugin nativo real se llama 'windows'. Esta funcion garantiza
+    que QT_QPA_PLATFORM nunca contiene un valor invalido para Qt.
+
+    mode="auto"      Windows sin CI → deja unset (Qt elige 'windows'/DirectWrite);
+                     CI o Linux/Mac sin display → 'offscreen'.
+    mode="native"    Deja unset siempre (Qt elige su backend nativo del OS).
+    mode="offscreen" Fuerza 'offscreen' (headless, CI).
     """
-    if os.environ.get("QT_QPA_PLATFORM"):
-        return  # respeta seteo externo (conftest.py, CI, usuario)
+    # Paso 1: sanear siempre. Si el entorno ya contiene un valor invalido para Qt
+    # (heredado de un seteo anterior o de CI mal configurado), corregirlo primero.
+    if os.environ.get("QT_QPA_PLATFORM") in _INVALID_QT_PLATFORMS:
+        del os.environ["QT_QPA_PLATFORM"]
+
+    # Paso 2: si ya hay un valor valido externo (conftest.py, CI...), solo se
+    # sobreescribe cuando el modo lo pide explicitamente (offscreen).
+    current = os.environ.get("QT_QPA_PLATFORM", "")
+
     if mode == "offscreen":
         os.environ["QT_QPA_PLATFORM"] = "offscreen"
         return
+
     if mode == "native":
-        return  # Qt elige su backend nativo
-    # auto: nativo en Windows sin CI, offscreen en el resto
+        # 'native' no es plugin Qt: dejar unset para que Qt elija el backend del OS.
+        # No sobreescribimos un valor externo valido ya presente.
+        return
+
+    # mode == "auto": si ya hay valor externo valido, respetarlo
+    if current:
+        return
+    # Sin valor externo: Windows sin CI → nativo; resto → offscreen
     _ci = ("CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL", "TF_BUILD",
            "BUILDKITE", "CIRCLECI", "TRAVIS")
     if sys.platform == "win32" and not any(os.environ.get(v) for v in _ci):
-        return  # Windows sin CI → plataforma nativa (DirectWrite)
+        return  # Windows sin CI → Qt elige 'windows' (DirectWrite)
     os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
 
@@ -797,7 +818,11 @@ def _instantiate(app_key: str, modo: str, res: str = _RESOLUTION):
     from PyQt6.QtWidgets import QApplication
     from PyQt6.QtCore import QSize, QSettings
 
-    qapp = QApplication.instance() or QApplication(sys.argv)
+    # Pasar solo el nombre del ejecutable a QApplication: Qt parsea sys.argv
+    # buscando --platform <plugin> y otros flags Qt-propios; si recibe
+    # --platform auto/native buscaria plugins Qt inexistentes y falla.
+    _safe_argv = [sys.argv[0] if sys.argv else "visual_sentinel"]
+    qapp = QApplication.instance() or QApplication(_safe_argv)
     qapp.setQuitOnLastWindowClosed(False)
     try:
         from shared.fonts import load_fonts
@@ -2306,11 +2331,27 @@ def _resolve_screen(app: str, screen_id: str) -> str:
 
 def _find_node_by_screen(app_key: str, screen_id: str, modo: str,
                          opts: dict, out_dirs: dict) -> DiscoveredNode | None:
-    """Crawl rapido para ubicar el path que produce un screen_id dado."""
+    """Crawl rapido para ubicar el path que produce un screen_id dado.
+
+    Intenta primero coincidencia exacta; luego acepta el primer nodo cuyo
+    screen_id comienza con screen_id + ':' o screen_id + '/' (el usuario puede
+    abreviar, p.ej. 'suite:home' para 'suite:home-view').
+    """
     nodes, _ = crawl_app(app_key, modo, opts, out_dirs,
                          log=lambda *a, **k: None)
+    # 1. coincidencia exacta
     for n in nodes:
         if n.screen_id == screen_id:
+            return DiscoveredNode(node_id=n.node_id, screen_id=n.screen_id,
+                                  app=n.app, theme=n.theme, label=n.label,
+                                  path=n.path)
+    # 2. prefijo con separador: 'suite:home' encuentra 'suite:home-view',
+    #    'suite:home/tab-...' pero NO 'suite:homeostasis'.
+    _sep = frozenset("-:/~")
+    for n in nodes:
+        sid = n.screen_id
+        if (sid.startswith(screen_id) and len(sid) > len(screen_id)
+                and sid[len(screen_id)] in _sep):
             return DiscoveredNode(node_id=n.node_id, screen_id=n.screen_id,
                                   app=n.app, theme=n.theme, label=n.label,
                                   path=n.path)
