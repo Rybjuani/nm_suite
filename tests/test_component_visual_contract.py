@@ -438,6 +438,8 @@ def test_dialog_matches_mockup_modal_contract(qtbot) -> None:
     dialog._set_panel_scale(1.0)
     assert dialog._panel.width() == int(host.width() * 0.92)
     assert dialog._panel.graphicsEffect() is not None
+    assert dialog._panel.objectName() == "NMDialogPanel"
+    assert "QFrame#NMDialogPanel" in dialog._panel.styleSheet()
     assert "border-radius: 28px" in dialog._panel.styleSheet()
 
     primary = dialog.add_footer_button("Guardar", role="primary")

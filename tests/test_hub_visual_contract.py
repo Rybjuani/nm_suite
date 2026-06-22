@@ -199,6 +199,7 @@ def test_hub_resumen_ia_uses_nm_dialog_overlay(qtbot, monkeypatch) -> None:
     assert dialog.parent() is view.window()
     assert dialog.isVisible()
     assert dialog._dialog_width == 480
+    assert dialog._panel.height() == 325
     assert dialog._panel_scale == _NM_MODAL_SCALE_FROM
     assert view._btn_resumen_ia.isEnabled()
     assert view._btn_resumen_ia.text() == "Resumen IA"

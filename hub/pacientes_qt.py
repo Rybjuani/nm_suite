@@ -387,12 +387,13 @@ class DetallePacienteView(QWidget):
             f"QTextBrowser {{ background: transparent; color: {v3c('text', self._modo).name()}; "
             f"border: none; font-size: 13px; }}"
         )
-        tb.setMinimumHeight(220)
+        tb.setMinimumHeight(160)
         tb.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         bl.addWidget(tb, 1)
 
         dialog.set_body_widget(body)
         dialog.add_footer_button("Cerrar", role="ghost", callback=dialog.close)
+        dialog._panel.setFixedHeight(325)
         dialog.show_centered()
 
     def _on_resumen_ia_error(self, msg: str):

@@ -486,12 +486,18 @@ Cierre asistido: `agent_harness\scripts\close_episode.ps1` + `summarize_diff.ps1
   arreglarlo; si no, callar. Un fix que no baja un contador del probe/contrato no es avance.
 - Cerrar SIEMPRE con evidencia (§10.4). Sin diff + validación + antes/después = no hay éxito.
 
-**Estado de avance (actualizar al cerrar cada episodio):**
-- OLA 0 runtime: EN CURSO · OLA 1 primitivas: PARCIAL (botones/tabs/badge/card/search/empty/
-  chrome OK; slider/toast/modal/stepper/sparkline pendientes) · OLA 2 densidad: ABIERTA ·
-  OLA 3 Suite / OLA 4 Hub: ABIERTAS · OLA 5 fidelidad: ABIERTA.
-- **Terminado** = probe OK en las 22 vistas (light+dark) + contratos verdes + cero
-  legacy + revisión humana de pantallas clave. No hay número de SSIM que lo cierre.
+**Estado de avance (actualizado al cierre E5, 2026-06-21):**
+- OLA 0 runtime: CERRADA (`runtime_live_probe.py --all --theme both` → OK=22,
+  DEFECTS_FOUND=0, FAILED=0).
+- OLA 1/2/3/4: CERRADAS por contratos y probes de clusters previos; E5 no detectó deuda
+  visual accionable restante.
+- OLA 5 fidelidad: CERRADA técnicamente (`capture_v8.py --all --theme both` → 98/98
+  capturas, 0 failed; barrido visual de hojas de contacto sin clipping/blank/wrong-view/
+  overlap accionable).
+- `diff_fidelity.py` queda como señal auxiliar: 96 comparadas, 0 missing actuals, 0 partial
+  evidence, 92 failures por umbrales SSIM/MAD no-gate ya documentados en §10.2.
+- **Terminado operativo:** probe OK en las 22 vistas (light+dark) + suite de contratos verde
+  + cero legacy + capturas finales completas + revisión visual técnica sin deuda accionable.
 
 ---
 *Fin de `PLAN_MIGRACION_UI_V2.md`. Supera a `PLAN_MIGRACION_UI.md` (histórico).*

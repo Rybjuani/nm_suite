@@ -93,6 +93,7 @@ class NMDialog(QWidget):
 
         # Container central
         self._panel = QFrame(self)
+        self._panel.setObjectName("NMDialogPanel")
         self._panel.setFixedWidth(width)
         self._panel.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
 
@@ -239,7 +240,7 @@ class NMDialog(QWidget):
         bg = v3c("surfaceSolid" if is_dark else "surface", self._modo).name()
         border = qcolor_to_rgba_css(v3c("line", self._modo))
         self._panel.setStyleSheet(
-            f"QFrame {{ background-color: {bg}; "
+            f"QFrame#NMDialogPanel {{ background-color: {bg}; "
             f"border: 1px solid {border}; border-radius: {V3_RD['xl']}px; }}"
         )
         self._panel.setGraphicsEffect(shadow_3(self._modo, self._panel))

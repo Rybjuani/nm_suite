@@ -614,8 +614,8 @@ _RECIPES: dict[str, dict[str, dict]] = {
         },
 
         # 2026-06: Dialogo "Resumen IA" del detalle. En runtime depende de un
-        # proveedor IA; aqui se abre con texto de muestra parcheando exec()->show()
-        # para evidenciar el UI del modal sin red.
+        # proveedor IA; aqui se abre con texto de muestra y se captura el panel
+        # natural del NMDialog overlay sin red.
         "detalle-resumen-ia": {
             "label": "Detalle > dialogo Resumen IA (muestra)",
             "parent": "detalle",
@@ -1367,11 +1367,8 @@ def _detalle_open_resumen_ia_dialog(win, qapp, action):
     """Abre el dialogo 'Resumen IA' del detalle con texto de muestra.
 
     En runtime el dialogo se alimenta de un proveedor IA (red); para evidencia
-    visual offline invocamos _show_resumen_dialog con texto muestra. Como ese
-    metodo termina con dialog.exec() (modal bloqueante), parcheamos
-    QDialog.exec -> show() solo durante la llamada para no congelar el harness.
+    visual offline invocamos _show_resumen_dialog con texto muestra.
     """
-    from PyQt6.QtWidgets import QDialog
     det = win._stack.currentWidget() if hasattr(win, "_stack") else None
     if det is None or not hasattr(det, "_show_resumen_dialog"):
         return
@@ -1381,14 +1378,10 @@ def _detalle_open_resumen_ia_dialog(win, qapp, action):
         "respiracion. Se observan distorsiones cognitivas recurrentes "
         "(catastrofizacion). Sugerencia: reforzar TCC y activacion conductual."
     )
-    _orig_exec = QDialog.exec
-    QDialog.exec = lambda self, *a, **k: (self.show(), 0)[1]
     try:
         det._show_resumen_dialog(sample)
     except Exception:
         pass
-    finally:
-        QDialog.exec = _orig_exec
     _drain(qapp, cycles=6)
 
 
@@ -2154,6 +2147,14 @@ def _execute_actions(win, actions: list[dict], qapp, app_key: str,
 
         elif action_type == "close_child":
             from PyQt6.QtWidgets import QApplication
+            from shared.components.dialogs import NMDialog
+            for child in win.findChildren(NMDialog):
+                if child.isVisible() and hasattr(child, "close"):
+                    try:
+                        child.close()
+                        child.deleteLater()
+                    except Exception:
+                        pass
             for tl in QApplication.topLevelWidgets():
                 if tl != win and tl.isVisible() and hasattr(tl, 'close'):
                     try:
@@ -2270,7 +2271,21 @@ def _scan_and_capture_children(win, qapp, app_key: str, prefix: str, modo: str,
                                 captured_views: set, scale: float) -> int:
     """Escanea ventanas hijas/popups visibles de la app actual y las captura."""
     from PyQt6.QtWidgets import QApplication, QDialog
+    from shared.components.dialogs import NMDialog
     count = 0
+    for overlay in win.findChildren(NMDialog):
+        if not overlay.isVisible():
+            continue
+        child_id = f"{prefix}-{count}"
+        if child_id in captured_views:
+            continue
+        captured_views.add(child_id)
+        target = getattr(overlay, "_panel", overlay)
+        r = _grab_save(target, app_key, child_id, modo, res, out_dir, scale, True)
+        if r:
+            results.append(r)
+            count += 1
+
     for tl in QApplication.topLevelWidgets():
         if tl == win or not tl.isVisible():
             continue
