@@ -1,8 +1,19 @@
 # Plan de implementación — Módulo Habilidades DBT
 
 **Fecha:** 2026-06-14  
-**Estado:** plan de producto e implementación; no incluye cambios de código  
+**Estado:** implementación técnica validada contra `fba804a` el 2026-06-21; la revisión
+profesional DBT sigue siendo gate externo de release, no trabajo de código local.  
 **Objetivo:** retirar el módulo paciente **Visualizador de Evolución Anímica** y ocupar su lugar con un módulo de práctica de habilidades DBT claramente distinto del Registro de Pensamientos TCC.
+
+## Estado de cierre técnico
+
+- `app/modules/evolucion_qt.py` no existe y no quedan consumidores directos de
+  `ModuloEvolucion`, `app.modules.evolucion_qt`, `text.module.evolucion.*` ni navegación
+  `evolucion` en código vivo.
+- `app/modules/dbt_qt.py`, Home/main, QA, build, SQLite, Supabase, sync, Hub, PDF e IA Hub
+  referencian DBT con los seams actuales.
+- Validación focal DBT: `pytest tests\test_dbt_module.py tests\test_dbt_visual_contract.py tests\test_ra5_dbt_skill_version_canonico.py tests\test_home_visual_contract.py::test_visual_qa_home_statuses_match_mockup tests\test_rb7_pdf_consistency.py tests\test_s0_1_fetch_patient_data.py -q` -> 37 passed.
+- Validación global reciente: `pytest tests/` -> 317 passed, `runtime_live_probe.py --all --theme both` -> 22/22, `capture_v8.py --all --theme both` -> 98/98, `build_neuromood.py --dry-run` -> preflight OK.
 
 ---
 
