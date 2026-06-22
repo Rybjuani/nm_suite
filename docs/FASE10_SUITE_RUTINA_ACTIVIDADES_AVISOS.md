@@ -44,13 +44,14 @@
 | `suite-actividades-filtered-{dark,light}` | revisado — filtro por familia con resultados |
 | `suite-actividades-marked-hice-{dark,light}` | revisado — marcadas vs activas, botones equivalentes |
 | `suite-avisos-{dark,light}` | revisado — sin duplicación Completado/Hecho |
-| `suite-avisos-completed-{dark,light}` | revisado — completados solo con badge "Completado" |
-| `suite-avisos-empty-{dark,light}` | revisado — NMEmptyState "Sin recordatorios asignados" |
 | `suite-avisos-filter-activos-{dark,light}` | revisado — filtro Activos, badges/acciones claros |
 | `suite-avisos-search-{dark,light}` | revisado — búsqueda con resultados |
+| `suite-avisos-empty-{dark,light}` | revisado — NMEmptyState "Sin recordatorios asignados" |
+
+> **Nota (2026-06-22):** `avisos-completed` (microestado de marcar un aviso) retirado del set canónico; candidato a `extended_runtime_qa`. Se incorpora `avisos-today` (filtro Hoy) que sí tiene pantalla canónica en el mockup. Conteo canónico total: `canonical_mockup_parity=86` (43 vistas × 2 temas).
 
 ## Deuda pendiente exacta
-- Ninguna en el alcance de Fase 10. Las 13 vistas (26 capturas) quedan `revisado`.
+- Ninguna en el alcance de Fase 10. Las 12 vistas canónicas (24 capturas) quedan `revisado`; `avisos-today` pendiente de primera inspección.
 - Fuera de alcance (no son deuda de Fase 10): quedan `pendiente`/`parcial` en la matriz `animo-note-filled`, `evolucion-monthly`, `pacientes-filter-sin-registros`, `pacientes-filter-sin-sync` (estados sueltos/data-dependent), más los `parcial` data-dependent ya documentados (empties/filtros/standalone). Se resuelven en la Fase 11 (regresión final) o quedan documentados como dependientes de datos reales.
 
 ## Estado

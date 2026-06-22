@@ -278,22 +278,9 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 8},
                         {"action": "capture", "view": "respiracion"}],
         },
-        "respiracion-preset-3min": {
-            "label": "Respiracion preset 3 min",
-            "parent": "respiracion",
-            "actions": [{"action": "navigate", "view": "respiracion"},
-                        {"action": "click", "text_contains": "3 min"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "respiracion-preset-3min"}],
-        },
-        "respiracion-preset-10min": {
-            "label": "Respiracion preset 10 min",
-            "parent": "respiracion",
-            "actions": [{"action": "navigate", "view": "respiracion"},
-                        {"action": "click", "text_contains": "10 min"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "respiracion-preset-10min"}],
-        },
+        # respiracion-preset-3min / respiracion-preset-10min: microestados de
+        # interacción (click en preset chip). Movidos a extended_runtime_qa;
+        # no participan del gate de paridad mockup (canonical_mockup_parity=86).
         "respiracion-running": {
             "label": "Respiracion running (inhala)",
             "parent": "respiracion",
@@ -456,22 +443,9 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "timer-paused"}],
         },
-        "timer-preset-5min": {
-            "label": "Timer preset 5 min",
-            "parent": "timer",
-            "actions": [{"action": "navigate", "view": "timer"},
-                        {"action": "call", "func": "_timer_select_preset", "seconds": 5 * 60},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "timer-preset-5min"}],
-        },
-        "timer-preset-45min": {
-            "label": "Timer preset 45 min",
-            "parent": "timer",
-            "actions": [{"action": "navigate", "view": "timer"},
-                        {"action": "call", "func": "_timer_select_preset", "seconds": 45 * 60},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "timer-preset-45min"}],
-        },
+        # timer-preset-5min / timer-preset-45min: microestados de interacción
+        # (click en chip de duración). Movidos a extended_runtime_qa;
+        # no participan del gate de paridad mockup (canonical_mockup_parity=86).
         # 2026-06: Timer empty state — sin asignación `patient:<id>` ni fixture
         # QA. Verifica que el módulo muestra el mensaje de empty state y los
         # controles quedan deshabilitados (regla clínica: no hay presets
@@ -510,13 +484,15 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "avisos-search"}],
         },
-        "avisos-completed": {
-            "label": "Avisos + completado",
+        # avisos-completed: microestado de interacción (marcar aviso como hecho).
+        # Movido a extended_runtime_qa; no participa del gate canónico.
+        "avisos-today": {
+            "label": "Avisos filtro Hoy",
             "parent": "avisos",
             "actions": [{"action": "navigate", "view": "avisos"},
-                        {"action": "call", "func": "_avisos_complete_first"},
-                        {"action": "drain", "cycles": 8},
-                        {"action": "capture", "view": "avisos-completed"}],
+                        {"action": "call", "func": "_avisos_filter_hoy"},
+                        {"action": "drain", "cycles": 6},
+                        {"action": "capture", "view": "avisos-today"}],
         },
         "avisos-empty": {
             "label": "Avisos empty state deterministico",
@@ -1249,6 +1225,15 @@ def _avisos_filter_activos(win, qapp, action):
             row["activo"] = 0
     if hasattr(target, '_on_filter_changed'):
         target._on_filter_changed("activos")
+    _drain(qapp, cycles=6)
+
+
+@_register_helper
+def _avisos_filter_hoy(win, qapp, action):
+    """Aplica filtro Hoy en Avisos."""
+    target = _module_target(win)
+    if hasattr(target, '_on_filter_changed'):
+        target._on_filter_changed("hoy")
     _drain(qapp, cycles=6)
 
 

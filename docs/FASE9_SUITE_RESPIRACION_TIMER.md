@@ -41,17 +41,15 @@
 | `suite-respiracion-{dark,light}` (idle) | revisado — card "Ciclos" (no BPM), historial poblado sin corte |
 | `suite-respiracion-running-{dark,light}` | revisado — "Ciclos 0" en lugar de pulso simulado, círculo con fase+countdown |
 | `suite-respiracion-paused-{dark,light}` | revisado — pausa (Reanudar), Ciclos honesto |
-| `suite-respiracion-preset-3min-{dark,light}` | revisado — preset 3 min, card Ciclos |
-| `suite-respiracion-preset-10min-{dark,light}` | revisado — preset 10 min, card Ciclos |
 | `suite-respiracion-historial-{dark,light}` | revisado — "Sin sesiones." centrado |
 | `suite-timer-{dark,light}` (idle) | revisado — ring focal, controles media, sesiones sin corte inicial |
 | `suite-timer-running-{dark,light}` | revisado — "Sesión en curso", sin métricas falsas |
 | `suite-timer-paused-{dark,light}` | revisado — pausa, controles reconocibles |
-| `suite-timer-preset-5min-{dark,light}` | revisado — preset 5 min |
-| `suite-timer-preset-45min-{dark,light}` | revisado — preset 45 min |
+
+> **Nota (2026-06-22):** `respiracion-preset-3min/10min` y `timer-preset-5min/45min` son microestados de interacción (click en preset chip) sin pantalla canónica en el mockup de referencia. Retirados del set canónico (`canonical_mockup_parity=86`); candidatos a `extended_runtime_qa` si se retoman.
 
 ## Deuda pendiente exacta
-- Ninguna en el alcance de Fase 9. Las 11 vistas (22 capturas) quedan `revisado`.
+- Ninguna en el alcance de Fase 9. Las 7 vistas canónicas (14 capturas) quedan `revisado`.
 - Se retiró el flag `DUPLICATE_SUSPECT` de respiracion/respiracion-historial: con "Ciclos" + estado vacío centrado las capturas dejaron de compartir hash.
 
 ## Estado

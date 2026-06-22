@@ -93,20 +93,6 @@ MOCKUP_TARGETS: tuple[MockupTarget, ...] = (
     _t("suite", "animo", "animo"),
     # Suite - Breathing
     _t("suite", "respiracion", "respiracion", "idle"),
-    _t(
-        "suite",
-        "respiracion-preset-3min",
-        "respiracion",
-        "idle",
-        clicks=("#brPreset [data-m='3']",),
-    ),
-    _t(
-        "suite",
-        "respiracion-preset-10min",
-        "respiracion",
-        "idle",
-        clicks=("#brPreset [data-m='10']",),
-    ),
     _t("suite", "respiracion-running", "respiracion", "running"),
     _t("suite", "respiracion-paused", "respiracion", "paused"),
     # Suite - CBT thought record
@@ -130,15 +116,13 @@ MOCKUP_TARGETS: tuple[MockupTarget, ...] = (
     _t("suite", "avisos", "avisos", "all"),
     _t("suite", "avisos-filter-activos", "avisos", "active"),
     _t("suite", "avisos-search", "avisos", "search"),
+    _t("suite", "avisos-today", "avisos", "today"),
     _t("suite", "avisos-empty", "avisos", "empty"),
-    _t("suite", "avisos-completed", "avisos", "all", clicks=(".av-do",)),
     # Suite - Timer
     _t("suite", "timer", "timer", "idle"),
     _t("suite", "timer-running", "timer", "running"),
     _t("suite", "timer-paused", "timer", "paused"),
     _t("suite", "timer-empty", "timer", "empty"),
-    _t("suite", "timer-preset-5min", "timer", "idle", clicks=("[data-min='5']",)),
-    _t("suite", "timer-preset-45min", "timer", "idle", clicks=("[data-min='45']",)),
     # Suite - DBT
     _t("suite", "dbt-now", "dbtnow"),
     _t("suite", "dbt-library", "dbtlib"),
