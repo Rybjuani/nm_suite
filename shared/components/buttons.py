@@ -152,8 +152,10 @@ class NMButton(QPushButton):
         height: int | None = None,
         variant: str = "gradient",
         size: str = "md",
+        icon_name: str = None,
     ):
         super().__init__(text, parent)
+        self._icon_name = icon_name
         self._modo = norm_modo(modo or _tm().modo)
         self._variant = _NM_BUTTON_VARIANT_ALIASES.get(variant, variant)
         if self._variant not in ("gradient", "secondary", "ghost", "soft", "danger"):
@@ -315,10 +317,30 @@ class NMButton(QPushButton):
                 else v3c("text2", self._modo)
             )
 
-        # Label
+        # Label (with optional leading icon)
         p.setPen(QPen(text_color))
         p.setFont(self.font())
-        p.drawText(rect.toRect(), Qt.AlignmentFlag.AlignCenter, self.text())
+        _icon_name = getattr(self, "_icon_name", None)
+        if _icon_name:
+            try:
+                from shared.icons_svg import nm_svg_pixmap
+                _isz = 13 if self._size == "sm" else 15
+                _pix = nm_svg_pixmap(_icon_name, text_color.name(), _isz)
+            except Exception:
+                _pix = None
+            if _pix and not _pix.isNull():
+                _gap = 5
+                _tw = p.fontMetrics().horizontalAdvance(self.text())
+                _cx = rect.center().x()
+                _ix = _cx - (_tw + _gap + _isz) / 2
+                _iy = rect.center().y() - _isz / 2
+                p.drawPixmap(int(_ix), int(_iy), _isz, _isz, _pix)
+                _tr = QRectF(_ix + _isz + _gap, rect.top(), _tw + 4, rect.height())
+                p.drawText(_tr, Qt.AlignmentFlag.AlignCenter, self.text())
+            else:
+                p.drawText(rect.toRect(), Qt.AlignmentFlag.AlignCenter, self.text())
+        else:
+            p.drawText(rect.toRect(), Qt.AlignmentFlag.AlignCenter, self.text())
 
         p.end()
 
@@ -483,8 +505,10 @@ class NMButtonOutline(QPushButton):
         modo: str = None,
         toggleable: bool = False,
         size: str = "md",
+        icon_name: str = None,
     ):
         super().__init__(text, parent)
+        self._icon_name = icon_name
         self._modo = norm_modo(modo or _tm().modo)
         self._hover = False
         self._active = False
@@ -557,7 +581,27 @@ class NMButtonOutline(QPushButton):
 
         p.setPen(QPen(text_color))
         p.setFont(self.font())
-        p.drawText(rect.toRect(), Qt.AlignmentFlag.AlignCenter, self.text())
+        _icon_name = getattr(self, "_icon_name", None)
+        if _icon_name:
+            try:
+                from shared.icons_svg import nm_svg_pixmap
+                _isz = 13 if self._size == "sm" else 15
+                _pix = nm_svg_pixmap(_icon_name, text_color.name(), _isz)
+            except Exception:
+                _pix = None
+            if _pix and not _pix.isNull():
+                _gap = 5
+                _tw = p.fontMetrics().horizontalAdvance(self.text())
+                _cx = rect.center().x()
+                _ix = _cx - (_tw + _gap + _isz) / 2
+                _iy = rect.center().y() - _isz / 2
+                p.drawPixmap(int(_ix), int(_iy), _isz, _isz, _pix)
+                _tr = QRectF(_ix + _isz + _gap, rect.top(), _tw + 4, rect.height())
+                p.drawText(_tr, Qt.AlignmentFlag.AlignCenter, self.text())
+            else:
+                p.drawText(rect.toRect(), Qt.AlignmentFlag.AlignCenter, self.text())
+        else:
+            p.drawText(rect.toRect(), Qt.AlignmentFlag.AlignCenter, self.text())
         p.end()
 
     def enterEvent(self, event):

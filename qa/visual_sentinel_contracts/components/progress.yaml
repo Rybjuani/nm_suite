@@ -3,6 +3,6 @@ contracts:
   - id: progress_no_error_color_outside_error
     severity: P2
     description: >
-      Detecta progress dots / rings con color/nombre de error o warning fuera
-      de un estado de error. Conservativo (heuristica sobre objectName).
+      Widgets de progreso (NMProgressBar/NMRingPulse) con nombre de
+      error/warning/danger fuera de un estado de error.
     check: progress_dot_error_color

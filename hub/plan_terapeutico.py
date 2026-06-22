@@ -26,7 +26,7 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
 )
 
-from shared.components import NMButton, NMButtonOutline, NMCard, NMIcon, NMInput, NMToast, nm_confirm
+from shared.components import NMButton, NMButtonOutline, NMCard, NMInput, NMToast, nm_confirm
 from shared.theme_qt import (
     norm_modo,
     qfont,
@@ -118,42 +118,8 @@ def _empty_hint_label(text: str, modo: str) -> QWidget:
 
 
 def _activation_empty_state(modo: str) -> QWidget:
-    """Empty compacto para Activacion: icono + titulo, sin funciones nuevas."""
-    modo = norm_modo(modo)
-    wrap = QWidget()
-    wrap.setObjectName("ActivationEmptyState")
-    wrap.setStyleSheet("background: transparent;")
-    wrap.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
-    wrap.setMinimumHeight(128)
-    wrap.setMaximumHeight(156)
-
-    lay = QVBoxLayout(wrap)
-    lay.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], V3_SP["md"])
-    lay.setSpacing(V3_SP["sm"])
-    lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-    chip = QFrame()
-    chip.setObjectName("ActivationEmptyIconChip")
-    chip.setFixedSize(48, 48)
-    chip.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-    chip.setStyleSheet(
-        f"#ActivationEmptyIconChip {{ background: {qcolor_to_rgba_css(v3c('primarySoft', modo))}; "
-        "border-radius: 14px; }}"
-    )
-    chip_lay = QHBoxLayout(chip)
-    chip_lay.setContentsMargins(0, 0, 0, 0)
-    icon = NMIcon("activity", size=24, color=v3c("primary", modo).name(), modo=modo)
-    chip_lay.addWidget(icon, 0, Qt.AlignmentFlag.AlignCenter)
-    lay.addWidget(chip, 0, Qt.AlignmentFlag.AlignCenter)
-
-    lbl = QLabel("Sin actividades personalizadas aún.")
-    lbl.setObjectName("ActivationEmptyTitle")
-    lbl.setWordWrap(True)
-    lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    lbl.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_semibold"]))
-    lbl.setStyleSheet(f"color: {v3c('ink_secondary', modo).name()}; background: transparent;")
-    lay.addWidget(lbl, 0, Qt.AlignmentFlag.AlignCenter)
-    return wrap
+    """Empty calmo para Activacion: solo texto, sin chip de icono."""
+    return _empty_hint_label("Sin actividades personalizadas aún.", modo)
 
 
 def _assigned_row_qss(modo: str) -> str:
@@ -350,7 +316,7 @@ class _PresetTimerTab(QWidget):
         form_lay.addLayout(btn_row)
 
         ia_row = QHBoxLayout()
-        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm")
+        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm", icon_name="sparkle")
         self._ia_btn.setFixedHeight(32)
         self._ia_btn.clicked.connect(self._autofill_with_ia)
         ia_row.addWidget(self._ia_btn)
@@ -634,7 +600,7 @@ class _PresetRecordatoriosTab(QWidget):
         form_lay.addLayout(btn_row)
 
         ia_row = QHBoxLayout()
-        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm")
+        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm", icon_name="sparkle")
         self._ia_btn.setFixedHeight(32)
         self._ia_btn.clicked.connect(self._autofill_with_ia)
         ia_row.addWidget(self._ia_btn)
@@ -864,7 +830,7 @@ class _PresetRutinaTab(QWidget):
         form_lay.addWidget(self._save_btn, alignment=Qt.AlignmentFlag.AlignLeft)
 
         ia_row = QHBoxLayout()
-        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm")
+        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm", icon_name="sparkle")
         self._ia_btn.setFixedHeight(32)
         self._ia_btn.clicked.connect(self._autofill_with_ia)
         ia_row.addWidget(self._ia_btn)
@@ -1112,7 +1078,7 @@ class _PresetActivacionTab(QWidget):
         )
         self._save_btn.clicked.connect(self._save_activity)
         action_row.addWidget(self._save_btn)
-        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm")
+        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm", icon_name="sparkle")
         self._ia_btn.setFixedHeight(32)
         self._ia_btn.clicked.connect(self._autofill_with_ia)
         action_row.addWidget(self._ia_btn)

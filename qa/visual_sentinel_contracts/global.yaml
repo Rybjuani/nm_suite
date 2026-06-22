@@ -1,36 +1,23 @@
 # Contratos globales del Visual Sentinel.
 #
-# Estos contratos corren sobre TODAS las pantallas descubiertas automaticamente.
-# No estan sesgados por 3 pantallas ni por una lista manual: se aplican a cada
-# estado del grafo de navegacion que el Sentinel descubre en vivo.
-#
-# Severidades:
-#   P0 = bloqueante, evidencia invalida.
-#   P1 = bloqueante, requiere accion antes de cerrar la auditoria.
-#   P2 = no bloqueante, deuda visible a revisar.
-#
-# Cada contrato referencia un `check` implementado en qa/visual_sentinel.py
-# (registro _CHECKS). Los `params` son umbrales ajustables sin tocar codigo.
+# CORREN SOBRE TODAS LAS PANTALLAS DESCUBIERTAS por el crawler generico.
+# No estan sesgados por pantallas especificas: son reglas por componente/rol/
+# metadata (objectName/accessibleName/estructura), no por labels de botones
+# concretos. Si se agregan pantallas nuevas, estos contratos las cubren igual.
 
 contracts:
   - id: no_blank_or_flat_screens
     severity: P0
     description: >
       Ninguna pantalla puede ser blank/flat (casi todo blanco/negro o sin
-      varianza tonal). Una captura asi no puede contar como evidencia de estado
-      renderizado y bloquea la auditoria general.
+      varianza tonal). Bloquea la auditoria general.
     check: blank_or_flat
-    params:
-      max_gray_mean: 0.985
-      min_gray_mean: 0.015
-      min_gray_stddev: 0.004
 
   - id: no_duplicate_suspect_between_states
     severity: P1
     description: >
       Estados distintos no pueden ser visualmente identicos (phash cercano o
-      sha256 igual). Un duplicado indica que un estado no se alcanzo de verdad
-      (fallback silencioso o navegacion rota).
+      sha256 igual). Indica fallback o navegacion rota.
     check: duplicate_suspect
     params:
       max_distance: 5
@@ -38,8 +25,8 @@ contracts:
   - id: no_widgets_out_of_viewport
     severity: P1
     description: >
-      Ningun widget visible (con texto o clickeable) puede quedar fuera del
-      viewport de la ventana a la resolucion canonica de captura.
+      Ningun widget visible (con texto o clickeable, fuera de scroll areas) puede
+      quedar fuera del viewport a la resolucion canonica.
     check: out_of_viewport
     params:
       tolerance: 2
@@ -48,7 +35,7 @@ contracts:
     severity: P2
     description: >
       No se permiten solapes claros entre widgets visibles con contenido
-      (interseccion >= 45% del widget menor). Heuristico conservativo.
+      (interseccion >= 45% del menor), excluyendo anidamiento padre/hijo.
     check: widget_overlap
     params:
       min_overlap_ratio: 0.45
@@ -57,20 +44,26 @@ contracts:
     severity: P1
     description: >
       Toda pantalla descubierta sin baseline aprobada se marca
-      NEW_STATE_UNREVIEWED y bloquea el cierre general hasta revision humana.
-      El Sentinel NUNCA autoaprueba estados nuevos.
+      NEW_STATE_UNREVIEWED y bloquea el cierre general. El Sentinel nunca
+      autoaprueba.
     check: new_state_unreviewed
 
   - id: no_elided_primary_text
     severity: P2
     description: >
-      No permitir texto principal cortado/elidido sin justificacion.
       Detecta NMElidedLabel visible (posible truncacion de copys primarios).
     check: elided_primary_text
+
+  - id: no_control_without_visual_metadata
+    severity: P2
+    description: >
+      Todo control clickeable debe exponer metadata visual suficiente (texto,
+      icono u objectName/accessibleName). Un control opaco no es auditable.
+    check: control_without_visual_metadata
 
   - id: no_progress_dot_error_color_outside_error
     severity: P2
     description: >
-      Detecta progress dots / rings con nombre de error/warning/danger fuera
-      de un estado de error.
+      Detecta widgets de progreso con nombre de error/warning/danger fuera de
+      un estado de error.
     check: progress_dot_error_color

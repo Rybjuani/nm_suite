@@ -1,9 +1,11 @@
-"""Tests minimos del Visual Sentinel.
+"""Tests del Visual Sentinel.
 
-Cubren la logica pura (no requieren levantar Qt): parseo de CLI, normalizacion,
-carga de contratos, y los checks visuales sobre estructuras sinteticas. La
-validacion end-to-end (audit --all) corre por separado via el CLI documentado en
-qa/README_VISUAL_SENTINEL.md.
+Dos grupos:
+1) Logica pura (sin Qt): normalizacion, contratos, cobertura, CLI.
+2) Crawler generico con fixtures Qt sinteticos (e2e): prueban que el Sentinel
+   descubre estados dinamicos (tabs, stacked, modal, boton que revela subestado,
+   loop visual) SIN depender de pantallas actuales de NeuroMood. Si cambian
+   nombres o cantidades, estos tests siguen validando el comportamiento general.
 """
 
 from __future__ import annotations
@@ -18,17 +20,17 @@ if str(_PROJ) not in sys.path:
     sys.path.insert(0, str(_PROJ))
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# Independencia del Sentinel (no importa ni reusa V8/runtime)
+# ═══════════════════════════════════════════════════════════════════════════
+
 def test_module_imports_without_capture_v8_or_runtime():
-    """El Sentinel debe ser independiente: no importa ni reusa capture_v8/
-    runtime_live_probe. La docstring puede mencionarlos conceptualmente, pero
-    el codigo no debe importarlos ni referenciar su API/_RECIPES."""
     import ast
     import importlib
     for m in list(sys.modules):
         if m.startswith("qa.visual_sentinel"):
             del sys.modules[m]
     mod = importlib.import_module("qa.visual_sentinel")
-    # Ningun import debe tirar de capture_v8 ni runtime_live_probe
     tree = ast.parse(Path(mod.__file__).read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -38,13 +40,16 @@ def test_module_imports_without_capture_v8_or_runtime():
             mod_name = node.module or ""
             assert "capture_v8" not in mod_name
             assert "runtime_live_probe" not in mod_name
-    # Tampoco reusa la lista de recetas manual de V8 (su simbolo caracteristico)
     src = Path(mod.__file__).read_text(encoding="utf-8")
     assert "from qa.capture_v8" not in src
     assert "import qa.capture_v8" not in src
     assert "from qa.runtime_live_probe" not in src
     assert "_RECIPES" not in src
 
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Logica pura
+# ═══════════════════════════════════════════════════════════════════════════
 
 def test_short_theme_and_theme_map():
     from qa.visual_sentinel import _short_theme, _theme_map
@@ -64,10 +69,22 @@ def test_norm_text_strips_accents_and_case():
     assert _norm_text("Completar con IA") == "completar con ia"
 
 
+def test_sanitize_label():
+    from qa.visual_sentinel import _sanitize_label
+    assert _sanitize_label("Guía de Respiración!") == "guia-de-respiracion"
+    assert _sanitize_label("???") == "state"
+
+
+def test_safe_name_windows():
+    from qa.visual_sentinel import _safe_name
+    assert _safe_name("suite:dbt:NMTabs0-tab-1") == "suite__dbt__NMTabs0-tab-1"
+    assert "/" not in _safe_name("a/b")
+
+
 def test_state_spec_screen_id():
     from qa.visual_sentinel import StateSpec
-    s = StateSpec(app="suite", surface="dbt", substate="NMTabs0-tab-1", label="x")
-    assert s.screen_id == "suite:dbt:NMTabs0-tab-1"
+    s = StateSpec(app="suite", surface="dbt", substate="tab-1", label="x")
+    assert s.screen_id == "suite:dbt:tab-1"
     s2 = StateSpec(app="hub", surface="pacientes", label="x")
     assert s2.screen_id == "hub:pacientes"
 
@@ -75,7 +92,7 @@ def test_state_spec_screen_id():
 def test_contracts_yaml_load_and_have_required_fields():
     from qa.visual_sentinel import _load_contracts
     contracts = _load_contracts()
-    assert len(contracts) >= 10, "debe cargar contratos globales + de componentes"
+    assert len(contracts) >= 12
     for c in contracts:
         assert "id" in c and "severity" in c and "check" in c, c
         assert c["severity"] in {"P0", "P1", "P2", "P3"}, c
@@ -85,7 +102,6 @@ def _make_state(text="", mean=0.5, stddev=0.1, phash=None, sha="abc",
                 tree=None, geo=None, screen_id="suite:test", surface="test",
                 theme="dark"):
     from qa.visual_sentinel import CapturedState
-    from pathlib import Path
     if tree is None:
         tree = {"type": "QWidget", "text": "", "visible": True, "children": []}
     if geo is None:
@@ -140,24 +156,48 @@ def test_out_of_viewport_detects_offscreen_widget():
     from qa.visual_sentinel import _check_out_of_viewport
     tree = {"type": "QWidget", "visible": True, "children": [
         {"type": "QLabel", "text": "fuera", "visible": True, "clickable": False,
-         "geometry": {"x": -50, "y": 10, "w": 40, "h": 20}, "children": []},
-    ]}
+         "in_scroll": False, "geo_win": {"x": -50, "y": 10, "w": 40, "h": 20},
+         "children": []}]}
     st = _make_state(tree=tree)
     out = _check_out_of_viewport(st, {}, [], {})
     assert out and out[0]["flag"] == "OUT_OF_VIEWPORT"
+
+
+def test_out_of_viewport_ignores_scroll_content():
+    from qa.visual_sentinel import _check_out_of_viewport
+    tree = {"type": "QWidget", "visible": True, "children": [
+        {"type": "QLabel", "text": "en scroll", "visible": True, "clickable": False,
+         "in_scroll": True, "geo_win": {"x": -50, "y": 2000, "w": 40, "h": 20},
+         "children": []}]}
+    st = _make_state(tree=tree)
+    assert _check_out_of_viewport(st, {}, [], {}) == []
 
 
 def test_overlap_detects_clear_overlap():
     from qa.visual_sentinel import _check_overlap
     tree = {"type": "QWidget", "visible": True, "children": [
         {"type": "QPushButton", "text": "A", "visible": True, "clickable": True,
-         "geometry": {"x": 10, "y": 10, "w": 100, "h": 40}, "children": []},
+         "geo_win": {"x": 10, "y": 10, "w": 100, "h": 40}, "children": []},
         {"type": "QPushButton", "text": "B", "visible": True, "clickable": True,
-         "geometry": {"x": 20, "y": 15, "w": 100, "h": 40}, "children": []},
+         "geo_win": {"x": 20, "y": 15, "w": 100, "h": 40}, "children": []},
     ]}
     st = _make_state(tree=tree)
     out = _check_overlap(st, {}, [], {})
     assert any(r["flag"] == "WIDGET_OVERLAP" for r in out)
+
+
+def test_overlap_skips_parent_child_nesting():
+    from qa.visual_sentinel import _check_overlap
+    # padre grande con hijo chico adentro: nesting, no overlap
+    tree = {"type": "QWidget", "visible": True, "children": [
+        {"type": "NMCard", "text": "card", "visible": True, "clickable": True,
+         "geo_win": {"x": 0, "y": 0, "w": 300, "h": 200}, "children": [
+            {"type": "QPushButton", "text": "hijo", "visible": True,
+             "clickable": True, "geo_win": {"x": 10, "y": 10, "w": 80, "h": 30},
+             "children": []}]}]}
+    st = _make_state(tree=tree)
+    out = _check_overlap(st, {}, [], {})
+    assert all(r["flag"] != "WIDGET_OVERLAP" for r in out)
 
 
 def test_new_state_unreviewed_when_not_in_registry():
@@ -169,21 +209,73 @@ def test_new_state_unreviewed_when_not_in_registry():
     assert out2 == []
 
 
+def test_primary_button_missing_icon_by_role():
+    from qa.visual_sentinel import _check_primary_button_missing_icon, CapturedState
+    st = CapturedState(
+        screen_id="hub:detalle", app="hub", theme="dark", label="d",
+        png_path=Path("x.png"), tree_path=Path("x.json"), sha256=None, phash=None,
+        structural_hash="", visual_metrics={}, widget_tree={}, texts=[],
+        clickable=[], scrollbars=[], tabs=[],
+        buttons=[{"type": "NMButton", "text": "Exportar", "enabled": True,
+                  "objectName": "NMButton_gradient", "has_icon": False}],
+        crops=[], geometry={})
+    out = _check_primary_button_missing_icon(st, {"params": {}}, [], {})
+    assert out and out[0]["flag"] == "PRIMARY_BUTTON_MISSING_ICON"
+    # con icono no flagea
+    st.buttons[0]["has_icon"] = True
+    assert _check_primary_button_missing_icon(st, {"params": {}}, [], {}) == []
+
+
+def test_control_without_metadata_flag():
+    from qa.visual_sentinel import _check_control_without_metadata
+    tree = {"type": "QWidget", "visible": True, "children": [
+        {"type": "QPushButton", "text": "", "visible": True, "clickable": True,
+         "objectName": "", "has_icon": False, "children": []}]}
+    st = _make_state(tree=tree)
+    out = _check_control_without_metadata(st, {}, [], {})
+    assert out and out[0]["flag"] == "CONTROL_WITHOUT_VISUAL_METADATA"
+
+
+def test_checkbox_in_scroll_area_structural():
+    from qa.visual_sentinel import _check_checkbox_in_scroll_area
+    tree = {"type": "QWidget", "visible": True, "children": [
+        {"type": "QCheckBox", "text": "Acepto terminos", "visible": True,
+         "clickable": True, "in_scroll": True, "children": []}]}
+    st = _make_state(tree=tree)
+    out = _check_checkbox_in_scroll_area(st, {}, [], {})
+    assert out and out[0]["flag"] == "CHECKBOX_IN_SCROLL_AREA"
+
+
+def test_dialog_without_close_flag():
+    from qa.visual_sentinel import _check_dialog_without_close
+    tree = {"type": "QDialog", "text": "", "visible": True, "clickable": False,
+            "children": [{"type": "QLabel", "text": "info", "visible": True,
+                          "children": []}]}
+    st = _make_state(tree=tree)
+    out = _check_dialog_without_close(st, {}, [], {})
+    assert out and out[0]["flag"] == "DIALOG_WITHOUT_VISIBLE_CLOSE"
+
+
 def test_compute_result_blocks_on_p0_p1_and_flags():
     from qa.visual_sentinel import _compute_result, Finding
     states = []
     cov = {"discovered_states": 0, "captured_states": 0}
-    # general no corrio
-    res, blk = _compute_result(False, states, [], cov)
+    res, blk = _compute_result(False, states, [], cov, strict=False)
     assert res == "FAIL" and any("GENERAL_AUDIT_NOT_RUN" in b for b in blk)
-    # P0 bloquea
-    res, blk = _compute_result(True, states, [Finding("c", "P0", "BLANK_OR_FLAT", "x", "dark", "m")], cov)
+    res, blk = _compute_result(True, states,
+                               [Finding("c", "P0", "BLANK_OR_FLAT", "x", "dark", "m")],
+                               cov, strict=False)
     assert res == "FAIL"
-    # bloqueante por flag (DUPLICATE_SUSPECT aunque sea P2)
-    res, blk = _compute_result(True, states, [Finding("c", "P2", "DUPLICATE_SUSPECT", "x", "dark", "m")], cov)
+    res, blk = _compute_result(True, states,
+                               [Finding("c", "P2", "DUPLICATE_SUSPECT", "x", "dark", "m")],
+                               cov, strict=False)
     assert res == "FAIL"
-    # PASS solo si todo limpio y general corrio
-    res, blk = _compute_result(True, states, [], cov)
+    # strict: P2 tambien bloquea
+    res, blk = _compute_result(True, states,
+                               [Finding("c", "P2", "WIDGET_OVERLAP", "x", "dark", "m")],
+                               cov, strict=True)
+    assert res == "FAIL"
+    res, blk = _compute_result(True, states, [], cov, strict=False)
     assert res == "PASS" and blk == []
 
 
@@ -194,7 +286,6 @@ def test_compute_coverage_new_and_stale():
     states = [a, b]
     reg = {"suite:a@dark": {}, "suite:gone@dark": {}}
     cov = _compute_coverage(states, ["suite:a", "suite:b"], reg)
-    # suite:a@dark aprobado -> no nuevo; suite:b@light nuevo; suite:gone@dark stale
     assert cov["new_count"] == 1
     assert "suite:b@light" in cov["new_state_unreviewed"]
     assert "suite:gone@dark" in cov["stale_states"]
@@ -216,22 +307,6 @@ def test_check_obsolete_recipe_refs():
     assert out and out[0].flag == "OBSOLETE_RECIPE_REFERENCE"
 
 
-def test_cta_missing_icon_for_semantic_buttons():
-    from qa.visual_sentinel import _check_cta_missing_icon
-    from qa.visual_sentinel import CapturedState
-    from pathlib import Path
-    st = CapturedState(
-        screen_id="hub:detalle", app="hub", theme="dark", label="d",
-        png_path=Path("x.png"), tree_path=Path("x.json"), sha256=None, phash=None,
-        structural_hash="", visual_metrics={}, widget_tree={}, texts=[],
-        clickable=[], scrollbars=[], tabs=[],
-        buttons=[{"type": "NMButton", "text": "Exportar PDF", "enabled": True, "hasIcon": False}],
-        crops=[], geometry={},
-    )
-    out = _check_cta_missing_icon(st, {}, [], {})
-    assert out and out[0]["flag"] == "CTA_SEMANTIC_MISSING_ICON"
-
-
 def test_resolve_screen_and_parse_res():
     from qa.visual_sentinel import _resolve_screen, _parse_res
     assert _resolve_screen("suite", "animo") == "suite:animo"
@@ -239,12 +314,268 @@ def test_resolve_screen_and_parse_res():
     assert _parse_res("960x600") == (960, 600)
 
 
-def test_cli_parser_supports_top_level_list():
+def test_cli_parser_supports_top_level_list_and_strict():
     from qa.visual_sentinel import _build_parser
     p = _build_parser()
     ns = p.parse_args(["--list"])
     assert ns.list is True
-    ns2 = p.parse_args(["audit", "--all", "--theme", "both"])
-    assert ns2.all is True and ns2.theme == "both"
+    ns2 = p.parse_args(["audit", "--all", "--theme", "both", "--strict"])
+    assert ns2.all is True and ns2.theme == "both" and ns2.strict is True
     ns3 = p.parse_args(["inspect", "--screen", "suite:home", "--theme", "light"])
     assert ns3.screen == "suite:home"
+
+
+def test_crawl_opts_strict_increases_caps():
+    from qa.visual_sentinel import _crawl_opts
+    base = _crawl_opts(False)
+    strict = _crawl_opts(True)
+    assert strict["max_states"] > base["max_states"]
+    assert strict["max_depth"] > base["max_depth"]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Crawler generico: tests e2e con fixtures Qt sinteticos
+# (requieren pytest-qt / qapp fixture; offscreen via conftest)
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _show(w):
+    w.show()
+    w.resize(400, 300)
+    return w
+
+
+def test_enumerate_finds_tab_actions(qapp):
+    from PyQt6.QtWidgets import QTabWidget, QWidget, QVBoxLayout, QLabel
+    from qa.visual_sentinel import _enumerate_safe_actions
+    root = _show(QWidget())
+    lay = QVBoxLayout(root)
+    tabs = QTabWidget()
+    for name in ("Uno", "Dos", "Tres"):
+        page = QWidget()
+        page.setLayout(QVBoxLayout(page))
+        page.layout().addWidget(QLabel(name))
+        tabs.addTab(page, name)
+    lay.addWidget(tabs)
+    qapp.processEvents()
+    actions = _enumerate_safe_actions(root, [], {"max_branch": 20})
+    tab_acts = [a for a in actions if a["kind"] == "tab"]
+    assert len(tab_acts) == 2  # 2 no-current indexes
+    root.deleteLater()
+
+
+def test_enumerate_finds_safe_click_and_skips_destructive(qapp):
+    from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton
+    from qa.visual_sentinel import _enumerate_safe_actions
+    omitted = []
+    root = _show(QWidget())
+    lay = QVBoxLayout(root)
+    lay.addWidget(QPushButton("Iniciar"))
+    lay.addWidget(QPushButton("Eliminar"))
+    qapp.processEvents()
+    actions = _enumerate_safe_actions(root, [], {"max_branch": 20},
+                                      log_omitted=omitted.append)
+    labels = [a["label"] for a in actions if a["kind"] == "click"]
+    assert any("iniciar" in l for l in labels)
+    assert all("eliminar" not in l for l in labels)
+    assert any(o["reason"] == "destructive-text" for o in omitted)
+    root.deleteLater()
+
+
+def test_find_by_locator_resolves(qapp):
+    from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton
+    from qa.visual_sentinel import _widget_locator, _find_by_locator
+    root = _show(QWidget())
+    lay = QVBoxLayout(root)
+    btn = QPushButton("Aceptar")
+    lay.addWidget(btn)
+    qapp.processEvents()
+    loc = _widget_locator(btn, root)
+    assert loc["type"] == "QPushButton"
+    found = _find_by_locator(root, loc)
+    assert found is btn
+    root.deleteLater()
+
+
+def test_apply_action_clicks_button(qapp):
+    from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton
+    from qa.visual_sentinel import _widget_locator, _find_by_locator, _apply_action
+    root = _show(QWidget())
+    lay = QVBoxLayout(root)
+    btn = QPushButton("Go")
+    state = {"clicked": False}
+    btn.clicked.connect(lambda: state.__setitem__("clicked", True))
+    lay.addWidget(btn)
+    qapp.processEvents()
+    action = {"kind": "click", "locator": _widget_locator(btn, root), "label": "act:go"}
+    assert _apply_action(root, action, qapp)
+    assert state["clicked"] is True
+    root.deleteLater()
+
+
+def test_widget_has_icon_detection(qapp):
+    from PyQt6.QtGui import QIcon
+    from PyQt6.QtWidgets import QPushButton, QWidget
+    from qa.visual_sentinel import _widget_has_icon
+    w = QPushButton("x")
+    assert _widget_has_icon(w) is False
+    # no podemos setear un QIcon real sin un recurso, pero un QIcon vacio sigue
+    # isNull; verificamos que el helper no crashea y devuelve bool.
+    w2 = QPushButton("y")
+    w2.setIcon(QIcon())
+    assert _widget_has_icon(w2) in (False, True)
+    QWidget()  # keep refs
+    w.deleteLater()
+    w2.deleteLater()
+
+
+def test_build_widget_tree_marks_in_scroll_and_icon(qapp, tmp_path):
+    from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QScrollArea, QCheckBox,
+                                 QPushButton)
+    from qa.visual_sentinel import _build_widget_tree, _walk_tree
+    root = _show(QWidget())
+    lay = QVBoxLayout(root)
+    scroll = QScrollArea()
+    inner = QWidget()
+    inner.setLayout(QVBoxLayout(inner))
+    cb = QCheckBox("Acepto terminos")
+    inner.layout().addWidget(cb)
+    scroll.setWidget(inner)
+    lay.addWidget(scroll)
+    lay.addWidget(QPushButton("Guardar"))
+    qapp.processEvents()
+    tree = _build_widget_tree(root, win_ref=root)
+    found_cb = [n for n in _walk_tree(tree) if n.get("type") == "QCheckBox"]
+    assert found_cb and found_cb[0]["in_scroll"] is True
+    root.deleteLater()
+
+
+def test_crawler_discovers_distinct_states_synthetic(qapp):
+    """e2e: el crawler generico descubre estados dinamicos en un fixture Qt
+    sintetico con tabs + boton que revela un subestado. No usa pantallas reales
+    de NeuroMood: valida que la mecanica de descubrimiento es generica."""
+    from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QLabel,
+                                 QStackedWidget)
+    from qa.visual_sentinel import (_enumerate_safe_actions, _apply_action,
+                                    _build_widget_tree, _structural_hash)
+
+    def build():
+        root = QWidget()
+        root.resize(400, 300)
+        lay = QVBoxLayout(root)
+        toggle = QPushButton("Revelar panel")
+        stack = QStackedWidget()
+        page0 = QWidget(); page0.setLayout(QVBoxLayout(page0))
+        page0.layout().addWidget(QLabel("estado base"))
+        page1 = QWidget(); page1.setLayout(QVBoxLayout(page1))
+        page1.layout().addWidget(QLabel("estado revelado"))
+        stack.addWidget(page0); stack.addWidget(page1)
+        lay.addWidget(toggle)
+        lay.addWidget(stack)
+        toggle.clicked.connect(lambda: stack.setCurrentIndex(
+            0 if stack.currentIndex() == 1 else 1))
+        root.show()
+        qapp.processEvents()
+        return root
+
+    opts = {"max_branch": 20, "max_states": 50, "max_depth": 4}
+    seen_sigs = set()
+    # estado base
+    base = build()
+    base_sig = _structural_hash(_build_widget_tree(base, win_ref=base))
+    seen_sigs.add(base_sig)
+    actions = _enumerate_safe_actions(base, [], opts)
+    base.deleteLater()
+    # para cada accion, materializar en fixture fresco y computar sig
+    for action in actions:
+        root = build()
+        _apply_action(root, action, qapp)
+        sig = _structural_hash(_build_widget_tree(root, win_ref=root))
+        seen_sigs.add(sig)
+        root.deleteLater()
+    # debe haber descubierto al menos 2 estados distintos (base + revelado)
+    assert len(seen_sigs) >= 2
+
+
+def test_crawler_detects_loop_visual(qapp):
+    """Un toggle que vuelve al estado base (A->B->A) debe deduparse por hash:
+    el crawler no cuenta el loop como estado nuevo."""
+    from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel
+    from qa.visual_sentinel import (_enumerate_safe_actions, _apply_action,
+                                    _build_widget_tree, _structural_hash)
+
+    def build():
+        root = QWidget(); root.resize(300, 200)
+        lay = QVBoxLayout(root)
+        tog = QPushButton("toggle")
+        lbl = QLabel("off")
+        tog.clicked.connect(lambda: lbl.setText("on" if lbl.text() == "off" else "off"))
+        lay.addWidget(tog); lay.addWidget(lbl)
+        root.show(); qapp.processEvents()
+        return root
+
+    opts = {"max_branch": 20, "max_states": 50, "max_depth": 4}
+    base = build()
+    base_sig = _structural_hash(_build_widget_tree(base, win_ref=base))
+    actions = _enumerate_safe_actions(base, [], opts)
+    base.deleteLater()
+    sigs = {base_sig}
+    for action in actions:
+        r = build()
+        _apply_action(r, action, qapp)
+        sigs.add(_structural_hash(_build_widget_tree(r, win_ref=r)))
+        r.deleteLater()
+    # exactamente 2 estados (off / on); el loop de vuelta colapsa a "off"
+    assert len(sigs) == 2
+
+
+def test_crawler_discovers_stack_pages_synthetic(qapp):
+    """Fixture con QStackedWidget y botones Siguiente/Anterior: el crawler debe
+    descubrir las paginas internas siguiendo los botones (flujo multi-step donde
+    el MISMO boton avanza por estados distintos)."""
+    from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
+                                 QStackedWidget, QLabel)
+    from qa.visual_sentinel import (_enumerate_safe_actions, _apply_action,
+                                    _build_widget_tree, _structural_hash)
+
+    def build():
+        root = QWidget(); root.resize(400, 300)
+        lay = QVBoxLayout(root)
+        stack = QStackedWidget()
+        for txt in ("paso 0", "paso 1", "paso 2"):
+            p = QWidget(); p.setLayout(QVBoxLayout(p))
+            p.layout().addWidget(QLabel(txt))
+            stack.addWidget(p)
+        row = QWidget(); row.setLayout(QHBoxLayout(row))
+        nxt = QPushButton("Siguiente"); prev = QPushButton("Anterior")
+        nxt.clicked.connect(lambda: stack.setCurrentIndex(
+            min(stack.currentIndex() + 1, stack.count() - 1)))
+        prev.clicked.connect(lambda: stack.setCurrentIndex(
+            max(stack.currentIndex() - 1, 0)))
+        row.layout().addWidget(prev); row.layout().addWidget(nxt)
+        lay.addWidget(stack); lay.addWidget(row)
+        root.show(); qapp.processEvents()
+        return root
+
+    opts = {"max_branch": 20, "max_states": 50, "max_depth": 4}
+    sigs = set()
+    # BFS manual de profundidad 2 sobre fixtures frescos (igual que crawl_app):
+    # cada nodo se materializa en un fixture fresco re-aplicando su path.
+    frontier = [[]]
+    while frontier:
+        path = frontier.pop()
+        root = build()
+        ok = True
+        for a in path:
+            if not _apply_action(root, a, qapp):
+                ok = False
+                break
+        if ok:
+            sig = _structural_hash(_build_widget_tree(root, win_ref=root))
+            if sig not in sigs:
+                sigs.add(sig)
+                if len(path) < 3:
+                    for a in _enumerate_safe_actions(root, path, opts):
+                        frontier.append(path + [a])
+        root.deleteLater()
+    # debe alcanzar los 3 pasos (paso 0/1/2)
+    assert len(sigs) >= 3

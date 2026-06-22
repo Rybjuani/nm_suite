@@ -151,15 +151,7 @@ MOCKUP_TARGETS: tuple[MockupTarget, ...] = (
         clicks=("#dbtNext",),
         wait_ms=260,
     ),
-    _t(
-        "suite",
-        "dbt-practice-closure",
-        "dbtlib",
-        capture="viewport",
-        eval_after=("openDBTPractice('Tolerancia')",),
-        clicks=("#dbtNext", "#dbtNext", "#dbtNext"),
-        wait_ms=260,
-    ),
+    # dbt-practice-closure removido (C4-05): pantalla eliminada del producto
     # Hub - Patients
     _t("hub", "pacientes", "pacientes", "list"),
     _t("hub", "pacientes-empty", "pacientes", "empty"),

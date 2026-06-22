@@ -1,13 +1,19 @@
-# Contratos de componentes: DIALOGS / overlays.
+# Contratos de componentes: DIALOGS / modals.
 contracts:
   - id: dialog_not_blank
     severity: P0
-    description: >
-      Un dialogo que se captura blank/flat no aporta evidencia. Bloqueante.
+    description: Un dialogo que se captura blank/flat no aporta evidencia.
     check: blank_or_flat
 
-  - id: dialog_not_duplicate
+  - id: dialog_must_have_visible_close
+    severity: P2
+    description: >
+      Todo dialogo (QDialog/NMDialog/NMModal) debe tener un control de cierre
+      visible y clickeable (cerrar/x/cancelar/ok/aceptar/entendido).
+    check: dialog_without_visible_close
+
+  - id: dialog_internal_scrollbar
     severity: P1
     description: >
-      Un dialogo identico a otra pantalla/estado indica fallback.
-    check: duplicate_suspect
+      Scrollbar interna en dialogo con overflow: posible contenido truncado.
+    check: dialog_internal_scrollbar

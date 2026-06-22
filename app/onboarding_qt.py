@@ -425,7 +425,7 @@ class OnboardingDialog(QDialog):
             sub.setStyleSheet(f"color: {self._fallback_color('ink_secondary')};")
         form_lay.addWidget(sub)
 
-        form_lay.addSpacing(10 if is_compact else 18)  # mockup: sub margin 0 0 18px
+        form_lay.addSpacing(8 if is_compact else 14)  # mockup: sub margin 0 0 18px
 
         # ── Nombre ────────────────────────────────────────────────────────────
         form_lay.addWidget(self._lbl(suite_t("text.onboarding.name_label", "Nombre *"), is_compact))
@@ -434,7 +434,7 @@ class OnboardingDialog(QDialog):
             self._name.setFixedHeight(36)
         form_lay.addWidget(self._name)
 
-        form_lay.addSpacing(8 if is_compact else 14)  # mockup: input margin-bottom 14px
+        form_lay.addSpacing(6 if is_compact else 10)  # mockup: input margin-bottom 14px
 
         # ── Email ─────────────────────────────────────────────────────────────
         form_lay.addWidget(
@@ -448,7 +448,7 @@ class OnboardingDialog(QDialog):
             self._email.setFixedHeight(36)
         form_lay.addWidget(self._email)
 
-        form_lay.addSpacing(8 if is_compact else 14)  # mockup: input margin-bottom 14px
+        form_lay.addSpacing(6 if is_compact else 10)  # mockup: input margin-bottom 14px
 
         # ── Contraseña ────────────────────────────────────────────────────────
         form_lay.addWidget(
@@ -468,7 +468,7 @@ class OnboardingDialog(QDialog):
 
         # (Hint "Se usa Supabase Auth..." eliminado — feedback owner v1.0:
         # información técnica interna, no aporta al usuario.)
-        form_lay.addSpacing(10 if is_compact else 16)  # mockup: password margin-bottom 16px
+        form_lay.addSpacing(8 if is_compact else 12)  # mockup: password margin-bottom 16px
 
         # ── Consentimiento: card secundaria ADN con shield icon ─────────────
         consent_card = QFrame()
@@ -570,15 +570,15 @@ class OnboardingDialog(QDialog):
         cc_body.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
-        cc_body.setMinimumHeight(52 if is_compact else 64)
-        cc_body.setMaximumHeight(56 if is_compact else 76)
+        cc_body.setMinimumHeight(72 if is_compact else 90)
+        cc_body.setMaximumHeight(88 if is_compact else 116)
         cc_lay.addWidget(cc_body, stretch=1)
 
         # Alto deliberado: legal completo con scroll local visible. El checkbox
         # vive dentro del bloque para que consentimiento y aceptación no parezcan
         # piezas sueltas.
-        consent_card.setMinimumHeight(144 if is_compact else 164)
-        consent_card.setMaximumHeight(150 if is_compact else 176)
+        consent_card.setMinimumHeight(170 if is_compact else 200)
+        consent_card.setMaximumHeight(186 if is_compact else 222)
         consent_card.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
@@ -610,11 +610,23 @@ class OnboardingDialog(QDialog):
             consent_lbl.setStyleSheet("background: transparent;")
         consent_row.addWidget(consent_lbl, stretch=1)
 
-        cc_lay.insertLayout(1, consent_row)
+        cc_lay.addLayout(consent_row)
 
         form_lay.addWidget(consent_card, stretch=0)
 
-        card_lay.addWidget(form_widget, stretch=1)
+        # Scroll area para el formulario: el contenido puede exceder 600px en
+        # pantallas compactas o cuando la card legal es grande. Los botones viven
+        # en footer_widget (fuera del scroll) y siempre quedan visibles.
+        _form_scroll = QScrollArea()
+        _form_scroll.setWidgetResizable(True)
+        _form_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        _form_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        _form_scroll.setStyleSheet(
+            "QScrollArea { background: transparent; border: none; }"
+            + stylesheet_scrollarea(self._modo)
+        )
+        _form_scroll.setWidget(form_widget)
+        card_lay.addWidget(_form_scroll, stretch=1)
 
         # Footer section (fixed at the bottom)
         footer_widget = QWidget()

@@ -1,17 +1,23 @@
 # Contratos de componentes: BOTONES.
-# Aplican sobre TODAS las pantallas descubiertas.
+# Reglas por ROL (objectName del design system), no por labels de pantallas.
 contracts:
-  - id: semantic_cta_must_have_icon
+  - id: primary_button_must_have_icon
     severity: P2
     description: >
-      Los CTAs semanticos clave (Exportar PDF, Resumen IA, Completar con IA)
-      deben tener icono. Un CTA semantico sin icono rompe densidad y reconocimiento.
-    check: semantic_cta_missing_icon
+      Un boton de rol primario (objectName NMButton_gradient, la variante
+      primaria del design system) deberia portar icono. Deriva del ROL del
+      componente (objectName), NO de labels como "Exportar PDF": si la app
+      cambia sus textos, la regla sigue valiendo.
+    check: primary_button_missing_icon
+    params:
+      primary_objectname_marker: NMButton_gradient
 
   - id: button_out_of_viewport
     severity: P1
-    description: >
-      Ningun boton visible puede quedar fuera del viewport de la ventana.
-      (Cubierto por el contrato global out_of_viewport; se documenta aqui como
-      contrato de componente para futuras especializaciones por boton.)
+    description: Ningun boton visible puede quedar fuera del viewport.
     check: out_of_viewport
+
+  - id: button_without_metadata
+    severity: P2
+    description: Boton sin texto, icono ni objectName.
+    check: control_without_visual_metadata

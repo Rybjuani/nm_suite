@@ -1,17 +1,18 @@
 # Contratos de componentes: ONBOARDING / LEGAL.
-# Reglas especificas de pantallas de consentimiento/onboarding.
+# Reglas ESTRUCTURALES genericas (no nombran pantallas): aplican a cualquier
+# pantalla con checkbox dentro de scroll o scrollbar interna con overflow, que
+# son los patrones de riesgo tipico de consentimientos/onboarding.
 contracts:
-  - id: legal_no_unexpected_scrollbar
+  - id: legal_no_checkbox_inside_scroll
     severity: P1
     description: >
-      No permitir scrollbars internas inesperadas en legales/onboarding: el
-      contenido legal debe caber sin scroll interno que oculte terminos.
-    check: unexpected_scrollbar_in_legal
+      Checkbox/toggle dentro de un QScrollArea: el consentimiento debe quedar
+      fijo y visible, no perdido dentro de un area desplazable.
+    check: checkbox_in_scroll_area
 
-  - id: legal_checkbox_in_scroll_area
+  - id: legal_no_internal_scrollbar_overflow
     severity: P1
     description: >
-      Detecta un checkbox legal (consentimiento/terminos/privacidad) dentro de
-      una scroll area: el consentimiento debe estar fijo y visible, no perdido
-      dentro de un area desplazable.
-    check: unexpected_scrollbar_in_legal
+      Scrollbar interna con rango > pageStep: posible truncamiento de terminos
+      que obliga a desplazar para verlos.
+    check: dialog_internal_scrollbar

@@ -268,16 +268,8 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "dbt-practice-stop"}],
         },
-        "dbt-practice-closure": {
-            "label": "DBT Cierre - evaluación sin ratings seleccionados",
-            "parent": "dbt-now",
-            "actions": [{"action": "navigate", "view": "dbt"},
-                        {"action": "call", "func": "_dbt_select_tab_library"},
-                        {"action": "call", "func": "_dbt_start_stop_practice"},
-                        {"action": "call", "func": "_dbt_go_to_closure"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "dbt-practice-closure"}],
-        },
+        # dbt-practice-closure eliminado del harness (C4-05): pantalla de cierre
+        # fue removida del producto; la evidencia era stale y generaba falsos positivos.
 
         "respiracion": {
             "label": "Respiracion idle",

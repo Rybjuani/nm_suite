@@ -1,9 +1,16 @@
-# Contratos de componentes: SCROLLBARS.
+# Contratos de componentes: SCROLLBARS / contenido scrolleable.
 contracts:
-  - id: no_unexpected_scrollbar_in_legal
+  - id: no_checkbox_inside_scroll_area
     severity: P1
     description: >
-      No permitir scrollbars internas inesperadas en pantallas legales/onboarding.
-      El contenido legal debe caber sin scroll interno (riesgo de ocultar
-      terminos/consentimiento).
-    check: unexpected_scrollbar_in_legal
+      Estructural: cualquier checkbox/toggle dentro de un QScrollArea. Cubre el
+      patron "consentimiento/afirmacion legal dentro de scroll" de forma
+      generica (sin nombrar pantallas): el control afirmativo debe quedar fijo.
+    check: checkbox_in_scroll_area
+
+  - id: no_dialog_internal_scrollbar_overflow
+    severity: P1
+    description: >
+      Scrollbar interna cuyo rango supera el pageStep: posible contenido
+      truncado (terminos/legales) que obliga a desplazar para verlo todo.
+    check: dialog_internal_scrollbar

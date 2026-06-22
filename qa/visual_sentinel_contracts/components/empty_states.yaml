@@ -3,8 +3,8 @@ contracts:
   - id: empty_state_not_blank
     severity: P0
     description: >
-      Un empty state debe renderizar contenido (icono + copy + CTA). Si la
-      captura sale blank/flat, el empty state no se renderizo de verdad.
+      Un empty state debe renderizar contenido. Si sale blank/flat, no se
+      renderizo de verdad.
     check: blank_or_flat
 
   - id: empty_state_not_duplicate_of_parent

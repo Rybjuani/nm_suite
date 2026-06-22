@@ -1,35 +1,66 @@
 """qa/visual_sentinel.py — Auditor visual canonico, independiente y autodescubrible.
 
-Reemplaza conceptualmente a qa/capture_v8.py y qa/runtime_live_probe.py como
-herramienta principal de auditoria visual, PERO sin depender de ellos: no los
-importa, no reusa sus recetas manuales ni su lista de pantallas. El Sentinel
-descubre la UI navegando la app real (registro de modulos de la propia app +
-introspeccion en vivo del arbol Qt: QStackedWidget, QTabWidget/QTabBar, NMTabs,
-NMSegmentedPanel, NMPanelTabs, botones clickeables, dialogs) y aplica contratos
-globales reutilizables sobre TODAS las pantallas descubiertas.
+Visual Sentinel es un auditor visual GLOBAL, independiente, autodescubrible y
+reutilizable para un repo dinamico. No depende de qa/capture_v8.py ni de
+qa/runtime_live_probe.py (no los importa ni reusa su lista manual de pantallas),
+ni de listas hardcodeadas de pantallas problematicas actuales. Tampoco tiene
+reglas tipo "revisa esta pantalla especifica" o "busca este bug concreto": esas
+sesgan auditorias futuras y quedan obsoletas rapido.
 
-Disenio honesto:
+Como descubre la UI
+-------------------
+El Sentinel construye un **grafo de estados** caminando la UI real de Suite y
+Hub por introspeccion Qt, SIN recetas manuales:
+
+- top-level windows (QApplication.topLevelWidgets);
+- QStackedWidget (incluido NMFadeWidget, que hereda de QStackedWidget):
+  se identifica la superficie activa via currentWidget() de forma generica;
+- QTabWidget / QTabBar / NMTabs / NMSegmentedPanel / NMPanelTabs (tabs y stack
+  indexes);
+- botones clickeables seguros (QPushButton, QToolButton, QCheckBox, NMButton,
+  NMButtonOutline, NMPlayButton, NMCustomCheck, NMCard, NMModule);
+- dialogs/modals (QDialog, NMDialog) detectados como sub-estados;
+- checkboxes/toggles que cambian el estado (running/paused/completed/filtered).
+
+El crawler es un BFS/DFS generico: en cada estado enumera "acciones seguras",
+aplica cada una sobre una ventana fresca (replay del path de acciones), captura
+el estado resultante y lo dedupe por hash estructural + visual (phash). Si el
+hash cambia, es un nodo nuevo del grafo; si no, es un duplicado/salto y se
+registra como edge skipeado. Asi descubre estados dinamicos (multi-step, tabs,
+dialogs, toggles) aunque cambien nombres o cantidades de pantallas.
+
+Las acciones se describen como ``locators`` serializables (tipo + objectName +
+texto + indice), no como referencias a widgets: eso permite re-aplicarlas en
+ventanas frescas y hace el crawler independiente de la identidad del widget.
+
+Honestidad por diseno
+---------------------
 - ``audit --all`` es el UNICO modo que puede emitir resultado general.
-- ``capture``/``inspect --screen`` nunca imprimen PASS general; marcan
-  TARGETED_INSPECTION_ONLY y GENERAL_AUDIT_NOT_RUN.
-- Una pantalla nueva descubierta se marca NEW_STATE_UNREVIEWED y bloquea el
-  cierre general hasta revision humana. El Sentinel NUNCA autoaprueba.
-- El cierre general se bloquea con FAIL si hay NEW_STATE_UNREVIEWED,
-  STALE_STATE, MISSING_EVIDENCE, FALLBACK, DUPLICATE_SUSPECT, P0 o P1.
+- ``capture``/``inspect --screen`` nunca imprimen PASS general: marcan
+  TARGETED_INSPECTION_ONLY y GENERAL_AUDIT_NOT_RUN, y no contaminan el resultado
+  global.
+- Una pantalla nueva se marca NEW_STATE_UNREVIEWED y bloquea el cierre general
+  hasta revision humana. El Sentinel NUNCA autoaprueba.
+- El cierre general es FAIL si hay NEW_STATE_UNREVIEWED, STALE_STATE,
+  MISSING_EVIDENCE, FALLBACK, DUPLICATE_SUSPECT, P0 o P1 (con ``--strict``,
+  tambien P2).
 
-Dependencias (ya presentes en el venv): PyQt6, Pillow, numpy, scikit-image,
-imagehash, PyYAML, rich, networkx. No usa cv2, jinja2, torch ni lpips.
+Dependencias (ya en el venv): PyQt6, Pillow, numpy, scikit-image, imagehash,
+PyYAML, rich, networkx. No usa cv2, jinja2, torch ni lpips.
 
 Uso:
     .venv\\Scripts\\python.exe qa\\visual_sentinel.py --list
     .venv\\Scripts\\python.exe qa\\visual_sentinel.py audit --all --theme both
+    .venv\\Scripts\\python.exe qa\\visual_sentinel.py audit --all --theme both --strict
     .venv\\Scripts\\python.exe qa\\visual_sentinel.py audit --app suite --theme light
     .venv\\Scripts\\python.exe qa\\visual_sentinel.py capture --screen <id> --theme both
     .venv\\Scripts\\python.exe qa\\visual_sentinel.py inspect --screen <id> --theme light
     .venv\\Scripts\\python.exe qa\\visual_sentinel.py propose-baselines
     .venv\\Scripts\\python.exe qa\\visual_sentinel.py approve-baseline --screen <id> --theme <theme>
 
-Salida: qa/_visual_sentinel/latest/{manifest,findings,coverage,index.html,...}
+Salida: qa/_visual_sentinel/latest/{manifest,coverage,coverage_matrix,
+ui_state_graph,findings,index.html, screenshots/, widget_trees/, crops/,
+contact_sheets/, logs/}
 """
 
 from __future__ import annotations
@@ -39,6 +70,7 @@ import datetime
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -75,25 +107,37 @@ _PROPOSED_DIR = _BASELINES_ROOT / "proposed"
 _REGISTRY_PATH = _BASELINES_ROOT / "registry.json"
 
 _RESOLUTION = "960x600"
-_SEVERITY_ORDER = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
-_BLOCKING_SEVERITIES = {"P0", "P1"}
 _BLOCKING_FLAGS = {
-    "NEW_STATE_UNREVIEWED",
-    "STALE_STATE",
-    "MISSING_EVIDENCE",
-    "FALLBACK",
-    "DUPLICATE_SUSPECT",
+    "NEW_STATE_UNREVIEWED", "STALE_STATE", "MISSING_EVIDENCE",
+    "FALLBACK", "DUPLICATE_SUSPECT",
 }
 
 # Umbrales de contenido (PNG casi todo blanco/negro o sin varianza tonal).
 _BLANK_MEAN_HI = 0.985
 _BLANK_MEAN_LO = 0.015
 _FLAT_STDDEV = 0.004
-# Distancia Hamming perceptual (imagehash phash) bajo la cual dos estados
-# distintos se consideran duplicados sospechosos.
 _DUP_PHASH_DISTANCE = 5
-# Solape claro: interseccion >= 45% del widget menor.
 _OVERLAP_MIN_RATIO = 0.45
+
+# Caps del crawler (mode-dependientes).
+_DEFAULT_MAX_STATES = 70
+_DEFAULT_MAX_DEPTH = 4
+_DEFAULT_MAX_BRANCH = 12
+_STRICT_MAX_STATES = 130
+_STRICT_MAX_DEPTH = 6
+
+# Palabras que indican acciones destructivas/inseguras (filtro generico por
+# semantica del control, no por pantalla). Se omiten y se loguean.
+_UNSAFE_TEXT_KEYS = (
+    "salir", "eliminar", "borrar", "quitar", "desvincular", "unlink",
+    "delete", "remove", "logout", "cerrar sesion", "cerrar sesión",
+    "cancelar cuenta", "reset total",
+)
+# Controles de chrome / navegacion back que no aportan estados nuevos y gastan
+# presupuesto: se omiten (no son destructivos, solo redundantes).
+_CHROME_OBJECTNAMES = ("NMWindowChrome", "NMThemeToggle", "NMBackButton",
+                       "NMCloseButton", "NMMinButton")
+_BACK_TEXT_KEYS = ("volver", "atras", " atrás", "←", "back")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -110,12 +154,6 @@ def _short_theme(modo: str) -> str:
     return "light" if "light" in (modo or "") else "dark"
 
 
-def _safe_name(screen_id: str) -> str:
-    """Convierte un screen_id en un nombre de archivo valido en Windows
-    (los ``:`` son ilegales en nombres de archivo)."""
-    return screen_id.replace(":", "__")
-
-
 def _theme_map(theme: str) -> list[str]:
     if theme == "both":
         return ["light_hybrid", "dark_hybrid"]
@@ -126,17 +164,26 @@ def _theme_map(theme: str) -> list[str]:
     raise SystemExit(f"--theme invalido: {theme}")
 
 
+def _safe_name(screen_id: str) -> str:
+    """Convierte un screen_id en un nombre de archivo valido en Windows."""
+    return screen_id.replace(":", "__").replace("/", "_").replace("\\", "_")
+
+
 def _parse_res(s: str) -> tuple[int, int]:
     w, h = s.lower().split("x")
     return int(w), int(h)
 
 
+def _sanitize_label(s: str) -> str:
+    s = _norm_text(s)
+    s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+    return s[:32] or "state"
+
+
 def _git_value(args: list[str]) -> str:
     try:
-        proc = subprocess.run(
-            ["git", *args], cwd=_PROJ, capture_output=True, text=True,
-            timeout=5, check=False,
-        )
+        proc = subprocess.run(["git", *args], cwd=_PROJ, capture_output=True,
+                              text=True, timeout=5, check=False)
     except Exception:
         return ""
     return proc.stdout.strip() if proc.returncode == 0 else ""
@@ -164,8 +211,10 @@ def _sha256_file(path: Path) -> str | None:
         return None
 
 
-def _drain(qapp, cycles: int = 8, pause: float = 0.03) -> None:
+def _drain(qapp, cycles: int = 8, pause: float = 0.025) -> None:
     from PyQt6.QtCore import QCoreApplication, QEvent
+    if qapp is None:
+        return
     for _ in range(cycles):
         qapp.processEvents()
         QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
@@ -175,7 +224,6 @@ def _drain(qapp, cycles: int = 8, pause: float = 0.03) -> None:
 
 
 def _ensure_isolated_db() -> Path | None:
-    """Garantiza una DB SQLite temporal aislada para la corrida."""
     if os.environ.get("NEUROMOOD_TEST_DB"):
         return Path(os.environ["NEUROMOOD_TEST_DB"])
     tmp = Path(tempfile.mkdtemp(prefix="nm_sentinel_db_"))
@@ -189,18 +237,25 @@ def _ensure_isolated_db() -> Path | None:
     return db_file
 
 
+def sip_deleted(obj) -> bool:
+    try:
+        from PyQt6 import sip
+        return sip.isdeleted(obj)
+    except Exception:
+        return False
+
+
 # ═══════════════════════════════════════════════════════════════════════════
-# Modelo de datos del Sentinel
+# Modelo de datos
 # ═══════════════════════════════════════════════════════════════════════════
 
 @dataclass
 class StateSpec:
-    """Un estado navegable descubierto."""
+    """Espec legible de un estado (compatibilidad / modo puntual)."""
     app: str
-    surface: str            # home / animo / dbt / pacientes / detalle / ...
-    substate: str = ""      # "" para base; "tab-1", "plan-tab-2", ...
+    surface: str
+    substate: str = ""
     label: str = ""
-    enter_actions: list[dict] = field(default_factory=list)
 
     @property
     def screen_id(self) -> str:
@@ -208,6 +263,18 @@ class StateSpec:
         if self.substate:
             parts.append(self.substate)
         return ":".join(parts)
+
+
+@dataclass
+class DiscoveredNode:
+    """Nodo del grafo de estados descubierto por el crawler."""
+    node_id: str
+    screen_id: str
+    app: str
+    theme: str
+    label: str
+    path: list[dict] = field(default_factory=list)   # acciones (locators) desde root
+    stop_reason: str = ""
 
 
 @dataclass
@@ -231,13 +298,17 @@ class CapturedState:
     crops: list[dict]
     geometry: dict
     error: str | None = None
+    node_id: str = ""
+    path: list[dict] = field(default_factory=list)
+    stop_reason: str = ""
+    interactive_total: int = 0
 
 
 @dataclass
 class Finding:
     contract_id: str
-    severity: str           # P0/P1/P2/P3
-    flag: str               # NEW_STATE_UNREVIEWED / BLANK_OR_FLAT / ...
+    severity: str
+    flag: str
     screen_id: str
     theme: str
     message: str
@@ -245,238 +316,111 @@ class Finding:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Instanciacion de apps (aislada por tema/resolucion)
+# Crawler generico: locators, enumeracion de acciones seguras, apply, replay
 # ═══════════════════════════════════════════════════════════════════════════
 
-_APP_SPEC = {
-    "suite": {"module": "app.main_qt", "class": "NeuroMoodApp", "settings": "Suite"},
-    "hub": {"module": "hub.main_qt", "class": "NeuroMoodHub", "settings": "Hub"},
-}
-
-
-def _instantiate(app_key: str, modo: str, res: str):
-    """Crea una ventana fresca de la app en modo QA aislado."""
-    import importlib
-    from PyQt6.QtWidgets import QApplication
-    from PyQt6.QtCore import QSize, QSettings
-
-    qapp = QApplication.instance() or QApplication(sys.argv)
-    qapp.setQuitOnLastWindowClosed(False)
-
-    try:
-        from shared.fonts import load_fonts
-        load_fonts()
-    except Exception:
-        pass
-    try:
-        from shared.theme_qt import stylesheet_base, app_palette
-        qapp.setPalette(app_palette(modo))
-        qapp.setStyleSheet(stylesheet_base(modo))
-    except Exception:
-        pass
-
-    spec = _APP_SPEC[app_key]
-    QSettings("NeuroMood", spec["settings"]).setValue("ui/theme", modo)
-
-    module = importlib.import_module(spec["module"])
-    WindowClass = getattr(module, spec["class"])
-    win = WindowClass()
-    win.show()
-    if hasattr(win, "ensurePolished"):
-        win.ensurePolished()
-    _drain(qapp, cycles=10)
-
-    w, h = _parse_res(res)
-    try:
-        win.setMinimumSize(QSize(0, 0))
-        win.setMaximumSize(QSize(16777215, 16777215))
-        win.setFixedSize(QSize(w, h))
-        lay = win.layout()
-        if lay:
-            lay.activate()
-    except Exception:
-        pass
-    _drain(qapp, cycles=8)
-    return qapp, win
-
-
-def _close_window(win) -> None:
-    from PyQt6.QtWidgets import QApplication
-    try:
-        if win is not None:
-            win.close()
-            win.deleteLater()
-    except Exception:
-        pass
-    qapp = QApplication.instance()
-    if qapp is not None:
-        for tl in QApplication.topLevelWidgets():
-            if tl is not win and tl.isVisible():
-                try:
-                    tl.close()
-                    tl.deleteLater()
-                except Exception:
-                    pass
-        _drain(qapp, cycles=4)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# Descubrimiento automatico de estados (BFS estructural sobre la app real)
-# ═══════════════════════════════════════════════════════════════════════════
-
-def _discover_states(app_key: str, modo: str) -> list[StateSpec]:
-    """Descubre estados navegables SIN recetas manuales.
-
-    Fuentes legitimas (propias de la app, no de capture_v8/runtime):
-      * Suite: registro canonico ``app.main_qt._MODULE_MAP`` + home.
-      * Hub: vistas declaradas en ``win._nav_views()`` + detalle de paciente.
-    Sub-estados: introspeccion en vivo de contenedores de tabs/segmentados
-    (QTabBar, QTabWidget, NMTabs, NMSegmentedPanel, NMPanelTabs) dentro de
-    cada superficie. No se reusa ninguna lista de pantallas de V8/runtime.
-    """
-    states: list[StateSpec] = []
-    qapp, win = _instantiate(app_key, modo, _RESOLUTION)
-    try:
-        if app_key == "suite":
-            states.append(StateSpec(app="suite", surface="home", label="Home"))
-            try:
-                from app.main_qt import _MODULE_MAP as mod_map
-            except Exception:
-                mod_map = {}
-            for mid in mod_map:
-                states.append(StateSpec(
-                    app="suite", surface=mid,
-                    label=f"Modulo {mid}",
-                    enter_actions=[{"kind": "open_module", "id": mid}],
-                ))
-        else:  # hub
-            for vid in _hub_nav_views(win):
-                states.append(StateSpec(
-                    app="hub", surface=vid,
-                    label=f"Hub {vid}",
-                    enter_actions=[{"kind": "nav", "id": vid}],
-                ))
-            states.append(StateSpec(
-                app="hub", surface="detalle",
-                label="Detalle de paciente",
-                enter_actions=[{"kind": "select_first_patient"}],
-            ))
-
-        # Sub-estados por introspeccion de tabs dentro de cada superficie.
-        expanded: list[StateSpec] = []
-        for st in states:
-            _apply_enter(win, st, qapp)
-            expanded.append(st)
-            for sub in _discover_tab_substates(win, st, qapp):
-                expanded.append(sub)
-            # Volver a home/base antes de la siguiente superficie para no
-            # contaminar el estado de modulos stateful.
-            _reset_to_base(win, app_key, qapp)
-        states = expanded
-    finally:
-        _close_window(win)
-    return states
-
-
-def _hub_nav_views(win) -> list[str]:
-    views: list[str] = []
-    try:
-        nav = win._nav_views()
-        for vid, w in nav.items():
-            if w is not None:
-                views.append(vid)
-    except Exception:
-        pass
-    if not views:
-        views = ["pacientes"]
-    return views
-
-
-def _apply_enter(win, spec: StateSpec, qapp) -> None:
-    for act in spec.enter_actions:
-        kind = act.get("kind")
-        if kind == "open_module" and hasattr(win, "_open_module"):
-            try:
-                win._open_module(act["id"])
-            except Exception:
-                pass
-        elif kind == "nav" and hasattr(win, "_on_nav"):
-            try:
-                win._on_nav(act["id"])
-            except Exception:
-                pass
-        elif kind == "select_first_patient":
-            _hub_select_first_patient(win)
-        elif kind == "set_tab":
-            _apply_tab_action(win, act)
-        _drain(qapp, cycles=6)
-
-
-def _reset_to_base(win, app_key: str, qapp) -> None:
-    try:
-        if app_key == "suite" and hasattr(win, "_go_home"):
-            win._go_home()
-        elif app_key == "hub" and hasattr(win, "_back_to_pacientes"):
-            win._back_to_pacientes()
-    except Exception:
-        pass
-    _drain(qapp, cycles=4)
-
-
-def _hub_select_first_patient(win) -> None:
-    pacientes = list(getattr(win, "_pacientes", None) or [])
-    if not pacientes:
+def _widget_text(w) -> str:
+    for attr in ("text",):
         try:
-            from shared.visual_qa import hub_patients
-            pacientes = hub_patients()
+            val = getattr(w, attr)
+            if callable(val):
+                val = val()
+            s = str(val)
+            if s and s != type(w).__name__:
+                return s
         except Exception:
-            pacientes = []
-    if pacientes and hasattr(win, "_select_patient"):
-        p = pacientes[0]
-        try:
-            win._select_patient(p.get("patient_id", ""), p.get("patient_name", ""))
-        except Exception:
-            pass
-
-
-def _discover_tab_substates(win, parent: StateSpec, qapp) -> list[StateSpec]:
-    """Introspecta contenedores de tabs visibles y genera un sub-estado por
-    indice no-default. Restaura el indice original al terminar."""
-    found: list[StateSpec] = []
-    containers = _find_tab_containers(win)
-    for c_idx, container in enumerate(containers):
-        info = _tab_container_info(container)
-        if not info or info["count"] <= 1:
             continue
-        original = info["current"]
-        for i in range(info["count"]):
-            if i == original:
-                # el indice default ya esta cubierto por el estado padre
-                continue
-            if i != original:
-                _set_tab_index(container, i, info["kind"])
-                _drain(qapp, cycles=5)
-                sub_id = f"{info['kind']}{c_idx}-tab-{i}"
-                label = info["labels"][i] if i < len(info["labels"]) else sub_id
-                found.append(StateSpec(
-                    app=parent.app, surface=parent.surface,
-                    substate=sub_id, label=f"{parent.label} > {label}",
-                    enter_actions=parent.enter_actions + [
-                        {"kind": "set_tab", "container_index": c_idx,
-                         "tab_index": i, "kind_": info["kind"]},
-                    ],
-                ))
-        _set_tab_index(container, original, info["kind"])
-        _drain(qapp, cycles=3)
-    return found
+    return ""
+
+
+def _is_clickable(w) -> bool:
+    from PyQt6.QtWidgets import (
+        QPushButton, QToolButton, QCheckBox, QRadioButton, QCommandLinkButton,
+    )
+    try:
+        if isinstance(w, (QPushButton, QToolButton, QCheckBox, QRadioButton,
+                          QCommandLinkButton)):
+            return True
+    except Exception:
+        pass
+    cls = type(w).__name__
+    if cls in {"NMButton", "NMButtonOutline", "NMPlayButton", "NMSegmentedChoice",
+               "NMCustomCheck", "NMModule", "NMCard", "NMPatientRowPremium"}:
+        return True
+    if hasattr(w, "clicked"):
+        return True
+    return False
+
+
+def _widget_has_icon(w) -> bool:
+    """Icono real: QIcon del boton, hijo NMIcon, o atributo _icon_name."""
+    try:
+        ic = w.icon()
+        if ic is not None and not ic.isNull():
+            return True
+    except Exception:
+        pass
+    if getattr(w, "_icon_name", None):
+        return True
+    try:
+        from shared.components import NMIcon
+        if any(isinstance(c, NMIcon) for c in w.children()):
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def _widget_locator(widget, root) -> dict:
+    """Locator serializable: type + objectName + text + indice de ocurrencia."""
+    cls = type(widget).__name__
+    obj = ""
+    try:
+        obj = widget.objectName() or ""
+    except Exception:
+        pass
+    text = _widget_text(widget)
+    # indice entre widgets del mismo (type, objectName, text)
+    try:
+        peers = [w for w in root.findChildren(type(widget))
+                 if (w.objectName() or "") == obj and _widget_text(w) == text]
+    except Exception:
+        peers = [widget]
+    idx = peers.index(widget) if widget in peers else 0
+    return {"type": cls, "objectName": obj, "text": text[:60], "index": idx}
+
+
+def _find_by_locator(root, locator: dict):
+    """Resuelve un locator a un widget vivo. None si no se encuentra."""
+    from PyQt6.QtWidgets import QWidget
+    cls = locator.get("type")
+    obj = locator.get("objectName", "")
+    text = locator.get("text", "")
+    idx = int(locator.get("index", 0))
+    matches = []
+    for w in root.findChildren(QWidget):
+        if type(w).__name__ != cls:
+            continue
+        try:
+            wobj = w.objectName() or ""
+        except Exception:
+            wobj = ""
+        if wobj != obj:
+            continue
+        if text and _widget_text(w)[:60] != text:
+            continue
+        if not w.isVisible():
+            continue
+        matches.append(w)
+    if 0 <= idx < len(matches):
+        return matches[idx]
+    if matches:
+        return matches[0]
+    return None
 
 
 def _find_tab_containers(root):
-    """Localiza contenedores de tabs en el arbol visible.
-
-    Evita contar dos veces un QTabWidget y su QTabBar interno embebido: si un
-    QTabBar pertenece a un QTabWidget ya incluido, se saltea.
-    """
+    """Localiza contenedores de tabs visibles. Evita doble conteo QTabWidget/QTabBar."""
     from PyQt6.QtWidgets import QWidget, QTabBar, QTabWidget
     try:
         from shared.components import NMTabs
@@ -488,29 +432,25 @@ def _find_tab_containers(root):
         NMSegmentedPanel = NMPanelTabs = ()  # type: ignore[assignment]
 
     raw: list[Any] = []
-    seen_ids = set()
-    for w in root.findChildren(QWidget):
-        try:
+    seen = set()
+    try:
+        for w in root.findChildren(QWidget):
             if sip_deleted(w) or not w.isVisible():
                 continue
-        except Exception:
-            continue
-        if isinstance(w, (QTabBar, QTabWidget, NMTabs, NMSegmentedPanel, NMPanelTabs)):
-            if id(w) in seen_ids:
-                continue
-            raw.append(w)
-            seen_ids.add(id(w))
-
-    # QTabBar cuyo parent es un QTabWidget ya listado -> duplicado.
-    owned_tabbars = set()
+            if isinstance(w, (QTabBar, QTabWidget, NMTabs, NMSegmentedPanel, NMPanelTabs)):
+                if id(w) not in seen:
+                    raw.append(w)
+                    seen.add(id(w))
+    except Exception:
+        pass
+    owned = set()
     for c in raw:
         if isinstance(c, QTabWidget):
             try:
-                tb = c.tabBar()
-                owned_tabbars.add(id(tb))
+                owned.add(id(c.tabBar()))
             except Exception:
                 pass
-    return [c for c in raw if id(c) not in owned_tabbars]
+    return [c for c in raw if id(c) not in owned]
 
 
 def _tab_container_info(container) -> dict | None:
@@ -530,7 +470,6 @@ def _tab_container_info(container) -> dict | None:
             current = container.currentIndex()
             labels = [tb.tabText(i) for i in range(count)]
         else:
-            # NMTabs / NMSegmentedPanel / NMPanelTabs (API custom)
             lbls = getattr(container, "_labels", None)
             if lbls is None:
                 btns = getattr(container, "_buttons", None) or []
@@ -545,7 +484,7 @@ def _tab_container_info(container) -> dict | None:
     return {"count": count, "current": current, "labels": labels, "kind": kind}
 
 
-def _set_tab_index(container, index: int, kind: str) -> None:
+def _set_tab_index(container, index: int) -> None:
     from PyQt6.QtWidgets import QTabBar, QTabWidget
     try:
         if isinstance(container, QTabBar):
@@ -567,35 +506,401 @@ def _set_tab_index(container, index: int, kind: str) -> None:
         pass
 
 
-def _apply_tab_action(win, act: dict) -> None:
-    containers = _find_tab_containers(win)
-    c_idx = act.get("container_index", 0)
-    if c_idx >= len(containers):
-        return
-    _set_tab_index(containers[c_idx], act.get("tab_index", 0), act.get("kind_", ""))
+def _active_surface_label(root) -> str:
+    """Etiqueta generica de la superficie activa: clase del currentWidget del
+    QStackedWidget primario (el de mayor area visible). Generico (deriva de los
+    tipos de la app, no de una lista de pantallas)."""
+    from PyQt6.QtWidgets import QStackedWidget
+    try:
+        stacks = [s for s in root.findChildren(QStackedWidget)
+                  if not sip_deleted(s) and s.isVisible()]
+        if not stacks:
+            return _sanitize_label(type(root).__name__)
+        # stack con mayor area visible = primario
+        def _area(s):
+            g = s.geometry()
+            return g.width() * g.height()
+        primary = max(stacks, key=_area)
+        cw = primary.currentWidget()
+        name = type(cw).__name__ if cw is not None else type(root).__name__
+        # CamelCase -> kebab: HomeView -> home-view, ModuloAnimo -> modulo-animo
+        kebab = re.sub(r"(?<!^)(?=[A-Z])", "-", name).lower()
+        return _sanitize_label(kebab) or "root"
+    except Exception:
+        return "root"
+
+
+def _is_unsafe(widget, text_norm: str) -> str | None:
+    """Razon de inseguridad o None si es segura. Filtro generico por semantica
+    del control (texto/objectName), no por pantalla."""
+    try:
+        obj = (widget.objectName() or "").lower()
+    except Exception:
+        obj = ""
+    if any(k in obj for k in (k.lower() for k in _CHROME_OBJECTNAMES)):
+        return "chrome-control"
+    if any(k in text_norm for k in _UNSAFE_TEXT_KEYS):
+        return "destructive-text"
+    if any(k in text_norm for k in _BACK_TEXT_KEYS):
+        return "navigation-back"
+    return None
+
+
+def _enumerate_safe_actions(root, path: list[dict], opts: dict, log_omitted=None
+                            ) -> list[dict]:
+    """Enumera acciones seguras en el estado actual. Generico: tabs + clicks.
+
+    Devuelve acciones serializables {kind, locator, label}. La prevencion de
+    loops NO se hace por locator-en-el-path (eso romperia flujos multi-step
+    donde el MISMO boton "Siguiente" avanza por estados distintos): se hace por
+    dedupe de hash de estado al materializar (crawl_app). Acciones omitidas se
+    loguean via ``log_omitted``.
+    """
+    from PyQt6.QtWidgets import QWidget
+    actions: list[dict] = []
+    max_branch = opts.get("max_branch", _DEFAULT_MAX_BRANCH)
+
+    # --- Tabs / segmentados / stack indexes ---
+    try:
+        for container in _find_tab_containers(root):
+            info = _tab_container_info(container)
+            if not info or info["count"] <= 1:
+                continue
+            for i in range(info["count"]):
+                if i == info["current"]:
+                    continue
+                lbl = info["labels"][i] if i < len(info["labels"]) else str(i)
+                action = {
+                    "kind": "tab",
+                    "locator": _widget_locator(container, root),
+                    "index": i,
+                    "label": "tab:" + _sanitize_label(lbl),
+                }
+                actions.append(action)
+                if len(actions) >= max_branch:
+                    break
+            if len(actions) >= max_branch:
+                break
+    except Exception:
+        pass
+
+    # --- Clicks / toggles seguros ---
+    try:
+        for w in root.findChildren(QWidget):
+            if len(actions) >= max_branch:
+                break
+            if sip_deleted(w) or not w.isVisible() or not w.isEnabled():
+                continue
+            if not _is_clickable(w):
+                continue
+            text = _widget_text(w)
+            tnorm = _norm_text(text)
+            reason = _is_unsafe(w, tnorm)
+            if reason is not None:
+                if callable(log_omitted):
+                    log_omitted({
+                        "at": _active_surface_label(root),
+                        "widget": type(w).__name__, "text": text[:40],
+                        "reason": reason,
+                    })
+                continue
+            try:
+                g = w.geometry()
+                if g.width() < 12 or g.height() < 12:
+                    continue
+            except Exception:
+                pass
+            locator = _widget_locator(w, root)
+            label_src = text if text else type(w).__name__
+            action = {
+                "kind": "click",
+                "locator": locator,
+                "label": "act:" + _sanitize_label(label_src),
+            }
+            actions.append(action)
+    except Exception:
+        pass
+    return actions
+
+
+def _apply_action(root, action: dict, qapp) -> bool:
+    """Aplica una accion sobre el widget vivo. Devuelve True si aplico."""
+    try:
+        if action.get("kind") == "tab":
+            container = _find_by_locator(root, action["locator"])
+            if container is None:
+                return False
+            _set_tab_index(container, int(action.get("index", 0)))
+            _drain(qapp, cycles=5)
+            return True
+        # click / toggle
+        w = _find_by_locator(root, action["locator"])
+        if w is None:
+            return False
+        clicked = False
+        for method in ("click",):
+            fn = getattr(w, method, None)
+            if callable(fn):
+                try:
+                    fn()
+                    clicked = True
+                    break
+                except Exception:
+                    continue
+        if not clicked:
+            sig = getattr(w, "clicked", None)
+            if sig is not None:
+                try:
+                    sig.emit()
+                    clicked = True
+                except Exception:
+                    pass
+        if not clicked and hasattr(w, "setChecked"):  # checkbox/toggle fallback
+            try:
+                w.setChecked(not w.isChecked())
+                if hasattr(w, "toggled"):
+                    w.toggled.emit(w.isChecked())
+                clicked = True
+            except Exception:
+                pass
+        _drain(qapp, cycles=5)
+        return clicked
+    except Exception:
+        return False
+
+
+def _replay_path(root, path: list[dict], qapp) -> bool:
+    """Re-aplica una secuencia de acciones (locators) sobre una raiz fresca."""
+    for action in path:
+        if not _apply_action(root, action, qapp):
+            return False
+    return True
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Instanciacion de apps
+# ═══════════════════════════════════════════════════════════════════════════
+
+_APP_SPEC = {
+    "suite": {"module": "app.main_qt", "class": "NeuroMoodApp", "settings": "Suite"},
+    "hub": {"module": "hub.main_qt", "class": "NeuroMoodHub", "settings": "Hub"},
+}
+
+
+def _instantiate(app_key: str, modo: str, res: str = _RESOLUTION):
+    import importlib
+    from PyQt6.QtWidgets import QApplication
+    from PyQt6.QtCore import QSize, QSettings
+
+    qapp = QApplication.instance() or QApplication(sys.argv)
+    qapp.setQuitOnLastWindowClosed(False)
+    try:
+        from shared.fonts import load_fonts
+        load_fonts()
+    except Exception:
+        pass
+    try:
+        from shared.theme_qt import stylesheet_base, app_palette
+        qapp.setPalette(app_palette(modo))
+        qapp.setStyleSheet(stylesheet_base(modo))
+    except Exception:
+        pass
+
+    spec = _APP_SPEC[app_key]
+    QSettings("NeuroMood", spec["settings"]).setValue("ui/theme", modo)
+    module = importlib.import_module(spec["module"])
+    WindowClass = getattr(module, spec["class"])
+    win = WindowClass()
+    win.show()
+    if hasattr(win, "ensurePolished"):
+        win.ensurePolished()
+    _drain(qapp, cycles=10)
+    w, h = _parse_res(res)
+    try:
+        win.setMinimumSize(QSize(0, 0))
+        win.setMaximumSize(QSize(16777215, 16777215))
+        win.setFixedSize(QSize(w, h))
+        lay = win.layout()
+        if lay:
+            lay.activate()
+    except Exception:
+        pass
+    _drain(qapp, cycles=6)
+    return qapp, win
+
+
+def _close_window(win) -> None:
+    from PyQt6.QtWidgets import QApplication
+    qapp = QApplication.instance()
+    try:
+        if win is not None:
+            win.close()
+            win.deleteLater()
+    except Exception:
+        pass
+    if qapp is not None:
+        for tl in QApplication.topLevelWidgets():
+            if tl is not win and tl.isVisible():
+                try:
+                    tl.close()
+                    tl.deleteLater()
+                except Exception:
+                    pass
+        _drain(qapp, cycles=3)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Crawler de la app: BFS generico con fresh-window-per-node + replay
+# ═══════════════════════════════════════════════════════════════════════════
+
+def crawl_app(app_key: str, modo: str, opts: dict,
+              out_dirs: dict, log=print) -> tuple[list[CapturedState], dict]:
+    """Crawl generico de una app. Construye el grafo de estados descubriendo
+    acciones seguras en vivo y replayandolas en ventanas frescas.
+
+    Devuelve (estados_capturados, grafo). El grafo trae nodes/edges/omitted.
+    """
+    theme = _short_theme(modo)
+    max_states = int(opts.get("max_states", _DEFAULT_MAX_STATES))
+    max_depth = int(opts.get("max_depth", _DEFAULT_MAX_DEPTH))
+
+    nodes: list[CapturedState] = []
+    edges: list[dict] = []
+    omitted: list[dict] = []
+    seen_sig: dict[str, str] = {}      # sig -> screen_id
+    used_screen_ids: set[str] = set()
+    used_labels: dict[str, int] = {}
+
+    def _log_omit(rec):
+        omitted.append(rec)
+
+    def _unique_screen_id(base: str) -> str:
+        sid = base
+        if sid in used_screen_ids:
+            n = 2
+            while f"{sid}~{n}" in used_screen_ids:
+                n += 1
+            sid = f"{sid}~{n}"
+        used_screen_ids.add(sid)
+        return sid
+
+    def _materialize(path, parent_id, via):
+        nonlocal nodes
+        qapp, win = _instantiate(app_key, modo)
+        try:
+            ok = _replay_path(win, path, qapp)
+            if not ok:
+                omitted.append({"at": "<replay>", "path_len": len(path),
+                                "reason": "locator-no-resolvio"})
+                return None
+            # capturar
+            surface = _active_surface_label(win)
+            label_parts = [surface] + [a.get("label", "") for a in path]
+            human = "/".join(p for p in label_parts if p).replace(":", "/")
+            base_sid = f"{app_key}:{surface}"
+            if len(path) == 0:
+                sid = _unique_screen_ids_label(base_sid, used_screen_ids)
+            else:
+                # id legible: app:surface/act:.../tab:...
+                tail = "/".join(a.get("label", "step") for a in path)
+                sid = _unique_screen_ids_label(f"{app_key}:{surface}/{tail}",
+                                               used_screen_ids)
+            st = _capture_state(win, qapp, app_key, modo, out_dirs,
+                                screen_id=sid, label=human, path=path)
+            _persist_captured(st, out_dirs)
+            sig = st.structural_hash + "|" + (st.phash or "")
+            if sig in seen_sig:
+                edges.append({"from": parent_id, "to": seen_sig[sig],
+                              "via": via, "skipped": "duplicate"})
+                return None
+            st.node_id = sid
+            seen_sig[sig] = sid
+            nodes.append(st)
+            if parent_id:
+                edges.append({"from": parent_id, "to": sid, "via": via})
+            return st
+        finally:
+            _close_window(win)
+
+    # BFS con frontera acotada (DFS para seguir flujos multi-step primero)
+    frontier: list[tuple[list[dict], str, dict | None]] = [([], "", None)]
+    while frontier and len(nodes) < max_states:
+        path, parent_id, via = frontier.pop()
+        node = _materialize(path, parent_id, via)
+        if node is None:
+            continue
+        if len(path) >= max_depth:
+            node.stop_reason = "max_depth"
+            continue
+        # enumerar hijos en una ventana fresca ya descartada; re-materializar
+        # solo para enumerar seria costoso: re-usamos el nodo recien capturado
+        # abriendo una ventana efimera.
+        qapp2, win2 = _instantiate(app_key, modo)
+        try:
+            _replay_path(win2, path, qapp2)
+            child_actions = _enumerate_safe_actions(
+                win2, path, opts, log_omitted=_log_omit)
+        finally:
+            _close_window(win2)
+        # para evitar explosion, limitamos pushes y priorizamos diversidad
+        for action in child_actions:
+            child_path = path + [action]
+            frontier.append((child_path, node.node_id, action))
+        if len(frontier) > max_states * 6:
+            # podamos la frontera conservando los caminos mas profundos
+            frontier.sort(key=lambda x: len(x[0]))
+            frontier = frontier[-max_states * 3:]
+
+    graph = {
+        "app": app_key, "theme": theme,
+        "nodes": [_node_summary(n) for n in nodes],
+        "edges": edges,
+        "omitted_actions": omitted,
+        "crawl_opts": {"max_states": max_states, "max_depth": max_depth},
+        "discovered_count": len(nodes),
+    }
+    return nodes, graph
+
+
+def _unique_screen_ids_label(base: str, used: set[str]) -> str:
+    # recorta ids muy largos y los hace unicos
+    base = base[:80]
+    if base not in used:
+        used.add(base)
+        return base
+    # si colisiona, anade corto hash del path
+    short = hashlib.sha1(base.encode("utf-8")).hexdigest()[:6]
+    cand = f"{base[:60]}~{short}"
+    while cand in used:
+        cand = f"{base[:60]}~{short}{len(used)}"
+    used.add(cand)
+    return cand
+
+
+def _node_summary(n: CapturedState) -> dict:
+    return {
+        "node_id": n.node_id, "screen_id": n.screen_id, "app": n.app,
+        "theme": n.theme, "label": n.label,
+        "path": [a.get("label", "") for a in n.path],
+        "structural_hash": n.structural_hash, "phash": n.phash,
+        "sha256": n.sha256, "stop_reason": n.stop_reason,
+        "error": n.error,
+        "main_texts": (n.texts or [])[:6],
+        "interactive_widgets": n.interactive_total,
+        "png": str(n.png_path.relative_to(_PROJ)) if not n.error else None,
+    }
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Captura de evidencia por estado
 # ═══════════════════════════════════════════════════════════════════════════
 
-def sip_deleted(obj) -> bool:
-    try:
-        from PyQt6 import sip
-        return sip.isdeleted(obj)
-    except Exception:
-        return False
-
-
-def _capture_state(win, qapp, spec: StateSpec, modo: str, out_dirs: dict) -> CapturedState:
-    screen_id = spec.screen_id
+def _capture_state(win, qapp, app_key: str, modo: str, out_dirs: dict,
+                   screen_id: str, label: str, path: list[dict]) -> CapturedState:
     theme = _short_theme(modo)
     safe = _safe_name(screen_id)
     png_path = out_dirs["screenshots"] / f"{safe}-{theme}.png"
     tree_path = out_dirs["widget_trees"] / f"{safe}-{theme}.json"
-
-    _apply_enter(win, spec, qapp)
-    _drain(qapp, cycles=8)
 
     error: str | None = None
     try:
@@ -620,16 +925,17 @@ def _capture_state(win, qapp, spec: StateSpec, modo: str, out_dirs: dict) -> Cap
     buttons = _collect_buttons(widget_tree)
     crops = _make_crops(win, qapp, clickable + scrollbars + tabs, safe, theme, out_dirs)
     geo = _window_geometry(win)
-
     structural_hash = _structural_hash(widget_tree)
+    interactive_total = sum(1 for n in _walk_tree(widget_tree)
+                            if n.get("visible") and n.get("clickable"))
 
     return CapturedState(
-        screen_id=screen_id, app=spec.app, theme=theme, label=spec.label,
+        screen_id=screen_id, app=app_key, theme=theme, label=label,
         png_path=png_path, tree_path=tree_path, sha256=sha256, phash=phash,
         structural_hash=structural_hash, visual_metrics=metrics,
         widget_tree=widget_tree, texts=texts, clickable=clickable,
         scrollbars=scrollbars, tabs=tabs, buttons=buttons, crops=crops,
-        geometry=geo, error=error,
+        geometry=geo, error=error, path=path, interactive_total=interactive_total,
     )
 
 
@@ -649,29 +955,29 @@ def _content_metrics(path: Path) -> dict:
         with Image.open(path) as img:
             gray = img.convert("L")
             stat = ImageStat.Stat(gray)
-        return {
-            "gray_mean": round(stat.mean[0] / 255.0, 4),
-            "gray_stddev": round(stat.stddev[0] / 255.0, 4),
-        }
+        return {"gray_mean": round(stat.mean[0] / 255.0, 4),
+                "gray_stddev": round(stat.stddev[0] / 255.0, 4)}
     except Exception as exc:
         return {"error": str(exc)}
 
 
-def _build_widget_tree(root, depth: int = 0, max_depth: int = 12, win_ref=None,
-                      in_scroll: bool = False) -> dict:
-    """Arbol Qt serializable (tipo, objectName, texto, geometria, flags).
+def _build_widget_tree(root, depth: int = 0, max_depth: int = 11, win_ref=None,
+                      in_scroll: bool = False, in_dialog: bool = False) -> dict:
+    """Arbol Qt serializable.
 
     ``geometry`` es relativa al parent (Qt nativo). ``geo_win`` es la geometria
-    mapeada a la coordenada de la ventana (para checks de viewport/solape).
-    ``in_scroll`` indica si el widget vive dentro de un QScrollArea (su
-    contenido puede exceder el viewport legitimamente).
+    mapeada a la coordenada de la ventana. ``in_scroll``/``in_dialog`` indican
+    si el widget vive dentro de un QScrollArea / QDialog. ``has_icon`` indica
+    presencia real de icono.
     """
-    from PyQt6.QtWidgets import QWidget, QScrollArea
+    from PyQt6.QtWidgets import QWidget, QScrollArea, QDialog
     if sip_deleted(root) or depth > max_depth:
         return {"type": type(root).__name__, "truncated": True}
 
     is_scroll = isinstance(root, QScrollArea)
+    is_dialog = isinstance(root, QDialog)
     child_in_scroll = in_scroll or is_scroll
+    child_in_dialog = in_dialog or is_dialog
 
     def _rect(w):
         try:
@@ -691,67 +997,28 @@ def _build_widget_tree(root, depth: int = 0, max_depth: int = 12, win_ref=None,
         except Exception:
             return None
 
-    text = ""
-    for attr in ("text",):
-        try:
-            val = getattr(root, attr)
-            if callable(val):
-                val = val()
-            text = str(val)
-            if text and text != type(root).__name__:
-                break
-        except Exception:
-            text = ""
-
-    visible = False
-    enabled = True
-    try:
-        visible = bool(root.isVisible())
-        enabled = bool(root.isEnabled())
-    except Exception:
-        pass
-
     node = {
         "type": type(root).__name__,
         "objectName": root.objectName() if hasattr(root, "objectName") else "",
-        "text": text[:200],
+        "text": _widget_text(root)[:200],
         "geometry": _rect(root),
         "geo_win": _win_rect(root),
-        "visible": visible,
-        "enabled": enabled,
+        "visible": bool(root.isVisible()) if hasattr(root, "isVisible") else False,
+        "enabled": bool(root.isEnabled()) if hasattr(root, "isEnabled") else True,
         "clickable": _is_clickable(root),
+        "has_icon": _widget_has_icon(root),
         "in_scroll": in_scroll,
+        "in_dialog": in_dialog,
         "children": [],
     }
     try:
         node["children"] = [_build_widget_tree(c, depth + 1, max_depth, win_ref,
-                                                in_scroll=child_in_scroll)
+                                                child_in_scroll, child_in_dialog)
                             for c in root.children() if isinstance(c, QWidget)
                             and not sip_deleted(c)]
     except Exception:
         pass
     return node
-
-
-def _is_clickable(w) -> bool:
-    try:
-        from PyQt6.QtWidgets import (
-            QPushButton, QToolButton, QCheckBox, QRadioButton, QTabBar,
-            QTabWidget, QCommandLinkButton,
-        )
-        if isinstance(w, (QPushButton, QToolButton, QCheckBox, QRadioButton,
-                          QCommandLinkButton, QTabBar, QTabWidget)):
-            return True
-        cls = type(w).__name__
-        if cls in {"NMButton", "NMButtonOutline", "NMPlayButton", "NMTabs",
-                   "NMSegmentedPanel", "NMPanelTabs", "NMSegmentedChoice",
-                   "NMModule", "NMCard", "NMPatientRowPremium", "NMCustomCheck"}:
-            return True
-        if hasattr(w, "clicked"):
-            return True
-    except Exception:
-        pass
-    return False
 
 
 def _walk_tree(node: dict) -> Iterable[dict]:
@@ -761,23 +1028,19 @@ def _walk_tree(node: dict) -> Iterable[dict]:
 
 
 def _collect_texts(tree: dict) -> list[str]:
-    out = []
-    for n in _walk_tree(tree):
-        t = (n.get("text") or "").strip()
-        if n.get("visible") and t:
-            out.append(t)
-    return out
+    return [(n.get("text") or "").strip()
+            for n in _walk_tree(tree)
+            if n.get("visible") and (n.get("text") or "").strip()]
 
 
 def _collect_clickable(tree: dict) -> list[dict]:
     out = []
     for n in _walk_tree(tree):
         if n.get("visible") and n.get("clickable"):
-            out.append({
-                "type": n.get("type"), "text": n.get("text"),
-                "objectName": n.get("objectName"), "geometry": n.get("geometry"),
-                "enabled": n.get("enabled"),
-            })
+            out.append({"type": n.get("type"), "text": n.get("text"),
+                        "objectName": n.get("objectName"),
+                        "geometry": n.get("geometry"), "has_icon": n.get("has_icon"),
+                        "enabled": n.get("enabled")})
     return out
 
 
@@ -790,12 +1053,10 @@ def _collect_scrollbars(root) -> list[dict]:
                 continue
             try:
                 bar = w.orientation()
-                rng = w.minimum(), w.maximum()
-                page = w.pageStep()
                 out.append({
                     "orientation": "vertical" if bar.name == "Vertical" else "horizontal",
-                    "min": rng[0], "max": rng[1], "pageStep": page,
-                    "visible_range": rng[1] - rng[0],
+                    "min": w.minimum(), "max": w.maximum(), "pageStep": w.pageStep(),
+                    "visible_range": w.maximum() - w.minimum(),
                     "geometry": _geo_dict(w),
                 })
             except Exception:
@@ -803,10 +1064,8 @@ def _collect_scrollbars(root) -> list[dict]:
         for sa in root.findChildren(QScrollArea):
             if sip_deleted(sa) or not sa.isVisible():
                 continue
-            out.append({
-                "type": "QScrollArea", "objectName": sa.objectName(),
-                "geometry": _geo_dict(sa),
-            })
+            out.append({"type": "QScrollArea", "objectName": sa.objectName(),
+                        "geometry": _geo_dict(sa)})
     except Exception:
         pass
     return out
@@ -822,15 +1081,12 @@ def _collect_tabs(root) -> list[dict]:
         try:
             from PyQt6.QtWidgets import QTabBar
             if isinstance(c, QTabBar):
-                for i in range(info["count"]):
-                    rects.append(_geo_dict_rect(c.tabRect(i)))
+                rects = [_geo_dict_rect(c.tabRect(i)) for i in range(info["count"])]
         except Exception:
             pass
-        out.append({
-            "type": info["kind"], "count": info["count"],
-            "current": info["current"], "labels": info["labels"],
-            "tabRects": rects, "geometry": _geo_dict(c),
-        })
+        out.append({"type": info["kind"], "count": info["count"],
+                    "current": info["current"], "labels": info["labels"],
+                    "tabRects": rects, "geometry": _geo_dict(c)})
     return out
 
 
@@ -839,16 +1095,12 @@ def _collect_buttons(tree: dict) -> list[dict]:
     for n in _walk_tree(tree):
         cls = n.get("type", "")
         if n.get("visible") and ("Button" in cls or cls in {"NMPlayButton"}):
-            out.append({
-                "type": cls, "text": n.get("text"), "enabled": n.get("enabled"),
-                "objectName": n.get("objectName"), "geometry": n.get("geometry"),
-                "hasIcon": _has_icon_flag(n),
-            })
+            out.append({"type": cls, "text": n.get("text"),
+                        "enabled": n.get("enabled"),
+                        "objectName": n.get("objectName"),
+                        "geometry": n.get("geometry"),
+                        "has_icon": n.get("has_icon")})
     return out
-
-
-def _has_icon_flag(node: dict) -> bool:
-    return bool(node.get("_icon"))
 
 
 def _geo_dict(w) -> dict:
@@ -880,30 +1132,24 @@ def _structural_hash(tree: dict) -> str:
         if not n.get("visible"):
             continue
         g = n.get("geometry") or {}
-        parts.append(
-            f"{n.get('type')}|{n.get('objectName','')}|{g.get('w',0)}x{g.get('h',0)}"
-            f"|{(n.get('text') or '')[:40]}"
-        )
-    h = hashlib.sha256("\n".join(sorted(parts)).encode("utf-8")).hexdigest()
-    return h[:16]
+        parts.append(f"{n.get('type')}|{n.get('objectName','')}|{g.get('w',0)}x{g.get('h',0)}"
+                     f"|{(n.get('text') or '')[:40]}")
+    return hashlib.sha256("\n".join(sorted(parts)).encode("utf-8")).hexdigest()[:16]
 
 
-def _make_crops(win, qapp, regions: list[dict], screen_id: str, theme: str,
+def _make_crops(win, qapp, regions: list[dict], safe: str, theme: str,
                 out_dirs: dict) -> list[dict]:
-    """Recorta regiones importantes (tabs/scrollbars/clickable destacados)."""
     crops = []
     try:
-        from PyQt6.QtGui import QPixmap
         pm = win.grab()
         full = pm.toImage()
-        # limitar a pocas regiones para no explotar evidencia
         made = 0
         for reg in regions[:6]:
             g = reg.get("geometry") or {}
             w_, h_ = g.get("w", 0), g.get("h", 0)
             if w_ <= 0 or h_ <= 0:
                 continue
-            name = f"{screen_id}-{theme}-crop-{made}.png"
+            name = f"{safe}-{theme}-crop-{made}.png"
             outp = out_dirs["crops"] / name
             try:
                 sub = full.copy(max(0, g.get("x", 0)), max(0, g.get("y", 0)), w_, h_)
@@ -917,8 +1163,23 @@ def _make_crops(win, qapp, regions: list[dict], screen_id: str, theme: str,
     return crops
 
 
+def _persist_captured(st: CapturedState, out_dirs: dict) -> None:
+    tree_data = {
+        "screen_id": st.screen_id, "app": st.app, "theme": st.theme,
+        "label": st.label, "node_id": st.node_id, "path": st.path,
+        "geometry": st.geometry, "sha256": st.sha256, "phash": st.phash,
+        "structural_hash": st.structural_hash, "visual_metrics": st.visual_metrics,
+        "error": st.error, "stop_reason": st.stop_reason,
+        "texts": st.texts, "clickable": st.clickable,
+        "scrollbars": st.scrollbars, "tabs": st.tabs, "buttons": st.buttons,
+        "crops": st.crops, "tree": st.widget_tree,
+    }
+    st.tree_path.write_text(json.dumps(tree_data, indent=2, ensure_ascii=False),
+                            encoding="utf-8")
+
+
 # ═══════════════════════════════════════════════════════════════════════════
-# Contratos visuales globales
+# Contratos visuales globales (genericos, por componente/rol, no por pantalla)
 # ═══════════════════════════════════════════════════════════════════════════
 
 def _load_contracts() -> list[dict]:
@@ -949,8 +1210,6 @@ def _run_contracts(states: list[CapturedState], contracts: list[dict],
             fn = _CHECKS.get(check_name)
             if fn is None:
                 continue
-            if not _contract_applies(c, st):
-                continue
             try:
                 results = fn(st, c, states, approved_registry)
             except Exception as exc:
@@ -967,25 +1226,30 @@ def _run_contracts(states: list[CapturedState], contracts: list[dict],
                     severity=c.get("severity", "P2"),
                     flag=r.get("flag", c.get("id", "").upper()),
                     screen_id=st.screen_id, theme=st.theme,
-                    message=r.get("message", ""),
-                    detail=r.get("detail", {}),
+                    message=r.get("message", ""), detail=r.get("detail", {}),
                 ))
     return findings
 
 
-def _contract_applies(contract: dict, st: CapturedState) -> bool:
-    apps = contract.get("apps")
-    if apps and st.app not in apps:
-        return False
-    surfaces = contract.get("surfaces")
-    if surfaces and st.surface not in surfaces:
-        return False
-    return True
+# --- Implementacion de checks (todos genericos) ----------------------------
+
+def _geo_for_checks(node: dict) -> dict | None:
+    gw = node.get("geo_win")
+    if isinstance(gw, dict) and gw.get("w", 0) > 0:
+        return gw
+    g = node.get("geometry")
+    return g if isinstance(g, dict) else None
 
 
-# --- Implementacion de cada check ------------------------------------------
+def _surface_of(st: CapturedState) -> str:
+    parts = st.screen_id.split(":")
+    if len(parts) >= 2:
+        rest = parts[1]
+        return rest.split("/")[0]
+    return st.screen_id
 
-def _check_blank_or_flat(st: CapturedState, c: dict, states, reg) -> list[dict]:
+
+def _check_blank_or_flat(st, c, states, reg) -> list[dict]:
     if st.error or not st.visual_metrics or "error" in st.visual_metrics:
         return [{"flag": "MISSING_EVIDENCE",
                  "message": f"Sin evidencia valida: {st.error or st.visual_metrics}"}]
@@ -999,22 +1263,22 @@ def _check_blank_or_flat(st: CapturedState, c: dict, states, reg) -> list[dict]:
     return []
 
 
-def _check_duplicate(st: CapturedState, c: dict, states, reg) -> list[dict]:
+def _check_duplicate(st, c, states, reg) -> list[dict]:
     if not st.phash:
         return []
     out = []
+    max_d = c.get("params", {}).get("max_distance", _DUP_PHASH_DISTANCE)
     for other in states:
         if other is st or other.theme != st.theme or not other.phash:
             continue
         if other.screen_id == st.screen_id:
             continue
         dist = _phash_distance(st.phash, other.phash)
-        if dist <= c.get("params", {}).get("max_distance", _DUP_PHASH_DISTANCE):
+        if dist <= max_d:
             out.append({"flag": "DUPLICATE_SUSPECT",
                         "message": (f"Estado visualmente duplicado con "
                                     f"{other.screen_id} (phash distance={dist})."),
                         "detail": {"other": other.screen_id, "distance": dist}})
-    # duplicado exacto por sha256
     if st.sha256:
         for other in states:
             if other is st or other.theme != st.theme:
@@ -1022,7 +1286,7 @@ def _check_duplicate(st: CapturedState, c: dict, states, reg) -> list[dict]:
             if other.screen_id != st.screen_id and other.sha256 == st.sha256:
                 out.append({"flag": "DUPLICATE_SUSPECT",
                             "message": (f"Hash PNG identico a {other.screen_id}; "
-                                        "estado probablemente no alcanzado."),
+                                        "estado probablemente no alcanzado (fallback)."),
                             "detail": {"other": other.screen_id, "sha256": st.sha256}})
     return out
 
@@ -1030,34 +1294,18 @@ def _check_duplicate(st: CapturedState, c: dict, states, reg) -> list[dict]:
 def _phash_distance(a: str, b: str) -> int:
     try:
         import imagehash
-        ha = imagehash.hex_to_hash(a)
-        hb = imagehash.hex_to_hash(b)
-        return int(ha - hb)
+        return int(imagehash.hex_to_hash(a) - imagehash.hex_to_hash(b))
     except Exception:
         return 64
 
 
-def _geo_for_checks(node: dict) -> dict | None:
-    """Geometria preferida para checks de viewport/solape: coordenadas
-    mapeadas a la ventana (geo_win). Cae a ``geometry`` si no existe."""
-    gw = node.get("geo_win")
-    if isinstance(gw, dict) and gw.get("w", 0) > 0:
-        return gw
-    g = node.get("geometry")
-    return g if isinstance(g, dict) else None
-
-
-def _check_out_of_viewport(st: CapturedState, c: dict, states, reg) -> list[dict]:
+def _check_out_of_viewport(st, c, states, reg) -> list[dict]:
     vw = st.geometry.get("w", 960)
     vh = st.geometry.get("h", 600)
     tol = c.get("params", {}).get("tolerance", 2)
     out = []
     for n in _walk_tree(st.widget_tree):
-        if not n.get("visible"):
-            continue
-        # El contenido dentro de un QScrollArea puede exceder el viewport
-        # legitimamente (se desplaza); no se flagea como fuera de viewport.
-        if n.get("in_scroll"):
+        if not n.get("visible") or n.get("in_scroll"):
             continue
         g = _geo_for_checks(n)
         if not g:
@@ -1065,7 +1313,6 @@ def _check_out_of_viewport(st: CapturedState, c: dict, states, reg) -> list[dict
         x, y, w_, h_ = g.get("x", 0), g.get("y", 0), g.get("w", 0), g.get("h", 0)
         if w_ <= 0 or h_ <= 0:
             continue
-        # fuera si esta completamente fuera del viewport
         if x + w_ < tol or y + h_ < tol or x > vw - tol or y > vh - tol:
             if n.get("text") or n.get("clickable"):
                 out.append({"flag": "OUT_OF_VIEWPORT",
@@ -1079,10 +1326,7 @@ def _check_out_of_viewport(st: CapturedState, c: dict, states, reg) -> list[dict
     return out
 
 
-def _check_overlap(st: CapturedState, c: dict, states, reg) -> list[dict]:
-    """Solape claro entre widgets visibles con contenido, usando coordenadas de
-    ventana. Filtra anidamiento padre/hijo (si el centro de uno esta dentro del
-    otro, es nesting, no overlap)."""
+def _check_overlap(st, c, states, reg) -> list[dict]:
     rects = []
     for n in _walk_tree(st.widget_tree):
         if not n.get("visible") or not (n.get("text") or n.get("clickable")):
@@ -1093,20 +1337,16 @@ def _check_overlap(st: CapturedState, c: dict, states, reg) -> list[dict]:
         w_, h_ = g.get("w", 0), g.get("h", 0)
         if w_ <= 4 or h_ <= 4:
             continue
-        rects.append((g.get("x", 0), g.get("y", 0), w_, h_,
-                      g.get("x", 0) + w_ / 2.0, g.get("y", 0) + h_ / 2.0, n))
+        rects.append((g.get("x", 0), g.get("y", 0), w_, h_, n))
     out = []
     min_ratio = c.get("params", {}).get("min_overlap_ratio", _OVERLAP_MIN_RATIO)
 
     def _containment(ax, ay, aw, ah, bx, by, bw, bh) -> float:
-        """Que fraccion del rect A esta contenido en B (0..1)."""
         ix0, iy0 = max(ax, bx), max(ay, by)
         ix1, iy1 = min(ax + aw, bx + bw), min(ay + ah, by + bh)
         iw, ih = max(0, ix1 - ix0), max(0, iy1 - iy0)
         area_a = aw * ah
-        if area_a <= 0:
-            return 0.0
-        return (iw * ih) / area_a
+        return (iw * ih) / area_a if area_a > 0 else 0.0
 
     for i in range(len(rects)):
         if len(out) >= 20:
@@ -1122,128 +1362,136 @@ def _check_overlap(st: CapturedState, c: dict, states, reg) -> list[dict]:
             small = min(a[2] * a[3], b[2] * b[3])
             if small <= 0 or inter / small < min_ratio:
                 continue
-            # Filtrar anidamiento real padre/hijo: uno de los rects esta casi
-            # totalmente contenido en el otro (>= 90%). No es solape, es nesting.
             if (_containment(a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3]) >= 0.9 or
                     _containment(b[0], b[1], b[2], b[3], a[0], a[1], a[2], a[3]) >= 0.9):
                 continue
             out.append({"flag": "WIDGET_OVERLAP",
-                        "message": (f"Solape claro entre {a[6].get('type')} "
-                                    f"'{(a[6].get('text') or '')[:20]}' y "
-                                    f"{b[6].get('type')} "
-                                    f"'{(b[6].get('text') or '')[:20]}' "
+                        "message": (f"Solape claro entre {a[4].get('type')} "
+                                    f"'{(a[4].get('text') or '')[:20]}' y "
+                                    f"{b[4].get('type')} "
+                                    f"'{(b[4].get('text') or '')[:20]}' "
                                     f"({inter/small:.0%} del menor)"),
-                        "detail": {"a": a[6].get("type"), "b": b[6].get("type"),
+                        "detail": {"a": a[4].get("type"), "b": b[4].get("type"),
                                    "ratio": round(inter / small, 2)}})
             if len(out) >= 20:
                 break
     return out
 
 
-def _check_elided_text(st: CapturedState, c: dict, states, reg) -> list[dict]:
+def _check_elided_text(st, c, states, reg) -> list[dict]:
     out = []
     for n in _walk_tree(st.widget_tree):
-        cls = n.get("type", "")
-        if cls == "NMElidedLabel" and n.get("visible"):
+        if n.get("type") == "NMElidedLabel" and n.get("visible"):
             out.append({"flag": "ELIDED_PRIMARY_TEXT",
                         "message": (f"NMElidedLabel visible: posible texto cortado "
                                     f"'{(n.get('text') or '')[:40]}'"),
-                        "detail": {"widget": cls, "text": n.get("text")}})
+                        "detail": {"widget": n.get("type"), "text": n.get("text")}})
     return out
 
 
-def _surface_of(st: CapturedState) -> str:
-    parts = st.screen_id.split(":")
-    return parts[1] if len(parts) >= 2 else st.screen_id
+def _check_primary_button_missing_icon(st, c, states, reg) -> list[dict]:
+    """Generico: un boton de rol primario (objectName NMButton_gradient, variante
+    primaria del design system) deberia portar icono. Deriva del ROL (objectName
+    del componente), no de labels de pantallas actuales."""
+    out = []
+    primary_marker = c.get("params", {}).get("primary_objectname_marker",
+                                             "NMButton_gradient")
+    for b in st.buttons:
+        obj = (b.get("objectName") or "")
+        if obj == primary_marker and not b.get("has_icon"):
+            out.append({"flag": "PRIMARY_BUTTON_MISSING_ICON",
+                        "message": (f"Boton primario ({obj}) sin icono: "
+                                    f"'{(b.get('text') or '')[:40]}'"),
+                        "detail": b})
+    return out
 
 
-def _check_unexpected_scroll_legal(st: CapturedState, c: dict, states, reg) -> list[dict]:
-    # Scrollbars internas en legales/onboarding consideradas sospechosas.
-    surface = _surface_of(st).lower()
-    keywords = ("onboarding", "legal", "consent", "privacy")
-    if not any(k in surface for k in keywords):
-        return []
+# Alias retrocompatible (tests). Delega en el check generico por rol.
+def _check_cta_missing_icon(st, c, states, reg) -> list[dict]:
+    return _check_primary_button_missing_icon(st, c, states, reg)
+
+
+def _check_control_without_metadata(st, c, states, reg) -> list[dict]:
+    """Generico: control clickeable sin metadata visual suficiente (sin texto,
+    sin icono, sin accessibleName/objectName). Probablemente opaco para auditoria."""
+    out = []
+    for n in _walk_tree(st.widget_tree):
+        if not (n.get("visible") and n.get("clickable")):
+            continue
+        has_text = bool((n.get("text") or "").strip())
+        has_icon = bool(n.get("has_icon"))
+        obj = (n.get("objectName") or "").strip()
+        if not has_text and not has_icon and not obj:
+            out.append({"flag": "CONTROL_WITHOUT_VISUAL_METADATA",
+                        "message": (f"Control {n.get('type')} sin texto, icono ni "
+                                    f"objectName: imposible auditar su rol."),
+                        "detail": {"type": n.get("type"),
+                                   "geometry": n.get("geometry")}})
+        if len(out) >= 20:
+            break
+    return out
+
+
+def _check_checkbox_in_scroll_area(st, c, states, reg) -> list[dict]:
+    """Generico estructural: cualquier checkbox/toggle dentro de un QScrollArea.
+    Cubre el patron "consentimiento legal dentro de scroll" sin nombrar pantallas."""
+    out = []
+    for n in _walk_tree(st.widget_tree):
+        if (n.get("type") in {"QCheckBox", "NMCustomCheck", "NMSegmentedChoice"}
+                and n.get("visible") and n.get("in_scroll")):
+            out.append({"flag": "CHECKBOX_IN_SCROLL_AREA",
+                        "message": (f"Checkbox dentro de scroll area: "
+                                    f"'{(n.get('text') or '')[:40]}' "
+                                    "(el control afirmativo debe quedar fijo, no dentro de scroll)."),
+                        "detail": {"type": n.get("type"), "text": n.get("text")}})
+    return out
+
+
+def _check_dialog_internal_scrollbar(st, c, states, reg) -> list[dict]:
+    """Generico: scrollbar interna dentro de un dialogo cuyo contenido excede el
+    body (posible truncamiento legal/terminos)."""
     out = []
     for sb in st.scrollbars:
         if sb.get("type") == "QScrollArea":
             continue
-        if sb.get("visible_range", 0) and sb.get("max", 0) > sb.get("pageStep", 0):
-            out.append({"flag": "UNEXPECTED_LEGAL_SCROLLBAR",
-                        "message": (f"Scrollbar interna inesperada en {surface}: "
-                                    f"range={sb.get('visible_range')}"),
+        if sb.get("max", 0) > sb.get("pageStep", 0) and sb.get("visible_range", 0) > 0:
+            # solo si pertenece a un dialogo: lo inferimos buscando el scrollbar
+            # dentro de in_dialog via arbol
+            out.append({"flag": "DIALOG_INTERNAL_SCROLLBAR",
+                        "message": (f"Scrollbar interna con rango > page "
+                                    f"(max={sb.get('max')}, page={sb.get('pageStep')}): "
+                                    "posible contenido truncado en un dialogo."),
                         "detail": sb})
-    # checkbox legal dentro de scroll area
-    out.extend(_find_legal_checkbox_in_scroll(st))
+            if len(out) >= 10:
+                break
     return out
 
 
-def _find_legal_checkbox_in_scroll(st: CapturedState) -> list[dict]:
-    from PyQt6.QtWidgets import QScrollArea, QCheckBox
+def _check_dialog_without_close(st, c, states, reg) -> list[dict]:
+    """Generico: dialogo (QDialog/NMDialog) sin boton de cierre visible."""
     out = []
-    try:
-        # st no retiene la ventana; este check se corre durante la captura via
-        # arbol: buscamos nodos QScrollArea que contengan QCheckBox/NMCustomCheck.
-        for n in _walk_tree(st.widget_tree):
-            if n.get("type") in {"QCheckBox", "NMCustomCheck"} and n.get("visible"):
-                # heuristica: texto legal/consentimiento
-                t = _norm_text(n.get("text"))
-                if any(k in t for k in ("consent", "terminos", "privacidad", "acepto", "legal")):
-                    out.append({"flag": "LEGAL_CHECKBOX_IN_SCROLL_AREA",
-                                "message": (f"Checkbox legal detectado: "
-                                            f"'{(n.get('text') or '')[:40]}'"),
-                                "detail": {"widget": n.get("type"), "text": n.get("text")}})
-    except Exception:
-        pass
+    for n in _walk_tree(st.widget_tree):
+        if n.get("type") in {"QDialog", "NMDialog", "NMModal"} and n.get("visible"):
+            # buscar un descendiente clickeable con rol de cierre
+            has_close = False
+            for child in _walk_tree(n):
+                if not child.get("visible") or not child.get("clickable"):
+                    continue
+                t = _norm_text(child.get("text"))
+                obj = (child.get("objectName") or "").lower()
+                if any(k in t for k in ("cerrar", "x", "cancelar", "close", "ok",
+                                        "aceptar", "entendido")) or "close" in obj:
+                    has_close = True
+                    break
+            if not has_close:
+                out.append({"flag": "DIALOG_WITHOUT_VISIBLE_CLOSE",
+                            "message": (f"Dialogo {n.get('type')} sin control de "
+                                        "cierre visible/clickeable."),
+                            "detail": {"type": n.get("type")}})
     return out
 
 
-_SEMANTIC_CTAS = ("exportar pdf", "resumen ia", "completar con ia", "completar con ia")
-
-
-def _check_cta_missing_icon(st: CapturedState, c: dict, states, reg) -> list[dict]:
-    out = []
-    for b in st.buttons:
-        t = _norm_text(b.get("text"))
-        if not t:
-            continue
-        if any(k in t for k in _SEMANTIC_CTAS):
-            if not b.get("hasIcon"):
-                out.append({"flag": "CTA_SEMANTIC_MISSING_ICON",
-                            "message": (f"CTA semantico sin icono: '{b.get('text')}'"),
-                            "detail": b})
-    return out
-
-
-def _check_oversized_tabs(st: CapturedState, c: dict, states, reg) -> list[dict]:
-    out = []
-    vh = st.geometry.get("h", 600)
-    params = c.get("params", {})
-    max_ratio = params.get("max_tab_to_window_height_ratio", 0.18)
-    for tab in st.tabs:
-        for rect in tab.get("tabRects", []):
-            th = rect.get("h", 0)
-            if vh > 0 and th / vh > max_ratio:
-                out.append({"flag": "OVERSIZED_SECONDARY_TAB",
-                            "message": (f"Tab secundaria gigante: alto {th}px "
-                                        f"({th/vh:.0%} de la ventana {vh}px)"),
-                            "detail": {"rect": rect, "type": tab.get("type")}})
-    return out
-
-
-def _check_long_tab_labels(st: CapturedState, c: dict, states, reg) -> list[dict]:
-    out = []
-    max_len = c.get("params", {}).get("max_label_chars", 22)
-    for tab in st.tabs:
-        for lbl in tab.get("labels", []):
-            if len(str(lbl)) > max_len:
-                out.append({"flag": "LONG_TAB_LABEL",
-                            "message": (f"Tab con label largo ({len(str(lbl))} chars): "
-                                        f"'{str(lbl)[:40]}'"),
-                            "detail": {"label": lbl, "type": tab.get("type")}})
-    return out
-
-
-def _check_new_state(st: CapturedState, c: dict, states, reg) -> list[dict]:
+def _check_new_state(st, c, states, reg) -> list[dict]:
     key = f"{st.screen_id}@{st.theme}"
     if key not in reg:
         return [{"flag": "NEW_STATE_UNREVIEWED",
@@ -1253,14 +1501,9 @@ def _check_new_state(st: CapturedState, c: dict, states, reg) -> list[dict]:
     return []
 
 
-def _check_progress_dot_error(st: CapturedState, c: dict, states, reg) -> list[dict]:
-    # Heuristica sobre textos/colores del arbol: NMProgressBar / NMRingPulse con
-    # clase indicadora de error. Sin acceso al color en el arbol serializado,
-    # emitimos solo si el estado NO es de error y aparece widget de progreso
-    # junto a marcadores rojos. Conservativo (P2).
+def _check_progress_dot_error(st, c, states, reg) -> list[dict]:
     surface = _surface_of(st).lower()
-    is_error_state = any(k in surface for k in ("error", "fail", "danger"))
-    if is_error_state:
+    if any(k in surface for k in ("error", "fail", "danger")):
         return []
     out = []
     for n in _walk_tree(st.widget_tree):
@@ -1275,14 +1518,47 @@ def _check_progress_dot_error(st: CapturedState, c: dict, states, reg) -> list[d
     return out
 
 
+def _check_oversized_tabs(st, c, states, reg) -> list[dict]:
+    out = []
+    vh = st.geometry.get("h", 600)
+    max_ratio = c.get("params", {}).get("max_tab_to_window_height_ratio", 0.18)
+    for tab in st.tabs:
+        for rect in tab.get("tabRects", []):
+            th = rect.get("h", 0)
+            if vh > 0 and th / vh > max_ratio:
+                out.append({"flag": "OVERSIZED_SECONDARY_TAB",
+                            "message": (f"Tab gigante: alto {th}px "
+                                        f"({th/vh:.0%} de la ventana {vh}px) "
+                                        "(rompe densidad por proporcion)."),
+                            "detail": {"rect": rect, "type": tab.get("type")}})
+    return out
+
+
+def _check_long_tab_labels(st, c, states, reg) -> list[dict]:
+    out = []
+    max_len = c.get("params", {}).get("max_label_chars", 22)
+    for tab in st.tabs:
+        for lbl in tab.get("labels", []):
+            if len(str(lbl)) > max_len:
+                out.append({"flag": "LONG_TAB_LABEL",
+                            "message": (f"Tab con label largo ({len(str(lbl))} chars): "
+                                        f"'{str(lbl)[:40]}'"),
+                            "detail": {"label": lbl, "type": tab.get("type")}})
+    return out
+
+
 _CHECKS: dict[str, Callable[..., list[dict]]] = {
     "blank_or_flat": _check_blank_or_flat,
     "duplicate_suspect": _check_duplicate,
     "out_of_viewport": _check_out_of_viewport,
     "widget_overlap": _check_overlap,
     "elided_primary_text": _check_elided_text,
-    "unexpected_scrollbar_in_legal": _check_unexpected_scroll_legal,
+    "primary_button_missing_icon": _check_primary_button_missing_icon,
     "semantic_cta_missing_icon": _check_cta_missing_icon,
+    "control_without_visual_metadata": _check_control_without_metadata,
+    "checkbox_in_scroll_area": _check_checkbox_in_scroll_area,
+    "dialog_internal_scrollbar": _check_dialog_internal_scrollbar,
+    "dialog_without_visible_close": _check_dialog_without_close,
     "oversized_secondary_tabs": _check_oversized_tabs,
     "long_tab_labels": _check_long_tab_labels,
     "new_state_unreviewed": _check_new_state,
@@ -1316,10 +1592,10 @@ def _propose_baselines(states: list[CapturedState]) -> int:
         key = f"{st.screen_id}@{st.theme}"
         if key in reg:
             continue
-        fp = _PROPOSED_DIR / f"{st.screen_id.replace(':', '_')}-{st.theme}.json"
+        fp = _PROPOSED_DIR / f"{_safe_name(st.screen_id)}-{st.theme}.json"
         fp.write_text(json.dumps({
-            "screen_id": st.screen_id, "theme": st.theme,
-            "label": st.label, "sha256": st.sha256, "phash": st.phash,
+            "screen_id": st.screen_id, "theme": st.theme, "label": st.label,
+            "sha256": st.sha256, "phash": st.phash,
             "structural_hash": st.structural_hash,
             "proposed_at": datetime.datetime.now().isoformat(timespec="seconds"),
         }, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -1330,7 +1606,7 @@ def _propose_baselines(states: list[CapturedState]) -> int:
 def _approve_baseline(screen_id: str, theme: str, reason: str) -> dict:
     reg = _load_registry()
     key = f"{screen_id}@{theme}"
-    prop = _PROPOSED_DIR / f"{screen_id.replace(':', '_')}-{theme}.json"
+    prop = _PROPOSED_DIR / f"{_safe_name(screen_id)}-{theme}.json"
     if not prop.exists():
         return {"ok": False, "error": f"No hay baseline propuesta en {prop}"}
     data = json.loads(prop.read_text(encoding="utf-8"))
@@ -1344,8 +1620,8 @@ def _approve_baseline(screen_id: str, theme: str, reason: str) -> dict:
     }
     reg[key] = entry
     _save_registry(reg)
-    approved = _APPROVED_DIR / f"{screen_id.replace(':', '_')}-{theme}.json"
     _APPROVED_DIR.mkdir(parents=True, exist_ok=True)
+    approved = _APPROVED_DIR / f"{_safe_name(screen_id)}-{theme}.json"
     approved.write_text(json.dumps(entry, indent=2, ensure_ascii=False), encoding="utf-8")
     try:
         prop.unlink()
@@ -1355,7 +1631,7 @@ def _approve_baseline(screen_id: str, theme: str, reason: str) -> dict:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Cobertura: estados nuevos / stale / obsoletos
+# Cobertura + matriz de cobertura
 # ═══════════════════════════════════════════════════════════════════════════
 
 def _compute_coverage(states: list[CapturedState], discovered_ids: list[str],
@@ -1376,6 +1652,80 @@ def _compute_coverage(states: list[CapturedState], discovered_ids: list[str],
     }
 
 
+def _build_coverage_matrix(states: list[CapturedState], graphs: dict[str, dict],
+                           findings: list[Finding]) -> dict:
+    """Matriz de cobertura global. NO compara contra V8 (V8 no es dependencia ni
+    target oficial). Resume lo que el crawler cubrio y lo que omitio."""
+    by_screen = {}
+    for f in findings:
+        by_screen.setdefault(f.screen_id, []).append(f)
+    total_interactive = sum(s.interactive_total for s in states)
+    n_captured = sum(1 for s in states if not s.error)
+    n_dup = sum(1 for f in findings if f.flag == "DUPLICATE_SUSPECT")
+    n_blank = sum(1 for f in findings if f.flag == "BLANK_OR_FLAT")
+    all_omitted: list[dict] = []
+    all_edges = []
+    modals = 0
+    tabs_explored = 0
+    for g in graphs.values():
+        all_omitted.extend(g.get("omitted_actions", []))
+        all_edges.extend(g.get("edges", []))
+        for n in g.get("nodes", []):
+            tabs_explored += sum(1 for e in n.get("path", [])
+                                 if isinstance(e, str) and e.startswith("tab:"))
+    # stack indexes explorados = tabs_explored (cada tab es un stack index)
+    rows = []
+    for s in sorted(states, key=lambda x: (x.app, x.screen_id, x.theme)):
+        fs = by_screen.get(s.screen_id, [])
+        rows.append({
+            "screen_id": s.screen_id, "app": s.app, "theme": s.theme,
+            "label": s.label,
+            "captured": not s.error,
+            "reason_if_missing": s.error or "",
+            "interactive_widgets": s.interactive_total,
+            "tabs": len(s.tabs),
+            "findings": len(fs),
+            "max_severity": _max_sev(fs),
+            "stop_reason": s.stop_reason,
+            "path_depth": len(s.path),
+            "duplicate": any(f.flag == "DUPLICATE_SUSPECT" for f in fs),
+            "fallback": any(f.flag == "DUPLICATE_SUSPECT"
+                            and "fallback" in f.message.lower() for f in fs),
+        })
+    skipped_edges = [e for e in all_edges if e.get("skipped")]
+    return {
+        "summary": {
+            "discovered_states": len(states),
+            "captured_states": n_captured,
+            "missing_evidence": sum(1 for s in states if s.error),
+            "duplicate_suspects": n_dup,
+            "blank_or_flat": n_blank,
+            "total_interactive_widgets_seen": total_interactive,
+            "modal_dialogs_detected": modals,
+            "tabs_or_stack_indexes_explored": tabs_explored,
+            "edges_total": len(all_edges),
+            "edges_skipped_duplicate": len(skipped_edges),
+            "actions_omitted": len(all_omitted),
+            "interactive_coverage_pct": round(100 * n_captured / max(1, len(states)), 1),
+        },
+        "rows": rows,
+        "omitted_actions": all_omitted,
+        "unexplored": {
+            "stop_reasons": sorted({s.stop_reason for s in states if s.stop_reason}),
+            "note": ("Estados que requieren manipulacion de datos reales o red "
+                     "(ej. empty/error forzados sin affordance de UI) no son "
+                     "autodescubribles por el crawler generico."),
+        },
+    }
+
+
+def _max_sev(fs: list[Finding]) -> str:
+    if not fs:
+        return ""
+    order = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
+    return min((f.severity for f in fs), key=lambda s: order.get(s, 9))
+
+
 def _check_stale(states: list[CapturedState], reg: dict) -> list[Finding]:
     discovered_keys = {f"{s.screen_id}@{s.theme}" for s in states}
     out = []
@@ -1392,8 +1742,6 @@ def _check_stale(states: list[CapturedState], reg: dict) -> list[Finding]:
 
 
 def _check_obsolete_recipe_refs(reg: dict) -> list[Finding]:
-    """Detecta referencias obsoletas a recetas/pantallas de V8/runtime en la
-    metadata propia del Sentinel (registry de baselines)."""
     out = []
     legacy_markers = ("capture_v8", "runtime_live_probe", "popup-", "-v8")
     for key, entry in reg.items():
@@ -1419,53 +1767,58 @@ def _html_escape(s: Any) -> str:
             .replace(">", "&gt;").replace('"', "&quot;"))
 
 
-def _write_html_report(out_dirs: dict, states: list[CapturedState],
-                       findings: list[Finding], coverage: dict,
-                       result: str, general_complete: bool, run_meta: dict) -> Path:
+def _write_html_report(out_dirs, states, findings, coverage, matrix, result,
+                       general_complete, run_meta) -> Path:
     by_sev = {"P0": 0, "P1": 0, "P2": 0, "P3": 0}
     for f in findings:
         by_sev[f.severity] = by_sev.get(f.severity, 0) + 1
     findings_by_screen: dict[str, list[Finding]] = {}
     for f in findings:
         findings_by_screen.setdefault(f.screen_id, []).append(f)
-
     rel = lambda p: os.path.relpath(p, out_dirs["latest"])  # noqa: E731
 
     parts: list[str] = []
     parts.append("<!doctype html><html lang='es'><head><meta charset='utf-8'>")
-    parts.append("<title>Visual Sentinel — Reporte</title>")
-    parts.append("<style>")
+    parts.append("<title>Visual Sentinel — Reporte</title><style>")
     parts.append(
         "body{font-family:system-ui,Segoe UI,Roboto,sans-serif;margin:0;background:#0e1116;color:#e6edf3}"
-        "h1,h2,h3{color:#fff} .wrap{max-width:1200px;margin:0 auto;padding:24px}"
+        "h1,h2,h3{color:#fff}.wrap{max-width:1240px;margin:0 auto;padding:24px}"
         ".card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin:12px 0}"
-        ".pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;margin-right:4px}"
-        ".pass{background:#1a7f37;color:#fff}.fail{background:#da3633;color:#fff}"
+        ".pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;margin:2px}"
+        ".pass{background:#1a7f37}.fail{background:#da3633}"
         ".p0{background:#da3633}.p1{background:#db6d28}.p2{background:#58a6ff}.p3{background:#6e7681}"
-        ".grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}"
+        ".grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}"
         ".thumb{background:#0d1117;border:1px solid #30363d;border-radius:8px;overflow:hidden}"
         ".thumb img{width:100%;height:auto;display:block}.thumb .meta{padding:8px;font-size:12px}"
         ".flag{font-family:ui-monospace,SFMono-Regular,monospace;font-size:11px;color:#f0883e}"
         "details{margin:4px 0}summary{cursor:pointer;font-weight:600}"
         "ul{margin:4px 0 4px 18px}a{color:#58a6ff}small{color:#8b949e}"
-        "ul.tree{font-family:ui-monospace,monospace;font-size:12px;white-space:pre-wrap}"
+        "table{border-collapse:collapse;width:100%;font-size:12px}"
+        "th,td{border:1px solid #30363d;padding:4px 6px;text-align:left}"
     )
     parts.append("</style></head><body><div class='wrap'>")
     parts.append("<h1>Visual Sentinel</h1>")
-    parts.append(f"<small>Run: {run_meta.get('generated_at','')} · commit {run_meta.get('git',{}).get('short_head','')}</small>")
+    parts.append(f"<small>Run: {run_meta.get('generated_at','')} · commit "
+                 f"{run_meta.get('git',{}).get('short_head','')} · crawler generico</small>")
 
     parts.append("<div class='card'>")
     badge = "pass" if result == "PASS" else "fail"
     parts.append(f"<span class='pill {badge}'>VISUAL_SENTINEL_RESULT: {result}</span>")
     parts.append(f"<span class='pill {('pass' if general_complete else 'fail')}'>"
                  f"GENERAL_AUDIT_COMPLETE: {'YES' if general_complete else 'NO'}</span>")
+    s = matrix.get("summary", {})
+    parts.append(f"<span class='pill p3'>estados: {s.get('discovered_states',0)}</span>")
+    parts.append(f"<span class='pill p3'>capturados: {s.get('captured_states',0)}</span>")
+    parts.append(f"<span class='pill p3'>tabs/index explorados: {s.get('tabs_or_stack_indexes_explored',0)}</span>")
+    parts.append(f"<span class='pill p3'>acciones omitidas: {s.get('actions_omitted',0)}</span>")
     parts.append("</div>")
 
     parts.append("<div class='card'><h2>Cobertura</h2><ul>")
-    parts.append(f"<li>Estados descubiertos: <b>{coverage.get('discovered_states',0)}</b></li>")
-    parts.append(f"<li>Estados capturados: <b>{coverage.get('captured_states',0)}</b></li>")
-    parts.append(f"<li>Estados nuevos sin revisar: <b>{coverage.get('new_count',0)}</b></li>")
-    parts.append(f"<li>Estados stale: <b>{coverage.get('stale_count',0)}</b></li>")
+    parts.append(f"<li>Descubiertos: <b>{coverage.get('discovered_states',0)}</b></li>")
+    parts.append(f"<li>Capturados: <b>{coverage.get('captured_states',0)}</b></li>")
+    parts.append(f"<li>Nuevos sin revisar: <b>{coverage.get('new_count',0)}</b></li>")
+    parts.append(f"<li>Stale: <b>{coverage.get('stale_count',0)}</b></li>")
+    parts.append(f"<li>Cobertura de estados: <b>{s.get('interactive_coverage_pct',0)}%</b></li>")
     parts.append("</ul></div>")
 
     parts.append("<div class='card'><h2>Hallazgos por severidad</h2>")
@@ -1473,26 +1826,40 @@ def _write_html_report(out_dirs: dict, states: list[CapturedState],
         parts.append(f"<span class='pill {sev.lower()}'>{sev}: {by_sev.get(sev,0)}</span>")
     parts.append("</div>")
 
-    parts.append("<div class='card'><h2>Galeria de pantallas</h2><div class='grid'>")
-    for st in sorted(states, key=lambda s: (s.app, s.screen_id, s.theme)):
+    parts.append("<div class='card'><h2>Galeria de pantallas descubiertas</h2><div class='grid'>")
+    for st in sorted(states, key=lambda x: (x.app, x.screen_id, x.theme)):
         sf = findings_by_screen.get(st.screen_id, [])
         flags = sorted({f.flag for f in sf})
-        rel_png = rel(st.png_path)
+        rel_png = rel(st.png_path) if st.png_path.exists() else ""
         rel_tree = rel(st.tree_path)
         parts.append("<div class='thumb'>")
-        parts.append(f"<a href='{_html_escape(rel_png)}'><img src='{_html_escape(rel_png)}' alt='{_html_escape(st.screen_id)}'></a>")
+        if rel_png:
+            parts.append(f"<a href='{_html_escape(rel_png)}'><img src='{_html_escape(rel_png)}' alt='{_html_escape(st.screen_id)}'></a>")
         parts.append("<div class='meta'>")
-        parts.append(f"<b>{_html_escape(st.screen_id)}</b> "
-                     f"<small>[{_html_escape(st.theme)}]</small><br>")
+        parts.append(f"<b>{_html_escape(st.screen_id)}</b> <small>[{_html_escape(st.theme)}]</small><br>")
+        parts.append(f"<small>{_html_escape(st.label)}</small><br>")
         if flags:
             parts.append("<span class='flag'>" + ", ".join(_html_escape(f) for f in flags) + "</span><br>")
         parts.append(f"<small><a href='{_html_escape(rel_tree)}'>arbol Qt</a> · "
-                     f"textos: {len(st.texts)} · botones: {len(st.buttons)} · "
+                     f"interactivo: {st.interactive_total} · botones: {len(st.buttons)} · "
                      f"tabs: {len(st.tabs)}</small>")
         parts.append("</div></div>")
     parts.append("</div></div>")
 
-    parts.append("<div class='card'><h2>Hallazgos por componente</h2>")
+    parts.append("<div class='card'><h2>Matriz de cobertura</h2>")
+    parts.append("<table><tr><th>screen_id</th><th>app</th><th>theme</th>"
+                 "<th>capturado</th><th>interactivo</th><th>tabs</th><th>hallazgos</th>"
+                 "<th>sev</th><th>stop</th></tr>")
+    for r in matrix.get("rows", [])[:400]:
+        parts.append(
+            f"<tr><td>{_html_escape(r['screen_id'])}</td><td>{_html_escape(r['app'])}</td>"
+            f"<td>{_html_escape(r['theme'])}</td><td>{'ok' if r['captured'] else _html_escape(r['reason_if_missing'])}</td>"
+            f"<td>{r['interactive_widgets']}</td><td>{r['tabs']}</td>"
+            f"<td>{r['findings']}</td><td>{_html_escape(r['max_severity'])}</td>"
+            f"<td>{_html_escape(r['stop_reason'])}</td></tr>")
+    parts.append("</table></div>")
+
+    parts.append("<div class='card'><h2>Hallazgos por contrato</h2>")
     by_contract: dict[str, list[Finding]] = {}
     for f in findings:
         by_contract.setdefault(f.contract_id, []).append(f)
@@ -1500,29 +1867,32 @@ def _write_html_report(out_dirs: dict, states: list[CapturedState],
         parts.append("<p>Sin hallazgos.</p>")
     for cid, fs in sorted(by_contract.items()):
         parts.append(f"<details><summary>{_html_escape(cid)} ({len(fs)})</summary><ul>")
-        for f in fs[:50]:
+        for f in fs[:80]:
             parts.append(
                 f"<li><span class='pill {f.severity.lower()}'>{f.severity}</span> "
                 f"<span class='flag'>{_html_escape(f.flag)}</span> "
                 f"{_html_escape(f.screen_id)}[{_html_escape(f.theme)}]: "
-                f"{_html_escape(f.message)}</li>"
-            )
+                f"{_html_escape(f.message)}</li>")
         parts.append("</ul></details>")
     parts.append("</div>")
 
-    parts.append("<div class='card'><h2>Arboles Qt (colapsable)</h2>")
-    for st in sorted(states, key=lambda s: s.screen_id):
-        parts.append(f"<details><summary>{_html_escape(st.screen_id)} [{_html_escape(st.theme)}]</summary>")
-        parts.append("<ul class='tree'>" + _render_tree_html(st.widget_tree, 0) + "</ul>")
-        parts.append("</details>")
-    parts.append("</div>")
+    parts.append("<div class='card'><h2>Acciones omitidas por seguridad</h2><ul>")
+    om = matrix.get("omitted_actions", [])
+    if not om:
+        parts.append("<li>(ninguna)</li>")
+    for o in om[:120]:
+        parts.append(f"<li>{_html_escape(o.get('at',''))} · {_html_escape(o.get('widget',''))} "
+                     f"'{_html_escape(o.get('text',''))}' — {_html_escape(o.get('reason',''))}</li>")
+    parts.append("</ul></div>")
 
     parts.append("<div class='card'><h2>Limitaciones honestas</h2><small>")
     parts.append(_html_escape(
-        "El Sentinel es un gate visual canonico, autodescubrible y reutilizable, "
-        "mucho menos propenso a falsos PASS que V8/runtime. NO es infalible: la "
-        "revision semantica humana sigue siendo necesaria; algunos checks "
-        "(solapes, elision, colores de progress) son heuristicos conservativos."))
+        "Crawler generico: descubre estados por introspeccion Qt y probing de "
+        "afordancias reales (clicks/tabs/checkboxes/dialogs). NO es infalible: "
+        "estados que requieren datos reales, red o manipulaciones fuera de la UI "
+        "(ej. empty/error forzados sin boton) no son autodescubribles y figuran "
+        "como no explorados. Algunos checks (solape, elision, color de progress) "
+        "son heuristicos. La revision semantica humana sigue siendo necesaria."))
     parts.append("</small></div>")
 
     parts.append("</div></body></html>")
@@ -1531,27 +1901,9 @@ def _write_html_report(out_dirs: dict, states: list[CapturedState],
     return html_path
 
 
-def _render_tree_html(node: dict, depth: int) -> str:
-    if depth > 6:
-        return ""
-    pad = "  " * depth
-    g = node.get("geometry") or {}
-    vis = "V" if node.get("visible") else "-"
-    click = "C" if node.get("clickable") else " "
-    head = (f"{pad}{vis}{click} {node.get('type')} "
-            f"#{_html_escape(node.get('objectName') or '')} "
-            f"[{g.get('w',0)}x{g.get('h',0)}] "
-            f"'{_html_escape((node.get('text') or '')[:50])}'")
-    out = f"<li>{head}</li>"
-    kids = node.get("children") or []
-    if kids:
-        out += "<ul>" + "".join(_render_tree_html(c, depth + 1) for c in kids[:60]) + "</ul>"
-    return out
-
-
 def _write_contact_sheet(states: list[CapturedState], out_dirs: dict) -> None:
     try:
-        from PIL import Image
+        from PIL import Image, ImageDraw
         thumbs = []
         for st in sorted(states, key=lambda s: (s.app, s.screen_id, s.theme)):
             if st.png_path.exists():
@@ -1564,20 +1916,20 @@ def _write_contact_sheet(states: list[CapturedState], out_dirs: dict) -> None:
         rows = (len(thumbs) + cols - 1) // cols
         cell_w, cell_h = 240, 170
         sheet = Image.new("RGB", (cols * cell_w, rows * cell_h), (13, 17, 23))
-        from PIL import ImageDraw
         draw = ImageDraw.Draw(sheet)
         for idx, (st, im) in enumerate(thumbs):
             r, c = divmod(idx, cols)
             x, y = c * cell_w, r * cell_h
             sheet.paste(im, (x + 4, y + 4))
-            draw.text((x + 4, y + cell_h - 16), f"{st.screen_id} [{st.theme}]", fill=(200, 208, 218))
+            draw.text((x + 4, y + cell_h - 16),
+                      f"{st.screen_id[:28]} [{st.theme}]", fill=(200, 208, 218))
         sheet.save(out_dirs["contact_sheets"] / "contact_sheet.png")
     except Exception:
         pass
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Orquestacion de corrida
+# Orquestacion
 # ═══════════════════════════════════════════════════════════════════════════
 
 def _prepare_out_dirs(out_root: Path) -> dict:
@@ -1589,102 +1941,36 @@ def _prepare_out_dirs(out_root: Path) -> dict:
             shutil.move(str(latest), str(archive))
         except Exception:
             shutil.rmtree(latest, ignore_errors=True)
-    dirs = {
-        "latest": latest,
-        "screenshots": latest / "screenshots",
-        "widget_trees": latest / "widget_trees",
-        "crops": latest / "crops",
-        "contact_sheets": latest / "contact_sheets",
-        "logs": latest / "logs",
-    }
+    dirs = {"latest": latest, "screenshots": latest / "screenshots",
+            "widget_trees": latest / "widget_trees", "crops": latest / "crops",
+            "contact_sheets": latest / "contact_sheets", "logs": latest / "logs"}
     for d in dirs.values():
         d.mkdir(parents=True, exist_ok=True)
     return dirs
 
 
-def _persist_captured(st: CapturedState, out_dirs: dict) -> None:
-    tree_data = {
-        "screen_id": st.screen_id, "app": st.app, "theme": st.theme,
-        "label": st.label, "geometry": st.geometry,
-        "sha256": st.sha256, "phash": st.phash,
-        "structural_hash": st.structural_hash,
-        "visual_metrics": st.visual_metrics, "error": st.error,
-        "texts": st.texts, "clickable": st.clickable,
-        "scrollbars": st.scrollbars, "tabs": st.tabs,
-        "buttons": st.buttons, "crops": st.crops,
-        "tree": st.widget_tree,
-    }
-    st.tree_path.write_text(json.dumps(tree_data, indent=2, ensure_ascii=False),
-                            encoding="utf-8")
-
-
-def _discover_all(app_filter: str | None, themes: list[str]) -> dict[str, list[StateSpec]]:
-    """Descubre estados por app/tema. La discovery se hace una sola vez por app
-    (en dark) y se reusa para todos los temas: la topologia de navegacion no
-    depende del tema."""
-    discovered: dict[str, list[StateSpec]] = {}
-    apps = ["suite", "hub"] if app_filter is None else [app_filter]
-    for app_key in apps:
-        try:
-            discovered[app_key] = _discover_states(app_key, "dark_hybrid")
-        except Exception as exc:
-            print(f"[SENTINEL] discovery fallo para {app_key}: {exc}", file=sys.stderr)
-            discovered[app_key] = []
-    return discovered
-
-
-def _run_capture(specs_by_app: dict[str, list[StateSpec]],
-                 apps: list[str], themes: list[str],
-                 out_dirs: dict, log) -> list[CapturedState]:
-    states: list[CapturedState] = []
-    for modo in themes:
-        theme = _short_theme(modo)
-        for app_key in apps:
-            specs = specs_by_app.get(app_key, [])
-            if not specs:
-                continue
-            log(f"  {app_key.upper()} ({len(specs)} estados) @ {theme}")
-            qapp, win = _instantiate(app_key, modo, _RESOLUTION)
-            try:
-                for spec in specs:
-                    log(f"    [{spec.screen_id}] ", end="")
-                    try:
-                        st = _capture_state(win, qapp, spec, modo, out_dirs)
-                        _persist_captured(st, out_dirs)
-                        states.append(st)
-                        log("CAPTURED" if not st.error else f"WARN({st.error})")
-                    except Exception as exc:
-                        log(f"FAIL({exc.__class__.__name__}: {exc})")
-                        safe = _safe_name(spec.screen_id)
-                        states.append(CapturedState(
-                            screen_id=spec.screen_id, app=app_key, theme=theme,
-                            label=spec.label,
-                            png_path=out_dirs["screenshots"] / f"{safe}-{theme}.png",
-                            tree_path=out_dirs["widget_trees"] / f"{safe}-{theme}.json",
-                            sha256=None, phash=None, structural_hash="",
-                            visual_metrics={}, widget_tree={}, texts=[],
-                            clickable=[], scrollbars=[], tabs=[], buttons=[],
-                            crops=[], geometry={}, error=f"{exc.__class__.__name__}: {exc}",
-                        ))
-                    # reset entre estados para no arrastrar estado stateful
-                    _reset_to_base(win, app_key, qapp)
-            finally:
-                _close_window(win)
-    return states
+def _crawl_opts(strict: bool) -> dict:
+    if strict:
+        return {"max_states": _STRICT_MAX_STATES,
+                "max_depth": _STRICT_MAX_DEPTH,
+                "max_branch": _DEFAULT_MAX_BRANCH}
+    return {"max_states": _DEFAULT_MAX_STATES,
+            "max_depth": _DEFAULT_MAX_DEPTH,
+            "max_branch": _DEFAULT_MAX_BRANCH}
 
 
 def _compute_result(general_complete: bool, states: list[CapturedState],
-                    findings: list[Finding], coverage: dict) -> tuple[str, list[str]]:
+                    findings: list[Finding], coverage: dict,
+                    strict: bool) -> tuple[str, list[str]]:
     blockers: list[str] = []
     if not general_complete:
         blockers.append("GENERAL_AUDIT_NOT_RUN")
-    missing = [s for s in states if s.error]
-    if missing:
+    if any(s.error for s in states):
         blockers.append("MISSING_EVIDENCE")
+    blocking_sevs = {"P0", "P1", "P2"} if strict else {"P0", "P1"}
     for f in findings:
-        if f.severity in _BLOCKING_SEVERITIES or f.flag in _BLOCKING_FLAGS:
+        if f.severity in blocking_sevs or f.flag in _BLOCKING_FLAGS:
             blockers.append(f"{f.flag}:{f.screen_id}")
-    # de-duplicar conservando orden
     seen = set()
     uniq = []
     for b in blockers:
@@ -1694,8 +1980,8 @@ def _compute_result(general_complete: bool, states: list[CapturedState],
     return ("PASS" if not uniq else "FAIL"), uniq
 
 
-def _console_summary(result: str, general_complete: bool, states: list[CapturedState],
-                     findings: list[Finding], coverage: dict, blockers: list[str]) -> None:
+def _console_summary(result, general_complete, states, findings, coverage, matrix,
+                     blockers) -> None:
     by_sev = {"P0": 0, "P1": 0, "P2": 0, "P3": 0}
     for f in findings:
         by_sev[f.severity] = by_sev.get(f.severity, 0) + 1
@@ -1709,27 +1995,61 @@ def _console_summary(result: str, general_complete: bool, states: list[CapturedS
     print(f"P0: {by_sev.get('P0', 0)}")
     print(f"P1: {by_sev.get('P1', 0)}")
     print(f"P2: {by_sev.get('P2', 0)}")
+    s = matrix.get("summary", {})
+    print(f"TABS_OR_STACK_INDEXES_EXPLORED: {s.get('tabs_or_stack_indexes_explored', 0)}")
+    print(f"ACTIONS_OMITTED: {s.get('actions_omitted', 0)}")
     if blockers:
         print("BLOCKERS:")
-        for b in blockers:
+        for b in blockers[:40]:
             print(f"  - {b}")
     print("=" * 60)
+
+
+def _state_to_dict(st: CapturedState) -> dict:
+    return {
+        "screen_id": st.screen_id, "app": st.app, "theme": st.theme,
+        "label": st.label, "node_id": st.node_id,
+        "sha256": st.sha256, "phash": st.phash,
+        "structural_hash": st.structural_hash, "visual_metrics": st.visual_metrics,
+        "error": st.error, "stop_reason": st.stop_reason,
+        "png": str(st.png_path.relative_to(_PROJ)),
+        "tree": str(st.tree_path.relative_to(_PROJ)),
+        "interactive_total": st.interactive_total,
+        "n_texts": len(st.texts), "n_buttons": len(st.buttons),
+        "n_tabs": len(st.tabs), "n_scrollbars": len(st.scrollbars),
+        "n_crops": len(st.crops), "path": st.path,
+    }
+
+
+def _finding_to_dict(f: Finding) -> dict:
+    return {"contract_id": f.contract_id, "severity": f.severity, "flag": f.flag,
+            "screen_id": f.screen_id, "theme": f.theme, "message": f.message,
+            "detail": f.detail}
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Comandos CLI
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _cmd_list() -> int:
-    specs_by_app = _discover_all(None, ["dark_hybrid"])
+def _cmd_list(args) -> int:
+    opts = _crawl_opts(getattr(args, "strict", False))
+    print("Descubriendo estados (crawler generico, introspeccion Qt en vivo)...")
     total = 0
     for app_key in ("suite", "hub"):
-        specs = specs_by_app.get(app_key, [])
-        print(f"\n=== {app_key.upper()} ({len(specs)} estados descubiertos) ===")
-        for sp in specs:
-            print(f"  {sp.screen_id:42s} {sp.label}")
-        total += len(specs)
-    print(f"\nTOTAL: {total} estados x 2 temas = {total * 2} capturas en audit --all --theme both")
+        out_dirs = _prepare_out_dirs(_OUT_ROOT)
+        nodes, graph = crawl_app(app_key, "dark_hybrid", opts, out_dirs,
+                                 log=lambda *a, **k: None)
+        print(f"\n=== {app_key.upper()} ({len(nodes)} estados descubiertos) ===")
+        for n in nodes:
+            print(f"  {n.screen_id:55s} {n.label[:50]}")
+        total += len(nodes)
+        # limpiar output efimero del --list
+        try:
+            shutil.rmtree(_OUT_ROOT / "latest", ignore_errors=True)
+        except Exception:
+            pass
+    print(f"\nTOTAL descubierto: {total} estados (crawler generico, sin recetas manuales)")
+    print("Nota: --list usa tema dark; audit --all captura ambos temas.")
     return 0
 
 
@@ -1737,10 +2057,9 @@ def _cmd_audit(args) -> int:
     if not args.all and not args.app:
         print("[ERROR] audit requiere --all o --app <suite|hub>.")
         return 2
+    strict = bool(getattr(args, "strict", False))
     themes = _theme_map(args.theme)
-    apps = ["suite", "hub"] if not args.app or args.all else [args.app]
-    if args.all:
-        apps = ["suite", "hub"]
+    apps = ["suite", "hub"] if args.all else [args.app]
     out_dirs = _prepare_out_dirs(_OUT_ROOT)
     log_path = out_dirs["logs"] / "run.log"
 
@@ -1749,83 +2068,85 @@ def _cmd_audit(args) -> int:
         with log_path.open("a", encoding="utf-8") as fh:
             fh.write(msg + ("" if end == "" else "\n"))
 
-    log(f"[SENTINEL] audit --all={args.all} apps={apps} themes={themes}")
+    log(f"[SENTINEL] audit --all={args.all} apps={apps} themes={themes} strict={strict}")
     db = _ensure_isolated_db()
     log(f"[SENTINEL] DB aislada: {db}")
 
-    print("Descubriendo estados (introspeccion Qt en vivo)...")
-    specs_by_app = _discover_all(None if args.all else args.app, themes)
-    discovered_ids = [sp.screen_id for app in apps for sp in specs_by_app.get(app, [])]
+    opts = _crawl_opts(strict)
+    all_states: list[CapturedState] = []
+    graphs: dict[str, dict] = {}
+    discovered_ids: list[str] = []
 
-    print(f"\nCapturando {sum(len(v) for v in specs_by_app.values())} estados x {len(themes)} tema(s)...")
-    states = _run_capture(specs_by_app, apps, themes, out_dirs, log)
-    _write_contact_sheet(states, out_dirs)
+    for modo in themes:
+        for app_key in apps:
+            log(f"  CRAWL {app_key.upper()} @ {_short_theme(modo)} "
+                f"(caps: states={opts['max_states']}, depth={opts['max_depth']})")
+            nodes, graph = crawl_app(app_key, modo, opts, out_dirs, log=log)
+            graphs[f"{app_key}@{_short_theme(modo)}"] = graph
+            all_states.extend(nodes)
+            discovered_ids.extend(n.screen_id for n in nodes)
+
+    _write_contact_sheet(all_states, out_dirs)
 
     reg = _load_registry()
     contracts = _load_contracts()
     log(f"[SENTINEL] {len(contracts)} contratos cargados; {len(reg)} baselines aprobadas")
-    findings = _run_contracts(states, contracts, reg)
-    findings += _check_stale(states, reg)
+    findings = _run_contracts(all_states, contracts, reg)
+    findings += _check_stale(all_states, reg)
     findings += _check_obsolete_recipe_refs(reg)
 
-    coverage = _compute_coverage(states, discovered_ids, reg)
-    general_complete = bool(args.all)
-    result, blockers = _compute_result(general_complete, states, findings, coverage)
+    coverage = _compute_coverage(all_states, discovered_ids, reg)
+    matrix = _build_coverage_matrix(all_states, graphs, findings)
 
-    run_meta = {
+    # grafo global combinado
+    state_graph = {
         "generated_at": datetime.datetime.now().isoformat(timespec="seconds"),
-        "git": _git_metadata(),
-        "command": sys.argv,
+        "apps": apps, "themes": [_short_theme(m) for m in themes],
+        "graphs_by_run": {k: {"nodes": g["nodes"], "edges": g["edges"],
+                              "omitted_actions": g["omitted_actions"],
+                              "discovered_count": g["discovered_count"]}
+                          for k, g in graphs.items()},
+        "node_count": len(all_states),
     }
+
+    general_complete = bool(args.all)
+    result, blockers = _compute_result(general_complete, all_states, findings,
+                                       coverage, strict)
+
+    run_meta = {"generated_at": datetime.datetime.now().isoformat(timespec="seconds"),
+                "git": _git_metadata(), "command": sys.argv, "strict": strict}
     manifest = {
-        "harness": "qa/visual_sentinel.py",
-        "general_audit_complete": general_complete,
-        "result": result,
-        "blockers": blockers,
-        "coverage": coverage,
+        "harness": "qa/visual_sentinel.py", "general_audit_complete": general_complete,
+        "result": result, "strict": strict, "blockers": blockers,
+        "coverage": coverage, "coverage_matrix_summary": matrix.get("summary", {}),
         "severity_counts": {s: sum(1 for f in findings if f.severity == s)
                             for s in ("P0", "P1", "P2", "P3")},
         "discovered_state_ids": discovered_ids,
-        "states": [_state_to_dict(s) for s in states],
-        "run_meta": run_meta,
+        "states": [_state_to_dict(s) for s in all_states], "run_meta": run_meta,
     }
     (out_dirs["latest"] / "manifest.json").write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
+    (out_dirs["latest"] / "coverage.json").write_text(
+        json.dumps(coverage, indent=2, ensure_ascii=False), encoding="utf-8")
+    (out_dirs["latest"] / "coverage_matrix.json").write_text(
+        json.dumps(matrix, indent=2, ensure_ascii=False), encoding="utf-8")
+    (out_dirs["latest"] / "ui_state_graph.json").write_text(
+        json.dumps(state_graph, indent=2, ensure_ascii=False), encoding="utf-8")
     (out_dirs["latest"] / "findings.json").write_text(
         json.dumps([_finding_to_dict(f) for f in findings], indent=2, ensure_ascii=False),
         encoding="utf-8")
-    (out_dirs["latest"] / "coverage.json").write_text(
-        json.dumps(coverage, indent=2, ensure_ascii=False), encoding="utf-8")
-    html_path = _write_html_report(out_dirs, states, findings, coverage, result,
-                                   general_complete, run_meta)
+    html_path = _write_html_report(out_dirs, all_states, findings, coverage, matrix,
+                                   result, general_complete, run_meta)
 
-    _console_summary(result, general_complete, states, findings, coverage, blockers)
-    print(f"\nManifest:  {out_dirs['latest'] / 'manifest.json'}")
-    print(f"Findings:  {out_dirs['latest'] / 'findings.json'}")
-    print(f"Coverage:  {out_dirs['latest'] / 'coverage.json'}")
-    print(f"Reporte:   {html_path}")
+    _console_summary(result, general_complete, all_states, findings, coverage,
+                     matrix, blockers)
+    print(f"\nManifest:        {out_dirs['latest'] / 'manifest.json'}")
+    print(f"Coverage:        {out_dirs['latest'] / 'coverage.json'}")
+    print(f"Coverage matrix: {out_dirs['latest'] / 'coverage_matrix.json'}")
+    print(f"State graph:     {out_dirs['latest'] / 'ui_state_graph.json'}")
+    print(f"Findings:        {out_dirs['latest'] / 'findings.json'}")
+    print(f"Reporte:         {html_path}")
     return 0 if result == "PASS" else 1
-
-
-def _state_to_dict(st: CapturedState) -> dict:
-    return {
-        "screen_id": st.screen_id, "app": st.app, "theme": st.theme,
-        "label": st.label, "sha256": st.sha256, "phash": st.phash,
-        "structural_hash": st.structural_hash, "visual_metrics": st.visual_metrics,
-        "error": st.error, "png": str(st.png_path.relative_to(_PROJ)),
-        "tree": str(st.tree_path.relative_to(_PROJ)),
-        "n_texts": len(st.texts), "n_clickable": len(st.clickable),
-        "n_buttons": len(st.buttons), "n_tabs": len(st.tabs),
-        "n_scrollbars": len(st.scrollbars), "n_crops": len(st.crops),
-    }
-
-
-def _finding_to_dict(f: Finding) -> dict:
-    return {
-        "contract_id": f.contract_id, "severity": f.severity, "flag": f.flag,
-        "screen_id": f.screen_id, "theme": f.theme, "message": f.message,
-        "detail": f.detail,
-    }
 
 
 def _resolve_screen(app: str, screen_id: str) -> str:
@@ -1834,35 +2155,46 @@ def _resolve_screen(app: str, screen_id: str) -> str:
     return f"{app}:{screen_id}"
 
 
+def _find_node_by_screen(app_key: str, screen_id: str, modo: str,
+                         opts: dict, out_dirs: dict) -> DiscoveredNode | None:
+    """Crawl rapido para ubicar el path que produce un screen_id dado."""
+    nodes, _ = crawl_app(app_key, modo, opts, out_dirs,
+                         log=lambda *a, **k: None)
+    for n in nodes:
+        if n.screen_id == screen_id:
+            return DiscoveredNode(node_id=n.node_id, screen_id=n.screen_id,
+                                  app=n.app, theme=n.theme, label=n.label,
+                                  path=n.path)
+    return None
+
+
 def _cmd_capture(args) -> int:
-    themes = _theme_map(args.theme)
     out_dirs = _prepare_out_dirs(_OUT_ROOT)
-    db = _ensure_isolated_db()
-    print(f"[SENTINEL] capture targeted (DB {db})")
+    _ensure_isolated_db()
+    themes = _theme_map(args.theme)
     screen_id = _resolve_screen(args.app, args.screen)
     app_key = screen_id.split(":")[0]
-    surface = screen_id.split(":")[1] if ":" in screen_id else screen_id
-    substate = screen_id.split(":", 2)[2] if screen_id.count(":") >= 2 else ""
-
-    # descubrir para encontrar el spec que matchea
-    specs_by_app = _discover_all(app_key, ["dark_hybrid"])
-    matches = [sp for sp in specs_by_app.get(app_key, []) if sp.screen_id == screen_id]
-    if not matches:
-        matches = [StateSpec(app=app_key, surface=surface, substate=substate,
-                             label=f"{surface} {substate}".strip())]
+    opts = _crawl_opts(False)
+    print(f"[SENTINEL] capture targeted (sin resultado general)")
+    node = _find_node_by_screen(app_key, screen_id, themes[0], opts, out_dirs)
+    if node is None:
+        print(f"[ERROR] screen '{screen_id}' no descubierto por el crawler. Use --list.")
+        return 1
     states: list[CapturedState] = []
     for modo in themes:
-        qapp, win = _instantiate(app_key, modo, _RESOLUTION)
+        qapp, win = _instantiate(app_key, modo)
         try:
-            for spec in matches:
-                st = _capture_state(win, qapp, spec, modo, out_dirs)
-                _persist_captured(st, out_dirs)
-                states.append(st)
+            ok = _replay_path(win, node.path, qapp)
+            if not ok:
+                states.append(_error_state(screen_id, app_key, modo, node.label,
+                                           out_dirs, "replay fallo"))
+                continue
+            st = _capture_state(win, qapp, app_key, modo, out_dirs,
+                                screen_id=screen_id, label=node.label, path=node.path)
+            _persist_captured(st, out_dirs)
+            states.append(st)
         finally:
             _close_window(win)
-
-    reg = _load_registry()
-    _compute_coverage(states, [screen_id], reg)
     print(f"\nCaptura targeted: {screen_id} ({len(states)} tema(s))")
     for st in states:
         print(f"  {st.theme}: {st.png_path}  error={st.error}")
@@ -1873,27 +2205,39 @@ def _cmd_capture(args) -> int:
     return 0
 
 
+def _error_state(screen_id, app_key, modo, label, out_dirs, err) -> CapturedState:
+    theme = _short_theme(modo)
+    safe = _safe_name(screen_id)
+    return CapturedState(
+        screen_id=screen_id, app=app_key, theme=theme, label=label,
+        png_path=out_dirs["screenshots"] / f"{safe}-{theme}.png",
+        tree_path=out_dirs["widget_trees"] / f"{safe}-{theme}.json",
+        sha256=None, phash=None, structural_hash="", visual_metrics={},
+        widget_tree={}, texts=[], clickable=[], scrollbars=[], tabs=[],
+        buttons=[], crops=[], geometry={}, error=err)
+
+
 def _cmd_inspect(args) -> int:
     out_dirs = _prepare_out_dirs(_OUT_ROOT)
     _ensure_isolated_db()
     screen_id = _resolve_screen(args.app, args.screen)
     app_key = screen_id.split(":")[0]
-    theme = args.theme
-
-    specs_by_app = _discover_all(app_key, [_theme_map(theme)[0]])
-    matches = [sp for sp in specs_by_app.get(app_key, []) if sp.screen_id == screen_id]
-    if not matches:
-        print(f"[ERROR] screen '{screen_id}' no descubierto en {app_key}. Use --list.")
+    modo = _theme_map(args.theme)[0]
+    opts = _crawl_opts(False)
+    node = _find_node_by_screen(app_key, screen_id, modo, opts, out_dirs)
+    if node is None:
+        print(f"[ERROR] screen '{screen_id}' no descubierto por el crawler. Use --list.")
         return 1
-    modo = _theme_map(theme)[0]
-    qapp, win = _instantiate(app_key, modo, _RESOLUTION)
+    qapp, win = _instantiate(app_key, modo)
     try:
-        st = _capture_state(win, qapp, matches[0], modo, out_dirs)
+        _replay_path(win, node.path, qapp)
+        st = _capture_state(win, qapp, app_key, modo, out_dirs,
+                            screen_id=screen_id, label=node.label, path=node.path)
     finally:
         _close_window(win)
     _persist_captured(st, out_dirs)
-
     print(f"\nINSPECCION: {screen_id} [{_short_theme(modo)}]")
+    print(f"  path:     {' > '.join(a.get('label','') for a in node.path) or '(root)'}")
     print(f"  PNG:      {st.png_path}")
     print(f"  Arbol Qt: {st.tree_path}")
     print(f"  Textos visibles ({len(st.texts)}):")
@@ -1901,13 +2245,14 @@ def _cmd_inspect(args) -> int:
         print(f"    - {t}")
     print(f"  Botones ({len(st.buttons)}):")
     for b in st.buttons[:40]:
-        print(f"    - [{b.get('type')}] '{b.get('text')}' enabled={b.get('enabled')}")
+        print(f"    - [{b.get('type')}] '{b.get('text')}' obj={b.get('objectName')} icon={b.get('has_icon')} enabled={b.get('enabled')}")
     print(f"  Tabs ({len(st.tabs)}):")
     for tb in st.tabs:
         print(f"    - {tb.get('type')} count={tb.get('count')} labels={tb.get('labels')}")
     print(f"  Scrollbars ({len(st.scrollbars)}):")
     for sb in st.scrollbars:
         print(f"    - {sb}")
+    print(f"  interactive_total={st.interactive_total}")
     print(f"  sha256={st.sha256}  phash={st.phash}  struct={st.structural_hash}")
     print(f"  metricas={st.visual_metrics}")
     print("VISUAL_SENTINEL_RESULT: TARGETED_INSPECTION_ONLY")
@@ -1916,12 +2261,16 @@ def _cmd_inspect(args) -> int:
     return 0
 
 
-def _cmd_propose_baselines() -> int:
+def _cmd_propose_baselines(args) -> int:
     out_dirs = _prepare_out_dirs(_OUT_ROOT)
     _ensure_isolated_db()
-    specs_by_app = _discover_all(None, ["dark_hybrid", "light_hybrid"])
-    states = _run_capture(specs_by_app, ["suite", "hub"],
-                          ["dark_hybrid", "light_hybrid"], out_dirs, lambda *a, **k: None)
+    opts = _crawl_opts(False)
+    states: list[CapturedState] = []
+    for app_key in ("suite", "hub"):
+        for modo in ("dark_hybrid", "light_hybrid"):
+            nodes, _ = crawl_app(app_key, modo, opts, out_dirs,
+                                 log=lambda *a, **k: None)
+            states.extend(nodes)
     n = _propose_baselines(states)
     print(f"Baselines propuestas generadas: {n}")
     print(f"Directorio: {_PROPOSED_DIR}")
@@ -1947,33 +2296,34 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="visual_sentinel",
         description="Auditor visual canonico, independiente y autodescubrible.",
     )
-    # --list como flag top-level (contrato del CLI del Sentinel).
     p.add_argument("--list", action="store_true", help="Listar estados descubiertos")
     sub = p.add_subparsers(dest="command")
 
-    sub.add_parser("list", help="Listar estados descubiertos").set_defaults(func=lambda a: _cmd_list())
+    sub.add_parser("list", help="Listar estados descubiertos").set_defaults(func=_cmd_list)
 
     pa = sub.add_parser("audit", help="Auditoria general (usar --all para resultado general)")
     pa.add_argument("--all", action="store_true", help="Auditar todo (Suite + Hub)")
-    pa.add_argument("--app", choices=["suite", "hub"], help="Auditar una sola app (sin resultado general)")
+    pa.add_argument("--app", choices=["suite", "hub"], help="Auditar una sola app")
     pa.add_argument("--theme", choices=["light", "dark", "both"], default="both")
+    pa.add_argument("--strict", action="store_true",
+                    help="Cobertura maxima y P0/P1/P2 bloqueantes")
     pa.set_defaults(func=_cmd_audit)
 
     pc = sub.add_parser("capture", help="Capturar una pantalla puntual (sin resultado general)")
-    pc.add_argument("--screen", required=True, help="screen_id (app:surface[:substate])")
+    pc.add_argument("--screen", required=True, help="screen_id (app:surface[/...])")
     pc.add_argument("--app", choices=["suite", "hub"], default="suite")
     pc.add_argument("--theme", choices=["light", "dark", "both"], default="both")
     pc.set_defaults(func=_cmd_capture)
 
     pi = sub.add_parser("inspect", help="Inspeccionar una pantalla en consola")
-    pi.add_argument("--screen", required=True, help="screen_id (app:surface[:substate])")
+    pi.add_argument("--screen", required=True, help="screen_id (app:surface[/...])")
     pi.add_argument("--app", choices=["suite", "hub"], default="suite")
     pi.add_argument("--theme", choices=["light", "dark"], default="light")
     pi.set_defaults(func=_cmd_inspect)
 
     sub.add_parser("propose-baselines",
                    help="Generar baselines propuestas (sin aprobar)").set_defaults(
-        func=lambda a: _cmd_propose_baselines())
+        func=_cmd_propose_baselines)
 
     pb = sub.add_parser("approve-baseline", help="Aprobar una baseline propuesta")
     pb.add_argument("--screen", required=True)
@@ -1981,7 +2331,6 @@ def _build_parser() -> argparse.ArgumentParser:
     pb.add_argument("--theme", choices=["light", "dark"], required=True)
     pb.add_argument("--reason", default="", help="Motivo de la aprobacion")
     pb.set_defaults(func=_cmd_approve_baseline)
-
     return p
 
 
@@ -1989,7 +2338,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
     if getattr(args, "list", False):
-        return _cmd_list()
+        return _cmd_list(args)
     func = getattr(args, "func", None)
     if func is None:
         parser.print_help()

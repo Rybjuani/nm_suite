@@ -1,15 +1,12 @@
 # Contratos de componentes: FORMS / inputs.
 contracts:
   - id: form_inputs_visible
-    severity: P2
+    severity: P1
     description: >
       Los inputs visibles de un form no pueden quedar fuera del viewport.
-      (Cubierto por out_of_viewport; documentado aqui para futura
-      especializacion por tipo de input NMInput/NMTextArea.)
     check: out_of_viewport
 
   - id: form_not_blank
     severity: P0
-    description: >
-      Un form que se captura blank/flat no aporta evidencia. Bloqueante.
+    description: Un form que se captura blank/flat no aporta evidencia.
     check: blank_or_flat
