@@ -123,6 +123,31 @@ def test_hub_detalle_plan_tabs_match_mockup(qtbot) -> None:
     assert actual == expected
 
 
+def test_hub_activacion_empty_state_uses_compact_icon_card(qtbot) -> None:
+    from PyQt6.QtWidgets import QLabel, QFrame, QWidget
+    from hub.plan_terapeutico import _PresetActivacionTab
+
+    tab = _PresetActivacionTab(
+        sb=_fake_sb(),
+        pid="test-001",
+        modo="light_hybrid",
+    )
+    qtbot.addWidget(tab)
+
+    empty = tab.findChild(QWidget, "ActivationEmptyState")
+    assert empty is not None
+    assert empty.maximumHeight() == 156
+
+    chip = empty.findChild(QFrame, "ActivationEmptyIconChip")
+    assert chip is not None
+    assert chip.width() == 48
+    assert chip.height() == 48
+
+    title = empty.findChild(QLabel, "ActivationEmptyTitle")
+    assert title is not None
+    assert title.text() == "Sin actividades personalizadas aún."
+
+
 # ── E4-H-CONFIG: Textos globales ──────────────────────────────────────────
 
 

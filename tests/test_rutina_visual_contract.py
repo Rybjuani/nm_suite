@@ -76,7 +76,9 @@ def test_rutina_add_done_and_empty_states_match_mockup(qtbot, monkeypatch) -> No
 
     assert add_input.placeholderText() == "Nueva tarea…"
     assert add_buttons
-    assert add_buttons[0].variant() == "gradient"
+    assert add_buttons[0].variant() == "secondary"
+    assert add_buttons[0].width() == 36
+    assert add_buttons[0].height() == 34
 
     monkeypatch.setattr(
         rutina_qt,
@@ -86,5 +88,6 @@ def test_rutina_add_done_and_empty_states_match_mockup(qtbot, monkeypatch) -> No
     module._load_tasks()
 
     assert not module._empty_state.isHidden()
+    assert not module._empty_host.isHidden()
     assert module._hero_card.isHidden()
     assert all(card.isHidden() for card in module._section_cards.values())

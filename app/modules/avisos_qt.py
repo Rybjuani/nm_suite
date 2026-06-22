@@ -261,11 +261,10 @@ class _StepPill(QPushButton):
                 f"padding: 0px 14px; min-height: {height}px; max-height: {height}px; }}"
             )
         elif self._active:
-            _p = QColor(v3c("primary", self._modo))
             self.setStyleSheet(
-                f"QPushButton {{ background: {_p.name()}; "
-                f"color: {v3c('primary_ink', self._modo).name()}; "
-                f"border: 1px solid transparent; border-radius: {radius}px; "
+                f"QPushButton {{ background: {v3c('surface', self._modo).name()}; "
+                f"color: {v3c('text', self._modo).name()}; "
+                f"border: 1px solid {brand_line}; border-radius: {radius}px; "
                 f"padding: 0px 14px; min-height: {height}px; max-height: {height}px; }}"
             )
         elif self._segmented:
@@ -496,8 +495,11 @@ class ModuloAvisos(NMModule):
         _TRACK_H = _AVISOS_FILTER_PILL_HEIGHT + 8  # 40px — track = pill + 4px inset top+bottom
         self._filter_segment = QFrame()
         self._filter_segment.setObjectName("FilterSegment")
+        self._filter_segment.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._filter_segment.setStyleSheet(self._segment_qss(self._modo))
         self._filter_segment.setFixedHeight(_TRACK_H)
+        self._filter_segment.setMaximumWidth(334)
+        self._filter_segment.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
         seg_lay = QHBoxLayout(self._filter_segment)
         seg_lay.setContentsMargins(4, 4, 4, 4)
         seg_lay.setSpacing(4)
@@ -508,7 +510,7 @@ class ModuloAvisos(NMModule):
             ("hoy", t("text.module.avisos.filter_today", "Hoy")),
         ):
             pill = _StepPill(label, active=(key == "todos"), modo=self._modo, segmented=True)
-            pill.setMinimumWidth(70)
+            pill.setMinimumWidth(96)
             pill.setFixedHeight(_AVISOS_FILTER_PILL_HEIGHT)
             pill.clicked.connect(lambda _, k=key: self._on_filter_changed(k))
             self._filter_pills[key] = pill
@@ -566,9 +568,9 @@ class ModuloAvisos(NMModule):
         """Track del filtro segmentado Todos/Activos/Hoy (surface2 + radio pill)."""
         m = norm_modo(modo)
         return (
-            f"#FilterSegment {{ background: {v3c('surface2', m).name()}; "
-            f"border: 1px solid {C('borderSoft', m)}; "
-            f"border-radius: 999px; }}"
+            f"#FilterSegment {{ background: {v3c('surface_2', m).name()}; "
+            f"border: 1px solid {C('border', m)}; "
+            f"border-radius: 20px; }}"
         )
 
     def _on_theme(self, modo: str) -> None:

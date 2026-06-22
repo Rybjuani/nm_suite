@@ -44,6 +44,8 @@ def test_timer_idle_chips_and_status_badge_match_mockup(qtbot, monkeypatch) -> N
         "Pausa activa",
         "Trabajo profundo",
     ]
+    assert {btn.__class__.__name__ for btn, _secs in module._duration_chip_btns} == {"_TimerChip"}
+    assert {btn.__class__.__name__ for btn, _secs in module._chip_btns} == {"_TimerChip"}
 
     duration_active = {btn.text(): btn.is_active() for btn, _secs in module._duration_chip_btns}
     mode_active = {btn.text(): btn.is_active() for btn, _secs in module._chip_btns}

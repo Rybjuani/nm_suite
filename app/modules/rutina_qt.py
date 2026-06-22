@@ -34,6 +34,7 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QGridLayout,
     QScrollArea,
+    QSpacerItem,
 )
 
 try:
@@ -304,8 +305,8 @@ class _SectionCard(NMCard):
             entry.setMinimumHeight(34)
             entry.setMaximumHeight(38)
             form_lay.addWidget(entry, stretch=1)
-            btn = NMButton("✓", variant="gradient", size="sm", modo=self._modo)
-            btn.setFixedWidth(40)
+            btn = NMButton("✓", variant="secondary", size="sm", modo=self._modo)
+            btn.setFixedSize(36, 34)
             btn.setEnabled(False)
             form_lay.addWidget(btn)
 
@@ -425,7 +426,17 @@ class ModuloRutina(NMModule):
             parent=body,
         )
         self._empty_state.hide()
-        lay.addWidget(self._empty_state)
+        self._empty_host = QWidget()
+        self._empty_host.setStyleSheet("background: transparent;")
+        self._empty_host.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        empty_lay = QVBoxLayout(self._empty_host)
+        empty_lay.setContentsMargins(0, 0, 0, 0)
+        empty_lay.setSpacing(0)
+        empty_lay.addStretch(1)
+        empty_lay.addWidget(self._empty_state, 0, Qt.AlignmentFlag.AlignHCenter)
+        empty_lay.addStretch(1)
+        self._empty_host.hide()
+        lay.addWidget(self._empty_host, stretch=1)
 
         # 4. Grid responsive de _SectionCard
         self._sections_grid_widget = QWidget()
@@ -447,12 +458,27 @@ class ModuloRutina(NMModule):
             self._section_cards[key] = card
             self._section_order.append(card)
         lay.addWidget(self._sections_grid_widget)
-        lay.addStretch(1)
+        self._bottom_spacer = QSpacerItem(
+            0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
+        lay.addItem(self._bottom_spacer)
         self._relayout_sections()
 
         self._apply_text_styles()
         self._load_tasks()
         QTimer.singleShot(0, self._relayout_sections)
+
+    def _set_empty_visible(self, visible: bool) -> None:
+        self._empty_host.setVisible(visible)
+        self._empty_state.setVisible(visible)
+        self._bottom_spacer.changeSize(
+            0,
+            0,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Fixed if visible else QSizePolicy.Policy.Expanding,
+        )
+        if (layout := self._empty_host.parentWidget().layout()) is not None:
+            layout.invalidate()
 
     def _relayout_sections(self):
         if not hasattr(self, "_sections_grid"):
@@ -598,7 +624,7 @@ class ModuloRutina(NMModule):
         self._refresh_hero()
         has_tasks = bool(self._task_checks)
         self._hero_card.setVisible(has_tasks)
-        self._empty_state.setVisible(not has_tasks)
+        self._set_empty_visible(not has_tasks)
         for card in self._section_cards.values():
             card.setVisible(has_tasks)
         QTimer.singleShot(0, self._relayout_sections)
@@ -650,7 +676,7 @@ class ModuloRutina(NMModule):
         self._refresh_hero()
         has_tasks = bool(self._task_checks)
         self._hero_card.setVisible(has_tasks)
-        self._empty_state.setVisible(not has_tasks)
+        self._set_empty_visible(not has_tasks)
         for card in self._section_cards.values():
             card.setVisible(has_tasks)
         QTimer.singleShot(0, self._relayout_sections)
