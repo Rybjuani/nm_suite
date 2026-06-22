@@ -9,15 +9,14 @@ import datetime
 import uuid
 import logging
 
-from PyQt6.QtCore import Qt, pyqtSignal, QSize, QRectF, QEvent
-from PyQt6.QtGui import QPainter, QBrush, QPen, QColor, QPainterPath
+from PyQt6.QtCore import Qt, pyqtSignal, QRectF, QEvent
+from PyQt6.QtGui import QPainter, QBrush, QColor
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
     QGridLayout,
     QLabel,
-    QPushButton,
     QSizePolicy,
     QScrollArea,
     QStackedWidget,
@@ -32,7 +31,6 @@ try:
     from shared.components import (
         NMModule,
         NMButton,
-        NMButtonOutline,
         NMToast,
         ThemeManager,
         NMCard,
@@ -45,7 +43,6 @@ try:
         v3_font,
         qcolor_to_rgba_css,
         TYPOGRAPHY,
-        LAYOUT,
         stylesheet_scrollarea,
     )
     from shared.db import conexion
@@ -57,7 +54,6 @@ except ImportError:
     from shared.components import (
         NMModule,
         NMButton,
-        NMButtonOutline,
         NMToast,
         ThemeManager,
         NMCard,
@@ -70,7 +66,6 @@ except ImportError:
         v3_font,
         qcolor_to_rgba_css,
         TYPOGRAPHY,
-        LAYOUT,
         stylesheet_scrollarea,
     )
     from shared.db import conexion
@@ -554,166 +549,6 @@ class _StepProgressIndicator(QWidget):
         p.end()
 
 
-class _DistressRatingButton(QPushButton):
-    """Circular distress rating button (0-10) with semantic color coding."""
-    
-    def __init__(self, value: int, parent=None, modo: str = None):
-        super().__init__(str(value), parent)
-        self._value = value
-        self._modo = norm_modo(modo)
-        self._hover = False
-        self._active = False
-        
-        self.setFixedSize(32, 32)
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
-        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
-        
-    def set_active(self, active: bool):
-        self._active = active
-        self.update()
-        
-    def is_active(self) -> bool:
-        return self._active
-        
-    def paintEvent(self, event):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        
-        rect = QRectF(self.rect())
-        is_dark = "dark" in self._modo
-        
-        if not self.isEnabled():
-            p.setOpacity(0.4)
-            
-        if self._active:
-            if self._value <= 3:
-                bg_color = v3c("teal", self._modo)
-            elif self._value <= 6:
-                bg_color = v3c("warning", self._modo)
-            else:
-                bg_color = v3c("danger", self._modo)
-            text_color = QColor("#FFFFFF")
-            border_color = bg_color
-        elif self._hover:
-            bg_color = v3c("elevatedSolid" if is_dark else "elevated", self._modo)
-            border_color = v3c("borderStrong", self._modo)
-            text_color = v3c("text", self._modo)
-        else:
-            bg_color = v3c("surfaceSolid" if is_dark else "surface", self._modo)
-            border_color = v3c("border", self._modo)
-            text_color = v3c("text2", self._modo)
-            
-        p.setBrush(QBrush(bg_color))
-        p.setPen(QPen(border_color, 1.5))
-        p.drawEllipse(rect.adjusted(1, 1, -1, -1))
-        
-        p.setPen(QPen(text_color))
-        p.setFont(self.font())
-        p.drawText(rect, Qt.AlignmentFlag.AlignCenter, self.text())
-        p.end()
-        
-    def enterEvent(self, event):
-        self._hover = True
-        self.update()
-        super().enterEvent(event)
-        
-    def leaveEvent(self, event):
-        self._hover = False
-        self.update()
-        super().leaveEvent(event)
-        
-    def _apply_theme(self, modo: str):
-        self._modo = norm_modo(modo)
-        self.update()
-
-
-class _ServiceOptionButton(QPushButton):
-    """Semantic option button for evaluating practice efficacy."""
-    
-    def __init__(self, key: str, text: str, parent=None, modo: str = None):
-        super().__init__(text, parent)
-        self._key = key
-        self._modo = norm_modo(modo)
-        self._hover = False
-        self._active = False
-        
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
-        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.setMinimumHeight(34)
-        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
-        
-    def set_active(self, active: bool):
-        self._active = active
-        self.update()
-        
-    def is_active(self) -> bool:
-        return self._active
-        
-    def paintEvent(self, event):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        
-        h = self.height()
-        r = min(LAYOUT["radius_button"], h // 2)
-        rect = QRectF(self.rect())
-        path = QPainterPath()
-        path.addRoundedRect(rect, r, r)
-        is_dark = "dark" in self._modo
-        
-        if not self.isEnabled():
-            p.setOpacity(0.4)
-            
-        color_map = {
-            "ayudo": "teal",
-            "parcial": "warning",
-            "no_esta_vez": "danger",
-            "sin_evaluar": "textMuted"
-        }
-        color_token = color_map.get(self._key, "text")
-        
-        if self._active:
-            color_solid = v3c(color_token, self._modo)
-            bg_color = QColor(color_solid)
-            bg_color.setAlpha(42 if is_dark else 34)
-            border_color = color_solid
-            text_color = color_solid
-        elif self._hover:
-            bg_color = v3c("elevatedSolid" if is_dark else "elevated", self._modo)
-            border_color = v3c("borderStrong", self._modo)
-            text_color = v3c("text", self._modo)
-        else:
-            bg_color = v3c("surfaceSolid" if is_dark else "surface", self._modo)
-            border_color = v3c("border", self._modo)
-            text_color = v3c("text2", self._modo)
-            
-        p.fillPath(path, QBrush(bg_color))
-        p.setPen(QPen(border_color, 1.25))
-        p.setBrush(Qt.BrushStyle.NoBrush)
-        p.drawRoundedRect(rect.adjusted(0.5, 0.5, -0.5, -0.5), r, r)
-        
-        p.setPen(QPen(text_color))
-        p.setFont(self.font())
-        p.drawText(rect, Qt.AlignmentFlag.AlignCenter, self.text())
-        p.end()
-        
-    def enterEvent(self, event):
-        self._hover = True
-        self.update()
-        super().enterEvent(event)
-        
-    def leaveEvent(self, event):
-        self._hover = False
-        self.update()
-        super().leaveEvent(event)
-        
-    def _apply_theme(self, modo: str):
-        self._modo = norm_modo(modo)
-        self.update()
-
-
 class _SkillPracticeView(QWidget):
     """Flujo paso a paso guiado para practicar una habilidad."""
     
@@ -852,154 +687,6 @@ class _SkillPracticeView(QWidget):
             self.finished.emit(self._started_at)
 
 
-class _PracticeClosure(QWidget):
-    """Pantalla de evaluación final antes de guardar."""
-
-    saved = pyqtSignal(object, object, str, str)  # (antes, despues, resultado, nota)
-    
-    def __init__(self, skill_title: str, modo: str = None, parent=None):
-        super().__init__(parent)
-        self._skill_title = skill_title
-        self._modo = norm_modo(modo)
-        self._antes = None
-        self._despues = None
-        self._resultado = "sin_evaluar"
-        
-        self._setup_ui()
-        
-    def _setup_ui(self):
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(24, 18, 24, 18)
-        lay.setSpacing(8)
-
-        self.title_lbl = QLabel(f"Finalizar práctica: {self._skill_title}")
-        self.title_lbl.setFont(v3_font("size_h4", weight=TYPOGRAPHY["weight_bold"], serif=True))
-        lay.addWidget(self.title_lbl)
-
-        # Antes
-        self.lbl_antes = QLabel(
-            t(
-                "text.module.dbt.closure_antes",
-                "¿Cómo estaba tu nivel de malestar ANTES? (Opcional)",
-            )
-        )
-        self.lbl_antes.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_semibold"]))
-        lay.addWidget(self.lbl_antes)
-
-        self.antes_buttons = []
-        antes_lay = QHBoxLayout()
-        antes_lay.setSpacing(6)
-        antes_lay.addStretch(1)
-        for i in range(11):
-            btn = _DistressRatingButton(i, parent=self, modo=self._modo)
-            btn.clicked.connect(lambda checked=False, val=i: self._select_antes(val))
-            antes_lay.addWidget(btn)
-            self.antes_buttons.append(btn)
-        antes_lay.addStretch(1)
-        lay.addLayout(antes_lay)
-
-        # Despues
-        self.lbl_despues = QLabel(
-            t(
-                "text.module.dbt.closure_despues",
-                "¿Cómo está tu nivel de malestar AHORA? (Opcional)",
-            )
-        )
-        self.lbl_despues.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_semibold"]))
-        lay.addWidget(self.lbl_despues)
-
-        self.despues_buttons = []
-        despues_lay = QHBoxLayout()
-        despues_lay.setSpacing(6)
-        despues_lay.addStretch(1)
-        for i in range(11):
-            btn = _DistressRatingButton(i, parent=self, modo=self._modo)
-            btn.clicked.connect(lambda checked=False, val=i: self._select_despues(val))
-            despues_lay.addWidget(btn)
-            self.despues_buttons.append(btn)
-        despues_lay.addStretch(1)
-        lay.addLayout(despues_lay)
-
-        # Resultado
-        self.lbl_res = QLabel(t("text.module.dbt.closure_result", "¿Te sirvió la práctica?"))
-        self.lbl_res.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_semibold"]))
-        lay.addWidget(self.lbl_res)
-
-        self.res_buttons = {}
-        res_lay = QHBoxLayout()
-        res_lay.setSpacing(6)
-
-        options = [
-            ("ayudo", t("text.module.dbt.result_helped", "Me ayudó")),
-            ("parcial", t("text.module.dbt.result_partial", "Un poco")),
-            ("no_esta_vez", t("text.module.dbt.result_no", "No esta vez")),
-            ("sin_evaluar", t("text.module.dbt.result_skip", "Prefiero no evaluar"))
-        ]
-        for val, label in options:
-            btn = _ServiceOptionButton(val, label, parent=self, modo=self._modo)
-            btn.setMinimumWidth(150 if val == "sin_evaluar" else 104)
-            btn.clicked.connect(lambda checked=False, v=val: self._select_resultado(v))
-            res_lay.addWidget(btn)
-            self.res_buttons[val] = btn
-        lay.addLayout(res_lay)
-
-        # Preselect "sin_evaluar"
-        self._select_resultado("sin_evaluar")
-
-        # 2026-06: removido `lay.addStretch()` que generaba un vacío
-        # excesivo entre los botones de resultado y el botón Guardar.
-        # El botón ahora queda pegado al bloque de arriba.
-
-        btn_lay = QHBoxLayout()
-        btn_lay.addStretch()
-        self.btn_save = NMButton(
-            t("text.module.dbt.save_practice_btn", "Guardar práctica"),
-            parent=self, variant="gradient", size="sm", width=180
-        )
-        self.btn_save.clicked.connect(self._save_practice)
-        btn_lay.addWidget(self.btn_save)
-        lay.addLayout(btn_lay)
-        
-        self._apply_theme(self._modo)
-        ThemeManager.instance().theme_changed.connect(self._apply_theme)
-        
-    def _apply_theme(self, modo: str):
-        self._modo = norm_modo(modo)
-        self.title_lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-        self.lbl_antes.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-        self.lbl_despues.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-        self.lbl_res.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-
-        for btn in self.antes_buttons:
-            btn._apply_theme(self._modo)
-        for btn in self.despues_buttons:
-            btn._apply_theme(self._modo)
-        for btn in self.res_buttons.values():
-            btn._apply_theme(self._modo)
-            
-    def _select_antes(self, val: int):
-        self._antes = val
-        for i, btn in enumerate(self.antes_buttons):
-            btn.set_active(i == val)
-            
-    def _select_despues(self, val: int):
-        self._despues = val
-        for i, btn in enumerate(self.despues_buttons):
-            btn.set_active(i == val)
-            
-    def _select_resultado(self, val: str):
-        self._resultado = val
-        for k, btn in self.res_buttons.items():
-            btn.set_active(k == val)
-            
-    def _save_practice(self):
-        if getattr(self, "_is_saved", False):
-            return
-        self._is_saved = True
-        self.btn_save.setEnabled(False)
-        self.saved.emit(self._antes, self._despues, self._resultado, "")
-
-
 class _PracticeModalScrim(QWidget):
     """Overlay modal del flujo DBT (mockup `.modal-bg` + `.modal`).
 
@@ -1128,7 +815,6 @@ class ModuloDBT(NMModule):
         self._view_stack.addWidget(self._view_biblioteca)
         
         self._practice_view = None
-        self._closure_view = None
         self._modal_scrim = None
         self._modal_background_controls_hidden = False
 
@@ -1136,7 +822,7 @@ class ModuloDBT(NMModule):
         self._on_tab_changed(0, t("text.module.dbt.tab_now", "Ahora"))
         
     def _on_tab_changed(self, idx: int, label: str):
-        if self._practice_view or self._closure_view:
+        if self._practice_view:
             self._cleanup_practice_flow()
             
         self._view_stack.setCurrentIndex(idx)
@@ -1308,15 +994,7 @@ class ModuloDBT(NMModule):
 
     def _on_practice_finished(self, started_at: datetime.datetime):
         self._started_at = started_at
-
-        skill = DBT_SKILLS.get(self._current_skill_id)
-        skill_title = skill["title"] if skill else ""
-
-        self._closure_view = _PracticeClosure(skill_title, modo=self._modo, parent=self)
-        self._closure_view.setMaximumWidth(760)
-        self._closure_view.saved.connect(self._on_practice_saved)
-        # El cierre reemplaza a la práctica DENTRO del mismo modal (scrim sigue).
-        self._show_modal(self._closure_view, 760)
+        self._on_practice_saved(None, None, "sin_evaluar", "")
 
     def _on_practice_saved(self, antes, despues, resultado, nota):
         # Calculate duration
@@ -1378,7 +1056,6 @@ class ModuloDBT(NMModule):
             self._modal_scrim = None
         self._set_modal_background_controls_visible(True)
         self._practice_view = None
-        self._closure_view = None
             
     def get_card_status(self) -> str:
         today_str = datetime.date.today().isoformat()
@@ -1437,6 +1114,3 @@ class ModuloDBT(NMModule):
         if hasattr(self, "_practice_view") and self._practice_view:
             if hasattr(self._practice_view, "_apply_theme"):
                 self._practice_view._apply_theme(self._modo)
-        if hasattr(self, "_closure_view") and self._closure_view:
-            if hasattr(self._closure_view, "_apply_theme"):
-                self._closure_view._apply_theme(self._modo)

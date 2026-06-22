@@ -6,7 +6,7 @@ import pytest
 from PyQt6.QtWidgets import QApplication
 
 from shared.db import conexion, inicializar_tablas
-from app.modules.dbt_qt import ModuloDBT, DBT_SKILLS, _PracticeClosure
+from app.modules.dbt_qt import ModuloDBT, DBT_SKILLS
 
 _qapp = None
 def get_qapp():
@@ -180,23 +180,6 @@ def test_dbt_cancel_does_not_insert():
     with conexion() as conn:
         count = conn.execute("SELECT COUNT(*) FROM dbt_practicas").fetchone()[0]
         assert count == 0
-
-
-def test_dbt_double_save_prevention():
-    get_qapp()
-    
-    closure = _PracticeClosure("Observar y describir", modo=None)
-    
-    # Connect its saved signal to a custom function that records how many times it was emitted
-    emitted_payloads = []
-    closure.saved.connect(lambda antes, despues, res, nota: emitted_payloads.append((antes, despues, res, nota)))
-    
-    # Simulate saving twice
-    closure._save_practice()
-    closure._save_practice()
-    
-    # It should only emit once
-    assert len(emitted_payloads) == 1
 
 
 def test_dbt_get_card_status():
@@ -421,36 +404,13 @@ def test_dbt_module_apply_theme_scroll_bars():
 
 def test_dbt_custom_widgets_behaviors():
     get_qapp()
-    from app.modules.dbt_qt import _DistressRatingButton, _ServiceOptionButton, _StepProgressIndicator
-    
-    # Test Distress Rating Button
-    btn_low = _DistressRatingButton(2, modo="dark")
-    assert btn_low.text() == "2"
-    assert not btn_low.is_active()
-    btn_low.set_active(True)
-    assert btn_low.is_active()
-    
-    btn_mid = _DistressRatingButton(5, modo="light")
-    btn_mid.set_active(True)
-    
-    btn_high = _DistressRatingButton(9, modo="dark")
-    btn_high.set_active(True)
-    
-    # Test Service Option Button
-    btn_opt = _ServiceOptionButton("ayudo", "Me ayudó", modo="dark")
-    assert btn_opt.text() == "Me ayudó"
-    btn_opt.set_active(True)
-    assert btn_opt.is_active()
-    
+    from app.modules.dbt_qt import _StepProgressIndicator
+
     # Test Step Progress Indicator
     indicator = _StepProgressIndicator(num_steps=3, family="mindfulness", modo="dark")
     assert indicator._current_step == 0
     indicator.set_current_step(1)
     assert indicator._current_step == 1
-    
-    # Ensure they can paint without crashing
-    btn_low.repaint()
-    btn_opt.repaint()
     indicator.repaint()
 
 
