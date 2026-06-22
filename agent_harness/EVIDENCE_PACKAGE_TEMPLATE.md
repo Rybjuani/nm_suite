@@ -34,6 +34,14 @@ Evidencia mínima requerida para cerrar un episodio.
 - Nombrar: `evidence/<episodio>_before_<componente>.png`
 - Nombrar: `evidence/<episodio>_after_<componente>.png`
 
+### Checklist visual (obligatorio para UI visual)
+
+- Usar `agent_harness/VISUAL_REVIEW_CHECKLIST_TEMPLATE.md`.
+- Completar una fila por pantalla/estado/tema revisado.
+- Una captura existente o generada no aprueba la pantalla por si sola.
+- Tests/probe/SSIM/MAD son soporte tecnico; la decision visual vive en el checklist.
+- Defectos P0/P1 deben quedar resueltos o diferidos explicitamente por owner.
+
 ### Defectos
 
 - Defectos bajados (corregidos con validación)
