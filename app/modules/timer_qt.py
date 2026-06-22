@@ -40,64 +40,49 @@ from PyQt6.QtWidgets import (
 try:
     from shared.components import (
         NMModule,
-        NMButton,
         NMButtonOutline,
         NMInput,
         NMToast,
-        ThemeManager,
         NMCard,
-        NMIcon,
         NMPlayButton,
         NMFocusArc,
         NMRingPulse,
         NMEmptyState,
     )
     from shared.theme_qt import (
-        C,
-        colors,
-        norm_modo,
         qfont,
-        qfont_mono,
         v3c,
         V3_SP,
-        V3_RD,
-        stylesheet_lineedit,
         stylesheet_scrollarea,
-        PAD_CONTAINER,
         eyebrow_font,
     )
     from shared.theme import TYPOGRAPHY
     from shared.db import obtener_conexion, leer_config, conexion
     from shared.utils import fecha_hoy, hora_actual
-    from shared.visual_qa import visual_qa_enabled, timer_sessions
+    from shared.visual_qa import visual_qa_enabled
 except ImportError:
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _dir not in sys.path:
         sys.path.insert(0, _dir)
     from shared.components import (
         NMModule,
-        NMButton,
         NMButtonOutline,
         NMInput,
         NMToast,
         NMCard,
-        NMIcon,
         NMPlayButton,
         NMFocusArc,
         NMRingPulse,
     )
     from shared.theme_qt import (
-        C,
         qfont,
-        qfont_mono,
         v3c,
         V3_SP,
-        stylesheet_lineedit,
         stylesheet_scrollarea,
         eyebrow_font,
     )
     from shared.theme import TYPOGRAPHY
-    from shared.visual_qa import visual_qa_enabled, timer_sessions
+    from shared.visual_qa import visual_qa_enabled
 
 from shared.remote_config import t
 

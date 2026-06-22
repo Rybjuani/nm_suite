@@ -21,7 +21,6 @@ import os
 import sys
 from shared.crash_log import redact
 import logging
-import datetime as _dt
 
 _log = logging.getLogger(__name__)
 
@@ -32,10 +31,8 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QFrame,
-    QLineEdit,
     QSizePolicy,
     QGridLayout,
-    QMenu,
     QScrollArea,
 )
 
@@ -44,31 +41,24 @@ try:
         NMModule,
         NMButton,
         NMToast,
-        ThemeManager,
         NMCard,
         NMIcon,
         NMModuleRing,
         NMCustomCheck,
         NMEmptyState,
-        NMProgressLine,
         NMInput,
     )
     from shared.theme_qt import (
-        C,
-        colors,
-        norm_modo,
         qfont,
         qfont_mono,
         qcolor_to_rgba_css,
         v3c,
         V3_SP,
-        V3_RD,
         stylesheet_scrollarea,
-        PAD_CONTAINER,
         eyebrow_font,
     )
     from shared.theme import TYPOGRAPHY
-    from shared.db import obtener_conexion, leer_config, conexion
+    from shared.db import obtener_conexion, conexion
     from shared.utils import fecha_hoy
     from shared.visual_qa import visual_qa_enabled, routine_sections
 except ImportError:

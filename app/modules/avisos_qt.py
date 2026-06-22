@@ -19,7 +19,6 @@ LÓGICA DE NEGOCIO PRESERVADA EXACTA:
 import os
 import sys
 import datetime
-from shared.crash_log import redact
 import logging
 
 _log = logging.getLogger(__name__)
@@ -34,8 +33,6 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QFrame,
     QPushButton,
-    QLineEdit,
-    QComboBox,
     QSizePolicy,
 )
 
@@ -43,35 +40,21 @@ try:
     from shared.components import (
         NMModule,
         NMButton,
-        NMButtonOutline,
         NMCard,
         NMInput,
         NMSearchInput,
-        NMToggle,
         NMToast,
-        NMProgressBar,
-        NMSkeleton,
-        ThemeManager,
         NMEmptyState,
-        NMProgressLine,
         NMIcon,
-        NMPlayButton,
-        NMFormPanel,
     )
     from shared.theme_qt import (
         C,
-        colors,
         norm_modo,
         qfont,
-        qfont_mono,
         qcolor_to_rgba_css,
         v3c,
         V3_SP,
-        V3_RD,
-        stylesheet_textedit,
         stylesheet_scrollarea,
-        stylesheet_lineedit,
-        PAD_CONTAINER,
         eyebrow_font,
     )
     from shared.theme import TYPOGRAPHY
@@ -88,21 +71,16 @@ except ImportError:
         NMInput,
         NMSearchInput,
         NMToast,
-        NMProgressBar,
         NMEmptyState,
         NMIcon,
-        NMFormPanel,
     )
     from shared.theme_qt import (
         C,
         norm_modo,
         qfont,
-        qfont_mono,
         v3c,
         V3_SP,
-        V3_RD,
         stylesheet_scrollarea,
-        stylesheet_lineedit,
         eyebrow_font,
     )
     from shared.visual_qa import visual_qa_enabled, reminder_rows
@@ -114,7 +92,6 @@ from shared.remote_config import t
 
 DIAS_LABELS = ["L", "M", "X", "J", "V", "S", "D"]
 # Canónico en shared (lo consume también el Hub); re-export para compatibilidad.
-from shared.utils import SUPPORT_CATEGORIES  # noqa: E402
 DIAS_FULL = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
 
 
