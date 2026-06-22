@@ -1,4 +1,4 @@
-# Python
+﻿# Python
 __pycache__/
 *.py[cod]
 *.pyo
@@ -55,7 +55,7 @@ docs/QA_FINAL_*.md
 # Manuales PDF generados (regenerables con AI_SCRIPTS/generate_neuromood_manuals.py)
 Manual_Usuario_Profesional_NeuroMood.pdf
 Manual_Tecnico_Descriptivo_NeuroMood.pdf
-# NotebookLM pack — documentación local no versionada
+# NotebookLM pack â€” documentaciÃ³n local no versionada
 docs/_notebooklm_pack/
 # Redesign backups
 REDESIGN/design_sources/03_current_app/*.zip
@@ -75,8 +75,8 @@ qa/evidence/
 qa/_captures/
 _scratch_trash/
 
-# qa/e2e runtime — efímero / con secretos (tokens, .env, PHI). NUNCA versionar.
-# El CÓDIGO y DOCS de qa/e2e SÍ se versionan; solo se ignora lo de abajo:
+# qa/e2e runtime â€” efÃ­mero / con secretos (tokens, .env, PHI). NUNCA versionar.
+# El CÃ“DIGO y DOCS de qa/e2e SÃ se versionan; solo se ignora lo de abajo:
 qa/e2e/shots/
 qa/e2e/trees/
 qa/e2e/logs/
@@ -111,8 +111,12 @@ qa/_re.txt
 qa/_baseline_f0_indigo/
 qa/_baseline_*/
 
-# Visual Sentinel — outputs regenerables (screenshots, crops, arboles, reportes).
+# Visual Sentinel â€” outputs regenerables (screenshots, crops, arboles, reportes).
 # El ledger de aprobaciones registry.json SI se versiona (fuente de verdad).
 qa/_visual_sentinel/
 qa/visual_sentinel_baselines/proposed/
 qa/visual_sentinel_baselines/approved/
+
+# Mockup reference static â€” 86 PNGs (43 estados Ã— 2 temas) canÃ³nicos contra
+# neuromood-mockup.html. Regenerable con qa/capture_mockup.py. Tracked como
+# snapshot estÃ¡tico en CI/storage externo si se necesita inmutabilidad.
