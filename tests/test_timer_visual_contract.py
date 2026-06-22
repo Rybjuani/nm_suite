@@ -53,7 +53,8 @@ def test_timer_idle_chips_and_status_badge_match_mockup(qtbot, monkeypatch) -> N
 
 
 def test_timer_focus_arc_size_and_num_match_mockup(qtbot, monkeypatch) -> None:
-    """E3-S-BIENESTAR: bigring 230×230 + num override 46px (mockup líneas 344/861)."""
+    """Timer ring 180×180 — propuesta visual aprobada owner (V2-P1-040 resuelto).
+    Ring reducido de 230px a 180px para que no domine el viewport."""
     _use_default_texts(monkeypatch)
 
     from app.modules import timer_qt
@@ -64,9 +65,9 @@ def test_timer_focus_arc_size_and_num_match_mockup(qtbot, monkeypatch) -> None:
     module = ModuloTimer(show_header=False, modo="light_hybrid")
     qtbot.addWidget(module)
 
-    assert module._canvas.width() == 230
-    assert module._canvas.height() == 230
-    assert module._canvas._num_size_override == 46
+    assert module._canvas.width() == 180
+    assert module._canvas.height() == 180
+    assert module._canvas._num_size_override == 40
     assert module._canvas._time_text == "25:00"
 
 

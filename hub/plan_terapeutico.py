@@ -208,7 +208,7 @@ class PlanTerapeuticoTab(QWidget):
         # tamaño. font-weight 600 en selected refuerza la jerarquía visual.)
         self._tabs.setStyleSheet(
             stylesheet_tabwidget_segmented(self._modo)
-            + "QTabBar::tab { padding: 4px 9px; font-size: 11px; }"
+            + "QTabBar::tab { padding: 6px 12px; font-size: 12px; }"
             + "QTabBar::tab:selected { font-weight: 600; }"
         )
         self._tabs.setDocumentMode(True)
@@ -246,7 +246,7 @@ class PlanTerapeuticoTab(QWidget):
         # (Jerarquía 2026-06: padding/fuente ↑ ligeramente — ver _setup.)
         self._tabs.setStyleSheet(
             stylesheet_tabwidget_segmented(self._modo)
-            + "QTabBar::tab { padding: 4px 9px; font-size: 11px; }"
+            + "QTabBar::tab { padding: 6px 12px; font-size: 12px; }"
             + "QTabBar::tab:selected { font-weight: 600; }"
         )
         for i in range(self._tabs.count()):
@@ -1018,21 +1018,20 @@ class _PresetActivacionTab(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
         body = QWidget()
         lay = QHBoxLayout(body)
-        lay.setContentsMargins(0, 8, 0, 8)
-        lay.setSpacing(12)
+        lay.setContentsMargins(0, V3_SP["sm"], 0, V3_SP["sm"])
+        lay.setSpacing(V3_SP["md"])
         outer.addWidget(_tab_scroll_wrap(body, self._modo))
 
         # Form (Left)
         form_card = NMCard(modo=self._modo, clickable=False)
-        _set_plan_card_height(form_card, 316)
+        _set_plan_card_height(form_card, 340)
         form_lay = QVBoxLayout(form_card)
-        form_lay.setContentsMargins(12, 12, 12, 12)
-        form_lay.setSpacing(8)
+        form_lay.setContentsMargins(V3_SP["md"], V3_SP["md"], V3_SP["md"], V3_SP["md"])
+        form_lay.setSpacing(V3_SP["sm"])
 
-
-        self._ent_name = NMInput("Nombre (ej: Caminata corta, máx 50)", modo=self._modo)
+        self._ent_name = NMInput("Nombre de la actividad (máx 50 caracteres)", modo=self._modo)
         self._ent_name.setMaxLength(50)
-        self._ent_desc = NMInput("Descripción (ej: 15 min de aire fresco)", modo=self._modo)
+        self._ent_desc = NMInput("Descripción breve (ej: 15 min de aire fresco)", modo=self._modo)
         self._ent_desc.setMaxLength(120)
 
         self._combo_cat = QComboBox()
@@ -1040,14 +1039,13 @@ class _PresetActivacionTab(QWidget):
         for cat in ("Autocuidado", "Física", "Cognitiva", "Placer", "Social", "Maestría"):
             self._combo_cat.addItem(cat, cat)
 
-        # Rango de ánimo (1-10) — items cortos ("Mín: N"): el texto largo
-        # inflaba el ancho mínimo de la columna y recortaba la card derecha.
-        range_lbl = QLabel("Rango de ánimo en el que se sugiere")
-        range_lbl.setFont(qfont("size_caption"))
+        range_lbl = QLabel("Rango de ánimo sugerido")
+        range_lbl.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
         range_lbl.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
         )
         range_lay = QHBoxLayout()
+        range_lay.setSpacing(V3_SP["sm"])
         self._combo_min = QComboBox()
         self._combo_min.setStyleSheet(stylesheet_combobox(self._modo))
         self._combo_max = QComboBox()
@@ -1055,7 +1053,7 @@ class _PresetActivacionTab(QWidget):
         for i in range(1, 11):
             self._combo_min.addItem(f"Mín: {i}", i)
             self._combo_max.addItem(f"Máx: {i}", i)
-        self._combo_max.setCurrentIndex(9)  # default max = 10
+        self._combo_max.setCurrentIndex(9)
         range_lay.addWidget(self._combo_min)
         range_lay.addWidget(self._combo_max)
         range_lay.addStretch()
@@ -1066,20 +1064,21 @@ class _PresetActivacionTab(QWidget):
         form_lay.addWidget(range_lbl)
         form_lay.addLayout(range_lay)
 
+        # Fila primaria: "Agregar actividad" (gradient) + "Completar con IA" (outline)
+        # en la misma fila — acción principal izquierda, asistente derecho.
+        action_row = QHBoxLayout()
+        action_row.setSpacing(V3_SP["sm"])
         self._save_btn = NMButton(
-            "Agregar actividad", modo=self._modo, width=150, height=32, size="sm"
+            "Agregar actividad", modo=self._modo, size="sm"
         )
         self._save_btn.clicked.connect(self._save_activity)
-        form_lay.addWidget(self._save_btn, alignment=Qt.AlignmentFlag.AlignLeft)
-
-        # IA Assist Button
-        ia_row = QHBoxLayout()
+        action_row.addWidget(self._save_btn)
         self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm")
         self._ia_btn.setFixedHeight(32)
         self._ia_btn.clicked.connect(self._autofill_with_ia)
-        ia_row.addWidget(self._ia_btn)
-        ia_row.addStretch()
-        form_lay.addLayout(ia_row)
+        action_row.addWidget(self._ia_btn)
+        action_row.addStretch()
+        form_lay.addLayout(action_row)
 
         form_lay.addStretch()
 
@@ -1087,9 +1086,9 @@ class _PresetActivacionTab(QWidget):
 
         # List (Right)
         list_card = NMCard(modo=self._modo, clickable=False)
-        _set_plan_card_height(list_card, 316, min_height=236)
+        _set_plan_card_height(list_card, 340, min_height=236)
         list_lay = QVBoxLayout(list_card)
-        list_lay.setContentsMargins(10, 10, 10, 10)
+        list_lay.setContentsMargins(V3_SP["md"], V3_SP["md"], V3_SP["md"], V3_SP["md"])
 
         list_lay.addLayout(_section_header_row(
             "Actividades del paciente",

@@ -304,7 +304,8 @@ class _SectionCard(NMCard):
             entry.setMinimumHeight(34)
             entry.setMaximumHeight(38)
             form_lay.addWidget(entry, stretch=1)
-            btn = NMButton("✓", variant="gradient", size="sm", modo=self._modo, width=36)
+            btn = NMButton("✓", variant="gradient", size="sm", modo=self._modo)
+            btn.setFixedWidth(40)
             btn.setEnabled(False)
             form_lay.addWidget(btn)
 
@@ -446,6 +447,7 @@ class ModuloRutina(NMModule):
             self._section_cards[key] = card
             self._section_order.append(card)
         lay.addWidget(self._sections_grid_widget)
+        lay.addStretch(1)
         self._relayout_sections()
 
         self._apply_text_styles()

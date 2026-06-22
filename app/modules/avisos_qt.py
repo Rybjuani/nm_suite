@@ -493,9 +493,11 @@ class ModuloAvisos(NMModule):
         # 2. Filtros + búsqueda, como el mockup de Recordatorios.
         # Polish visual: pills agrupadas en un track segmentado (surface2 +
         # radio pill), con search compacto a la derecha.
+        _TRACK_H = _AVISOS_FILTER_PILL_HEIGHT + 8  # 40px — track = pill + 4px inset top+bottom
         self._filter_segment = QFrame()
         self._filter_segment.setObjectName("FilterSegment")
         self._filter_segment.setStyleSheet(self._segment_qss(self._modo))
+        self._filter_segment.setFixedHeight(_TRACK_H)
         seg_lay = QHBoxLayout(self._filter_segment)
         seg_lay.setContentsMargins(4, 4, 4, 4)
         seg_lay.setSpacing(4)
@@ -513,6 +515,7 @@ class ModuloAvisos(NMModule):
             seg_lay.addWidget(pill)
         filter_row = QHBoxLayout()
         filter_row.setSpacing(V3_SP["sm"])
+        filter_row.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         filter_row.addWidget(self._filter_segment)
         self._search_input = NMSearchInput(
             t("text.module.avisos.search_placeholder", "Buscar recordatorio…"),
@@ -520,6 +523,7 @@ class ModuloAvisos(NMModule):
         )
         self._search_input.setMinimumWidth(220)
         self._search_input.setMaximumWidth(340)
+        self._search_input.setFixedHeight(_TRACK_H)
         self._search_input.text_changed.connect(self._on_search)
         self._search_edit = self._search_input._edit
         filter_row.addWidget(self._search_input, stretch=1)

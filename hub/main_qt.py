@@ -407,7 +407,7 @@ class PacientesView(QWidget):
         self._rows_scroll.setWidgetResizable(True)
         self._rows_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self._rows_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._rows_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self._rows_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._rows_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         self._rows_scroll.verticalScrollBar().valueChanged.connect(
             lambda _value: self._queue_row_control_visibility_refresh()
@@ -695,12 +695,20 @@ class PacientesView(QWidget):
         visible = min(len(rows), self._rows_limit)
         # Overhead real: roster_meta ~34 + col-header ~26 + tc_margins 8 + spacing 4
         # + table_lay_bottom 4 + row_gaps (n-1)*2 = 76 + 2*(n-1) ~80-90. Buffer 20.
-        target_h = min(520, max(252, 100 + visible * _NM_PATIENT_ROW_HEIGHT))
+        target_h = min(520, max(252, 108 + visible * _NM_PATIENT_ROW_HEIGHT))
         self._table_card.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum
         )
         self._table_card.setMinimumHeight(target_h)
         self._table_card.setMaximumHeight(target_h)
+        # Scrollbar solo cuando las filas superan la capacidad del card máximo.
+        max_rows_no_scroll = (520 - 108) // _NM_PATIENT_ROW_HEIGHT  # 5 rows
+        scroll_policy = (
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+            if visible <= max_rows_no_scroll
+            else Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+        self._rows_scroll.setVerticalScrollBarPolicy(scroll_policy)
 
     def _patient_tags(self, p: dict) -> list[str]:
         tags = []

@@ -298,7 +298,7 @@ class ModuloTimer(NMModule):
 
         # Card principal del temporizador, equivalente al panel 6 columnas del mockup.
         timer_card = NMCard(modo=self._modo, clickable=False, glow=False)
-        timer_card.setMinimumHeight(300)
+        timer_card.setMinimumHeight(280)
         timer_card_lay = QVBoxLayout(timer_card)
         timer_card_lay.setContentsMargins(V3_SP["lg"], V3_SP["xs"], V3_SP["lg"], V3_SP["xs"])
         timer_card_lay.setSpacing(V3_SP["xs"])
@@ -327,7 +327,7 @@ class ModuloTimer(NMModule):
         # 200×200 + número central 46px font-display (mockup línea 861:
         # <div class="h-serif" id="tmNum" style="font-size:46px;">). El CSS base
         # pide 52px (.bigring .num), pero el Timer overridea inline a 46px.
-        self._canvas = NMFocusArc(size=230, modo=self._modo, num_size=46)
+        self._canvas = NMFocusArc(size=180, modo=self._modo, num_size=40)
         self._canvas.set_data(0.0, self._format_time(self._remaining_sec))
         cent_lay.addWidget(self._canvas, alignment=Qt.AlignmentFlag.AlignHCenter)
 
@@ -497,7 +497,13 @@ class ModuloTimer(NMModule):
             self._empty_state.show()
 
         timer_card_lay.addWidget(cent_container, stretch=1)
-        outer.addWidget(timer_card, stretch=1)
+        if self._has_activity:
+            outer.addWidget(timer_card, stretch=1)
+        else:
+            timer_card.setMinimumHeight(220)
+            timer_card.setMaximumHeight(300)
+            outer.addWidget(timer_card, stretch=0)
+            outer.addStretch(1)
         self._timer_card = timer_card
 
         self._apply_text_styles()
@@ -598,7 +604,7 @@ class ModuloTimer(NMModule):
         try:
             from shared.theme_qt import v3_font
 
-            self._canvas.setFont(v3_font(48, weight=600, serif=True))
+            self._canvas.setFont(v3_font(40, weight=600, serif=True))
         except Exception:
             pass
 
