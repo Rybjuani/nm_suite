@@ -95,7 +95,8 @@ histórico de ejecución, no como frente abierto.
   mockup, nunca fueron producto**. No revivir.
 - Strings eliminados: **"Registrar ánimo", "Registrar ahora", "Sin registro hoy", "Sin
   registros hoy", "Notas del día"** → no revivir (ver §12 guardas).
-- Capturas QA stale en `qa/_fidelity_fresh/` con SSIM bajo por fuente → no son defectos.
+- Capturas QA stale de `qa/_fidelity_fresh/` con SSIM bajo por fuente -> no son defectos;
+  los reports frescos son efimeros y ese directorio ya no se versiona.
 
 ---
 

@@ -73,7 +73,7 @@ reabran deuda UI V2 ya cerrada.
 - **Archivos tocados:**
   - `docs/README.md`
   - `agent_harness/episodes/20260621_210818_DOCS_visual_status_index/EPISODE.md`
-- **Commit:** pendiente
+- **Commit:** a5138d4 (`docs(ui): add visual docs status index`)
 - **Deuda restante:** sin deuda documental accionable detectada en docs de UI/QA visual;
   los docs historicos quedan explicitamente marcados como no-backlog vivo.
 
