@@ -1,0 +1,13 @@
+# Contratos de componentes: DIALOGS / overlays.
+contracts:
+  - id: dialog_not_blank
+    severity: P0
+    description: >
+      Un dialogo que se captura blank/flat no aporta evidencia. Bloqueante.
+    check: blank_or_flat
+
+  - id: dialog_not_duplicate
+    severity: P1
+    description: >
+      Un dialogo identico a otra pantalla/estado indica fallback.
+    check: duplicate_suspect

@@ -1,0 +1,17 @@
+# Contratos de componentes: ONBOARDING / LEGAL.
+# Reglas especificas de pantallas de consentimiento/onboarding.
+contracts:
+  - id: legal_no_unexpected_scrollbar
+    severity: P1
+    description: >
+      No permitir scrollbars internas inesperadas en legales/onboarding: el
+      contenido legal debe caber sin scroll interno que oculte terminos.
+    check: unexpected_scrollbar_in_legal
+
+  - id: legal_checkbox_in_scroll_area
+    severity: P1
+    description: >
+      Detecta un checkbox legal (consentimiento/terminos/privacidad) dentro de
+      una scroll area: el consentimiento debe estar fijo y visible, no perdido
+      dentro de un area desplazable.
+    check: unexpected_scrollbar_in_legal

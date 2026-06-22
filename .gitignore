@@ -110,3 +110,9 @@ qa/_pos.txt
 qa/_re.txt
 qa/_baseline_f0_indigo/
 qa/_baseline_*/
+
+# Visual Sentinel — outputs regenerables (screenshots, crops, arboles, reportes).
+# El ledger de aprobaciones registry.json SI se versiona (fuente de verdad).
+qa/_visual_sentinel/
+qa/visual_sentinel_baselines/proposed/
+qa/visual_sentinel_baselines/approved/

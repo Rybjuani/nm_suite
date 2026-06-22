@@ -1,0 +1,16 @@
+# Contratos de componentes: CARDS / superficies de contenido.
+contracts:
+  - id: cards_not_blank
+    severity: P0
+    description: >
+      Las cards (NMCard y superficies equivalentes) no pueden quedar vacias/
+      planas a nivel de captura: si toda la pantalla sale blank/flat, la card
+      tampoco aporta evidencia. Bloqueante.
+    check: blank_or_flat
+
+  - id: card_not_duplicate
+    severity: P1
+    description: >
+      Una card que se captura identica a otra pantalla distinta indica que no
+      se alcanzo el estado real (fallback).
+    check: duplicate_suspect

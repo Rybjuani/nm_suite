@@ -1,0 +1,9 @@
+# Contratos de componentes: SCROLLBARS.
+contracts:
+  - id: no_unexpected_scrollbar_in_legal
+    severity: P1
+    description: >
+      No permitir scrollbars internas inesperadas en pantallas legales/onboarding.
+      El contenido legal debe caber sin scroll interno (riesgo de ocultar
+      terminos/consentimiento).
+    check: unexpected_scrollbar_in_legal

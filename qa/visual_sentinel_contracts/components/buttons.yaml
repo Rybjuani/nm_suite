@@ -1,0 +1,17 @@
+# Contratos de componentes: BOTONES.
+# Aplican sobre TODAS las pantallas descubiertas.
+contracts:
+  - id: semantic_cta_must_have_icon
+    severity: P2
+    description: >
+      Los CTAs semanticos clave (Exportar PDF, Resumen IA, Completar con IA)
+      deben tener icono. Un CTA semantico sin icono rompe densidad y reconocimiento.
+    check: semantic_cta_missing_icon
+
+  - id: button_out_of_viewport
+    severity: P1
+    description: >
+      Ningun boton visible puede quedar fuera del viewport de la ventana.
+      (Cubierto por el contrato global out_of_viewport; se documenta aqui como
+      contrato de componente para futuras especializaciones por boton.)
+    check: out_of_viewport

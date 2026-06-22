@@ -1,0 +1,26 @@
+# Contratos de componentes: TABS (QTabBar / QTabWidget / NMTabs / segmentados).
+contracts:
+  - id: no_oversized_secondary_tabs
+    severity: P2
+    description: >
+      No permitir tabs secundarias gigantes: altura/padding/ratio excesivo
+      respecto a la ventana. Una tab secundaria con alto > 18% de la ventana
+      rompe la densidad del layout.
+    check: oversized_secondary_tabs
+    params:
+      max_tab_to_window_height_ratio: 0.18
+
+  - id: no_long_tab_labels
+    severity: P2
+    description: >
+      No permitir QTabBar/QTabWidget con labels largos que rompen densidad
+      (> 22 caracteres). Los labels largos deben abreviarse o redisenarse.
+    check: long_tab_labels
+    params:
+      max_label_chars: 22
+
+  - id: tabs_out_of_viewport
+    severity: P1
+    description: >
+      Ningun contenedor de tabs visible puede quedar fuera del viewport.
+    check: out_of_viewport
