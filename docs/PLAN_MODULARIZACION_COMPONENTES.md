@@ -469,11 +469,6 @@ Rollback:
 
 ## Fase 9 - Regresion final completa
 
-Estado:
-- Revalidada el 2026-06-21 contra `9c2f9a0`: `git diff --check`, `ruff`,
-  `compileall`, smoke imports, `pytest tests/`, `runtime_live_probe --all --theme both`,
-  `capture_v8.py --all --theme both` y `build_neuromood.py --dry-run` verdes.
-
 Alcance:
 - Ejecutar validacion completa luego de todas las fases anteriores.
 - No mezclar con cambios de codigo.
