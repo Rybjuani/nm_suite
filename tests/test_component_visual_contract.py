@@ -787,7 +787,7 @@ def test_patient_row_premium_matches_mockup_prow_contract(qtbot) -> None:
     assert f"border-radius: {_NM_PATIENT_AVATAR_RADIUS}px" in row._avatar.styleSheet()
     assert row._sparkline.width() == 78
     assert row._sparkline.height() == 30
-    assert row._ring.width() == _NM_PATIENT_RING_SIZE == 46
+    assert row._ring.width() == _NM_PATIENT_RING_SIZE == 36
     assert row._ring._color_key == "gold"
     assert row._btn_unlink.width() == _NM_PATIENT_UNLINK_SIZE == 30
     assert _NM_PATIENT_TREND_COL_W == 90

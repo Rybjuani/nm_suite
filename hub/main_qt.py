@@ -39,7 +39,6 @@ from PyQt6.QtGui import QIcon, QPainter, QBrush, QLinearGradient
 from PyQt6 import sip
 
 from shared.theme_qt import (
-    C,
     v3c,
     colors,
     norm_modo,
@@ -50,7 +49,6 @@ from shared.theme_qt import (
     obtener_ruta_recurso,
     aplicar_captionbar_qt,
     ThemeAwareWidgetMixin,
-    nm_icon,
     apply_hub_density,
     HUB_DENSITY_OBJECT_NAME,
     V3_SP,
@@ -71,7 +69,6 @@ from shared.components import (
     NMEmptyState,
     NMWindowChrome,
     NMBadge,
-    NMPageHeader,
 )
 from shared.components.patient import (
     _NM_PATIENT_RING_COL_W,
@@ -359,8 +356,10 @@ class PacientesView(QWidget):
                 width=130,
             )
             self._texts_btn.clicked.connect(self._on_global_texts)
+            roster_meta.addStretch()
             roster_meta.addWidget(self._texts_btn, alignment=Qt.AlignmentFlag.AlignVCenter)
-        roster_meta.addStretch()
+        else:
+            roster_meta.addStretch()
         tc_lay.addLayout(roster_meta)
 
         self._table_header = table_header = QWidget()
@@ -370,7 +369,7 @@ class PacientesView(QWidget):
         # fila se da con margen/espaciado, no con una línea dura (ADN §7).
         table_header.setStyleSheet("background: transparent;")
         th_lay = QHBoxLayout(table_header)
-        th_lay.setContentsMargins(76, 0, 14, V3_SP["md"])
+        th_lay.setContentsMargins(94, 0, 14, V3_SP["md"])
         # Spacing 12 = al de NMPatientRowPremium: con sm(6) las columnas Mail /
         # Ánimo 7d / Uso no caían sobre sus datos (desalineadas).
         th_lay.setSpacing(12)
@@ -694,9 +693,9 @@ class PacientesView(QWidget):
             self._table_card.setMaximumHeight(520)
             return
         visible = min(len(rows), self._rows_limit)
-        # Overhead fijo (roster_meta ~34 + col-header ~24 + margins 8 + spacing 4 + buffer 10)
-        # más _NM_PATIENT_ROW_HEIGHT (70px) por fila real. Cap de 520px.
-        target_h = min(520, max(252, 80 + visible * _NM_PATIENT_ROW_HEIGHT))
+        # Overhead real: roster_meta ~34 + col-header ~26 + tc_margins 8 + spacing 4
+        # + table_lay_bottom 4 + row_gaps (n-1)*2 = 76 + 2*(n-1) ~80-90. Buffer 20.
+        target_h = min(520, max(252, 100 + visible * _NM_PATIENT_ROW_HEIGHT))
         self._table_card.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum
         )

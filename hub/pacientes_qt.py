@@ -11,7 +11,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
-    QScrollArea,
     QFrame,
     QSizePolicy,
     QTextBrowser,
@@ -21,7 +20,6 @@ try:
     from shared.components import (
         NMCard,
         NMAvatar,
-        NMBadge,
         NMButton,
         NMElidedLabel,
         NMToast,
@@ -46,7 +44,6 @@ except ImportError:
     from shared.components import (
         NMCard,
         NMAvatar,
-        NMBadge,
         NMButton,
         NMElidedLabel,
         NMToast,
@@ -152,12 +149,12 @@ class DetallePacienteView(QWidget):
         ia_row.setContentsMargins(0, 4, 0, 0)
         ia_row.addStretch()
         self._btn_exportar_pdf = NMButton(
-            "Exportar PDF", variant="secondary", size="sm", modo=self._modo, width=120
+            "Exportar PDF", variant="gradient", size="sm", modo=self._modo, width=120
         )
         self._btn_exportar_pdf.clicked.connect(self._on_exportar_pdf)
         ia_row.addWidget(self._btn_exportar_pdf)
         self._btn_resumen_ia = NMButton(
-            "Resumen IA", variant="ghost", size="sm", modo=self._modo, width=120
+            "Resumen IA", variant="secondary", size="sm", modo=self._modo, width=120
         )
         self._btn_resumen_ia.clicked.connect(self._on_resumen_ia)
         ia_row.addWidget(self._btn_resumen_ia)
