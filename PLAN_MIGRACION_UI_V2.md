@@ -240,17 +240,18 @@ Curvas/duración canónicas: `t-fast 140ms cubic(.4,0,.2,1)` · `t 240ms cubic(.
 | Categoría | Estado |
 |---|---|
 | **Tokens existentes y correctos** | paleta claro/oscuro, radios (xs8..pill999), `V3_SPACE` (xs4 sm6 md10 lg14 xl16 2xl20 3xl24 4xl32), `V3_SHADOWS`, `V3_GRADIENTS`, `TYPOGRAPHY` (Fraunces display / Inter body), `MOOD_PALETTE`, tonos DBT (mind/toler/regul/efect) → **= mockup, lock-tested. No tocar.** |
-| **Tokens mal consumidos** (deuda) | títulos de card en sans 12px donde el mockup pide `.h-serif` Fraunces (corregido en Home/Activación; **revisar DBT/recordatorios/rutina/timer**); eyebrows ya en uppercase (`eyebrow_font`) |
+| **Tokens antes mal consumidos** | hallazgos de serif-titles/card titles quedaron cerrados o aceptados al cierre E5; no reabrir DBT/recordatorios/rutina/timer sin defecto nuevo reproducible |
 | **Primitivas ya corregidas** | `NMButton`, `NMTabs`, `NMBadge`, `NMCard`, `NMSearchInput`, `NMEmptyState`, `NMPatientRow`, theme-toggle (glifo sol/luna) |
-| **Primitivas aún divergentes** | revisar contra mockup: slider arcoíris (6 stops/thumb), `NMToast` (timing/slide), `NMDialog` (scale .96→1), `NMStepper` (estados), sparkline área 7/30d |
-| **Divergencias locales por pantalla** | densidad/overflow residual (frente OLA 0/2); microespaciado y serif-titles (OLA 5) |
+| **Primitivas antes divergentes** | slider, `NMToast`, `NMDialog`, `NMStepper` y sparkline quedaron cubiertos por contratos/probes o aceptados bajo las recetas Qt estables de §12 |
+| **Divergencias locales por pantalla** | sin divergencias accionables al cierre E5; cualquier delta nuevo requiere evidencia runtime/captura fresca |
 | **Elementos del mockup que NO se replican** | nav-rail web, `.seg` Suite/Hub, `.chip-state`, `.window`/device-frame, `.stage`; CTAs/strings eliminados (§12) |
 | **Decisiones owner** | confirmadas; sin pendientes operativos al cierre E5 (ver §12) |
 
 Cobertura por categoría (paleta light/dark, tipografía, radios, sombras, espaciados,
 tamaños de control, z-index visual, duración/curvas, iconografía, densidad, estados
-hover/pressed/disabled/focus, tema en caliente): **cimientos completos**; deuda viva =
-**consumo** (serif-titles, densidad) + **microfidelidad de algunas primitivas**.
+hover/pressed/disabled/focus, tema en caliente): **cimientos completos**. No hay deuda viva
+operativa al cierre E5; los marcadores de consumo/microfidelidad anteriores son historicos
+o señales auxiliares, no backlog activo.
 
 ---
 
