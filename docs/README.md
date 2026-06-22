@@ -2,9 +2,11 @@
 
 ## Fuente de verdad vigente
 
-Para la migración UI Suite + Hub, la fuente operativa vigente es:
+La migración UI Suite + Hub está **cerrada operativamente**. La referencia de cómo se llegó
+aquí (diccionario Web→Qt, decisiones owner, postmortem, crónica del cierre) es **histórica**:
 
-- [`../PLAN_MIGRACION_UI_V2.md`](../PLAN_MIGRACION_UI_V2.md) (único plan activo)
+- [`./PLAN_MIGRACION_UI_V2.md`](./PLAN_MIGRACION_UI_V2.md) — plan maestro de la migración,
+  **cerrado** (ver su header: documento histórico, no plan vivo ni backlog activo).
 - `agent_harness/episodes/20260621_202526_E5_FIDELITY_final_visual_qa/EPISODE.md`
 
 Estado actual: UI V2 cerrada operativamente, último reconcile visual en `5bad967`.
@@ -13,11 +15,11 @@ Evidencia de cierre:
 - `runtime_live_probe.py --all --theme both` → OK=22, DEFECTS_FOUND=0, FAILED=0.
 - `pytest tests/` → 317 passed.
 - Barrido visual técnico de las capturas finales → sin deuda accionable.
-- `qa/mockup_reference_static/` (86 PNGs = 43 estados × 2 temas) es la **referencia mockup
-  canónica estática** contra `neuromood-mockup.html` (SHA256
-  `0944e6516c0da83cf3d68d5e1ae3ebdf1f9dd9fe3261a0d49131b03634587b4e`, verificado).
-  Se regenera con `qa/capture_mockup.py --all --theme both --clean --out-dir
-  qa/mockup_reference_static`. **No trackeado** (gitignored), vive como snapshot regenerable.
+- `qa/mockup_reference_static/` (86 PNGs = 43 estados × 2 temas + `README.txt` + `manifest.{csv,json}`)
+  es la **referencia mockup canónica estática** contra `neuromood-mockup.html` (SHA256
+  `0944e6516c0da83cf3d68d5e1ae3ebdf1f9dd9fe3261a0d49131b03634587b4e`, verificado). **Está
+  trackeada en el repo** (89 archivos, NO gitignored) como snapshot canónico. Se regenera con
+  `qa/capture_mockup.py --all --theme both --clean --out-dir qa/mockup_reference_static`.
 - `qa/capture_v8.py` produce el set **runtime v8** (recetas de la app corriendo, state_ids
   del harness). Es **distinto** del set mockup estático: las pantallas se solapan pero los
   `state_id` difieren. Ambos dominios se complementan, no se contradicen.
@@ -39,7 +41,6 @@ deben trackearse:
 - `qa/_visual_sentinel/`, `qa/visual_sentinel_baselines/{proposed,approved}/` — outputs
   regenerables del sentinel visual (el `registry.json` del sentinel sí se versiona).
 - `qa/_build*.txt`, `qa/_capture_run.log`, `qa/_pf3.log`, `*.log` — logs efímeros.
-- `qa/mockup_reference_static/` — snapshot regenerable del set mockup canónico (86 PNGs).
 - `_scratch_trash/` — scratch local; 155 MB de runs históricos pre-F0 y mockup_targets stale.
 
 Si un agente futuro necesita evidencia histórica, regenerar con `python qa/capture_v8.py
@@ -70,11 +71,13 @@ Los documentos `FASE*.md`, `PLAN FASEADO.md`, `PLAN_COHERENCIA_VISUAL_ACTUALIZAD
 Pueden mencionar commits antiguos, capturas stale, fases pendientes o deuda visual que ya
 fue cerrada por el flujo V2.
 
-`PLAN_MIGRACION_UI.md` (V1) fue eliminado en favor del V2, cuyo §3 contiene el postmortem
-del V1 y §13 el handoff final.
+`PLAN_MIGRACION_UI_V2.md` (V2) es el plan maestro de la migración, ya **cerrada**: se conserva
+en `docs/` como referencia técnica (su header lo marca como histórico, no plan vivo). El V1
+(`PLAN_MIGRACION_UI.md`) fue eliminado en su momento; el §3 del V2 contiene el postmortem del
+V1 y el §13 el handoff final.
 
-Usarlos como referencia histórica está bien; no deben usarse como backlog vivo sin
-revalidar contra `PLAN_MIGRACION_UI_V2.md`, el harness y el estado actual de `main`.
+Usarlos como referencia histórica está bien; no deben usarse como backlog vivo. La fuente de
+verdad actual es el código en `main`, este README y los tests de contrato — no un plan cerrado.
 
 ## Episodes del harness (agent_harness/episodes/)
 

@@ -1,9 +1,14 @@
 # Plan Maestro de Migración UI · V2 · NeuroMood (Suite + Hub → mockup canónico)
 
-> **Estado vivo · documento de handoff entre agentes.** Supera a `PLAN_MIGRACION_UI.md`
-> (intento anterior, conservado como histórico). Fuente visual: `neuromood-mockup.html`.
-> Marco de ejecución: `agent_harness/`. Regla de oro: **fidelidad perceptual alta, estable
-> y verificable en runtime 960×600 — NO pixel-perfect HTML/CSS.**
+> **Documento HISTÓRICO — migración UI V2 CERRADA.** No es un plan vivo ni backlog activo.
+> Se conserva como referencia técnica (diccionario Web→Qt §5, decisiones owner §12, postmortem
+> §3) y crónica del cierre (§13). La migración quedó operativamente terminada al cierre E5
+> (probe runtime 22/22, contratos verde, capturas finales completas); revalidado en `a809ad1`
+> (probe 22/22, pytest 317/317). Para estado actual, ver `docs/README.md` y el código en `main`.
+>
+> Supera al `PLAN_MIGRACION_UI.md` (V1, histórico). Fuente visual: `neuromood-mockup.html`.
+> Marco de ejecución: `agent_harness/`. Regla de oro histórica: **fidelidad perceptual alta,
+> estable y verificable en runtime 960×600 — NO pixel-perfect HTML/CSS.**
 
 ---
 
