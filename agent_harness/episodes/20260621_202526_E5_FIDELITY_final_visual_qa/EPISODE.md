@@ -104,7 +104,7 @@ defecto puntual verificable.
   - `tests/test_hub_visual_contract.py`
   - `PLAN_MIGRACION_UI_V2.md`
   - `agent_harness/episodes/20260621_202526_E5_FIDELITY_final_visual_qa/EPISODE.md`
-- **Commit:** pendiente
+- **Commit:** `c0c692e`
 - **Deuda restante:** cero deuda accionable detectada. Los 92 failures de
   `diff_fidelity.py` quedan registrados como señal auxiliar no-gate por techo de render
   Qt/Chromium y diferencias aceptadas; no hay missing actuals ni captura fallida.

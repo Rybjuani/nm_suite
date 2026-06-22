@@ -84,9 +84,9 @@ y lifecycle del modal de Resumen IA/PDF sin modificar IA, PDF, sync ni datos cli
   - `hub/pacientes_qt.py`
   - `tests/test_hub_visual_contract.py`
   - `agent_harness/episodes/20260621_201112_E4_H_MODALES_ia_pdf/EPISODE.md`
-- **Commit:** pendiente
+- **Commit:** `4059a74`
 - **Deuda restante:** E4-H-MODALES cerrado para Resumen IA. No se modifico PDF porque sus
-  flujos funcionales ya quedaron verdes; visual review humana sigue pendiente para OLA 5.
+  flujos funcionales ya quedaron verdes; E5-FIDELITY quedó cerrado en `c0c692e`.
 
 ## Decisión final
 

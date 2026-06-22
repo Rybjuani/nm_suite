@@ -77,9 +77,9 @@ tipografia serif del titulo, boton Guardar deshabilitado al iniciar y presencia 
 - **Diff stat:** solo este `EPISODE.md`.
 - **Archivos tocados:**
   - `agent_harness/episodes/20260621_200848_E4_H_CONFIG_textos_globales/EPISODE.md`
-- **Commit:** pendiente
-- **Deuda restante:** sin deuda accionable en E4-H-CONFIG. Siguiente cluster del plan:
-  E4-H-MODALES o E5-FIDELITY segun evidencia.
+- **Commit:** `7efd3ce`
+- **Deuda restante:** sin deuda accionable en E4-H-CONFIG. E4-H-MODALES quedó cerrado en
+  `4059a74`; E5-FIDELITY quedó cerrado en `c0c692e`.
 
 ## Decisión final
 

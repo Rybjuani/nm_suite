@@ -4,6 +4,10 @@ Baseline de evidencia para `PLAN_MIGRACION_UI_V2.md`. Audit read-only en HEAD `e
 (`main` == `origin/main`; working tree solo con los `.md` del plan V2 — el fallo NO fue
 introducido en esta sesión, es pre-existente en `main`).
 
+> Nota de cierre: D001 fue resuelto posteriormente por `8638035`
+> (`fix(ui): guard NMPlayButton size against global QPushButton QSS`) y validado en el
+> cierre E5 (`c0c692e`) con `pytest tests/` → 317 passed y runtime probe 22/22.
+
 ## Baseline de gates
 
 | Gate | Comando | Resultado |
@@ -20,7 +24,7 @@ robusta + contaminación de stylesheet entre tests, con **eco en runtime real**.
 
 | ID | Severidad | Módulo/Pantalla | Evidencia | Causa sospechada | Estado | Commit corrige | Validación | Deuda restante |
 |----|-----------|-----------------|-----------|------------------|--------|----------------|------------|----------------|
-| D001 | Medio | Primitiva `NMPlayButton` → Respiración (`.ctl` reset/stop) y Timer | `pytest tests/` full → 1 failed en `tests/test_respiracion_visual_contract.py:49` (`_btn_reset.height()` = **56**, esperado 46). Aislado → pasa. | `NMPlayButton` (`shared/components/inputs.py:125`, `_SIZE_MAP md=46`, `setFixedSize(d,d)`) **no resiste** el QSS global `QPushButton{min-height:_NM_CONTROL_INNER_HEIGHT}` (+padding ≈56px) de `stylesheet_base` (`shared/theme_qt.py:1036-1042`). `NMButton` sí lo resiste (lock `test_button_keeps_contract_height_under_global_pushbutton_qss`). El alto fijado por `setFixedSize` lo pisa el `min-height` del stylesheet. | Open | — | aislado pasa; full-suite falla | E1-PLAYBUTTON-GUARD |
+| D001 | Medio | Primitiva `NMPlayButton` → Respiración (`.ctl` reset/stop) y Timer | `pytest tests/` full → 1 failed en `tests/test_respiracion_visual_contract.py:49` (`_btn_reset.height()` = **56**, esperado 46). Aislado → pasa. | `NMPlayButton` (`shared/components/inputs.py:125`, `_SIZE_MAP md=46`, `setFixedSize(d,d)`) **no resiste** el QSS global `QPushButton{min-height:_NM_CONTROL_INNER_HEIGHT}` (+padding ≈56px) de `stylesheet_base` (`shared/theme_qt.py:1036-1042`). `NMButton` sí lo resiste (lock `test_button_keeps_contract_height_under_global_pushbutton_qss`). El alto fijado por `setFixedSize` lo pisa el `min-height` del stylesheet. | Closed | `8638035` | `pytest tests/` → 317 passed; runtime probe 22/22 en `c0c692e` | — |
 
 ### D001 — detalle y alcance runtime (no es solo un test)
 

@@ -69,10 +69,12 @@ probe + la suite pytest y escribir el primer `DEFECT_LEDGER.md`. Read-only.
 - **Deuda restante:** **D001** — `NMPlayButton` se deforma a 46×56 bajo `stylesheet_base`
   global (controles `.ctl` de Respiración/Timer ovalados en runtime real). Abrir
   **E1-PLAYBUTTON-GUARD**.
+- **Cierre posterior:** D001 quedó cerrado por `8638035` y validado en E5 (`c0c692e`):
+  `pytest tests/` → 317 passed; runtime probe → OK=22, DEFECTS_FOUND=0, FAILED=0.
 
 ## Decisión final
 
 - [ ] Commit
 - [ ] Rollback
-- [x] Pedir revisión  (handoff a E1-PLAYBUTTON-GUARD)
+- [x] Pedir revisión  (handoff histórico a E1-PLAYBUTTON-GUARD; cerrado posteriormente)
 - [ ] Descartar

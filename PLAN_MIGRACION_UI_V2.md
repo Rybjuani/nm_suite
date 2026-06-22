@@ -70,12 +70,12 @@ Timer, DBT (Ahora/Biblioteca + **Historial extra conservado**), Onboarding/Recup
 Hub: Pacientes, Detalle (**aplanado a 4 tabs + grid form|panel**), Configuración global
 Suite (clon navegable de la Suite para editar textos), modales IA/PDF.
 
-### 2.4 Frente activo (deuda real abierta)
+### 2.4 Frente activo (cierre E5)
 
-Los últimos 6 commits son **integridad runtime / densidad / clipping** (OLA 0): card
-contract, search density bounds, density overflow, raw-scroll audit, patient-row clipping.
-→ La migración está en la transición **OLA 0 (runtime) → OLA 2 (densidad/layout) → OLA 5
-(fidelidad fina)**. OLA 1 (primitivas) está mayormente cerrada por contrato.
+La deuda operativa de UI V2 quedó cerrada al commit `c0c692e`: probe runtime 22/22,
+capturas finales 98/98, suite de contratos verde y barrido visual técnico sin deuda
+accionable. Los commits previos de integridad runtime / densidad / clipping quedan como
+histórico de ejecución, no como frente abierto.
 
 ### 2.5 Tooling QA presente
 
@@ -244,7 +244,7 @@ Curvas/duración canónicas: `t-fast 140ms cubic(.4,0,.2,1)` · `t 240ms cubic(.
 | **Primitivas aún divergentes** | revisar contra mockup: slider arcoíris (6 stops/thumb), `NMToast` (timing/slide), `NMDialog` (scale .96→1), `NMStepper` (estados), sparkline área 7/30d |
 | **Divergencias locales por pantalla** | densidad/overflow residual (frente OLA 0/2); microespaciado y serif-titles (OLA 5) |
 | **Elementos del mockup que NO se replican** | nav-rail web, `.seg` Suite/Hub, `.chip-state`, `.window`/device-frame, `.stage`; CTAs/strings eliminados (§12) |
-| **Decisiones pendientes del owner** | ver §12 |
+| **Decisiones owner** | confirmadas; sin pendientes operativos al cierre E5 (ver §12) |
 
 Cobertura por categoría (paleta light/dark, tipografía, radios, sombras, espaciados,
 tamaños de control, z-index visual, duración/curvas, iconografía, densidad, estados
@@ -293,7 +293,7 @@ toca viewport/clip.
 Cada ola: objetivo · razón del orden · archivos candidatos · pantallas · riesgos ·
 validación mínima · criterio de corte · entregable · handoff.
 
-### OLA 0 — Integridad runtime  *(EN CURSO — frente activo)*
+### OLA 0 — Integridad runtime  *(CERRADA — ver cierre E5)*
 - **Objetivo:** cero bloqueos reales antes de fidelidad fina: clipping, off-viewport, centro
   no-clickeable, widget tapado por parent/layout, gigantismo >960×600, strings/CTAs
   prohibidos revividos, falsos negativos del probe.
@@ -445,7 +445,7 @@ Cierre asistido: `agent_harness\scripts\close_episode.ps1` + `summarize_diff.ps1
 
 ---
 
-## 12. Decisiones pendientes / confirmadas del owner
+## 12. Decisiones confirmadas del owner
 
 **Confirmadas (NO re-litigar):**
 1. ADN = mockup (crema/bosque claro, tinta/menta oscuro, Inter+Fraunces). Hecho y lock-tested.
@@ -459,12 +459,11 @@ Cierre asistido: `agent_harness\scripts\close_episode.ps1` + `summarize_diff.ps1
    registro hoy", "Sin registros hoy", "Notas del día". (Guardas: `test_no_legacy_*`.)
 7. Densidad: Suite `comfortable`, Hub `compact`.
 
-**Pendientes de decisión (marcar en el episodio, NO bloquear la sesión):**
-- ¿Slider de ánimo con thumb/track 100% mockup o tolerar la aproximación Qt actual?
-- ¿Chart de ánimo 7/30d con `QPainter` propio o `pyqtgraph` (tradeoff perf/fidelidad)?
-- ¿Hover-lift de cards se intenta con overlay animado o se deja en `brand-line`?
-- Cualquier delta de contenido nuevo (texto/orden) que no esté en §12 → frontera de
-  producto: saltar y reportar, no inventar.
+**Sin pendientes operativos al cierre E5:**
+- Slider, stepper, toast/modal, cards y estados principales quedaron lock-tested por contrato.
+- Chart de ánimo y hover-lift quedan aceptados bajo las recetas Qt estables de §5/§11.
+- Cualquier delta de contenido nuevo (texto/orden) que no esté en §12 vuelve a ser frontera
+  de producto: saltar y reportar, no inventar.
 
 ---
 
