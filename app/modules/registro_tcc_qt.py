@@ -215,7 +215,7 @@ DEFAULT_TCC_TEMPLATE = {
     ],
     "tip_text": (
         "Los pensamientos no son hechos. Preguntate: "
-        "¿qué evidencia tengo? ¿qué le diría a un amigo en esta situación?"
+        "¿qué evidencia tengo? ¿qué le dirías a un amigo en esta situación?"  # mockup: voseo
     ),
 }
 
