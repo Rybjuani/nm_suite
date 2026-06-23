@@ -65,7 +65,8 @@ Comando de validación por módulo:
   (`NMChartPanel` header tabs en `shared/components/cards.py`) y Avisos (`_StepPill`).
   Revierte la decisión deliberada de "activo suave" (confirmada con el owner) para
   alinear al mockup. Test `test_avisos_visual_contract` actualizado. Validado x3 capturas.
-- [ ] Fase 2.4 — checkbox rutina
+- [x] **Fase 2.4 — checkbox rutina**: `NMCustomCheck` (shared/components/session.py)
+  pone el box a la IZQUIERDA del texto (antes a la derecha). Validado con captura.
 - [ ] Fase 3 — pulido (5-9)
 
 ## Notas

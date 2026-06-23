@@ -228,12 +228,14 @@ class NMCustomCheck(QWidget):
         lay = QHBoxLayout(self)
         lay.setContentsMargins(0, V3_SP["sm"], 0, V3_SP["sm"])
         lay.setSpacing(V3_SP["md"])
+        # Checkbox a la IZQUIERDA del texto, como el mockup canónico (antes el box
+        # iba a la derecha). El label ocupa el resto del ancho con stretch.
+        self._box = _NMAnimCheckBox(self._modo)
+        lay.addWidget(self._box)
         self._label = QLabel(text)
         self._label.setFont(qfont("size_small"))
         self._label.setWordWrap(True)
         lay.addWidget(self._label, stretch=1)
-        self._box = _NMAnimCheckBox(self._modo)
-        lay.addWidget(self._box)
         self.setAccessibleName(text)
         if checked:
             self._box.set_checked_instant(True)
