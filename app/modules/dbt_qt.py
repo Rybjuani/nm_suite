@@ -289,7 +289,7 @@ DBT_SKILLS = {
         "version": 1,
         "family": "interpersonal_effectiveness",
         "title": "GIVE / FAST",
-        "summary": "Checklist para cuidar la relación y mantener el autorrespeto en tus interacciones.",
+        "summary": "Checklist para cuidar la relación y mantener el autorrespeto.",
         "duration_min": 2,
         "steps": [
             {
