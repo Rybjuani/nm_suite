@@ -207,7 +207,39 @@ Cada iteración registra:
 **Discrepancias restantes** en Avisos:
 - Status chip item 4 (Rutina de tarde): real "Hoy", mockup "Activo". **DIFERIDO** — dato (depende de la frecuencia del recordatorio), no fix de layout.
 - Ícono de Respiración: real usa `leaf` (hoja), mockup usa `drop` (gota). **DIFERIDO** — decisión de diseño (la hoja es semánticamente más coherente con respiración/calma).
-- Search box: real más ancho (extiende casi al borde derecho), mockup más compacto. **DIFERIDO** — subóptimo menor.
+### Iter 6 — Textos globales: separador bajo la fila de controles
+
+- **SHA antes:** `903663f` (HEAD previo al iter)
+- **SHA después:** _(se completa al commit)_
+- **Pantalla:** Hub · Configuración · Textos globales
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Hub · Clínico/Configuración/Textos globales/Textos globales.png` — `.tg-top` con `padding-bottom:16px; border-bottom:1px solid var(--line)` (mockup l.383)
+- **Captura real antes:** `qa/_captures_v8/iter6_textos/hub-textos-globales-light-960x600.png`
+- **Captura real después:** `qa/_captures_v8/iter6_textos_after/hub-textos-globales-light-960x600.png`
+- **Comparativa antes/después:** `qa/_captures_v8/iter6_textos_after/_compare.png`
+
+**Discrepancia detectada** (sev 🟡):
+- La fila superior (título "Textos globales" + buscador + dropdown + contador) estaba pegada visualmente a la primera card de la lista — sin separador.
+- El mockup define una línea horizontal sutil (1px, color `--line`) con 16px de padding inferior, que ancla el bloque de controles como una "toolbar" separada de la lista.
+
+**Fix aplicado** (`hub/config_global_texts.py`, `_build` y `_apply_theme`):
+- Envuelto el `top` QHBoxLayout en un `QWidget` (`TextosGlobalesTopBar`).
+- Agregado un `QFrame` (`TextosGlobalesSeparator`) con `HLine` + `FixedHeight(1)` debajo del top, con 16px de spacing antes.
+- Color aplicado en `_apply_theme` con `v3c('line', modo)` para que siga al tema (light/dark).
+- `self._top_sep = sep` para tener referencia en `_apply_theme`.
+
+**Validación:**
+- ✅ `ruff check hub/config_global_texts.py` — All checks passed
+- ✅ `pytest tests/test_hub_visual_contract.py tests/test_home_visual_contract.py tests/test_animo_visual_contract.py tests/test_registro_tcc_visual_contract.py tests/test_avisos_visual_contract.py` — 29/29 pass
+- ✅ Captura V8 regenerada: separador 1px visible bajo la fila de controles, padding 16px
+- ✅ Sin regresión visible
+
+**Resultado:** MEJORA — la fila de controles ahora tiene un separador visual que coincide con el mockup, anclando la toolbar y separándola de la lista.
+
+**Discrepancias restantes** en Textos globales:
+- Contador "158 textos" vs mockup "145 textos". **DIFERIDO** — dato (cantidad real de textos editables ha crecido desde el snapshot del mockup).
+- Cards de la lista con más padding vertical en real vs mockup. **DIFERIDO** — subóptimo menor, no estructural.
+
 
 
 

@@ -257,7 +257,27 @@ class TextosGlobalesSuiteView(QWidget):
 
         self._count = NMBadge("0 textos", tone="info", modo=self._modo)
         top.addWidget(self._count, alignment=Qt.AlignmentFlag.AlignVCenter)
-        root.addLayout(top)
+
+        # Mockup l.383: .tg-top tiene padding-bottom 16px + border-bottom 1px
+        # var(--line). Antes el row de búsqueda/filtro estaba pegado a la lista
+        # sin separador — el mockup define una línea sutil que ancla el bloque
+        # de controles y le da aire a la lista de cards debajo.
+        top_wrap = QWidget()
+        top_wrap.setObjectName("TextosGlobalesTopBar")
+        top_wrap_lay = QVBoxLayout(top_wrap)
+        top_wrap_lay.setContentsMargins(0, 0, 0, 0)
+        top_wrap_lay.setSpacing(0)
+        top_wrap_lay.addLayout(top)
+        # Padding-bottom 16 + border-bottom 1 (mockup).
+        sep = QFrame(top_wrap)
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setFixedHeight(1)
+        sep.setObjectName("TextosGlobalesSeparator")
+        sep.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self._top_sep = sep  # para _apply_theme
+        top_wrap_lay.addSpacing(16)
+        top_wrap_lay.addWidget(sep)
+        root.addWidget(top_wrap)
 
         self._scroll = QScrollArea()
         self._scroll.setWidgetResizable(True)
@@ -528,6 +548,13 @@ class TextosGlobalesSuiteView(QWidget):
         )
         self._section_filter.setStyleSheet(stylesheet_combobox(self._modo))
         self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        # Separador bajo la fila de controles: color v3c('line', modo) — el
+        # mismo token que el resto de las cards/listas usan como border.
+        if hasattr(self, "_top_sep"):
+            sep_color = v3c("line", self._modo).name()
+            self._top_sep.setStyleSheet(
+                f"QFrame#TextosGlobalesSeparator {{ background: {sep_color}; border: none; }}"
+            )
         if hasattr(self, "_pending_badge"):
             self._pending_badge._apply_theme(self._modo)
         for row in self._rows:
