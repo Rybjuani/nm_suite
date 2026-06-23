@@ -26,7 +26,7 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
 )
 
-from shared.components import NMButton, NMButtonOutline, NMCard, NMInput, NMToast, nm_confirm
+from shared.components import NMButton, NMButtonOutline, NMCard, NMInput, NMTextArea, NMToast, nm_confirm
 from shared.theme_qt import (
     norm_modo,
     qfont,
@@ -595,8 +595,12 @@ class _PresetRecordatoriosTab(QWidget):
 
         self._ent_hora = NMInput("Hora (HH:MM, ej: 08:30)", modo=self._modo)
         self._ent_hora.setMaxLength(5)
-        self._ent_msg = NMInput("Mensaje del recordatorio (máx 150)", modo=self._modo)
-        self._ent_msg.setMaxLength(150)
+        self._ent_msg = NMTextArea(  # mockup: textarea multilinea
+            "Mensaje del recordatorio (máx 150)",
+            modo=self._modo,
+            max_length=150,
+            min_height=72,
+        )
         form_lay.addWidget(self._ent_hora)
         form_lay.addWidget(self._ent_msg)
 
@@ -703,7 +707,7 @@ class _PresetRecordatoriosTab(QWidget):
 
     def _save_recordatorio(self):
         hora = self._ent_hora.text().strip()
-        msg = self._ent_msg.text().strip()
+        msg = self._ent_msg.toPlainText().strip()
         if not hora or not msg:
             NMToast.display(self.window(), "Completá la hora y el mensaje", variant="error")
             return
@@ -787,7 +791,7 @@ class _PresetRecordatoriosTab(QWidget):
         if vals.get("hora"):
             self._ent_hora.setText(vals["hora"][:5])
         if vals.get("mensaje"):
-            self._ent_msg.setText(vals["mensaje"][:150])
+            self._ent_msg.setPlainText(vals["mensaje"][:150])
         NMToast.display(self.window(), "Recordatorio sugerido por la IA", variant="success")
 
     def _on_ia_failure(self, msg: str):
