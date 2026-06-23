@@ -595,22 +595,13 @@ class _PresetRecordatoriosTab(QWidget):
         form_lay.addWidget(self._ent_hora)
         form_lay.addWidget(self._ent_msg)
 
-        btn_row = QHBoxLayout()
-        self._save_btn = NMButton(
-            "Agregar", modo=self._modo, width=180, height=32, size="sm"
-        )
+        self._save_btn = NMButton("Agregar", modo=self._modo)  # mockup: full-width
         self._save_btn.clicked.connect(self._save_recordatorio)
-        btn_row.addWidget(self._save_btn)
-        btn_row.addStretch()
-        form_lay.addLayout(btn_row)
+        form_lay.addWidget(self._save_btn)
 
-        ia_row = QHBoxLayout()
-        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm", icon_name="sparkle")
-        self._ia_btn.setFixedHeight(32)
+        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, icon_name="sparkle")  # mockup: full-width
         self._ia_btn.clicked.connect(self._autofill_with_ia)
-        ia_row.addWidget(self._ia_btn)
-        ia_row.addStretch()
-        form_lay.addLayout(ia_row)
+        form_lay.addWidget(self._ia_btn)
         form_lay.addStretch()
 
         lay.addWidget(form_card, 1, Qt.AlignmentFlag.AlignTop)
