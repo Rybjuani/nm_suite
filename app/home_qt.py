@@ -31,6 +31,8 @@ from PyQt6.QtCore import (
 )
 from PyQt6.QtGui import (
     QColor,
+    QFont,
+    QFontMetrics,
     QPainter,
     QPen,
     QBrush,
@@ -492,6 +494,45 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         p.end()
 
     # ── eventos ───────────────────────────────────────────────────────────────
+
+    def resizeEvent(self, event):
+        # El mockup muestra todos los títulos de card en 1 línea
+        # (l.640 neuromood-mockup.html: font-size 16.5px). A 960px de viewport
+        # las cards miden ~219px; con 20px de padding queda ~179px para el
+        # título. En Newsreader 16px algunos títulos largos ("Registro de
+        # pensamientos", "Activación conductual", "Termómetro emocional")
+        # overflow y Qt los wrappea a 2 líneas, desalineando el contenido.
+        # Ajuste adaptativo: mantener 16px cuando entre, reducir 1px hasta
+        # que entre o llegar a 13px como piso. setWordWrap(True) sigue
+        # cubriendo anchos aún menores (sub-720px → 3 cols, sub-540px → 2).
+        # El test test_home_module_card_title_uses_serif_font lee el font al
+        # init (pre-resizeEvent), por eso este ajuste no rompe la aserción
+        # 16px sobre `animo` — el fix se aplica en runtime, no en build_ui.
+        super().resizeEvent(event)
+        if not hasattr(self, "_title_lbl"):
+            return
+        title_text = self._title_lbl.text()
+        if not title_text:
+            return
+        avail = self._title_lbl.width()
+        if avail <= 0:
+            return
+        # No tocar el font si ya encajaba en el intento previo — evita
+        # re-correr QFontMetrics en cada resize sub-pixel.
+        current = self._title_lbl.font()
+        fm = QFontMetrics(current)
+        if fm.horizontalAdvance(title_text) <= avail:
+            return
+        candidate = QFont(current)
+        for px in (15, 14, 13):
+            candidate.setPixelSize(px)
+            fm_c = QFontMetrics(candidate)
+            if fm_c.horizontalAdvance(title_text) <= avail:
+                self._title_lbl.setFont(candidate)
+                return
+        # Si ni a 13px entra, se queda con 13px + wordwrap (caso extremo).
+        candidate.setPixelSize(13)
+        self._title_lbl.setFont(candidate)
 
     def enterEvent(self, event):
         self._hover = True
