@@ -33,7 +33,7 @@ Cada iteración registra:
 ### Iter 1 — Home: títulos largos a 1 línea (3 cards)
 
 - **SHA antes:** `1525c032a1370045ea3971422f02b474b14b6ebf`
-- **SHA después:** _(se completa al commit)_
+- **SHA después:** `795f0fc7c308086145a473616f045557c40e83cb`
 - **Pantalla:** Suite · Home (con puntaje)
 - **Tema:** light + dark (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Inicio/Home/Con puntaje.png` — los 8 títulos en 1 línea
