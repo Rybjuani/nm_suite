@@ -268,7 +268,7 @@ Cada iteración registra:
 ### Iter 8 — Animo stat card: per-card tone (brand / accent)
 
 - **SHA antes:** `1ac17c77c9b9e67d291514c32d0a0a21fac5407d`
-- **SHA después:** _(se completa al commit)_
+- **SHA después:** `8594cefdcb5adece7eddc03fae4a4b1e376bc20b`
 - **Pantalla:** Suite · Animo (Termómetro emocional) — cards de Progreso 7d y 30d
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Bienestar/Termómetro emocional/Termómetro emocional.png`
@@ -300,7 +300,7 @@ Cada iteración registra:
 ### Iter 9 — TCC: copy de subtítulos y placeholder
 
 - **SHA antes:** `8594cefdcb5adece7eddc03fae4a4b1e376bc20b`
-- **SHA después:** _(se completa al commit)_
+- **SHA después:** `992815f371328f9ade61900d9346bca9f61e959c`
 - **Pantalla:** Suite · Registro de pensamientos (TCC) — todos los pasos
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Cognitivo/Registro de pensamientos (TCC)/*.png`
@@ -331,7 +331,7 @@ Cada iteración registra:
 ### Iter 10 — Animo stat card: value + subtitle copy
 
 - **SHA antes:** `992815f371328f9ade61900d9346bca9f61e959c`
-- **SHA después:** _(se completa al commit)_
+- **SHA después:** `f575d4028888e55ff581169c00033583ac53c624`
 - **Pantalla:** Suite · Animo — cards de Progreso 7d y 30d
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Bienestar/Termómetro emocional/Termómetro emocional.png`
   - l.717 (7d value): `7 días seguidos` (color brand)
@@ -362,7 +362,7 @@ Cada iteración registra:
 ### Iter 11 — Rutina banner: subtitle copy
 
 - **SHA antes:** `f575d4028888e55ff581169c00033583ac53c624`
-- **SHA después:** _(se completa al commit)_
+- **SHA después:** `a73b26563d499b0a90e8f56b85a41837cb41204c`
 - **Pantalla:** Suite · Checklist de rutina diaria — banner superior
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Hábitos/Checklist de rutina/Con tareas.png` — `Vas por buen camino, seguí así.` (l.1218)
 - **Captura real antes:** `qa/_captures_v8/iter5_rutina/suite-rutina-light-960x600.png`
@@ -386,7 +386,7 @@ Cada iteración registra:
 ### Iter 12 — Activación conductual: voseo + "de forma"
 
 - **SHA antes:** `a73b26563d499b0a90e8f56b85a41837cb41204c`
-- **SHA después:** _(se completa al commit)_
+- **SHA después:** `1920ff83297998fd206288aa5d04b7e787d1d85b`
 - **Pantalla:** Suite · Activación conductual — descripciones de actividades
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Cognitivo/Activación conductual/Sugerencias.png` — l.972-975
   - Caminata 20 min: `mejora el ánimo de forma significativa`
@@ -415,7 +415,7 @@ Cada iteración registra:
 ### Iter 13 — DBT: "superar la crisis" (artículo)
 
 - **SHA antes:** `1920ff83297998fd206288aa5d04b7e787d1d85b`
-- **SHA después:** _(se completa al commit)_
+- **SHA después:** `9535f41e80b143fb21f42fb791c2a8ea5a3b19b2`
 - **Pantalla:** Suite · Habilidades DBT — skill "Atravesar un momento intenso"
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Habilidades DBT/Habilidades DBT · Biblioteca/Habilidades DBT · Biblioteca.png` — l.1104: `Tolerancia: superar la crisis sin empeorar la situación.`
 - **Discrepancia detectada** (sev 🟡): Faltaba el artículo "la" — `superar crisis` → `superar la crisis`.
@@ -426,7 +426,7 @@ Cada iteración registra:
 ### Iter 14 — Home: glow radial en hero card
 
 - **SHA antes:** `9535f41e80b143fb21f42fb791c2a8ea5a3b19b2`
-- **SHA después:** _(se completa al commit)_
+- **SHA después:** `2230c16f0a31a42148d32b2b47bf0f8dc943bbfa`
 - **Pantalla:** Suite · Home — hero card superior
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Inicio/Home/Con puntaje.png` — l.667: `<div style="position:absolute; right:-30px; top:-40px; width:200px; height:200px; border-radius:50%; background:radial-gradient(circle, var(--brand-soft), transparent 70%);">`
 - **Captura real antes:** `qa/_captures_v8/iter_loop_home_v8_2/suite-home-light-960x600.png`
