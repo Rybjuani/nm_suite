@@ -619,3 +619,112 @@ Cada iteración registra:
 
 
 
+
+---
+
+## Iter 30 — DBT Ahora: icono "Comunicarme con claridad"
+
+- **SHA antes:** `2230c16` · **SHA después:** `87e37ec`
+- **Pantalla:** Suite · Habilidades DBT · Ahora · light
+- **Captura antes:** `qa/_captures_v8/iter30_dbt_now/` · **Captura después:** `qa/_captures_v8/iter30_dbt_now_after/`
+- **Discrepancia:** 🟠 Card "Comunicarme con claridad" (Efectividad) usa icono `handshake`; mockup usa `heart`.
+- **Archivo:** `app/modules/dbt_qt.py` línea 864
+- **Fix:** `"handshake"` → `"heart"` en la tupla needs.
+- **Resultado:** MEJORA — card muestra ♡ en lugar del loop de apretón de manos.
+
+---
+
+## Iter 31 — Avisos: separador · antes de recurrencia
+
+- **SHA antes:** `87e37ec` · **SHA después:** `db793f2`
+- **Pantalla:** Suite · Recordatorios de bienestar (Todos) · light
+- **Captura antes:** `qa/_captures_v8/iter31_avisos/` · **Captura después:** `qa/_captures_v8/iter31_avisos_after/`
+- **Discrepancia:** 🟠 Meta de item mostraba `Salud · 08:00  Lun a Vie` (sin punto medio antes de recurrencia); mockup: `Salud · 08:00 · Lun a Vie`.
+- **Archivo:** `app/modules/avisos_qt.py` línea 372
+- **Fix:** `_freq_lbl = QLabel(f"· {_format_frequency(...)}")` — agrega separador · al inicio del label de frecuencia.
+- **Resultado:** MEJORA — meta completa con separadores consistentes.
+
+---
+
+## Iter 32 — Hub plan: botones full-width en timer y checklist
+
+- **SHA antes:** `db793f2` · **SHA después:** `fdbfe13`
+- **Pantalla:** Hub · Detalle > Plan > Temporizador + Checklist · light
+- **Captura antes:** `qa/_captures_v8/iter31_hub_timer/` y `iter31_hub_rutina/` · **Captura después:** `qa/_captures_v8/iter32_after/` y `iter32_timer_after/`
+- **Discrepancia:** 🔴 "Agregar actividad" (timer) y "Asignar tarea" (checklist) eran botones compactos `size="sm"` con `width` fijo; mockup: botones 100% ancho apilados verticalmente.
+- **Archivo:** `hub/plan_terapeutico.py` líneas 315, 329, 842, 847
+- **Fix:** Eliminados `btn_row`/`ia_row` HBox y parámetros `width`/`height`/`size="sm"`; botones agregados directamente a `form_lay` para ancho natural 100%.
+- **Resultado:** MEJORA — ambos tabs muestran botones full-width apilados igual que mockup.
+
+---
+
+## Iter 33 — Hub bienestar: botones full-width
+
+- **SHA antes:** `fdbfe13` · **SHA después:** `d679675`
+- **Pantalla:** Hub · Detalle > Recordatorios de Bienestar · light
+- **Captura antes:** `qa/_captures_v8/iter33_hub_detalle/` · **Captura después:** `qa/_captures_v8/iter33_bienestar_after/`
+- **Discrepancia:** 🔴 "Agregar" y "Completar con IA" en tab Bienestar eran botones compactos; mockup: 100% ancho apilados.
+- **Archivo:** `hub/plan_terapeutico.py` líneas 598–613
+- **Fix:** Mismo patrón que iter 32: eliminados `btn_row`/`ia_row`, botones directos a `form_lay`.
+- **Resultado:** MEJORA — botones full-width.
+
+---
+
+## Iter 34 — Hub pacientes: "Textos globales" pasa a outline
+
+- **SHA antes:** `d679675` · **SHA después:** `5df0bc2`
+- **Pantalla:** Hub · Pacientes (lista activa) · light
+- **Captura antes:** `qa/_captures_v8/scan_pacientes/` · **Captura después:** `qa/_captures_v8/iter34_pacientes_after/`
+- **Discrepancia:** 🟠 Botón "Textos globales" era `NMButton(variant="secondary")` (fondo oscuro); mockup: botón outline transparente.
+- **Archivo:** `hub/main_qt.py` líneas 351–358
+- **Fix:** `NMButton` → `NMButtonOutline`; eliminado parámetro `variant="secondary"` y `width=155` (no soportado por NMButtonOutline).
+- **Resultado:** MEJORA — botón muestra estilo outline coherente con mockup.
+
+---
+
+## Iter 35 — Hub pacientes: badge "N pacientes" tone neutral
+
+- **SHA antes:** `5df0bc2` · **SHA después:** `f394b01`
+- **Pantalla:** Hub · Pacientes (lista activa) · light
+- **Captura antes:** `qa/_captures_v8/scan_pacientes/` · **Captura después:** `qa/_captures_v8/iter35_pacientes_after/`
+- **Discrepancia:** 🟠 Badge "5 pacientes" usaba `tone="info"` (fondo teal); mockup: pill neutral gris sin color semántico.
+- **Archivo:** `hub/main_qt.py` línea 343
+- **Fix:** `tone="info"` → `tone="neutral"`.
+- **Resultado:** MEJORA — badge gris neutro igual al mockup.
+
+---
+
+## Iter 36 — DBT Biblioteca: filter tabs variant="filter"
+
+- **SHA antes:** `f394b01` · **SHA después:** `0aca195`
+- **Pantalla:** Suite · Habilidades DBT · Biblioteca · light
+- **Captura antes:** `qa/_captures_v8/scan_dbt_library/` · **Captura después:** `qa/_captures_v8/iter36_dbt_library_after/`
+- **Discrepancia:** 🟠 Tabs de familia (Todas/Mindfulness/…) usaban `NMTabs` sin `variant`; activo mostraba outline pill en lugar de fill sólido como en mockup.
+- **Archivo:** `app/modules/dbt_qt.py` línea 895
+- **Fix:** Agregado `variant="filter"` al `NMTabs`; igual al comportamiento de `actividades_qt.py`.
+- **Resultado:** MEJORA — tab activa muestra fill oscuro como mockup.
+
+---
+
+## Iter 37 — DBT práctica STOP: em-dash y título centrado
+
+- **SHA antes:** `0aca195` · **SHA después:** `d4c7db2`
+- **Pantalla:** Suite · Habilidades DBT · Práctica guiada (STOP) · light
+- **Captura antes:** `qa/_captures_v8/scan_dbt_practice/` · **Captura después:** `qa/_captures_v8/iter37_dbt_practice_after/`
+- **Discrepancia:** 🟠 Títulos de pasos STOP usaban guión `-` (`S - Detenete`); mockup usa em-dash `—` (`S — Stop`). Además título left-aligned vs mockup centrado.
+- **Archivo:** `app/modules/dbt_qt.py` líneas 169–182 (copy) + 597–599 (alignment)
+- **Fix:** Cuatro títulos actualizados con `—` y título correcto (S — Stop (Frená), T — Tomá distancia…). `step_title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)`.
+- **Resultado:** MEJORA — modal muestra em-dash y título centrado.
+
+---
+
+## Resumen sesión iters 30–37
+
+- **SHA inicial sesión:** `e9af633` · **SHA final:** `d4c7db2`
+- **Commits de fix esta sesión:** 8 iters (30–37)
+- **Archivos tocados:** `app/modules/dbt_qt.py`, `app/modules/avisos_qt.py`, `hub/plan_terapeutico.py`, `hub/main_qt.py`
+- **Pantallas corregidas:** DBT Ahora, Avisos, Hub Timer, Hub Checklist, Hub Bienestar, Hub Pacientes, DBT Biblioteca, DBT Práctica STOP
+- **Tests ruff:** ✅ 0 errores en todos los archivos modificados
+- **Diferido / fuera de alcance:** onboarding privacy text (legal_contract.py — fuera de mandato de loop visual)
+
+> **NO es PASS visual global.** El loop itera acercamiento; quedan pantallas por revisar y discrepancias de layout fino (padding, spacing) pendientes de priorización.
