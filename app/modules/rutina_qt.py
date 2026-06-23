@@ -309,7 +309,7 @@ class _SectionCard(NMCard):
             entry.setMinimumHeight(34)
             entry.setMaximumHeight(38)
             form_lay.addWidget(entry, stretch=1)
-            btn = NMButton("✓", variant="secondary", size="sm", modo=self._modo)
+            btn = NMButton("+", size="sm", modo=self._modo)  # mockup: + verde (primary)
             btn.setFixedSize(36, 34)
             btn.setEnabled(False)
             form_lay.addWidget(btn)
