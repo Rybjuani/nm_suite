@@ -42,7 +42,8 @@ def test_respiracion_matches_mockup_idle_contract(qtbot, monkeypatch) -> None:
     assert module._chrono_eyebrow.text() == "Crono"
     assert module._session_lbl.text() == "00:00"
     assert module._ciclos_eyebrow.text() == "Ciclos"
-    assert module._ciclos_value_lbl.text() == "—"
+    # En reposo CICLOS muestra "0" (no "—"), como el mockup canónico.
+    assert module._ciclos_value_lbl.text() == "0"
 
     assert module._btn_reset.icon_name() == "refresh"
     assert module._btn_reset.width() == 46

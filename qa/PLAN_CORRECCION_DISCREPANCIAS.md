@@ -67,7 +67,21 @@ Comando de validación por módulo:
   alinear al mockup. Test `test_avisos_visual_contract` actualizado. Validado x3 capturas.
 - [x] **Fase 2.4 — checkbox rutina**: `NMCustomCheck` (shared/components/session.py)
   pone el box a la IZQUIERDA del texto (antes a la derecha). Validado con captura.
-- [ ] Fase 3 — pulido (5-9)
+- [x] **Fase 3 — pulido** (items de mayor valor visual):
+  - [x] Guía de respiración: pills de patrón con color base (Inhalá=verde/success,
+    Mantené=amarillo/warning, Exhalá=naranja/danger) visibles también en reposo;
+    CICLOS muestra "0" (no "—").
+  - [x] Termómetro: íconos de tarjetas de progreso = sparkle ("spark").
+  - [x] Recordatorios: dot de color a la izquierda de cada badge ("●  Completado").
+  - [ ] **Diferidos** (diferencias sub-pixel / componente compartido con riesgo
+    desproporcionado al beneficio; documentadas como aceptadas):
+    - Dots del slider del Termómetro: son los 10 niveles **clickeables** del
+      `_V3GradientTrack` (función, no solo decoración). Quitarlos cambiaría el
+      comportamiento. Se deja.
+    - Contador "0/500" de Registro TCC dentro de la card (hoy fuera): reordenamiento
+      de layout de impacto mínimo.
+    - Wrap a 2 líneas de títulos de tarjeta en Home: ajuste de ancho/fuente que
+      puede desbalancear el grid; impacto mínimo.
 
 ## Notas
 

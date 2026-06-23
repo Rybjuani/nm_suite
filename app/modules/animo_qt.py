@@ -416,12 +416,14 @@ class ModuloAnimo(NMModule):
             "0 días",
             "Días seguidos con registro esta semana.",
             modo=self._modo,
+            icon_name="spark",
         )
         self._stat_streak_30 = _CareStatCard(
             "Progreso 30 días",
             "0 días",
             "Días seguidos con registro este mes.",
             modo=self._modo,
+            icon_name="spark",
         )
         self._stat_cards = [self._stat_streak_7, self._stat_streak_30]
 

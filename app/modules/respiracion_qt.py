@@ -793,7 +793,7 @@ class ModuloRespiracion(NMModule):
         ciclos_lay.setSpacing(2)
         self._ciclos_eyebrow = QLabel(t("text.module.respiracion.cycles_label", "Ciclos"))
         self._ciclos_eyebrow.setFont(eyebrow_font())
-        self._ciclos_value_lbl = QLabel("—")
+        self._ciclos_value_lbl = QLabel("0")
         self._ciclos_value_lbl.setFont(val_font)
         ciclos_lay.addWidget(self._ciclos_eyebrow)
         ciclos_lay.addWidget(self._ciclos_value_lbl)
@@ -929,21 +929,24 @@ class ModuloRespiracion(NMModule):
         self._show_idle_preview()
         self._session_lbl.setText("00:00")
         if hasattr(self, "_ciclos_value_lbl"):
-            self._ciclos_value_lbl.setText("—")
+            self._ciclos_value_lbl.setText("0")
 
     def _update_phase_chips(self, phase_idx: int | None):
         if not hasattr(self, "_chip_inhala"):
             return
-        self._chip_inhala._variant = "default"
-        self._chip_manten._variant = "default"
-        self._chip_exhala._variant = "default"
+        # Cada fase con su color base (verde / amarillo / naranja), visible también
+        # en reposo como el mockup canónico. El feedback de la fase activa lo da el
+        # círculo central animado; antes los chips quedaban gris "default" en reposo.
+        self._chip_inhala._variant = "success"
+        self._chip_manten._variant = "warning"
+        self._chip_exhala._variant = "danger"
 
         if phase_idx == 0:
-            self._chip_inhala._variant = "tint"
+            self._chip_inhala._variant = "solid"
         elif phase_idx == 1:
-            self._chip_manten._variant = "info"
+            self._chip_manten._variant = "solid"
         elif phase_idx == 2:
-            self._chip_exhala._variant = "amber"
+            self._chip_exhala._variant = "solid"
 
         self._chip_inhala._apply_style()
         self._chip_manten._apply_style()

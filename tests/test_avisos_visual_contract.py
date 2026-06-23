@@ -22,7 +22,8 @@ def test_avisos_row_badge_and_complete_button_match_mockup(qtbot, monkeypatch) -
 
     assert card._meta_lbl.text() == "Hidratación · 09:00"
     assert card._freq_lbl.text() == "Todos los días"
-    assert card._status_lbl.text() == "Hoy"
+    # El badge lleva un dot de color a la izquierda, como el mockup canónico.
+    assert card._status_lbl.text() == "●  Hoy"
     assert card._btn_done.text() == "Completar"
     assert card._btn_done.isVisibleTo(card) or not card._btn_done.isHidden()
 
@@ -37,7 +38,7 @@ def test_avisos_row_badge_and_complete_button_match_mockup(qtbot, monkeypatch) -
     done_card = _ReminderCardV3(completed, modo="light_hybrid")
     qtbot.addWidget(done_card)
 
-    assert done_card._status_lbl.text() == "Completado"
+    assert done_card._status_lbl.text() == "●  Completado"
     assert done_card._btn_done.isHidden()
     assert done_card._btn_done.sizePolicy().retainSizeWhenHidden()
 

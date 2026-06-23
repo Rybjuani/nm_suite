@@ -428,7 +428,9 @@ class _ReminderCardV3(QFrame):
             stat_text = "Activo"
         qs = QColor(stat_color)
         bg_stat = f"rgba({qs.red()},{qs.green()},{qs.blue()},36)"
-        self._status_lbl.setText(stat_text)
+        # Dot de color a la izquierda del badge (toma el color del estado), como
+        # el mockup canónico: "● Completado" / "● Hoy" / "● Activo".
+        self._status_lbl.setText(f"●  {stat_text}")
         self._status_lbl.setStyleSheet(
             f"color: {stat_color}; background: {bg_stat}; border-radius: 11px;"
         )
