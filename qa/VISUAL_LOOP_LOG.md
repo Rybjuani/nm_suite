@@ -70,3 +70,40 @@ Cada iteración registra:
 - Top hero card: mockup tiene glow sutil en upper-right corner; real flat. 🟡 menor, **DIFERIDO**.
 - "Acción" chip: en captura real, el chip podría mostrarse con kerning diferente al mockup. 🟡 **DIFERIDO** (copy/chrome, no bloqueante).
 
+### Iter 2 — Animo: tile del ícono "Progreso" a rounded square
+
+- **SHA antes:** `8253ae4` (HEAD previo al iter)
+- **SHA después:** _(se completa al commit)_
+- **Pantalla:** Suite · Animo (Termómetro emocional)
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Bienestar/Termómetro emocional/Termómetro emocional.png` — cards de Progreso con icon container `42×42 border-radius 12px` y sparkle `20px` (l.715 mockup).
+- **Captura real antes:** `qa/_captures_v8/iter2_animo/suite-animo-light-960x600.png`
+- **Captura real después:** `qa/_captures_v8/iter2_animo_after/suite-animo-light-960x600.png`
+- **Comparativa antes/después:** `qa/_captures_v8/iter2_animo_after/_compare.png`
+
+**Discrepancia detectada** (sev 🟡):
+- Las 2 cards "Progreso 7 días" y "Progreso 30 días" tenían el ícono en un **círculo grande** (58×58, border-radius 29px) con sparkle 26px.
+- El mockup usa **rounded square** (42×42, border-radius 12px) con sparkle 20px → más proporcional al card y alineado al resto del sistema (icon tiles en otras pantallas usan 32-44px con radius 10-12px).
+- Visualmente el círculo grande se veía desfasado del lenguaje del resto de la app.
+
+**Fix aplicado** (`app/modules/animo_qt.py`, `_CareStatCard.__init__` y `_apply_theme`):
+- `setFixedSize(58, 58)` → `setFixedSize(42, 42)`
+- `NMIcon(... size=26 ...)` → `NMIcon(... size=20 ...)`
+- `border-radius: 29px` → `border-radius: 12px`
+
+**Validación:**
+- ✅ `ruff check app/modules/animo_qt.py` — All checks passed
+- ✅ `pytest tests/test_animo_visual_contract.py tests/test_home_visual_contract.py` — 10/10 pass
+- ✅ Captura V8 regenerada: contenedor ahora es rounded square, sparkle más chico
+- ✅ Sin regresión visible
+
+**Resultado:** MEJORA — el contenedor del ícono ahora coincide con el mockup (l.715).
+
+**Discrepancias restantes** en Animo:
+- Valor copy: "7 días" (real) vs "7 días seguidos" (mockup l.717). **DIFERIDO** — copy, decisión aparte.
+- Mensaje copy: "Días seguidos con registro esta semana." (real) vs "con registro esta semana" (mockup l.718). **DIFERIDO** — copy.
+- Color del valor: real sin color de tono, mockup usa `var(--brand)` para 7d y `var(--accent)` para 30d. **DIFERIDO** — requiere extender `_CareStatCard` con `tone_key`.
+- Slider dots: real muestra 10 dots clickeables, mockup sin dots. **DIFERIDO** — son los niveles clínicos clickeables (funcional).
+- Botón "Guardar registro" deshabilitado: real (porque slider sin selección), mockup también disabled. Coinciden.
+
+

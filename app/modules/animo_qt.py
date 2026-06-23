@@ -155,12 +155,15 @@ class _CareStatCard(NMCard):
 
         self._icon_tile = QFrame(self)
         self._icon_tile.setObjectName("MoodStatIconTile")
-        self._icon_tile.setFixedSize(58, 58)
+        # Mockup l.715: tile 42×42 con border-radius 12px (no círculo) y sparkle
+        # 20px centrado. Antes era 58×58 círculo (border-radius 29) con sparkle
+        # 26px — no coincidía con el mockup y se veía pesado vs el resto.
+        self._icon_tile.setFixedSize(42, 42)
         self._icon_tile.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         icon_lay = QVBoxLayout(self._icon_tile)
         icon_lay.setContentsMargins(0, 0, 0, 0)
         icon_lay.setSpacing(0)
-        self._icon = NMIcon(icon_name, size=26, color_key="primary", modo=self._modo)
+        self._icon = NMIcon(icon_name, size=20, color_key="primary", modo=self._modo)
         icon_lay.addWidget(self._icon, 0, Qt.AlignmentFlag.AlignCenter)
         lay.addWidget(self._icon_tile, 0, Qt.AlignmentFlag.AlignVCenter)
 
@@ -226,7 +229,8 @@ class _CareStatCard(NMCard):
             "QFrame#MoodStatIconTile {"
             f"background: {tile_bg};"
             f"border: 1px solid {border};"
-            "border-radius: 29px;"
+            # Mockup l.715: border-radius 12px (rounded square), no círculo.
+            "border-radius: 12px;"
             "}"
         )
         self._icon._apply_theme(self._modo)
