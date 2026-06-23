@@ -144,7 +144,7 @@ Cada iteración registra:
 ### Iter 4 — TCC: textarea más corto para que el contador respire
 
 - **SHA antes:** `b88847a` (HEAD previo al iter)
-- **SHA después:** _(se completa al commit)_
+- **SHA después:** `cb3dab63a2d587ecd908523827614f8ebf6c5104`
 - **Pantalla:** Suite · Registro de pensamientos (TCC) · paso 0 (Situación) y paso 3 (Respuesta)
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Cognitivo/Registro de pensamientos (TCC)/Situación.png` — textarea con `rows="5"` (~110–120px) y contador `0/500` con `margin-top: 8px` debajo (l.1224–1225)
