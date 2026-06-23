@@ -160,7 +160,7 @@ _EMOTIONS_GRID = [
     ("Miedo", "thought", "violet"),
     ("Culpa", "heart", "warning"),
     ("Vergüenza", "user", "violet"),
-    ("Soledad", "moon", "info"),
+    ("Frustración", "moon", "info"),  # mockup: Frustración no Soledad
     ("Otro", "dots", "text2"),
 ]
 
@@ -962,7 +962,7 @@ class ModuloRegistroTCC(NMModule):
         _intens_init = self._data.get("intensidad")
         _intens_val = _intens_init if _intens_init is not None else 5
         _intens_visual = int(_intens_val * 10)  # 0-10 → 0-100 visual
-        _intens_lbl = f"Intensidad: {_intens_visual} (0–100)"
+        _intens_lbl = "Intensidad (0–100)"  # mockup l.1235: sin valor numérico en el label
         self._lbl_intensidad_header = QLabel(_intens_lbl)
         self._lbl_intensidad_header.setFont(
             qfont("size_small", weight=TYPOGRAPHY["weight_semibold"])
@@ -1249,8 +1249,7 @@ class ModuloRegistroTCC(NMModule):
         # (mockup TCC línea 1235: "Intensidad (0–100)").
         self._data["intensidad"] = value
         try:
-            visual_value = int(value * 10)  # 0-10 → 0-100
-            self._lbl_intensidad_header.setText(f"Intensidad: {visual_value} (0–100)")
+            pass  # label es estático 'Intensidad (0–100)' — valor visible en el slider
         except Exception:
             _log.exception("Operation failed")
         if hasattr(self, "_resumen"):
