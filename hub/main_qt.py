@@ -63,6 +63,7 @@ from shared.components import (
     ThemeManager,
     NMFadeWidget,
     NMButton,
+    NMButtonOutline,
     NMCard,
     NMToast,
     NMPatientRowPremium,
@@ -348,13 +349,11 @@ class PacientesView(QWidget):
         )
         roster_meta.addWidget(self._table_hint, alignment=Qt.AlignmentFlag.AlignVCenter)
         if callable(self._on_global_texts):
-            self._texts_btn = NMButton(
+            self._texts_btn = NMButtonOutline(
                 "Textos globales",
-                variant="secondary",
                 size="sm",
                 modo=self._modo,
-                width=155,
-                icon_name="list",  # mockup: ≡ icono de lista
+                icon_name="list",  # mockup: outline con ≡
             )
             self._texts_btn.clicked.connect(self._on_global_texts)
             roster_meta.addStretch()
