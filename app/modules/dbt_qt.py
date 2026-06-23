@@ -239,7 +239,7 @@ DBT_SKILLS = {
         "version": 1,
         "family": "emotion_regulation",
         "title": "Acción opuesta",
-        "summary": "Actuar de forma contraria al impulso de la emoción cuando esta no coincide con los hechos.",
+        "summary": "Actuar de forma contraria al impulso cuando no coincide con los hechos.",
         "duration_min": 3,
         "steps": [
             {
@@ -262,7 +262,7 @@ DBT_SKILLS = {
         "version": 1,
         "family": "interpersonal_effectiveness",
         "title": "DEAR MAN",
-        "summary": "Estructura para expresar asertivamente una petición o límite.",
+        "summary": "Estructura para expresar asertivamente una necesidad o pedido.",
         "duration_min": 3,
         "steps": [
             {
