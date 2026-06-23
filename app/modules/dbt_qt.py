@@ -166,19 +166,19 @@ DBT_SKILLS = {
         "duration_min": 2,
         "steps": [
             {
-                "title": "S - Detenete (Stop)",
+                "title": "S — Stop (Frená)",  # mockup: em-dash
                 "body": "¡No reacciones inmediatamente! Tus emociones pueden empujarte a actuar sin pensar. Mantenete quieto por un instante."
             },
             {
-                "title": "T - Tomá distancia (Take a step back)",
+                "title": "T — Tomá distancia (Take a step back)",  # mockup: em-dash
                 "body": "Alejate físicamente o mentalmente de la situación. Respirá profundamente y recordá que es una emoción pasajera."
             },
             {
-                "title": "O - Observá (Observe)",
+                "title": "O — Observá (Observe)",  # mockup: em-dash
                 "body": "Observá qué pasa dentro de vos y a tu alrededor. ¿Qué estás sintiendo, pensando y qué dicen los demás?"
             },
             {
-                "title": "P - Procedé con conciencia (Proceed mindfully)",
+                "title": "P — Procedé con conciencia (Proceed mindfully)",  # mockup: em-dash
                 "body": "Preguntate: ¿Qué acción mejorará la situación en lugar de empeorarla? Actúa de forma deliberada y constructiva."
             }
         ],
@@ -596,6 +596,7 @@ class _SkillPracticeView(QWidget):
 
         self.step_title_lbl = QLabel()
         self.step_title_lbl.setFont(v3_font("size_h4", weight=TYPOGRAPHY["weight_bold"], serif=True))
+        self.step_title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)  # mockup: centrado
         self.step_card_lay.addWidget(self.step_title_lbl)
 
         self.step_body_lbl = QLabel()
