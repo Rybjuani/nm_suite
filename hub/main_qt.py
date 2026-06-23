@@ -353,7 +353,8 @@ class PacientesView(QWidget):
                 variant="secondary",
                 size="sm",
                 modo=self._modo,
-                width=130,
+                width=155,
+                icon_name="list",  # mockup: ≡ icono de lista
             )
             self._texts_btn.clicked.connect(self._on_global_texts)
             roster_meta.addStretch()
