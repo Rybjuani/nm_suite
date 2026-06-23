@@ -333,14 +333,24 @@ class _ReminderCardV3(QFrame):
         lay.setContentsMargins(14, 8, 14, 8)
         lay.setSpacing(10)
 
-        # Icon
+        # Icon tile: mockup l.636 define 32x32 con surface-3 + radius 10.
+        # Antes era solo NMIcon 18px sin contenedor, lo que lo dejaba "flotando"
+        # y rompía la consistencia con el resto de icon tiles del sistema.
+        self._icon_tile = QFrame(self)
+        self._icon_tile.setObjectName("AvisoRowIconTile")
+        self._icon_tile.setFixedSize(32, 32)
+        self._icon_tile.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        tile_lay = QVBoxLayout(self._icon_tile)
+        tile_lay.setContentsMargins(0, 0, 0, 0)
+        tile_lay.setSpacing(0)
         self._icon = NMIcon(
             self._icon_name,
             size=18,
             color=v3c(self._color_token, self._modo).name(),
             modo=self._modo,
         )
-        lay.addWidget(self._icon)
+        tile_lay.addWidget(self._icon, 0, Qt.AlignmentFlag.AlignCenter)
+        lay.addWidget(self._icon_tile, 0, Qt.AlignmentFlag.AlignVCenter)
 
         content = QVBoxLayout()
         content.setContentsMargins(0, 0, 0, 0)
@@ -401,6 +411,17 @@ class _ReminderCardV3(QFrame):
             f"background: {bg}; }}"
             f"_ReminderCardV3:hover {{ background: {hover_bg}; border-color: {hover_border}; }}"
             f"QLabel {{ background: transparent; color: {text_color}; }}"
+        )
+
+        # Icon tile: surface-3 background + radius 10 (mockup l.636).
+        # Lo aplicamos acá para que siga al tema (dark/light).
+        tile_bg = v3c("surface3", self._modo).name()
+        self._icon_tile.setStyleSheet(
+            "QFrame#AvisoRowIconTile {"
+            f"background: {tile_bg};"
+            "border: none;"
+            "border-radius: 10px;"
+            "}"
         )
 
         # Metadatos — color de categoría a texto desnudo, sin caja tintada:

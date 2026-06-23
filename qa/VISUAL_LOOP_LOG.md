@@ -175,7 +175,40 @@ Cada iteración registra:
 - Título: real usa pregunta "¿Qué pasó?" como título; mockup usa nombre del paso "Situación" como título y la pregunta como subtítulo. **DIFERIDO** — decisión de diseño.
 - Subtítulo copy: real "Contá en pocas palabras qué estaba pasando." vs mockup "¿Qué pasó? Describí el momento de forma concreta y objetiva." **DIFERIDO** — copy.
 - Placeholder copy: real "Escribí lo que pasó…" vs mockup "Ej: En la reunión me preguntaron por el reporte y no supe qué responder…" **DIFERIDO** — copy.
-- Botones nav: real dentro de la card, mockup fuera. **DIFERIDO** — estructura, requiere refactor mayor.
+### Iter 5 — Avisos: icon tile 32×32 en cada recordatorio
+
+- **SHA antes:** `994676c` (HEAD previo al iter)
+- **SHA después:** _(se completa al commit)_
+- **Pantalla:** Suite · Recordatorios de bienestar (Todos)
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Hábitos/Recordatorios de bienestar/Todos.png` — icon en tile `32×32 surface-3 radius 10` (mockup l.636, mismo lenguaje que homeCard)
+- **Captura real antes:** `qa/_captures_v8/iter5_avisos/suite-avisos-light-960x600.png`
+- **Captura real después:** `qa/_captures_v8/iter5_avisos_after/suite-avisos-light-960x600.png`
+- **Comparativa antes/después:** `qa/_captures_v8/iter5_avisos_after/_compare.png`
+
+**Discrepancia detectada** (sev 🟡):
+- El ícono de cada recordatorio (pill, leaf, bell) estaba como `NMIcon(18px)` sin contenedor — quedaba "flotando" en el padding de la row.
+- El mockup (l.636) y el resto del sistema (home cards l.636, animo stat cards l.715) usan un tile `32×32 surface-3 radius 10` con el ícono centrado.
+- Inconsistencia visual: los icon tiles del home y animo sí tenían contenedor; los de avisos no.
+
+**Fix aplicado** (`app/modules/avisos_qt.py`, `_ReminderCardV3._build` y `_apply_card_styles`):
+- Envuelto `NMIcon(18)` en un `QFrame` 32×32 con `setObjectName("AvisoRowIconTile")`.
+- Style aplicado en `_apply_card_styles`: `background: v3c('surface3', modo)`, `border: none`, `border-radius: 10px` — sigue al tema.
+- Alineación vertical centrada (`AlignVCenter` en el addWidget) para que el tile se vea balanceado con el contenido (título + meta).
+
+**Validación:**
+- ✅ `ruff check app/modules/avisos_qt.py` — All checks passed
+- ✅ `pytest tests/test_avisos_visual_contract.py tests/test_home_visual_contract.py tests/test_animo_visual_contract.py tests/test_hub_visual_contract.py tests/test_registro_tcc_visual_contract.py` — 29/29 pass
+- ✅ Captura V8 regenerada: cada recordatorio ahora tiene su tile 32×32 con surface-3
+- ✅ Sin regresión visible
+
+**Resultado:** MEJORA — los iconos de recordatorios ahora viven en un tile consistente con el resto del sistema.
+
+**Discrepancias restantes** en Avisos:
+- Status chip item 4 (Rutina de tarde): real "Hoy", mockup "Activo". **DIFERIDO** — dato (depende de la frecuencia del recordatorio), no fix de layout.
+- Ícono de Respiración: real usa `leaf` (hoja), mockup usa `drop` (gota). **DIFERIDO** — decisión de diseño (la hoja es semánticamente más coherente con respiración/calma).
+- Search box: real más ancho (extiende casi al borde derecho), mockup más compacto. **DIFERIDO** — subóptimo menor.
+
 
 
 
