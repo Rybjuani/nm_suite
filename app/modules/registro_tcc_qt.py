@@ -184,7 +184,7 @@ DEFAULT_TCC_TEMPLATE = {
         },
         {
             "order": 2,
-            "title": "Pensamiento",
+            "title": "Pensamiento automático",  # mockup l.1241: título completo
             # Mockup l.1241.
             "prompt": "¿Qué pensaste en ese momento? Escribilo tal como apareció.",
             "hint": "",
@@ -529,7 +529,7 @@ class _TipCard(NMCard):
         col = QVBoxLayout()
         col.setSpacing(2)
         self._eyebrow = QLabel(t("text.module.registro.tip_eyebrow", "Tip terapéutico"))
-        self._eyebrow.setFont(eyebrow_font())
+        self._eyebrow.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))  # mockup: sin uppercase
         col.addWidget(self._eyebrow)
         self._text_lbl = QLabel(self._tip_text)
         self._text_lbl.setFont(qfont("size_small"))
@@ -1026,7 +1026,7 @@ class ModuloRegistroTCC(NMModule):
         self._dist_eyebrow = QLabel(
             t("text.module.registro.distortions_eyebrow", "Posibles distorsiones detectadas")
         )
-        self._dist_eyebrow.setFont(eyebrow_font())
+        self._dist_eyebrow.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))  # mockup: sin uppercase
         self._dist_eyebrow.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; "
             f"background: transparent;"
