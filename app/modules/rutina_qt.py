@@ -152,12 +152,8 @@ class _HeroDayCard(NMCard):
             pct = done / total
             self._ring.set_pct(pct)
             self._title_lbl.setText(f"{done} de {total} tareas completadas")
-            # Mockup l.1218: 'Vas por buen camino, seguí así.' (cuando no
-            # completa) / '¡Excelente! Rutina del día completa.' (al 100%).
-            # Antes mostraba 'X% del día completado.' que duplicaba el dato
-            # numérico del título.
             self._desc_lbl.setText(
-                "¡Excelente! Rutina del día completa."
+                "¡Día completo! Buen trabajo sosteniendo tu rutina."  # mockup: copy 100%
                 if pct >= 1.0
                 else "Vas por buen camino, seguí así."
             )
