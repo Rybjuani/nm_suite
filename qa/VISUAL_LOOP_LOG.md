@@ -73,7 +73,7 @@ Cada iteración registra:
 ### Iter 2 — Animo: tile del ícono "Progreso" a rounded square
 
 - **SHA antes:** `8253ae4` (HEAD previo al iter)
-- **SHA después:** _(se completa al commit)_
+- **SHA después:** `0e1f2b9ef5fdf4e7238668279c55f35bbab21210`
 - **Pantalla:** Suite · Animo (Termómetro emocional)
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Bienestar/Termómetro emocional/Termómetro emocional.png` — cards de Progreso con icon container `42×42 border-radius 12px` y sparkle `20px` (l.715 mockup).
