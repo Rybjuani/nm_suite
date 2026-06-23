@@ -1044,9 +1044,9 @@ class _PresetActivacionTab(QWidget):
         form_lay.setContentsMargins(V3_SP["md"], V3_SP["md"], V3_SP["md"], V3_SP["md"])
         form_lay.setSpacing(V3_SP["sm"])
 
-        self._ent_name = NMInput("Nombre de la actividad (máx 50 caracteres)", modo=self._modo)
+        self._ent_name = NMInput("Nombre (ej: Caminata corta, máx 50)", modo=self._modo)
         self._ent_name.setMaxLength(50)
-        self._ent_desc = NMInput("Descripción breve (ej: 15 min de aire fresco)", modo=self._modo)
+        self._ent_desc = NMInput("Descripción (ej: 15 min de aire fresco)", modo=self._modo)
         self._ent_desc.setMaxLength(120)
 
         self._combo_cat = QComboBox()
@@ -1054,7 +1054,7 @@ class _PresetActivacionTab(QWidget):
         for cat in ("Autocuidado", "Física", "Cognitiva", "Placer", "Social", "Maestría"):
             self._combo_cat.addItem(cat, cat)
 
-        range_lbl = QLabel("Rango de ánimo sugerido")
+        range_lbl = QLabel("Rango de ánimo en el que se sugiere")
         range_lbl.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
         range_lbl.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
@@ -1079,21 +1079,14 @@ class _PresetActivacionTab(QWidget):
         form_lay.addWidget(range_lbl)
         form_lay.addLayout(range_lay)
 
-        # Fila primaria: "Agregar actividad" (gradient) + "Completar con IA" (outline)
-        # en la misma fila — acción principal izquierda, asistente derecho.
-        action_row = QHBoxLayout()
-        action_row.setSpacing(V3_SP["sm"])
-        self._save_btn = NMButton(
-            "Agregar actividad", modo=self._modo, size="sm"
-        )
+        # Mockup l.1479-1480: botones apilados, cada uno width:100%
+        self._save_btn = NMButton("Agregar actividad", modo=self._modo)
         self._save_btn.clicked.connect(self._save_activity)
-        action_row.addWidget(self._save_btn)
-        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm", icon_name="sparkle")
+        form_lay.addWidget(self._save_btn)
+        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, icon_name="sparkle")
         self._ia_btn.setFixedHeight(32)
         self._ia_btn.clicked.connect(self._autofill_with_ia)
-        action_row.addWidget(self._ia_btn)
-        action_row.addStretch()
-        form_lay.addLayout(action_row)
+        form_lay.addWidget(self._ia_btn)
 
         form_lay.addStretch()
 
