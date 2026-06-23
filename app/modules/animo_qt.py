@@ -699,7 +699,7 @@ class ModuloAnimo(NMModule):
             self._stat_streak_7.set_message("con registro esta semana")
             self._stat_streak_7.set_tone("brand" if streak_7 else None)
         if hasattr(self, "_stat_streak_30"):
-            self._stat_streak_30.set_value("1 día seguido" if streak_30 == 1 else f"{streak_30} días seguidos")
+            self._stat_streak_30.set_value(f"{streak_30} día" if streak_30 == 1 else f"{streak_30} días")  # mockup l.721: sin 'seguidos'
             self._stat_streak_30.set_message("con registro este mes")
             self._stat_streak_30.set_tone("accent" if streak_30 else None)
 
