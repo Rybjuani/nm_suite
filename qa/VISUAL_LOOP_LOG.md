@@ -826,4 +826,34 @@ Cada iteración registra:
 - **Tests ruff:** ✅ 0 errores en todos los archivos modificados
 - **Diferido:** emotion step grid→pills (layout estructural), registro success (harness no captura post-save), recuperar-acceso consent text (legal_contract.py fuera de mandato)
 
-> **NO es PASS visual global.** El loop itera acercamiento; quedan pantallas por revisar y discrepancias de layout fino (padding, spacing) pendientes de priorización.
+---
+
+## Iter 46 — Hub Detalle: "Exportar PDF" primary + "Resumen IA" outline
+
+- **SHA antes:** `20cca70` · **SHA después:** `9d4bdc1`
+- **Pantalla:** Hub · Detalle de paciente · light
+- **Discrepancia:** 🟠 "Exportar PDF" era `NMButton(variant="gradient", size="sm")` (no green fill); "Resumen IA" era `NMButton(variant="secondary")`. Mockup: PDF = filled primary green, Resumen = outline.
+- **Archivo:** `hub/pacientes_qt.py` líneas 151–160
+- **Fix:** PDF → `NMButton(modo, icon_name="download")` (default primary); Resumen → `NMButtonOutline(modo, icon_name="sparkle")`. Agregado `NMButtonOutline` a imports.
+- **Resultado:** MEJORA ✅
+
+---
+
+## Resumen sesión iters 38–46
+
+- **SHA inicial sesión:** `d4c7db2` · **SHA final:** `9d4bdc1`
+- **Commits de fix esta sesión:** 9 iters (38–46)
+- **Archivos tocados:** `app/modules/registro_tcc_qt.py`, `app/modules/rutina_qt.py`, `app/modules/actividades_qt.py`, `app/modules/avisos_qt.py`, `app/modules/timer_qt.py`, `hub/config_global_texts.py`, `hub/pacientes_qt.py`
+- **Pantallas corregidas:** TCC step4 heading, Rutina (+btn+100%), Actividades empty, Avisos empty, Timer empty, Hub Textos globales, Hub Detalle botones
+- **Tests ruff:** ✅ 0 errores en todos los archivos modificados
+
+## Scan completo de mockup_reference_static — estado al cierre
+
+Todas las pantallas de `qa/mockup_reference_static/light/` revisadas (Suite + Hub).
+
+**Diferido / fuera de alcance:**
+- 🟡 Registro Emoción: grid de iconos → pills horizontales (refactor estructural)
+- ⚪ Registro success: harness captura paso 4 pre-save (no puede simular guardado real)
+- ⚪ Recuperar acceso / Onboarding: texto consent de `shared/legal_contract.py` (fuera de mandato)
+
+> **NO es PASS visual global.**
