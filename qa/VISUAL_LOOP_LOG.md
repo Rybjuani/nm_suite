@@ -240,6 +240,26 @@ Cada iteración registra:
 - Contador "158 textos" vs mockup "145 textos". **DIFERIDO** — dato (cantidad real de textos editables ha crecido desde el snapshot del mockup).
 - Cards de la lista con más padding vertical en real vs mockup. **DIFERIDO** — subóptimo menor, no estructural.
 
+---
+
+## Resumen final del loop
+
+- **Iteraciones completadas:** 6 (cada una con 1 commit de fix + 1 commit de docs con SHA)
+- **Pantallas corregidas:**
+  1. Suite · Home (3 cards con título wrappeado a 1 línea)
+  2. Suite · Animo (icon tile "Progreso" a rounded square 42×42)
+  3. Hub · Detalle de paciente (empty state con dashed border)
+  4. Suite · Registro TCC (textarea max 120 para que el contador 0/500 respire)
+  5. Suite · Recordatorios (icon tile 32×32 en cada item)
+  6. Hub · Textos globales (separador bajo la fila de controles)
+- **Tests:** 88 visual contracts pass en aislamiento. Único failure en suite completa (`test_window_chrome_matches_mockup_titlebar_contract`) es **preexistente** (verificado en commit 1525c03 sin mis cambios) — orden de tests, no regresión.
+- **Capturas V8:** todas las pantallas regeneradas (light + dark, 86 PNGs) — sin regresión visual.
+
+## Confirmación explícita final
+
+> **NO es PASS visual global.** Quedan ítems abiertos documentados en cada iter como DIFERIDO (decisión de owner, copy, chrome, datos). El loop acercó 6 frentes visibles al mockup sin regresiones, pero el resto de las pantallas y los detalles finos (copy/voseo, slider dots funcionales, per-card tone en Animo, estructura de título de paso en TCC, etc.) siguen pendientes de decisión humana.
+
+
 
 
 
