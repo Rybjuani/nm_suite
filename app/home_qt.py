@@ -420,6 +420,11 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
             self._badge.setText(status)
             self._apply_status_badge_style(self._config.get("badge_tone", "brand"))
             self._badge_wrap.show()
+        elif self._config["id"] == "animo":
+            # Mockup: card animo muestra estado vacío cuando no hay registro del día
+            self._badge.setText(t("text.home.animo_no_record", "Sin registro hoy"))
+            self._apply_status_badge_style("gold")
+            self._badge_wrap.show()
         else:
             self._badge.setText("")
             self._badge_wrap.hide()

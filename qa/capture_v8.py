@@ -613,22 +613,25 @@ def _module_target(win):
 
 @_register_helper
 def _force_no_score(win, qapp, action):
-    """Fuerza que Home/Animo no muestre puntaje."""
+    """Fuerza que Home/Animo no muestre puntaje (solo animo; otros módulos intactos)."""
     from app.home_qt import HomeView
     homes = list(win.findChildren(HomeView))
     direct_home = getattr(win, '_home', None)
     if direct_home is not None and direct_home not in homes:
         homes.append(direct_home)
-    def _empty_status(module_id):
-        return ""
 
     for home in homes:
-        home._get_status = _empty_status
+        _orig = home._get_status
+
+        def _animo_no_score(module_id, _f=_orig):
+            return "" if module_id == "animo" else _f(module_id)
+
+        home._get_status = _animo_no_score
         # ModuleCards capturan get_status_fn por referencia en su __init__; hay
         # que parchearlos directamente o refresh_statuses sigue devolviendo QA data.
         if hasattr(home, '_cards'):
             for card in home._cards.values():
-                card._get_status = _empty_status
+                card._get_status = _animo_no_score
         if hasattr(home, 'refresh_statuses'):
             home.refresh_statuses()
         if hasattr(home, '_hero'):
