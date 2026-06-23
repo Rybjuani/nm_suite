@@ -656,7 +656,7 @@ class ModuloRespiracion(NMModule):
         lay.setSpacing(V3_SP["sm"])
 
         # 1+2. Práctica de respiración principal en card. Los presets 3/5/10 min viven DENTRO
-        # de la card (arriba a la derecha, posición conservada) en vez de flotar
+        # de la card (centrados arriba, mockup l.663) en vez de flotar
         # fuera; la card se expande para ocupar el espacio disponible.
         practice_card = NMCard(modo=self._modo, clickable=False, glow=False)
         practice_lay = QVBoxLayout(practice_card)
@@ -667,7 +667,7 @@ class ModuloRespiracion(NMModule):
         header_l.setSpacing(V3_SP["sm"])
         header_l.addStretch()
 
-        # Pills de preset integradas en el header de la card.
+        # Pills de preset integradas en el header de la card (centradas, mockup).
         self._pill_btns: list[tuple[NMButtonOutline, int]] = []
         for label, mins in PRESETS:
             btn = NMButtonOutline(label, modo=self._modo, toggleable=False, size="sm")
@@ -675,6 +675,7 @@ class ModuloRespiracion(NMModule):
             btn.clicked.connect(lambda _, m=mins: self._select_preset(m))
             header_l.addWidget(btn)
             self._pill_btns.append((btn, mins))
+        header_l.addStretch()
 
         practice_lay.addLayout(header_l)
         self._highlight_preset(5)
