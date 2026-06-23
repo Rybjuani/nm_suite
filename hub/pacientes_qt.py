@@ -21,6 +21,7 @@ try:
         NMCard,
         NMAvatar,
         NMButton,
+        NMButtonOutline,
         NMElidedLabel,
         NMToast,
         ThemeManager,
@@ -149,14 +150,14 @@ class DetallePacienteView(QWidget):
         ia_row.setContentsMargins(0, 4, 0, 0)
         ia_row.addStretch()
         self._btn_exportar_pdf = NMButton(
-            "Exportar PDF", variant="gradient", size="sm", modo=self._modo, width=130,
-            icon_name="download",
+            "Exportar PDF", modo=self._modo,
+            icon_name="download",  # mockup: primary filled, icono descarga
         )
         self._btn_exportar_pdf.clicked.connect(self._on_exportar_pdf)
         ia_row.addWidget(self._btn_exportar_pdf)
-        self._btn_resumen_ia = NMButton(
-            "Resumen IA", variant="secondary", size="sm", modo=self._modo, width=130,
-            icon_name="sparkle",
+        self._btn_resumen_ia = NMButtonOutline(
+            "Resumen IA", modo=self._modo,
+            icon_name="sparkle",  # mockup: outline
         )
         self._btn_resumen_ia.clicked.connect(self._on_resumen_ia)
         ia_row.addWidget(self._btn_resumen_ia)
