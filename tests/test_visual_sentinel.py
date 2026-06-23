@@ -334,6 +334,50 @@ def test_crawl_opts_strict_increases_caps():
     assert strict["max_depth"] > base["max_depth"]
 
 
+def test_crawl_opts_includes_time_budget():
+    from qa.visual_sentinel import (_crawl_opts, _DEFAULT_TIME_BUDGET_SECS,
+                                    _STRICT_TIME_BUDGET_SECS)
+    assert _crawl_opts(False)["time_budget_secs"] == _DEFAULT_TIME_BUDGET_SECS
+    assert _crawl_opts(True)["time_budget_secs"] == _STRICT_TIME_BUDGET_SECS
+
+
+def test_crawl_opts_env_override_time_budget(monkeypatch):
+    from qa.visual_sentinel import _crawl_opts
+    monkeypatch.setenv("NM_SENTINEL_TIME_BUDGET", "45")
+    assert _crawl_opts(False)["time_budget_secs"] == 45
+    # valores invalidos no rompen: se ignora el override y vuelve al default
+    monkeypatch.setenv("NM_SENTINEL_TIME_BUDGET", "no-numero")
+    from qa.visual_sentinel import _DEFAULT_TIME_BUDGET_SECS
+    assert _crawl_opts(False)["time_budget_secs"] == _DEFAULT_TIME_BUDGET_SECS
+    # piso de seguridad: nunca menos de 15s
+    monkeypatch.setenv("NM_SENTINEL_TIME_BUDGET", "1")
+    assert _crawl_opts(False)["time_budget_secs"] == 15
+
+
+def test_check_crawl_truncated_flags_partial_coverage():
+    from qa.visual_sentinel import _check_crawl_truncated
+    graphs = {
+        "suite@light": {"truncated_by_time": True, "theme": "light",
+                        "discovered_count": 40, "frontier_remaining": 12,
+                        "crawl_opts": {"time_budget_secs": 300}},
+        "hub@light": {"truncated_by_time": False, "theme": "light",
+                      "discovered_count": 18, "frontier_remaining": 0,
+                      "crawl_opts": {"time_budget_secs": 300}},
+    }
+    out = _check_crawl_truncated(graphs)
+    assert len(out) == 1
+    assert out[0].flag == "CRAWL_TRUNCATED"
+    assert out[0].severity == "P1"
+    assert out[0].screen_id == "suite@light"
+
+
+def test_check_crawl_truncated_clean_when_complete():
+    from qa.visual_sentinel import _check_crawl_truncated
+    graphs = {"suite@light": {"truncated_by_time": False,
+                              "crawl_opts": {"time_budget_secs": 300}}}
+    assert _check_crawl_truncated(graphs) == []
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Crawler generico: tests e2e con fixtures Qt sinteticos
 # (requieren pytest-qt / qapp fixture; offscreen via conftest)
@@ -380,6 +424,197 @@ def test_enumerate_finds_safe_click_and_skips_destructive(qapp):
     assert all("eliminar" not in lbl for lbl in labels)
     assert any(o["reason"] == "destructive-text" for o in omitted)
     root.deleteLater()
+
+
+def test_enumerate_skips_async_network_buttons(qapp):
+    """Botones que disparan llamadas LLM/export deben filtrarse como async-network.
+
+    Cubre las tres formas reales del repo: "Completar con IA", "Resumen IA"
+    (token 'ia' aislado) y "Exportar PDF". El control benigno "Guia diaria"
+    NO debe filtrarse pese a contener la subcadena 'ia' dentro de palabras."""
+    from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton
+    from qa.visual_sentinel import _enumerate_safe_actions
+    omitted = []
+    root = _show(QWidget())
+    lay = QVBoxLayout(root)
+    lay.addWidget(QPushButton("Iniciar tarea"))
+    lay.addWidget(QPushButton("Completar con IA"))
+    lay.addWidget(QPushButton("Resumen IA"))
+    lay.addWidget(QPushButton("Exportar PDF"))
+    lay.addWidget(QPushButton("Guia diaria"))  # 'ia' dentro de palabras: benigno
+    qapp.processEvents()
+    actions = _enumerate_safe_actions(root, [], {"max_branch": 20},
+                                      log_omitted=omitted.append)
+    labels = [a["label"] for a in actions if a["kind"] == "click"]
+    assert any("iniciar" in lbl for lbl in labels)
+    assert any("guia-diaria" in lbl for lbl in labels)
+    assert not any("con-ia" in lbl for lbl in labels)
+    assert not any("resumen" in lbl for lbl in labels)
+    assert not any("exportar" in lbl for lbl in labels)
+    assert sum(1 for o in omitted if o["reason"] == "async-network") == 3
+    root.deleteLater()
+
+
+def test_enumerate_skips_reset_and_tooltip_destructive(qapp):
+    """Reset-por-defecto (bajo valor) y boton-icono destructivo sin texto pero con
+    tooltip ('Quitar...') deben filtrarse. Replica el sumidero NMRowUnlink /
+    'Restablecer por defecto' que hundia el presupuesto del crawler."""
+    from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QToolButton
+    from qa.visual_sentinel import _enumerate_safe_actions
+    omitted = []
+    root = _show(QWidget())
+    lay = QVBoxLayout(root)
+    lay.addWidget(QPushButton("Restablecer por defecto"))
+    icon_btn = QToolButton()  # sin texto: proposito solo en el tooltip
+    icon_btn.setToolTip("Quitar paciente del Hub")
+    lay.addWidget(icon_btn)
+    lay.addWidget(QPushButton("Guardar"))
+    qapp.processEvents()
+    actions = _enumerate_safe_actions(root, [], {"max_branch": 20},
+                                      log_omitted=omitted.append)
+    labels = [a["label"] for a in actions if a["kind"] == "click"]
+    assert any("guardar" in lbl for lbl in labels)
+    assert not any("restablecer" in lbl for lbl in labels)
+    reasons = {o["reason"] for o in omitted}
+    assert "reset-low-value" in reasons
+    assert "destructive-text" in reasons  # del tooltip del boton-icono
+    root.deleteLater()
+
+
+def test_enumerate_dedupes_repeated_labels(qapp):
+    """N controles con el mismo (tipo+texto) colapsan a UNA accion: evita la
+    explosion de capturas/duplicados (p.ej. 20x el mismo boton de fila)."""
+    from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton
+    from qa.visual_sentinel import _enumerate_safe_actions
+    root = _show(QWidget())
+    lay = QVBoxLayout(root)
+    for _ in range(15):
+        lay.addWidget(QPushButton("Editar campo"))
+    lay.addWidget(QPushButton("Guardar cambios"))
+    qapp.processEvents()
+    actions = _enumerate_safe_actions(root, [], {"max_branch": 12})
+    labels = [a["label"] for a in actions if a["kind"] == "click"]
+    assert labels.count("act:editar-campo") == 1
+    assert "act:guardar-cambios" in labels  # no fue desplazado por las copias
+    root.deleteLater()
+
+
+def _make_card_class(qapp):
+    """Fabrica una clase tipo ModuleCard: QFrame que navega via mouseReleaseEvent
+    custom (sin senal 'clicked'), con cursor pointing-hand y un QLabel de titulo."""
+    from PyQt6.QtWidgets import QFrame, QVBoxLayout, QLabel
+    from PyQt6.QtCore import Qt
+
+    class _Card(QFrame):
+        def __init__(self, title):
+            super().__init__()
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
+            self.clicks = 0
+            lay = QVBoxLayout(self)
+            lay.addWidget(QLabel(title))
+
+        def mouseReleaseEvent(self, event):
+            self.clicks += 1
+            super().mouseReleaseEvent(event)
+
+    return _Card
+
+
+def test_reimplements_mouse_ignores_pyqt_classes(qapp):
+    """Solo cuenta override REAL de producto: una clase Python con
+    mouseReleaseEvent -> True; un QFrame/QLabel puro del binding -> False."""
+    from PyQt6.QtWidgets import QFrame, QLabel
+    from qa.visual_sentinel import _reimplements_mouse
+    Card = _make_card_class(qapp)
+    assert _reimplements_mouse(Card("x")) is True
+    assert _reimplements_mouse(QFrame()) is False
+    assert _reimplements_mouse(QLabel("y")) is False
+
+
+def test_is_clickable_custom_card_by_capability(qapp):
+    """Un card custom (override mouse + pointing-hand) se detecta clickeable sin
+    estar en ninguna lista de nombres; un QFrame estatico no."""
+    from PyQt6.QtWidgets import QFrame
+    from qa.visual_sentinel import _is_clickable
+    Card = _make_card_class(qapp)
+    assert _is_clickable(Card("Termometro")) is True
+    assert _is_clickable(QFrame()) is False
+
+
+def test_derive_label_text_from_child_label(qapp):
+    """Card sin texto propio deriva su label del QLabel hijo (distingue hermanas)."""
+    from PyQt6.QtWidgets import QPushButton
+    from qa.visual_sentinel import _derive_label_text
+    Card = _make_card_class(qapp)
+    c = Card("Guia de respiracion")
+    c.show()
+    qapp.processEvents()
+    assert _derive_label_text(c) == "Guia de respiracion"
+    assert _derive_label_text(QPushButton("Aceptar")) == "Aceptar"  # texto propio
+    c.deleteLater()
+
+
+def test_apply_action_synthesizes_mouse_for_card(qapp):
+    """_apply_action dispara mouseReleaseEvent en cards sin click()/clicked."""
+    from PyQt6.QtWidgets import QWidget, QVBoxLayout
+    from qa.visual_sentinel import _widget_locator, _apply_action
+    Card = _make_card_class(qapp)
+    root = _show(QWidget())
+    lay = QVBoxLayout(root)
+    card = Card("Modulo")
+    lay.addWidget(card)
+    qapp.processEvents()
+    action = {"kind": "click", "locator": _widget_locator(card, root),
+              "label": "act:modulo"}
+    assert _apply_action(root, action, qapp) is True
+    assert card.clicks >= 1
+    root.deleteLater()
+
+
+def test_enumerate_detects_sibling_cards_distinctly(qapp):
+    """Varias cards hermanas sin texto propio NO colapsan: cada una conserva su
+    label derivado del titulo hijo (replica los 8 modulos del Suite home)."""
+    from PyQt6.QtWidgets import QWidget, QVBoxLayout
+    from qa.visual_sentinel import _enumerate_safe_actions
+    Card = _make_card_class(qapp)
+    root = _show(QWidget())
+    lay = QVBoxLayout(root)
+    for title in ("Termometro", "Respiracion", "Registro", "Rutina"):
+        lay.addWidget(Card(title))
+    qapp.processEvents()
+    actions = _enumerate_safe_actions(root, [], {"max_branch": 20})
+    labels = {a["label"] for a in actions if a["kind"] == "click"}
+    assert "act:termometro" in labels
+    assert "act:respiracion" in labels
+    assert "act:registro" in labels
+    assert "act:rutina" in labels
+    root.deleteLater()
+
+
+def test_close_active_modals_rejects_native_dialog(qapp):
+    """El modal guard cierra QDialog nativos modales (evita el cuelgue por
+    event-loop anidado). Usa setModal+show (sin exec) para no bloquear el test."""
+    from PyQt6.QtWidgets import QDialog
+    from qa.visual_sentinel import _close_active_modals
+    dlg = QDialog()
+    dlg.setModal(True)
+    dlg.show()
+    qapp.processEvents()
+    assert qapp.activeModalWidget() is dlg
+    _close_active_modals()
+    qapp.processEvents()
+    assert qapp.activeModalWidget() is None
+    dlg.deleteLater()
+
+
+def test_watchdog_beat_and_stop_no_abort():
+    """El watchdog no aborta mientras recibe latidos / se detiene limpio."""
+    from qa.visual_sentinel import _Watchdog
+    wd = _Watchdog(op_timeout_s=999).start()
+    wd.beat()
+    wd.stop()
+    # Si el proceso sigue vivo tras stop(), el watchdog no disparo os._exit.
+    assert True
 
 
 def test_find_by_locator_resolves(qapp):

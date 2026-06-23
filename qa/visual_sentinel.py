@@ -67,6 +67,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import gc
 import hashlib
 import json
 import os
@@ -74,6 +75,7 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import tempfile
 import time
 import traceback
@@ -122,6 +124,16 @@ _OVERLAP_MIN_RATIO = 0.45
 
 _FONT_DIAG_CACHE: dict | None = None
 
+# Timer global (uno por proceso) que neutraliza modales nativos bloqueantes.
+_MODAL_GUARD_TIMER = None
+
+# Flag: stubs de dialogos nativos del OS ya instalados (idempotente).
+_DIALOG_STUBS_DONE = False
+
+# Watchdog: si una sola operacion del crawl no progresa en este tiempo, se aborta
+# el proceso (red de seguridad dura contra cuelgues que escapen al modal guard).
+_WATCHDOG_OP_TIMEOUT_SECS = 120.0
+
 # Valores del argumento --platform que son conceptos del Sentinel, NO plugins Qt.
 # Qt acepta: offscreen, windows, minimal (en Windows), xcb/cocoa en otros OS.
 # 'native' y 'auto' nunca deben llegar a Qt como valor de QT_QPA_PLATFORM.
@@ -134,6 +146,15 @@ _DEFAULT_MAX_BRANCH = 12
 _STRICT_MAX_STATES = 130
 _STRICT_MAX_DEPTH = 6
 
+# Presupuesto de tiempo por (app, theme) — RED DE SEGURIDAD anti-cuelgue, no un
+# limite operativo. Un crawl sano de ~70 estados con WA_DontShowOnScreen y sin
+# disparar red termina en 1-3 min; el budget solo se alcanza si algo se cuelga
+# patologicamente (red, modal que no cierra, loop de layout). Si se alcanza, el
+# crawl corta limpio y emite CRAWL_TRUNCATED (FAIL honesto: cobertura parcial).
+# Override por entorno NM_SENTINEL_TIME_BUDGET (segundos) para auditorias rapidas.
+_DEFAULT_TIME_BUDGET_SECS = 300
+_STRICT_TIME_BUDGET_SECS = 540
+
 # Palabras que indican acciones destructivas/inseguras (filtro generico por
 # semantica del control, no por pantalla). Se omiten y se loguean.
 _UNSAFE_TEXT_KEYS = (
@@ -141,11 +162,41 @@ _UNSAFE_TEXT_KEYS = (
     "delete", "remove", "logout", "cerrar sesion", "cerrar sesión",
     "cancelar cuenta", "reset total",
 )
+# Acciones de bajo valor visual que vuelven un control a su default: NO aportan
+# un estado nuevo (el default ya se captura) y, cuando hay decenas de campos
+# editables (config de textos globales), generan una explosion combinatoria que
+# hunde el presupuesto del crawler en una sola rama y deja pantallas reales sin
+# cubrir. Se omiten para repartir el presupuesto entre superficies distintas.
+_RESET_TEXT_KEYS = ("restablecer", "restaurar", "reset")
 # Controles de chrome / navegacion back que no aportan estados nuevos y gastan
 # presupuesto: se omiten (no son destructivos, solo redundantes).
 _CHROME_OBJECTNAMES = ("NMWindowChrome", "NMThemeToggle", "NMBackButton",
                        "NMCloseButton", "NMMinButton")
+# Mismos controles identificables por CLASE: los botones privados del titlebar
+# (_ChromeWinBtn min/max/close, _ChromeThemeToggle, _ChromeLogoMark) y la barra
+# NMWindowChrome NO exponen objectName, asi que el filtro por objectName solo no
+# los atrapa. Match por subcadena case-insensitive sobre type(w).__name__.
+_CHROME_CLASS_HINTS = (
+    "chromewinbtn", "chromethemetoggle", "chromelogo",
+    "windowchrome", "titlebar", "winbtn",
+    "backbutton", "closebutton", "minbutton", "maxbutton",
+)
 _BACK_TEXT_KEYS = ("volver", "atras", " atrás", "←", "back")
+# Botones que disparan operaciones de red/IA reales en hilos daemon: se omiten
+# porque (a) el resultado es no deterministico, (b) el hilo puede sobrevivir al
+# cierre de la ventana y congestionar el event loop (lo vimos colgar el crawl),
+# (c) los estados intermedios dependen de datos externos no reproducibles.
+# Match por substring sobre el texto normalizado del control.
+_NETWORK_ASYNC_KEYS = (
+    "exportar",        # Exportar PDF/informe (async, abre dialogo de archivo)
+    "generar",         # "Generar resumen", "Generando..."
+    "completar con",   # "Completar con IA"
+    "sincronizar",     # sync remoto
+)
+# Siglas/tokens aislados que siempre implican una llamada a IA (red). Se chequean
+# como TOKEN (palabra completa), no substring, para no atrapar "guia"/"dia"/
+# "familia". Cubre "Resumen IA", "Completar con IA", "Sugerir con I.A.", etc.
+_NETWORK_ASYNC_TOKENS = ("ia", "i.a.", "ai")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -229,6 +280,156 @@ def _drain(qapp, cycles: int = 8, pause: float = 0.025) -> None:
         time.sleep(pause)
         qapp.processEvents()
         QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+
+
+def _close_active_modals() -> None:
+    """Cierra/rechaza cualquier modal NATIVO bloqueante actualmente activo.
+
+    Cubre QDialog/QMessageBox/QFileDialog (activeModalWidget) y menus emergentes
+    (activePopupWidget). Rechaza (NO acepta): cancelar es la opcion segura ante
+    un dialog de confirmacion destructiva. Los NMDialog del producto son overlays
+    no-modales y NO se tocan: el crawler los captura como sub-estados normales.
+    """
+    try:
+        from PyQt6.QtWidgets import QApplication, QDialog
+    except Exception:
+        return
+    try:
+        for _ in range(5):
+            w = QApplication.activeModalWidget()
+            if w is None:
+                break
+            try:
+                if isinstance(w, QDialog):
+                    w.reject()
+                else:
+                    w.close()
+            except Exception:
+                try:
+                    w.close()
+                except Exception:
+                    break
+        pop = QApplication.activePopupWidget()
+        if pop is not None:
+            try:
+                pop.close()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+def _install_dialog_stubs() -> None:
+    """Neutraliza dialogos NATIVOS/bloqueantes del OS durante el crawl.
+
+    A diferencia de QDialog/QMessageBox (widgets Qt que el modal guard puede
+    cerrar), los selectores nativos de archivo/color/fuente y los QMenu.exec()
+    arrancan un loop del shell de Windows que el guard Qt-side NO alcanza: un
+    boton que los abra cuelga el crawler para siempre. Estos stubs hacen que
+    retornen "cancelado/vacio" de inmediato (opcion SEGURA: no escriben archivos
+    ni cambian settings). Corre en el proceso aislado del Sentinel: no afecta a
+    la app real del owner. Idempotente."""
+    global _DIALOG_STUBS_DONE
+    if _DIALOG_STUBS_DONE:
+        return
+    try:
+        from PyQt6.QtWidgets import (QFileDialog, QColorDialog, QFontDialog,
+                                     QInputDialog, QMenu)
+        from PyQt6.QtGui import QColor, QFont
+    except Exception:
+        return
+
+    def _stub(retval):
+        return staticmethod(lambda *a, **k: retval)
+
+    for cls, name, ret in (
+        (QFileDialog, "getOpenFileName", ("", "")),
+        (QFileDialog, "getOpenFileNames", ([], "")),
+        (QFileDialog, "getSaveFileName", ("", "")),
+        (QFileDialog, "getExistingDirectory", ""),
+        (QColorDialog, "getColor", QColor()),
+        (QFontDialog, "getFont", (QFont(), False)),
+        (QInputDialog, "getText", ("", False)),
+        (QInputDialog, "getMultiLineText", ("", False)),
+        (QInputDialog, "getInt", (0, False)),
+        (QInputDialog, "getDouble", (0.0, False)),
+        (QInputDialog, "getItem", ("", False)),
+    ):
+        try:
+            setattr(cls, name, _stub(ret))
+        except Exception:
+            pass
+    # QMenu.exec()/exec_() bloquean en un popup-loop nativo: stub a None.
+    for name in ("exec", "exec_"):
+        try:
+            setattr(QMenu, name, lambda self, *a, **k: None)
+        except Exception:
+            pass
+    _DIALOG_STUBS_DONE = True
+
+
+def _install_modal_guard(qapp) -> None:
+    """Instala (una vez por proceso) un QTimer que cierra modales nativos.
+
+    Un boton que abre un QDialog.exec()/QMessageBox.exec() arranca un event-loop
+    anidado que, en este crawler headless, NUNCA recibe el cierre del usuario y
+    cuelga el proceso para siempre. El QTimer sigue disparandose DENTRO de ese
+    loop anidado, asi que rompe el bloqueo cerrando el modal. Critico para un
+    repo dinamico: cualquier dialog nuevo queda neutralizado sin tocar el producto.
+    """
+    global _MODAL_GUARD_TIMER
+    if _MODAL_GUARD_TIMER is not None:
+        return
+    try:
+        from PyQt6.QtCore import QTimer
+        t = QTimer()
+        t.setInterval(500)
+        t.timeout.connect(_close_active_modals)
+        t.start()
+        _MODAL_GUARD_TIMER = t
+    except Exception:
+        pass
+
+
+class _Watchdog:
+    """Aborta el proceso si una sola operacion del crawl no progresa en N seg.
+
+    Red de seguridad DURA contra cuelgues que escapen al modal guard (deadlock
+    en C++, red que ignora timeout, loop de layout). Un crawl sano patea el
+    heartbeat en cada iteracion; si pasan >timeout sin latido, abortar con codigo
+    != 0 es preferible a loopear para siempre. Corre en un thread daemon.
+    """
+
+    def __init__(self, op_timeout_s: float = _WATCHDOG_OP_TIMEOUT_SECS):
+        self._timeout = float(op_timeout_s)
+        self._last = time.monotonic()
+        self._lock = threading.Lock()
+        self._stopped = False
+        self._thread = threading.Thread(target=self._run, daemon=True,
+                                        name="sentinel-watchdog")
+
+    def start(self) -> "_Watchdog":
+        self._thread.start()
+        return self
+
+    def beat(self) -> None:
+        with self._lock:
+            self._last = time.monotonic()
+
+    def stop(self) -> None:
+        self._stopped = True
+
+    def _run(self) -> None:
+        while not self._stopped:
+            time.sleep(2.0)
+            with self._lock:
+                idle = time.monotonic() - self._last
+            if not self._stopped and idle > self._timeout:
+                print(f"[WATCHDOG] crawl sin progreso por {idle:.0f}s "
+                      f"(> {self._timeout:.0f}s): abortando para no colgar. "
+                      "Probable modal/operacion bloqueante no neutralizada.",
+                      file=sys.stderr, flush=True)
+                os._exit(75)
 
 
 def _configure_platform(mode: str = "auto") -> None:
@@ -459,9 +660,64 @@ def _widget_text(w) -> str:
     return ""
 
 
+def _derive_label_text(w) -> str:
+    """Texto distintivo para el label/locator de un control.
+
+    Si el widget no tiene texto propio (tarjetas/tiles cuyo titulo vive en un
+    QLabel hijo, p.ej. ModuleCard del Suite), usa el primer QLabel descendiente
+    con texto. Critico para que cards hermanas NO colapsen al MISMO label (y por
+    ende al dedupe): sin esto, 8 modulos del home quedan como 'act:modulecard' y
+    solo se explora 1."""
+    txt = _widget_text(w)
+    if txt:
+        return txt
+    try:
+        from PyQt6.QtWidgets import QLabel
+        for child in w.findChildren(QLabel):
+            try:
+                if not child.isVisible():
+                    continue
+                ct = child.text()
+            except Exception:
+                continue
+            if ct and ct.strip():
+                return ct
+    except Exception:
+        pass
+    return ""
+
+
+def _reimplements_mouse(w) -> bool:
+    """True si una clase de PRODUCTO (no del binding PyQt) reimplementa un handler
+    de mouse (press/release).
+
+    Heuristica generica y autodescubrible: un widget cuya clase override
+    mousePressEvent/mouseReleaseEvent es interactivo aunque no sea un QPushButton
+    ni exponga senal 'clicked' (p.ej. ModuleCard navega via mouseReleaseEvent).
+    No depende de una lista de nombres de clase, asi sobrevive a un repo que
+    cambia seguido.
+
+    Se recorre el MRO IGNORANDO las clases de PyQt6: el binding expone un wrapper
+    de metodo distinto por clase (QFrame.mouseReleaseEvent is not
+    QWidget.mouseReleaseEvent) aunque no cambie el comportamiento, lo que daria
+    falsos positivos para todo QFrame/QLabel. Solo cuenta un override definido en
+    codigo de la app (su __dict__)."""
+    try:
+        for klass in type(w).__mro__:
+            if getattr(klass, "__module__", "").startswith("PyQt6"):
+                continue
+            if ("mouseReleaseEvent" in klass.__dict__
+                    or "mousePressEvent" in klass.__dict__):
+                return True
+    except Exception:
+        pass
+    return False
+
+
 def _is_clickable(w) -> bool:
     from PyQt6.QtWidgets import (
         QPushButton, QToolButton, QCheckBox, QRadioButton, QCommandLinkButton,
+        QLabel,
     )
     try:
         if isinstance(w, (QPushButton, QToolButton, QCheckBox, QRadioButton,
@@ -475,6 +731,19 @@ def _is_clickable(w) -> bool:
         return True
     if hasattr(w, "clicked"):
         return True
+    # Heuristica generica y autodescubrible: un control clickeable custom (card/
+    # tile que navega via mouseReleaseEvent, sin senal 'clicked') combina DOS
+    # senales: (a) su clase reimplementa un handler de mouse y (b) declara cursor
+    # pointing-hand. La conjuncion distingue un ModuleCard real de un contenedor
+    # de drag (NMShellContent/_ShellWidget: reimplementan mouse pero cursor
+    # normal) y de un badge estatico (cursor normal). No usa nombres de clase.
+    try:
+        from PyQt6.QtCore import Qt
+        if (_reimplements_mouse(w) and not isinstance(w, QLabel)
+                and w.cursor().shape() == Qt.CursorShape.PointingHandCursor):
+            return True
+    except Exception:
+        pass
     return False
 
 
@@ -656,19 +925,83 @@ def _active_surface_label(root) -> str:
         return "root"
 
 
+def _chrome_ancestor(widget) -> bool:
+    """True si el widget vive dentro de un NMWindowChrome (barra de titulo custom).
+
+    Cualquier control clickeable ahi es chrome (min/max/close/theme toggle/back),
+    no un estado funcional del producto: se omite para no capturar ruido de
+    titlebar ni generar explosion combinatoria (theme toggle cambia el hash).
+    """
+    try:
+        p = widget.parent()
+    except Exception:
+        return False
+    while p is not None:
+        try:
+            pcls = type(p).__name__.lower()
+            try:
+                pobj = (p.objectName() or "").lower()
+            except Exception:
+                pobj = ""
+        except Exception:
+            return False
+        if "windowchrome" in pcls or "windowchrome" in pobj:
+            return True
+        try:
+            p = p.parent()
+        except Exception:
+            return False
+    return False
+
+
+def _semantic_text(widget, text_norm: str) -> str:
+    """Texto semantico del control para el filtro de seguridad: combina el texto
+    visible con tooltip, accessibleName/Description y objectName (normalizados).
+
+    Critico para botones-ICONO sin texto cuyo proposito (destructivo/red/back)
+    solo vive en el tooltip o el objectName (p.ej. NMRowUnlink: text='' pero
+    tooltip='Quitar paciente del Hub' y objectName contiene 'unlink'). Sin esto,
+    el crawler los clickearia y dispararia su dialog/accion bloqueante."""
+    parts = [text_norm]
+    for getter in ("toolTip", "accessibleName", "accessibleDescription",
+                   "objectName"):
+        try:
+            fn = getattr(widget, getter, None)
+            if callable(fn):
+                extra = _norm_text(fn())
+                if extra:
+                    parts.append(extra)
+        except Exception:
+            pass
+    return " ".join(parts)
+
+
 def _is_unsafe(widget, text_norm: str) -> str | None:
     """Razon de inseguridad o None si es segura. Filtro generico por semantica
-    del control (texto/objectName), no por pantalla."""
+    del control (texto/tooltip/accessible/objectName/clase/ancestro chrome), no
+    por pantalla."""
     try:
         obj = (widget.objectName() or "").lower()
     except Exception:
         obj = ""
     if any(k in obj for k in (k.lower() for k in _CHROME_OBJECTNAMES)):
         return "chrome-control"
-    if any(k in text_norm for k in _UNSAFE_TEXT_KEYS):
+    cls = type(widget).__name__.lower()
+    if any(k in cls for k in _CHROME_CLASS_HINTS):
+        return "chrome-control"
+    if _chrome_ancestor(widget):
+        return "chrome-control"
+    sem = _semantic_text(widget, text_norm)
+    if any(k in sem for k in _UNSAFE_TEXT_KEYS):
         return "destructive-text"
-    if any(k in text_norm for k in _BACK_TEXT_KEYS):
+    if any(k in sem for k in _RESET_TEXT_KEYS):
+        return "reset-low-value"
+    if any(k in sem for k in _BACK_TEXT_KEYS):
         return "navigation-back"
+    if any(k in sem for k in _NETWORK_ASYNC_KEYS):
+        return "async-network"
+    if any(tok in _NETWORK_ASYNC_TOKENS for tok in sem.split()):
+        return "async-network"
     return None
 
 
@@ -711,6 +1044,13 @@ def _enumerate_safe_actions(root, path: list[dict], opts: dict, log_omitted=None
         pass
 
     # --- Clicks / toggles seguros ---
+    # Dedupe por label DENTRO del estado: controles con el mismo (tipo+texto)
+    # producen el mismo resultado visual; explorar repetidos solo quema
+    # presupuesto y genera capturas/DUPLICATE_SUSPECT en cascada (el dedupe por
+    # hash posterior los colapsaria igual, pero materializar cada uno es caro).
+    # Colapsa p.ej. 20x "Restablecer por defecto" -> 1. El dedupe es inline para
+    # que max_branch limite acciones DISTINTAS, no copias del mismo control.
+    seen_click_labels: set[str] = set()
     try:
         for w in root.findChildren(QWidget):
             if len(actions) >= max_branch:
@@ -719,7 +1059,9 @@ def _enumerate_safe_actions(root, path: list[dict], opts: dict, log_omitted=None
                 continue
             if not _is_clickable(w):
                 continue
-            text = _widget_text(w)
+            # Texto distintivo: incluye el de un QLabel hijo para cards sin texto
+            # propio (asi el filtro de seguridad y el dedupe distinguen hermanas).
+            text = _derive_label_text(w)
             tnorm = _norm_text(text)
             reason = _is_unsafe(w, tnorm)
             if reason is not None:
@@ -736,12 +1078,16 @@ def _enumerate_safe_actions(root, path: list[dict], opts: dict, log_omitted=None
                     continue
             except Exception:
                 pass
-            locator = _widget_locator(w, root)
             label_src = text if text else type(w).__name__
+            label = "act:" + _sanitize_label(label_src)
+            if label in seen_click_labels:
+                continue
+            seen_click_labels.add(label)
+            locator = _widget_locator(w, root)
             action = {
                 "kind": "click",
                 "locator": locator,
-                "label": "act:" + _sanitize_label(label_src),
+                "label": label,
             }
             actions.append(action)
     except Exception:
@@ -789,6 +1135,27 @@ def _apply_action(root, action: dict, qapp) -> bool:
                 clicked = True
             except Exception:
                 pass
+        if not clicked and _reimplements_mouse(w):
+            # Fallback final: sintetizar press+release en el centro del widget.
+            # Cubre cards/tiles que navegan via mouseReleaseEvent custom y no
+            # exponen click()/clicked (p.ej. ModuleCard del Suite home).
+            try:
+                from PyQt6.QtCore import Qt, QPointF, QEvent
+                from PyQt6.QtGui import QMouseEvent
+                center = w.rect().center()
+                gpos = w.mapToGlobal(center)
+                lpos = QPointF(float(center.x()), float(center.y()))
+                gposf = QPointF(float(gpos.x()), float(gpos.y()))
+                for etype in (QEvent.Type.MouseButtonPress,
+                              QEvent.Type.MouseButtonRelease):
+                    ev = QMouseEvent(etype, lpos, gposf,
+                                     Qt.MouseButton.LeftButton,
+                                     Qt.MouseButton.LeftButton,
+                                     Qt.KeyboardModifier.NoModifier)
+                    qapp.sendEvent(w, ev)
+                clicked = True
+            except Exception:
+                pass
         _drain(qapp, cycles=5)
         return clicked
     except Exception:
@@ -824,6 +1191,8 @@ def _instantiate(app_key: str, modo: str, res: str = _RESOLUTION):
     _safe_argv = [sys.argv[0] if sys.argv else "visual_sentinel"]
     qapp = QApplication.instance() or QApplication(_safe_argv)
     qapp.setQuitOnLastWindowClosed(False)
+    _install_dialog_stubs()      # stubea file/color/menu nativos (cuelgan el crawl)
+    _install_modal_guard(qapp)   # cierra QDialog/QMessageBox modales Qt-side
     try:
         from shared.fonts import load_fonts
         load_fonts()
@@ -846,6 +1215,14 @@ def _instantiate(app_key: str, modo: str, res: str = _RESOLUTION):
     module = importlib.import_module(spec["module"])
     WindowClass = getattr(module, spec["class"])
     win = WindowClass()
+    # No tapar la pantalla del owner ni robar foco: la ventana se "muestra"
+    # logicamente (procesa show/polish/layout y renderiza con el backend nativo
+    # de Windows = DirectWrite, sin tofu) pero NUNCA se mapea en el escritorio.
+    # win.grab() funciona igual sobre el backing store. Critico para correr
+    # auditorias mientras el owner usa la app real sin interrupciones.
+    from PyQt6.QtCore import Qt
+    win.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, True)
+    win.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
     win.show()
     if hasattr(win, "ensurePolished"):
         win.ensurePolished()
@@ -864,9 +1241,47 @@ def _instantiate(app_key: str, modo: str, res: str = _RESOLUTION):
     return qapp, win
 
 
+def _quiesce_widget(win) -> None:
+    """Detiene todos los QTimer y QAbstractAnimation vivos de la ventana.
+
+    Se usa (1) ANTES de capturar — congela la UI en un frame estatico: el grab()
+    de un widget con una animacion activa (modulos animados como la Guia de
+    Respiracion) puede provocar access violation, y ademas da capturas no
+    deterministas (a media animacion); y (2) en el teardown — si un timer dispara
+    despues de borrar la ventana, toca widgets C++ ya destruidos y crashea."""
+    if win is None:
+        return
+    from PyQt6.QtCore import QTimer, QAbstractAnimation
+    try:
+        for t in win.findChildren(QTimer):
+            try:
+                t.stop()
+            except Exception:
+                pass
+        for an in win.findChildren(QAbstractAnimation):
+            try:
+                an.stop()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
 def _close_window(win) -> None:
+    """Cierra la ventana y libera a fondo los objetos C++ Qt.
+
+    El crawler instancia una ventana fresca por nodo (decenas por crawl). Si el
+    teardown no libera de verdad, los widgets/modales/popups huerfanos se acumulan
+    entre instanciaciones y agotan handles GDI/memoria -> access violation. Por
+    eso: (1) se detienen timers/animaciones de la ventana, (2) se cierran TODOS
+    los top-levels (no solo los visibles: modales y popups ocultos tambien),
+    (3) se procesa DeferredDelete a fondo y (4) se fuerza gc.collect()."""
     from PyQt6.QtWidgets import QApplication
+    from PyQt6.QtCore import QCoreApplication, QEvent
     qapp = QApplication.instance()
+    # Detener timers/animaciones vivos de la ventana: si disparan tras el teardown
+    # tocan widgets ya borrados (causa tipica de crash en apps con NMFadeWidget).
+    _quiesce_widget(win)
     try:
         if win is not None:
             win.close()
@@ -874,14 +1289,23 @@ def _close_window(win) -> None:
     except Exception:
         pass
     if qapp is not None:
-        for tl in QApplication.topLevelWidgets():
-            if tl is not win and tl.isVisible():
+        try:
+            for tl in list(QApplication.topLevelWidgets()):
+                if tl is win:
+                    continue
                 try:
                     tl.close()
                     tl.deleteLater()
                 except Exception:
                     pass
-        _drain(qapp, cycles=3)
+        except Exception:
+            pass
+        # Procesar DeferredDelete a fondo para liberar los objetos C++ de verdad.
+        for _ in range(6):
+            qapp.processEvents()
+            QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+            qapp.processEvents()
+        gc.collect()
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -898,6 +1322,9 @@ def crawl_app(app_key: str, modo: str, opts: dict,
     theme = _short_theme(modo)
     max_states = int(opts.get("max_states", _DEFAULT_MAX_STATES))
     max_depth = int(opts.get("max_depth", _DEFAULT_MAX_DEPTH))
+    time_budget = float(opts.get("time_budget_secs", _DEFAULT_TIME_BUDGET_SECS))
+    deadline = time.monotonic() + time_budget
+    truncated_by_time = False
 
     nodes: list[CapturedState] = []
     edges: list[dict] = []
@@ -919,6 +1346,13 @@ def crawl_app(app_key: str, modo: str, opts: dict,
         return sid
 
     def _materialize(path, parent_id, via):
+        """Instancia una ventana fresca, replaya el path, captura el estado y
+        (si no se alcanzo max_depth) enumera las acciones hijas EN LA MISMA
+        ventana ya en el estado capturado. Devuelve (estado, acciones_hijas).
+
+        Enumerar aqui — y no en una segunda instanciacion — evita re-instanciar
+        y re-replayar cada nodo solo para listar sus hijos (~2x menos ventanas).
+        Es seguro: _capture_state solo lee/graba (no muta la navegacion)."""
         nonlocal nodes
         qapp, win = _instantiate(app_key, modo)
         try:
@@ -926,7 +1360,7 @@ def crawl_app(app_key: str, modo: str, opts: dict,
             if not ok:
                 omitted.append({"at": "<replay>", "path_len": len(path),
                                 "reason": "locator-no-resolvio"})
-                return None
+                return None, []
             # capturar
             surface = _active_surface_label(win)
             label_parts = [surface] + [a.get("label", "") for a in path]
@@ -946,52 +1380,75 @@ def crawl_app(app_key: str, modo: str, opts: dict,
             if sig in seen_sig:
                 edges.append({"from": parent_id, "to": seen_sig[sig],
                               "via": via, "skipped": "duplicate"})
-                return None
+                return None, []
             st.node_id = sid
             seen_sig[sig] = sid
             nodes.append(st)
             if parent_id:
                 edges.append({"from": parent_id, "to": sid, "via": via})
-            return st
+            # enumerar hijos en la misma ventana viva (estado == capturado)
+            child_actions: list[dict] = []
+            if len(path) < max_depth:
+                child_actions = _enumerate_safe_actions(
+                    win, path, opts, log_omitted=_log_omit)
+            return st, child_actions
         finally:
             _close_window(win)
 
-    # BFS con frontera acotada (DFS para seguir flujos multi-step primero)
+    # BFS por NIVELES (cola FIFO, pop del frente): cubre todas las superficies de
+    # un nivel (p.ej. los 8 modulos del home) antes de profundizar. Para un repo
+    # del que se quieren "todas las pantallas", la amplitud rinde mas cobertura
+    # por segundo que hundirse en una rama (un DFS gastaria el presupuesto en los
+    # sub-tabs del primer modulo y dejaria los demas modulos sin visitar).
+    # Watchdog: aborta el proceso si una sola iteracion cuelga (red de seguridad
+    # dura por encima del modal guard y del presupuesto de tiempo).
+    watchdog = _Watchdog().start()
     frontier: list[tuple[list[dict], str, dict | None]] = [([], "", None)]
-    while frontier and len(nodes) < max_states:
-        path, parent_id, via = frontier.pop()
-        node = _materialize(path, parent_id, via)
-        if node is None:
-            continue
-        if len(path) >= max_depth:
-            node.stop_reason = "max_depth"
-            continue
-        # enumerar hijos en una ventana fresca ya descartada; re-materializar
-        # solo para enumerar seria costoso: re-usamos el nodo recien capturado
-        # abriendo una ventana efimera.
-        qapp2, win2 = _instantiate(app_key, modo)
-        try:
-            _replay_path(win2, path, qapp2)
-            child_actions = _enumerate_safe_actions(
-                win2, path, opts, log_omitted=_log_omit)
-        finally:
-            _close_window(win2)
-        # para evitar explosion, limitamos pushes y priorizamos diversidad
-        for action in child_actions:
-            child_path = path + [action]
-            frontier.append((child_path, node.node_id, action))
-        if len(frontier) > max_states * 6:
-            # podamos la frontera conservando los caminos mas profundos
-            frontier.sort(key=lambda x: len(x[0]))
-            frontier = frontier[-max_states * 3:]
+    try:
+        while frontier and len(nodes) < max_states:
+            watchdog.beat()
+            if time.monotonic() > deadline:
+                truncated_by_time = True
+                log(f"  [TIME_BUDGET] {app_key}@{theme}: corte tras {len(nodes)} "
+                    f"estados al alcanzar {time_budget:.0f}s (cobertura PARCIAL).")
+                break
+            path, parent_id, via = frontier.pop(0)
+            if os.environ.get("NM_SENTINEL_TRACE"):
+                _tail = "/".join(a.get("label", "?") for a in path) or "(root)"
+                print(f"[TRACE] {app_key}@{theme} depth={len(path)} "
+                      f"nodes={len(nodes)} -> {_tail}", file=sys.stderr, flush=True)
+            node, child_actions = _materialize(path, parent_id, via)
+            if node is None:
+                continue
+            if len(path) >= max_depth:
+                node.stop_reason = "max_depth"
+                continue
+            # Dentro del nivel, primero los tabs/superficies y luego los botones:
+            # si el presupuesto corta a mitad de nivel, se priorizo la cobertura
+            # de superficies distintas sobre los controles de una sola pantalla.
+            tabs = [a for a in child_actions if a.get("kind") == "tab"]
+            clicks = [a for a in child_actions if a.get("kind") != "tab"]
+            for action in tabs + clicks:
+                child_path = path + [action]
+                frontier.append((child_path, node.node_id, action))
+            if len(frontier) > max_states * 6:
+                # podamos conservando los caminos MENOS profundos (BFS: el proximo
+                # nivel a cubrir) para no sacrificar amplitud de superficies.
+                frontier.sort(key=lambda x: len(x[0]))
+                frontier = frontier[:max_states * 3]
+    finally:
+        watchdog.stop()
 
     graph = {
         "app": app_key, "theme": theme,
         "nodes": [_node_summary(n) for n in nodes],
         "edges": edges,
         "omitted_actions": omitted,
-        "crawl_opts": {"max_states": max_states, "max_depth": max_depth},
+        "crawl_opts": {"max_states": max_states, "max_depth": max_depth,
+                       "time_budget_secs": time_budget},
         "discovered_count": len(nodes),
+        "truncated_by_time": truncated_by_time,
+        "frontier_remaining": len(frontier),
     }
     return nodes, graph
 
@@ -1041,6 +1498,10 @@ def _capture_state(win, qapp, app_key: str, modo: str, out_dirs: dict,
         if not win.isVisible():
             win.show()
         _drain(qapp, cycles=3)
+        # Congelar animaciones/timers antes del grab: evita access violation al
+        # capturar modulos animados y hace la captura determinista.
+        _quiesce_widget(win)
+        _drain(qapp, cycles=2)
         pm = win.grab()
         ok = pm.save(str(png_path))
         if not ok:
@@ -1908,6 +2369,31 @@ def _check_stale(states: list[CapturedState], reg: dict) -> list[Finding]:
     return out
 
 
+def _check_crawl_truncated(graphs: dict[str, dict]) -> list[Finding]:
+    """P1 si algun crawl se corto por presupuesto de tiempo: la cobertura es
+    PARCIAL (pueden faltar estados sin descubrir), por lo que NO puede emitirse
+    un PASS general honesto. Mantiene al Sentinel honesto cuando una app se
+    vuelve patologicamente lenta o entra en un flujo que no converge."""
+    out = []
+    for key, g in graphs.items():
+        if not g.get("truncated_by_time"):
+            continue
+        budget = g.get("crawl_opts", {}).get("time_budget_secs", 0)
+        out.append(Finding(
+            contract_id="crawl_time_budget", severity="P1",
+            flag="CRAWL_TRUNCATED", screen_id=key, theme=g.get("theme", "?"),
+            message=(f"Crawl {key} truncado por presupuesto de tiempo "
+                     f"({budget:.0f}s) con {g.get('discovered_count', 0)} estados "
+                     f"y {g.get('frontier_remaining', 0)} pendientes: cobertura "
+                     "PARCIAL, no es auditoria completa. Suba NM_SENTINEL_TIME_BUDGET "
+                     "o investigue por que el crawl no converge."),
+            detail={"discovered": g.get("discovered_count"),
+                    "frontier_remaining": g.get("frontier_remaining"),
+                    "time_budget_secs": budget},
+        ))
+    return out
+
+
 def _check_obsolete_recipe_refs(reg: dict) -> list[Finding]:
     out = []
     legacy_markers = ("capture_v8", "runtime_live_probe", "popup-", "-v8")
@@ -2117,13 +2603,22 @@ def _prepare_out_dirs(out_root: Path) -> dict:
 
 
 def _crawl_opts(strict: bool) -> dict:
+    budget = _STRICT_TIME_BUDGET_SECS if strict else _DEFAULT_TIME_BUDGET_SECS
+    env_budget = os.environ.get("NM_SENTINEL_TIME_BUDGET", "").strip()
+    if env_budget:
+        try:
+            budget = max(15, int(float(env_budget)))
+        except ValueError:
+            pass
     if strict:
         return {"max_states": _STRICT_MAX_STATES,
                 "max_depth": _STRICT_MAX_DEPTH,
-                "max_branch": _DEFAULT_MAX_BRANCH}
+                "max_branch": _DEFAULT_MAX_BRANCH,
+                "time_budget_secs": budget}
     return {"max_states": _DEFAULT_MAX_STATES,
             "max_depth": _DEFAULT_MAX_DEPTH,
-            "max_branch": _DEFAULT_MAX_BRANCH}
+            "max_branch": _DEFAULT_MAX_BRANCH,
+            "time_budget_secs": budget}
 
 
 def _compute_result(general_complete: bool, states: list[CapturedState],
@@ -2261,6 +2756,7 @@ def _cmd_audit(args) -> int:
     findings = _run_contracts(all_states, contracts, reg)
     findings += _check_stale(all_states, reg)
     findings += _check_obsolete_recipe_refs(reg)
+    findings += _check_crawl_truncated(graphs)
     findings += _check_font_render_broken(all_states, _FONT_DIAG_CACHE)
     if _FONT_DIAG_CACHE:
         log(f"[SENTINEL FONT] platform={_FONT_DIAG_CACHE.get('platform')} "
