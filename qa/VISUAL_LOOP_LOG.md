@@ -178,7 +178,7 @@ Cada iteración registra:
 ### Iter 5 — Avisos: icon tile 32×32 en cada recordatorio
 
 - **SHA antes:** `994676c` (HEAD previo al iter)
-- **SHA después:** _(se completa al commit)_
+- **SHA después:** `a0f674b57f972c7efd1e7fe7e07d0785b4c6e130`
 - **Pantalla:** Suite · Recordatorios de bienestar (Todos)
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Hábitos/Recordatorios de bienestar/Todos.png` — icon en tile `32×32 surface-3 radius 10` (mockup l.636, mismo lenguaje que homeCard)
