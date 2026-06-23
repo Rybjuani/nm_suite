@@ -340,7 +340,7 @@ class PacientesView(QWidget):
             f"color: {v3c('text', self._modo).name()}; background: transparent;"
         )
         roster_meta.addWidget(self._table_title)
-        self._results_badge = NMBadge("0 pacientes", tone="info", modo=self._modo)
+        self._results_badge = NMBadge("0 pacientes", tone="neutral", modo=self._modo)  # mockup: pill neutral sin color
         roster_meta.addWidget(self._results_badge, alignment=Qt.AlignmentFlag.AlignVCenter)
         self._table_hint = QLabel("Mail, ánimo de 7 días y uso por paciente")
         self._table_hint.setFont(qfont("size_caption_xs"))
