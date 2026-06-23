@@ -859,7 +859,7 @@ class ModuloDBT(NMModule):
 
         needs = [
             ("Volver al presente", "Mindfulness: pausar, enfocar y notar el aquí y ahora.", "mindfulness", "mind"),
-            ("Atravesar un momento intenso", "Tolerancia: superar crisis sin empeorar la situación.", "distress_tolerance", "shield"),
+            ("Atravesar un momento intenso", "Tolerancia: superar la crisis sin empeorar la situación.", "distress_tolerance", "shield"),
             ("Regular una emoción", "Regulación: entender y suavizar sentimientos desbordantes.", "emotion_regulation", "mood"),
             ("Comunicarme con claridad", "Efectividad: pedir límites o dialogar con autorrespeto.", "interpersonal_effectiveness", "handshake"),
         ]
