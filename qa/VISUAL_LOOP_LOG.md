@@ -265,6 +265,217 @@ Cada iteración registra:
 
 **Resultado:** MEJORA — el card del TCC ahora sigue la estructura del mockup (nombre del paso como h2, prompt como subtítulo).
 
+### Iter 8 — Animo stat card: per-card tone (brand / accent)
+
+- **SHA antes:** `1ac17c77c9b9e67d291514c32d0a0a21fac5407d`
+- **SHA después:** _(se completa al commit)_
+- **Pantalla:** Suite · Animo (Termómetro emocional) — cards de Progreso 7d y 30d
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Bienestar/Termómetro emocional/Termómetro emocional.png`
+  - l.715 (7d): `background: var(--brand-soft); color: var(--brand);` para icon
+  - l.721 (30d): `background: var(--accent-soft); color: var(--accent);` para icon
+  - l.717: `7 días seguidos` en color brand
+  - l.723: `12 días` en color accent
+- **Captura real antes:** `qa/_captures_v8/iter2_animo_after/suite-animo-light-960x600.png`
+- **Captura real después:** `qa/_captures_v8/iter8_animo/suite-animo-light-960x600.png`
+
+**Discrepancia detectada** (sev 🟠):
+- Ambas cards "Progreso" usaban `primary_soft` (verde) para el tile del icono y `primary` para el texto del valor. El mockup las diferencia con brand/accent.
+- Audit previo lo marcaba DIFERIDO por requerir extender la API de `_CareStatCard`.
+
+**Fix aplicado** (`app/modules/animo_qt.py`, `_CareStatCard.__init__`, `_apply_theme` y call sites):
+- Nuevo parámetro `tone: str | None = None` en `__init__`.
+- `_apply_theme` calcula `tile_bg_token = (self._tone + "_soft") if self._tone else "primary_soft"`.
+- 7d instanciada con `tone="brand"`, 30d con `tone="accent"`.
+- `_refresh_stats` actualizado para pasar `"brand"`/`"accent"` al `set_tone` del value text (antes pasaba `"primary"`).
+
+**Validación:**
+- ✅ `ruff check app/modules/animo_qt.py` — All checks passed
+- ✅ `pytest tests/test_animo_visual_contract.py` — 3/3 pass
+- ✅ Captura V8 regenerada: 7d con tile verde, 30d con tile naranja
+- ✅ Sin regresión visible
+
+**Resultado:** MEJORA — las cards ahora se diferencian visualmente por tone (brand para 7d, accent para 30d), matcheando mockup l.715-723.
+
+### Iter 9 — TCC: copy de subtítulos y placeholder
+
+- **SHA antes:** `8594cefdcb5adece7eddc03fae4a4b1e376bc20b`
+- **SHA después:** _(se completa al commit)_
+- **Pantalla:** Suite · Registro de pensamientos (TCC) — todos los pasos
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Cognitivo/Registro de pensamientos (TCC)/*.png`
+  - l.1223 (s0): `¿Qué pasó? Describí el momento de forma concreta y objetiva.`
+  - l.1224 (s0 placeholder): `Ej: En la reunión me preguntaron por el reporte y no supe qué responder…`
+  - l.1230 (s1): `¿Qué sentiste? Elegí la emoción más intensa y su nivel.`
+  - l.1241 (s2): `¿Qué pensaste en ese momento? Escribilo tal como apareció.`
+  - l.1260 (s3): `Reformulá el pensamiento de forma más equilibrada y realista.`
+- **Captura real antes:** `qa/_captures_v8/iter7_tcc/suite-registro-light-960x600.png`
+- **Captura real después:** `qa/_captures_v8/iter9_tcc/suite-registro-light-960x600.png`
+
+**Discrepancia detectada** (sev 🟡):
+- Los 4 prompts eran cortos y no coincidian con el mockup. El placeholder del paso 0 era `Escribí lo que pasó…` (genérico) vs `Ej: En la reunión me preguntaron por el reporte y no supe qué responder…` (ejemplo concreto).
+
+**Fix aplicado** (`app/modules/registro_tcc_qt.py` + `shared/suite_text_catalog.py`):
+- Los 4 prompts en `DEFAULT_TCC_TEMPLATE` actualizados al copy del mockup.
+- Los 4 fallbacks en `_build_page_*` también actualizados (por si el template se overridea).
+- El placeholder por defecto en `suite_text_catalog.py` actualizado a la versión del mockup.
+
+**Validación:**
+- ✅ `ruff check app/modules/registro_tcc_qt.py shared/suite_text_catalog.py` — All checks passed
+- ✅ `pytest tests/test_registro_tcc_visual_contract.py` — 7/7 pass
+- ✅ Captura V8 regenerada: subtítulos y placeholder matchean mockup
+- ✅ Sin regresión visible
+
+**Resultado:** MEJORA — los textos del TCC ahora coinciden con el mockup.
+
+### Iter 10 — Animo stat card: value + subtitle copy
+
+- **SHA antes:** `992815f371328f9ade61900d9346bca9f61e959c`
+- **SHA después:** _(se completa al commit)_
+- **Pantalla:** Suite · Animo — cards de Progreso 7d y 30d
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Bienestar/Termómetro emocional/Termómetro emocional.png`
+  - l.717 (7d value): `7 días seguidos` (color brand)
+  - l.718 (7d subtitle): `con registro esta semana`
+  - l.723 (30d value): `12 días` (color accent)
+  - l.724 (30d subtitle): `con registro este mes`
+- **Captura real antes:** `qa/_captures_v8/iter8_animo/suite-animo-light-960x600.png`
+- **Captura real después:** `qa/_captures_v8/iter10_animo/suite-animo-light-960x600.png`
+
+**Discrepancia detectada** (sev 🟡):
+- Real: value `7 días` (sin "seguidos") y subtitle `Días seguidos con registro esta semana.` (duplicaba la palabra "seguidos" que en el mockup vive en el value).
+- Mockup: la palabra "seguidos" está en el value (`7 días seguidos`), y el subtitle es solo `con registro esta semana`.
+
+**Fix aplicado** (`app/modules/animo_qt.py`):
+- Default value en `__init__` de cada card: `"0 días seguidos"`.
+- Subtitle (message): `"con registro esta semana"` / `"con registro este mes"`.
+- `set_value` en `_refresh_stats`: `"1 día seguido"` si es 1, sino `f"{n} días seguidos"`.
+- `set_message` en `_refresh_stats`: el copy corto del mockup.
+
+**Validación:**
+- ✅ `ruff check app/modules/animo_qt.py` — All checks passed
+- ✅ `pytest tests/test_animo_visual_contract.py` — 3/3 pass
+- ✅ Captura V8 regenerada: value "7 días seguidos" + subtitle "con registro esta semana"
+- ✅ Sin regresión visible
+
+**Resultado:** MEJORA — la estructura del value/subtitle ahora coincide con el mockup.
+
+### Iter 11 — Rutina banner: subtitle copy
+
+- **SHA antes:** `f575d4028888e55ff581169c00033583ac53c624`
+- **SHA después:** _(se completa al commit)_
+- **Pantalla:** Suite · Checklist de rutina diaria — banner superior
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Hábitos/Checklist de rutina/Con tareas.png` — `Vas por buen camino, seguí así.` (l.1218)
+- **Captura real antes:** `qa/_captures_v8/iter5_rutina/suite-rutina-light-960x600.png`
+- **Captura real después:** `qa/_captures_v8/iter11_rutina/suite-rutina-light-960x600.png`
+
+**Discrepancia detectada** (sev 🟡):
+- Real: `X% del día completado.` (duplicaba el dato numérico del título "N de M tareas completadas").
+- Mockup: `Vas por buen camino, seguí así.` (copy motivacional, no repite el número).
+
+**Fix aplicado** (`app/modules/rutina_qt.py`, `set_progress`):
+- `self._desc_lbl.setText("¡Excelente! Rutina del día completa." if pct >= 1.0 else "Vas por buen camino, seguí así.")`
+
+**Validación:**
+- ✅ `ruff check app/modules/rutina_qt.py` — All checks passed
+- ✅ `pytest tests/test_rutina_visual_contract.py` — 2/2 pass
+- ✅ Captura V8 regenerada: banner con "Vas por buen camino, seguí así."
+- ✅ Sin regresión visible
+
+**Resultado:** MEJORA — el banner ahora usa copy motivacional en lugar de repetir el porcentaje.
+
+### Iter 12 — Activación conductual: voseo + "de forma"
+
+- **SHA antes:** `a73b26563d499b0a90e8f56b85a41837cb41204c`
+- **SHA después:** _(se completa al commit)_
+- **Pantalla:** Suite · Activación conductual — descripciones de actividades
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Cognitivo/Activación conductual/Sugerencias.png` — l.972-975
+  - Caminata 20 min: `mejora el ánimo de forma significativa`
+  - Escuchar música: `Armá una playlist de canciones que te gusten.`
+  - Diario de 5 min: `Escribí 3 cosas que funcionaron hoy, aunque sean pequeñas.`
+- **Captura real antes:** `qa/_captures_v8/iter5_rutina/suite-rutina-light-960x600.png` (módulo de actividades)
+- **Captura real después:** `qa/_captures_v8/iter12_actividades/suite-actividades-light-960x600.png`
+
+**Discrepancia detectada** (sev 🟡):
+- Real: `mejora el estado de ánimo de manera significativa` (sobra "estado de", "manera" en vez de "forma")
+- Real: `Arma una playlist` (sin tilde, falta voseo)
+- Real: `Escribe 3 cosas` (falta tilde, falta voseo)
+
+**Fix aplicado** (`shared/visual_qa.py`, `activity_suggestions`):
+- Caminata: `"mejora el ánimo de forma significativa"` (sin "estado de", "forma" en vez de "manera")
+- Escuchar música: `"Armá una playlist..."` (voseo)
+- Diario: `"Escribí 3 cosas..."` (voseo)
+
+**Validación:**
+- ✅ `ruff check shared/visual_qa.py` — All checks passed
+- ✅ `pytest tests/test_actividades_visual_contract.py` — 4/4 pass
+- ✅ Sin regresión visible
+
+**Resultado:** MEJORA — los 3 textos ahora matchean el mockup (incluye voseo argentino).
+
+### Iter 13 — DBT: "superar la crisis" (artículo)
+
+- **SHA antes:** `1920ff83297998fd206288aa5d04b7e787d1d85b`
+- **SHA después:** _(se completa al commit)_
+- **Pantalla:** Suite · Habilidades DBT — skill "Atravesar un momento intenso"
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Habilidades DBT/Habilidades DBT · Biblioteca/Habilidades DBT · Biblioteca.png` — l.1104: `Tolerancia: superar la crisis sin empeorar la situación.`
+- **Discrepancia detectada** (sev 🟡): Faltaba el artículo "la" — `superar crisis` → `superar la crisis`.
+- **Fix aplicado** (`app/modules/dbt_qt.py`): 1 carácter agregado.
+- **Validación:** ruff OK, `pytest tests/test_dbt_visual_contract.py` — 5/5 pass, sin regresión.
+- **Resultado:** MEJORA — copy coincide con mockup.
+
+### Iter 14 — Home: glow radial en hero card
+
+- **SHA antes:** `9535f41e80b143fb21f42fb791c2a8ea5a3b19b2`
+- **SHA después:** _(se completa al commit)_
+- **Pantalla:** Suite · Home — hero card superior
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Inicio/Home/Con puntaje.png` — l.667: `<div style="position:absolute; right:-30px; top:-40px; width:200px; height:200px; border-radius:50%; background:radial-gradient(circle, var(--brand-soft), transparent 70%);">`
+- **Captura real antes:** `qa/_captures_v8/iter_loop_home_v8_2/suite-home-light-960x600.png`
+- **Captura real después:** `qa/_captures_v8/iter14_home/suite-home-light-960x600.png`
+
+**Discrepancia detectada** (sev 🟡):
+- El hero usaba solo `linear-gradient surface → surface2` sin glow. El mockup agrega un radial-gradient brand-soft → transparent en upper-right (200×200, position right:-30 top:-40) que da calidez.
+
+**Fix aplicado** (`app/home_qt.py`, `_HeroBienestar.paintEvent`):
+- Agregado `QRadialGradient` después del linear gradient.
+- Color: `v3c("brand_soft", modo)`, radio 200, centro en (w-30, -40).
+- Fade a 0 al 70% del radio.
+- Repaint del roundedRect con el glow encima (el clip lo mantiene dentro del card).
+
+**Validación:**
+- ✅ `ruff check app/home_qt.py` — All checks passed
+- ✅ `pytest tests/test_home_visual_contract.py` — 7/7 pass
+- ✅ Captura V8 regenerada: glow sutil visible en upper-right
+- ✅ Sin regresión visible
+
+**Resultado:** MEJORA — el hero ahora tiene el glow radial del mockup, dándole calidez y diferenciándolo del resto de cards.
+
+---
+
+## Resumen final del loop (14 iteraciones)
+
+- **Iteraciones completadas:** 14 (cada una con 1 commit de fix + 1 commit de docs con SHA)
+- **Pantallas corregidas:**
+  1. Suite · Home (3 cards con título wrappeado a 1 línea)
+  2. Suite · Animo (icon tile "Progreso" a rounded square 42×42)
+  3. Hub · Detalle de paciente (empty state con dashed border)
+  4. Suite · Registro TCC (textarea max 120 para que el contador 0/500 respire)
+  5. Suite · Recordatorios (icon tile 32×32 en cada item)
+  6. Hub · Textos globales (separador bajo la fila de controles)
+  7. Suite · TCC (título = nombre del paso, prompt = subtítulo)
+  8. Suite · Animo (per-card tone: brand para 7d, accent para 30d)
+  9. Suite · TCC (copy de subtítulos y placeholder alineados al mockup)
+  10. Suite · Animo (value "N días seguidos" + subtitle "con registro...")
+  11. Suite · Rutina (banner subtitle: "Vas por buen camino, seguí así.")
+  12. Suite · Activación (voseo + "de forma" en descripciones)
+  13. Suite · DBT (artículo "la" en "superar la crisis")
+  14. Suite · Home (glow radial en upper-right del hero)
+- **Tests:** 88+ visual contracts pass en aislamiento.
+- **Capturas V8:** todas las pantallas regeneradas sin regresión.
+
+## Confirmación explícita final
+
+> **NO es PASS visual global.** Quedan 5 ítems DIFERIDOS pendientes: slider dots del Animo (funcional), ícono Respiración leaf/drop (decisión de diseño), status chip "Hoy"/"Activo" (dato), contador 158/145 (dato), ancho del input de recordatorio (texto correcto, ancho insuficiente). El loop cerró 14 divergencias accionables: 7 estructurales + 7 de copy/visual.
+
 
 ---
 
