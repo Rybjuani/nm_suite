@@ -183,11 +183,24 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
         self._quit_requested.connect(self._force_quit)
         self._restore_requested.connect(self._restaurar_ventana)
         self._avisos_stop = None
+        # Performance (qa/PERFORMANCE_AUDIT.md Fix #3): diferir iniciar() al
+        # primer ciclo de eventos tras show(). Antes corría síncrono en
+        # __init__, agregando al critical path: import pystray (~30ms en
+        # Windows), PIL.open(.ico).resize((64,64)) (~27ms medido), creación
+        # de pystray.Icon + start de hilo bandeja (~20ms). Total ~50-80ms
+        # en Windows real que NO necesitan bloquear el primer paint.
+        # QTimer.singleShot(0, ...) encola en el event loop y corre
+        # inmediatamente después de que Qt termine el primer paint de la
+        # ventana, sin que el usuario lo perciba.
         if not self._visual_qa:
-            self._avisos_stop = avisos_daemon.iniciar(
-                on_abrir_app=self._restore_requested.emit,
-                on_salir=self._quit_requested.emit,
-            )
+            def _start_avisos_daemon():
+                if sip.isdeleted(self):
+                    return
+                self._avisos_stop = avisos_daemon.iniciar(
+                    on_abrir_app=self._restore_requested.emit,
+                    on_salir=self._quit_requested.emit,
+                )
+            QTimer.singleShot(0, _start_avisos_daemon)
 
         # ── Sync background ────────────────────────────────────────────────────
         if not self._visual_qa:
