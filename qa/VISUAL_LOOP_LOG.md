@@ -241,7 +241,7 @@ Cada iteración registra:
 ### Iter 7 — TCC: título de paso = nombre (no prompt)
 
 - **SHA antes:** `7541f1b` (HEAD previo al iter)
-- **SHA después:** _(se completa al commit)_
+- **SHA después:** `1ac17c77c9b9e67d291514c32d0a0a21fac5407d`
 - **Pantalla:** Suite · Registro de pensamientos (TCC) — todos los pasos
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Cognitivo/Registro de pensamientos (TCC)/Situación.png` — `<h2 class="h-serif" style="font-size:19px">Situación</h2>` + `<p>¿Qué pasó? Describí el momento de forma concreta y objetiva.</p>` (mockup l.1222-1223)
