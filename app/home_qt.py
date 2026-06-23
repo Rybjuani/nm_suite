@@ -37,6 +37,7 @@ from PyQt6.QtGui import (
     QPen,
     QBrush,
     QLinearGradient,
+    QRadialGradient,
 )
 from PyQt6.QtWidgets import (
     QWidget,
@@ -775,6 +776,17 @@ class _HeroBienestar(QFrame):
         grad.setColorAt(1.0, c2)
 
         p.setBrush(QBrush(grad))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawRoundedRect(rect, r, r)
+
+        # Mockup l.667: glow radial en upper-right (brand-soft → transparent,
+        # 200x200 en right:-30 top:-40). Da calidez al hero y lo diferencia
+        # del resto de cards (que usan solo surface sólido).
+        glow_color = v3c("brand_soft", self._modo)
+        glow = QRadialGradient(w - 30, -40, 200)
+        glow.setColorAt(0.0, glow_color)
+        glow.setColorAt(0.7, QColor(glow_color.red(), glow_color.green(), glow_color.blue(), 0))
+        p.setBrush(QBrush(glow))
         p.setPen(Qt.PenStyle.NoPen)
         p.drawRoundedRect(rect, r, r)
 
