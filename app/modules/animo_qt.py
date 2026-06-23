@@ -428,18 +428,23 @@ class ModuloAnimo(NMModule):
         # tienen que reflejar el mismo rango para no quedar desfasadas.
         # Mockup l.715/l.721: 7d usa brand, 30d usa accent. Antes ambas
         # usaban primary (verde) y no se diferenciaban visualmente.
+        # Mockup l.715/l.721: value = 'N días' y subtitle = 'con registro
+        # esta semana'/'con registro este mes' (sin la palabra 'seguidos'
+        # en el subtitle — el 'seguidos' vive dentro del value via 'N días
+        # seguidos' en el mockup). El código anterior duplicaba 'seguidos'
+        # en ambos lugares.
         self._stat_streak_7 = _CareStatCard(
             "Progreso 7 días",
-            "0 días",
-            "Días seguidos con registro esta semana.",
+            "0 días seguidos",
+            "con registro esta semana",
             modo=self._modo,
             icon_name="spark",
             tone="brand",
         )
         self._stat_streak_30 = _CareStatCard(
             "Progreso 30 días",
-            "0 días",
-            "Días seguidos con registro este mes.",
+            "0 días seguidos",
+            "con registro este mes",
             modo=self._modo,
             icon_name="spark",
             tone="accent",
@@ -690,12 +695,12 @@ class ModuloAnimo(NMModule):
         streak_7 = self._load_streak(days=7)
         streak_30 = self._load_streak(days=30)
         if hasattr(self, "_stat_streak_7"):
-            self._stat_streak_7.set_value("1 día" if streak_7 == 1 else f"{streak_7} días")
-            self._stat_streak_7.set_message("Días seguidos con registro esta semana.")
+            self._stat_streak_7.set_value("1 día seguido" if streak_7 == 1 else f"{streak_7} días seguidos")
+            self._stat_streak_7.set_message("con registro esta semana")
             self._stat_streak_7.set_tone("brand" if streak_7 else None)
         if hasattr(self, "_stat_streak_30"):
-            self._stat_streak_30.set_value("1 día" if streak_30 == 1 else f"{streak_30} días")
-            self._stat_streak_30.set_message("Días seguidos con registro este mes.")
+            self._stat_streak_30.set_value("1 día seguido" if streak_30 == 1 else f"{streak_30} días seguidos")
+            self._stat_streak_30.set_message("con registro este mes")
             self._stat_streak_30.set_tone("accent" if streak_30 else None)
 
     # ── registrar (lógica preservada exacta) ─────────────────────────────────
