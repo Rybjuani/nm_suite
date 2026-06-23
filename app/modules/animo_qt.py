@@ -142,6 +142,7 @@ class _CareStatCard(NMCard):
         modo: str = None,
         parent=None,
         icon_name: str = "chart",
+        tone: str | None = None,
     ):
         super().__init__(parent=parent, modo=modo, clickable=False, glow=False)
         self.setMinimumHeight(96)
@@ -153,6 +154,12 @@ class _CareStatCard(NMCard):
         lay.setSpacing(14)
         lay.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
+        # Tone define el color del tile del icono y del valor.
+        # Mockup l.715 (Progreso 7d): brand-soft bg + brand color
+        # Mockup l.721 (Progreso 30d): accent-soft bg + accent color
+        # Antes ambas cards usaban primary_soft (verde) y no se diferenciaban.
+        self._tone = tone
+        icon_color_key = tone if tone else "primary"
         self._icon_tile = QFrame(self)
         self._icon_tile.setObjectName("MoodStatIconTile")
         # Mockup l.715: tile 42×42 con border-radius 12px (no círculo) y sparkle
@@ -163,7 +170,7 @@ class _CareStatCard(NMCard):
         icon_lay = QVBoxLayout(self._icon_tile)
         icon_lay.setContentsMargins(0, 0, 0, 0)
         icon_lay.setSpacing(0)
-        self._icon = NMIcon(icon_name, size=20, color_key="primary", modo=self._modo)
+        self._icon = NMIcon(icon_name, size=20, color_key=icon_color_key, modo=self._modo)
         icon_lay.addWidget(self._icon, 0, Qt.AlignmentFlag.AlignCenter)
         lay.addWidget(self._icon_tile, 0, Qt.AlignmentFlag.AlignVCenter)
 
@@ -223,7 +230,11 @@ class _CareStatCard(NMCard):
 
     def _apply_theme(self, modo: str):
         super()._apply_theme(modo)
-        tile_bg = qcolor_to_rgba_css(v3c("primary_soft", self._modo))
+        # Tile bg sigue al tone: brand-soft para 7d, accent-soft para 30d
+        # (mockup l.715 / l.721). Antes siempre primary_soft (verde) — no
+        # se diferenciaban las 2 cards.
+        tile_bg_token = (self._tone + "_soft") if self._tone else "primary_soft"
+        tile_bg = qcolor_to_rgba_css(v3c(tile_bg_token, self._modo))
         border = qcolor_to_rgba_css(v3c("border", self._modo))
         self._icon_tile.setStyleSheet(
             "QFrame#MoodStatIconTile {"
@@ -415,12 +426,15 @@ class ModuloAnimo(NMModule):
         # referencia, para que el panel de historial pueda ocupar toda la derecha.
         # El chart ya muestra 7/30 días por separado, así que las stats
         # tienen que reflejar el mismo rango para no quedar desfasadas.
+        # Mockup l.715/l.721: 7d usa brand, 30d usa accent. Antes ambas
+        # usaban primary (verde) y no se diferenciaban visualmente.
         self._stat_streak_7 = _CareStatCard(
             "Progreso 7 días",
             "0 días",
             "Días seguidos con registro esta semana.",
             modo=self._modo,
             icon_name="spark",
+            tone="brand",
         )
         self._stat_streak_30 = _CareStatCard(
             "Progreso 30 días",
@@ -428,6 +442,7 @@ class ModuloAnimo(NMModule):
             "Días seguidos con registro este mes.",
             modo=self._modo,
             icon_name="spark",
+            tone="accent",
         )
         self._stat_cards = [self._stat_streak_7, self._stat_streak_30]
 
@@ -677,11 +692,11 @@ class ModuloAnimo(NMModule):
         if hasattr(self, "_stat_streak_7"):
             self._stat_streak_7.set_value("1 día" if streak_7 == 1 else f"{streak_7} días")
             self._stat_streak_7.set_message("Días seguidos con registro esta semana.")
-            self._stat_streak_7.set_tone("primary" if streak_7 else None)
+            self._stat_streak_7.set_tone("brand" if streak_7 else None)
         if hasattr(self, "_stat_streak_30"):
             self._stat_streak_30.set_value("1 día" if streak_30 == 1 else f"{streak_30} días")
             self._stat_streak_30.set_message("Días seguidos con registro este mes.")
-            self._stat_streak_30.set_tone("primary" if streak_30 else None)
+            self._stat_streak_30.set_tone("accent" if streak_30 else None)
 
     # ── registrar (lógica preservada exacta) ─────────────────────────────────
 
