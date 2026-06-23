@@ -46,12 +46,14 @@ def activity_suggestions() -> list[dict]:
     return [
         {
             "nombre": "Caminata 20 min",
-            "descripcion": "Salir a caminar activa el sistema nervioso y mejora el estado de ánimo de manera significativa.",
+            # Mockup l.972: 'mejora el animo de forma significativa' (no 'de manera').
+            "descripcion": "Salir a caminar activa el sistema nervioso y mejora el ánimo de forma significativa.",
             "categoria": "Fisica",
         },
         {
             "nombre": "Escuchar música",
-            "descripcion": "Arma una playlist de canciones que te gusten. El placer musical activa circuitos de recompensa.",
+            # Mockup l.973: 'Arma' -> 'Arma' (voseo).
+            "descripcion": "Armá una playlist de canciones que te gusten. El placer musical activa circuitos de recompensa.",
             "categoria": "Placer",
         },
         {
@@ -62,7 +64,8 @@ def activity_suggestions() -> list[dict]:
         },
         {
             "nombre": "Diario de 5 min",
-            "descripcion": "Escribe 3 cosas que funcionaron hoy, aunque sean pequeñas.",
+            # Mockup l.975: 'Escribe' -> 'Escribi' (voseo).
+            "descripcion": "Escribí 3 cosas que funcionaron hoy, aunque sean pequeñas.",
             "categoria": "Maestria",
         },
     ]
