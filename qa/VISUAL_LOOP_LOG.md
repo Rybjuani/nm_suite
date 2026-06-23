@@ -451,6 +451,124 @@ Cada iteración registra:
 
 ---
 
+---
+
+### Iter 15 — Respiración: chips de duración centrados
+
+- **SHA antes:** `e9af633` · **SHA después:** `184a63b`
+- **Pantalla:** Suite · Respiración (idle)
+- **Discrepancia:** Chips 3/5/10 min alineados a la derecha (solo leading stretch). Mockup: centrados.
+- **Fix:** `app/modules/respiracion_qt.py` — añadido `header_l.addStretch()` trailing después de los chips.
+- **Resultado:** MEJORA ✅
+
+### Iter 16 — DBT: copy "Acción opuesta" y "DEAR MAN"
+
+- **SHA antes:** `184a63b` · **SHA después:** `156172f`
+- **Pantalla:** Suite · DBT Biblioteca
+- **Discrepancia:** Summaries de "Acción opuesta" y "DEAR MAN" con texto extra vs mockup l.1098-1100.
+- **Fix:** `app/modules/dbt_qt.py` — "de forma contraria al impulso cuando no coincide con los hechos" / "necesidad o pedido".
+- **Resultado:** MEJORA ✅
+
+### Iter 17 — (sin commit separado — incluido en iter 16)
+
+### Iter 18 — DBT: copy "GIVE / FAST"
+
+- **SHA antes:** `156172f` · **SHA después:** `ec74d6a`
+- **Pantalla:** Suite · DBT Biblioteca
+- **Discrepancia:** Summary "GIVE / FAST" con "en tus interacciones" extra vs mockup.
+- **Fix:** `app/modules/dbt_qt.py` — "Checklist para cuidar la relación y mantener el autorrespeto."
+- **Resultado:** MEJORA ✅
+
+### Iter 19 — Home: CTA "Registrar ahora" en hero empty state
+
+- **SHA antes:** `ec74d6a` · **SHA después:** `26f44d0`
+- **Pantalla:** Suite · Home (sin puntaje)
+- **Discrepancia:** Mockup l.673: botón "Registrar ahora" inline en el hero vacío — ausente en app.
+- **Fix:** `app/home_qt.py` — NMButton "Registrar ahora" añadido en `_HeroBienestar._build_ui()`.
+- **Resultado:** MEJORA ✅
+
+### Iter 20 — Home: "Sin registro hoy" badge + fix _force_no_score
+
+- **SHA antes:** `26f44d0` · **SHA después:** `84dc0e3`
+- **Pantallas:** Suite · Home (sin puntaje)
+- **Discrepancia:** Card animo sin badge en estado vacío; `_force_no_score` borraba todos los módulos.
+- **Fix:** `app/home_qt.py` + `qa/capture_v8.py` — badge "Sin registro hoy" (gold) + helper solo limpia animo.
+- **Resultado:** MEJORA ✅
+
+### Iter 21 — Hub Activación: botones apilados full-width + copy placeholders
+
+- **SHA antes:** `84dc0e3` · **SHA después:** `eecf765`
+- **Pantalla:** Hub · Detalle · Asistente de Activación Conductual
+- **Discrepancia:** Mockup l.1479-1480: botones apilados full-width. App tenía inline row.
+- **Fix:** `hub/plan_terapeutico.py` — botones en `form_lay` directo (no `action_row`); copy placeholders.
+- **Resultado:** MEJORA ✅
+
+### Iter 22 — DBT práctica: título "TOLERANCIA AL MALESTAR"
+
+- **SHA antes:** `eecf765` · **SHA después:** `c12b18e`
+- **Pantalla:** Suite · DBT Práctica (modal STOP paso 2)
+- **Discrepancia:** Modal header mostraba "STOP · TOLERANCIA" (nombre corto). Mockup: "TOLERANCIA AL MALESTAR".
+- **Fix:** `app/modules/dbt_qt.py` — `_DBT_FAMILY_TITLES` → `_DBT_FAMILY_LONG_TITLES` en `_setup_ui` del modal.
+- **Resultado:** MEJORA ✅
+
+### Iter 23 — TCC Situación: contador 0/500 alineado a izquierda
+
+- **SHA antes:** `c12b18e` · **SHA después:** `59bc562`
+- **Pantalla:** Suite · TCC Situación
+- **Discrepancia:** `_situacion_count_lbl` tenía `AlignRight`. Mockup: left-aligned.
+- **Fix:** `app/modules/registro_tcc_qt.py` — `AlignRight` → `AlignLeft`.
+- **Resultado:** MEJORA ✅
+
+### Iter 24 — TCC Pensamiento: título completo + eyebrows sin uppercase
+
+- **SHA antes:** `59bc562` · **SHA después:** `411327c`
+- **Pantalla:** Suite · TCC Pensamiento (con distorsiones)
+- **Discrepancia:** Card title "Pensamiento" (corto); eyebrows "POSIBLES DISTORSIONES" / "TIP TERAPÉUTICO" en ALL CAPS. Mockup: título completo, sentence case.
+- **Fix:** `app/modules/registro_tcc_qt.py` — title → "Pensamiento automático"; `eyebrow_font()` → `qfont(size_caption_xs, semibold)`.
+- **Resultado:** MEJORA ✅
+
+### Iter 25 — Animo: racha 30d sin "seguidos"
+
+- **SHA antes:** `411327c` · **SHA después:** `71dadf5`
+- **Pantalla:** Suite · Animo (Termómetro emocional)
+- **Discrepancia:** Tarjeta 30d mostraba "12 días seguidos". Mockup l.721: "12 días".
+- **Fix:** `app/modules/animo_qt.py` — formato `f"{streak_30} días"` sin "seguidos".
+- **Resultado:** MEJORA ✅
+
+### Iter 26 — TCC stepper: label corto "Pensamiento" en paso 3
+
+- **SHA antes:** `71dadf5` · **SHA después:** `262e007`
+- **Pantalla:** Suite · TCC (todos los pasos)
+- **Discrepancia:** Stepper mostraba "Pensamiento automáti..." truncado. Mockup stepper: "Pensamiento".
+- **Fix:** `app/modules/registro_tcc_qt.py` — `stepper_label` separado del `title` en `_step_defs`.
+- **Resultado:** MEJORA ✅
+
+### Iter 27 — TCC Emoción: "Frustración" + label intensidad estático
+
+- **SHA antes:** `262e007` · **SHA después:** `48ba925`
+- **Pantalla:** Suite · TCC Emoción
+- **Discrepancias:** "Soledad" → "Frustración" (mockup); label "Intensidad: 50 (0–100)" → "Intensidad (0–100)" estático.
+- **Fix:** `app/modules/registro_tcc_qt.py` — nombre emoción 7 + label sin valor numérico.
+- **Resultado:** MEJORA ✅
+
+### Iter 28 — Hub Recordatorios: campo mensaje como textarea multilinea
+
+- **SHA antes:** `48ba925` · **SHA después:** `4f3fc8e`
+- **Pantalla:** Hub · Detalle · Recordatorios de Bienestar
+- **Discrepancia:** Campo "Mensaje del recordatorio" era NMInput (single-line). Mockup: textarea multilinea.
+- **Fix:** `hub/plan_terapeutico.py` — NMInput → NMTextArea (min_height=72, max_length=150).
+- **Resultado:** MEJORA ✅
+
+### Iter 29 — Hub Pacientes: icono ≡ en botón "Textos globales"
+
+- **SHA antes:** `4f3fc8e` · **SHA después:** `defccdb`
+- **Pantalla:** Hub · Pacientes
+- **Discrepancia:** Botón "Textos globales" sin icono. Mockup: ≡ (list icon) a la izquierda.
+- **Fix:** `hub/main_qt.py` — `icon_name="list"` + `width=155`.
+- **Resultado:** MEJORA ✅
+
+---
+
 ## Resumen final del loop (14 iteraciones)
 
 - **Iteraciones completadas:** 14 (cada una con 1 commit de fix + 1 commit de docs con SHA)
