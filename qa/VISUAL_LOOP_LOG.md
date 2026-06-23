@@ -210,7 +210,7 @@ Cada iteración registra:
 ### Iter 6 — Textos globales: separador bajo la fila de controles
 
 - **SHA antes:** `903663f` (HEAD previo al iter)
-- **SHA después:** _(se completa al commit)_
+- **SHA después:** `6f849f9c4619ca5bb5847250fdc62f1cd7942ae0`
 - **Pantalla:** Hub · Configuración · Textos globales
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Hub · Clínico/Configuración/Textos globales/Textos globales.png` — `.tg-top` con `padding-bottom:16px; border-bottom:1px solid var(--line)` (mockup l.383)
