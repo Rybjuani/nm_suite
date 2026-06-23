@@ -109,7 +109,7 @@ Cada iteración registra:
 ### Iter 3 — Hub Detalle: empty state con borde dashed (Plan terapéutico)
 
 - **SHA antes:** `e8ecfe6` (HEAD previo al iter)
-- **SHA después:** `4d4f1d7...` _(se completa al commit)_
+- **SHA después:** `87c03bf78fb191adfc26d9a8177c93f9d1dd1618`
 - **Pantalla:** Hub · Detalle de paciente · tab Recordatorios (y aplica a Rutina/Activación)
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Hub · Clínico/Pacientes/Detalle de paciente/Detalle de paciente.png` — caja con `border: 1px dashed var(--line); border-radius: 16px; padding: 40px 16px` (mockup l.1495)
