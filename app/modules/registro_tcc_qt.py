@@ -169,29 +169,33 @@ DEFAULT_TCC_TEMPLATE = {
         {
             "order": 0,
             "title": "Situación",
-            "prompt": "¿Qué pasó?",
-            "hint": "Contá en pocas palabras qué estaba pasando.",
+            # Mockup l.1223: subtítulo del card = prompt del paso.
+            "prompt": "¿Qué pasó? Describí el momento de forma concreta y objetiva.",
+            "hint": "",
             "required": True,
         },
         {
             "order": 1,
             "title": "Emoción",
-            "prompt": "¿Qué sentiste?",
+            # Mockup l.1230.
+            "prompt": "¿Qué sentiste? Elegí la emoción más intensa y su nivel.",
             "hint": "",
             "required": True,
         },
         {
             "order": 2,
             "title": "Pensamiento",
-            "prompt": "Pensamiento automático",
-            "hint": "¿Qué pensaste en ese momento? Escribilo tal como apareció.",
+            # Mockup l.1241.
+            "prompt": "¿Qué pensaste en ese momento? Escribilo tal como apareció.",
+            "hint": "",
             "required": True,
         },
         {
             "order": 3,
             "title": "Respuesta",
-            "prompt": "Respuesta alternativa",
-            "hint": "¿Cómo podrías pensar de manera más equilibrada y compasiva?",
+            # Mockup l.1260.
+            "prompt": "Reformulá el pensamiento de forma más equilibrada y realista.",
+            "hint": "",
             "required": False,
         },
     ],
@@ -835,12 +839,12 @@ class ModuloRegistroTCC(NMModule):
         for lbl in self._make_title(
             # Mockup l.1222-1223: titulo = nombre del paso, subtitulo = pregunta.
             self._step_name(0, "Situación"),
-            self._step_prompt(0, "¿Qué pasó?"),
+            self._step_prompt(0, "¿Qué pasó? Describí el momento de forma concreta y objetiva."),
         ):
             layout.addWidget(lbl)
 
         self._txt_situacion = NMTextArea(
-            t("text.module.registro.situation_placeholder", "Escribí lo que pasó…"),
+            t("text.module.registro.situation_placeholder", "Ej: En la reunión me preguntaron por el reporte y no supe qué responder…"),
             modo=self._modo,
             min_height=120,
         )
@@ -865,7 +869,7 @@ class ModuloRegistroTCC(NMModule):
         layout.setContentsMargins(12, 8, 12, 8)
         for lbl in self._make_title(
             self._step_name(1, "Emoción"),
-            self._step_prompt(1, "¿Qué sentiste?"),
+            self._step_prompt(1, "¿Qué sentiste? Elegí la emoción más intensa y su nivel."),
         ):
             layout.addWidget(lbl)
 
@@ -989,7 +993,7 @@ class ModuloRegistroTCC(NMModule):
         layout.setContentsMargins(12, 8, 12, 8)
         for lbl in self._make_title(
             self._step_name(2, "Pensamiento"),
-            self._step_prompt(2, "Pensamiento automático"),
+            self._step_prompt(2, "¿Qué pensaste en ese momento? Escribilo tal como apareció."),
         ):
             layout.addWidget(lbl)
 
@@ -1066,7 +1070,7 @@ class ModuloRegistroTCC(NMModule):
         layout.setContentsMargins(12, 8, 12, 8)
         for lbl in self._make_title(
             self._step_name(3, "Respuesta"),
-            self._step_prompt(3, "Respuesta alternativa"),
+            self._step_prompt(3, "Reformulá el pensamiento de forma más equilibrada y realista."),
         ):
             layout.addWidget(lbl)
 

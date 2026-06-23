@@ -253,7 +253,7 @@ _add("text.module.registro.eyebrow", "TCC", "Título del módulo oculto", "Regis
 _add("text.module.registro.prev_btn", "TCC", "Botón anterior", "Anterior", 32)
 _add("text.module.registro.next_btn", "TCC", "Botón siguiente", "Siguiente", 32)
 _add("text.module.registro.save_btn", "TCC", "Botón guardar", "Guardar registro", 40)
-_add("text.module.registro.situation_placeholder", "TCC", "Placeholder situación", "Escribí lo que pasó…", 80)
+_add("text.module.registro.situation_placeholder", "TCC", "Placeholder situación", "Ej: En la reunión me preguntaron por el reporte y no supe qué responder…", 80)
 _add("text.module.registro.other_emotion_placeholder", "TCC", "Placeholder otra emoción", "Nombrá tu emoción…", 48)
 _add(
     "text.module.registro.thought_placeholder",
