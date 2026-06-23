@@ -74,23 +74,20 @@ class _TextEntryRow(NMCard):
         meta_col.addWidget(self._field_lbl)
         lay.addLayout(meta_col, stretch=1)
 
-        self._default_lbl = QLabel(self.entry.default)
-        self._default_lbl.setWordWrap(True)
-        self._default_lbl.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        self._default_lbl.setFont(qfont("size_caption"))
-        self._default_lbl.setMinimumWidth(210)
-        self._default_lbl.setMaximumWidth(300)
-        lay.addWidget(self._default_lbl, stretch=2)
-
+        # El editor lleva el VALOR actual (override si existe, sino el default),
+        # como en el mockup canonico: no hay un label de "valor por defecto" aparte.
+        # El valor se setea ANTES de conectar textChanged para no marcar dirty.
         if self.entry.multiline:
             self.editor = NMTextArea("", modo=self._modo, min_height=64, max_length=self.entry.max_chars)
             self.editor.setMaximumHeight(82)
+            self.editor.setPlainText(self.entry.default)
             self.editor.textChanged.connect(self._on_text_changed)
         else:
             self.editor = NMInput("", modo=self._modo, max_length=self.entry.max_chars)
+            self.editor.setText(self.entry.default)
             self.editor.textChanged.connect(self._on_text_changed)
         self.editor.setMinimumWidth(230)
-        lay.addWidget(self.editor, stretch=2)
+        lay.addWidget(self.editor, stretch=3)
 
         side = QVBoxLayout()
         side.setSpacing(V3_SP["xs"])
@@ -116,13 +113,12 @@ class _TextEntryRow(NMCard):
         if visible == self._interactive_controls_visible:
             return
         self._interactive_controls_visible = visible
-        self.editor.setVisible(visible)
+        # El editor permanece SIEMPRE visible: ahora porta el valor (ya no hay un
+        # label de default aparte que lo cubra fuera del viewport). Solo el boton
+        # Restaurar se oculta fuera de vista (optimizacion menor).
         self._restore_btn.setVisible(visible)
-        if not visible:
-            if self.editor.hasFocus():
-                self.editor.clearFocus()
-            if self._restore_btn.hasFocus():
-                self._restore_btn.clearFocus()
+        if not visible and self._restore_btn.hasFocus():
+            self._restore_btn.clearFocus()
 
     def value(self) -> str:
         if isinstance(self.editor, NMTextArea):
@@ -146,7 +142,9 @@ class _TextEntryRow(NMCard):
         return len(self.value()) > self.entry.max_chars
 
     def restore(self) -> None:
-        self.set_value("")
+        # Restaurar = volver al default visible en el input (effective_value()
+        # devolvera "" porque value == default, asi no se persiste override).
+        self.set_value(self.entry.default)
         self.changed.emit()
 
     def set_dirty(self, dirty: bool) -> None:
@@ -185,9 +183,6 @@ class _TextEntryRow(NMCard):
         )
         self._field_lbl.setStyleSheet(
             f"color: {v3c('text', self._modo).name()}; background: transparent;"
-        )
-        self._default_lbl.setStyleSheet(
-            f"color: {v3c('text2', self._modo).name()}; background: transparent;"
         )
 
     def _apply_dirty_shadow(self) -> None:
@@ -242,7 +237,7 @@ class TextosGlobalesSuiteView(QWidget):
 
         top = QHBoxLayout()
         top.setSpacing(V3_SP["sm"])
-        self._title_lbl = QLabel("Textos globales de Suite")
+        self._title_lbl = QLabel("Textos globales")
         self._title_lbl.setFont(v3_font("size_heading_l", weight=TYPOGRAPHY["weight_semibold"], serif=True))
         top.addWidget(self._title_lbl)
 
@@ -424,7 +419,7 @@ class TextosGlobalesSuiteView(QWidget):
         self._loading = True
         try:
             for row in self._rows:
-                row.set_value(values.get(row.entry.key, ""))
+                row.set_value(values.get(row.entry.key) or row.entry.default)
             self._original_values = {
                 key: value
                 for key, value in values.items()

@@ -246,7 +246,10 @@ def test_global_texts_offscreen_rows_do_not_expose_controls(qapp):
 
     assert first_row.editor.isVisible()
     assert first_row._restore_btn.isVisible()
-    assert not offscreen_row.editor.isVisible()
+    # El editor permanece visible siempre: ahora porta el VALOR del texto (como el
+    # mockup canonico, sin un label de default aparte). Ocultarlo esconderia el
+    # contenido. Solo el boton Restaurar se oculta fuera del viewport.
+    assert offscreen_row.editor.isVisible()
     assert not offscreen_row._restore_btn.isVisible()
 
     view._scroll.verticalScrollBar().setValue(offscreen_row.geometry().top())
