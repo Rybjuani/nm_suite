@@ -184,7 +184,8 @@ DEFAULT_TCC_TEMPLATE = {
         },
         {
             "order": 2,
-            "title": "Pensamiento automático",  # mockup l.1241: título completo
+            "title": "Pensamiento automático",  # mockup l.1241: título completo del card
+            "stepper_label": "Pensamiento",  # mockup stepper: label corto
             # Mockup l.1241.
             "prompt": "¿Qué pensaste en ese momento? Escribilo tal como apareció.",
             "hint": "",
@@ -643,7 +644,9 @@ class ModuloRegistroTCC(NMModule):
         lay.addWidget(self._eyebrow)
         self._eyebrow.hide()  # BL-07: título de módulo ahora en la titlebar
 
-        self._stepper = NMStepper([step["title"] for step in self._step_defs], modo=self._modo)
+        self._stepper = NMStepper(
+            [step.get("stepper_label", step["title"]) for step in self._step_defs], modo=self._modo
+        )
         lay.addWidget(self._stepper)
 
         # 2. Main responsive grid: LEFT stack + RIGHT resumen
