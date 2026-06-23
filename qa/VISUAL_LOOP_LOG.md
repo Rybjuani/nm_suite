@@ -106,4 +106,40 @@ Cada iteración registra:
 - Slider dots: real muestra 10 dots clickeables, mockup sin dots. **DIFERIDO** — son los niveles clínicos clickeables (funcional).
 - Botón "Guardar registro" deshabilitado: real (porque slider sin selección), mockup también disabled. Coinciden.
 
+### Iter 3 — Hub Detalle: empty state con borde dashed (Plan terapéutico)
+
+- **SHA antes:** `e8ecfe6` (HEAD previo al iter)
+- **SHA después:** `4d4f1d7...` _(se completa al commit)_
+- **Pantalla:** Hub · Detalle de paciente · tab Recordatorios (y aplica a Rutina/Activación)
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Hub · Clínico/Pacientes/Detalle de paciente/Detalle de paciente.png` — caja con `border: 1px dashed var(--line); border-radius: 16px; padding: 40px 16px` (mockup l.1495)
+- **Captura real antes:** `qa/_captures_v8/iter3_detalle/hub-detalle-light-960x600.png`
+- **Captura real después:** `qa/_captures_v8/iter3_detalle_after/hub-detalle-light-960x600.png`
+- **Comparativa antes/después:** `qa/_captures_v8/iter3_detalle_after/_compare.png`
+
+**Discrepancia detectada** (sev 🟠):
+- El empty state de "Sin recordatorios asignados aún." (panel derecho del tab Recordatorios) se mostraba como texto plano sin contenedor. El copy hacía wrap a 2 líneas.
+- El mockup muestra una **caja con borde dashed** y padding generoso (40px v / 16px h), radius 16px — lee como "placeholder" y ancla visualmente el panel.
+- Aplica también a los empty states de tabs Rutina ("Sin tareas asignadas aún.") y Activación ("Sin actividades personalizadas aún.").
+
+**Fix aplicado** (`hub/plan_terapeutico.py`, `_empty_hint_label`):
+- `QWidget` con `border: 1px dashed <line-color>` + `border-radius: 16px`.
+- `setContentsMargins(16, 40, 16, 40)` (mockup l.1495: padding 40px 16px).
+- minHeight 58→132, maxHeight 78→180 — la caja tiene cuerpo y se lee como placeholder.
+- Label interno con `border: none` para no heredar el border del wrap (sería redundante).
+- Aplica a 5 sitios (3 tabs × 2 sub-estados, según `_load_*()`).
+
+**Validación:**
+- ✅ `ruff check hub/plan_terapeutico.py` — All checks passed
+- ✅ `pytest tests/test_hub_visual_contract.py` — 10/10 pass
+- ✅ Captura V8 regenerada: caja con dashed border visible, padding correcto, radius 16px
+- ✅ Sin regresión visible
+
+**Resultado:** MEJORA — el empty state ahora coincide con el mockup (dashed border + radius + padding 40/16).
+
+**Discrepancias restantes** en Hub Detalle:
+- "Sin recordatorios asignados aún." en real wrappea a 2 líneas; en mockup está en 1 línea (más espacio horizontal). El dashed border ya marca el contenedor, pero el copy podría entrar en 1 línea con un poco más de ancho. **DIFERIDO** — subóptimo pero el contenedor es correcto.
+- Mensaje del recordatorio: input truncado a "Mensaje del recordatorio (máx 1..." vs mockup "Mensaje del recordatorio (máx 150)". **DIFERIDO** — copy + ancho.
+
+
 

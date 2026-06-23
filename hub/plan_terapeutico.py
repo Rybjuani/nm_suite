@@ -85,33 +85,43 @@ def _make_reset_button(owner: QWidget, modo: str, mensaje: str, on_confirm) -> N
 
 
 def _empty_hint_label(text: str, modo: str) -> QWidget:
-    """Estado vacío calmo del Plan: compacto y anclado bajo el encabezado.
+    """Estado vacío del Plan terapéutico. Mockup l.1495:
+    `padding:40px 16px; border:1px dashed var(--line); border-radius:16px;`
 
-    Antes (v0): un QLabel suelto arriba-izquierda dejaba el panel viéndose
-    "roto". Fase 5 lo centró (h+v) con minHeight 220 — pero a 960×600 el panel
-    derecho hereda la altura del formulario (muy alto) y el mensaje quedaba
-    flotando en el centro de un panel enorme y vacío. Ahora es una banda
-    compacta (≤132px, vertical=Maximum para no estirarse a todo el panel)
-    centrada en horizontal y anclada arriba (la lista usa AlignTop): se lee como
-    "lista vacía" sin reservar un vacío gigante.
+    Antes: QLabel plano sin border → el panel se veía "roto" en mockups.
+    Ahora: caja con borde dashed + radius 16px + padding 40/16 que coincide
+    con el mockup. El texto se centra en la caja (AlignCenter h+v).
+    SizePolicy Maximum vertical: la caja se queda en su altura natural
+    (texto + padding) y no se estira a llenar el panel derecho (que es alto
+    por culpa del form de la izquierda). Mínimo 132px para que la caja
+    tenga cuerpo y se lea como placeholder.
     """
     modo = norm_modo(modo)
     wrap = QWidget()
-    wrap.setStyleSheet("background: transparent;")
-    # Expanding horizontal: el texto centra sobre todo el ancho del panel.
-    # Maximum vertical: no se estira para llenar el panel alto.
+    # Mockup: 1px dashed --line + radius 16. Usa v3c('line', modo) para
+    # el color que sigue al tema.
+    line_color = v3c("line", modo).name()
+    wrap.setStyleSheet(
+        "background: transparent;"
+        f"border: 1px dashed {line_color};"
+        "border-radius: 16px;"
+    )
     wrap.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
-    wrap.setMinimumHeight(58)
-    wrap.setMaximumHeight(78)
+    wrap.setMinimumHeight(132)
+    wrap.setMaximumHeight(180)
     wl = QVBoxLayout(wrap)
-    wl.setContentsMargins(V3_SP["lg"], V3_SP["md"], V3_SP["lg"], V3_SP["md"])
+    # Mockup l.1495: padding 40px 16px (vertical horizontal).
+    wl.setContentsMargins(16, 40, 16, 40)
     wl.setSpacing(0)
     lbl = QLabel(text)
     lbl.setWordWrap(True)
     lbl.setFont(qfont("size_small"))
     lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
     lbl.setStyleSheet(
+        # El label no debe heredar el border del wrap (sería redundante);
+        # sí hereda el color de texto muted del mockup (.empty p).
         f"color: {v3c('ink_secondary', modo).name()}; background: transparent;"
+        "border: none;"
     )
     wl.addWidget(lbl, 0, Qt.AlignmentFlag.AlignCenter)
     return wrap
