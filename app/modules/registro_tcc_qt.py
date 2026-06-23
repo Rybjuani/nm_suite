@@ -831,7 +831,10 @@ class ModuloRegistroTCC(NMModule):
             modo=self._modo,
             min_height=120,
         )
-        self._txt_situacion.setMaximumHeight(156)
+        # Mockup l.1224: textarea rows=5 (~110–120px) — antes 156 ocupaba
+        # casi toda la card y empujaba el contador 0/500 al borde inferior
+        # (apenas visible). 120 le da aire al contador y matchea el mockup.
+        self._txt_situacion.setMaximumHeight(120)
         self._txt_situacion.textChanged.connect(self._update_situacion_count)
         layout.addWidget(self._txt_situacion, stretch=0)
 
@@ -1056,7 +1059,9 @@ class ModuloRegistroTCC(NMModule):
             modo=self._modo,
             min_height=120,
         )
-        self._txt_respuesta.setMaximumHeight(156)
+        # Mockup l.1235: textarea rows=5 (~110–120px) — mismo fix que
+        # _txt_situacion para no aplastar el contador al borde de la card.
+        self._txt_respuesta.setMaximumHeight(120)
         layout.addWidget(self._txt_respuesta, stretch=0)
         self._pages.append(page)
 

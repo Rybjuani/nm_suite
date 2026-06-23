@@ -141,5 +141,41 @@ Cada iteración registra:
 - "Sin recordatorios asignados aún." en real wrappea a 2 líneas; en mockup está en 1 línea (más espacio horizontal). El dashed border ya marca el contenedor, pero el copy podría entrar en 1 línea con un poco más de ancho. **DIFERIDO** — subóptimo pero el contenedor es correcto.
 - Mensaje del recordatorio: input truncado a "Mensaje del recordatorio (máx 1..." vs mockup "Mensaje del recordatorio (máx 150)". **DIFERIDO** — copy + ancho.
 
+### Iter 4 — TCC: textarea más corto para que el contador respire
+
+- **SHA antes:** `b88847a` (HEAD previo al iter)
+- **SHA después:** _(se completa al commit)_
+- **Pantalla:** Suite · Registro de pensamientos (TCC) · paso 0 (Situación) y paso 3 (Respuesta)
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Cognitivo/Registro de pensamientos (TCC)/Situación.png` — textarea con `rows="5"` (~110–120px) y contador `0/500` con `margin-top: 8px` debajo (l.1224–1225)
+- **Captura real antes:** `qa/_captures_v8/iter4_tcc/suite-registro-light-960x600.png`
+- **Captura real después:** `qa/_captures_v8/iter4_tcc_after/suite-registro-light-960x600.png`
+- **Comparativa antes/después:** `qa/_captures_v8/iter4_tcc_after/_compare.png`
+
+**Discrepancia detectada** (sev 🟡, audit previo lo marcaba DIFERIDO):
+- Textarea del paso 0 (Situación) tenía `setMaximumHeight(156)` y se mostraba casi a tope de la card → el contador `0 / 500` quedaba apenas visible al borde inferior de la card, con margen <5px respecto al border-radius.
+- Mismo problema en paso 3 (Respuesta) con `setMaximumHeight(156)`.
+- Mockup define `rows="5"` (~110–120px según font) — el contador tiene `margin-top: 8px` y queda con aire arriba y abajo.
+
+**Fix aplicado** (`app/modules/registro_tcc_qt.py`):
+- `_txt_situacion.setMaximumHeight(156)` → `120` (mockup rows=5)
+- `_txt_respuesta.setMaximumHeight(156)` → `120` (mismo motivo)
+- `_txt_pensamiento` ya estaba en 132 (no lo toqué — está dentro del rango rows=4–5 del mockup)
+- `_txt_situacion.min_height=120` se mantiene — el rango efectivo es 120–120, altura fija que matchea el mockup.
+
+**Validación:**
+- ✅ `ruff check app/modules/registro_tcc_qt.py` — All checks passed
+- ✅ `pytest tests/test_registro_tcc_visual_contract.py tests/test_home_visual_contract.py tests/test_animo_visual_contract.py tests/test_hub_visual_contract.py` — 27/27 pass
+- ✅ Captura V8 regenerada: contador ahora con espacio visible, no aplastado al borde
+- ✅ Sin regresión visible
+
+**Resultado:** MEJORA — el contador `0 / 500` ahora tiene aire respecto al border-radius de la card, matcheando el mockup.
+
+**Discrepancias restantes** en TCC:
+- Título: real usa pregunta "¿Qué pasó?" como título; mockup usa nombre del paso "Situación" como título y la pregunta como subtítulo. **DIFERIDO** — decisión de diseño.
+- Subtítulo copy: real "Contá en pocas palabras qué estaba pasando." vs mockup "¿Qué pasó? Describí el momento de forma concreta y objetiva." **DIFERIDO** — copy.
+- Placeholder copy: real "Escribí lo que pasó…" vs mockup "Ej: En la reunión me preguntaron por el reporte y no supe qué responder…" **DIFERIDO** — copy.
+- Botones nav: real dentro de la card, mockup fuera. **DIFERIDO** — estructura, requiere refactor mayor.
+
 
 
