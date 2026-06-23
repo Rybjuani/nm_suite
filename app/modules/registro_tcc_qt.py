@@ -857,7 +857,7 @@ class ModuloRegistroTCC(NMModule):
 
         self._situacion_count_lbl = QLabel("0 / 500")
         self._situacion_count_lbl.setFont(qfont("size_caption_xs"))
-        self._situacion_count_lbl.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self._situacion_count_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)  # mockup: left-aligned
         self._situacion_count_lbl.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
         )
