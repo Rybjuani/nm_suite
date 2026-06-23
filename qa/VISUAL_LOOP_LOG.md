@@ -238,7 +238,33 @@ Cada iteración registra:
 
 **Discrepancias restantes** en Textos globales:
 - Contador "158 textos" vs mockup "145 textos". **DIFERIDO** — dato (cantidad real de textos editables ha crecido desde el snapshot del mockup).
-- Cards de la lista con más padding vertical en real vs mockup. **DIFERIDO** — subóptimo menor, no estructural.
+### Iter 7 — TCC: título de paso = nombre (no prompt)
+
+- **SHA antes:** `7541f1b` (HEAD previo al iter)
+- **SHA después:** _(se completa al commit)_
+- **Pantalla:** Suite · Registro de pensamientos (TCC) — todos los pasos
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Cognitivo/Registro de pensamientos (TCC)/Situación.png` — `<h2 class="h-serif" style="font-size:19px">Situación</h2>` + `<p>¿Qué pasó? Describí el momento de forma concreta y objetiva.</p>` (mockup l.1222-1223)
+- **Captura real antes:** `qa/_captures_v8/iter4_tcc_after/suite-registro-light-960x600.png`
+- **Captura real después:** `qa/_captures_v8/iter7_tcc/suite-registro-light-960x600.png`
+
+**Discrepancia detectada** (sev 🟠):
+- El card usaba el `prompt` ("¿Qué pasó?") como título y el `hint` ("Contá en pocas palabras qué estaba pasando.") como subtítulo. El mockup invierte la jerarquía: nombre del paso ("Situación") como h2, prompt como subtítulo.
+- Aplicaba a los 4 pasos (Situación/Emoción/Pensamiento/Respuesta).
+
+**Fix aplicado** (`app/modules/registro_tcc_qt.py`):
+- Nuevo helper `_step_name(index, fallback)` que devuelve el campo `title` del step (mockup l.1222: "Situación"/"Emoción"/"Pensamiento"/"Respuesta").
+- Las 4 llamadas a `_make_title` ahora pasan `(self._step_name(...), self._step_prompt(...))` en vez de `(self._step_prompt(...), self._step_hint(...))`.
+- El campo `hint` ya no se usa como subtítulo (queda en el dict para futura referencia, sin breaking change en la data layer).
+
+**Validación:**
+- ✅ `ruff check app/modules/registro_tcc_qt.py` — All checks passed
+- ✅ `pytest tests/test_registro_tcc_visual_contract.py` — 7/7 pass
+- ✅ Captura V8 regenerada: título "Situación" + subtítulo "¿Qué pasó?" — matchea mockup
+- ✅ Sin regresión visible
+
+**Resultado:** MEJORA — el card del TCC ahora sigue la estructura del mockup (nombre del paso como h2, prompt como subtítulo).
+
 
 ---
 

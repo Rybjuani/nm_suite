@@ -804,6 +804,18 @@ class ModuloRegistroTCC(NMModule):
             widgets.append(sub)
         return widgets
 
+    def _step_name(self, index: int, fallback: str) -> str:
+        """Nombre del paso (mockup l.1222: 'Situación'/'Emoción'/'Pensamiento'/'Respuesta').
+
+        Es lo que el mockup usa como h2 del card. Antes se usaba el prompt
+        ('¿Qué pasó?') como título — ahora el prompt pasa a ser el subtítulo
+        (mockup l.1223).
+        """
+        try:
+            return self._step_defs[index].get("title") or fallback
+        except Exception:
+            return fallback
+
     def _step_prompt(self, index: int, fallback: str) -> str:
         try:
             return self._step_defs[index].get("prompt") or fallback
@@ -821,8 +833,9 @@ class ModuloRegistroTCC(NMModule):
         # Add internal margins for indentation
         layout.setContentsMargins(12, 8, 12, 8)
         for lbl in self._make_title(
+            # Mockup l.1222-1223: titulo = nombre del paso, subtitulo = pregunta.
+            self._step_name(0, "Situación"),
             self._step_prompt(0, "¿Qué pasó?"),
-            self._step_hint(0, "Contá en pocas palabras qué estaba pasando."),
         ):
             layout.addWidget(lbl)
 
@@ -850,7 +863,10 @@ class ModuloRegistroTCC(NMModule):
     def _build_page_emocion(self):
         page, layout = self._make_page()
         layout.setContentsMargins(12, 8, 12, 8)
-        for lbl in self._make_title(self._step_prompt(1, "¿Qué sentiste?")):
+        for lbl in self._make_title(
+            self._step_name(1, "Emoción"),
+            self._step_prompt(1, "¿Qué sentiste?"),
+        ):
             layout.addWidget(lbl)
 
         # Grid 4×2 de _EmotionTile. La celda de "Otro" usa un QStackedWidget
@@ -972,8 +988,8 @@ class ModuloRegistroTCC(NMModule):
         page, layout = self._make_page()
         layout.setContentsMargins(12, 8, 12, 8)
         for lbl in self._make_title(
+            self._step_name(2, "Pensamiento"),
             self._step_prompt(2, "Pensamiento automático"),
-            self._step_hint(2, "¿Qué pensaste en ese momento? Escribilo tal como apareció."),
         ):
             layout.addWidget(lbl)
 
@@ -1049,8 +1065,8 @@ class ModuloRegistroTCC(NMModule):
         page, layout = self._make_page()
         layout.setContentsMargins(12, 8, 12, 8)
         for lbl in self._make_title(
+            self._step_name(3, "Respuesta"),
             self._step_prompt(3, "Respuesta alternativa"),
-            self._step_hint(3, "¿Cómo podrías pensar de manera más equilibrada y compasiva?"),
         ):
             layout.addWidget(lbl)
 
