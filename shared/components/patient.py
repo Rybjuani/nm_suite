@@ -558,6 +558,13 @@ class NMPatientRowPremium(QFrame):
             self._btn_unlink.setToolTip("Quitar paciente del Hub")
             self._btn_unlink.setAccessibleName(f"Quitar a {self._full_name} del Hub")
             self._btn_unlink.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            # La X se oculta en filas no completamente visibles (optimización de
+            # scroll). Debe CONSERVAR su espacio al ocultarse: si no, el layout
+            # recupera el hueco y corre sparkline+ring a la derecha, desalineando
+            # la última fila respecto de las demás.
+            _sp = self._btn_unlink.sizePolicy()
+            _sp.setRetainSizeWhenHidden(True)
+            self._btn_unlink.setSizePolicy(_sp)
             self._btn_unlink.clicked.connect(on_unlink)
             lay.addWidget(self._btn_unlink, 0, Qt.AlignmentFlag.AlignVCenter)
 
