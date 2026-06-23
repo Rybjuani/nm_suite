@@ -670,14 +670,14 @@ class ModuloAvisos(NMModule):
 
         if not rows:
             empty_msg = (
-                t("text.module.avisos.empty_title", "Sin recordatorios asignados")
+                t("text.module.avisos.empty_title", "Sin recordatorios")  # mockup: sin 'asignados'
                 if not self._all_rows
                 else t("text.module.avisos.empty_filter_title", "Sin resultados con esos filtros")
             )
             empty_sub = (
                 t(
                     "text.module.avisos.empty_desc",
-                    "Tu profesional configura tus recordatorios de bienestar desde el Hub.",
+                    "No tenés avisos configurados todavía. Tu terapeuta puede asignarte recordatorios de bienestar.",  # mockup
                 )
                 if not self._all_rows
                 else t("text.module.avisos.empty_filter_desc", "Probá cambiar los filtros.")
