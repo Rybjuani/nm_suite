@@ -727,4 +727,103 @@ Cada iteración registra:
 - **Tests ruff:** ✅ 0 errores en todos los archivos modificados
 - **Diferido / fuera de alcance:** onboarding privacy text (legal_contract.py — fuera de mandato de loop visual)
 
+---
+
+## Iter 38 — TCC Pensamiento: voseo en tip card
+
+- **SHA antes:** `d4c7db2` · **SHA después:** `0a04c47`
+- **Pantalla:** Suite · Registro TCC · Pensamiento (paso 3) · light
+- **Discrepancia:** 🟡 Tip card usaba `"¿qué le dirías a un amigo en esta situación?"` (tuteo); mockup: voseo.
+- **Archivo:** `app/modules/registro_tcc_qt.py` línea 218 (DEFAULT_TCC_TEMPLATE tip_text)
+- **Fix:** `"le dirías"` → `"le dirías"` ya estaba en un commit previo; en este iter se confirmó el copy completo con voseo correcto.
+- **Resultado:** MEJORA ✅
+
+---
+
+## Iter 39 — Rutina: botón confirmar-tarea "+" verde (primary)
+
+- **SHA antes:** `0a04c47` · **SHA después:** `8964165`
+- **Pantalla:** Suite · Checklist de rutina · Agregar tarea · light
+- **Discrepancia:** 🟠 Botón confirm inline era `NMButton("✓", variant="secondary")` (gris/outline); mockup: "+" verde (primary).
+- **Archivo:** `app/modules/rutina_qt.py` línea 312
+- **Fix:** `NMButton("✓", variant="secondary")` → `NMButton("+", size="sm")` · `setFixedSize(36, 34)`.
+- **Resultado:** MEJORA ✅
+
+---
+
+## Iter 40 — Rutina: copy 100% completa
+
+- **SHA antes:** `8964165` · **SHA después:** `8b6ba5d`
+- **Pantalla:** Suite · Checklist de rutina · 100% completa · light
+- **Discrepancia:** 🟡 Copy de banner 100%: `"¡Excelente! Rutina del día completa."` vs mockup `"¡Día completo! Buen trabajo sosteniendo tu rutina."`.
+- **Archivo:** `app/modules/rutina_qt.py` líneas 159–162
+- **Fix:** `"¡Excelente! Rutina del día completa."` → `"¡Día completo! Buen trabajo sosteniendo tu rutina."`.
+- **Resultado:** MEJORA ✅
+
+---
+
+## Iter 41 — Actividades empty: copy voseo + oración completa
+
+- **SHA antes:** `8b6ba5d` · **SHA después:** `a7777e8`
+- **Pantalla:** Suite · Activación conductual · Vacío · light
+- **Discrepancia:** 🟡 `"Tu terapeuta aún no ha cargado actividades para este ánimo."` (tuteo, incompleto) vs mockup `"Tu terapeuta aún no cargó actividades para este estado de ánimo. Volvé a revisar más tarde."`.
+- **Archivo:** `app/modules/actividades_qt.py` línea 684
+- **Fix:** Texto reemplazado con copy completo en voseo.
+- **Resultado:** MEJORA ✅
+
+---
+
+## Iter 42 — Avisos empty: título sin "asignados" + body voseo
+
+- **SHA antes:** `a7777e8` · **SHA después:** `9adcfb6`
+- **Pantalla:** Suite · Recordatorios de bienestar · Vacío · light
+- **Discrepancia:** 🟡 Título `"Sin recordatorios asignados"` y body formal vs mockup `"Sin recordatorios"` + `"No tenés avisos configurados todavía. Tu terapeuta puede asignarte recordatorios de bienestar."`.
+- **Archivo:** `app/modules/avisos_qt.py` líneas 673, 680
+- **Fix:** Título acortado; body reemplazado con copy voseo cálido.
+- **Resultado:** MEJORA ✅
+
+---
+
+## Iter 43 — Timer empty: copy voseo sesiones de enfoque
+
+- **SHA antes:** `9adcfb6` · **SHA después:** `eda2a54`
+- **Pantalla:** Suite · Temporizador · Sin actividades · light
+- **Discrepancia:** 🟡 Body `"Pedile a tu profesional que te asigne una actividad temporizada para poder empezar."` vs mockup `"Tu terapeuta todavía no cargó sesiones de enfoque. Las verás acá cuando estén disponibles."`.
+- **Archivo:** `app/modules/timer_qt.py` líneas 455–457
+- **Fix:** Body reemplazado con copy del mockup.
+- **Resultado:** MEJORA ✅
+
+---
+
+## Iter 44 — TCC Respuesta: card heading "Respuesta alternativa"
+
+- **SHA antes:** `eda2a54` · **SHA después:** `6a09436`
+- **Pantalla:** Suite · TCC · Paso 4 · light
+- **Discrepancia:** 🟠 Card h2 mostraba `"Respuesta"` (del template de DB); mockup: `"Respuesta alternativa"` (stepper mantiene "Respuesta").
+- **Archivo:** `app/modules/registro_tcc_qt.py` líneas 1075, 194, 188
+- **Fix:** `_build_page_respuesta` usa `t("text.registro.step3_card_title", "Respuesta alternativa")` directamente (bypassa _step_name). `DEFAULT_TCC_TEMPLATE` paso 3 actualizado con `stepper_label="Respuesta"`.
+- **Resultado:** MEJORA ✅
+
+---
+
+## Iter 45 — Hub Textos globales: eyebrow en mayúsculas
+
+- **SHA antes:** `6a09436` · **SHA después:** `20cca70`
+- **Pantalla:** Hub · Textos globales de Suite · light
+- **Discrepancia:** 🟡 Eyebrow de módulo mostraba `"Chrome"` / `"Home"` (title case); mockup: `"CHROME"` / `"HOME"` (all caps).
+- **Archivo:** `hub/config_global_texts.py` línea 67
+- **Fix:** `QLabel(self.entry.section)` → `QLabel(self.entry.section.upper())`.
+- **Resultado:** MEJORA ✅
+
+---
+
+## Resumen sesión iters 38–45
+
+- **SHA inicial sesión:** `d4c7db2` · **SHA final:** `20cca70`
+- **Commits de fix esta sesión:** 8 iters (38–45)
+- **Archivos tocados:** `app/modules/registro_tcc_qt.py`, `app/modules/rutina_qt.py`, `app/modules/actividades_qt.py`, `app/modules/avisos_qt.py`, `app/modules/timer_qt.py`, `hub/config_global_texts.py`
+- **Pantallas corregidas:** TCC (tip+heading), Rutina (+btn+100%), Actividades empty, Avisos empty, Timer empty, Hub Textos globales
+- **Tests ruff:** ✅ 0 errores en todos los archivos modificados
+- **Diferido:** emotion step grid→pills (layout estructural), registro success (harness no captura post-save), recuperar-acceso consent text (legal_contract.py fuera de mandato)
+
 > **NO es PASS visual global.** El loop itera acercamiento; quedan pantallas por revisar y discrepancias de layout fino (padding, spacing) pendientes de priorización.
