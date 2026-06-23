@@ -104,13 +104,13 @@ _MODULE_MAP = {
 }
 
 _MODULE_UI_META = {
-    "animo": ("Termómetro Emocional", "animo"),
-    "respiracion": ("Guía de Respiración Animada", "respiracion"),
-    "registro": ("Registro de Pensamientos (TCC)", "registro_tcc"),
-    "rutina": ("Checklist de Rutina Diaria", "rutina"),
-    "actividades": ("Asistente de Activación Conductual", "actividades"),
-    "timer": ("Temporizador de Actividades", "timer"),
-    "avisos": ("Recordatorios de Bienestar", "avisos"),
+    "animo": ("Termómetro emocional", "animo"),
+    "respiracion": ("Guía de respiración animada", "respiracion"),
+    "registro": ("Registro de pensamientos (TCC)", "registro_tcc"),
+    "rutina": ("Checklist de rutina diaria", "rutina"),
+    "actividades": ("Asistente de activación conductual", "actividades"),
+    "timer": ("Temporizador de actividades", "timer"),
+    "avisos": ("Recordatorios de bienestar", "avisos"),
     "dbt": ("Habilidades DBT", "spark"),
 }
 

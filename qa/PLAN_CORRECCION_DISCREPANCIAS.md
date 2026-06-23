@@ -56,7 +56,10 @@ Comando de validación por módulo:
 
 - [x] **Fase 1 — Textos globales** (commit tras `fd51354`): valor dentro del input editable,
   contador real (15/40…), título "Textos globales". Validado con captura vs mockup.
-- [ ] Fase 2.2 — capitalización headers
+- [x] **Fase 2.2 — capitalización headers**: títulos de header de módulo del Suite a
+  sentence case en `shared/suite_text_catalog.py` + fallback `_MODULE_UI_META` en
+  `app/main_qt.py`. Los tabs del Hub (hardcodeados Title Case) NO se tocan: coinciden
+  con su propio mockup. Validado con captura.
 - [ ] Fase 2.3 — segmented seleccionado
 - [ ] Fase 2.4 — checkbox rutina
 - [ ] Fase 3 — pulido (5-9)

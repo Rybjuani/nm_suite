@@ -89,21 +89,22 @@ _add(
 
 # (id, título de módulo [titlebar, largo], título de tarjeta [card, corto, mockup],
 #  descripción, chip). El mockup usa un título de card corto distinto del título
-#  largo del módulo — son dos textos editables separados.
+#  largo del módulo — son dos textos editables separados. AMBOS van en sentence
+#  case (como el mockup canónico); DBT queda igual por ser sigla.
 _HOME_MODULES = [
-    ("animo", "Termómetro Emocional", "Termómetro emocional", "Registro emocional diario", "Bienestar"),
-    ("respiracion", "Guía de Respiración Animada", "Guía de respiración", "Técnicas de calma 4·7·8", "Calma"),
-    ("registro", "Registro de Pensamientos (TCC)", "Registro de pensamientos", "Trabajo con pensamientos automáticos", "Cognitivo"),
-    ("rutina", "Checklist de Rutina Diaria", "Checklist de rutina", "Tu rutina del día", "Hábitos"),
+    ("animo", "Termómetro emocional", "Termómetro emocional", "Registro emocional diario", "Bienestar"),
+    ("respiracion", "Guía de respiración animada", "Guía de respiración", "Técnicas de calma 4·7·8", "Calma"),
+    ("registro", "Registro de pensamientos (TCC)", "Registro de pensamientos", "Trabajo con pensamientos automáticos", "Cognitivo"),
+    ("rutina", "Checklist de rutina diaria", "Checklist de rutina", "Tu rutina del día", "Hábitos"),
     (
         "actividades",
-        "Asistente de Activación Conductual",
+        "Asistente de activación conductual",
         "Activación conductual",
         "Sugerencias para activarte",
         "Acción",
     ),
-    ("timer", "Temporizador de Actividades", "Temporizador", "Sesiones de foco", "Enfoque"),
-    ("avisos", "Recordatorios de Bienestar", "Recordatorios", "Avisos de bienestar", "Diario"),
+    ("timer", "Temporizador de actividades", "Temporizador", "Sesiones de foco", "Enfoque"),
+    ("avisos", "Recordatorios de bienestar", "Recordatorios", "Avisos de bienestar", "Diario"),
     ("dbt", "Habilidades DBT", "Habilidades DBT", "Práctica guiada breve", "Habilidades"),
 ]
 
