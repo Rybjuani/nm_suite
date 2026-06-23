@@ -311,27 +311,18 @@ class _PresetTimerTab(QWidget):
         form_lay.addWidget(self._ent_secs)
         form_lay.addWidget(self._ent_cat)
 
-        btn_row = QHBoxLayout()
-        self._save_btn = NMButton("Agregar actividad", modo=self._modo, width=140, height=32, size="sm")
+        self._save_btn = NMButton("Agregar actividad", modo=self._modo)  # mockup: full-width
         self._save_btn.clicked.connect(self._save_preset)
         self._cancel_btn = NMButtonOutline("Cancelar", modo=self._modo)
-        self._cancel_btn.setFixedHeight(32)
-        self._cancel_btn.setMinimumWidth(90)
         self._cancel_btn.clicked.connect(self._cancel_edit)
         self._cancel_btn.hide()
 
-        btn_row.addWidget(self._save_btn)
-        btn_row.addWidget(self._cancel_btn)
-        btn_row.addStretch()
-        form_lay.addLayout(btn_row)
+        form_lay.addWidget(self._save_btn)
+        form_lay.addWidget(self._cancel_btn)
 
-        ia_row = QHBoxLayout()
-        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm", icon_name="sparkle")
-        self._ia_btn.setFixedHeight(32)
+        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, icon_name="sparkle")  # mockup: full-width
         self._ia_btn.clicked.connect(self._autofill_with_ia)
-        ia_row.addWidget(self._ia_btn)
-        ia_row.addStretch()
-        form_lay.addLayout(ia_row)
+        form_lay.addWidget(self._ia_btn)
         form_lay.addStretch()
 
         lay.addWidget(form_card, 1, Qt.AlignmentFlag.AlignTop)
@@ -839,17 +830,13 @@ class _PresetRutinaTab(QWidget):
         form_lay.addWidget(self._ent_task)
         form_lay.addWidget(self._combo_sec)
 
-        self._save_btn = NMButton("Asignar tarea", modo=self._modo, width=130, height=32, size="sm")
+        self._save_btn = NMButton("Asignar tarea", modo=self._modo)  # mockup: full-width
         self._save_btn.clicked.connect(self._save_task)
-        form_lay.addWidget(self._save_btn, alignment=Qt.AlignmentFlag.AlignLeft)
+        form_lay.addWidget(self._save_btn)
 
-        ia_row = QHBoxLayout()
-        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, size="sm", icon_name="sparkle")
-        self._ia_btn.setFixedHeight(32)
+        self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, icon_name="sparkle")  # mockup: full-width
         self._ia_btn.clicked.connect(self._autofill_with_ia)
-        ia_row.addWidget(self._ia_btn)
-        ia_row.addStretch()
-        form_lay.addLayout(ia_row)
+        form_lay.addWidget(self._ia_btn)
         form_lay.addStretch()
 
         lay.addWidget(form_card, 1, Qt.AlignmentFlag.AlignTop)
