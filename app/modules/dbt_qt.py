@@ -900,6 +900,7 @@ class ModuloDBT(NMModule):
                 t("text.module.dbt.family_regulation", "Regulación"),
                 t("text.module.dbt.family_effectiveness", "Efectividad"),
             ],
+            variant="filter",  # mockup: active pill fill sólido
             modo=self._modo,
             parent=widget,
         )
