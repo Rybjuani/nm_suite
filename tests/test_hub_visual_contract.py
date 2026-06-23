@@ -123,8 +123,14 @@ def test_hub_detalle_plan_tabs_match_mockup(qtbot) -> None:
     assert actual == expected
 
 
-def test_hub_activacion_empty_state_uses_compact_icon_card(qtbot) -> None:
-    from PyQt6.QtWidgets import QLabel, QFrame, QWidget
+def test_hub_activacion_empty_state_is_calm_text_only(qtbot) -> None:
+    """El empty de Activación es CALMO: solo texto, SIN chip de ícono.
+
+    Decisión deliberada (commit 8b9d5f7 'simplificado: solo texto calmo' vía
+    _empty_hint_label). Antes había una card de ícono compacta; este test
+    bloquea esa regresión inversa y verifica el contrato vigente.
+    """
+    from PyQt6.QtWidgets import QFrame, QLabel
     from hub.plan_terapeutico import _PresetActivacionTab
 
     tab = _PresetActivacionTab(
@@ -134,18 +140,15 @@ def test_hub_activacion_empty_state_uses_compact_icon_card(qtbot) -> None:
     )
     qtbot.addWidget(tab)
 
-    empty = tab.findChild(QWidget, "ActivationEmptyState")
-    assert empty is not None
-    assert empty.maximumHeight() == 156
+    # Sin presets asignados → se muestra el texto calmo del empty state.
+    labels = [
+        lbl for lbl in tab.findChildren(QLabel)
+        if lbl.text() == "Sin actividades personalizadas aún."
+    ]
+    assert labels, "el empty state de Activación debe mostrar el texto calmo"
 
-    chip = empty.findChild(QFrame, "ActivationEmptyIconChip")
-    assert chip is not None
-    assert chip.width() == 48
-    assert chip.height() == 48
-
-    title = empty.findChild(QLabel, "ActivationEmptyTitle")
-    assert title is not None
-    assert title.text() == "Sin actividades personalizadas aún."
+    # Solo texto: no debe existir el chip de ícono (decisión de diseño vigente).
+    assert tab.findChild(QFrame, "ActivationEmptyIconChip") is None
 
 
 # ── E4-H-CONFIG: Textos globales ──────────────────────────────────────────
