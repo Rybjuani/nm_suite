@@ -265,40 +265,10 @@ def _play_soft_alarm() -> None:
 
 
 class _TimerChip(NMButtonOutline):
-    """Chip local de Timer: activo suave para no competir con el play primary."""
-
-    def paintEvent(self, event):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
-        radius = min(18, max(12, self.height() // 2))
-        path = QPainterPath()
-        path.addRoundedRect(rect, radius, radius)
-        is_dark = "dark" in self._modo
-
-        if not self.isEnabled():
-            p.setOpacity(0.45)
-
-        if self.is_active():
-            p.fillPath(path, QBrush(v3c("primary_soft", self._modo)))
-            p.setPen(QPen(v3c("brandLine", self._modo), 1))
-            text_color = v3c("brand", self._modo)
-        elif getattr(self, "_hover", False):
-            p.fillPath(path, QBrush(v3c("elevatedSolid" if is_dark else "elevated", self._modo)))
-            p.setPen(QPen(v3c("borderStrong", self._modo), 1))
-            text_color = v3c("text", self._modo)
-        else:
-            p.fillPath(path, QBrush(v3c("surfaceSolid" if is_dark else "surface", self._modo)))
-            p.setPen(QPen(v3c("border", self._modo), 1))
-            text_color = v3c("text2", self._modo)
-
-        p.setBrush(Qt.BrushStyle.NoBrush)
-        p.drawRoundedRect(rect, radius, radius)
-        p.setPen(QPen(text_color))
-        p.setFont(self.font())
-        p.drawText(rect.toRect(), Qt.AlignmentFlag.AlignCenter, self.text())
-        p.end()
+    """Chip local de Timer. El estado activo se hereda de NMButtonOutline:
+    primary SÓLIDO (verde oscuro) + texto claro, para coincidir con el mockup
+    canónico. (Antes pintaba un activo 'suave' con primary_soft que no coincidía
+    con la referencia.)"""
 
 
 class ModuloTimer(NMModule):

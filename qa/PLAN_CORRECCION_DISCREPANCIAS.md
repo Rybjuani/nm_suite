@@ -60,7 +60,11 @@ Comando de validación por módulo:
   sentence case en `shared/suite_text_catalog.py` + fallback `_MODULE_UI_META` en
   `app/main_qt.py`. Los tabs del Hub (hardcodeados Title Case) NO se tocan: coinciden
   con su propio mockup. Validado con captura.
-- [ ] Fase 2.3 — segmented seleccionado
+- [x] **Fase 2.3 — segmented seleccionado** → verde oscuro relleno + texto claro
+  (primary/primary_ink) en Timer (`_TimerChip` hereda NMButtonOutline), Termómetro
+  (`NMChartPanel` header tabs en `shared/components/cards.py`) y Avisos (`_StepPill`).
+  Revierte la decisión deliberada de "activo suave" (confirmada con el owner) para
+  alinear al mockup. Test `test_avisos_visual_contract` actualizado. Validado x3 capturas.
 - [ ] Fase 2.4 — checkbox rutina
 - [ ] Fase 3 — pulido (5-9)
 

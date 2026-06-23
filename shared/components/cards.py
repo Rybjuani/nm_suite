@@ -1063,7 +1063,7 @@ class NMChartPanel(NMCard):
         ink2 = v3c("ink_secondary", self._modo).name()
         ink1 = v3c("ink_primary", self._modo).name()
         primary = v3c("primary", self._modo).name()
-        soft = v3c("bgAlt", self._modo).name()
+        primary_ink = v3c("primary_ink", self._modo).name()
         self._eyebrow_lbl.setStyleSheet(f"color: {ink2}; background: transparent;")
         self._subtitle_lbl.setStyleSheet(f"color: {ink2}; background: transparent;")
         self._title_lbl.setStyleSheet(f"color: {ink1}; background: transparent;")
@@ -1077,7 +1077,7 @@ class NMChartPanel(NMCard):
             btn.setStyleSheet(
                 f"QPushButton {{ background: transparent; color: {ink2}; "
                 f"border: none; border-radius: 10px; padding: 2px 7px; }}"
-                f"QPushButton:checked {{ background: {soft}; color: {primary}; }}"
+                f"QPushButton:checked {{ background: {primary}; color: {primary_ink}; }}"
                 f"QPushButton:hover {{ color: {ink1}; }}"
             )
 

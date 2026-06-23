@@ -252,19 +252,15 @@ class _StepPill(QPushButton):
     def _refresh(self):
         height = _AVISOS_FILTER_PILL_CONTENT_HEIGHT
         radius = _AVISOS_FILTER_PILL_RADIUS
-        brand_line = qcolor_to_rgba_css(v3c("brandLine", self._modo))
-        if self._active and self._segmented:
+        if self._active:
+            # Activo: primary SÓLIDO (verde oscuro) + texto claro, como el mockup
+            # canónico (antes surface clara + borde, que no coincidía).
+            primary = v3c("primary", self._modo).name()
+            primary_ink = v3c("primary_ink", self._modo).name()
             self.setStyleSheet(
-                f"QPushButton {{ background: {v3c('surface', self._modo).name()}; "
-                f"color: {v3c('text', self._modo).name()}; "
-                f"border: 1px solid {brand_line}; border-radius: {radius}px; "
-                f"padding: 0px 14px; min-height: {height}px; max-height: {height}px; }}"
-            )
-        elif self._active:
-            self.setStyleSheet(
-                f"QPushButton {{ background: {v3c('surface', self._modo).name()}; "
-                f"color: {v3c('text', self._modo).name()}; "
-                f"border: 1px solid {brand_line}; border-radius: {radius}px; "
+                f"QPushButton {{ background: {primary}; "
+                f"color: {primary_ink}; "
+                f"border: 1px solid {primary}; border-radius: {radius}px; "
                 f"padding: 0px 14px; min-height: {height}px; max-height: {height}px; }}"
             )
         elif self._segmented:

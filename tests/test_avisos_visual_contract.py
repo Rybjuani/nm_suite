@@ -72,10 +72,12 @@ def test_avisos_filters_and_search_are_visible_and_drive_state(qtbot, monkeypatc
     assert "border-radius: 20px" in segment_qss
     active_qss = module._filter_pills["todos"].styleSheet()
     assert module._filter_pills["todos"].height() == _AVISOS_FILTER_PILL_HEIGHT == 32
-    assert "background: #fbf8f1" in active_qss.lower()
-    assert "border: 1px solid rgba(46, 93, 67, 71)" in active_qss
+    # Activo = primary SÓLIDO (verde oscuro) + texto claro, como el mockup canónico
+    # (Fase 2.3 fidelidad: antes era una superficie clara #fbf8f1 con borde).
+    assert "background: #2e5d43" in active_qss.lower()
+    assert "border: 1px solid #2e5d43" in active_qss.lower()
     assert f"border-radius: {_AVISOS_FILTER_PILL_RADIUS}px" in active_qss
-    assert "background: #2e5d43" not in active_qss.lower()
+    assert "#fbf8f1" not in active_qss.lower()
     assert module._search_input.text() == ""
     assert module._search_input._edit.placeholderText() == "Buscar recordatorio…"
     assert module._search_edit is module._search_input._edit
