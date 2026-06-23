@@ -453,8 +453,7 @@ class ModuloTimer(NMModule):
             t("text.module.timer.empty_title", "Sin actividades asignadas"),
             t(
                 "text.module.timer.empty_desc",
-                "Pedile a tu profesional que te asigne una "
-                "actividad temporizada para poder empezar.",
+                "Tu terapeuta todavía no cargó sesiones de enfoque. Las verás acá cuando estén disponibles.",  # mockup
             ),
             parent=cent_container,
         )
