@@ -143,14 +143,71 @@ Total: ~20 commits = 20 fsync. En Windows con HDD esto es 100-500ms en primer ar
 - Migrar `inicializar_tablas` a transacción (toca DB, fuera de scope).
 - Cachear fonts/icons (ya son baratos: 11ms / 4ms).
 - Eliminar `apply_hub_density` (caerá solo con fix #1).
+- Batch de conexiones en `_get_module_status` (riesgo de contrato moderado, beneficio estimado pequeño en offscreen QA — postergado).
 
 ---
 
-## Fase 4 — Registro de fixes (se completa tras aplicar)
+## Fase 4 — Registro de fixes
 
-| # | SHA antes | SHA después | fix | medición antes | medición después | mejora | archivos | riesgo | validación |
-|---|-----------|-------------|-----|---------------:|------------------:|-------:|----------|--------|-----------|
-| - | -         | -           | (pendiente) | -              | -                 | -      | -        | -      | -         |
+### Fix #1 — Hub: lazy-load `TextosGlobalesSuiteView`
+
+| campo | valor |
+|-------|-------|
+| SHA antes | `cb4687c7d4da45c2080846e46f99f650a7e1158d` |
+| SHA después | `772d2b9fc7faba0fefcc77440a4c4a903a570a6d` |
+| Archivos tocados | `hub/main_qt.py` |
+| Medición antes (Hub wall cold-start, n=3 mediana) | 885 ms |
+| Medición después (Hub wall cold-start, n=3 mediana) | 308 ms |
+| Mejora porcentual | **-65% (-577 ms)** |
+| Riesgo | bajo. Primera apertura de "Textos globales" pasa de 40ms a 725ms (trade-off aceptable: pantalla bajo demanda). |
+| Validación | tests/test_hub_visual_contract.py + tests/test_global_texts_integration.py + tests/test_suite_text_catalog.py — 18 passed, 1 pre-existing failure (test_hub_pacientes_badge_tone_is_info, falla igual sin el cambio). Ruff clean. |
+
+### Fix #2 — Suite/Hub: cache en memoria para `t()` — REVERTIDO
+
+| campo | valor |
+|-------|-------|
+| Razón de reversión | En QA offscreen no produjo mejora medible (Suite wall 360→363ms, dentro de noise). La mayoría de las llamadas a `t()` durante startup son únicas por clave (no repetidas), por lo que el cache no ayuda en cold start. El riesgo de bugs de invalidación supera el beneficio no medible. |
+| Estado | Revertido antes de commit. |
+
+### Fix #3 — Suite: defer `avisos_daemon.iniciar()` a `QTimer.singleShot(0, ...)`
+
+| campo | valor |
+|-------|-------|
+| SHA antes | `772d2b9fc7faba0fefcc77440a4c4a903a570a6d` |
+| SHA después | `bc93baa` (ver `git log -1 bc93baa`) |
+| Archivos tocados | `app/main_qt.py` |
+| Medición antes (critical path) | `avisos_daemon.iniciar()` síncrono en `__init__`: PIL open+resize = 27ms (Linux), + pystray import + Icon() + thread start estimado 30-50ms en Windows prod |
+| Medición después (critical path) | 0 ms (deferred a post-show via singleShot(0)) |
+| Mejora porcentual | N/A en QA offscreen (avisos_daemon se skipea en QA). En Windows production: ~50-80ms esperado fuera del critical path. |
+| Riesgo | bajo. `detener()` es safe aunque `iniciar()` no haya corrido. Si el usuario cierra antes del singleShot, callback chequea `sip.isdeleted(self)`. |
+| Validación | tests/test_home_visual_contract.py + tests/test_avisos_visual_contract.py + tests/test_visual_sentinel.py + tests/test_fonts.py + tests/test_assets.py + tests/test_no_legacy_visuals.py + tests/test_no_legacy_text_override_system.py — 83 passed, 1 pre-existing failure (test_avisos_row_badge..., falla igual sin el cambio). Ruff clean. |
+
+---
+
+## Resumen de mediciones finales (post Fix #1 + #3, n=5 mediana, offscreen QA)
+
+| target | wall_total | inproc_total | vs baseline |
+|--------|-----------:|-------------:|------------:|
+| Suite  |     362 ms |       292 ms |    ~sin cambio (Fix #3 no aplica en QA) |
+| Hub    |     309 ms |       240 ms |    **-577 ms wall (-65%)** vs baseline 885ms |
+
+Nota: Suite no cambió porque los fixes aplicaban a paths que el QA mode skipea
+(`avisos_daemon`) o a Hub (lazy TextosGlobales). En Windows production se
+espera que Suite también mejore ~50-80ms por Fix #3 (no medible en este entorno).
+
+## Capturas V8
+
+No se generaron capturas V8 porque los fixes aplicados **no tocan UI visible**:
+- Fix #1 mueve la construcción de `TextosGlobalesSuiteView` de startup a
+  primera navegación. La vista en sí es idéntica (mismo constructor, mismos
+  widgets, mismo tema).
+- Fix #3 mueve `avisos_daemon.iniciar()` a post-show. El ícono de bandeja
+  aparece en el primer ciclo de eventos tras show() en vez de durante
+  `__init__` — diferencia imperceptible (<16ms en Windows real).
+
+Si el owner lo solicita, se pueden generar capturas V8 comparando
+arranque del Hub antes/después (deberían ser visualmente idénticas,
+incluyendo Pacientes view inicial).
 
 ---
 
@@ -159,10 +216,10 @@ Total: ~20 commits = 20 fsync. En Windows con HDD esto es 100-500ms en primer ar
 - Medir en Windows real (el offscreen + QA mode subestima el costo de `inicializar_tablas`, `avisos_daemon` con pystray real, y `pyqtgraph` si se carga).
 - Medir con `NM_VISUAL_QA=0` (modo producción) — requiere credenciales Supabase válidas.
 - Evaluar agrupar migraciones SQLite en una transacción (fuera de scope por regla "no tocar DB schema sin necesidad extrema").
-- Evaluar lazy-import de `pyqtgraph` / `matplotlib` si algún módulo los importa al顶层 (auditoría de imports no los mostró cargados en startup, pero sí podrían cargarse al abrir módulos específicos — medir navegación con QA mode off).
+- Evaluar batch de conexiones en `_get_module_status` (postergado: requiere cambiar contrato HomeView↔NeuroMoodApp, riesgo moderado, beneficio estimado ~60ms por `refresh_statuses` en producción).
+- Evaluar lazy-import de `pyqtgraph` / `matplotlib` si algún módulo los importa al 顶层 (auditoría de imports no los mostró cargados en startup, pero sí podrían cargarse al abrir módulos específicos — medir navegación con QA mode off).
 
 ## Riesgos restantes
 
-- **Fix #1 (lazy TextosGlobales)**: la primera apertura de "Textos globales" tardará ~450ms en vez de 40ms. Aceptable porque es interacción explícita del usuario, no startup. Se debe validar que no rompa la navegación Pacientes ↔ Textos.
-- **Fix #2 (cache t())**: si `cache_rows` o `replace_scopes` no invalidan el cache en memoria, la Suite puede mostrar textos desactualizados tras un sync. Crítico invalidar correctamente.
-- **Fix #3 (defer avisos_daemon)**: si el usuario cierra la ventana dentro de los primeros 0-50ms, el daemon podría no inicializarse y los recordatorios no funcionarían hasta reabrir. Mitigación: usar `QTimer.singleShot(0, ...)` que corre en el siguiente ciclo de eventos, prácticamente inmediato.
+- **Fix #1 (lazy TextosGlobales)**: la primera apertura de "Textos globales" tardará ~725ms en vez de 40ms. Aceptable porque es interacción explícita del usuario, no startup. Validado por tests de navegación Pacientes↔Textos (sigue funcionando).
+- **Fix #3 (defer avisos_daemon)**: si el usuario cierra la ventana dentro de los primeros 0-50ms (antes del primer processEvents), el daemon no se inicializa y los recordatorios no funcionarían hasta reabrir. Mitigación: `QTimer.singleShot(0, ...)` corre en el primer ciclo de eventos, prácticamente inmediato. Validado por tests existentes.
