@@ -681,7 +681,7 @@ class ModuloActividades(NMModule):
                     t("text.module.actividades.empty_no_mood_title", "Sin sugerencias"),
                     t(
                         "text.module.actividades.empty_no_activities_desc",
-                        "Tu terapeuta aún no ha cargado actividades para este ánimo.",
+                        "Tu terapeuta aún no cargó actividades para este estado de ánimo. Volvé a revisar más tarde.",  # mockup
                     ),
                 )
             )
