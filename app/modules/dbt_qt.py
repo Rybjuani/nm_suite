@@ -569,7 +569,7 @@ class _SkillPracticeView(QWidget):
         lay.setContentsMargins(24, 16, 24, 16)
         lay.setSpacing(12)
 
-        family_title = _DBT_FAMILY_TITLES.get(self._skill["family"], "").upper()
+        family_title = _DBT_FAMILY_LONG_TITLES.get(self._skill["family"], "").upper()  # mockup l.165: título largo
         title_text = self._skill["title"].upper()
         if family_title:
             title_text = f"{title_text} · {family_title}"
