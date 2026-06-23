@@ -64,7 +64,7 @@ class _TextEntryRow(NMCard):
 
         meta_col = QVBoxLayout()
         meta_col.setSpacing(2)
-        self._section_lbl = QLabel(self.entry.section)
+        self._section_lbl = QLabel(self.entry.section.upper())  # mockup: eyebrow en mayúsculas
         self._section_lbl.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
         meta_col.addWidget(self._section_lbl)
 
