@@ -714,6 +714,7 @@ class _HeroBienestar(QFrame):
         self._empty_page = QWidget()
         empty_lay = QHBoxLayout(self._empty_page)
         empty_lay.setContentsMargins(0, 0, 0, 0)
+        empty_lay.setSpacing(14)  # mockup l.671: gap:14px
         self._msg = QLabel(
             t(
                 "text.home.empty_message",
@@ -722,6 +723,15 @@ class _HeroBienestar(QFrame):
         )
         self._msg.setFont(qfont("size_small"))
         empty_lay.addWidget(self._msg)
+        # Mockup l.673: CTA inline "Registrar ahora" → navega al módulo animo
+        self._register_btn = NMButton(
+            t("text.home.register_btn", "Registrar ahora"),
+            variant="primary",
+            size="sm",
+            modo=self._modo,
+        )
+        self._register_btn.clicked.connect(lambda: self._on_module_open("animo"))
+        empty_lay.addWidget(self._register_btn)
         empty_lay.addStretch()
         self._stack.addWidget(self._empty_page)
 
