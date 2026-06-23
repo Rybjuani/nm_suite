@@ -193,7 +193,8 @@ DEFAULT_TCC_TEMPLATE = {
         },
         {
             "order": 3,
-            "title": "Respuesta",
+            "title": "Respuesta alternativa",  # mockup l.1260: card title
+            "stepper_label": "Respuesta",  # mockup stepper: label corto
             # Mockup l.1260.
             "prompt": "Reformulá el pensamiento de forma más equilibrada y realista.",
             "hint": "",
@@ -1072,7 +1073,7 @@ class ModuloRegistroTCC(NMModule):
         page, layout = self._make_page()
         layout.setContentsMargins(12, 8, 12, 8)
         for lbl in self._make_title(
-            self._step_name(3, "Respuesta"),
+            t("text.registro.step3_card_title", "Respuesta alternativa"),  # mockup card heading (stepper stays 'Respuesta')
             self._step_prompt(3, "Reformulá el pensamiento de forma más equilibrada y realista."),
         ):
             layout.addWidget(lbl)
