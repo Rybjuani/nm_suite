@@ -930,8 +930,8 @@ class ModuloDBT(NMModule):
         self._library_container.setStyleSheet("background: transparent;")
         self._library_grid = QGridLayout(self._library_container)
         self._library_grid.setContentsMargins(0, 0, 8, 0)
-        self._library_grid.setHorizontalSpacing(16)
-        self._library_grid.setVerticalSpacing(16)
+        self._library_grid.setHorizontalSpacing(12)
+        self._library_grid.setVerticalSpacing(12)
         self._library_grid.setAlignment(Qt.AlignmentFlag.AlignTop)
         for col in range(3):
             self._library_grid.setColumnStretch(col, 1)
