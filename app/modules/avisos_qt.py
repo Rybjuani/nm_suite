@@ -369,7 +369,10 @@ class _ReminderCardV3(QFrame):
         self._meta_lbl = QLabel(f"{self._cat_name} · {self._hora}")
         self._meta_lbl.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
         meta.addWidget(self._meta_lbl)
-        self._freq_lbl = QLabel(f"· {_format_frequency(self._dias)}")  # mockup: separador · antes de recurrencia
+        # Mockup: la frecuencia va sin prefijo "· " — el separador ya vive en
+        # _meta_lbl ("Categoría · HH:MM"). Test avisos_visual_contract exige
+        # exactamente "Todos los días".
+        self._freq_lbl = QLabel(_format_frequency(self._dias))
         self._freq_lbl.setFont(qfont("size_caption_xs"))
         meta.addWidget(self._freq_lbl)
         meta.addStretch()
