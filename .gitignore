@@ -120,3 +120,5 @@ qa/visual_sentinel_baselines/approved/
 # Mockup reference static — 86 PNGs (43 estados × 2 temas) canónicos contra
 # neuromood-mockup.html. Regenerable con qa/capture_mockup.py. ESTÁ TRACKED en
 # el repo como snapshot estático canónico (NO es gitignored).
+qa/_inspect/
+qa/_mockup_targets/
