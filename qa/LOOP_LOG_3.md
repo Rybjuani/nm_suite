@@ -97,12 +97,84 @@ Cada iteración registra:
 
 ---
 
+## Fase de migración controlada de tests obsoletos (post-audit)
+
+Apertura 2026-06-24 v3 luego del audit `qa/LEGACY_TESTS_AUDIT.md` (commit `4a59d8d`). Reglas: 1 test obsoleto por commit, sólo si el mockup canónico demuestra el valor esperado, citar línea/mockup, explicar UI anterior, correr test + suite visual + ruff. No tocar producto salvo que el test demuestre bug real. Mantener "NO PASS visual global".
+
+### Iter 75 — Migración test_rutina_add_done_and_empty_states_match_mockup (mockup l.929)
+
+- **SHA antes:** `4a59d8d` (HEAD pre-migración)
+- **SHA después:** `ad995a2`
+- **Superficie auditada:** Suite · Módulo Rutina · vista tareas por sección · subvista add task inline · componente NMButton add
+- **Mockup esperado:** `neuromood-mockup.html` l.929 `<button class="btn btn--primary" id="rtAdd" style="padding:9px 14px;">+</button>` — glyph `+` y variant `primary` (alias de `gradient` en NMButton).
+- **Discrepancia (sev 🟡):** assert viejo `text() == "✓"` + `variant() == "secondary"` validaba UI anterior del design system (checkmark glyph + secondary outline). El código actual `app/modules/rutina_qt.py:308` ya rindió al spec (NMButton("+", ...) con default variant gradient). El test quedó pineado al valor histórico.
+- **Fix test:** filter `if btn.text() == "✓"` → `if btn.text() == "+"`; assert `variant() == "secondary"` → `variant() == "gradient"`. Width/height (36, 34) sin ref mockup directa, se mantienen (consistency con código).
+- **Producto:** sin tocar (código ya matcheaba).
+- **Validación:** pytest `test_rutina_visual_contract.py` 2/2 pass (1/2 antes); ruff clean; full suite 76/77 pass.
+- **Resultado:** MEJORA — test ahora refleja spec canónico.
+
+### Iter 76 — Migración test_registro_tcc_stepper_otro_and_final_cta_match_mockup (mockup l.1241+l.1261)
+
+- **SHA antes:** `ad995a2`
+- **SHA después:** `a44f5e3`
+- **Superficie auditada:** Suite · Módulo Registro TCC · wizard 4 pasos · card title de cada paso · campo `title` del template
+- **Mockup esperado:** `neuromood-mockup.html` l.1241 `<div class="h-serif" style="font-size:17px;">Pensamiento automático</div>` (card title paso 2) + l.1261 `<div class="h-serif" style="font-size:17px;">Respuesta alternativa</div>` (card title paso 3).
+- **Discrepancia (sev 🟠):** assert viejo `step["title"] == "Pensamiento"` + `"Respuesta"` validaba UI anterior del template (un único campo `title` con valor corto, usado por card + NMStepper). El código actual `app/modules/registro_tcc_qt.py:185-202` separó los dos contextos: `title` (card, largo) + `stepper_label` (NMStepper, corto). El test quedó pineado al campo `title` corto histórico.
+- **Fix test:** assert del campo `title` (card) actualizado a `"Pensamiento automático"` y `"Respuesta alternativa"`. El campo `stepper_label` mantiene los valores cortos, que el mockup confirma en `CBT_STEPS = ['Situación','Emoción','Pensamiento','Respuesta']`.
+- **Producto:** sin tocar (código ya matcheaba).
+- **Aclaración:** `test_registro_tcc_stepper_widget_has_4_steps_and_titles_match` (audit #2) NO está obsoleto — assertea `_stepper._steps` (NMStepper labels) que el mockup mantiene cortos. Se reclasifica como CORRECT.
+- **Validación:** pytest `test_registro_tcc_visual_contract.py` 7/7 pass (6/7 antes); ruff clean.
+- **Resultado:** MEJORA — test ahora refleja spec canónico.
+
+### Iter 77 — Migración test_dbt_stop_practice_uses_modal_stepper_contract (mockup l.1091+l.1172)
+
+- **SHA antes:** `a44f5e3`
+- **SHA después:** `7f670f4`
+- **Superficie auditada:** Suite · Módulo DBT · practice modal · eyebrow `STOP · ${fam}` · componente title_lbl del practice view
+- **Mockup esperado:** `neuromood-mockup.html` l.1091 `DBT_FAMILIES={Mindfulness:'mind',Tolerancia:'toler',...}` (nombres de familia CORTOS, Title Case) + l.1172 `<div class="eyebrow" style="text-align:center;">STOP · ${esc(fam)}</div>` (eyebrow usa el nombre corto en Title Case).
+- **Discrepancia (sev 🟠):** assert viejo `title_lbl.text() == "STOP · TOLERANCIA"` validaba UI anterior (eyebrow pineado a título corto UPPERCASE). El código actual `app/modules/dbt_qt.py:579-583` usaba `_DBT_FAMILY_LONG_TITLES["Tolerancia al malestar"]` + `.upper()`, rindiendo `"STOP · TOLERANCIA AL MALESTAR"` — más largo que el spec. El test pineaba el valor corto histórico y fallaba contra el código (pre-existing).
+- **Fix test:** `assert practice.title_lbl.text() == "STOP · TOLERANCIA"` → `"STOP · Tolerancia"` (Title Case corto, per mockup).
+- **Fix producto (bug real demostrado por el test post-migración):** `app/modules/dbt_qt.py:579-583` — `_DBT_FAMILY_LONG_TITLES` → `_DBT_FAMILY_TITLES` (corto), y se remueve `.upper()` en ambos lados. El eyebrow rinde `"STOP · Tolerancia"`, matcheando l.1172 del mockup.
+- **Validación:** pytest `test_dbt_visual_contract.py` 5/5 pass (4/5 antes); ruff clean; full suite **82/82 pass** (primer pase completamente verde de la sesión v3).
+- **Resultado:** MEJORA — test y producto ahora matchean el spec canónico.
+
+### Iter 78 — Migración test_timer_focus_arc_size_and_num_match_mockup (mockup l.861)
+
+- **SHA antes:** `7f670f4`
+- **SHA después:** `2a18b15`
+- **Superficie auditada:** Suite · Módulo Timer · canvas bigring · número central "25:00" · override de font-size
+- **Mockup esperado:** `neuromood-mockup.html` l.861 `<div class="h-serif" id="tmNum" style="font-size:46px;">25:00</div>` — número central del Timer 46px (override inline del `.bigring .num { font-size:52px }` base).
+- **Discrepancia (sev 🟠):** assert viejo `_num_size_override == 40` validaba UI anterior pineada a 40px. El código actual `app/modules/timer_qt.py:337` también tenía `num_size=40`, contradiciendo el comentario del propio archivo (l.333-336) que ya citaba correctamente el spec: "46px font-display (mockup línea 861: ...font-size:46px)".
+- **Fix test:** `_num_size_override == 40` → `== 46`.
+- **Fix producto (bug real demostrado por el test post-migración):** `app/modules/timer_qt.py:337` `num_size=40` → `num_size=46`. El comentario preexistente ahora matchea el kwarg.
+- **Validación:** pytest `test_timer_visual_contract.py` 3/3 pass; ruff clean; full suite **82/82 pass**.
+- **Resultado:** MEJORA — test y producto ahora matchean el spec canónico.
+
+### Iter 79 — Migración test_hub_pacientes_badge_tone_is_info (mockup l.1388)
+
+- **SHA antes:** `2a18b15`
+- **SHA después:** `6c9c641`
+- **Superficie auditada:** Hub · Módulo Pacientes · header de la lista · badge "N pacientes" · componente NMBadge tone key
+- **Mockup esperado:** `neuromood-mockup.html` l.1388 `<span class="badge brand" style="font-weight:600;">${count} paciente${count===1?'':'s'}</span>` — tone `brand`.
+- **Discrepancia (sev 🟡, semántica NO visual):** assert viejo `tone() == "info"` validaba UI anterior con alias interno `info` (que mapea al mismo render que `brand`: ambos a `_BADGE_TONE_TO_KEY["primary"]` y `_BADGE_TONE_TO_SOFT_KEY["primary_soft"]`). Visualmente idéntico, pero el spec del mockup declara explícitamente `brand` (no el alias `info` que era convención interna).
+- **Fix test:** `tone() == "info"` → `tone() == "brand"`.
+- **Fix producto (spec drift, sin gap visual):** `hub/main_qt.py:345` `tone="info"` → `tone="brand"`. El render no cambia (mismo color), pero la etiqueta interna ahora matchea el spec.
+- **Validación:** pytest `test_hub_visual_contract.py` 10/10 pass; ruff clean; full suite **82/82 pass**.
+- **Resultado:** MEJORA — semántica alineada al spec.
+
+### Reclasificación post-migración
+
+`test_registro_tcc_stepper_widget_has_4_steps_and_titles_match` (audit #2): se reclasifica de OBSOLETE → CORRECT. El test assertea `_stepper._steps` (NMStepper widget labels, intencionalmente cortos) que el mockup `CBT_STEPS = ['Situación','Emoción','Pensamiento','Respuesta']` confirma como spec. No requiere migración.
+
+---
+
 ## Cierre de sesión (al pausar)
 
 - **SHA inicial:** `7f2774396ab46c2c0464fa41dec61d01dc9a92b7`
-- **SHA final:** _(se completa al final)_
-- **Commits en esta sesión:** 1 (este `docs(qa/visual-loop): crea LOOP_LOG_3.md con preflight v3`)
-- **Iteraciones de código:** 0 (solo audit preflight, sin fixes aplicados aún)
-- **Capturas V8 generadas:** `qa/_captures_v8/iter89_baseline/hub-pacientes-light-960x600.png` (1)
+- **SHA final:** `6c9c641` (HEAD actual)
+- **Commits en esta sesión v3:** 6 (1 docs preflight + 1 docs audit + 1 test-only migration + 3 test+fix migrations)
+- **Iteraciones de migración:** 5 de 6 tests obsoletos del audit (1 reclasificado como CORRECT)
+- **Capturas V8 generadas:** 1 (`qa/_captures_v8/iter89_baseline/hub-pacientes-light-960x600.png`)
+- **Suite visual contract:** 82/82 pass (verde al cierre)
 
-> **NO es PASS visual global.** Sesión v3 abierta en estado de preflight: el audit identificó 1 discrepancia visual accionable (color de avatar Ana Martínez brand→accent) que requiere ubicar la clase del row para aplicar el fix mínimo. DIFERIDOS únicos heredados de v1+v2 siguen abiertos y clasificados en las 4 categorías válidas (10 BLOCKED-BY-TEST, 3 DATA-DEPENDENT, 4 FUNCTIONAL-CHANGE, 2 TEST-ISOLATION, 5 no-defecto). Próximo iter pendiente: localizar `NMPatientRowPremium` y aplicar el color override por paciente.
+> **NO es PASS visual global.** La sesión v3 migró 5 tests obsoletos al spec del mockup canónico (con fixes de producto donde el test post-migración demostró bugs reales: STOP eyebrow largo+uppercase → corto Title Case; Timer num 40→46; Hub badge tone info→brand). Quedan 49+ tests CORRECTOS que son la barrera de regresión vigente, 11 tests FUNCTIONALES que nunca se tocan, y 13 tests PINNED-IMPL que requieren refactor cross-cutting fuera del scope de migración controlada. El loop visual puede continuar iterando sobre las 60+ superficies auditables restantes (ver LOOP_LOG_3 §"Discrepancias restantes" iter 74: avatar Ana Martínez, dbt-practice-stop, timer-paused, home-no-score, avisos-filter-activos, actividades-marked-hice, recuperar-acceso).
