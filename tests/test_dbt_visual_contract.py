@@ -47,7 +47,12 @@ def test_dbt_stop_practice_uses_modal_stepper_contract(qtbot, monkeypatch) -> No
 
     practice = module._practice_view
     assert practice.maximumWidth() == 560
-    assert practice.title_lbl.text() == "STOP · TOLERANCIA"
+    # Mockup l.1091 DBT_FAMILIES + l.1172 eyebrow `STOP · ${fam}`: el eyebrow
+    # usa el nombre CORTO de la familia en Title Case. Migración desde UI
+    # anterior que pineaba el render UPPERCASE del título largo. El código
+    # `app/modules/dbt_qt.py:579-583` ya rindió al spec usando
+    # _DBT_FAMILY_TITLES (corto) sin .upper().
+    assert practice.title_lbl.text() == "STOP · Tolerancia"
     assert practice.progress_lbl.text() == "Paso 1 de 4"
     assert practice.step_card.maximumHeight() == 190
     assert practice.safety_lbl is not None
