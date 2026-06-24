@@ -105,8 +105,9 @@ def _categorize(msg: str) -> tuple[str, str, str]:
         return ("Salud", "medicine", "danger")
     if any(k in m for k in ("agua", "hidrat", "beber")):
         return ("Hidratación", "water", "cyan")
+    # 2026-06-24: mockup "Respiración 5 min" usa icono "water" (gota).
     if any(k in m for k in ("respir", "calma", "medit", "mindful")):
-        return ("Calma", "leaf", "teal")
+        return ("Calma", "water", "teal")
     if any(k in m for k in ("ejerci", "yoga", "camin", "estira", "correr", "gimnasio", "gym")):
         return ("Actividad", "run", "teal")
     if any(

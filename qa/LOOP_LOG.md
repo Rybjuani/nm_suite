@@ -288,7 +288,7 @@ Cada iteración registra:
 ### Iter 57 — DBT STOP paso P: title + body alineados al mockup
 
 - **SHA antes:** `ee34f35d8ff2d8eb626117d8bbb49fdf729ba173`
-- **SHA después:** _(pending)_
+- **SHA después:** `b39028142c049b90e0003264be2e45117ab5f196`
 - **Pantalla:** Suite · DBT Práctica guiada (STOP · paso 4, P)
 - **Mockup esperado (l.1164):**
   - title: "P — Procedé con conciencia" (sin paréntesis)
@@ -307,5 +307,29 @@ Cada iteración registra:
 - ✅ `pytest tests/test_dbt_module.py` — 14/14 pass
 
 **Resultado:** MEJORA — copy de P matchea mockup l.1164.
+
+### Iter 58 — Avisos: icono "Respiración 5 min" leaf → water
+
+- **SHA antes:** `b39028142c049b90e0003264be2e45117ab5f196`
+- **SHA después:** _(pending)_
+- **Pantalla:** Suite · Avisos · Todos (item "Respiración 5 min")
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Hábitos/Recordatorios de bienestar/Todos.png` — icono drop 💧 para "Respiración 5 min" (mockup l.637)
+- **Captura real antes:** `qa/_captures_v8/iter_loop_2026_06_24_baseline/suite-avisos-light/suite-avisos-light-960x600.png` — icono leaf 🍃
+- **Captura real después:** `qa/_captures_v8/iter58_after/suite-avisos-light-960x600.png` — icono drop 💧
+
+**Discrepancia detectada** (sev 🟡):
+- `_categorize()` en `app/modules/avisos_qt.py` línea 108-109 retornaba `("Calma", "leaf", "teal")` para mensajes con "respir" — usando icono "leaf".
+- El mockup l.637 muestra drop 💧 para "Respiración 5 min".
+- Iter log lo marcó como "DIFERIDO — decisión de diseño". Reabierto porque el mockup es la verdad.
+
+**Fix aplicado** (`app/modules/avisos_qt.py`):
+- Cambiado "leaf" → "water" en la tupla de la categoría "Calma" cuando el match es por "respir" (mismo path SVG del drop, igual que "Hidratación").
+
+**Validación:**
+- ✅ `ruff check app/modules/avisos_qt.py` — All checks passed
+- ✅ `pytest tests/test_avisos_visual_contract.py` — 2/2 pass
+- ✅ Captura V8 regenerada: ahora muestra gota 💧
+
+**Resultado:** MEJORA — icono de "Respiración 5 min" ahora matchea el mockup l.637.
 
 ---
