@@ -311,7 +311,7 @@ Cada iteración registra:
 ### Iter 58 — Avisos: icono "Respiración 5 min" leaf → water
 
 - **SHA antes:** `b39028142c049b90e0003264be2e45117ab5f196`
-- **SHA después:** _(pending)_
+- **SHA después:** `c56170a01c6863d9e76718046022e08e823f1151`
 - **Pantalla:** Suite · Avisos · Todos (item "Respiración 5 min")
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Hábitos/Recordatorios de bienestar/Todos.png` — icono drop 💧 para "Respiración 5 min" (mockup l.637)
 - **Captura real antes:** `qa/_captures_v8/iter_loop_2026_06_24_baseline/suite-avisos-light/suite-avisos-light-960x600.png` — icono leaf 🍃
@@ -333,3 +333,49 @@ Cada iteración registra:
 **Resultado:** MEJORA — icono de "Respiración 5 min" ahora matchea el mockup l.637.
 
 ---
+
+## Resumen final del loop (12 iteraciones)
+
+- **SHA inicial:** `e29c36e681f346e7130fb418c9df0757f2257559`
+- **SHA final:** `c56170a01c6863d9e76718046022e08e823f1151`
+- **Commits de fix esta sesión:** 12 iters (47–58)
+- **Archivos tocados:** `app/home_qt.py`, `app/modules/dbt_qt.py`, `hub/pacientes_qt.py`, `shared/icons_svg.py`, `app/modules/registro_tcc_qt.py`, `app/modules/avisos_qt.py`
+- **Pantallas corregidas:**
+  1. Suite · Home (hero glow verde visible + module cards border visible)
+  2. Suite · DBT Práctica STOP (copy de los 4 pasos + safety_note sin "un")
+  3. Suite · Ánimo (header icon smile, antes neutral)
+  4. Suite · Respiración (header icon drop, antes leaf)
+  5. Hub · Resumen IA (eyebrow uppercase + botón Cerrar primary)
+  6. Suite · TCC (counter "0/500" en paso 4)
+  7. Suite · Timer (icono pause "00" — dos círculos)
+  8. Suite · Avisos (icono Respiración 5 min: leaf → water)
+
+- **Tests ruff:** ✅ 0 errores en todos los archivos modificados
+- **Tests visuales relevantes:** 50/52 pass. 2 preexistentes rotos (bloquean tests que validan código antiguo incorrecto):
+  - `test_rutina_visual_contract.py::test_rutina_add_done_and_empty_states_match_mockup` — asserta botón "✓" pero el código usa "+" (iter 39 acercó al mockup, no al test).
+  - `test_registro_tcc_visual_contract.py::test_registro_tcc_stepper_otro_and_final_cta_match_mockup` — asserta "Pensamiento" pero el código tiene "Pensamiento automático" (iter 24 acercó al mockup, no al test).
+  - **Tests bloqueados intencionalmente** (no se pueden iterar sin tocar el test): TCC Emoción grilla 4×2 → pills (iter fallido), Timer `num_size` 40 → 46, Avisos freq label sin "·", DBT STOP centrado, etc. — todas iteraciones previas que acercaron al mockup y rompen tests legacy.
+
+- **Capturas V8 generadas:** todas las superficies iteradas regeneradas (light, 960×600) — sin regresión visual.
+- **Sesiones de captura auxiliar:** `iter_loop_2026_06_24_baseline` (39 superficies) usada como baseline; `iter47_after`, `iter48_after`, `iter49_after`, `iter50_after`, `iter51_after`, `iter52_after`, `iter53_after`, `iter54_after`, `iter58_after` para iteraciones individuales.
+
+## Confirmación explícita final
+
+> **NO es PASS visual global.** Quedan ítems DIFERIDOS pendientes:
+> - 🟡 Slider dots animo (DIFERIDO funcional — los 10 niveles clickeables)
+> - 🟡 TCC Emoción grilla 4×2 → pills horizontales (DIFERIDO estructural — tests legacy bloquean el refactor)
+> - 🟡 Hub · sidebar collapsed (DIFERIDO — sin mockup de referencia)
+> - 🟡 Hub · Personalización/Editor overrides (DIFERIDO — sin mockup de referencia)
+> - 🟡 Onboarding copy legal (DIFERIDO — `shared/legal_contract.py` fuera de mandato)
+> - 🟡 Registro success post-save (DIFERIDO — harness no captura post-save)
+> - 🟡 Status chip "Hoy"/"Activo" (DIFERIDO data-driven — depende del recordatorio)
+> - 🟡 Contador 158/145 (DIFERIDO data — cantidad real de textos editables)
+> - 🟡 Ancho input recordatorio "Mensaje del recordatorio (máx 150)" truncado (DIFERIDO ancho)
+> - 🟡 Subtítulo Respiración "Técnicas de calma 4·7·8" punto medio invisible (NO accionable — glifo de fuente)
+> - 🟡 Module card border (iter 48 ya iteró, quedó visible)
+> - ⚪ Botón "Restaurar" todos vs individual (Hub · Textos globales — copy/data menor)
+> - ⚪ Copy Onboarding privacy card (DIFERIDO legal, fuera de mandato)
+> - ⚪ Empty state sin card contenedor (DIFERIDO decisión de diseño)
+> - ⚪ Avatar gradient + border (sin cambio necesario, matchea mockup)
+>
+> El loop acercó 12 frentes visibles al mockup sin regresiones, pero el resto de las pantallas y los detalles finos (data-driven, funcionales, estructurales) siguen pendientes de decisión humana.
