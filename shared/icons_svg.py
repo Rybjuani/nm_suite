@@ -140,8 +140,10 @@ ICON_BODIES: dict[str, str] = {
     "chevronRight": '<path d="M9 6l6 6-6 6"/>',
     # ── Player controls (filled) ──────────────────────────────────────────
     "play": '<path d="M7 4l13 8-13 8z" fill="{color}" stroke="none"/>',
-    "pause": '<rect x="6" y="4" width="4" height="16" rx="1" fill="{color}" stroke="none"/>'
-    '<rect x="14" y="4" width="4" height="16" rx="1" fill="{color}" stroke="none"/>',
+    # 2026-06-24: pause son DOS CÍRCULOS rellenos (no rect, no barras).
+    # El mockup l.861 muestra "00" — convention de Phosphor (style "fill").
+    "pause": '<circle cx="9" cy="12" r="3.5" fill="{color}" stroke="none"/>'
+    '<circle cx="15" cy="12" r="3.5" fill="{color}" stroke="none"/>',
     "stop": '<rect x="5" y="5" width="14" height="14" rx="2" fill="{color}" stroke="none"/>',
     "skip": '<path d="M5 4v16l10-8z" fill="{color}" stroke="none"/>'
     '<rect x="17" y="4" width="2.5" height="16" rx="1" fill="{color}" stroke="none"/>',

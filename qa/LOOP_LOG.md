@@ -191,7 +191,7 @@ Cada iteración registra:
 ### Iter 53 — TCC Respuesta: counter "0 / 500" al pie del textarea
 
 - **SHA antes:** `0b3c9c8062b5dbbc38b40a7f1dd14f93757ef976`
-- **SHA después:** _(pending)_
+- **SHA después:** `8be1aa92575128711bbf4e846e268d9d0ecc988e`
 - **Pantalla:** Suite · TCC paso 4 (Respuesta alternativa)
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Cognitivo/Registro de pensamientos (TCC)/Respuesta.png` — counter "118 / 500" en bottom-left del card (mockup l.1235).
@@ -215,5 +215,29 @@ Cada iteración registra:
 - `ruff check` sobre archivos tocados acumulados (4 archivos): ✅ 0 errores
 - `pytest` sobre tests visuales de módulos tocados: 44/45 pass. 1 preexistente roto:
   - `test_rutina_visual_contract.py::test_rutina_add_done_and_empty_states_match_mockup` — asserta botón "✓" pero el código actual usa "+" (cambio de iter 39 que acercó al mockup, no al test).
+
+### Iter 54 — Timer: icono pause "00" (dos círculos)
+
+- **SHA antes:** `8be1aa92575128711bbf4e846e268d9d0ecc988e`
+- **SHA después:** _(pending)_
+- **Pantalla:** Suite · Temporizador (estado "Sesión en curso")
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Hábitos/Temporizador/En curso.png` — botón central de pause muestra "00" (dos círculos rellenos, convention Phosphor fill).
+- **Captura real antes:** `qa/_captures_v8/iter_loop_2026_06_24_baseline/suite-timer-running-light/suite-timer-running-light-960x600.png` — botón mostraba un rectángulo único (no "00").
+- **Captura real después:** `qa/_captures_v8/iter54_after/suite-timer-running-light-960x600.png` — "00" visible.
+
+**Discrepancia detectada** (sev 🟡):
+- El path SVG de `"pause"` en `shared/icons_svg.py` era un solo `<rect>` con `rx="1"`, lo que renderizaba un rectángulo estirado (no dos barras, no dos círculos).
+- El mockup muestra "00" — convention Phosphor fill (dos círculos rellenos).
+
+**Fix aplicado** (`shared/icons_svg.py`):
+- Cambiado el path de `"pause"` a dos `<circle>` (cx=9 y cx=15, ambos con cy=12, r=3.5, fill={color} stroke=none).
+- Esto matchea el "00" del mockup.
+
+**Validación:**
+- ✅ `ruff check shared/icons_svg.py` — All checks passed
+- ✅ Captura V8 regenerada: "00" ahora visible
+
+**Resultado:** MEJORA — botón de pause ahora matchea la convention "00" del mockup.
 
 ---
