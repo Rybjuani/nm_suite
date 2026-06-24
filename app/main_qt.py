@@ -107,7 +107,7 @@ _MODULE_UI_META = {
     "animo": ("Termómetro emocional", "animo"),
     "respiracion": ("Guía de respiración animada", "respiracion"),
     "registro": ("Registro de pensamientos (TCC)", "registro_tcc"),
-    "rutina": ("Checklist de rutina diaria", "rutina"),
+    "rutina": ("Checklist de rutina diaria", "checklist"),
     "actividades": ("Asistente de activación conductual", "actividades"),
     "timer": ("Temporizador de actividades", "timer"),
     "avisos": ("Recordatorios de bienestar", "avisos"),
