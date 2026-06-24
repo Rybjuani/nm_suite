@@ -808,8 +808,11 @@ class ModuloDBT(NMModule):
             parent=self,
         )
         self._tabs.changed.connect(self._on_tab_changed)
-        self._tabs.setMaximumWidth(640)
-        self._main_layout.addWidget(self._tabs, alignment=Qt.AlignmentFlag.AlignHCenter)
+        # Mockup neuromood-mockup.html: el seg "Ahora / Biblioteca" arranca a
+        # la izquierda del card, no centrado, y su ancho es compacto (≈200px).
+        # Antes: max 640 + AlignHCenter → seg gigante centrado, no matcheaba.
+        self._tabs.setMaximumWidth(220)
+        self._main_layout.addWidget(self._tabs, alignment=Qt.AlignmentFlag.AlignLeft)
         
         # View stacked widget
         self._view_stack = QStackedWidget()
