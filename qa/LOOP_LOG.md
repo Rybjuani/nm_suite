@@ -144,7 +144,7 @@ Cada iteración registra:
 ### Iter 51 — Ánimo: header icon smile (alias "animo" → "mood")
 
 - **SHA antes:** `5050bac3764811c88a5452c9bc7a157b2d40ba0e`
-- **SHA después:** _(pending)_
+- **SHA después:** `a9d8aaa3a5eb83bc84da2ac44e4ea2d344688c18`
 - **Pantalla:** Suite · Ánimo — header
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Bienestar/Termómetro emocional/Termómetro emocional.png` — header "← ☺ Termómetro emocional" (icono smile con ojos y boca)
@@ -163,5 +163,29 @@ Cada iteración registra:
 - ✅ Captura V8 regenerada: header ahora muestra smile
 
 **Resultado:** MEJORA — header de Ánimo ahora muestra el smile del mockup.
+
+### Iter 52 — Respiración: header icon drop (alias "respiracion" → "water")
+
+- **SHA antes:** `a9d8aaa3a5eb83bc84da2ac44e4ea2d344688c18`
+- **SHA después:** _(pending)_
+- **Pantalla:** Suite · Respiración — header
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Bienestar/Guía de respiración/En reposo.png` — header "← 💧 Guía de respiración animada" (icono gota de agua)
+- **Captura real antes:** `qa/_captures_v8/iter_loop_2026_06_24_baseline/suite-respiracion-light/suite-respiracion-light-960x600.png` — header "← 🍃 Guía de respiración animada" (icono hoja)
+- **Captura real después:** `qa/_captures_v8/iter52_after/suite-respiracion-light-960x600.png` — header con icono gota.
+
+**Discrepancia detectada** (sev 🟡):
+- `app/modules/respiracion_qt.py` define `MODULE_ICON = "respiracion"`, pero `"respiracion"` NO está en `shared/icons_svg.ICON_BODIES`. El fallback QtAwesome resolvía a una hoja 🍃.
+- El mockup muestra una gota de agua 💧, no una hoja.
+- Iter log lo marcó como "DIFERIDO — decisión de diseño (la hoja es semánticamente más coherente)". Reabierto porque el mockup es la verdad.
+
+**Fix aplicado** (`shared/icons_svg.py`):
+- Agregado `"respiracion"` como alias del path SVG de `"water"` (gota). Mismo patrón que iter 51.
+
+**Validación:**
+- ✅ `ruff check shared/icons_svg.py` — All checks passed
+- ✅ Captura V8 regenerada: header ahora muestra gota 💧
+
+**Resultado:** MEJORA — header de Respiración ahora muestra la gota del mockup.
 
 ---

@@ -57,6 +57,10 @@ ICON_BODIES: dict[str, str] = {
     '<circle cx="8.5" cy="10" r="1.1" fill="{color}" stroke="none"/>'
     '<circle cx="15.5" cy="10" r="1.1" fill="{color}" stroke="none"/>'
     '<path d="M8 14.5c2 2 6 2 8 0"/>',
+    # 2026-06-24: alias "respiracion" → "water" (gota de agua). El fallback QtAwesome
+    # de "respiracion" devolvía una hoja 🍃; el mockup del header muestra una gota 💧.
+    # Mismo path SVG duplicado para que has_icon("respiracion") retorne True.
+    "respiracion": '<path d="M12 3c-3 5-6 7-6 11a6 6 0 0 0 12 0c0-4-3-6-6-11z"/>',
     "mood": '<circle cx="12" cy="12" r="9"/>'
     '<circle cx="8.5" cy="10" r="1.1" fill="{color}" stroke="none"/>'
     '<circle cx="15.5" cy="10" r="1.1" fill="{color}" stroke="none"/>'
