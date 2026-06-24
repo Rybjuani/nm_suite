@@ -34,6 +34,7 @@ from shared.theme_qt import (
     stylesheet_combobox,
     stylesheet_scrollarea,
     stylesheet_tabwidget_segmented,
+    v3_font,
     v3c,
     V3_SP,
     V3_RD,
@@ -45,13 +46,14 @@ _log = logging.getLogger(__name__)
 
 
 def _section_title(text: str, modo: str) -> QLabel:
-    """Título de panel consistente (semibold + color de texto del tema) —
-    antes eran QLabel crudos con estilo por defecto, distintos entre tabs.
-    (Jerarquía 2026-06: size_body → size_h3, weight_semibold → weight_bold,
-    para que el título del panel sea el primer punto de lectura después del
-    nombre del módulo en la tab activa.)"""
+    """Título de panel consistente (serif 17px weight 600 + color de texto del tema).
+
+    Mockup l.1492: ``<h3 class="h-serif" style="font-size:17px; margin:0;">``
+    donde ``.h-serif`` = var(--font-display) (Fraunces) weight 600.
+    Aplica a los 4 paneles Hub: recordatorios / timer / rutina / activacion.
+    """
     lbl = QLabel(text)
-    lbl.setFont(qfont("size_h3", weight=TYPOGRAPHY["weight_bold"]))
+    lbl.setFont(v3_font(17, weight=600, serif=True))
     lbl.setStyleSheet(f"color: {v3c('text', norm_modo(modo)).name()}; background: transparent;")
     return lbl
 
