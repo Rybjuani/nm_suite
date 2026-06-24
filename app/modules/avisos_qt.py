@@ -701,6 +701,14 @@ class ModuloAvisos(NMModule):
             # el empty state domine el viewport y no compita por altura.
             if hasattr(self, "_silencio_card"):
                 self._silencio_card.setVisible(bool(self._all_rows))
+            # Mockup "Vacío": sin recordatorios asignados, ocultar también la fila
+            # de filtros + búsqueda (no hay nada que filtrar ni buscar). El header
+            # de la ventana (título + traffic lights) se mantiene porque es chrome.
+            has_assignments = bool(self._all_rows)
+            if hasattr(self, "_filter_segment"):
+                self._filter_segment.setVisible(has_assignments)
+            if hasattr(self, "_search_input"):
+                self._search_input.setVisible(has_assignments)
             return
 
         # 4.2: con recordatorios, mostrar la card de Silencio y restaurar el
