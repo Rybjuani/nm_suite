@@ -589,8 +589,8 @@ class _PresetRecordatoriosTab(QWidget):
         self._ent_hora = NMInput("Hora (HH:MM, ej: 08:30)", modo=self._modo)
         self._ent_hora.setMaxLength(5)
         self._ent_msg = NMTextArea(  # mockup: textarea multilinea
-            "Mensaje del recordatorio (máx 150)",
-            modo=self._modo,
+            "Mensaje (máx 150)",  # 2026-06-24 iter 73: acortado para entrar en una
+            modo=self._modo,      # línea a ~220px (placeholder nativo Qt no wrappea).
             max_length=150,
             min_height=72,
         )
