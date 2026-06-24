@@ -48,6 +48,15 @@ except ImportError:
 ICON_BODIES: dict[str, str] = {
     # ── Sidebar / core ──────────────────────────────────────────────────────
     "home": '<path d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2v-9z"/>',
+    # 2026-06-24: alias "animo" → "mood" (smile con ojos). El fallback QtAwesome
+    # de "animo" devolvía un face neutral 😐; el módulo Ánimo debe usar el smile
+    # del mockup (header "← ☺ Termómetro emocional"). El path queda en ICON_BODIES
+    # duplicado (mismo SVG) para que has_icon("animo") retorne True y nm_svg_pixmap
+    # pinte el smile canónico.
+    "animo": '<circle cx="12" cy="12" r="9"/>'
+    '<circle cx="8.5" cy="10" r="1.1" fill="{color}" stroke="none"/>'
+    '<circle cx="15.5" cy="10" r="1.1" fill="{color}" stroke="none"/>'
+    '<path d="M8 14.5c2 2 6 2 8 0"/>',
     "mood": '<circle cx="12" cy="12" r="9"/>'
     '<circle cx="8.5" cy="10" r="1.1" fill="{color}" stroke="none"/>'
     '<circle cx="15.5" cy="10" r="1.1" fill="{color}" stroke="none"/>'

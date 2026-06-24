@@ -114,7 +114,7 @@ Cada iteración registra:
 ### Iter 50 — Hub Resumen IA: eyebrow UPPERCASE + botón Cerrar primary
 
 - **SHA antes:** `bce215e5b30acb2d60b5db2acc110342b3ecbd28`
-- **SHA después:** _(pending)_
+- **SHA después:** `5050bac3764811c88a5452c9bc7a157b2d40ba0e`
 - **Pantalla:** Hub · Detalle de paciente · dialog "Resumen IA"
 - **Tema:** light (480×325)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Hub · Clínico/Pacientes/Detalle de paciente/Resumen IA.png` — eyebrow "ANA MARTÍNEZ" (UPPERCASE, gris) sobre título "Resumen IA"; botón "Cerrar" filled green (primary).
@@ -140,5 +140,28 @@ Cada iteración registra:
 
 **Discrepancias restantes** en Hub:
 - 🟡 Botón "Asignar tarea" / "Agregar actividad" full-width: el real llega casi al borde de la card pero con padding lateral visible (mockup más ajustado). Menor.
+
+### Iter 51 — Ánimo: header icon smile (alias "animo" → "mood")
+
+- **SHA antes:** `5050bac3764811c88a5452c9bc7a157b2d40ba0e`
+- **SHA después:** _(pending)_
+- **Pantalla:** Suite · Ánimo — header
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Bienestar/Termómetro emocional/Termómetro emocional.png` — header "← ☺ Termómetro emocional" (icono smile con ojos y boca)
+- **Captura real antes:** `qa/_captures_v8/iter_loop_2026_06_24_baseline/suite-animo-light/suite-animo-light-960x600.png` — header "← 😐 Termómetro emocional" (face neutral)
+- **Captura real después:** `qa/_captures_v8/iter51_after/suite-animo-light-960x600.png` — header con icono smile.
+
+**Discrepancia detectada** (sev 🟡):
+- `app/modules/animo_qt.py` define `MODULE_ICON = "animo"`, pero `"animo"` NO está en `shared/icons_svg.ICON_BODIES`. `has_icon("animo")` retornaba False → `NMIcon` caía al fallback QtAwesome que resolvía a un face neutral 😐.
+- El mockup muestra un smile (cara con ojos y boca) `☺`, no un face neutral.
+
+**Fix aplicado** (`shared/icons_svg.py`):
+- Agregado `"animo"` como alias a `"mood"` (mismo path SVG: smile con ojos y boca). Esto hace que `has_icon("animo")` retorne True y `nm_svg_pixmap("animo", ...)` pinte el smile canónico.
+
+**Validación:**
+- ✅ `ruff check shared/icons_svg.py` — All checks passed
+- ✅ Captura V8 regenerada: header ahora muestra smile
+
+**Resultado:** MEJORA — header de Ánimo ahora muestra el smile del mockup.
 
 ---
