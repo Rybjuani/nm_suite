@@ -1097,6 +1097,10 @@ class ModuloRegistroTCC(NMModule):
         self._respuesta_count_lbl.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
         )
+        # 2026-06-24: iter 69 — counter ahora se actualiza en tiempo real con
+        # el texto del textarea. Antes era label estático "0 / 500" y mostraba
+        # 0 incluso con texto prellenado (bug visible en V8 step3-filled).
+        self._txt_respuesta.textChanged.connect(self._update_respuesta_count)
         layout.addWidget(self._respuesta_count_lbl)
         self._pages.append(page)
 
@@ -1162,6 +1166,25 @@ class ModuloRegistroTCC(NMModule):
         )
         self._situacion_count_lbl.setText(f"{n} / 500")
         self._situacion_count_lbl.setStyleSheet(f"color: {col}; background: transparent;")
+        self._refresh_nav_state()
+
+    def _update_respuesta_count(self):
+        # 2026-06-24: iter 69 — mirror de _update_situacion_count para el
+        # paso 3 (Respuesta). El counter se actualiza en tiempo real con
+        # el texto del textarea y se torna warning > 500.
+        try:
+            if sip.isdeleted(self._respuesta_count_lbl):
+                return
+            n = len(self._txt_respuesta.toPlainText())
+        except Exception:
+            return
+        col = (
+            v3c("warning", self._modo).name()
+            if n > 500
+            else v3c("ink_secondary", self._modo).name()
+        )
+        self._respuesta_count_lbl.setText(f"{n} / 500")
+        self._respuesta_count_lbl.setStyleSheet(f"color: {col}; background: transparent;")
         self._refresh_nav_state()
 
     def _update_pensamiento_count(self):
