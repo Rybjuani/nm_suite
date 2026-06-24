@@ -2637,8 +2637,18 @@ def _build_mockup_to_capture_registry(
         "recuperar": ["recuperar-acceso"],
     }
 
+    # Mapeo de (screen_id, state_id) mockup → posibles view_ids de V8.
+    # Cubre aliases semanticos donde el state_id del mockup no se deriva
+    # mecanicamente de la convencion "{screen_id}-{state_id}" de V8.
+    _STATE_VIEW_ALIASES = {
+        ("home", "noscore"): ["home-no-score"],
+    }
+
     def _candidate_views(screen_id: str, state_id: str) -> list[str]:
         """Devuelve los view_ids V8 candidatos para una entrada mockup."""
+        key = (screen_id, state_id)
+        if key in _STATE_VIEW_ALIASES:
+            return _STATE_VIEW_ALIASES[key]
         if screen_id in _SCREEN_TO_VIEW:
             return _SCREEN_TO_VIEW[screen_id]
         if state_id == "default":

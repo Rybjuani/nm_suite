@@ -1060,3 +1060,39 @@ def test_audit_mockup_v8_captures_count_matches_root_manifest(tmp_path, monkeypa
         f"tiene prioridad como batch actual), pero ganó "
         f"{captures[shared_key]['iter']}."
     )
+
+
+def test_build_mockup_registry_maps_state_id_alias_to_v8_view():
+    """(d) El registry debe mapear state_id 'noscore' del mockup a la receta
+    V8 'home-no-score' (alias semantico de estado).
+
+    Pre-fix: _candidate_views solo derivaba "home-noscore" y no encontraba
+    la captura real, reportando MISSING_REFERENCE (P0) para
+    suite:home-no-score@light/dark.
+    """
+    mockup_items = [
+        {
+            "screen_id": "home",
+            "state_id": "score",
+            "theme": "light",
+            "product": "Suite · Paciente",
+            "relative_path": "light/home/score.png",
+        },
+        {
+            "screen_id": "home",
+            "state_id": "noscore",
+            "theme": "light",
+            "product": "Suite · Paciente",
+            "relative_path": "light/home/noscore.png",
+        },
+    ]
+    captures = {
+        ("suite", "home", "light"): {"png": Path("cap-home-light.png")},
+        ("suite", "home-no-score", "light"): {"png": Path("cap-home-no-score-light.png")},
+    }
+    reg = visual_sentinel._build_mockup_to_capture_registry(mockup_items, captures)
+
+    assert "suite:home:score@light" in reg["matched"]
+    assert "suite:home:noscore@light" in reg["matched"]
+    assert "suite:home-no-score@light" not in reg["missing_reference"]
+    assert reg["per_surface"]["suite:home:noscore@light"]["view"] == "home-no-score"
