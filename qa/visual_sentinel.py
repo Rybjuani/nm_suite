@@ -2450,43 +2450,103 @@ def _load_mockup_manifest() -> list[dict]:
 
 
 def _load_latest_captures() -> dict[tuple, dict]:
-    """Escanea ``qa/_captures_v8/iter*/CAPTURE_MANIFEST.json`` y devuelve el
-    dict ``{(app, view, theme) -> {"png": Path, "iter": str, "view": str, ...}}``
-    con la captura más reciente por (app, view, theme). El más reciente gana
-    porque los iters se numeran en orden cronológico.
+    """Lee el batch actual de capturas V8 y devuelve el dict
+    ``{(app, view, theme) -> {"png": Path, "iter": str, ...}}`` con la
+    captura más reciente por (app, view, theme).
+
+    Fuentes (en orden de prioridad, la última gana):
+      1. Manifests históricos ``qa/_captures_v8/iter*/CAPTURE_MANIFEST.json``,
+         ordenados por número real de iter (no lexicográfico: ``iter100``
+         es más reciente que ``iter89`` porque 100 > 89).
+      2. Manifest raíz ``qa/_captures_v8/CAPTURE_MANIFEST.json`` generado
+         por ``qa/capture_v8.py --all`` (batch actual). Este manifest es
+         la fuente canónica porque ``--all`` regenera los PNGs in-place
+         y deja el manifest a la raíz. Los iter dirs previos se ignoran
+         si el root manifest está presente y es válido.
+
+    El root manifest tiene PRIORIDAD: si un (app, view, theme) aparece
+    en ambos, gana el root. Esto es intencional — refleja la corrida
+    más reciente del harness.
     """
     out: dict[tuple, dict] = {}
     if not _CAPTURE_ROOT.exists():
         return out
-    # Itera en orden lexicográfico (suficiente para iters numerados).
-    iter_dirs = sorted([d for d in _CAPTURE_ROOT.iterdir()
-                        if d.is_dir() and d.name.startswith("iter")])
-    for iter_dir in iter_dirs:
-        manifest_path = iter_dir / "CAPTURE_MANIFEST.json"
+
+    def _iter_number(name: str) -> int:
+        """Extrae el número real de un nombre 'iterNN' (e.g. 'iter89' -> 89,
+        'iter89_baseline' -> 89, 'iter100' -> 100). Lexicográfico falla:
+        'iter100' < 'iter89' porque '1' < '8' en ASCII; numérico es la
+        verdad cronológica.
+        """
+        m = re.match(r"iter(\d+)", name)
+        return int(m.group(1)) if m else -1
+
+    def _load_manifest(manifest_path: Path, source: str) -> list[dict]:
+        """Carga un CAPTURE_MANIFEST.json y devuelve la lista de entries
+        exitosos. Errores de parseo o manifests vacíos retornan [].
+        """
         if not manifest_path.exists():
-            continue
+            return []
         try:
-            m = json.loads(manifest_path.read_text(encoding="utf-8"))
+            data = json.loads(manifest_path.read_text(encoding="utf-8"))
         except Exception:
-            continue
-        for entry in m.get("results", []):
+            return []
+        out_entries: list[dict] = []
+        for entry in data.get("results", []):
             if not entry.get("success", False):
                 continue
             key = (entry.get("app", ""), entry.get("view", ""), entry.get("theme", ""))
+            if not all(key):
+                continue
+            out_entries.append((key, entry, manifest_path.parent))
+        return out_entries
+
+    # 1. Iter dirs históricos (ordenados por número real, ascendente).
+    #    El último procesado GANA en el dict → iter con número mayor
+    #    override los anteriores.
+    iter_dirs = sorted(
+        [d for d in _CAPTURE_ROOT.iterdir()
+         if d.is_dir() and d.name.startswith("iter")],
+        key=lambda d: _iter_number(d.name),
+    )
+    for iter_dir in iter_dirs:
+        entries = _load_manifest(iter_dir / "CAPTURE_MANIFEST.json", iter_dir.name)
+        for key, entry, base_dir in entries:
             png_name = entry.get("file", "")
-            png_path = iter_dir / png_name
+            png_path = base_dir / png_name
             if not png_path.exists():
                 continue
-            # El último iter con captura válida gana.
             out[key] = {
                 "png": png_path,
-                "iter": iter_dir.name,
+                "iter": base_dir.name,
                 "view": entry.get("view", ""),
                 "app": entry.get("app", ""),
                 "theme": entry.get("theme", ""),
                 "size_bytes": entry.get("size_bytes", 0),
                 "evidence_contract": entry.get("evidence_contract", ""),
             }
+
+    # 2. Root manifest (batch actual del harness). PROCESADO AL FINAL
+    #    para que sobrescriba cualquier iter dir previo. Los PNGs del
+    #    root manifest están directamente en _CAPTURE_ROOT (no en
+    #    subdir).
+    root_manifest = _CAPTURE_ROOT / "CAPTURE_MANIFEST.json"
+    entries = _load_manifest(root_manifest, "root")
+    for key, entry, _base_dir in entries:
+        png_name = entry.get("file", "")
+        png_path = _CAPTURE_ROOT / png_name
+        if not png_path.exists():
+            continue
+        out[key] = {
+            "png": png_path,
+            "iter": "root",  # marca semántica del batch actual
+            "view": entry.get("view", ""),
+            "app": entry.get("app", ""),
+            "theme": entry.get("theme", ""),
+            "size_bytes": entry.get("size_bytes", 0),
+            "evidence_contract": entry.get("evidence_contract", ""),
+        }
+
     return out
 
 
