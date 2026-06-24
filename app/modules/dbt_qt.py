@@ -167,7 +167,9 @@ DBT_SKILLS = {
         "steps": [
             {
                 "title": "S — Stop (Frená)",  # mockup: em-dash
-                "body": "¡No reacciones inmediatamente! Tus emociones pueden empujarte a actuar sin pensar. Mantenete quieto por un instante."
+                # 2026-06-24: mockup l.1171 — copy alineado al mockup.
+                # Antes era genérico; ahora es específico al paso S de STOP.
+                "body": "Detené lo que estás haciendo. No actúes todavía. Quedate quieto por un momento."
             },
             {
                 "title": "T — Tomá distancia (Take a step back)",  # mockup: em-dash

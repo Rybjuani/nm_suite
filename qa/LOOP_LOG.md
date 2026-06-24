@@ -219,7 +219,7 @@ Cada iteración registra:
 ### Iter 54 — Timer: icono pause "00" (dos círculos)
 
 - **SHA antes:** `8be1aa92575128711bbf4e846e268d9d0ecc988e`
-- **SHA después:** _(pending)_
+- **SHA después:** `fc30052b80ec7dcba7fba3c98d06a1ae404e03b2`
 - **Pantalla:** Suite · Temporizador (estado "Sesión en curso")
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Hábitos/Temporizador/En curso.png` — botón central de pause muestra "00" (dos círculos rellenos, convention Phosphor fill).
@@ -239,5 +239,28 @@ Cada iteración registra:
 - ✅ Captura V8 regenerada: "00" ahora visible
 
 **Resultado:** MEJORA — botón de pause ahora matchea la convention "00" del mockup.
+
+### Iter 55 — DBT STOP paso 1: body "Detené lo que estás haciendo…"
+
+- **SHA antes:** `fc30052b80ec7dcba7fba3c98d06a1ae404e03b2`
+- **SHA después:** _(pending)_
+- **Pantalla:** Suite · DBT Práctica guiada (STOP · paso 1, S)
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Habilidades DBT/Habilidades DBT · Práctica guiada/STOP · Paso 1.png` — body: "Detené lo que estás haciendo. No actúes todavía. Quedate quieto un momento." (mockup l.1171)
+- **Captura real antes:** _(no capturada, harness captura paso 2)_
+- **Captura real después:** _(no capturada)_
+
+**Discrepancia detectada** (sev 🟡):
+- El body del paso S era "¡No reacciones inmediatamente! Tus emociones pueden empujarte a actuar sin pensar. Mantenete quieto por un instante." — genérico.
+- El mockup dice "Detené lo que estás haciendo. No actúes todavía. Quedate quieto por un momento." — específico al paso S.
+
+**Fix aplicado** (`app/modules/dbt_qt.py`):
+- Body del paso S actualizado al copy del mockup.
+
+**Validación:**
+- ✅ `ruff check app/modules/dbt_qt.py` — All checks passed
+- ✅ Grep confirma el cambio en el código
+
+**Resultado:** MEJORA — copy del paso S matchea el mockup l.1171.
 
 ---
