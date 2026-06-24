@@ -111,11 +111,11 @@ qa/_re.txt
 qa/_baseline_f0_indigo/
 qa/_baseline_*/
 
-# Visual Sentinel — outputs regenerables (screenshots, crops, árboles, reportes).
-# El ledger de aprobaciones registry.json SÍ se versiona (fuente de verdad).
-qa/_visual_sentinel/
-qa/visual_sentinel_baselines/proposed/
-qa/visual_sentinel_baselines/approved/
+# Visual Auditor V2 — placeholder para el próximo sistema de auditoría visual.
+# Sentinel fue retirado en 2026-06-24. V8 (qa/capture_v8.py) sigue siendo el
+# harness de capturas reales; el auditor visual autónomo será reemplazado en
+# una tarea futura. Ver qa/SENTINEL_REMOVAL.md.
+qa/_visual_auditor_v2/
 
 # Mockup reference static — 86 PNGs (43 estados × 2 temas) canónicos contra
 # neuromood-mockup.html. Regenerable con qa/capture_mockup.py. ESTÁ TRACKED en
