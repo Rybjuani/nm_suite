@@ -959,7 +959,10 @@ class _ProximaSesionCard(QFrame):
             surf_css = f"rgba({surf.red()},{surf.green()},{surf.blue()},160)"
         else:
             surf_css = f"rgba({surface.red()},{surface.green()},{surface.blue()},210)"
-        border_css = f"rgba({border.red()},{border.green()},{border.blue()},{border.alpha()})"
+        # 2026-06-24: subir opacidad del border de 26 (10%) a 60 (~24%) para
+        # que el 1px stroke sea perceptible (mockup muestra border visible).
+        border_alpha = 60 if not is_dark else border.alpha()
+        border_css = f"rgba({border.red()},{border.green()},{border.blue()},{border_alpha})"
         self.setStyleSheet(f"""
             QFrame#NMCard {{
                 background-color: {surf_css};

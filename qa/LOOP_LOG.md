@@ -32,7 +32,7 @@ Cada iteración registra:
 ### Iter 47 — Home hero glow con color brand (visible)
 
 - **SHA antes:** `e29c36e681f346e7130fb418c9df0757f2257559`
-- **SHA después:** _(pending)_
+- **SHA después:** `53d6fc72b83f6c2cd0ba5d637318ff508c3cbc24`
 - **Pantalla:** Suite · Home — hero card superior
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Inicio/Home/Con puntaje.png` — l.666-667: glow en upper-right con `var(--brand-soft) = rgba(46,93,67,.13)` (verde brand 13% alpha, no gris).
@@ -57,6 +57,32 @@ Cada iteración registra:
 
 **Discrepancias restantes** en Home:
 - 🟡 Module cards border: 1px stroke DIFERIDO por "decisión de diseño" — pero el mockup claramente tiene border visible. Reabrible.
-- 🟡 Subtítulo Respiración: "Técnicas de calma 4 7 8" (sin punto medio) vs mockup "Técnicas de calma 4·7·8".
+- 🟡 Subtítulo Respiración: "Técnicas de calma 4 7 8" (sin punto medio) vs mockup "Técnicas de calma 4·7·8". Caracter `·` se renderiza con el mismo ancho que un espacio, fuente no lo hace destacar. NO accionable sin cambio de fuente.
+
+### Iter 48 — Home module cards: border 1px visible
+
+- **SHA antes:** `53d6fc72b83f6c2cd0ba5d637318ff508c3cbc24`
+- **SHA después:** _(pending)_
+- **Pantalla:** Suite · Home — 8 module cards
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Inicio/Home/Con puntaje.png` — cada card tiene un border 1px stroke visible alrededor.
+- **Captura real antes:** `qa/_captures_v8/iter_loop_2026_06_24_baseline/suite-home-light/suite-home-light-960x600.png` — border INVISIBLE (alpha 26 = 10%).
+
+**Discrepancia detectada** (sev 🟡):
+- El código `_apply_card_styles` ya define `border: 1px solid {border_css}` con color `rgba(49,45,39,26)` (alpha 26 = 10%). En el mockup el border es claramente más visible.
+- El log previo lo marcó como DIFERIDO "decisión de diseño del app, no defecto", pero reabierto porque el mockup lo muestra visible.
+
+**Fix aplicado** (`app/home_qt.py`, `_apply_card_styles`):
+- Subir opacidad del border de 26 a 60 (~24%) en light_hybrid.
+- El color sigue `var(--border)` (`#312d27`), solo cambiamos la alpha para que el stroke sea perceptible.
+
+**Validación:**
+- ✅ `ruff check app/home_qt.py` — All checks passed
+- ✅ Captura V8 regenerada: cada card ahora muestra un border 1px sutil pero perceptible.
+
+**Resultado:** MEJORA — las module cards ahora tienen un border visible, matcheando el mockup.
+
+**Discrepancias restantes** en Home:
+- 🟡 Subtítulo Respiración: NO accionable (glifo invisible por fuente).
 
 ---
