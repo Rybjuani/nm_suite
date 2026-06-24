@@ -69,12 +69,13 @@ Aliases necesarios:
 
 ## Estado final
 - SHA inicial: 785dbccdc0db62254f76f77572f85e8f6cfeace1
-- SHA final: f925722
-- Commits: a81eec6, f925722
+- SHA final: fafad8f
+- Commits: a81eec6, f925722, fafad8f
 - MISSING_REFERENCE inicial: 26
 - MISSING_REFERENCE final: 0
 - Casos corregidos: 13 aliases (26 instancias light+dark)
 - Casos clasificados como no-fix: N/A (todos fueron fixables)
+- Validación final: ruff PASS, pytest 61 passed, git diff --clean PASS
 
 ## Confirmación
 **NO es PASS visual global.** Quedan 68 REGRESSIONS (P1) por diferencias visuales entre mockup HTML y capturas Qt offscreen. El registry está completo (MISSING_REFERENCE=0, MISSING_CAPTURE=0, REGISTRY_COMPLETE=YES) pero las divergencias visuales requieren iteración separada del loop de fidelidad visual.
