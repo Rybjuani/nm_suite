@@ -80,6 +80,13 @@ ICON_BODIES: dict[str, str] = {
     "routine": '<rect x="3" y="5" width="18" height="16" rx="2"/>'
     '<path d="M8 2v6M16 2v6M3 10h18"/>'
     '<path d="M8 15l2 2 4-4"/>',
+    # 2026-06-24: alias "checklist" para "routine". El icono routine original
+    # (calendario con check adentro + líneas header) era ilegible a 18px
+    # en module cards del Home — solo se veía el rect. Este alias usa la
+    # versión simplificada (rect + check prominente) que matchea el mockup
+    # de "Checklist de rutina" (cuadrado con ✓ adentro).
+    "checklist": '<rect x="3" y="5" width="18" height="16" rx="2"/>'
+    '<path d="M8 13l3 3 5-6" stroke-width="{sw}"/>',
     "spark": '<path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/>',
     "sparkle": '<path d="M12 2l1.5 5L18 9l-4.5 2L12 16l-1.5-5L6 9l4.5-2z"/>'
     '<path d="M19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7z" stroke-width="{sw_07}"/>'

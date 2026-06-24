@@ -157,7 +157,7 @@ MODULES_CONFIG = [
     },
     {
         "id": "rutina",
-        "icon_v3": "routine",
+        "icon_v3": "checklist",
         "title": "Checklist de Rutina Diaria",
         "card_title": "Checklist de rutina",
         "desc": "Tu rutina del día",
