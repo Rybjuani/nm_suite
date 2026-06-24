@@ -395,11 +395,11 @@ class _NeedCard(NMCard):
         icon_color = v3c(family_color_key, self._modo).name()
         self.icon_label.setPixmap(nm_svg_pixmap(self._icon_name, color=icon_color, size=24))
         
-        chip_bg = _dbt_family_soft_css(self._family, self._modo)
+        chip_bg = _dbt_family_soft_css(self._family, self._modo, alpha=0.04)
         self.chip_label.setStyleSheet(
             f"color: {icon_color}; "
             f"background: {chip_bg}; "
-            f"border-radius: 7px; border: 1px solid {_dbt_family_soft_css(self._family, self._modo, 0.28)};"
+            f"border-radius: 7px; border: 1px solid {_dbt_family_soft_css(self._family, self._modo, 0.34)};"
         )
         self.title_label.setStyleSheet(f"color: {v3c('text', self._modo).name()}; background: transparent;")
         self.subtitle_label.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()}; background: transparent;")
@@ -483,12 +483,12 @@ class _SkillCard(NMCard):
         self._family_color_key = family_color_key
         
         color_val = v3c(family_color_key, self._modo).name()
-        chip_bg = _dbt_family_soft_css(self._skill["family"], self._modo)
-        
+        chip_bg = _dbt_family_soft_css(self._skill["family"], self._modo, alpha=0.04)
+
         self.family_lbl.setStyleSheet(
             f"color: {color_val}; "
             f"background: {chip_bg}; "
-            f"border-radius: 4px; border: 1px solid {_dbt_family_soft_css(self._skill['family'], self._modo, 0.28)};"
+            f"border-radius: 4px; border: 1px solid {_dbt_family_soft_css(self._skill['family'], self._modo, 0.34)};"
         )
         self.family_bar.setStyleSheet(
             f"QFrame#DbtSkillFamilyBar {{ background: {color_val}; "
