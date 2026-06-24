@@ -24,11 +24,17 @@ def test_registro_tcc_stepper_otro_and_final_cta_match_mockup(qtbot, monkeypatch
     module = ModuloRegistroTCC(show_header=False, modo="light_hybrid")
     qtbot.addWidget(module)
 
+    # Mockup l.1241 (paso 2 card title) y l.1261 (paso 3 card title): el campo
+    # `title` del template rinde al título LARGO del card; el `stepper_label`
+    # (separado) rinde al label corto del NMStepper. Migración desde UI anterior
+    # donde el `title` tenía el valor corto y no existía `stepper_label` —
+    # el código `app/modules/registro_tcc_qt.py:185-202` ya separó los dos
+    # campos; el test quedó pineado al valor histórico.
     assert [step["title"] for step in module._step_defs] == [
         "Situación",
         "Emoción",
-        "Pensamiento",
-        "Respuesta",
+        "Pensamiento automático",
+        "Respuesta alternativa",
     ]
     assert module._btn_prev.text() == "Anterior"
     assert module._btn_next.text() == "Siguiente"
