@@ -125,7 +125,13 @@ def _empty_hint_label(text: str, modo: str) -> QWidget:
         f"color: {v3c('ink_secondary', modo).name()}; background: transparent;"
         "border: none;"
     )
-    wl.addWidget(lbl, 0, Qt.AlignmentFlag.AlignCenter)
+    # Mockup l.1495: texto corto ("Sin recordatorios asignados aún.") en 1
+    # línea. Antes: addWidget(lbl, 0, AlignCenter) → Qt usaba sizeHint
+    # width (~200px) y el texto wrapeaba a 2 líneas. Fix: addWidget(lbl)
+    # sin alignment a nivel layout — el label toma el ancho completo
+    # (378px en el panel) y setAlignment(AlignHCenter) centra el texto
+    # dentro. Word-wrap usa el ancho del parent, no el sizeHint.
+    wl.addWidget(lbl)
     return wrap
 
 
