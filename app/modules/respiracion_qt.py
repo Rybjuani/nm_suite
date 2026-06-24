@@ -487,7 +487,10 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
 
         try:
             from shared.theme_qt import v3_font as _v3_font
-            p.setFont(_v3_font(44, weight=TYPOGRAPHY["weight_medium"], serif=True))
+            # Mockup neuromood-mockup.html l.213: .bigring .num usa font-size:52px
+            # weight:500. El real estaba en 44px — se veía más chico y ligero
+            # que el mockup canónico.
+            p.setFont(_v3_font(52, weight=TYPOGRAPHY["weight_medium"], serif=True))
         except ImportError:
             p.setFont(qfont_mono(36, bold=False))
         p.setPen(QPen(text_color))
