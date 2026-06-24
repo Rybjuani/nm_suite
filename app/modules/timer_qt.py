@@ -334,7 +334,7 @@ class ModuloTimer(NMModule):
         # 200×200 + número central 46px font-display (mockup línea 861:
         # <div class="h-serif" id="tmNum" style="font-size:46px;">). El CSS base
         # pide 52px (.bigring .num), pero el Timer overridea inline a 46px.
-        self._canvas = NMFocusArc(size=180, modo=self._modo, num_size=40)
+        self._canvas = NMFocusArc(size=180, modo=self._modo, num_size=46)
         self._canvas.set_data(0.0, self._format_time(self._remaining_sec))
         cent_lay.addWidget(self._canvas, alignment=Qt.AlignmentFlag.AlignHCenter)
 
