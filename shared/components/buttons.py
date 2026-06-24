@@ -221,8 +221,12 @@ class NMButton(QPushButton):
         path.addRoundedRect(rect, r, r)
         is_dark = "dark" in self._modo
 
+        # 2026-06-24 iter 71: opacity 0.4 → 0.65 (gradient variant) — el mockup
+        # "Animo" muestra el botón "Guardar registro" disabled en verde brand
+        # pleno, no en sage claro. El real con 0.4 daba un verde sage que no
+        # matcheaba el mockup.
         if not self.isEnabled():
-            p.setOpacity(0.4)
+            p.setOpacity(0.65)
 
         if self._variant == "gradient":
             primary = v3c("primary", self._modo)
