@@ -455,15 +455,27 @@ class _SuggestedCard(NMCard):
         lay.setContentsMargins(12, 12, 12, 12)
         lay.setSpacing(8)
 
-        # Top: icono grande + chip cat
+        # Top: icono en chip tan (mockup l.997: 30x30 surface-3, icon 17px) + chip cat
         top = QHBoxLayout()
         top.setContentsMargins(0, 0, 0, 0)
         top.setSpacing(4)
         icon_name = dict(_CATEGORY_ORDER).get(self._categoria, "spark")
+        cat_color = _cat_color(self._categoria, self._modo)
         self._icon = NMIcon(
-            icon_name, size=18, color=_cat_color(self._categoria, self._modo), modo=self._modo
+            icon_name, size=17, color=cat_color, modo=self._modo
         )
-        top.addWidget(self._icon)
+        # Wrapper tan: 30x30, surface-3, border-radius 9 (mockup l.997)
+        self._icon_chip = QFrame()
+        self._icon_chip.setObjectName("sugCardIconChip")
+        self._icon_chip.setFixedSize(30, 30)
+        chip_lay = QVBoxLayout(self._icon_chip)
+        chip_lay.setContentsMargins(0, 0, 0, 0)
+        chip_lay.setSpacing(0)
+        chip_lay.addWidget(self._icon, alignment=Qt.AlignmentFlag.AlignCenter)
+        self._icon_chip.setStyleSheet(
+            f"background: {v3c('surface_3', self._modo).name()}; border-radius: 9px;"
+        )
+        top.addWidget(self._icon_chip)
         top.addStretch()
         self._chip = QLabel(_category_label(self._categoria))
         self._chip.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
