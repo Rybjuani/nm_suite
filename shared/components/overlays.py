@@ -54,9 +54,12 @@ _NM_EMPTY_ICON_CHIP_SIZE = 64
 _NM_EMPTY_ICON_CHIP_RADIUS = 18
 _NM_EMPTY_ICON_SIZE = 30
 _NM_EMPTY_TITLE_SIZE = 20
-# Mockup `.empty p { max-width: 34ch }` ≈ 300px a 13.5px Inter. Ancho fijo para
-# que el subtítulo wordwrap respete heightForWidth (ver nota en __init__).
-_NM_EMPTY_SUBTITLE_WIDTH = 300
+# Mockup `.empty p { max-width: 34ch }` (neuromood-mockup.html l.312). En
+# Segoe UI 13.5px (default FONT_SANS de la app) el glyph "0" mide 10px →
+# 34ch ≈ 340px. Antes pineado a 300px (<ch) y el body wrapeaba a 4 líneas
+# en lugar de las 3 del spec. Ancho fijo para que el subtítulo wordwrap
+# respete heightForWidth (ver nota en __init__).
+_NM_EMPTY_SUBTITLE_WIDTH = 340
 
 
 class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
