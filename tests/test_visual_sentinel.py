@@ -1096,3 +1096,35 @@ def test_build_mockup_registry_maps_state_id_alias_to_v8_view():
     assert "suite:home:noscore@light" in reg["matched"]
     assert "suite:home-no-score@light" not in reg["missing_reference"]
     assert reg["per_surface"]["suite:home:noscore@light"]["view"] == "home-no-score"
+
+
+def test_build_mockup_registry_maps_all_v8_aliases():
+    """(e) Verifica que todos los aliases _STATE_VIEW_ALIASEs mapean correctamente
+    mockup screen_id/state_id a V8 view_id, evitando MISSING_REFERENCE.
+    """
+    from qa.visual_sentinel import _STATE_VIEW_ALIASES
+
+    # Build minimal mockup items and captures for each alias
+    for (screen_id, state_id), views in _STATE_VIEW_ALIASES.items():
+        for theme in ("light", "dark"):
+            for view in views:
+                app = "hub" if screen_id in ("detalle", "pacientes", "textos") else "suite"
+                mockup_items = [
+                    {
+                        "screen_id": screen_id,
+                        "state_id": state_id,
+                        "theme": theme,
+                        "product": "Hub · Clínica" if app == "hub" else "Suite · Paciente",
+                        "relative_path": f"{theme}/{screen_id}/{state_id}.png",
+                    },
+                ]
+                captures = {
+                    (app, view, theme): {"png": Path(f"cap-{view}-{theme}.png")},
+                }
+                reg = visual_sentinel._build_mockup_to_capture_registry(mockup_items, captures)
+                key = f"{app}:{screen_id}:{state_id}@{theme}"
+                assert key in reg["matched"], f"Alias {key} -> {view} no hizo match"
+                assert f"{app}:{view}@{theme}" not in reg["missing_reference"], (
+                    f"V8 view {app}:{view}@{theme} sigue como MISSING_REFERENCE"
+                )
+                assert reg["per_surface"][key]["view"] == view

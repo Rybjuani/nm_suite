@@ -2588,6 +2588,39 @@ def _classify_mockup_taxonomy(item: dict) -> dict:
     return {"classes": sorted(classes)}
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# Mockup → V8 registry mapping constants
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Mapeo de screen_id mockup → posibles view_ids de V8
+_SCREEN_TO_VIEW = {
+    "dbtlib": ["dbt-library"],
+    "dbtnow": ["dbt-now"],
+    "textos": ["textos-globales"],
+    "recuperar": ["recuperar-acceso"],
+}
+
+# Mapeo de (screen_id, state_id) mockup → posibles view_ids de V8.
+# Cubre aliases semanticos donde el state_id del mockup no se deriva
+# mecanicamente de la convencion "{screen_id}-{state_id}" de V8.
+_STATE_VIEW_ALIASES = {
+    ("home", "noscore"): ["home-no-score"],
+    ("rutina", "add"): ["rutina-add-task"],
+    ("rutina", "done"): ["rutina-all-completed"],
+    ("actividades", "marked"): ["actividades-marked-hice"],
+    ("avisos", "active"): ["avisos-filter-activos"],
+    ("registro", "s1"): ["registro-step1-emotion"],
+    ("registro", "s1otro"): ["registro-step1-emotion-otro"],
+    ("registro", "s2"): ["registro-step2-distortions"],
+    ("registro", "s3"): ["registro-step3-filled"],
+    ("registro", "ok"): ["registro-success"],
+    ("detalle", "hub-tab-timer"): ["detalle-plan-timer"],
+    ("detalle", "hub-tab-rutina"): ["detalle-plan-rutina"],
+    ("detalle", "hub-tab-activacion"): ["detalle-plan-activacion"],
+    ("detalle", "modal-resumen-ia"): ["detalle-resumen-ia-0"],
+}
+
+
 def _build_mockup_to_capture_registry(
         mockup_items: list[dict],
         captures: dict[tuple, dict],
@@ -2629,21 +2662,6 @@ def _build_mockup_to_capture_registry(
       }
     }
     """
-    # Mapeo de screen_id mockup → posibles view_ids de V8
-    _SCREEN_TO_VIEW = {
-        "dbtlib": ["dbt-library"],
-        "dbtnow": ["dbt-now"],
-        "textos": ["textos-globales"],
-        "recuperar": ["recuperar-acceso"],
-    }
-
-    # Mapeo de (screen_id, state_id) mockup → posibles view_ids de V8.
-    # Cubre aliases semanticos donde el state_id del mockup no se deriva
-    # mecanicamente de la convencion "{screen_id}-{state_id}" de V8.
-    _STATE_VIEW_ALIASES = {
-        ("home", "noscore"): ["home-no-score"],
-    }
-
     def _candidate_views(screen_id: str, state_id: str) -> list[str]:
         """Devuelve los view_ids V8 candidatos para una entrada mockup."""
         key = (screen_id, state_id)
