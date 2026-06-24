@@ -89,12 +89,12 @@ Cada iteración registra:
 ### Iter 49 — DBT STOP: copy "sentís un malestar" → "sentís malestar"
 
 - **SHA antes:** `7ca72c36e98ffaf00110da0d589ceada9b54572b`
-- **SHA después:** _(pending)_
+- **SHA después:** `bce215e5b30acb2d60b5db2acc110342b3ecbd28`
 - **Pantalla:** Suite · DBT Práctica guiada (STOP) — safety_note de cualquier paso
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Habilidades DBT/Habilidades DBT · Práctica guiada/STOP · Paso 1.png` — neuromood-mockup.html l.1181: "Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional." (sin "un")
 - **Captura real antes:** `qa/_captures_v8/iter_loop_2026_06_24_baseline/suite-dbt-practice-stop-light/suite-dbt-practice-stop-light-960x600.png` — decía "Si sentís un malestar extremo..." (con "un" extra)
-- **Captura real después:** _(pending)_
+- **Captura real después:** `qa/_captures_v8/iter49_after/suite-dbt-practice-stop-light-960x600.png` — copy matchea mockup
 
 **Discrepancia detectada** (sev 🟡):
 - El safety_note del bloque `distress_tolerance` en el catalog embebido en `app/modules/dbt_qt.py` línea 185 decía "Si sentís un malestar extremo" — la palabra "un" sobra.
@@ -110,5 +110,35 @@ Cada iteración registra:
 - ✅ Captura V8 regenerada: copy matchea mockup
 
 **Resultado:** MEJORA — copy coincide con mockup l.1181.
+
+### Iter 50 — Hub Resumen IA: eyebrow UPPERCASE + botón Cerrar primary
+
+- **SHA antes:** `bce215e5b30acb2d60b5db2acc110342b3ecbd28`
+- **SHA después:** _(pending)_
+- **Pantalla:** Hub · Detalle de paciente · dialog "Resumen IA"
+- **Tema:** light (480×325)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Hub · Clínico/Pacientes/Detalle de paciente/Resumen IA.png` — eyebrow "ANA MARTÍNEZ" (UPPERCASE, gris) sobre título "Resumen IA"; botón "Cerrar" filled green (primary).
+- **Captura real antes:** `qa/_captures_v8/iter_loop_2026_06_24_baseline/hub-detalle-resumen-ia-0-light-480x325.png` — "Ana Martínez" en title-case normal; botón "Cerrar" como texto ghost.
+- **Captura real después:** `qa/_captures_v8/iter50_after/hub-detalle-resumen-ia-0-light-480x325.png` — eyebrow UPPERCASE + botón primary.
+
+**Discrepancia detectada** (sev 🟠):
+- Mockup muestra el nombre del paciente en eyebrow UPPERCASE (como el eyebrow del card "Ana Martínez" en el detalle).
+- Real usaba title-case (`Ana Martínez`) sin uppercase, y el botón era role="ghost" (texto plano), no filled green.
+- Inconsistencia con el lenguaje del resto del Hub (todos los eyebrows en mayúsculas).
+
+**Fix aplicado** (`hub/pacientes_qt.py`, `_show_resumen_dialog`):
+- `QLabel(self._nombre)` → `QLabel(self._nombre.upper())`.
+- Font: `qfont("size_caption", weight=600)` → `qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"])` (eyebrow style, igual al eyebrow del card de paciente).
+- Botón "Cerrar": `role="ghost"` → `role="primary"` (filled green).
+
+**Validación:**
+- ✅ `ruff check hub/pacientes_qt.py` — All checks passed
+- ✅ `pytest tests/test_hub_visual_contract.py` — 10/10 pass
+- ✅ Captura V8 regenerada: dialog matchea mockup
+
+**Resultado:** MEJORA — dialog Resumen IA ahora matchea el lenguaje del mockup.
+
+**Discrepancias restantes** en Hub:
+- 🟡 Botón "Asignar tarea" / "Agregar actividad" full-width: el real llega casi al borde de la card pero con padding lateral visible (mockup más ajustado). Menor.
 
 ---

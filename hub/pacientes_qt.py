@@ -372,8 +372,11 @@ class DetallePacienteView(QWidget):
         bl.setContentsMargins(0, 0, 0, 0)
         bl.setSpacing(V3_SP["md"])
 
-        patient_lbl = QLabel(self._nombre)
-        patient_lbl.setFont(qfont("size_caption", weight=600))
+        # 2026-06-24: mockup Resumen IA — eyebrow UPPERCASE del nombre del
+        # paciente sobre el título del diálogo. Antes era title-case en
+        # color gris secundario sin uppercase.
+        patient_lbl = QLabel(self._nombre.upper())
+        patient_lbl.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
         patient_lbl.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
         )
@@ -392,7 +395,9 @@ class DetallePacienteView(QWidget):
         bl.addWidget(tb, 1)
 
         dialog.set_body_widget(body)
-        dialog.add_footer_button("Cerrar", role="ghost", callback=dialog.close)
+        # 2026-06-24: mockup Resumen IA — botón "Cerrar" filled green (primary),
+        # no ghost. Antes era texto estilo ghost.
+        dialog.add_footer_button("Cerrar", role="primary", callback=dialog.close)
         dialog._panel.setFixedHeight(325)
         dialog.show_centered()
 
