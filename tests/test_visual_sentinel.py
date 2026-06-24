@@ -20,6 +20,8 @@ _PROJ = Path(__file__).resolve().parent.parent
 if str(_PROJ) not in sys.path:
     sys.path.insert(0, str(_PROJ))
 
+import qa.visual_sentinel as visual_sentinel  # noqa: E402  (alias for legacy per-test imports)
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Independencia del Sentinel (no importa ni reusa V8/runtime)
@@ -908,3 +910,153 @@ def test_qapplication_receives_sanitized_argv(monkeypatch):
         "--platform a Qt"
     )
     sys.argv = original_argv
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Tests para _load_latest_captures (bug 2026-06-24 v3):
+# El root manifest de qa/capture_v8.py --all (86 resultados) debe tener
+# prioridad sobre iter*/históricos, y los iters deben ordenarse por
+# número real (no lexicográfico: iter100 > iter89 porque 100 > 89, no
+# porque '1' < '8' en ASCII). Sin PyQt6; usan tmp_path + manifests
+# sintéticos. Compatibles con el patrón de import del legacy (sys.path
+# + from qa.visual_sentinel import).
+# ═══════════════════════════════════════════════════════════════════════════
+
+import json
+import shutil
+
+
+def _write_manifest_for_sentinel(path: Path, results: list[dict]) -> None:
+    """Escribe un CAPTURE_MANIFEST.json con la lista de results."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"harness": "test", "total": len(results), "results": results},
+                  indent=2),
+        encoding="utf-8",
+    )
+
+
+def _sentinel_entry(app: str, view: str, theme: str, file_name: str) -> dict:
+    """Construye un entry de CAPTURE_MANIFEST.json exitoso (shape V8)."""
+    return {
+        "file": file_name,
+        "app": app,
+        "view": view,
+        "theme": theme,
+        "resolution": "960x600",
+        "success": True,
+        "size_bytes": 50000,
+        "evidence_contract": "main_base",
+    }
+
+
+def test_load_latest_captures_root_manifest_with_86_results_loads_completely(
+    tmp_path, monkeypatch
+):
+    """(a) Root manifest con 86 results se carga completo.
+
+    Bug pre-fix: la implementación sólo leía iter*/ y veía 1 captura.
+    Post-fix: el root manifest se procesa y las 86 entries se registran
+    con ``iter='root'``.
+    """
+    cap_root = tmp_path / "_captures_v8"
+    cap_root.mkdir()
+    results = [
+        _sentinel_entry("suite" if i < 43 else "hub",
+                        f"view_{i:02d}", "light" if i % 2 == 0 else "dark",
+                        f"x-{i:02d}.png")
+        for i in range(86)
+    ]
+    # Crear PNGs dummy para que la función no los descarte.
+    for e in results:
+        (cap_root / e["file"]).write_bytes(b"PNG")
+    _write_manifest_for_sentinel(cap_root / "CAPTURE_MANIFEST.json", results)
+
+    monkeypatch.setattr(visual_sentinel, "_CAPTURE_ROOT", cap_root)
+    out = visual_sentinel._load_latest_captures()
+    assert len(out) == 86, (
+        f"Esperaba 86 entradas del root manifest, obtuve {len(out)}. "
+        f"Esto indica que _load_latest_captures no leyó el root "
+        f"manifest raíz (bug pre-fix)."
+    )
+    for key, entry in out.items():
+        assert entry["iter"] == "root", (
+            f"key {key} no viene del root manifest (iter={entry['iter']})"
+        )
+        assert entry["png"] == cap_root / entry["png"].name
+
+
+def test_load_latest_captures_numeric_sort_picks_higher_iter(tmp_path, monkeypatch):
+    """(b) iter89 e iter100 presentes → iter100 gana como más reciente.
+
+    Bug pre-fix: sorted() lexicográfico ponía iter100 ANTES de iter89
+    ('1' < '8' en ASCII) y el último procesado (iter89) ganaba →
+    resultado INCORRECTO. Post-fix: orden numérico por el número real
+    extraído con regex.
+    """
+    cap_root = tmp_path / "_captures_v8"
+    cap_root.mkdir()
+    iter89 = cap_root / "iter89_baseline"
+    iter89.mkdir()
+    (iter89 / "suite-pacientes-light.png").write_bytes(b"PNG89")
+    _write_manifest_for_sentinel(iter89 / "CAPTURE_MANIFEST.json", [
+        _sentinel_entry("suite", "pacientes", "light", "suite-pacientes-light.png"),
+    ])
+    iter100 = cap_root / "iter100_latest"
+    iter100.mkdir()
+    (iter100 / "suite-pacientes-light.png").write_bytes(b"PNG100")
+    _write_manifest_for_sentinel(iter100 / "CAPTURE_MANIFEST.json", [
+        _sentinel_entry("suite", "pacientes", "light", "suite-pacientes-light.png"),
+    ])
+
+    monkeypatch.setattr(visual_sentinel, "_CAPTURE_ROOT", cap_root)
+    out = visual_sentinel._load_latest_captures()
+    assert ("suite", "pacientes", "light") in out
+    assert out[("suite", "pacientes", "light")]["iter"] == "iter100_latest", (
+        f"iter100 debería ganar sobre iter89 (orden numérico), pero "
+        f"ganó {out[('suite', 'pacientes', 'light')]['iter']}."
+    )
+    assert out[("suite", "pacientes", "light")]["png"].parent == iter100
+
+
+def test_audit_mockup_v8_captures_count_matches_root_manifest(tmp_path, monkeypatch):
+    """(c) audit-mockup no reporta V8_CAPTURES_LATEST=1 con root válido.
+
+    Simula el escenario del bug: iter89 con 1 captura + root con
+    86 resultados, una entrada compartida. Verifica len==86 y que la
+    entrada compartida quede en 'root' (prioridad como batch actual).
+    """
+    cap_root = tmp_path / "_captures_v8"
+    cap_root.mkdir()
+    iter89 = cap_root / "iter89_baseline"
+    iter89.mkdir()
+    (iter89 / "suite-home-light.png").write_bytes(b"old")
+    _write_manifest_for_sentinel(iter89 / "CAPTURE_MANIFEST.json", [
+        _sentinel_entry("suite", "home", "light", "suite-home-light.png"),
+    ])
+    results = [
+        _sentinel_entry("suite" if i < 43 else "hub",
+                        f"view_{i:02d}", "light" if i % 2 == 0 else "dark",
+                        f"x-{i:02d}.png")
+        for i in range(86)
+    ]
+    # Sobrescribir suite/home/light en el root con el mismo key que iter89.
+    results[0] = _sentinel_entry("suite", "home", "light", "suite-home-light.png")
+    for e in results:
+        (cap_root / e["file"]).write_bytes(b"new")
+    _write_manifest_for_sentinel(cap_root / "CAPTURE_MANIFEST.json", results)
+
+    monkeypatch.setattr(visual_sentinel, "_CAPTURE_ROOT", cap_root)
+    captures = visual_sentinel._load_latest_captures()
+    assert len(captures) == 86, (
+        f"V8_CAPTURES_LATEST={len(captures)} sugiere que el root "
+        f"manifest se está ignorando. Esperaba 86. Bug pre-fix: 1."
+    )
+    shared_key = ("suite", "home", "light")
+    assert shared_key in captures
+    assert captures[shared_key]["iter"] == "root", (
+        f"Esperaba que root override iter89 para {shared_key} (root "
+        f"tiene prioridad como batch actual), pero ganó "
+        f"{captures[shared_key]['iter']}."
+    )

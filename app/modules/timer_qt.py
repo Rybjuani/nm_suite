@@ -334,7 +334,7 @@ class ModuloTimer(NMModule):
         # 200×200 + número central 46px font-display (mockup línea 861:
         # <div class="h-serif" id="tmNum" style="font-size:46px;">). El CSS base
         # pide 52px (.bigring .num), pero el Timer overridea inline a 46px.
-        self._canvas = NMFocusArc(size=180, modo=self._modo, num_size=40)
+        self._canvas = NMFocusArc(size=180, modo=self._modo, num_size=46)
         self._canvas.set_data(0.0, self._format_time(self._remaining_sec))
         cent_lay.addWidget(self._canvas, alignment=Qt.AlignmentFlag.AlignHCenter)
 
@@ -506,8 +506,13 @@ class ModuloTimer(NMModule):
         if self._has_activity:
             outer.addWidget(timer_card, stretch=1)
         else:
-            timer_card.setMinimumHeight(220)
-            timer_card.setMaximumHeight(300)
+            # Mockup l.856-858: empty state en pantalla directa, SIN card
+            # chrome. NMCard tiene paintEvent propio (no responde a
+            # stylesheet) — usamos el flag borderless agregado al widget
+            # para que pinte sin border/bg/shadow en este modo. El
+            # cent_container con el empty_state queda sobre el fondo del
+            # screen, matcheando el spec del mockup.
+            timer_card.set_borderless(True)
             outer.addWidget(timer_card, stretch=0)
             outer.addStretch(1)
         self._timer_card = timer_card

@@ -139,6 +139,7 @@ class NMCard(QFrame):
         self._clickable = clickable
         self._glow = glow
         self._active = active
+        self._borderless = False
         self._hover = False
         self._disabled = False
         self._disabled_effect: QGraphicsOpacityEffect | None = None
@@ -372,6 +373,15 @@ class NMCard(QFrame):
         w, h = self.width(), self.height()
         rect = QRectF(0, 0, w, h)
 
+        # Borderless: pinta el card sin chrome (sin border, sin fondo, sin
+        # shadow). Usado para empty states que el mockup muestra sobre el
+        # fondo del screen sin chrome (l.856-858 timer-empty, l.1044-1046
+        # avisos-empty, l.909 rutina-empty). El card sigue ocupando
+        # espacio en el layout pero es visualmente invisible.
+        if getattr(self, "_borderless", False):
+            p.end()
+            return
+
         # Superficie sólida del cockpit: card limpia, sin glass ni highlights.
         if not self._disabled and self.isEnabled():
             surf_col = v3c("surfaceSolid" if is_dark else "surface", self._modo)
@@ -422,6 +432,16 @@ class NMCard(QFrame):
 
     def set_active(self, active: bool):
         self._active = bool(active)
+        self.update()
+
+    def set_borderless(self, borderless: bool):
+        """Pinta el card SIN border, fondo ni shadow. Útil para empty
+        states que el mockup muestra directamente sobre el fondo del
+        screen sin chrome (mockup l.856-858 timer-empty, l.1044-1046
+        avisos-empty, l.909 rutina-empty). El card sigue siendo un
+        QWidget estructural pero visualmente invisible.
+        """
+        self._borderless = bool(borderless)
         self.update()
 
     def set_accent(self, hex_color: str | None):

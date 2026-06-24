@@ -69,7 +69,13 @@ def test_timer_focus_arc_size_and_num_match_mockup(qtbot, monkeypatch) -> None:
 
     assert module._canvas.width() == 180
     assert module._canvas.height() == 180
-    assert module._canvas._num_size_override == 40
+    # Mockup canónico l.861: número central del Timer 46px (override inline
+    # de .bigring .num base 52px). Migración desde UI anterior pineada a
+    # 40px (versión vieja, ignoraba el override del spec); el comentario
+    # ya citaba correctamente el valor 46 (l.333-336) pero el kwarg
+    # quedó desfasado. Test asserts _num_size_override==40 pineaba el
+    # valor histórico incorrecto.
+    assert module._canvas._num_size_override == 46
     assert module._canvas._time_text == "25:00"
 
 

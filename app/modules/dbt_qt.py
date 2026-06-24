@@ -576,8 +576,15 @@ class _SkillPracticeView(QWidget):
         lay.setContentsMargins(24, 16, 24, 16)
         lay.setSpacing(12)
 
-        family_title = _DBT_FAMILY_LONG_TITLES.get(self._skill["family"], "").upper()  # mockup l.165: título largo
-        title_text = self._skill["title"].upper()
+        # Mockup l.1091 DBT_FAMILIES + l.1172 eyebrow: STOP · ${fam} usa el
+        # nombre CORTO de la familia en Title Case (no el largo). Migración
+        # desde UI anterior donde el eyebrow usaba el título largo
+        # "Tolerancia al malestar" en UPPERCASE — el código actual usaba
+        # _DBT_FAMILY_LONG_TITLES + .upper() (rindiendo "STOP · TOLERANCIA AL
+        # MALESTAR", más largo que el spec). Se corrige a _DBT_FAMILY_TITLES
+        # (corto) y se remueve .upper() (mockup usa Title Case en l.1172).
+        family_title = _DBT_FAMILY_TITLES.get(self._skill["family"], "")
+        title_text = self._skill["title"]
         if family_title:
             title_text = f"{title_text} · {family_title}"
         self.title_lbl = QLabel(title_text)

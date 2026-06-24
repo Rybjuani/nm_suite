@@ -2415,6 +2415,526 @@ def _check_obsolete_recipe_refs(reg: dict) -> list[Finding]:
 # Reporte HTML
 # ═══════════════════════════════════════════════════════════════════════════
 
+_MOCKUP_MANIFEST = _PROJ / "qa" / "mockup_reference_static" / "manifest.json"
+_CAPTURE_ROOT = _PROJ / "qa" / "_captures_v8"
+
+# Banderas y severidades del modo "test visual Nº1" (registry mockup→captura real).
+# Estas reglas son DURAS: el Sentinel NUNCA emite PASS global si el registry
+# está incompleto (regla 7 del owner). Cada bandera tiene severidad P0/P1 y
+# un mensaje que cita la regla violated para que el log de auditoría sea
+# trazable al spec.
+_FLAG_REGISTRY_INCOMPLETE = "REGISTRY_INCOMPLETE"
+_FLAG_MISSING_CAPTURE = "MISSING_CAPTURE"           # mockup reference sin captura real
+_FLAG_MISSING_REFERENCE = "MISSING_REFERENCE"       # captura real sin referencia mockup
+_FLAG_COVERAGE_GAP = "COVERAGE_GAP"                 # clase de taxonomía sin entradas
+_FLAG_PER_SURFACE_REGRESSION = "PER_SURFACE_REGRESSION"  # phash dist > threshold
+
+# Umbral de phash distance para considerar regresión visual. 10 = diferencia
+# significativa en estructura/composición (puede ser render diff por fuente
+# faltante o un cambio real de layout). El owner puede ajustar.
+_PHASH_REGRESSION_THRESHOLD = 10
+
+
+def _load_mockup_manifest() -> list[dict]:
+    """Carga ``qa/mockup_reference_static/manifest.json`` y devuelve la lista
+    de superficies de referencia. Si el manifest no existe, devuelve lista
+    vacía (modo degradado: Sentinel emite REGISTRY_INCOMPLETE P0).
+    """
+    if not _MOCKUP_MANIFEST.exists():
+        return []
+    try:
+        data = json.loads(_MOCKUP_MANIFEST.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    return data.get("items", [])
+
+
+def _load_latest_captures() -> dict[tuple, dict]:
+    """Lee el batch actual de capturas V8 y devuelve el dict
+    ``{(app, view, theme) -> {"png": Path, "iter": str, ...}}`` con la
+    captura más reciente por (app, view, theme).
+
+    Fuentes (en orden de prioridad, la última gana):
+      1. Manifests históricos ``qa/_captures_v8/iter*/CAPTURE_MANIFEST.json``,
+         ordenados por número real de iter (no lexicográfico: ``iter100``
+         es más reciente que ``iter89`` porque 100 > 89).
+      2. Manifest raíz ``qa/_captures_v8/CAPTURE_MANIFEST.json`` generado
+         por ``qa/capture_v8.py --all`` (batch actual). Este manifest es
+         la fuente canónica porque ``--all`` regenera los PNGs in-place
+         y deja el manifest a la raíz. Los iter dirs previos se ignoran
+         si el root manifest está presente y es válido.
+
+    El root manifest tiene PRIORIDAD: si un (app, view, theme) aparece
+    en ambos, gana el root. Esto es intencional — refleja la corrida
+    más reciente del harness.
+    """
+    out: dict[tuple, dict] = {}
+    if not _CAPTURE_ROOT.exists():
+        return out
+
+    def _iter_number(name: str) -> int:
+        """Extrae el número real de un nombre 'iterNN' (e.g. 'iter89' -> 89,
+        'iter89_baseline' -> 89, 'iter100' -> 100). Lexicográfico falla:
+        'iter100' < 'iter89' porque '1' < '8' en ASCII; numérico es la
+        verdad cronológica.
+        """
+        m = re.match(r"iter(\d+)", name)
+        return int(m.group(1)) if m else -1
+
+    def _load_manifest(manifest_path: Path, source: str) -> list[dict]:
+        """Carga un CAPTURE_MANIFEST.json y devuelve la lista de entries
+        exitosos. Errores de parseo o manifests vacíos retornan [].
+        """
+        if not manifest_path.exists():
+            return []
+        try:
+            data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except Exception:
+            return []
+        out_entries: list[dict] = []
+        for entry in data.get("results", []):
+            if not entry.get("success", False):
+                continue
+            key = (entry.get("app", ""), entry.get("view", ""), entry.get("theme", ""))
+            if not all(key):
+                continue
+            out_entries.append((key, entry, manifest_path.parent))
+        return out_entries
+
+    # 1. Iter dirs históricos (ordenados por número real, ascendente).
+    #    El último procesado GANA en el dict → iter con número mayor
+    #    override los anteriores.
+    iter_dirs = sorted(
+        [d for d in _CAPTURE_ROOT.iterdir()
+         if d.is_dir() and d.name.startswith("iter")],
+        key=lambda d: _iter_number(d.name),
+    )
+    for iter_dir in iter_dirs:
+        entries = _load_manifest(iter_dir / "CAPTURE_MANIFEST.json", iter_dir.name)
+        for key, entry, base_dir in entries:
+            png_name = entry.get("file", "")
+            png_path = base_dir / png_name
+            if not png_path.exists():
+                continue
+            out[key] = {
+                "png": png_path,
+                "iter": base_dir.name,
+                "view": entry.get("view", ""),
+                "app": entry.get("app", ""),
+                "theme": entry.get("theme", ""),
+                "size_bytes": entry.get("size_bytes", 0),
+                "evidence_contract": entry.get("evidence_contract", ""),
+            }
+
+    # 2. Root manifest (batch actual del harness). PROCESADO AL FINAL
+    #    para que sobrescriba cualquier iter dir previo. Los PNGs del
+    #    root manifest están directamente en _CAPTURE_ROOT (no en
+    #    subdir).
+    root_manifest = _CAPTURE_ROOT / "CAPTURE_MANIFEST.json"
+    entries = _load_manifest(root_manifest, "root")
+    for key, entry, _base_dir in entries:
+        png_name = entry.get("file", "")
+        png_path = _CAPTURE_ROOT / png_name
+        if not png_path.exists():
+            continue
+        out[key] = {
+            "png": png_path,
+            "iter": "root",  # marca semántica del batch actual
+            "view": entry.get("view", ""),
+            "app": entry.get("app", ""),
+            "theme": entry.get("theme", ""),
+            "size_bytes": entry.get("size_bytes", 0),
+            "evidence_contract": entry.get("evidence_contract", ""),
+        }
+
+    return out
+
+
+def _classify_mockup_taxonomy(item: dict) -> dict:
+    """Asigna la taxonomía de superficie declarada por el owner para una
+    entrada del manifest. Devuelve dict con clases en las que la entrada
+    cuenta (puede contar en varias, p.ej. "detalle" cuenta como
+    pantallas/subpantallas).
+
+    Taxonomía mockup-enumerable (regla 2 del owner):
+      - producto/app   → manifest.product
+      - módulos        → manifest.group
+      - pantallas/vistas → manifest.screen_id (vista principal)
+      - subpantallas/vistas secundarias/detalles
+                        → screen_id "detalle"/"dbt-practice-stop" con
+                          state_id != "default" (tabs, modals)
+                        O screen_id con sufijo "-"
+      - estados/variantes → manifest.state_id (cuando != "default")
+
+    Taxonomía NO-enumerable-en-mockup (la descubre el crawler):
+      - componentes / modales / toasts / navegación
+        → estas clases NO se auditan en modo registry (audit-mockup);
+          se auditan en modo crawler (audit --all) que sí las
+          introspecciona en vivo. Si la regla 2 las exigiera acá
+          siempre serían GAP (el mockup no las enumera), lo que
+          bloquearía PASS en un modo que no tiene cómo cubrirlas.
+    """
+    screen_id = item.get("screen_id", "")
+    state_id = item.get("state_id", "default")
+    classes = {"producto/app", "módulos", "pantallas/vistas"}
+    # Subpantallas: tabs o modals dentro de detalle, o screen_id con sufijo
+    if state_id != "default" and screen_id in ("detalle", "dbt-practice-stop"):
+        classes.add("subpantallas/vistas secundarias/detalles")
+    if "-" in screen_id and any(screen_id.startswith(p)
+                                 for p in ("detalle", "registro-step")):
+        classes.add("subpantallas/vistas secundarias/detalles")
+    if state_id != "default":
+        classes.add("estados/variantes")
+    return {"classes": sorted(classes)}
+
+
+def _build_mockup_to_capture_registry(
+        mockup_items: list[dict],
+        captures: dict[tuple, dict],
+) -> dict:
+    """Construye el registry mockup→captura real. Join por
+    (theme, screen_id, state_id) → (app, view, theme).
+
+    Estrategia de view_id:
+      - screen_id == "dbtlib" → view "dbt-library"
+      - screen_id == "dbtnow" → view "dbt-now"
+      - screen_id == "dbt-practice-stop" → view "dbt-practice-stop"
+      - state_id == "default" → view = screen_id
+      - state_id != "default" → view = f"{screen_id}-{state_id}"
+      - Fallback: probar ambos patterns.
+
+    Devuelve:
+    {
+      "mockup_count": 86,
+      "capture_count": N,
+      "matched": [...],          # per-surface con mockup+real
+      "missing_capture": [...],  # mockup sin captura
+      "missing_reference": [...],# captura sin mockup
+      "per_surface": {
+        "<key>": {
+          "mockup_path": "...",
+          "capture_path": "...",
+          "phash_distance": int|None,
+          "status": "MATCH|MINOR_DIFF|REGRESSION|MISSING_CAPTURE|MISSING_REFERENCE",
+          "surface_classes": [...],
+          "screen_id": "...",
+          "state_id": "...",
+          "theme": "...",
+          "app": "...",
+          "view": "...",
+        }
+      },
+      "taxonomy_coverage": {
+        "<class>": {"mockup_count": N, "capture_count": M, "status": "OK|GAP"}
+      }
+    }
+    """
+    # Mapeo de screen_id mockup → posibles view_ids de V8
+    _SCREEN_TO_VIEW = {
+        "dbtlib": ["dbt-library"],
+        "dbtnow": ["dbt-now"],
+        "textos": ["textos-globales"],
+        "recuperar": ["recuperar-acceso"],
+    }
+
+    def _candidate_views(screen_id: str, state_id: str) -> list[str]:
+        """Devuelve los view_ids V8 candidatos para una entrada mockup."""
+        if screen_id in _SCREEN_TO_VIEW:
+            return _SCREEN_TO_VIEW[screen_id]
+        if state_id == "default":
+            return [screen_id]
+        # Probar screen_id-state_id primero, luego screen_id solo
+        return [f"{screen_id}-{state_id}", screen_id]
+
+    def _app_for_product(product: str) -> str:
+        return "hub" if "Hub" in product else "suite"
+
+    registry = {
+        "mockup_count": len(mockup_items),
+        "capture_count": len(captures),
+        "matched": [],
+        "missing_capture": [],
+        "missing_reference": [],
+        "per_surface": {},
+        "taxonomy_coverage": {},
+    }
+
+    # 1. Indexar capturas por (app, view, theme) para join O(1)
+    cap_by_view = captures
+
+    # 2. Join mockup → capture
+    matched_keys: set[tuple] = set()
+    taxonomy_classes: dict[str, dict] = {}
+
+    for item in mockup_items:
+        screen_id = item.get("screen_id", "")
+        state_id = item.get("state_id", "default")
+        theme = item.get("theme", "light")
+        app = _app_for_product(item.get("product", ""))
+        candidates = _candidate_views(screen_id, state_id)
+
+        matched_cap = None
+        matched_view = None
+        for view in candidates:
+            key = (app, view, theme)
+            if key in cap_by_view:
+                matched_cap = cap_by_view[key]
+                matched_view = view
+                break
+
+        surface_classes = _classify_mockup_taxonomy(item)["classes"]
+        for cls in surface_classes:
+            taxonomy_classes.setdefault(cls, {"mockup_count": 0, "capture_count": 0})
+            taxonomy_classes[cls]["mockup_count"] += 1
+
+        if matched_cap:
+            matched_keys.add((app, matched_view, theme))
+            key = f"{app}:{screen_id}:{state_id}@{theme}"
+            registry["per_surface"][key] = {
+                "mockup_path": str(_PROJ / "qa" / "mockup_reference_static"
+                                   / item.get("relative_path", "")),
+                "capture_path": str(matched_cap["png"]),
+                "phash_distance": None,  # se calcula en _compute_per_surface_diff
+                "status": "MATCH",  # provisional; se actualiza tras diff
+                "surface_classes": surface_classes,
+                "screen_id": screen_id,
+                "state_id": state_id,
+                "theme": theme,
+                "app": app,
+                "view": matched_view,
+            }
+            registry["matched"].append(key)
+            for cls in surface_classes:
+                taxonomy_classes[cls]["capture_count"] += 1
+        else:
+            key = f"{app}:{screen_id}:{state_id}@{theme}"
+            registry["per_surface"][key] = {
+                "mockup_path": str(_PROJ / "qa" / "mockup_reference_static"
+                                   / item.get("relative_path", "")),
+                "capture_path": "",
+                "phash_distance": None,
+                "status": "MISSING_CAPTURE",
+                "surface_classes": surface_classes,
+                "screen_id": screen_id,
+                "state_id": state_id,
+                "theme": theme,
+                "app": app,
+                "view": candidates[0] if candidates else screen_id,
+            }
+            registry["missing_capture"].append(key)
+
+    # 3. Capturas sin referencia mockup
+    for (app, view, theme), cap in cap_by_view.items():
+        if (app, view, theme) in matched_keys:
+            continue
+        key = f"{app}:{view}@{theme}"
+        registry["per_surface"][key] = {
+            "mockup_path": "",
+            "capture_path": str(cap["png"]),
+            "phash_distance": None,
+            "status": "MISSING_REFERENCE",
+            "surface_classes": ["pantallas/vistas"],  # heurística; surfaced como componente del producto
+            "screen_id": view,
+            "state_id": "default",
+            "theme": theme,
+            "app": app,
+            "view": view,
+        }
+        registry["missing_reference"].append(key)
+
+    # 4. Taxonomía: status por clase
+    for cls, counts in taxonomy_classes.items():
+        if counts["mockup_count"] > 0 and counts["capture_count"] == 0:
+            counts["status"] = "GAP"
+        else:
+            counts["status"] = "OK"
+    registry["taxonomy_coverage"] = taxonomy_classes
+
+    return registry
+
+
+def _compute_per_surface_diff(registry: dict) -> None:
+    """Calcula phash distance mockup↔captura por superficie y actualiza
+    status. Mutates registry["per_surface"][key] in place.
+
+    Clasificación por umbral:
+      - phash_distance <= 5    → MATCH
+      - phash_distance <= 10   → MINOR_DIFF (variación de render, fuente, etc.)
+      - phash_distance > 10    → REGRESSION (cambio estructural significativo)
+
+    Si la superficie ya está en MISSING_CAPTURE o MISSING_REFERENCE, no
+    calcula diff.
+    """
+    try:
+        import imagehash
+        from PIL import Image
+    except ImportError:
+        # Si las dependencias no están, deja status como MATCH provisional
+        return
+
+    for key, surface in registry.get("per_surface", {}).items():
+        if surface["status"] in ("MISSING_CAPTURE", "MISSING_REFERENCE"):
+            continue
+        mockup_p = Path(surface["mockup_path"])
+        capture_p = Path(surface["capture_path"])
+        if not mockup_p.exists() or not capture_p.exists():
+            continue
+        try:
+            m_hash = imagehash.phash(Image.open(mockup_p).convert("RGB"))
+            c_hash = imagehash.phash(Image.open(capture_p).convert("RGB"))
+            dist = int(m_hash - c_hash)
+        except Exception:
+            dist = None
+        surface["phash_distance"] = dist
+        if dist is None:
+            surface["status"] = "MATCH"  # no se pudo medir
+        elif dist <= 5:
+            surface["status"] = "MATCH"
+        elif dist <= _PHASH_REGRESSION_THRESHOLD:
+            surface["status"] = "MINOR_DIFF"
+        else:
+            surface["status"] = "REGRESSION"
+
+
+def _check_registry_completeness(registry: dict) -> list[Finding]:
+    """Regla 3 + 4: Falla P0 si hay MISSING_CAPTURE o MISSING_REFERENCE."""
+    findings: list[Finding] = []
+    for key, surface in registry.get("per_surface", {}).items():
+        if surface["status"] == "MISSING_CAPTURE":
+            findings.append(Finding(
+                contract_id="mockup_registry_completeness", severity="P0",
+                flag=_FLAG_MISSING_CAPTURE,
+                screen_id=key, theme=surface["theme"],
+                message=(f"[REGLA 4] Mockup reference sin captura real: "
+                         f"{surface['mockup_path']} (view esperado: "
+                         f"{surface['app']}:{surface['view']}, theme "
+                         f"{surface['theme']})."),
+                detail={"mockup_path": surface["mockup_path"],
+                        "expected_view": surface["view"],
+                        "app": surface["app"],
+                        "screen_id": surface["screen_id"],
+                        "state_id": surface["state_id"]},
+            ))
+        elif surface["status"] == "MISSING_REFERENCE":
+            findings.append(Finding(
+                contract_id="mockup_registry_completeness", severity="P0",
+                flag=_FLAG_MISSING_REFERENCE,
+                screen_id=key, theme=surface["theme"],
+                message=(f"[REGLA 3] Captura real sin referencia mockup: "
+                         f"{surface['capture_path']} (view: {surface['view']}, "
+                         f"theme {surface['theme']})."),
+                detail={"capture_path": surface["capture_path"],
+                        "view": surface["view"],
+                        "app": surface["app"]},
+            ))
+    return findings
+
+
+def _check_coverage_breadth(registry: dict) -> list[Finding]:
+    """Regla 2: Falla P0 si una clase de la taxonomía del owner está GAP.
+
+    SOLO audita las clases enumerables en el mockup manifest (regla 2 cubre
+    producto/app, módulos, pantallas, subpantallas, estados). Las clases
+    componentes/modales/toasts/navegación NO se enumeran en el mockup; las
+    audita el modo ``audit --all`` (con crawler en vivo), no el modo
+    registry. Ver ``_classify_mockup_taxonomy``.
+    """
+    findings: list[Finding] = []
+    taxonomy = registry.get("taxonomy_coverage", {})
+    # Clases enumerables-en-mockup (regla 2 del owner, subset aplicable al registry)
+    mockup_enumerable_taxonomy = [
+        "producto/app", "módulos", "pantallas/vistas",
+        "subpantallas/vistas secundarias/detalles",
+        "estados/variantes",
+    ]
+    # Clases descubiertas-por-crawler (regla 2 cubre, pero el registry no las enumera)
+    # Las listamos en una sección informativa P3 (no bloqueante) para que el
+    # log sea trazable, sin bloquear PASS en modo audit-mockup.
+    crawler_only_taxonomy = [
+        "componentes", "modales", "toasts", "navegación",
+    ]
+    for cls in mockup_enumerable_taxonomy:
+        info = taxonomy.get(cls, {"mockup_count": 0, "capture_count": 0, "status": "GAP"})
+        if info.get("status") == "GAP":
+            findings.append(Finding(
+                contract_id="coverage_breadth", severity="P0",
+                flag=_FLAG_COVERAGE_GAP,
+                screen_id=cls, theme="*",
+                message=(f"[REGLA 2] Taxonomía '{cls}' no cubierta por el "
+                         f"registry: {info.get('mockup_count', 0)} referencias "
+                         f"mockup, {info.get('capture_count', 0)} capturas "
+                         f"reales."),
+                detail={"taxonomy_class": cls,
+                        "mockup_count": info.get("mockup_count", 0),
+                        "capture_count": info.get("capture_count", 0),
+                        "audit_scope": "registry-mockup"},
+            ))
+    for cls in crawler_only_taxonomy:
+        # Informativo: el mockup no enumera esta clase; debe ser cubierta
+        # por el crawler (audit --all). En modo audit-mockup emitimos un
+        # P3 informativo para que el log registre que la cobertura depende
+        # del otro modo.
+        info = taxonomy.get(cls, {"mockup_count": 0, "capture_count": 0, "status": "GAP"})
+        findings.append(Finding(
+            contract_id="coverage_breadth_crawler_only", severity="P3",
+            flag=f"{_FLAG_COVERAGE_GAP}_CRAWLER_ONLY",
+            screen_id=cls, theme="*",
+            message=(f"[REGLA 2/INFO] Taxonomía '{cls}' no enumerable en "
+                     f"mockup manifest; se audita con ``audit --all`` "
+                     f"(crawler en vivo). Estado actual registry: "
+                     f"{info.get('mockup_count', 0)} refs mockup, "
+                     f"{info.get('capture_count', 0)} capturas."),
+            detail={"taxonomy_class": cls,
+                    "mockup_count": info.get("mockup_count", 0),
+                    "capture_count": info.get("capture_count", 0),
+                    "audit_scope": "crawler-only"},
+        ))
+    return findings
+
+
+def _check_per_surface_regression(registry: dict) -> list[Finding]:
+    """Regla 5 + 6: P1 si phash distance > threshold (REGRESSION)."""
+    findings: list[Finding] = []
+    for key, surface in registry.get("per_surface", {}).items():
+        if surface["status"] == "REGRESSION":
+            findings.append(Finding(
+                contract_id="per_surface_fidelity", severity="P1",
+                flag=_FLAG_PER_SURFACE_REGRESSION,
+                screen_id=key, theme=surface["theme"],
+                message=(f"[REGLA 5+6] Regresión visual en superficie {key}: "
+                         f"phash distance={surface['phash_distance']} > "
+                         f"threshold={_PHASH_REGRESSION_THRESHOLD}."),
+                detail={"phash_distance": surface["phash_distance"],
+                        "threshold": _PHASH_REGRESSION_THRESHOLD,
+                        "mockup_path": surface["mockup_path"],
+                        "capture_path": surface["capture_path"]},
+            ))
+    return findings
+
+
+def _classify_registry(registry: dict) -> dict:
+    """Regla 6: separa los 4 buckets canónicos para el log.
+
+    - accepted_changes: MATCH + MINOR_DIFF (no requieren acción)
+    - new_unreviewed_states: capturas sin mockup ref (MISSING_REFERENCE)
+    - regressions: REGRESSION (phash > threshold)
+    - missing: MISSING_CAPTURE (mockup sin captura)
+    """
+    out = {"accepted_changes": [], "new_unreviewed_states": [],
+           "regressions": [], "missing": []}
+    for key, surface in registry.get("per_surface", {}).items():
+        st = surface["status"]
+        if st in ("MATCH", "MINOR_DIFF"):
+            out["accepted_changes"].append(key)
+        elif st == "MISSING_REFERENCE":
+            out["new_unreviewed_states"].append(key)
+        elif st == "REGRESSION":
+            out["regressions"].append(key)
+        elif st == "MISSING_CAPTURE":
+            out["missing"].append(key)
+    return out
+
+
 def _html_escape(s: Any) -> str:
     return (str(s).replace("&", "&amp;").replace("<", "&lt;")
             .replace(">", "&gt;").replace('"', "&quot;"))
@@ -2854,6 +3374,327 @@ def _find_node_by_screen(app_key: str, screen_id: str, modo: str,
     return None
 
 
+
+
+def _cmd_audit_mockup(args) -> int:
+    """Modo "test visual Nº1" — registry mockup→captura real con reglas duras.
+
+    No ejecuta el crawler completo (eso puede tardar 5+ min). Solo corre las
+    8 reglas del spec del owner sobre el join entre el mockup manifest y
+    las últimas capturas V8. Es el modo pensado para gate de CI visual.
+
+    Reglas implementadas (ver qa/LEGACY_TESTS_AUDIT.md y memoria):
+      1. Registry completo mockup→captura real
+      2. Cubre producto/app, módulos, pantallas, subpantallas, estados,
+         componentes, modales, toasts y navegación
+      3. Falla si hay superficies sin referencia (MISSING_REFERENCE)
+      4. Falla si hay referencia sin captura real (MISSING_CAPTURE)
+      5. Diff visual por superficie (phash mockup↔captura)
+      6. Separa accepted / new_unreviewed / regressions / missing
+      7. PASS bloqueado si registry incompleto (REGISTRY_INCOMPLETE)
+      8. HTML report con columnas mockup | captura real | diff
+    """
+    out_dirs = _prepare_out_dirs(_OUT_ROOT)
+    log_path = out_dirs["logs"] / "run.log"
+
+    def log(msg, end="\n"):
+        print(msg, end=end, flush=True)
+        with log_path.open("a", encoding="utf-8") as fh:
+            fh.write(msg + ("" if end == "" else "\n"))
+
+    log(f"[SENTINEL-MOCKUP] audit-mockup --phash-threshold={args.phash_threshold}")
+    log(f"[SENTINEL-MOCKUP] mockup manifest: {_MOCKUP_MANIFEST}")
+    log(f"[SENTINEL-MOCKUP] capture root: {_CAPTURE_ROOT}")
+
+    # 1. Cargar manifest mockup y últimas capturas V8
+    mockup_items = _load_mockup_manifest()
+    captures = _load_latest_captures()
+    log(f"[SENTINEL-MOCKUP] mockup items: {len(mockup_items)} · "
+        f"v8 captures (latest per view): {len(captures)}")
+
+    if not mockup_items:
+        log("[SENTINEL-MOCKUP][ERROR] mockup manifest vacío o ausente; "
+            "no se puede construir el registry. Regla 1 violated.")
+        return 2
+
+    # 2. Construir registry mockup→captura
+    registry = _build_mockup_to_capture_registry(mockup_items, captures)
+    log(f"[SENTINEL-MOCKUP] registry: matched={len(registry['matched'])} "
+        f"missing_capture={len(registry['missing_capture'])} "
+        f"missing_reference={len(registry['missing_reference'])}")
+
+    # 3. Diff por superficie (regla 5)
+    _compute_per_surface_diff(registry)
+
+    # 4. Clasificar (regla 6)
+    classification = _classify_registry(registry)
+    log(f"[SENTINEL-MOCKUP] classification: "
+        f"accepted={len(classification['accepted_changes'])} "
+        f"new_unreviewed={len(classification['new_unreviewed_states'])} "
+        f"regressions={len(classification['regressions'])} "
+        f"missing={len(classification['missing'])}")
+
+    # 5. Findings (reglas 2, 3, 4, 5+6)
+    findings: list[Finding] = []
+    findings += _check_registry_completeness(registry)   # reglas 3, 4
+    findings += _check_coverage_breadth(registry)         # regla 2
+    findings += _check_per_surface_regression(registry)   # regla 5+6
+
+    # 6. Regla 7: si el registry está incompleto, agregar un P0 explícito
+    # REGISTRY_INCOMPLETE para que el PASS global quede bloqueado.
+    registry_incomplete = bool(registry["missing_capture"]
+                                or registry["missing_reference"])
+    if registry_incomplete:
+        n_missing = len(registry["missing_capture"])
+        n_unref = len(registry["missing_reference"])
+        findings.append(Finding(
+            contract_id="registry_completeness_gate", severity="P0",
+            flag=_FLAG_REGISTRY_INCOMPLETE, screen_id="*", theme="*",
+            message=(f"[REGLA 7] Registry incompleto: "
+                     f"{n_missing} mockup refs sin captura real + "
+                     f"{n_unref} capturas reales sin referencia. "
+                     f"PASS global BLOQUEADO."),
+            detail={"missing_capture": n_missing,
+                    "missing_reference": n_unref},
+        ))
+
+    # 7. Resultado: PASS solo si 0 blockers P0/P1
+    by_sev = {"P0": 0, "P1": 0, "P2": 0, "P3": 0}
+    for f in findings:
+        by_sev[f.severity] = by_sev.get(f.severity, 0) + 1
+    blockers_p0 = by_sev["P0"]
+    blockers_p1 = by_sev["P1"]
+    result = "PASS" if (blockers_p0 == 0 and blockers_p1 == 0) else "FAIL"
+    log(f"[SENTINEL-MOCKUP] resultado: {result} (P0={blockers_p0} P1={blockers_p1} P2={by_sev['P2']} P3={by_sev['P3']})")
+
+    # 8. Persistir artefactos
+    run_meta = {"generated_at": datetime.datetime.now().isoformat(timespec="seconds"),
+                "git": _git_metadata(),
+                "phash_threshold": args.phash_threshold,
+                "registry_summary": {
+                    "mockup_count": registry["mockup_count"],
+                    "capture_count": registry["capture_count"],
+                    "matched": len(registry["matched"]),
+                    "missing_capture": len(registry["missing_capture"]),
+                    "missing_reference": len(registry["missing_reference"]),
+                    "taxonomy_coverage": registry["taxonomy_coverage"],
+                },
+                "classification": classification}
+
+    (out_dirs["latest"] / "registry.json").write_text(
+        json.dumps(registry, indent=2, ensure_ascii=False), encoding="utf-8")
+    (out_dirs["latest"] / "findings.json").write_text(
+        json.dumps([_finding_to_dict(f) for f in findings], indent=2, ensure_ascii=False),
+        encoding="utf-8")
+    (out_dirs["latest"] / "classification.json").write_text(
+        json.dumps(classification, indent=2, ensure_ascii=False), encoding="utf-8")
+    (out_dirs["latest"] / "manifest.json").write_text(
+        json.dumps({"command": "audit-mockup", "result": result, "findings_by_sev": by_sev,
+                    "registry_summary": run_meta["registry_summary"],
+                    "classification": classification,
+                    "generated_at": run_meta["generated_at"],
+                    "git": run_meta["git"]}, indent=2, ensure_ascii=False),
+        encoding="utf-8")
+
+    # 9. HTML report con columnas mockup | real | diff
+    _write_html_report_mockup(out_dirs, registry, classification, findings, result, run_meta)
+
+    # 10. Console summary
+    print()
+    print("=" * 64)
+    print(f"VISUAL_SENTINEL_MOCKUP_RESULT: {result}")
+    print(f"REGISTRY_COMPLETE: {'YES' if not registry_incomplete else 'NO'}")
+    print(f"MOCKUP_ITEMS: {registry['mockup_count']}")
+    print(f"V8_CAPTURES_LATEST: {registry['capture_count']}")
+    print(f"MATCHED: {len(registry['matched'])}")
+    print(f"MISSING_CAPTURE: {len(registry['missing_capture'])}")
+    print(f"MISSING_REFERENCE: {len(registry['missing_reference'])}")
+    print(f"REGRESSIONS: {len(classification['regressions'])}")
+    print(f"NEW_UNREVIEWED: {len(classification['new_unreviewed_states'])}")
+    print(f"P0: {by_sev['P0']}  P1: {by_sev['P1']}  P2: {by_sev['P2']}  P3: {by_sev['P3']}")
+    if registry["taxonomy_coverage"]:
+        print("TAXONOMY_COVERAGE:")
+        for cls, info in sorted(registry["taxonomy_coverage"].items()):
+            print(f"  {cls:50s}  mockup={info.get('mockup_count', 0):3d}  "
+                  f"capture={info.get('capture_count', 0):3d}  {info.get('status', '?')}")
+    print("=" * 64)
+    if blockers_p0 or blockers_p1:
+        print("BLOCKERS:")
+        for f in findings:
+            if f.severity in ("P0", "P1"):
+                print(f"  [{f.severity}] {f.flag}: {f.screen_id} — {f.message[:120]}")
+    print(f"\nHTML report: {out_dirs['latest'] / 'index_mockup.html'}")
+    return 0 if result == "PASS" else 1
+
+
+def _write_html_report_mockup(out_dirs: dict, registry: dict, classification: dict,
+                              findings: list[Finding], result: str, run_meta: dict) -> Path:
+    """Regla 8: HTML report con columnas mockup | captura real | diff por superficie."""
+    rel = lambda p: os.path.relpath(p, out_dirs["latest"])  # noqa: E731
+    by_sev = {"P0": 0, "P1": 0, "P2": 0, "P3": 0}
+    for f in findings:
+        by_sev[f.severity] = by_sev.get(f.severity, 0) + 1
+
+    parts: list[str] = []
+    parts.append("<!doctype html><html lang='es'><head><meta charset='utf-8'>")
+    parts.append("<title>Visual Sentinel — Registry Mockup↔Captura</title><style>")
+    parts.append(
+        "body{font-family:system-ui,Segoe UI,Roboto,sans-serif;margin:0;background:#0e1116;color:#e6edf3}"
+        "h1,h2,h3{color:#fff}.wrap{max-width:1640px;margin:0 auto;padding:24px}"
+        ".card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin:12px 0}"
+        ".pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;margin:2px}"
+        ".pass{background:#1a7f37}.fail{background:#da3633}.warn{background:#db6d28}"
+        ".p0{background:#da3633}.p1{background:#db6d28}.p2{background:#58a6ff}.p3{background:#6e7681}"
+        ".grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:14px}"
+        ".triple{background:#0d1117;border:1px solid #30363d;border-radius:8px;overflow:hidden}"
+        ".triple .meta{padding:8px;font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px}"
+        ".triple .imgs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;background:#000}"
+        ".triple .imgs>div{position:relative}"
+        ".triple .imgs img{width:100%;height:auto;display:block;aspect-ratio:16/10;object-fit:cover}"
+        ".triple .imgs .lbl{position:absolute;top:4px;left:4px;background:rgba(0,0,0,.7);color:#fff;"
+        "padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600}"
+        ".triple .status{font-family:ui-monospace,SFMono-Regular,monospace;font-size:11px;font-weight:700}"
+        "table{border-collapse:collapse;width:100%;font-size:12px}"
+        "th,td{border:1px solid #30363d;padding:4px 6px;text-align:left}"
+        "small{color:#8b949e}"
+        "details{margin:4px 0}summary{cursor:pointer;font-weight:600}"
+        "ul{margin:4px 0 4px 18px}"
+    )
+    parts.append("</style></head><body><div class='wrap'>")
+    parts.append("<h1>Visual Sentinel — Registry Mockup↔Captura</h1>")
+    parts.append(f"<small>Run: {run_meta.get('generated_at', '')} · commit "
+                 f"{run_meta.get('git', {}).get('short_head', '')} · phash threshold "
+                 f"{run_meta.get('phash_threshold', '')}</small>")
+
+    # Header badges
+    badge = "pass" if result == "PASS" else "fail"
+    parts.append("<div class='card'>")
+    parts.append(f"<span class='pill {badge}'>REGISTRY_AUDIT_RESULT: {result}</span>")
+    s = run_meta.get("registry_summary", {})
+    parts.append(f"<span class='pill {'pass' if not s.get('missing_capture') and not s.get('missing_reference') else 'fail'}'>"
+                 f"REGISTRY_COMPLETE: {'YES' if not s.get('missing_capture') and not s.get('missing_reference') else 'NO'}</span>")
+    parts.append(f"<span class='pill p3'>mockup items: {s.get('mockup_count', 0)}</span>")
+    parts.append(f"<span class='pill p3'>v8 capturas: {s.get('capture_count', 0)}</span>")
+    parts.append(f"<span class='pill p3'>matched: {s.get('matched', 0)}</span>")
+    parts.append(f"<span class='pill p0'>missing_capture: {s.get('missing_capture', 0)}</span>")
+    parts.append(f"<span class='pill p0'>missing_reference: {s.get('missing_reference', 0)}</span>")
+    parts.append("</div>")
+
+    # Hallazgos por severidad
+    parts.append("<div class='card'><h2>Hallazgos por severidad</h2>")
+    for sev in ("P0", "P1", "P2", "P3"):
+        parts.append(f"<span class='pill {sev.lower()}'>{sev}: {by_sev.get(sev, 0)}</span>")
+    parts.append("</div>")
+
+    # Taxonomía
+    parts.append("<div class='card'><h2>Cobertura de taxonomía (regla 2)</h2><table>")
+    parts.append("<tr><th>clase</th><th>mockup_count</th><th>capture_count</th><th>status</th></tr>")
+    for cls, info in sorted((registry.get("taxonomy_coverage") or {}).items()):
+        st = info.get("status", "?")
+        pill_cls = "fail" if st == "GAP" else "pass"
+        parts.append(f"<tr><td>{_html_escape(cls)}</td>"
+                     f"<td>{info.get('mockup_count', 0)}</td>"
+                     f"<td>{info.get('capture_count', 0)}</td>"
+                     f"<td><span class='pill {pill_cls}'>{st}</span></td></tr>")
+    parts.append("</table></div>")
+
+    # Clasificación (regla 6)
+    parts.append("<div class='card'><h2>Clasificación por superficie (regla 6)</h2>")
+    for bucket, label in [("accepted_changes", "Cambios aceptados (MATCH + MINOR_DIFF)"),
+                          ("new_unreviewed_states", "Estados nuevos sin revisar (MISSING_REFERENCE)"),
+                          ("regressions", "Regresiones (REGRESSION)"),
+                          ("missing", "Faltantes (MISSING_CAPTURE)")]:
+        keys = classification.get(bucket, [])
+        parts.append(f"<details {'open' if keys else ''}>"
+                     f"<summary>{label} ({len(keys)})</summary><ul>")
+        for k in keys[:200]:
+            parts.append(f"<li><code>{_html_escape(k)}</code></li>")
+        if len(keys) > 200:
+            parts.append(f"<li>… y {len(keys) - 200} más</li>")
+        parts.append("</ul></details>")
+    parts.append("</div>")
+
+    # Grid 3-columna: mockup | captura real | diff
+    parts.append("<div class='card'><h2>Per-surface: mockup | captura real | diff (regla 5+8)</h2>")
+    parts.append("<div class='grid'>")
+    # Ordenar: primero MISSING, luego REGRESSION, luego MATCH/MINOR_DIFF
+    order = {"MISSING_CAPTURE": 0, "MISSING_REFERENCE": 1, "REGRESSION": 2,
+             "MINOR_DIFF": 3, "MATCH": 4}
+    sorted_surfaces = sorted(registry.get("per_surface", {}).items(),
+                              key=lambda kv: (order.get(kv[1]["status"], 9), kv[0]))
+    for key, surface in sorted_surfaces:
+        st = surface["status"]
+        st_pill_cls = {"MATCH": "pass", "MINOR_DIFF": "warn", "REGRESSION": "fail",
+                       "MISSING_CAPTURE": "fail", "MISSING_REFERENCE": "fail"}.get(st, "p3")
+        phash_d = surface.get("phash_distance")
+        phash_str = f"phash={phash_d}" if phash_d is not None else "phash=n/a"
+        parts.append("<div class='triple'>")
+        parts.append("<div class='imgs'>")
+        # Mockup
+        if surface["mockup_path"]:
+            rel_m = rel(surface["mockup_path"])
+            parts.append(f"<div><span class='lbl'>MOCKUP</span>"
+                         f"<img src='{_html_escape(rel_m)}' alt='mockup' "
+                         f"onerror=\"this.style.opacity=.2;this.alt='(missing)'\"></div>")
+        else:
+            parts.append("<div><span class='lbl'>MOCKUP</span>"
+                         "<div style='aspect-ratio:16/10;background:#222;display:grid;place-items:center;color:#666'>"
+                         "<small>(no ref)</small></div></div>")
+        # Captura real
+        if surface["capture_path"]:
+            rel_c = rel(surface["capture_path"])
+            parts.append(f"<div><span class='lbl'>REAL</span>"
+                         f"<img src='{_html_escape(rel_c)}' alt='real' "
+                         f"onerror=\"this.style.opacity=.2;this.alt='(missing)'\"></div>")
+        else:
+            parts.append("<div><span class='lbl'>REAL</span>"
+                         "<div style='aspect-ratio:16/10;background:#222;display:grid;place-items:center;color:#666'>"
+                         "<small>(no capture)</small></div></div>")
+        # Diff: placeholder visual (chip con phash distance)
+        diff_color = {"MATCH": "#1a7f37", "MINOR_DIFF": "#db6d28",
+                      "REGRESSION": "#da3633", "MISSING_CAPTURE": "#da3633",
+                      "MISSING_REFERENCE": "#da3633"}.get(st, "#6e7681")
+        parts.append(f"<div style='background:{diff_color};aspect-ratio:16/10;"
+                     "display:grid;place-items:center;color:#fff;font-weight:700'>"
+                     f"<div style='text-align:center'>"
+                     f"<div style='font-size:18px'>{st}</div>"
+                     f"<div style='font-size:11px;margin-top:4px'>{phash_str}</div>"
+                     f"</div></div>")
+        parts.append("</div>")  # /imgs
+        # Meta
+        parts.append("<div class='meta'>")
+        parts.append(f"<b>{_html_escape(key)}</b>")
+        parts.append(f"<span class='pill {st_pill_cls}'>{st}</span>")
+        parts.append(f"<small>{_html_escape(' · '.join(surface.get('surface_classes', [])))}</small>")
+        parts.append("</div>")
+        parts.append("</div>")  # /triple
+    parts.append("</div></div>")
+
+    # Hallazgos detallados
+    parts.append("<div class='card'><h2>Hallazgos detallados</h2>")
+    by_flag: dict[str, list[Finding]] = {}
+    for f in findings:
+        by_flag.setdefault(f.flag, []).append(f)
+    if not by_flag:
+        parts.append("<p>Sin hallazgos.</p>")
+    for flag, fs in sorted(by_flag.items()):
+        parts.append(f"<details open><summary>{_html_escape(flag)} ({len(fs)})</summary><ul>")
+        for f in fs[:100]:
+            parts.append(
+                f"<li><span class='pill {f.severity.lower()}'>{f.severity}</span> "
+                f"<code>{_html_escape(f.screen_id)}</code> "
+                f"[{_html_escape(f.theme)}]: {_html_escape(f.message)}</li>")
+        if len(fs) > 100:
+            parts.append(f"<li>… y {len(fs) - 100} más</li>")
+        parts.append("</ul></details>")
+    parts.append("</div>")
+
+    parts.append("</div></body></html>")
+    html_path = out_dirs["latest"] / "index_mockup.html"
+    html_path.write_text("\n".join(parts), encoding="utf-8")
+    return html_path
+
+
 def _cmd_capture(args) -> int:
     out_dirs = _prepare_out_dirs(_OUT_ROOT)
     _ensure_isolated_db()
@@ -3005,6 +3846,21 @@ def _build_parser() -> argparse.ArgumentParser:
     pc.add_argument("--app", choices=["suite", "hub"], default="suite")
     pc.add_argument("--theme", choices=["light", "dark", "both"], default="both")
     pc.set_defaults(func=_cmd_capture)
+
+    # Modo "test visual Nº1" — registry mockup→captura real con reglas duras.
+    # No requiere el crawler completo: usa el mockup manifest + las últimas
+    # capturas V8 + los contracts existentes. Pensado para correr en <30s
+    # y servir de gate de CI visual.
+    pm = sub.add_parser(
+        "audit-mockup",
+        help=("Auditoría registry mockup→captura real con reglas duras "
+              "(reglas 1-8 del owner). Modo rápido, sin crawler completo."),
+    )
+    pm.add_argument("--phash-threshold", type=int, default=_PHASH_REGRESSION_THRESHOLD,
+                    help=f"Umbral phash distance para REGRESSION (default: {_PHASH_REGRESSION_THRESHOLD})")
+    pm.add_argument("--strict", action="store_true",
+                    help="(reservado) cualquier P0/P1/P2 bloqueante")
+    pm.set_defaults(func=_cmd_audit_mockup)
 
     pi = sub.add_parser("inspect", help="Inspeccionar una pantalla en consola")
     pi.add_argument("--screen", required=True, help="screen_id (app:surface[/...])")

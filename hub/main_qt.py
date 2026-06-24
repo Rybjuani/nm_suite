@@ -340,9 +340,11 @@ class PacientesView(QWidget):
             f"color: {v3c('text', self._modo).name()}; background: transparent;"
         )
         roster_meta.addWidget(self._table_title)
-        # Mockup l.1388: class='badge brand' → tone='info' (pill de color brand).
-        # El test_hub_pacientes_badge_tone_is_info exige este tono exacto.
-        self._results_badge = NMBadge("0 pacientes", tone="info", modo=self._modo)
+        # Mockup l.1388: class='badge brand' → tone='brand'. Mapea al mismo
+        # render que 'info' (ambos → _BADGE_TONE_TO_KEY["primary"]), pero
+        # el spec del mockup declara explícitamente `brand` (no el alias
+        # interno `info`).
+        self._results_badge = NMBadge("0 pacientes", tone="brand", modo=self._modo)
         roster_meta.addWidget(self._results_badge, alignment=Qt.AlignmentFlag.AlignVCenter)
         self._table_hint = QLabel("Mail, ánimo de 7 días y uso por paciente")
         self._table_hint.setFont(qfont("size_caption_xs"))
