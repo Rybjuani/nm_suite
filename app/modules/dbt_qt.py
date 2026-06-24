@@ -173,11 +173,13 @@ DBT_SKILLS = {
             },
             {
                 "title": "T — Tomá distancia (Take a step back)",  # mockup: em-dash
-                "body": "Alejate físicamente o mentalmente de la situación. Respirá profundamente y recordá que es una emoción pasajera."
+                # 2026-06-24: mockup l.1162 — "física" en lugar de "físicamente"
+                "body": "Alejate física o mentalmente de la situación. Respirá profundamente y recordá que es una emoción pasajera."
             },
             {
                 "title": "O — Observá (Observe)",  # mockup: em-dash
-                "body": "Observá qué pasa dentro de vos y a tu alrededor. ¿Qué estás sintiendo, pensando y qué dicen los demás?"
+                # 2026-06-24: mockup l.1163 — copy alineado al mockup
+                "body": "Notá qué está pasando dentro y fuera: pensamientos, sensaciones, el contexto, sin juzgarlos."
             },
             {
                 "title": "P — Procedé con conciencia (Proceed mindfully)",  # mockup: em-dash

@@ -243,7 +243,7 @@ Cada iteración registra:
 ### Iter 55 — DBT STOP paso 1: body "Detené lo que estás haciendo…"
 
 - **SHA antes:** `fc30052b80ec7dcba7fba3c98d06a1ae404e03b2`
-- **SHA después:** _(pending)_
+- **SHA después:** `170a3f42486faa205458b96b7fb1456d839a208c`
 - **Pantalla:** Suite · DBT Práctica guiada (STOP · paso 1, S)
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Habilidades DBT/Habilidades DBT · Práctica guiada/STOP · Paso 1.png` — body: "Detené lo que estás haciendo. No actúes todavía. Quedate quieto un momento." (mockup l.1171)
@@ -262,5 +262,27 @@ Cada iteración registra:
 - ✅ Grep confirma el cambio en el código
 
 **Resultado:** MEJORA — copy del paso S matchea el mockup l.1171.
+
+### Iter 56 — DBT STOP pasos T y O: body alineado al mockup
+
+- **SHA antes:** `170a3f42486faa205458b96b7fb1456d839a208c`
+- **SHA después:** _(pending)_
+- **Pantalla:** Suite · DBT Práctica guiada (STOP · pasos T y O)
+- **Mockup esperado:**
+  - l.1162 (T): "Alejate **física** o mentalmente de la situación..."
+  - l.1163 (O): "Notá qué está pasando dentro y fuera: pensamientos, sensaciones, el contexto, sin juzgarlos."
+
+**Discrepancia detectada** (sev 🟡):
+- Paso T: real tenía "físicamente", mockup dice "física" (1 carácter).
+- Paso O: copy totalmente diferente entre real y mockup.
+
+**Fix aplicado** (`app/modules/dbt_qt.py`):
+- Paso T: "físicamente" → "física".
+- Paso O: reemplazado completo con copy del mockup.
+
+**Validación:**
+- ✅ `ruff check app/modules/dbt_qt.py` — All checks passed
+
+**Resultado:** MEJORA — copy de T y O matchea mockup l.1162/1163.
 
 ---
