@@ -182,7 +182,7 @@ DBT_SKILLS = {
                 "body": "Preguntate: ¿Qué acción mejorará la situación en lugar de empeorarla? Actúa de forma deliberada y constructiva."
             }
         ],
-        "safety_note": "Esta habilidad es un apoyo inmediato. Si sentís un malestar extremo o peligro inminente, recurrí a asistencia profesional."
+        "safety_note": "Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.",
     },
     "distress_senses": {
         "id": "distress_senses",

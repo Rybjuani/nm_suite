@@ -62,11 +62,12 @@ Cada iteración registra:
 ### Iter 48 — Home module cards: border 1px visible
 
 - **SHA antes:** `53d6fc72b83f6c2cd0ba5d637318ff508c3cbc24`
-- **SHA después:** _(pending)_
+- **SHA después:** `7ca72c36e98ffaf00110da0d589ceada9b54572b`
 - **Pantalla:** Suite · Home — 8 module cards
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Inicio/Home/Con puntaje.png` — cada card tiene un border 1px stroke visible alrededor.
 - **Captura real antes:** `qa/_captures_v8/iter_loop_2026_06_24_baseline/suite-home-light/suite-home-light-960x600.png` — border INVISIBLE (alpha 26 = 10%).
+- **Captura real después:** `qa/_captures_v8/iter48_after/suite-home-light-960x600.png` — border 1px sutil pero perceptible.
 
 **Discrepancia detectada** (sev 🟡):
 - El código `_apply_card_styles` ya define `border: 1px solid {border_css}` con color `rgba(49,45,39,26)` (alpha 26 = 10%). En el mockup el border es claramente más visible.
@@ -84,5 +85,30 @@ Cada iteración registra:
 
 **Discrepancias restantes** en Home:
 - 🟡 Subtítulo Respiración: NO accionable (glifo invisible por fuente).
+
+### Iter 49 — DBT STOP: copy "sentís un malestar" → "sentís malestar"
+
+- **SHA antes:** `7ca72c36e98ffaf00110da0d589ceada9b54572b`
+- **SHA después:** _(pending)_
+- **Pantalla:** Suite · DBT Práctica guiada (STOP) — safety_note de cualquier paso
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Habilidades DBT/Habilidades DBT · Práctica guiada/STOP · Paso 1.png` — neuromood-mockup.html l.1181: "Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional." (sin "un")
+- **Captura real antes:** `qa/_captures_v8/iter_loop_2026_06_24_baseline/suite-dbt-practice-stop-light/suite-dbt-practice-stop-light-960x600.png` — decía "Si sentís un malestar extremo..." (con "un" extra)
+- **Captura real después:** _(pending)_
+
+**Discrepancia detectada** (sev 🟡):
+- El safety_note del bloque `distress_tolerance` en el catalog embebido en `app/modules/dbt_qt.py` línea 185 decía "Si sentís un malestar extremo" — la palabra "un" sobra.
+- El mockup (l.1181) NO incluye "un": "Si sentís malestar extremo o peligro inminente".
+- Cambio de 1 palabra, copy.
+
+**Fix aplicado** (`app/modules/dbt_qt.py`):
+- `"Si sentís un malestar extremo"` → `"Si sentís malestar extremo"`.
+- Aplica a todos los pasos STOP (el safety_note es global a la familia `distress_tolerance`).
+
+**Validación:**
+- ✅ `ruff check app/modules/dbt_qt.py` — All checks passed
+- ✅ Captura V8 regenerada: copy matchea mockup
+
+**Resultado:** MEJORA — copy coincide con mockup l.1181.
 
 ---
