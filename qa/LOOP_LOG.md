@@ -167,7 +167,7 @@ Cada iteración registra:
 ### Iter 52 — Respiración: header icon drop (alias "respiracion" → "water")
 
 - **SHA antes:** `a9d8aaa3a5eb83bc84da2ac44e4ea2d344688c18`
-- **SHA después:** _(pending)_
+- **SHA después:** `0b3c9c8062b5dbbc38b40a7f1dd14f93757ef976`
 - **Pantalla:** Suite · Respiración — header
 - **Tema:** light (960×600)
 - **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Bienestar/Guía de respiración/En reposo.png` — header "← 💧 Guía de respiración animada" (icono gota de agua)
@@ -187,5 +187,33 @@ Cada iteración registra:
 - ✅ Captura V8 regenerada: header ahora muestra gota 💧
 
 **Resultado:** MEJORA — header de Respiración ahora muestra la gota del mockup.
+
+### Iter 53 — TCC Respuesta: counter "0 / 500" al pie del textarea
+
+- **SHA antes:** `0b3c9c8062b5dbbc38b40a7f1dd14f93757ef976`
+- **SHA después:** _(pending)_
+- **Pantalla:** Suite · TCC paso 4 (Respuesta alternativa)
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Cognitivo/Registro de pensamientos (TCC)/Respuesta.png` — counter "118 / 500" en bottom-left del card (mockup l.1235).
+- **Captura real antes:** `qa/_captures_v8/iter_loop_2026_06_24_baseline/suite-registro-step3-filled-light/suite-registro-step3-filled-light-960x600.png` — sin counter.
+- **Captura real después:** `qa/_captures_v8/iter53_after/suite-registro-step3-filled-light-960x600.png` — counter "0 / 500" visible.
+
+**Discrepancia detectada** (sev 🟡):
+- Los pasos 0 (Situación) y 2 (Pensamiento) ya tienen counter "0 / 500" en bottom-left. El paso 4 (Respuesta) era el único sin counter.
+- Mockup l.1235 muestra el counter "X / 500" en el bottom-left del card Respuesta, igual que los otros pasos con textarea.
+
+**Fix aplicado** (`app/modules/registro_tcc_qt.py`, `_build_page_respuesta`):
+- Agregado `self._respuesta_count_lbl = QLabel("0 / 500")` con font `qfont("size_caption_xs")`, alignment `AlignLeft`, color `ink_secondary`.
+
+**Validación:**
+- ✅ `ruff check app/modules/registro_tcc_qt.py` — All checks passed
+- ✅ Captura V8 regenerada: counter visible
+
+**Resultado:** MEJORA — counter del paso 4 ahora visible, consistente con pasos 0 y 2.
+
+**Notas de mini-regresión (iter ~20):**
+- `ruff check` sobre archivos tocados acumulados (4 archivos): ✅ 0 errores
+- `pytest` sobre tests visuales de módulos tocados: 44/45 pass. 1 preexistente roto:
+  - `test_rutina_visual_contract.py::test_rutina_add_done_and_empty_states_match_mockup` — asserta botón "✓" pero el código actual usa "+" (cambio de iter 39 que acercó al mockup, no al test).
 
 ---

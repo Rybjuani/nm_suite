@@ -1087,6 +1087,17 @@ class ModuloRegistroTCC(NMModule):
         # _txt_situacion para no aplastar el contador al borde de la card.
         self._txt_respuesta.setMaximumHeight(120)
         layout.addWidget(self._txt_respuesta, stretch=0)
+        # 2026-06-24: counter "0 / 500" al pie del textarea (mockup l.1235).
+        # El paso 4 era el único sin counter visible (los pasos 0 y 2 lo
+        # tienen; paso 1 no tiene input de texto). Mockup línea 1235 muestra
+        # el contador en el bottom-left del card Respuesta.
+        self._respuesta_count_lbl = QLabel("0 / 500")
+        self._respuesta_count_lbl.setFont(qfont("size_caption_xs"))
+        self._respuesta_count_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self._respuesta_count_lbl.setStyleSheet(
+            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
+        )
+        layout.addWidget(self._respuesta_count_lbl)
         self._pages.append(page)
 
     # ── emotion tile picker ──────────────────────────────────────────────────
