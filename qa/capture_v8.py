@@ -1214,6 +1214,13 @@ def _timer_force_empty(win, qapp, action):
                     w.hide()
     if hasattr(target, '_empty_state'):
         target._empty_state.show()
+    # Mockup l.856-858: empty state en pantalla directa, SIN card chrome.
+    # Forzar borderless en el timer_card si existe.
+    if hasattr(target, '_timer_card'):
+        try:
+            target._timer_card.set_borderless(True)
+        except Exception:
+            pass
     _drain(qapp, cycles=6)
 
 
