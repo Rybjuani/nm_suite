@@ -595,7 +595,10 @@ class _BreathCircle(ThemeAwareWidgetMixin, QWidget):
         step = 360.0 / _N_PARTICLES
         # Más opacos en dark (alto contraste sobre bg oscuro),
         # más sutiles en light (bg claro hace que 160 parezca demasiado llamativo)
-        particle_alpha = 160 if "dark" in self._modo else 115
+        # 2026-06-24 iter 70: alpha 115→55 (light) / 160→85 (dark) — partículas
+        # casi invisibles para acercarse al mockup "En curso" (sin partículas
+        # visibles). Mantiene feedback animado mínimo.
+        particle_alpha = 85 if "dark" in self._modo else 55
         for i in range(_N_PARTICLES):
             a = math.radians(self._orbit_angle + i * step)
             px = cx + orbit_r * math.cos(a)
