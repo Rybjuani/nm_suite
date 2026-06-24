@@ -5,9 +5,10 @@ from __future__ import annotations
 import math
 
 from PyQt6.QtCore import QEasingCurve, QPointF, QPropertyAnimation, QRectF, Qt, QTimer, pyqtProperty
-from PyQt6.QtGui import QBrush, QColor, QPainter, QPen, QRadialGradient
+from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPen, QRadialGradient
 from PyQt6.QtWidgets import QWidget
 
+from shared.fonts import FONT_SANS
 from shared.theme import TYPOGRAPHY, V3_GRADIENTS, v3_mode
 from shared.theme_manager import ThemeManager
 from shared.theme_qt import ANIM, interpolate_color, norm_modo, qfont_mono, v3c
@@ -473,7 +474,13 @@ class NMModuleRing(QWidget):
         # Texto centrado (solo si show_label=True; tamaños chicos no lo pintan)
         if self._show_label:
             p.setPen(v3c(self._color_key, self._modo))
-            p.setFont(qfont_mono(12 if s >= 50 else max(9, int(s * 0.20)), bold=True))
+            # Mockup usa sans (Inter) para los anillos, NO monospace. El 60% del
+            # real se renderizaba en Consolas mono (qfont_mono) y no matcheaba.
+            _label_px = 12 if s >= 50 else max(9, int(s * 0.20))
+            _f = QFont(FONT_SANS, _label_px)
+            _f.setWeight(QFont.Weight.Bold)
+            _f.setHintingPreference(QFont.HintingPreference.PreferFullHinting)
+            p.setFont(_f)
             label = "—" if self._pct is None else f"{int(self._pct * 100)}%"
             p.drawText(QRectF(0, 0, s, s), Qt.AlignmentFlag.AlignCenter, label)
 
