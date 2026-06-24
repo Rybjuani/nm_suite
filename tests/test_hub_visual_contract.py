@@ -56,7 +56,14 @@ def test_hub_pacientes_badge_tone_is_info(qtbot) -> None:
     )
     qtbot.addWidget(view)
 
-    assert view._results_badge.tone() == "info"
+    # Mockup canónico l.1388: class="badge brand". El código actual usa
+    # tone="info" (alias interno que rinde al mismo color: ambos mapean a
+    # _BADGE_TONE_TO_KEY["primary"]/["primary_soft"]). Visualmente idéntico,
+    # pero el spec declara explícitamente `brand`; el alias `info` es
+    # desviación semántica. Migración desde UI anterior que pineaba
+    # `info` por consistencia con otros badges; el spec del mockup es
+    # la verdad.
+    assert view._results_badge.tone() == "brand"
 
 
 # ── E4-H-PAC: Detalle hero ────────────────────────────────────────────────
