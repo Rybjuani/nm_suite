@@ -539,15 +539,15 @@ class ModuloAvisos(NMModule):
             self._filter_pills[key] = pill
             seg_lay.addWidget(pill)
         filter_row = QHBoxLayout()
-        filter_row.setSpacing(V3_SP["sm"])
+        filter_row.setSpacing(V3_SP["md"])
         filter_row.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         filter_row.addWidget(self._filter_segment)
         self._search_input = NMSearchInput(
             t("text.module.avisos.search_placeholder", "Buscar recordatorio…"),
             modo=self._modo,
         )
-        self._search_input.setMinimumWidth(220)
-        self._search_input.setMaximumWidth(340)
+        self._search_input.setMinimumWidth(320)
+        self._search_input.setMaximumWidth(480)
         self._search_input.setFixedHeight(_TRACK_H)
         self._search_input.text_changed.connect(self._on_search)
         self._search_edit = self._search_input._edit
