@@ -643,7 +643,7 @@ class _SkillPracticeView(QWidget):
         self.btn_prev.clicked.connect(self._prev_step)
         btn_lay.addWidget(self.btn_prev)
 
-        self.btn_next = NMButton(t("text.module.dbt.next_btn", "Siguiente"), parent=self, variant="gradient", size="sm", width=120)
+        self.btn_next = NMButton(t("text.module.dbt.next_btn", "Siguiente"), parent=self, variant="gradient", size="md")
         self.btn_next.clicked.connect(self._next_step)
         btn_lay.addWidget(self.btn_next)
 
