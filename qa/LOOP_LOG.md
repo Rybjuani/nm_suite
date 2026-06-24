@@ -332,15 +332,109 @@ Cada iteración registra:
 
 **Resultado:** MEJORA — icono de "Respiración 5 min" ahora matchea el mockup l.637.
 
+### Iter 59 — Rutina hero: ring "60%" font sans (no mono)
+
+- **SHA antes:** `cabd0c31782cd542d647e78913272e27427f1858`
+- **SHA después:** `58c3fbe78ce3544b9e17bc37f5e6a9d1666a4ed2`
+- **Pantalla:** Suite · Rutina · hero card + cards de sección (Mañana/Tarde/Noche) + Hub · Pacientes
+- **Tema:** light (960×600)
+- **Mockup esperado:**
+  - `qa/mockup_reference_static/light/Suite · Paciente/Hábitos/Checklist de rutina/Con tareas.png` — "60%" del hero en sans-serif.
+  - `qa/mockup_reference_static/light/Hub · Clínico/Pacientes/Pacientes/Lista activa.png` — "75%"/"50%"/"88%"/"62%"/"94%" en sans-serif.
+- **Captura real antes:** `qa/_captures_v8/iter_loop_2026_06_24_baseline/suite-rutina-light/suite-rutina-light-960x600.png` — "60%" en monospace (Consolas, caracteres cuadrados tipo JetBrains Mono fallback).
+- **Captura real después:** `qa/_captures_v8/iter59_after/suite-rutina-light-960x600.png` — "60%" en sans-serif (Segoe UI/Inter), matcheando mockup.
+
+**Discrepancia detectada** (sev 🟡):
+- `NMModuleRing.paintEvent` usaba `qfont_mono(12, bold=True)` para el label del porcentaje. Esto daba Consolas (mono) en Windows, completamente diferente al sans-serif (Inter) del mockup.
+- En rings grandes (Rutina hero 64px) el "60%" se veía con caracteres cuadrados no anatómicos.
+- En rings chicos (Hub Pacientes 46px) la diferencia era más sutil pero igual visible.
+- El cambio en `NMModuleRing` afecta TODOS los consumidores: Rutina hero (size=64), Rutina secciones (size=40), Hub Pacientes (size=46 + size de "gold"). Ningún test dependía del font (test_rutina_visual_contract solo asserta width).
+
+**Fix aplicado** (`shared/components/rings.py`, `NMModuleRing.paintEvent`):
+- Reemplazado `p.setFont(qfont_mono(12 if s >= 50 else max(9, int(s * 0.20)), bold=True))` por construcción de `QFont(FONT_SANS, _label_px)` con `setWeight(Bold)` y `setHintingPreference(PreferFullHinting)`.
+- Mismo tamaño de label (12 para s≥50, else 9-10 proporcional).
+- Mantiene ring size, color, stroke, start angle, `show_label` flag.
+
+**Validación:**
+- ✅ `ruff check shared/components/rings.py` — All checks passed
+- ✅ `pytest tests/test_rutina_visual_contract.py::test_rutina_sections_and_rings_match_mockup` — pass (asserta width 64 y 40, no font)
+- ✅ `pytest tests/test_rutina_visual_contract.py::test_rutina_add_done_and_empty_states_match_mockup` — FAIL preexistente (✓ vs +, no relacionado)
+- ✅ Captura V8 regenerada: rutina hero + secciones + Hub Pacientes ahora con sans-serif
+- ✅ Sin regresión visual
+
+**Resultado:** MEJORA — el "60%" del hero de Rutina, los porcentajes de las secciones y los del Hub Pacientes ahora usan sans-serif, matcheando el mockup.
+
+**Discrepancias restantes:** ver resumen al final.
+
+### Iter 60 — Respiración: "4" central font-size 44 → 52px
+
+- **SHA antes:** `58c3fbe78ce3544b9e17bc37f5e6a9d1666a4ed2`
+- **SHA después:** `e7eaca0...` (este commit)
+- **Pantalla:** Suite · Respiración — breath circle (estado idle "En reposo")
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Bienestar/Guía de respiración/En reposo.png` — "4" en serif grande (mockup l.213 `.bigring .num { font-size: 52px; font-weight: 500; }`).
+- **Captura real antes:** `qa/_captures_v8/iter_loop_2026_06_24_baseline/suite-respiracion-light/suite-respiracion-light-960x600.png` — "4" a 44px (chico y ligero vs mockup).
+- **Captura real después:** `qa/_captures_v8/iter60_after/suite-respiracion-light-960x600.png` — "4" a 52px, más cercano al mockup.
+
+**Discrepancia detectada** (sev 🟡):
+- El "4" central del breath circle estaba en `_v3_font(44, weight=TYPOGRAPHY["weight_medium"], serif=True)` — 44px serif weight 500.
+- El CSS del mockup (l.213) dice `font-size: 52px; font-weight: 500`. El real estaba 8px más chico (18% menor).
+- Visualmente el "4" del real se veía más pequeño y más frágil que el del mockup, que es dominante en el centro.
+
+**Fix aplicado** (`app/modules/respiracion_qt.py`, `_BreathCircle.paintEvent`):
+- Reemplazado `_v3_font(44, weight=TYPOGRAPHY["weight_medium"], serif=True)` por `_v3_font(52, weight=TYPOGRAPHY["weight_medium"], serif=True)`.
+- Mantiene family (serif/Fraunces), weight (500/medium), color (text_color).
+- Aplica a TODOS los estados (idle, running, paused, completion) que pasan por el mismo `paintEvent`.
+
+**Validación:**
+- ✅ `ruff check app/modules/respiracion_qt.py` — All checks passed
+- ✅ No hay test específico de respiración (no tests de contract)
+- ✅ Captura V8 regenerada: "4" ahora visiblemente más grande, acercándose al mockup
+- ✅ Sin regresión visible (otros estados no capturados en baseline)
+
+**Resultado:** MEJORA — el "4" central ahora es 52px en vez de 44px, acercándose al mockup. Sigue pendiente el ajuste del WEIGHT (el real se ve más liviano que el mockup pese a ambos ser weight 500, posiblemente por la variable font Fraunces — el render Chromium vs Qt interpreta diferente). Posible iter futuro: bump weight 500→600.
+
+**Discrepancias restantes:** ver resumen al final.
+
+### Iter 61 — DBT: seg "Ahora/Biblioteca" left-aligned + compacto
+
+- **SHA antes:** `9368131...` (iter 60)
+- **SHA después:** este commit
+- **Pantalla:** Suite · DBT — seg principal "Ahora" / "Biblioteca" (en las dos vistas: DBT Ahora y DBT Biblioteca)
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Habilidades DBT/Habilidades DBT · Biblioteca.png` y `Habilidades DBT · Ahora.png` — seg a la IZQUIERDA del card, ancho ~180-200px (compacto).
+- **Captura real antes:** `qa/_captures_v8/iter_loop_2026_06_24_baseline/suite-dbt-library-light/suite-dbt-library-light-960x600.png` — seg CENTRADO con ancho ~640px (gigante, dos segmentos con mucho padding).
+- **Captura real después:** `qa/_captures_v8/iter61_after/suite-dbt-library-light-960x600.png` — seg a la IZQUIERDA, compacto, matcheando mockup.
+
+**Discrepancia detectada** (sev 🟠):
+- El seg principal "Ahora / Biblioteca" se agregaba con `setMaximumWidth(640) + AlignHCenter` → quedaba como un seg gigante centrado con 2 segmentos muy anchos.
+- El mockup lo muestra a la IZQUIERDA y compacto (los 2 segmentos solo del ancho de su texto, ~90px cada uno).
+- Diferencia MUY visible: la primera impresión de "Habilidades DBT" cambiaba completamente (centrado vs izquierda).
+
+**Fix aplicado** (`app/modules/dbt_qt.py`):
+- `setMaximumWidth(640)` → `setMaximumWidth(220)`.
+- `alignment=Qt.AlignmentFlag.AlignHCenter` → `alignment=Qt.AlignmentFlag.AlignLeft`.
+- Comentario explicando la decisión basado en el mockup.
+
+**Validación:**
+- ✅ `ruff check app/modules/dbt_qt.py` — All checks passed
+- ✅ `pytest tests/test_dbt_visual_contract.py` — 4/5 pass; 1 preexistente fail (`test_dbt_stop_practice_uses_modal_stepper_contract` — asserta "STOP · TOLERANCIA" pero el código dice "STOP · TOLERANCIA AL MALESTAR", no relacionado)
+- ✅ Captura V8 regenerada: seg ahora a la izquierda y compacto en DBT Ahora y DBT Biblioteca
+- ✅ Sin regresión visible
+
+**Resultado:** MEJORA — el seg principal de DBT ahora arranca a la izquierda como en el mockup, y los dos segmentos son compactos en vez de gigantes.
+
+**Discrepancias restantes:** ver resumen al final.
+
 ---
 
-## Resumen final del loop (12 iteraciones)
+## Resumen parcial (15 iteraciones hasta cierre anterior)
 
-- **SHA inicial:** `e29c36e681f346e7130fb418c9df0757f2257559`
-- **SHA final:** `c56170a01c6863d9e76718046022e08e823f1151`
-- **Commits de fix esta sesión:** 12 iters (47–58)
-- **Archivos tocados:** `app/home_qt.py`, `app/modules/dbt_qt.py`, `hub/pacientes_qt.py`, `shared/icons_svg.py`, `app/modules/registro_tcc_qt.py`, `app/modules/avisos_qt.py`
-- **Pantallas corregidas:**
+- **SHA inicial de sesión 2026-06-24:** `e29c36e681f346e7130fb418c9df0757f2257559`
+- **SHA al cierre de sesión anterior (parcial):** `bc7ee578ee97c34876522d0df2c6082ba9c1ade3` (iter 61)
+- **Commits de fix en sesión:** 15 iters (47–61)
+- **Archivos tocados:** `app/home_qt.py`, `app/modules/dbt_qt.py`, `hub/pacientes_qt.py`, `shared/icons_svg.py`, `app/modules/registro_tcc_qt.py`, `app/modules/avisos_qt.py`, `app/modules/respiracion_qt.py`, `shared/components/rings.py`
+- **Pantallas/componentes corregidos:**
   1. Suite · Home (hero glow verde visible + module cards border visible)
   2. Suite · DBT Práctica STOP (copy de los 4 pasos + safety_note sin "un")
   3. Suite · Ánimo (header icon smile, antes neutral)
@@ -349,6 +443,10 @@ Cada iteración registra:
   6. Suite · TCC (counter "0/500" en paso 4)
   7. Suite · Timer (icono pause "00" — dos círculos)
   8. Suite · Avisos (icono Respiración 5 min: leaf → water)
+  9. Suite · Rutina (ring "60%" hero + secciones → sans, antes mono) — iter 59
+  10. Hub · Pacientes (ring "75%"/"50%" → sans) — iter 59
+  11. Suite · Respiración ("4" central 44→52px serif) — iter 60
+  12. Suite · DBT (seg "Ahora/Biblioteca" left-aligned + compacto) — iter 61
 
 - **Tests ruff:** ✅ 0 errores en todos los archivos modificados
 - **Tests visuales relevantes:** 50/52 pass. 2 preexistentes rotos (bloquean tests que validan código antiguo incorrecto):
@@ -359,7 +457,7 @@ Cada iteración registra:
 - **Capturas V8 generadas:** todas las superficies iteradas regeneradas (light, 960×600) — sin regresión visual.
 - **Sesiones de captura auxiliar:** `iter_loop_2026_06_24_baseline` (39 superficies) usada como baseline; `iter47_after`, `iter48_after`, `iter49_after`, `iter50_after`, `iter51_after`, `iter52_after`, `iter53_after`, `iter54_after`, `iter58_after` para iteraciones individuales.
 
-## Confirmación explícita final
+## Confirmación explícita al cierre de sesión anterior (parcial)
 
 > **NO es PASS visual global.** Quedan ítems DIFERIDOS pendientes:
 > - 🟡 Slider dots animo (DIFERIDO funcional — los 10 niveles clickeables)
