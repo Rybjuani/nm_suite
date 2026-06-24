@@ -546,8 +546,8 @@ class ModuloAvisos(NMModule):
             t("text.module.avisos.search_placeholder", "Buscar recordatorio…"),
             modo=self._modo,
         )
-        self._search_input.setMinimumWidth(320)
-        self._search_input.setMaximumWidth(480)
+        self._search_input.setMinimumWidth(240)
+        self._search_input.setMaximumWidth(320)
         self._search_input.setFixedHeight(_TRACK_H)
         self._search_input.text_changed.connect(self._on_search)
         self._search_edit = self._search_input._edit

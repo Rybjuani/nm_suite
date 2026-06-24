@@ -480,7 +480,7 @@ _RECIPES: dict[str, dict[str, dict]] = {
             "label": "Avisos con busqueda",
             "parent": "avisos",
             "actions": [{"action": "navigate", "view": "avisos"},
-                        {"action": "call", "func": "_avisos_search", "text": "medic"},
+                        {"action": "call", "func": "_avisos_search", "text": "respir"},
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "avisos-search"}],
         },
