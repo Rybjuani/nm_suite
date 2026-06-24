@@ -856,4 +856,25 @@ Todas las pantallas de `qa/mockup_reference_static/light/` revisadas (Suite + Hu
 - ⚪ Registro success: harness captura paso 4 pre-save (no puede simular guardado real)
 - ⚪ Recuperar acceso / Onboarding: texto consent de `shared/legal_contract.py` (fuera de mandato)
 
+---
+
+## DIFERIDOS cerrados en sesión 2026-06-24 v2 (LOOP_LOG_2.md)
+
+> Verificación cross-log post-sesión v2 (`d12ab5b`).
+
+- ✅ **Slider dots del Animo (DIFERIDO funcional)** — `_MoodTrackBar.mousePressEvent` y `mouseMoveEvent` (compartido en `shared/components/mood.py`) ya manejaban clicks y drags sobre los 10 niveles. El DIFERIDO era documentación desactualizada, no código faltante. **CERRADO sin código**.
+- ✅ **TCC contador 0/500 fuera de la card (DIFERIDO)** — el contador del paso 3 (Respuesta) era `QLabel("0 / 500")` estático sin conectar a `textChanged`. Iter 69 lo arregló: `self._txt_respuesta.textChanged.connect(self._update_respuesta_count)` + nueva `_update_respuesta_count()` mirror de `_update_situacion_count`. **CERRADO**.
+- ✅ **Ícono Respiración leaf/drop (DIFERIDO decisión de diseño)** — iter 53 cambió `shared/icons_svg.py` para aliasar `respiracion` → `water` (gota) porque el fallback QtAwesome devolvía hoja 🍃 y el mockup del header muestra gota 💧. **CERRADO**.
+- ✅ **Status chip "Hoy"/"Activo" (DIFERIDO dato)** — `_ReminderCardV3._apply_theme` ya muestra "Hoy" (warning amarillo) o "Activo" (teal verde) según `activo` y `_is_today(self._dias)`. Solo el fixture QA no cubre el caso "Activo". El código maneja ambos. **CERRADO sin código**.
+- ✅ **Ancho input recordatorio "Mensaje del recordatorio (máx 150)" truncado** — placeholder acortado a "Mensaje (máx 150)" en `hub/plan_terapeutico.py` línea 592 (iter 73). **CERRADO**.
+- ⚠️ **Contador 158/145 textos editables (DIFERIDO dato)** — sigue data-driven. **NO CERRADO**: la cantidad real (158) no matchea el mockup (145) porque el fixture crece con cada iter. Marcado como data-driven consciente.
+
+## DIFERIDOS que quedan al cierre de v2 (con justificación explícita)
+
+- 🟡 **TCC Emoción grid → pills horizontales** — PROHIBIDO por test legacy `test_registro_tcc_emotion_tiles_separate_icon_label_and_selected_state` (asserta `tile.minimumHeight()==68`, `tile.maximumHeight()==74`, `tile._icon.width()==22`).
+- 🟡 **Onboarding copy legal** — `shared/legal_contract.py` `LEGAL_DISCLAIMER_TEXT` con 5 párrafos; test assertea `len(_CONSENT_TEXT) > 200`. PROHIBIDO.
+- 🟡 **Registro success** — harness V8 no captura post-save. No iterable desde captura.
+- 🟡 **Contador 158/145 textos** — data-driven, fixture crece; no es discrepancia de UI.
+- ⚪ **Recuperar acceso / Onboarding consent** — DIFERIDO legal.
+
 > **NO es PASS visual global.**

@@ -469,11 +469,34 @@ Cada iteración registra:
 > - 🟡 Status chip "Hoy"/"Activo" (DIFERIDO data-driven — depende del recordatorio)
 > - 🟡 Contador 158/145 (DIFERIDO data — cantidad real de textos editables)
 > - 🟡 Ancho input recordatorio "Mensaje del recordatorio (máx 150)" truncado (DIFERIDO ancho)
-> - 🟡 Subtítulo Respiración "Técnicas de calma 4·7·8" punto medio invisible (NO accionable — glifo de fuente)
 > - 🟡 Module card border (iter 48 ya iteró, quedó visible)
 > - ⚪ Botón "Restaurar" todos vs individual (Hub · Textos globales — copy/data menor)
 > - ⚪ Copy Onboarding privacy card (DIFERIDO legal, fuera de mandato)
 > - ⚪ Empty state sin card contenedor (DIFERIDO decisión de diseño)
 > - ⚪ Avatar gradient + border (sin cambio necesario, matchea mockup)
 >
+> El loop acercó 12 frentes visibles al mockup sin regresiones, pero el resto de las pantallas y los detalles finos (data-driven, funcionales, estructurales) siguen pendientes de decisión humana.
+
+---
+
+## DIFERIDOS cerrados en sesión 2026-06-24 v2 (LOOP_LOG_2.md)
+
+> Verificación cross-log post-sesión v2 (`d12ab5b`).
+
+- ✅ **Slider dots animo (DIFERIDO funcional)** — `_MoodTrackBar.mousePressEvent` y `mouseMoveEvent` (compartido en `shared/components/mood.py`) ya manejaban clicks y drags sobre los 10 niveles. El DIFERIDO era documentación desactualizada, no código faltante. **CERRADO sin código**.
+- ✅ **Status chip "Hoy"/"Activo"** — `_ReminderCardV3._apply_theme` ya muestra "Hoy" (warning amarillo, días del recordatorio incluyen hoy) o "Activo" (teal verde, activo=1 sin día actual). Solo el fixture QA no cubre el caso "Activo". El código maneja ambos. **CERRADO sin código**.
+- ✅ **Ancho input recordatorio "Mensaje del recordatorio (máx 150)" truncado** — placeholder acortado a "Mensaje (máx 150)" en `hub/plan_terapeutico.py` línea 592 (iter 73). Placeholder completo visible en 1 línea. **CERRADO**.
+
+## DIFERIDOS que quedan al cierre de v2 (con justificación explícita)
+
+- 🟡 **TCC Emoción grilla 4×2 → pills horizontales** — PROHIBIDO por test legacy `test_registro_tcc_emotion_tiles_separate_icon_label_and_selected_state` (asserta `tile.minimumHeight()==68`, `tile.maximumHeight()==74`, `tile._icon.width()==22`).
+- 🟡 **Hub · sidebar collapsed** — sin mockup de referencia en `qa/mockup_reference_static/`. No iterable.
+- 🟡 **Hub · Personalización/Editor overrides** — sin mockup de referencia. No iterable.
+- 🟡 **Onboarding copy legal** — `shared/legal_contract.py` contiene `LEGAL_DISCLAIMER_TEXT` con 5 párrafos; test `test_onboarding_consent_card_uses_legal_disclaimer_text` assertea `len(_CONSENT_TEXT) > 200`. PROHIBIDO.
+- 🟡 **Registro success post-save** — el harness V8 no captura el estado post-save (no dispara `_registrar()` real). No iterable desde captura.
+- 🟡 **Contador 158/145 textos editables** — data-driven (cantidad real de textos en el sistema). Fixture crece con cada iter; mockup es snapshot estático.
+- ⚪ **Botón "Restaurar" todos vs individual (Hub · Textos globales)** — copy/data menor; no discrepancia visual accionable.
+- ⚪ **Copy Onboarding privacy card** — DIFERIDO legal (mismo bloque).
+- ⚪ **Empty state sin card contenedor** — decisión de diseño del app (empty states con contenedor reducen ruido visual).
+- ⚪ **Avatar gradient + border (Hub · Pacientes)** — el mockup usa colores brand sólidos; el real usa gradiente determinístico (`accent` → `warm`). Decisión de diseño diferenciadora. Matchea mockup visualmente (avatar visible, initials legibles).
 > El loop acercó 12 frentes visibles al mockup sin regresiones, pero el resto de las pantallas y los detalles finos (data-driven, funcionales, estructurales) siguen pendientes de decisión humana.

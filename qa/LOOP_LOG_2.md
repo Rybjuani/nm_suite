@@ -421,4 +421,59 @@ Cada iteración registra:
 - 🟡 **Contador 158/145 textos** — data-driven (depende de la cantidad real de textos en el sistema).
 - 🟡 **Ánimo slider thumb posición 1 vs mockup 5** — test `test_animo_slider_card_matches_mockup_initial_and_touched_states` assertea `slider_score.text() == "— / 10"` (untouched). PROHIBIDO.
 
+---
+
+## Consolidación cross-log (verificación final 2026-06-24 v2)
+
+Tres logs cubren la historia de fidelidad visual:
+
+| Log | Iteraciones | SHA inicial | SHA final | Sesión |
+|---|---|---|---|---|
+| `qa/VISUAL_LOOP_LOG.md` | 1–46 | inicio suite | `9d4bdc1` | semana 2026-06-19/20/21/22 |
+| `qa/LOOP_LOG.md` | 47–61 | `e29c36e` | `c004845` | 2026-06-24 v1 |
+| `qa/LOOP_LOG_2.md` | 62–73 | `c004845` | `d12ab5b` | 2026-06-24 v2 (esta) |
+
+### DIFERIDOS únicos (consolidado de los 3 logs al cierre de v2)
+
+**🟡 Bloqueados por test legacy (PROHIBIDO por regla owner — "no tocar tests para aceptar UI"):**
+- TCC Emoción grilla 4×2 → pills (test assertea tile.height 68-74, icon 22×22)
+- Rutina checkbox square vs circle (test assertea `_NM_RT_CHECK_RADIUS == 7`)
+- Onboarding consent text (test assertea `len > 200`)
+- Ánimo slider thumb posición 5 (test assertea "— / 10" untouched)
+
+**🟡 Sin mockup de referencia (no iterables):**
+- Hub · sidebar collapsed
+- Hub · Personalización/Editor overrides
+
+**🟡 Data-driven (dependen del fixture, no son UI):**
+- Status chip "Hoy"/"Activo" en filtro Hoy
+- Contador 158/145 textos editables
+
+**🟡 No accionables por fuente (glifo):**
+- Subtítulo Respiración "Técnicas de calma 4·7·8" (carácter `·` U+00B7 se renderiza pequeño)
+
+**🟡 No iterables desde captura:**
+- Registro success post-save (harness V8 no dispara `_registrar()` real)
+
+**⚪ Decisiones de diseño (no defectos):**
+- Botón "Restaurar" todos vs individual (Hub · Textos globales) — copy/data menor
+- Copy Onboarding privacy card — DIFERIDO legal
+- Empty state sin card contenedor — decisión de diseño
+- Avatar gradient + border — decisión de diseño diferenciadora
+
+### DIFERIDOS cerrados por iteración v2 (62–73)
+
+- Iter 62: "Salud" color danger→brand (Avisos)
+- Iter 63: Search input width + spacing (Avisos)
+- Iter 64: Avisos empty oculta filter+search
+- Iter 65: DBT chips familia outline-style
+- Iter 66: DBT library grid spacing
+- Iter 67: Home "Checklist de rutina" icon (nuevo checklist)
+- Iter 68: Titlebar Rutina icon "rutina"→"checklist"
+- Iter 69: TCC Paso 3 counter bug (textChanged)
+- Iter 70: Respiración partículas alpha
+- Iter 71: NMButton gradient disabled opacity 0.4→0.65
+- Iter 73: Hub Detalle placeholder "Mensaje (máx 150)"
+- Sin código: Slider dots animo (ya implementado), Status chip "Hoy"/"Activo" (código ya cubre ambos estados)
+
 
