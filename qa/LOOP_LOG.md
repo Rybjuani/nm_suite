@@ -266,7 +266,7 @@ Cada iteración registra:
 ### Iter 56 — DBT STOP pasos T y O: body alineado al mockup
 
 - **SHA antes:** `170a3f42486faa205458b96b7fb1456d839a208c`
-- **SHA después:** _(pending)_
+- **SHA después:** `ee34f35d8ff2d8eb626117d8bbb49fdf729ba173`
 - **Pantalla:** Suite · DBT Práctica guiada (STOP · pasos T y O)
 - **Mockup esperado:**
   - l.1162 (T): "Alejate **física** o mentalmente de la situación..."
@@ -284,5 +284,28 @@ Cada iteración registra:
 - ✅ `ruff check app/modules/dbt_qt.py` — All checks passed
 
 **Resultado:** MEJORA — copy de T y O matchea mockup l.1162/1163.
+
+### Iter 57 — DBT STOP paso P: title + body alineados al mockup
+
+- **SHA antes:** `ee34f35d8ff2d8eb626117d8bbb49fdf729ba173`
+- **SHA después:** _(pending)_
+- **Pantalla:** Suite · DBT Práctica guiada (STOP · paso 4, P)
+- **Mockup esperado (l.1164):**
+  - title: "P — Procedé con conciencia" (sin paréntesis)
+  - body: "Elegí una respuesta alineada con tus objetivos y valores, no con el impulso del momento."
+
+**Discrepancia detectada** (sev 🟡):
+- Title: real tenía "(Proceed mindfully)" extra, mockup NO.
+- Body: copy totalmente diferente.
+
+**Fix aplicado** (`app/modules/dbt_qt.py`):
+- Title: removido "(Proceed mindfully)".
+- Body: reemplazado con copy del mockup.
+
+**Validación:**
+- ✅ `ruff check app/modules/dbt_qt.py` — All checks passed
+- ✅ `pytest tests/test_dbt_module.py` — 14/14 pass
+
+**Resultado:** MEJORA — copy de P matchea mockup l.1164.
 
 ---

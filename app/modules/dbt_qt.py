@@ -182,8 +182,11 @@ DBT_SKILLS = {
                 "body": "Notá qué está pasando dentro y fuera: pensamientos, sensaciones, el contexto, sin juzgarlos."
             },
             {
-                "title": "P — Procedé con conciencia (Proceed mindfully)",  # mockup: em-dash
-                "body": "Preguntate: ¿Qué acción mejorará la situación en lugar de empeorarla? Actúa de forma deliberada y constructiva."
+                # 2026-06-24: mockup l.1164 — title sin "(Proceed mindfully)" en
+                # paréntesis (no está en el mockup).
+                "title": "P — Procedé con conciencia",  # mockup: em-dash
+                # 2026-06-24: mockup l.1164 — body alineado al mockup
+                "body": "Elegí una respuesta alineada con tus objetivos y valores, no con el impulso del momento."
             }
         ],
         "safety_note": "Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.",
