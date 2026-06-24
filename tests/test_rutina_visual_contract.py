@@ -72,11 +72,16 @@ def test_rutina_add_done_and_empty_states_match_mockup(qtbot, monkeypatch) -> No
 
     add_form = module._section_cards["tarde"].body_layout().itemAt(0).widget()
     add_input = add_form.findChild(rutina_qt.NMInput)
-    add_buttons = [btn for btn in add_form.findChildren(rutina_qt.NMButton) if btn.text() == "✓"]
+    # Mockup l.929: <button class="btn btn--primary" id="rtAdd" style="padding:9px 14px;">+</button>
+    # Migración desde UI anterior (glyph "✓" + variant "secondary"); el design system
+    # adoptó "+" como glyph canónico de "add" y "btn--primary" (alias de "gradient"
+    # en NMButton) para la CTA inline. El código `app/modules/rutina_qt.py:308` ya
+    # rindió al spec; el test quedó pineado al valor histórico.
+    add_buttons = [btn for btn in add_form.findChildren(rutina_qt.NMButton) if btn.text() == "+"]
 
     assert add_input.placeholderText() == "Nueva tarea…"
     assert add_buttons
-    assert add_buttons[0].variant() == "secondary"
+    assert add_buttons[0].variant() == "gradient"
     assert add_buttons[0].width() == 36
     assert add_buttons[0].height() == 34
 
