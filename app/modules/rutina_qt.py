@@ -428,15 +428,21 @@ class ModuloRutina(NMModule):
         self._empty_state.hide()
         self._empty_host = QWidget()
         self._empty_host.setStyleSheet("background: transparent;")
-        self._empty_host.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        # Mockup l.909: .empty vive dentro de .screen con padding 24px y el
+        # bloque empty tiene padding 50px vertical. El empty NO está centrado
+        # verticalmente en toda la pantalla: se posiciona cerca del top del
+        # screen. Usamos Maximum + AlignTop para que tome su sizeHint natural
+        # (icono 64 + padding 50+50 + texto) y el bottom_spacer expanding
+        # empuje el resto, matcheando la posición del mockup.
+        self._empty_host.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         empty_lay = QVBoxLayout(self._empty_host)
         empty_lay.setContentsMargins(0, 0, 0, 0)
         empty_lay.setSpacing(0)
-        empty_lay.addStretch(1)
-        empty_lay.addWidget(self._empty_state, 0, Qt.AlignmentFlag.AlignHCenter)
-        empty_lay.addStretch(1)
+        empty_lay.addWidget(
+            self._empty_state, 0, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop
+        )
         self._empty_host.hide()
-        lay.addWidget(self._empty_host, stretch=1)
+        lay.addWidget(self._empty_host, stretch=0)
 
         # 4. Grid responsive de _SectionCard
         self._sections_grid_widget = QWidget()
@@ -471,11 +477,14 @@ class ModuloRutina(NMModule):
     def _set_empty_visible(self, visible: bool) -> None:
         self._empty_host.setVisible(visible)
         self._empty_state.setVisible(visible)
+        # El bottom_spacer siempre expanding: cuando el empty es visible empuja
+        # el bloque compacto hacia el top del screen (matchea mockup l.909);
+        # cuando no lo es empuja las secciones hacia arriba.
         self._bottom_spacer.changeSize(
             0,
             0,
             QSizePolicy.Policy.Minimum,
-            QSizePolicy.Policy.Fixed if visible else QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Expanding,
         )
         if (layout := self._empty_host.parentWidget().layout()) is not None:
             layout.invalidate()
