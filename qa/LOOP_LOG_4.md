@@ -21,5 +21,6 @@ Reducir discrepancias visuales reales del producto contra `neuromood-mockup.html
 
 | # | SHA antes | SHA después | Superficie | Discrepancia | Archivos | Validación |
 |---|---|---|---|---|---|---|
-| 1 | `1d7a8bc` | `31ea9d7` | Suite · Checklist de rutina · empty state | El empty state estaba centrado verticalmente en toda la pantalla; el mockup (l.909) lo posiciona cerca del top del screen con padding 24+50. | `app/modules/rutina_qt.py` | ruff pass; `tests/test_rutina_visual_contract.py` 2/2 pass; captura V8 regenerada; diff PASS (SSIM≥0.92, MAD≤0.035, changed≤0.08) |
+| 1 | `1d7a8bc` | `0aec2c8` | Suite · Checklist de rutina · empty state | El empty state estaba centrado verticalmente en toda la pantalla; el mockup (l.909) lo posiciona cerca del top del screen con padding 24+50. | `app/modules/rutina_qt.py` | ruff pass; `tests/test_rutina_visual_contract.py` 2/2 pass; captura V8 regenerada; diff PASS (SSIM≥0.92, MAD≤0.035, changed≤0.08) |
+| 2 | `0aec2c8` | `70d226d` | Suite · Temporizador · empty state | El empty state estaba centrado verticalmente dentro del timer_card; el mockup (l.856-858) lo posiciona cerca del top del screen. | `app/modules/timer_qt.py`, `qa/capture_v8.py` | ruff pass; `tests/test_timer_visual_contract.py` + `tests/test_capture_v8_evidence.py` 11/11 pass; captura V8 regenerada; diff PASS |
 

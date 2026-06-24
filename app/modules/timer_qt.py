@@ -35,6 +35,8 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
+    QSpacerItem,
+    QSizePolicy,
 )
 
 try:
@@ -321,14 +323,22 @@ class ModuloTimer(NMModule):
         # verticales.
         cent_lay.setContentsMargins(0, 12, 0, 12)
         cent_lay.setSpacing(12)
-        cent_lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # En modo operativo el ring+controles se centran; en modo empty el
+        # NMEmptyState se alinea al top del screen (mockup l.856-858).
+        cent_lay.setAlignment(
+            Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignCenter
+            if self._has_activity
+            else Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop
+        )
         self._cent_lay = cent_lay  # para el helper QA _timer_force_empty
 
-        # Stretch superior de balance: los dos addStretch del empty-state (abajo)
-        # empujaban el bloque operativo (ring+controles+presets) hacia arriba,
-        # dejando el tercio inferior vacío. Este stretch lo equilibra y centra el
-        # contenido en modo operativo (el empty-state sigue centrado por los suyos).
-        cent_lay.addStretch(1)
+        # Stretch superior de balance: en modo operativo centra el ring+controles.
+        # En modo empty se colapsa para que el NMEmptyState quede cerca del top
+        # del screen, matcheando mockup l.856-858 (empty con padding 24+50).
+        self._cent_top_stretch = QSpacerItem(
+            0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
+        cent_lay.addSpacerItem(self._cent_top_stretch)
 
         # Canvas: bigring 230×230 (mockup canónico línea 207), con inner core
         # 200×200 + número central 46px font-display (mockup línea 861:
@@ -443,11 +453,10 @@ class ModuloTimer(NMModule):
         # QLabel improvisado — usa el widget NMEmptyState de la librería
         # compartida (icono en chip 64×64, título display-m serif, subtítulo
         # body, sin CTAs operativos).
-        # (2026-06 round 3: compactado y centrado como un solo bloque
-        # siguiendo el patrón del empty de Recordatorios — addStretch(1)
-        # antes y después para centrarlo verticalmente en el espacio
-        # disponible, sin stretch en el NMEmptyState para que tome su
-        # sizeHint compacto.)
+        # Mockup l.856-858: empty state posicionado cerca del top del screen
+        # (padding 12 del container + padding 50 del NMEmptyState), NO centrado
+        # verticalmente. Se alinea al top y se colapsa el stretch superior en
+        # modo empty; el stretch inferior empuja el bloque hacia arriba.
         self._empty_state = NMEmptyState(
             "timer",
             t("text.module.timer.empty_title", "Sin actividades asignadas"),
@@ -458,8 +467,13 @@ class ModuloTimer(NMModule):
             parent=cent_container,
         )
         self._empty_state.hide()
-        cent_lay.addWidget(self._empty_state)
-        cent_lay.addStretch(1)
+        cent_lay.addWidget(
+            self._empty_state, 0, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop
+        )
+        self._cent_bottom_stretch = QSpacerItem(
+            0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
+        cent_lay.addSpacerItem(self._cent_bottom_stretch)
 
         if self._has_activity:
             # Seleccionar la actividad asignada inicial con su categoría.
@@ -499,6 +513,23 @@ class ModuloTimer(NMModule):
                             w.setMaximumSize(0, 0)
                             w.hide()
                     break
+            # Colapsar el stretch superior para que el empty state quede cerca
+            # del top del screen (matchea mockup l.856-858). El stretch inferior
+            # ya existe y empuja el bloque hacia arriba.
+            self._cent_top_stretch.changeSize(
+                0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed
+            )
+            cent_lay.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+            # En modo empty el contenedor no debe estirarse verticalmente:
+            # toma el sizeHint del empty state y el outer stretch lo empuja
+            # hacia el top del screen (matchea mockup l.856-858).
+            cent_container.setSizePolicy(
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum
+            )
+            # En modo empty el timer_card no necesita altura mínima 280; se
+            # ajusta al sizeHint del empty state para matchear mockup l.856-858.
+            timer_card.setMinimumHeight(0)
+            cent_lay.invalidate()
             # Mostrar el empty state canónico (icono + título + subtítulo).
             self._empty_state.show()
 

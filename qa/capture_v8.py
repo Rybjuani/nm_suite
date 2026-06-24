@@ -1191,13 +1191,20 @@ def _timer_force_empty(win, qapp, action):
         target._state_chip.hide()
     if hasattr(target, '_canvas'):
         target._canvas.hide()
+        target._canvas.setMaximumSize(0, 0)
         target._canvas.set_data(0.0, "—:—")
+    if hasattr(target, '_state_chip'):
+        target._state_chip.hide()
+        target._state_chip.setMaximumSize(0, 0)
     if hasattr(target, '_input_container'):
         target._input_container.hide()
+        target._input_container.setMaximumSize(0, 0)
     if hasattr(target, '_duration_chip_container'):
         target._duration_chip_container.hide()
+        target._duration_chip_container.setMaximumSize(0, 0)
     if hasattr(target, '_chip_container'):
         target._chip_container.hide()
+        target._chip_container.setMaximumSize(0, 0)
     if hasattr(target, '_cent_lay'):
         # Ocultar fila de controles (reset/play/skip) — buscar el QHBoxLayout
         ctrl_row_layout = None
@@ -1212,8 +1219,21 @@ def _timer_force_empty(win, qapp, action):
                 w = ctrl_row_layout.itemAt(i).widget()
                 if w:
                     w.hide()
+                    w.setMaximumSize(0, 0)
     if hasattr(target, '_empty_state'):
         target._empty_state.show()
+    # Colapsar stretch superior del layout para que el empty state quede cerca
+    # del top del screen (matchea mockup l.856-858).
+    if hasattr(target, '_cent_top_stretch'):
+        from PyQt6.QtWidgets import QSizePolicy
+        from PyQt6.QtCore import Qt
+
+        target._cent_top_stretch.changeSize(
+            0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed
+        )
+        if hasattr(target, '_cent_lay'):
+            target._cent_lay.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+            target._cent_lay.invalidate()
     # Mockup l.856-858: empty state en pantalla directa, SIN card chrome.
     # Forzar borderless en el timer_card si existe.
     if hasattr(target, '_timer_card'):
