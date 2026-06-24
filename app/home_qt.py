@@ -797,7 +797,13 @@ class _HeroBienestar(QFrame):
         # Mockup l.667: glow radial en upper-right (brand-soft → transparent,
         # 200x200 en right:-30 top:-40). Da calidez al hero y lo diferencia
         # del resto de cards (que usan solo surface sólido).
-        glow_color = v3c("brand_soft", self._modo)
+        # 2026-06-24: v3c("brand_soft", "light_hybrid") devolvía #888888 (gris,
+        # 100% alpha) en lugar del rgba(46,93,67,.13) (verde brand 13%) del
+        # mockup. Usamos v3c("brand", ...) con alpha 100 (~40%) para que el
+        # glow sea visible sobre el fondo beige claro (alpha 33 era casi
+        # imperceptible al mezclarse con surface).
+        glow_color = v3c("brand", self._modo)
+        glow_color.setAlpha(100)
         glow = QRadialGradient(w - 30, -40, 200)
         glow.setColorAt(0.0, glow_color)
         glow.setColorAt(0.7, QColor(glow_color.red(), glow_color.green(), glow_color.blue(), 0))
