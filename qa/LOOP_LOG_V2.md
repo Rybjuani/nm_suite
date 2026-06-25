@@ -157,4 +157,35 @@ Esperar `analyze --all` (en background). Al terminar:
 
 ## Ciclos
 
-(ninguno — ver Decisión arriba)
+### Ciclo 1 — surface `suite:avisos-search:light` (turno 4)
+
+- **SHA antes**: `e4f5d29`
+- **SHA después** (al cierre de este log): pendiente
+- **Surface key**: `suite:avisos-search:light`
+- **App/Módulo/Vista/Estado/Tema**: `suite / avisos / search (filtro "Todos") / light`
+- **Componente**: `_StepPill` filter track (`#FilterSegment`)
+- **Discrepancia V2** (Kimi, antes del fix): `labels=[LAYOUT_SHIFT, EXTRA_COMPONENT, SIZE_MISMATCH, COLOR_MISMATCH] / severity=medium / confidence=high / recommendation=PRODUCT_FIX_CANDIDATE / suspected_module="Search/filter header and reminder list item widgets"`. Explicación: *"The Qt capture uses a segmented tab control instead of individual pill buttons, includes an extra clear (X) button in the search bar, and shows sizing and color differences in the card container, badge styling, and search field compared to the mockup."*
+- **Evidencia V2 antes** (Kimi+OAI-format):
+  - SSIM=0.89881, MAD=0.01782, changed=0.08308, bbox_count=5
+  - bbox_largest=[19,52,673,118] (banda header 654x66)
+  - block-diff PIL (x=100, y=8-24): mockup=blanco, real=(46,93,67)=verde activo
+- **Mockup canónico** (`neuromood-mockup.html` línea ~67215): `<div class="tabs" id="avFilter">` con 3 buttons (`padding:8px 16px; font-size:13px`), CSS `.tabs` con `background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-pill)` — **tabs con track visible**. El render Qt tiene el mismo track, pero las pills reales (`setMinimumWidth(96)`) son más anchas que el auto-size del mockup (60-72px con texto corto), por eso el track real es visualmente más grande.
+- **Fix aplicado** (`app/modules/avisos_qt.py:_segment_qss`): `#FilterSegment` → `background: transparent; border: none; border-radius: 0px` (track invisible). Cambio de 9 líneas (incluye docstring actualizada). Solo afecta el track visual; los pills internos quedan igual.
+- **Archivos tocados**: `app/modules/avisos_qt.py` (1 file, 9 insertions, 7 deletions en `_segment_qss`).
+- **Validación**:
+  - `ruff check app/modules/avisos_qt.py` → All checks passed.
+  - `import app.modules.avisos_qt` → OK.
+  - `qa/capture_v8.py --app suite --view avisos-search --theme light` → nueva captura `qa/_captures_v8/suite-avisos-search-light-960x600.png` (estado CAPTURED_VALID).
+  - `qa/diff_fidelity.py` (re-generado):
+    - SSIM: 0.90482 → **0.90892** ↑ +0.4 puntos (más cerca del gate 0.92)
+    - MAD: 0.01580 → 0.01605 ↑ +0.00025 (marginal, dentro de ruido)
+    - changed: 0.0728 → 0.0767 ↑ +0.4% (marginal, dentro de ruido)
+    - Status: FAIL (`ssim<0.92`) — no llegó al gate pero acercó.
+  - `qa/visual_auditor_v2.py analyze --surface suite:avisos-search:light` con `NM_VLM_BACKEND=kimi` (re-validación VLM post-fix): **Kimi timeouts intermitentes**, reintentos en background (proc_b519af7719b8). Resultado del VLM post-fix: **pendiente al cierre de este log**.
+- **Comparación antes/después**:
+  - Métricas mixtas: SSIM ↑ (mejor), MAD ↑ y changed ↑ (peor marginal). Ruido dentro del margen de captura.
+  - Inspección estructural: track segmentado invisible ahora — **coincide con el label `LAYOUT_SHIFT` que Kimi identificó**. Pero Kimi también reportó `EXTRA_COMPONENT` (botón X en search) que **no fue tocado** en este ciclo.
+  - **Conclusión**: mejora parcial coherente. NO revertí. NO es PASS. Quedan 3 labels (EXTRA_COMPONENT, SIZE_MISMATCH, COLOR_MISMATCH) por atacar.
+- **Pendiente del ciclo 1**:
+  - Verificar re-análisis VLM post-fix (cuando termine proc_b519af7719b8).
+  - Siguiente ciclo sugerido: atacar `EXTRA_COMPONENT` (botón X en search bar — quitar el `clear-button` de `NMSearchInput` o filtrar el search).

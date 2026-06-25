@@ -588,12 +588,15 @@ class ModuloAvisos(NMModule):
         # If we had a main title here it would be serif.
 
     def _segment_qss(self, modo: str) -> str:
-        """Track del filtro segmentado Todos/Activos/Hoy (surface2 + radio pill)."""
-        m = norm_modo(modo)
+        """Track del filtro segmentado Todos/Activos/Hoy.
+
+        Mockup canonico: tabs individuales sin track segmentado visible.
+        El contenedor sigue existiendo para layout, pero sin background/border.
+        """
         return (
-            f"#FilterSegment {{ background: {v3c('surface_2', m).name()}; "
-            f"border: 1px solid {C('border', m)}; "
-            f"border-radius: 20px; }}"
+            "#FilterSegment { background: transparent; "
+            "border: none; "
+            "border-radius: 0px; }"
         )
 
     def _on_theme(self, modo: str) -> None:
