@@ -596,9 +596,18 @@ def _call_vlm_kimi(
             },
             method="POST",
         )
-        with _ur.urlopen(req, timeout=180) as resp:
-            body_text = resp.read().decode("utf-8")
-        parsed_resp = json.loads(body_text)
+        for attempt in range(int(os.environ.get("NM_KIMI_RETRIES", "3"))):
+            try:
+                with _ur.urlopen(req, timeout=180) as resp:
+                    body_text = resp.read().decode("utf-8")
+                parsed_resp = json.loads(body_text)
+                break
+            except (_ue.URLError, _ue.HTTPError, TimeoutError, json.JSONDecodeError):
+                if attempt < int(os.environ.get("NM_KIMI_RETRIES", "3")) - 1:
+                    import time as _time
+                    _time.sleep(2 ** attempt)
+                    continue
+                raise
         raw = parsed_resp["choices"][0]["message"]["content"]
         raw_clean = raw.strip()
         if raw_clean.startswith("```"):
@@ -629,7 +638,7 @@ def _call_vlm_kimi(
         return Classification(
             labels=["NEEDS_HUMAN_REVIEW"],
             severity="needs_review",
-            explanation=f"Kimi VLM call failed: {exc}",
+            explanation=f"Kimi VLM call failed after retries: {exc}",
             recommendation="NEEDS_HUMAN_REVIEW",
             confidence="low",
             confidence_reason=f"Kimi exception: {type(exc).__name__}",
