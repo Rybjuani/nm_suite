@@ -816,12 +816,32 @@ def _map_to_agent_route(
     # bbox-level worst_fuzzy is low due to OCR noise, the structural/color
     # signal is not backed by legible text and the surface should go to
     # QA_TOOLING, not PRODUCT.
-    worst_pair = (worst_analysis or {}).get("fuzzy_ratio_worst_pair", ["", ""])
-    worst_mockup_ocr = (worst_analysis or {}).get("mockup_ocr", "")
-    worst_real_ocr = (worst_analysis or {}).get("real_ocr", "")
+    #
+    # Owner guardrail (V3 amend — OCR-legibility rule): the pair we expose
+    # to consumers is fuzzy_ratio_worst_pair, the worst line-to-line pair
+    # inside a bbox. Validating only the bbox's full mockup_ocr/real_ocr
+    # (which may aggregate multiple lines, some legible, some noise) is
+    # insufficient: a bbox can contain 'NeuroMood / Configuración' on one
+    # side and 'NeuroMood / Configuración' on the other (legible, pass)
+    # while its fuzzy_ratio_worst_pair is OCR garbage (would fail). The
+    # consumer reads the pair, not the full OCR; routing must mirror that.
+    worst_pair = (worst_analysis or {}).get('fuzzy_ratio_worst_pair', ['', ''])
+    worst_mockup_ocr = (worst_analysis or {}).get('mockup_ocr', '')
+    worst_real_ocr = (worst_analysis or {}).get('real_ocr', '')
+    # Pass condition: BOTH the bbox's aggregate OCR AND the reported
+    # worst_pair must look like real text. If only one passes, the
+    # evidence is mixed and the consumer cannot act on it.
+    worst_bbox_legible = _looks_like_real_text_pair(worst_mockup_ocr, worst_real_ocr)
+    worst_pair_legible = _looks_like_real_text_pair(
+        (worst_pair or ['', ''])[0], (worst_pair or ['', ''])[1]
+    )
     worst_has_real_pair = bool(
-        worst_pair and worst_pair[0] and worst_pair[1] and worst_pair[0] != worst_pair[1]
-        and _looks_like_real_text_pair(worst_mockup_ocr, worst_real_ocr)
+        worst_pair
+        and worst_pair[0]
+        and worst_pair[1]
+        and worst_pair[0] != worst_pair[1]
+        and worst_bbox_legible
+        and worst_pair_legible
     )
     ocr_contradicts_product = not worst_has_real_pair
 
@@ -832,20 +852,29 @@ def _map_to_agent_route(
     # bbox), we additionally require the top_bbox to carry some legible text
     # pair of its own. If the top_bbox has no real text pair, the structural
     # signal falls into the OCR-contradicts branch below.
-    top_pair = (top_bbox_analysis or {}).get("fuzzy_ratio_worst_pair", ["", ""])
+    #
+    # Same owner guardrail: validate the reported worst_pair directly. A
+    # bbox with aggregate legible OCR but a worst_pair of pure noise
+    # must NOT route to product.
+    top_pair = (top_bbox_analysis or {}).get('fuzzy_ratio_worst_pair', ['', ''])
+    top_bbox_legible = _looks_like_real_text_pair(
+        (top_bbox_analysis or {}).get('mockup_ocr', ''),
+        (top_bbox_analysis or {}).get('real_ocr', ''),
+    )
+    top_pair_legible = _looks_like_real_text_pair(
+        (top_pair or ['', ''])[0], (top_pair or ['', ''])[1]
+    )
     top_has_real_pair = bool(
         top_pair
         and top_pair[0]
         and top_pair[1]
         and top_pair[0] != top_pair[1]
-        and _looks_like_real_text_pair(
-            (top_bbox_analysis or {}).get("mockup_ocr", ""),
-            (top_bbox_analysis or {}).get("real_ocr", ""),
-        )
+        and top_bbox_legible
+        and top_pair_legible
     )
     if (
         has_structural
-        and confidence in ("high", "medium")
+        and confidence in ('high', 'medium')
         and not ocr_contradicts_product
         and top_has_real_pair
     ):

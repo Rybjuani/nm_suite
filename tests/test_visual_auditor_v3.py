@@ -33,6 +33,8 @@ from visual_auditor_v3 import (
     _extract_bboxes,
     _is_corrupt_or_blank,
     _load_cached,
+    _looks_like_real_text_pair,
+    _map_to_agent_route,
     _mark_normalization_artifacts,
     _ocr_image,
     _preprocess_for_ocr,
@@ -1610,3 +1612,237 @@ class _ScratchLatest:
         if self._orig is not None:
             import visual_auditor_v3 as v3mod
             v3mod._OUT_DIR = self._orig
+
+
+    # ---------------------------------------------------------------------------
+# Owner guardrail — V3 amend OCR-legibility rule
+# ---------------------------------------------------------------------------
+#
+# Bug being prevented: a bbox can pass `_looks_like_real_text_pair` against
+# its full aggregate mockup_ocr/real_ocr (because some line in it is real,
+# e.g. "NeuroMood / Configuración") while the line-to-line pair exposed to
+# consumers as `fuzzy_ratio_worst_pair` is pure OCR garbage (e.g.
+# "AP .. .. i..." vs "M\x27aomo"). The previous guardrail validated the bbox
+# aggregate only, so the route went to PRODUCT_ACTIONABLE with a
+# `diff_summary` of pure noise. The owner audit (2026-06-25) flagged four
+# surfaces that hit this: suite:recuperar-acceso@light,
+# suite:actividades@dark, suite:actividades-marked-hice@dark, and
+# hub:textos-globales@dark. These tests pin the regression.
+
+
+def _make_routing_inputs(bbox_analyses, *, has_structural=False, has_color=False,
+                         confidence="medium"):
+    """Build the kwargs _map_to_agent_route expects, except bbox_analyses."""
+    labels = []
+    if has_structural:
+        labels.append("EXTRA_COMPONENT")
+    if has_color:
+        labels.append("COLOR_MISMATCH")
+    labels.append("TEXT_MISMATCH_PROBABLE")
+    classification = Classification(
+        labels=labels, severity="high", explanation="",
+        decision="FIX_PRODUCT_REVIEW", suspected_module="",
+        confidence=confidence,
+    )
+    bboxes = [
+        BBoxInfo(label=0, geometry=(0, 0, 100, 50), area=5000,
+                 normalization_artifact=False, area_ratio=0.1)
+        for _ in bbox_analyses
+    ]
+    metrics = Metrics(
+        bbox_count=len(bbox_analyses), bbox_largest_area_ratio=0.1,
+        changed_pixel_ratio=0.05, mean_abs_diff=10.0,
+    )
+    pairing = Pairing(
+        surface_key="", app="", view="", theme="", mockup_path="",
+        real_capture_path="x", diff_path="", overlay_path="",
+    )
+    return {
+        "classification": classification,
+        "bboxes": bboxes,
+        "bbox_analyses": bbox_analyses,
+        "metrics": metrics,
+        "manifest_entry": {},
+        "biggest_bbox_dominates": False,
+        "all_artifacts": False,
+        "pairing": pairing,
+    }
+
+
+def _route_for(bbox_analyses, **kw):
+    inputs = _make_routing_inputs(bbox_analyses, **kw)
+    res = _map_to_agent_route(**inputs)
+    return res[0], res[5]  # agent_route, product_action_allowed
+
+
+def test_guardrail_garbage_worst_pair_not_product_actionable():
+    """Surface: suite:recuperar-acceso@light (real data).
+
+    Bbox aggregate OCR contains NeuroMood / Configuración (legible),
+    but fuzzy_ratio_worst_pair is the pure-noise pair
+    AP .. .. i... vs M-x22aomo. Previous guardrail validated only the
+    bbox aggregate and let this through to PRODUCT_ACTIONABLE.
+    """
+    ba = [{
+        "mockup_ocr": "NeuroMood / Configuración inicial\nAP .. .. i...",
+        "real_ocr": "NeuroMood / Configuración inicial\nM\x22aomo",
+        "fuzzy_ratio_worst": 0.0,
+        "fuzzy_ratio_worst_pair": ["AP .. .. i...", "M\x22aomo"],
+        "color_delta": 0,
+        "mockup_color": (0, 0, 0), "real_color": (0, 0, 0),
+        "geometry": (0, 0, 100, 50),
+    }]
+    route, allowed = _route_for(ba)
+    assert allowed is False, (
+        f"OCR-garbage worst_pair must NOT enable product action, got route={route}"
+    )
+    assert route != "PRODUCT_ACTIONABLE", (
+        f"OCR-garbage worst_pair must NOT route to PRODUCT_ACTIONABLE, got {route}"
+    )
+
+
+def test_guardrail_garbage_on_both_sides_not_product_actionable():
+    """Surface: suite:actividades@dark + suite:actividades-marked-hice@dark.
+
+    Both sides of fuzzy_ratio_worst_pair are junk. The pair shares no
+    alphabetic token of length >=3 and has no shared substring >=5 chars.
+    """
+    ba = [{
+        "mockup_ocr": "Elegí una fan",
+        "real_ocr": "VAIOCOUURIAS",
+        "fuzzy_ratio_worst": 0.0,
+        "fuzzy_ratio_worst_pair": ["Elegí una fan", "VAIOCOUURIAS"],
+        "color_delta": 0,
+        "mockup_color": (0, 0, 0), "real_color": (0, 0, 0),
+        "geometry": (0, 0, 100, 50),
+    }]
+    route, allowed = _route_for(ba)
+    assert allowed is False, (
+        f"Junk-on-both-sides pair must NOT enable product action, got route={route}"
+    )
+    assert route != "PRODUCT_ACTIONABLE", (
+        f"Junk-on-both-sides pair must NOT route to PRODUCT_ACTIONABLE, got {route}"
+    )
+
+
+def test_guardrail_garbage_with_color_signal_goes_to_qa_tooling():
+    """Surface: hub:textos-globales@dark (real data).
+
+    c 12/32 vs Bienvenida — no shared tokens, no shared substrings.
+    The bbox also has a strong color delta (so has_color=True), but the
+    OCR evidence is pure noise. The owner rule: color+noise must NOT
+    route to PRODUCT; it must go to QA_TOOLING_ACTIONABLE so the agent
+    can verify the dominant-color crop is not a background fill before
+    claiming product action.
+    """
+    ba = [{
+        "mockup_ocr": "c 12/32",
+        "real_ocr": "Bienvenida",
+        "fuzzy_ratio_worst": 0.0,
+        "fuzzy_ratio_worst_pair": ["c 12/32", "Bienvenida"],
+        "color_delta": 50,
+        "mockup_color": (10, 10, 10), "real_color": (200, 200, 200),
+        "geometry": (0, 0, 100, 50),
+    }]
+    route, allowed = _route_for(ba, has_color=True)
+    assert allowed is False, (
+        f"Color + garbage-OCR must NOT enable product action, got route={route}"
+    )
+    assert route != "PRODUCT_ACTIONABLE", (
+        f"Color + garbage-OCR must NOT route to PRODUCT_ACTIONABLE, got {route}"
+    )
+    assert route in ("QA_TOOLING_ACTIONABLE", "AUDITOR_IMPROVEMENT_ACTIONABLE"), (
+        f"Color + garbage-OCR should go to QA/AUDITOR, got {route}"
+    )
+
+
+def test_guardrail_legit_pair_still_routes_product_actionable():
+    """Sanity guard: a REAL text mismatch must still route to PRODUCT.
+
+    The amend must not be over-restrictive. Recuperar acceso vs
+    Recuperar-Acceso shares recuperar as a >=5-char substring;
+    _looks_like_real_text_pair returns True, so routing should pass.
+    """
+    ba = [{
+        "mockup_ocr": "Recuperar acceso",
+        "real_ocr": "Recuperar-Acceso",
+        "fuzzy_ratio_worst": 35.0,
+        "fuzzy_ratio_worst_pair": ["Recuperar acceso", "Recuperar-Acceso"],
+        "color_delta": 0,
+        "mockup_color": (0, 0, 0), "real_color": (0, 0, 0),
+        "geometry": (0, 0, 100, 50),
+    }]
+    route, allowed = _route_for(ba)
+    assert allowed is True, (
+        f"Legit text mismatch MUST enable product action, got route={route}"
+    )
+    assert route == "PRODUCT_ACTIONABLE", (
+        f"Legit text mismatch MUST route to PRODUCT_ACTIONABLE, got {route}"
+    )
+
+
+def test_guardrail_aggregate_legible_but_pair_garbage_not_product():
+    """The exact pattern that bit the four real surfaces:
+
+    bbox aggregate has legible OCR (e.g. multiple lines, one legible),
+    but the WORST sub-pair reported to consumers is garbage. Without
+    validating the sub-pair directly, the old guardrail would let this
+    through. With the amend, the sub-pair is validated and the route
+    falls back to AUDITOR (since worst_fuzzy_real < 70 but no structural,
+    no color → Case 4 weak-text branch).
+    """
+    ba = [{
+        "mockup_ocr": "NeuroMood\nConfiguración\nAP .. .. i...",
+        "real_ocr": "NeuroMood\nConfiguración\nM\x22aomo",
+        "fuzzy_ratio_worst": 0.0,
+        "fuzzy_ratio_worst_pair": ["AP .. .. i...", "M\x22aomo"],
+        "color_delta": 0,
+        "mockup_color": (0, 0, 0), "real_color": (0, 0, 0),
+        "geometry": (0, 0, 100, 50),
+    }]
+    route, allowed = _route_for(ba)
+    assert allowed is False, (
+        "When aggregate OCR is legible but worst_pair is garbage, the "
+        f"routing must NOT allow product action (got route={route})"
+    )
+    assert route != "PRODUCT_ACTIONABLE"
+
+
+def test_guardrail_empty_bbox_analyses_not_product():
+    """Regression for empty bbox_analyses: must not crash and must not
+    spuriously route to PRODUCT_ACTIONABLE."""
+    route, allowed = _route_for([])
+    assert allowed is False, (
+        f"Empty bbox_analyses must NOT enable product action, got route={route}"
+    )
+    assert route != "PRODUCT_ACTIONABLE"
+
+
+def test_report_json_no_garbage_pair_product_actionable():
+    """Integration check against the latest report.json.
+
+    Scans every PRODUCT_ACTIONABLE surface in the latest report and
+    confirms that its fuzzy_ratio_worst_pair (the pair actually shown to
+    consumers via diff_summary) passes _looks_like_real_text_pair on its
+    own. This catches the original regression at the report level.
+    """
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    for r in report:
+        pkg = r.get("agent_package", {})
+        if pkg.get("agent_route") != "PRODUCT_ACTIONABLE":
+            continue
+        if not pkg.get("product_action_allowed", False):
+            continue
+        te = pkg.get("text_evidence", {})
+        pair = te.get("fuzzy_ratio_worst_pair", ["", ""])
+        if not (pair and pair[0] and pair[1] and pair[0] != pair[1]):
+            continue
+        # The pair shown to consumers MUST pass the legibility check on
+        # its own. If it doesn't, the routing guardrail is broken.
+        assert _looks_like_real_text_pair(pair[0], pair[1]), (
+            f"PRODUCT_ACTIONABLE surface {pkg.get('surface_key', '')} "
+            f"cites an illegible pair: {pair!r}"
+        )
