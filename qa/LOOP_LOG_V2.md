@@ -72,13 +72,45 @@ Análisis independiente con `execute_code` + PIL sobre `metrics.json`:
 - `qa/visual_auditor_v2.py` **NO modificado** (no introduje código que no se pueda probar).
 - `GLM_API_KEY` queda en memoria operativa para uso futuro cuando se recargue saldo.
 - No se tocó producto en esta sesión (0 fixes).
-- 1 commit previo: `c1f84ba docs(qa): LOOP_LOG_V2 initial blocker report`.
+
+### Turno 3: skill canónico + analyze --no-vlm
+
+- Owner carga skill canónico `SKILL.md` (2603 tokens) → idéntico a la regla ya aplicada.
+- Comando nuevo probado: `qa/visual_auditor_v2.py analyze --all --no-vlm` → 86/86 surfaces procesadas, queue regenerada con `--no-vlm`.
+- `qa/visual_auditor_v2.py doctor` → `NM_VLM_BACKEND not set` (idéntico al turno previo).
+- Queue regenerada: 86/86 `severity: needs_review`, `confidence: low`. Diff_fidelity: 8/86 PASS (empty states), 78/86 FAIL.
+
+### Aplicación del template no-vision del skill
+
+```text
+I cannot inspect the PNGs directly in this environment. I will use V2 text evidence only.
+Selected surface: NINGUNA (queue tiene 86/86 confidence=low, bloqueado por falta de VLM backend con cuota)
+Evidence source: queue.md + metrics.json + classification.json + report.json + diff_fidelity
+Decision: NEEDS_HUMAN_REVIEW (forzado por regla dura del skill: "If confidence != high, do not FIX_PRODUCT")
+Reason:
+  - NM_VLM_BACKEND no configurado (qa/visual_auditor_v2.py doctor)
+  - qa/visual_auditor_v2.py:541 importa z_ai_web_dev_sdk que NO existe en PyPI (paquete real es zai-sdk 0.2.3, instalado en .venv/)
+  - GLM-4V key (provista por owner este turno): auth OK pero 429 code:1113 Insufficient balance
+  - Gemini CLI OAuth: texto funciona, con imagen adjunta routea a free tier quota 0
+  - 86/86 surfaces en severity=needs_review, confidence=low, recommendation=NEEDS_HUMAN_REVIEW
+  - diff_fidelity.py (gate real): 8/86 PASS (empty states), 78 FAIL
+Risk:
+  - Sin VLM no hay verificación visual posible
+  - Cualquier fix sería "blind attempt, unverified" (patrón condenado por owner en LOOP_LOG_7)
+  - Stop rule del owner: "0 mejoras medibles después de varios intentos → NO seguir grindando"
+  - Loop sigue bloqueado en pre-loop hasta tener VLM con cuota
+```
+
+### Commits de la sesión
+
+- `c1f84ba` docs(qa): LOOP_LOG_V2 initial blocker report (no VLM backend, 0 fixes)
+- `577376e` docs(qa): LOOP_LOG_V2 attempt 2 — VLM cableado bloqueado por cuota (GLM sin saldo, Gemini free tier quota 0)
 
 Pendientes para próximas sesiones (no es PASS visual global):
 
 - **Recargar saldo / comprar paquete vision en Z.AI** para que la key GLM-4V (provista por owner en este turno) pueda usarse para `glm-4.6v-flash`.
-- **O** habilitar vision en otro backend (Gemini Advanced con imagen vía CLI/mcp, MiniMax vision, etc.).
-- Con VLM funcional, **recién entonces** cablear `_call_vlm_gemini_cli` (o `_call_vlm_zai_sdk`) en `qa/visual_auditor_v2.py` y regenerar la queue.
+- **O** habilitar vision en otro backend con cuota (MiniMax vision API, Gemini Advanced con imagen vía CLI/mcp, etc.).
+- Con VLM funcional, **recién entonces** cablear `_call_vlm_zai_sdk` (o el que corresponda) en `qa/visual_auditor_v2.py` con patch ≤30 líneas, regenerar la queue, y entrar al loop 1-discrepancia-por-ciclo.
 - Hasta entonces, el loop 1-discrepancia-por-ciclo sigue bloqueado en pre-loop.
 
 ## Ciclos
