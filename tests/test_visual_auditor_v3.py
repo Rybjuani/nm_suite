@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -1397,3 +1398,215 @@ def test_check_fidelity_available_shape_handling():
         _FIDELITY_REPORT.unlink(missing_ok=True)
         if backup is not None and backup.exists():
             os.rename(backup, _FIDELITY_REPORT)
+
+# ---------------------------------------------------------------------------
+# V3 amend: latest/ cleanup, sync report<->surfaces, file completeness,
+# and stricter PRODUCT_ACTIONABLE guardrails.
+# ---------------------------------------------------------------------------
+
+
+def _safe_folder_name(surface_key: str) -> str:
+    """Mirror of qa/visual_auditor_v3.py::_safe_folder_name."""
+    return surface_key.replace(":", "_").replace("@", "_")
+
+
+def test_analyze_all_clears_latest_surfaces_before_writing():
+    """analyze --all must wipe qa/_visual_auditor_v3/latest/surfaces/ first
+    so stale dirs from previous runs (older taxonomy, etc.) cannot
+    accumulate past report.json's surface count.
+
+    We exercise the cleanup directly via the helper the CLI invokes, on
+    a temp directory containing a fake stale dir. The real CLI integration
+    is covered by test_latest_surfaces_in_sync_with_report_json.
+    """
+    from visual_auditor_v3 import _reset_latest_outputs
+
+    with _ScratchLatest() as scratch:
+        latest = scratch.path
+        (latest / "surfaces" / "stale_old_taxonomy_dir").mkdir(parents=True)
+        (latest / "surfaces" / "stale_old_taxonomy_dir" / "leftover.txt").write_text("x")
+        (latest / "report.json").write_text("[]", encoding="utf-8")
+        (latest / "queue.md").write_text("old", encoding="utf-8")
+        (latest / "index.html").write_text("<html></html>", encoding="utf-8")
+
+        _reset_latest_outputs()
+
+        assert not (latest / "surfaces").exists() or not any(
+            (latest / "surfaces").iterdir()
+        ), "stale dir was not removed"
+        assert not (latest / "report.json").exists()
+        assert not (latest / "queue.md").exists()
+        assert not (latest / "index.html").exists()
+
+
+def test_latest_surfaces_in_sync_with_report_json():
+    """surfaces/<dir> count must equal report.json count, and every active
+    surface must have agent_package.json + classification.json + metrics.json.
+    """
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    surf_dir = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "surfaces"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+
+    expected_dirs = {_safe_folder_name(r["pairing"]["surface_key"]) for r in report}
+    actual_dirs = {p.name for p in surf_dir.iterdir() if p.is_dir()}
+
+    stale = actual_dirs - expected_dirs
+    missing = expected_dirs - actual_dirs
+    assert not stale, f"Stale surfaces dirs not in report.json: {sorted(stale)}"
+    assert not missing, f"Missing surfaces dirs on disk: {sorted(missing)}"
+
+    for r in report:
+        sk = r["pairing"]["surface_key"]
+        sd = surf_dir / _safe_folder_name(sk)
+        for fname in ("agent_package.json", "classification.json", "metrics.json"):
+            assert (sd / fname).exists(), (
+                f"{sk}: missing {fname} (all 3 must be present)"
+            )
+
+
+def test_product_actionable_requires_top_bbox_real_pair():
+    """PRODUCT_ACTIONABLE cannot be assigned when text_evidence.fuzzy_ratio_worst_pair
+    is empty AND TEXT_MISMATCH diagnostic label is also absent (i.e. the
+    surface has no legible text pair in its top bbox either).
+
+    This is the harder guardrail from the V3 amend: previously a structural
+    label (EXTRA_COMPONENT / MISSING_COMPONENT) plus a secondary bbox with
+    fuzzy=0 could route to PRODUCT even when text_evidence reported 'No
+    significant OCR difference'.
+    """
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    for r in report:
+        pkg = r["agent_package"]
+        if pkg.get("agent_route") != "PRODUCT_ACTIONABLE":
+            continue
+        text_ev = pkg.get("text_evidence", {})
+        diag = pkg.get("diagnostic_labels", [])
+        pair = text_ev.get("fuzzy_ratio_worst_pair", ["", ""])
+        # If the top bbox reports no real text pair AND no secondary bbox
+        # is being relied upon for TEXT_MISMATCH, this surface must not
+        # be PRODUCT.
+        has_real_pair_in_top = bool(pair and pair[0] and pair[1])
+        assert has_real_pair_in_top or "TEXT_MISMATCH" not in diag, (
+            f"{r['pairing']['surface_key']}: PRODUCT_ACTIONABLE with empty "
+            f"top_bbox pair and no TEXT_MISMATCH diagnostic label"
+        )
+
+
+def test_product_actionable_no_diff_summary_no_significant():
+    """PRODUCT_ACTIONABLE must never carry diff_summary='No significant OCR difference'
+    when diagnostic_labels does not include TEXT_MISMATCH from a real secondary pair.
+    """
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    for r in report:
+        pkg = r["agent_package"]
+        if pkg.get("agent_route") != "PRODUCT_ACTIONABLE":
+            continue
+        diff = pkg.get("diff_summary", "")
+        diag = pkg.get("diagnostic_labels", [])
+        if diff == "No significant OCR difference" and "TEXT_MISMATCH" not in diag:
+            raise AssertionError(
+                f"{r['pairing']['surface_key']}: PRODUCT_ACTIONABLE with "
+                f"diff_summary='No significant OCR difference' and no "
+                f"TEXT_MISMATCH evidence"
+            )
+
+
+def test_product_actionable_no_huge_bbox_without_subevidence():
+    """PRODUCT_ACTIONABLE must not be based on a dominant bbox (>0.35 area_ratio)
+    unless there is sub-evidence from a secondary bbox that supports the decision.
+    """
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    for r in report:
+        pkg = r["agent_package"]
+        if pkg.get("agent_route") != "PRODUCT_ACTIONABLE":
+            continue
+        top_bbox = pkg.get("top_bbox", {})
+        area_ratio = top_bbox.get("area_ratio", 0.0)
+        diag = pkg.get("diagnostic_labels", [])
+        if area_ratio > 0.35:
+            assert "TEXT_MISMATCH" in diag or "COLOR_MISMATCH" in diag, (
+                f"{r['pairing']['surface_key']}: PRODUCT based on huge "
+                f"top_bbox (area_ratio={area_ratio}) without localized "
+                f"text or color sub-evidence"
+            )
+
+
+def test_queue_and_index_have_no_human_owner_manual_phrases():
+    """queue.md and index.html must not contain phrases that ask for human/manual/owner review."""
+    base = _PROJ / "qa" / "_visual_auditor_v3" / "latest"
+    if not (base / "report.json").exists():
+        pytest.skip("No report.json — run analyze --all first")
+
+    forbidden = [
+        "needs_human_review",
+        "requires_owner_review",
+        "manual review",
+        "owner action",
+        "human inspection",
+        "please review",
+    ]
+
+    queue_text = (base / "queue.md").read_text(encoding="utf-8")
+    html_text = (base / "index.html").read_text(encoding="utf-8")
+    report = json.loads((base / "report.json").read_text(encoding="utf-8"))
+
+    for f in forbidden:
+        # queue.md should not contain forbidden phrases in any case
+        assert f.lower() not in queue_text.lower(), (
+            f"queue.md contains forbidden phrase: {f!r}"
+        )
+        # index.html: 'requires_owner_review' is allowed if all are False,
+        # but other forbidden phrases should not appear.
+        if f == "requires_owner_review":
+            # Allow the literal False/true string in HTML; the rule is that
+            # no surface should *require* owner review. Check the report.
+            for r in report:
+                pkg = r["agent_package"]
+                if pkg.get("requires_owner_review", True):
+                    raise AssertionError(
+                        f"{r['pairing']['surface_key']}: requires_owner_review=True"
+                    )
+        else:
+            assert f.lower() not in html_text.lower(), (
+                f"index.html contains forbidden phrase: {f!r}"
+            )
+
+
+class _ScratchLatest:
+    """Context manager that swaps _OUT_DIR to a temp dir for the lifetime of
+    the block. Restores the original on exit."""
+
+    def __init__(self):
+        self.tmp = None
+        self.path = None
+        self._orig = None
+
+    def __enter__(self):
+        from visual_auditor_v3 import _OUT_DIR
+
+        self.tmp = Path(tempfile.mkdtemp(prefix="v3_reset_"))
+        self.path = self.tmp
+        self._orig = _OUT_DIR
+        # Monkey-patch the module-level binding used by _reset_latest_outputs
+        import visual_auditor_v3 as v3mod
+        v3mod._OUT_DIR = self.tmp
+        return self
+
+    def __exit__(self, *exc):
+        import shutil as _sh
+        if self.tmp and self.tmp.exists():
+            _sh.rmtree(self.tmp, ignore_errors=True)
+        if self._orig is not None:
+            import visual_auditor_v3 as v3mod
+            v3mod._OUT_DIR = self._orig

@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
+import shutil
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter
 from rapidfuzz import fuzz
 
@@ -824,7 +825,30 @@ def _map_to_agent_route(
     )
     ocr_contradicts_product = not worst_has_real_pair
 
-    if has_structural and confidence in ("high", "medium") and not ocr_contradicts_product:
+    # Case 3a guard: structural labels are surface-wide but the OCR
+    # evidence we expose to consumers comes from the top_bbox only. To avoid
+    # the case where labels=[EXTRA_COMPONENT] (surface) routes to PRODUCT
+    # while text_evidence.diff_summary='No significant OCR difference' (top
+    # bbox), we additionally require the top_bbox to carry some legible text
+    # pair of its own. If the top_bbox has no real text pair, the structural
+    # signal falls into the OCR-contradicts branch below.
+    top_pair = (top_bbox_analysis or {}).get("fuzzy_ratio_worst_pair", ["", ""])
+    top_has_real_pair = bool(
+        top_pair
+        and top_pair[0]
+        and top_pair[1]
+        and top_pair[0] != top_pair[1]
+        and _looks_like_real_text_pair(
+            (top_bbox_analysis or {}).get("mockup_ocr", ""),
+            (top_bbox_analysis or {}).get("real_ocr", ""),
+        )
+    )
+    if (
+        has_structural
+        and confidence in ("high", "medium")
+        and not ocr_contradicts_product
+        and top_has_real_pair
+    ):
         agent_route = "PRODUCT_ACTIONABLE"
         agent_next_action = _build_product_action(
             classification, bbox_analyses, bboxes, metrics, manifest_entry
@@ -840,7 +864,13 @@ def _map_to_agent_route(
             capture_action_allowed,
         )
 
-    if has_real_text and worst_fuzzy_real < 70 and confidence in ("high", "medium") and not ocr_contradicts_product:
+    if (
+        has_real_text
+        and worst_fuzzy_real < 70
+        and confidence in ("high", "medium")
+        and not ocr_contradicts_product
+        and top_has_real_pair
+    ):
         agent_route = "PRODUCT_ACTIONABLE"
         agent_next_action = _build_product_action(
             classification, bbox_analyses, bboxes, metrics, manifest_entry
@@ -2172,12 +2202,25 @@ def analyze_surface(
             diagnostic_labels=["PAIRING_OR_CAPTURE_ISSUE"],
             capture_action_allowed=True,
         )
+        # Unreliable paths also get classification.json + metrics.json so
+        # every per-surface dir on disk contains the same 3 canonical files
+        # (agent_package, classification, metrics). Metrics is a placeholder
+        # because we never computed it.
+        placeholder_metrics = Metrics()
         result = {
             "pairing": asdict(pairing),
-            "metrics": asdict(Metrics()),
+            "metrics": asdict(placeholder_metrics),
             "classification": asdict(classification),
             "agent_package": asdict(agent_pkg),
         }
+        (surface_out / "metrics.json").write_text(
+            json.dumps(asdict(placeholder_metrics), indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        (surface_out / "classification.json").write_text(
+            json.dumps(asdict(classification), indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
         (surface_out / "agent_package.json").write_text(
             json.dumps(asdict(agent_pkg), indent=2, ensure_ascii=False), encoding="utf-8"
         )
@@ -2289,6 +2332,33 @@ def analyze_surface(
 # ---------------------------------------------------------------------------
 # HTML Report
 # ---------------------------------------------------------------------------
+
+
+def _reset_latest_outputs() -> None:
+    """Wipe per-surface outputs and stale top-level artifacts so a fresh
+    `analyze --all` run starts from a known-clean state.
+
+    Removes:
+      * qa/_visual_auditor_v3/latest/surfaces/  (every per-surface dir)
+      * qa/_visual_auditor_v3/latest/report.json (rebuilt by analyze)
+      * qa/_visual_auditor_v3/latest/queue.md    (rebuilt by build_queue)
+      * qa/_visual_auditor_v3/latest/index.html  (rebuilt by generate_html)
+
+    The cache directory is left untouched — it is governed by
+    `clear-cache` and by per-surface staleness rules, not by this reset.
+    Historical snapshots should be stored outside `latest/`.
+    """
+    surfaces_dir = _OUT_DIR / "surfaces"
+    if surfaces_dir.exists():
+        for child in surfaces_dir.iterdir():
+            if child.is_dir():
+                shutil.rmtree(child)
+            else:
+                child.unlink(missing_ok=True)
+    for top in ("report.json", "queue.md", "index.html"):
+        target = _OUT_DIR / top
+        if target.exists():
+            target.unlink()
 
 
 def _safe_folder_name(surface_key: str) -> str:
@@ -2613,6 +2683,15 @@ def main() -> int:
                 return 1
 
         _OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+        # Clean stale per-surface outputs so report.json, surfaces/ and
+        # queue.md/index.html stay in sync. Without this, dirs from a
+        # previous run (e.g. an older taxonomy) leak through and inflate
+        # the surface count beyond what report.json contains. Only run
+        # the cleanup when --all is requested; --surface is incremental.
+        if args.all:
+            _reset_latest_outputs()
+
         results: list[dict] = []
 
         for pairing in pairings:
