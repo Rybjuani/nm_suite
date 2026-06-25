@@ -517,6 +517,125 @@ def _build_vlm_prompt(metrics: Metrics, surface_key: str) -> str:
     )
 
 
+def _call_vlm_kimi(
+    mockup_path: Path,
+    capture_path: Path,
+    diff_path: Path,
+    overlay_path: Path,
+    metrics: Metrics,
+    surface_key: str,
+) -> Classification:
+    """Kimi OAuth backend (k2p6 multimodal) via OpenAI-compatible endpoint.
+
+    Reads api_key and base_url from the active Kimi Code config.toml
+    (~/.kimi-code/config.toml on Unix, %APPDATA%/kimi-desktop/.../config.toml on Windows).
+    Falls back to NM_KIMI_API_KEY / NM_KIMI_BASE_URL env overrides.
+    """
+    import re as _re
+    import urllib.request as _ur
+    import urllib.error as _ue
+
+    cfg_candidates = [
+        Path(os.environ.get("KIMI_CONFIG", "")),
+        Path.home() / ".kimi" / "config.toml",
+        Path.home() / ".kimi-code" / "config.toml",
+        Path(os.environ.get("APPDATA", "")) / "kimi-desktop" / "daimon-share" / "config.toml",
+    ]
+    api_key = os.environ.get("NM_KIMI_API_KEY", "")
+    base_url = os.environ.get("NM_KIMI_BASE_URL", "")
+    for cp in cfg_candidates:
+        if not api_key and cp.exists():
+            try:
+                t = cp.read_text(encoding="utf-8")
+                mk = _re.search(r'api_key\s*=\s*"([^"]+)"', t)
+                mb = _re.search(r'base_url\s*=\s*"([^"]+)"', t)
+                if mk:
+                    api_key = mk.group(1)
+                if mb:
+                    base_url = mb.group(1)
+                if api_key and base_url:
+                    break
+            except OSError:
+                continue
+
+    if not api_key or not base_url:
+        return Classification(
+            labels=["NEEDS_HUMAN_REVIEW"],
+            severity="needs_review",
+            explanation="Kimi backend selected but api_key/base_url not found in config.",
+            recommendation="NEEDS_HUMAN_REVIEW",
+            confidence="low",
+            confidence_reason="Kimi credentials missing.",
+        )
+
+    try:
+        prompt = _build_vlm_prompt(metrics, surface_key)
+        b64_mockup = _image_to_b64(mockup_path)
+        b64_capture = _image_to_b64(capture_path)
+        b64_diff = _image_to_b64(diff_path)
+        b64_overlay = _image_to_b64(overlay_path)
+
+        content: list[dict] = [{"type": "text", "text": prompt}]
+        for b64 in (b64_mockup, b64_capture, b64_diff, b64_overlay):
+            content.append(
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}}
+            )
+
+        payload = {
+            "model": os.environ.get("NM_KIMI_MODEL", "k2p6"),
+            "messages": [{"role": "user", "content": content}],
+            "max_tokens": 16000,
+            "temperature": 1,
+        }
+        req = _ur.Request(
+            base_url.rstrip("/") + "/chat/completions",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+            method="POST",
+        )
+        with _ur.urlopen(req, timeout=180) as resp:
+            body_text = resp.read().decode("utf-8")
+        parsed_resp = json.loads(body_text)
+        raw = parsed_resp["choices"][0]["message"]["content"]
+        raw_clean = raw.strip()
+        if raw_clean.startswith("```"):
+            raw_clean = raw_clean.split("\n", 1)[-1].rsplit("\n", 1)[0]
+        if raw_clean.endswith("```"):
+            raw_clean = raw_clean[:-3].strip()
+        parsed = json.loads(raw_clean)
+        labels = [lbl for lbl in parsed.get("labels", []) if lbl in VALID_LABELS]
+        if not labels:
+            labels = ["NEEDS_HUMAN_REVIEW"]
+        rec = parsed.get("recommendation", "NEEDS_HUMAN_REVIEW")
+        if rec not in VALID_RECOMMENDATIONS:
+            rec = "NEEDS_HUMAN_REVIEW"
+        usage = parsed_resp.get("usage", {}) or {}
+        return Classification(
+            labels=labels,
+            severity=parsed.get("severity", "needs_review"),
+            explanation=parsed.get("explanation", ""),
+            recommendation=rec,
+            suspected_module=parsed.get("suspected_module", ""),
+            confidence=parsed.get("confidence", "low"),
+            confidence_reason=parsed.get("confidence_reason", ""),
+            vlm_model=f"kimi/{os.environ.get('NM_KIMI_MODEL', 'k2p6')}",
+            vlm_tokens_used=usage.get("total_tokens", 0),
+            vlm_cost_estimate_usd=0.0,
+        )
+    except Exception as exc:
+        return Classification(
+            labels=["NEEDS_HUMAN_REVIEW"],
+            severity="needs_review",
+            explanation=f"Kimi VLM call failed: {exc}",
+            recommendation="NEEDS_HUMAN_REVIEW",
+            confidence="low",
+            confidence_reason=f"Kimi exception: {type(exc).__name__}",
+        )
+
+
 def _call_vlm(
     mockup_path: Path,
     capture_path: Path,
@@ -525,7 +644,7 @@ def _call_vlm(
     metrics: Metrics,
     surface_key: str,
 ) -> Classification:
-    backend = os.environ.get("NM_VLM_BACKEND", "")
+    backend = os.environ.get("NM_VLM_BACKEND", "").lower()
     if not backend:
         return Classification(
             labels=["NEEDS_HUMAN_REVIEW"],
@@ -535,6 +654,12 @@ def _call_vlm(
             confidence="low",
             confidence_reason="No VLM available.",
         )
+    if backend == "kimi":
+        return _call_vlm_kimi(
+            mockup_path, capture_path, diff_path, overlay_path, metrics, surface_key
+        )
+
+    # Try GLM-4V via z-ai-web-dev-sdk if available
 
     # Try GLM-4V via z-ai-web-dev-sdk if available
     try:
