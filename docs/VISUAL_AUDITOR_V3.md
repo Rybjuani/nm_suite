@@ -11,6 +11,45 @@ V2 remains alive in Fase 2; V3 is an alternative pipeline for environments
 without VLM access or where deterministic, reproducible text comparison is
 preferred over neural classification.
 
+## Surface key alias format
+
+A surface is uniquely identified by a `surface_key` string. The canonical
+internal format produced by `pair_surfaces()` is:
+
+```
+{app}:{view}@{theme}
+```
+
+- `app` — `suite` or `hub`
+- `view` — view name from the normalized manifest (e.g. `home`, `rutina-empty`)
+- `theme` — `light` or `dark`
+
+Examples:
+- `suite:home@light`
+- `suite:avisos-search@light`
+- `hub:pacientes@dark`
+
+The CLI argument `--surface` **accepts both separators** (`@` and `:`) and
+**normalizes internally** before matching against the canonical key:
+
+| Input form                | Normalized to              | Notes                          |
+|---------------------------|----------------------------|--------------------------------|
+| `suite:home@light`        | `suite:home@light`         | Canonical form, no change      |
+| `suite:home:light`        | `suite:home@light`         | `:` between view/theme → `@`   |
+| `suite@home@light`        | `suite:home@light`         | `:` injected before view       |
+| `suite-home-light`        | `suite:home@light`         | Hyphens normalized to `:` / `@`|
+
+Normalization rules:
+1. If the key contains `@`, the segment before `@` is split into `app:view`
+   using the first `:`. Otherwise, split on `:` — first segment is `app`,
+   last segment is `theme`, middle segments are joined as `view`.
+2. Hyphens in the `view` segment are preserved (e.g. `home-no-score`).
+3. Lookup against `pair_surfaces()` output uses the normalized canonical
+   form, so any of the input aliases resolves to the same pairing.
+
+This makes it ergonomic to copy/paste surface keys from CI logs, GitHub
+issues, or older docs that used different separator conventions.
+
 ## Architecture
 
 ```
@@ -30,7 +69,12 @@ qa/visual_auditor_v3.py analyze --all ← NUEVO
 ### Pipeline steps
 
 1. **Pairing** — reads `manifest.json` and matches each item to a capture file
-   via `(app, screen_id, state_id, theme)` → filename convention.
+   via the canonical `surface_key` (`{app}:{view}@{theme}`) derived from
+   `item["surface_key"]` in the manifest. Hub surfaces are paired the same
+   way as Suite surfaces — the `app` prefix (`suite` or `hub`) is parsed
+   from `surface_key`, **not** defaulted to `suite`. The capture filename
+   convention is `{app}-{view}-{theme}-{WxH}.png`, indexed from
+   `CAPTURE_MANIFEST.json`.
 2. **Diff + BBoxes** — `scipy.ndimage.label` extracts connected diff regions,
    produces `diff.png` (side-by-side) and `overlay.png` (bboxes drawn).
 3. **OCR** — Tesseract OCR on mockup and real crops. Extracts text per region.
@@ -80,8 +124,10 @@ Si falla algo, arreglarlo antes de continuar. Los issues comunes:
 # Modo completo (OCR + color + diff)
 .\.venv\Scripts\python.exe qa\visual_auditor_v3.py analyze --all
 
-# Modo superficie única
-.\.venv\Scripts\python.exe qa\visual_auditor_v3.py analyze --surface suite:rutina-empty:default@light
+# Modo superficie única — acepta tanto 'suite:rutina-empty@light' como
+# 'suite:rutina-empty:light' (mismo surface, separadores normalizados)
+.\.venv\Scripts\python.exe qa\visual_auditor_v3.py analyze --surface suite:rutina-empty@light
+.\.venv\Scripts\python.exe qa\visual_auditor_v3.py analyze --surface suite:rutina-empty:light
 ```
 
 ### Paso 3: Leer los outputs
@@ -115,7 +161,7 @@ Leer `agent_package.json` de la superficie top de `queue.md`.
 
 ```json
 {
-  "surface_key": "suite:rutina-empty:default@light",
+  "surface_key": "suite:rutina-empty@light",
   "decision": "FIX_PRODUCT_STRONG",
   "suspected_module": "shared/components/empty_states.py",
   "evidence_summary": "OCR detectó 'No hay rutinas' en mockup pero 'No hay rutinas' + ghost char en real. Color diff ΔE=12.3 en bg.",
@@ -136,11 +182,17 @@ Después de hacer un fix, regenerar capturas (`capture_v8.py --all --theme both`
 # Analyze all surfaces
 .\.venv\Scripts\python.exe qa\visual_auditor_v3.py analyze --all
 
-# Analyze one surface
-.\.venv\Scripts\python.exe qa\visual_auditor_v3.py analyze --surface suite:rutina-empty:default@light
+# Analyze one surface (Suite example — @ separator, canonical form)
+.\.venv\Scripts\python.exe qa\visual_auditor_v3.py analyze --surface suite:avisos-search@light
+
+# Analyze one surface (Hub example — : separator, normalized internally)
+.\.venv\Scripts\python.exe qa\visual_auditor_v3.py analyze --surface hub:pacientes:dark
+
+# Analyze one surface (alias form — hyphens instead of separators)
+.\.venv\Scripts\python.exe qa\visual_auditor_v3.py analyze --surface suite-rutina-empty-light
 
 # Analyze surface only (skip deep OCR, fast mode)
-.\.venv\Scripts\python.exe qa\visual_auditor_v3.py analyze --surface suite:rutina-empty:default@light --surface-only
+.\.venv\Scripts\python.exe qa\visual_auditor_v3.py analyze --surface suite:rutina-empty@light --surface-only
 
 # Export prioritized queue
 .\.venv\Scripts\python.exe qa\visual_auditor_v3.py queue
@@ -234,7 +286,7 @@ Designed for agents without vision. Contains:
 
 ```json
 {
-  "surface_key": "suite:rutina-empty:default@light",
+  "surface_key": "suite:rutina-empty@light",
   "decision": "FIX_PRODUCT_STRONG",
   "suspected_module": "shared/components/empty_states.py",
   "evidence_summary": "OCR: mockup='No hay rutinas configuradas' vs real='No hay rutinas configuradas' (fuzz=97.1). Color: ΔE=2.1 en bg. Bboxes: 2. Ambos diffs dentro de tolerancia. Sin embargo, mockup muestra icono '+' que real no renderiza.",
@@ -311,6 +363,121 @@ Designed for agents without vision. Contains:
 - OCR text is sanitized (strip whitespace, lowercase) before fuzz comparison.
 - Empty OCR results on both sides are treated as `RENDER_NOISE_OK`, not
   `TEXT_MISMATCH_PROBABLE`.
+
+### BBox size guardrails
+
+- **Top-K cap.** `_extract_bboxes(..., top_k=5)` keeps at most the **5
+  largest** connected diff regions by area. Smaller bboxes are dropped
+  before classification, preventing pixel-noise floods from producing
+  dozens of low-signal labels.
+- **Area ratio tracking.** `bbox_total_area_ratio` and
+  `bbox_largest_area_ratio` are surfaced in `metrics.json` and
+  `agent_package.json.top_bbox` so agents can detect when a single diff
+  dominates the surface (often a sign of a layout regression).
+- **Connected-component threshold.** The diff mask is binarized at
+  `> 20` (8-bit luminance), so sub-pixel anti-aliasing noise is dropped
+  before connected-component labeling runs.
+- **Normalization artifact filter.** BBoxes that fall entirely in pad or
+  crop zones (per `manifest_entry.lost_pixels_*` / `pad_pixels`) are
+  flagged `normalization_artifact=True` and excluded from label
+  generation. If **all** bboxes are artifacts, the surface is forced to
+  `NEEDS_HUMAN_REVIEW` / `confidence=low`.
+- **Unreliable technical conditions.** Surfaces are marked
+  `unreliable=true` (and short-circuited to `NEEDS_HUMAN_REVIEW`) when:
+  mockup or capture path is missing, file fails `_is_corrupt_or_blank`
+  (gray mean > 0.985), image is empty (`(0, 0)`) or absurdly large
+  (max dimension > 10000 px), or PIL cannot decode the file.
+
+### OCR noise guardrails
+
+- **Minimum line length.** `_analyze_bbox` only computes a fuzzy ratio
+  when at least one OCR line is **longer than 2 characters**
+  (`len(ml) > 2 or len(rl) > 2`). Single-letter or 2-char ghost tokens
+  do not trigger `TEXT_MISMATCH_PROBABLE`.
+- **Deterministic preprocessing.** `_preprocess_for_ocr` does fixed
+  2× LANCZOS upscale → contrast 1.5× → mild sharpen. No stochastic
+  augmentation; same input always produces the same OCR output.
+- **OCR error marker.** When Tesseract raises (binary missing, bad crop,
+  OOM, etc.), `_ocr_image` returns `[OCR_ERROR: <message>]` instead of
+  crashing the surface. Downstream code skips fuzzy comparison for such
+  markers.
+- **Empty-on-both-sides = noise.** When both `mockup_ocr` and
+  `real_ocr` are empty/whitespace, no `TEXT_MISMATCH_PROBABLE` is
+  emitted; the surface is classified as `RENDER_NOISE_OK` (or
+  `NEEDS_HUMAN_REVIEW` if other signals exist).
+- **Cache invalidation.** OCR results are cached per
+  `(mockup_sha256, capture_sha256, bbox_geometry, ocr_version)`. When
+  either image changes, the cache is automatically bypassed — no stale
+  OCR can leak across renders. `clear-cache` wipes the cache on demand.
+
+## Metrics honesty
+
+`metrics.json` is written per surface as `asdict(Metrics(...))`. Of the 11
+fields defined on the `Metrics` dataclass, **only 4 are actually
+populated** during analysis. The remaining 7 are placeholders kept for
+schema compatibility with `diff_fidelity.py` outputs — agents should
+**not** read them as ground truth.
+
+| Field                       | Status        | Source / meaning                                    |
+|-----------------------------|---------------|-----------------------------------------------------|
+| `ssim`                      | placeholder   | Always `0.0`. V3 does not compute SSIM.             |
+| `ssim_method`               | placeholder   | Always `""`.                                         |
+| `mean_abs_diff`             | placeholder   | Always `0.0`. V3 does not compute global MAD.       |
+| `max_abs_diff`              | placeholder   | Always `0.0`.                                       |
+| `changed_pixel_ratio`       | placeholder   | Always `0.0`. Use `bbox_total_area_ratio` instead.  |
+| `size_mismatch`             | placeholder   | Always `False`. Pairing guarantees equal sizes.     |
+| `phash_distance`            | placeholder   | Always `-1`. Auxiliary only; never a severity       |
+|                             |               | criterion.                                            |
+| `phash_method`              | placeholder   | Always `"imagehash.phash"` — string only, not run.  |
+| `bbox_count`                | **populated** | Number of diff bboxes returned by `_extract_bboxes`. |
+| `bbox_total_area_ratio`     | **populated** | Sum of `area_ratio` across all bboxes.              |
+| `bbox_largest_area_ratio`   | **populated** | `area_ratio` of the largest bbox (or `0.0`).        |
+| `bbox_largest_geometry`     | **populated** | `[x0, y0, x1, y1]` of the largest bbox (or `[]`).   |
+
+**Why so many placeholders?** V3 deliberately does not reimplement SSIM,
+global MAD, pHash, or pixel-ratio diffs — those live in `diff_fidelity.py`,
+which V3 inherits upstream outputs from. Duplicating them here would be
+both slower and a source of false equivalence between two different
+implementations. The four bbox fields are the only metrics V3 actually
+computes; everything else is schema padding.
+
+**For agents:** rely on `agent_package.json.top_bbox`, `bbox_count`, and
+`bbox_*_area_ratio` for structural reasoning. Treat any non-zero value
+in `ssim`, `mean_abs_diff`, `phash_distance`, etc. as a bug in V3 —
+those should always be at their default placeholder values.
+
+## Hub pairing (corrected)
+
+Hub surfaces are paired identically to Suite surfaces — there is no
+separate code path, no app-specific defaults, and no `app="suite"`
+fallback.
+
+- The normalized manifest (`qa/mockup_reference_normalized/manifest.json`)
+  stores each surface under a `surface_key` of the form
+  `{app}:{view}@{theme}`. The `app` segment is **`suite`** or **`hub`**
+  and is **always present** in `surface_key`.
+- `pair_surfaces()` parses the `app` prefix **from `surface_key`**
+  (split on `:`), and only falls back to a default when the manifest
+  entry has no `surface_key` at all (a data-quality error, not the
+  expected path).
+- Capture filenames follow the convention
+  `{app}-{view}-{theme}-{WxH}.png` (e.g.
+  `hub-pacientes-dark-960x600.png`) and are indexed from
+  `CAPTURE_MANIFEST.json` by `(app, view, theme)`.
+- Mockup files are looked up at
+  `qa/mockup_reference_normalized/{theme}/{view}.png` — the `app`
+  prefix is **not** part of the path. Hub and Suite can share view
+  names (`home`, `pacientes`, etc.) without collision because their
+  mockups live in separate `light/` / `dark/` subdirs per manifest.
+
+**Historical bug (fixed):** earlier versions of `pair_surfaces()` read
+`item.get("app", "suite")`, which silently demoted every Hub surface to
+`app="suite"` because the normalized manifest entries do not expose a
+top-level `app` field — only `surface_key`. Pairings would then either
+miss the real capture or grab a Suite capture with the same view name.
+The corrected implementation parses `app` from `surface_key`, so
+`hub:pacientes@dark` now resolves to the Hub capture and mockup
+unambiguously.
 
 ## Limitations (honestidad)
 

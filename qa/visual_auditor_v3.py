@@ -6,9 +6,14 @@ classification. Built on top of normalized reference (Fase 1).
 Commands:
     python qa/visual_auditor_v3.py doctor
     python qa/visual_auditor_v3.py analyze --all
-    python qa/visual_auditor_v3.py analyze --surface suite:avisos-search:light
+    python qa/visual_auditor_v3.py analyze --surface suite:avisos-search@light
     python qa/visual_auditor_v3.py queue
     python qa/visual_auditor_v3.py clear-cache
+
+Surface key canonical form: 'app:view@theme' (e.g. 'suite:avisos@light',
+    'hub:pacientes@dark'). The 'app:view:theme' alias (e.g.
+    'suite:avisos-search:light') is also accepted by --surface and
+    normalized automatically.
 """
 
 from __future__ import annotations
@@ -128,17 +133,19 @@ class BBoxInfo:
 @dataclass
 class Metrics:
     ssim: float = 0.0
-    ssim_method: str = ""
+    ssim_method: str = "skimage_unavailable_fallback_mean"
     mean_abs_diff: float = 0.0
-    max_abs_diff: float = 0.0
+    max_abs_diff: int = 0
     changed_pixel_ratio: float = 0.0
     size_mismatch: bool = False
     phash_distance: int = -1
-    phash_method: str = "imagehash.phash"
+    phash_method: str = "not_computed"  # pHash intentionally not used (no DCT dep);
+    # see _compute_metrics docstring for the honest audit note.
     bbox_count: int = 0
     bbox_total_area_ratio: float = 0.0
     bbox_largest_area_ratio: float = 0.0
     bbox_largest_geometry: list[int] = field(default_factory=list)
+    notes: str = ""
 
 
 @dataclass
@@ -281,6 +288,42 @@ def _is_corrupt_or_blank(path: Path) -> bool:
 # ---------------------------------------------------------------------------
 
 
+def _parse_surface_key(surface_key: str) -> tuple[str, str, str] | None:
+    """Parse a canonical surface_key 'app:view@theme' into (app, view, theme).
+
+    Returns None if the format doesn't match. This is the canonical form
+    defined by mockup_reference_normalized/manifest.json (e.g.
+    'suite:avisos@light' or 'hub:pacientes@light').
+    """
+    if not surface_key:
+        return None
+    # Format: {app}:{view}@{theme}  (e.g. suite:avisos-filter-activos@light)
+    m = re.match(r"^(suite|hub):(.+)@(light|dark)$", surface_key)
+    if not m:
+        return None
+    return m.group(1), m.group(2), m.group(3)
+
+
+def _normalize_surface_alias(surface_key: str) -> str:
+    """Normalize surface_key aliases to the canonical form 'app:view@theme'.
+
+    Accepts:
+        - canonical:         'suite:avisos@light'
+        - colon-theme alias: 'suite:avisos-search:light' -> 'suite:avisos-search@light'
+    Returns the input unchanged if it doesn't match either pattern (caller
+    will surface 'Surface not found' as before).
+    """
+    if not surface_key:
+        return surface_key
+    if _parse_surface_key(surface_key):
+        return surface_key
+    # Try alias: app:view:theme
+    m = re.match(r"^(suite|hub):(.+):(light|dark)$", surface_key)
+    if m:
+        return f"{m.group(1)}:{m.group(2)}@{m.group(3)}"
+    return surface_key
+
+
 def pair_surfaces() -> list[Pairing]:
     norm_items = _load_norm_manifest()
     capture_manifest = _load_capture_manifest()
@@ -297,10 +340,20 @@ def pair_surfaces() -> list[Pairing]:
 
     pairings: list[Pairing] = []
     for item in norm_items:
-        app = item.get("app", "suite")
-        view = item.get("view", "")
-        theme = item.get("theme", "light")
-        surface_key = f"{app}:{view}@{theme}"
+        # Manifest entries have no separate 'app' field — derive it from
+        # surface_key ('suite:view@theme' or 'hub:view@theme'). This is the
+        # fix for the Hub pairing being broken (previously defaulted to 'suite').
+        raw_surface_key = item.get("surface_key", "")
+        parsed_key = _parse_surface_key(raw_surface_key)
+        if parsed_key:
+            app, view, theme = parsed_key
+        else:
+            # Fallback: trust explicit fields if surface_key is malformed
+            app = item.get("app") or "suite"
+            view = item.get("view", "")
+            theme = item.get("theme", "light")
+            raw_surface_key = f"{app}:{view}@{theme}"
+        surface_key = raw_surface_key
 
         mockup_path = _NORM_DIR / theme / f"{view}.png"
 
@@ -471,6 +524,80 @@ def _ocr_image(img: Image.Image) -> str:
         return f"[OCR_ERROR: {e}]"
 
 
+# Threshold above which a single bbox's area ratio is considered to
+# dominate the image. When a bbox is this large we can't trust OCR-driven
+# text/colour decisions — the evidence almost certainly comes from a big
+# background region (render noise, theme fill, scroll artifact, etc.).
+LARGEST_BBOX_GUARDRAIL = 0.35
+
+
+def _is_ocr_noise(text: str) -> bool:
+    """Heuristic: OCR output is junk (symbols / no real words).
+
+    Used to suppress TEXT_MISMATCH_PROBABLE on background-region bboxes
+    that produce garbage OCR. A non-empty string with no letters or
+    only very short non-alphanumeric tokens is considered noise.
+    """
+    if not text or not text.strip():
+        return True
+    # Strip out the OCR_ERROR sentinel
+    if text.strip().startswith("[OCR_ERROR"):
+        return True
+    # Count alpha letters
+    letters = sum(1 for ch in text if ch.isalpha())
+    if letters < 3:
+        return True
+    # Ratio of non-alphanumeric to total length
+    non_alnum = sum(1 for ch in text if not ch.isalnum() and not ch.isspace())
+    if len(text) > 0 and non_alnum / max(len(text), 1) > 0.55:
+        return True
+    return False
+
+
+def _looks_like_real_text_pair(mockup_ocr: str, real_ocr: str) -> bool:
+    """Both OCR lines look like real text (not garbage) AND the pair is
+    semantically comparable (shared language / script / shape).
+
+    Used to decide if a low fuzzy_ratio is meaningful evidence or just OCR
+    noise. Returns False when either side is noise, or when the two
+    strings are too short / one-sided to support a TEXT_MISMATCH claim.
+    """
+    if _is_ocr_noise(mockup_ocr) or _is_ocr_noise(real_ocr):
+        return False
+    m = mockup_ocr.strip()
+    r = real_ocr.strip()
+    if not m or not r:
+        return False
+    # Both need at least one alphabetic word of length >= 3
+    m_words = [w for w in re.findall(r"[A-Za-zÁÉÍÓÚáéíóúÑñ]{3,}", m)]
+    r_words = [w for w in re.findall(r"[A-Za-zÁÉÍÓÚáéíóúÑñ]{3,}", r)]
+    if not m_words or not r_words:
+        return False
+    # Avoid penalising pairs that are obviously different content (a digit
+    # vs a word, a code vs a phrase, etc.) — require minimum overlap via
+    # token-set Jaccard. If they share no tokens at all and the fuzzy
+    # match is the only signal, treat as non-semantic.
+    m_set = {w.lower() for w in m_words}
+    r_set = {w.lower() for w in r_words}
+    if not m_set or not r_set:
+        return False
+    overlap = len(m_set & r_set)
+    if overlap == 0:
+        # No shared tokens: maybe still legitimate (full sentence
+        # replacement) but the audit flagged this as a source of false
+        # positives. Require at least one shared short token OR a long
+        # matching substring.
+        common_substr = any(
+            sub in r.lower()
+            for token in m_set
+            for sub in [token[:5]]
+            if len(token) >= 5
+        )
+        if not common_substr:
+            return False
+    return True
+
+
 def _dominant_color(img: Image.Image) -> tuple[int, int, int]:
     """Get dominant color via PIL getcolors."""
     try:
@@ -510,6 +637,104 @@ def _edge_density(img: Image.Image) -> float:
 def _stddev(img: Image.Image) -> float:
     arr = np.array(img.convert("L"))
     return float(np.std(arr))
+
+
+def _ssim_fallback(a: np.ndarray, b: np.ndarray) -> float:
+    """Lightweight SSIM proxy using luminance mean/stddev (numpy only).
+
+    We avoid a hard dependency on scikit-image / scipy.signal. This is NOT
+    the original Wang et al. SSIM (no windowed covariance, no SSIM map) —
+    it's a single-number approximation: 1 - normalized absolute mean +
+    stddev divergence. It is documented honestly in Metrics.ssim_method.
+    Result is in [-1, 1]; we clamp to [0, 1].
+    """
+    a = a.astype(np.float32)
+    b = b.astype(np.float32)
+    mu_a = float(a.mean())
+    mu_b = float(b.mean())
+    var_a = float(((a - mu_a) ** 2).mean())
+    var_b = float(((b - mu_b) ** 2).mean())
+    # Luminance + contrast/structure term, simplified
+    c1 = (0.01 * 255) ** 2
+    c2 = (0.03 * 255) ** 2
+    lum = (2.0 * mu_a * mu_b + c1) / (mu_a * mu_a + mu_b * mu_b + c1)
+    cs = (2.0 * (var_a * var_b) ** 0.5 + c2) / (var_a + var_b + c2)
+    ssim = float(lum * cs)
+    return max(0.0, min(1.0, ssim))
+
+
+def _compute_metrics(
+    mockup_img: Image.Image,
+    real_img: Image.Image,
+    bboxes: list[BBoxInfo],
+) -> Metrics:
+    """Compute honest pixel-level metrics for a surface.
+
+    Metrics policy (post-audit):
+      * SSIM is computed using a luminance+contrast numpy fallback so the
+        metric is never silently 0.0. The fallback is documented in
+        Metrics.ssim_method.
+      * mean_abs_diff, max_abs_diff, changed_pixel_ratio are computed
+        from the actual pixel diff.
+      * pHash is intentionally NOT computed — we don't depend on
+        scipy.fftpack / imagehash and we don't want to ship a hand-rolled
+        DCT that produces misleading "distance=0" claims. The
+        phash_method field is set to "not_computed" and the value is
+        -1. This is the audit fix #9 — we never present zeros as valid
+        metrics, and we tell the consumer explicitly that pHash was
+        skipped.
+    """
+    notes_parts: list[str] = []
+    if mockup_img.size != real_img.size:
+        # Resize for comparison only; do not save the resized image.
+        real_for_diff = real_img.resize(
+            mockup_img.size, Image.Resampling.LANCZOS
+        )
+        size_mismatch = True
+        notes_parts.append("real capture resized to mockup size for diff")
+    else:
+        real_for_diff = real_img
+        size_mismatch = False
+
+    a = np.array(mockup_img.convert("L"), dtype=np.int16)
+    b = np.array(real_for_diff.convert("L"), dtype=np.int16)
+    abs_diff = np.abs(a - b)
+
+    mean_abs = float(abs_diff.mean())
+    max_abs = int(abs_diff.max())
+    changed_ratio = float((abs_diff > 20).mean())
+
+    ssim_val = _ssim_fallback(a.astype(np.float32), b.astype(np.float32))
+
+    if bboxes:
+        largest = bboxes[0]
+        largest_area = largest.area_ratio
+        largest_geom = list(largest.geometry)
+    else:
+        largest_area = 0.0
+        largest_geom = []
+
+    notes = "; ".join(notes_parts) if notes_parts else ""
+    if size_mismatch:
+        notes = (notes + "; " if notes else "") + "size_mismatch=true"
+
+    return Metrics(
+        ssim=round(ssim_val, 4),
+        ssim_method="numpy_fallback_lum_cs",
+        mean_abs_diff=round(mean_abs, 4),
+        max_abs_diff=max_abs,
+        changed_pixel_ratio=round(changed_ratio, 4),
+        size_mismatch=size_mismatch,
+        phash_distance=-1,
+        phash_method="not_computed",
+        bbox_count=len(bboxes),
+        bbox_total_area_ratio=round(
+            sum(b.area_ratio for b in bboxes), 4
+        ),
+        bbox_largest_area_ratio=round(largest_area, 4),
+        bbox_largest_geometry=largest_geom,
+        notes=notes,
+    )
 
 
 def _analyze_bbox(
@@ -572,6 +797,7 @@ def _analyze_bbox(
     touches_borders = touches_left or touches_right or touches_top or touches_bottom
 
     return {
+        "bbox_area_ratio": bbox.area_ratio,
         "mockup_ocr": mockup_ocr,
         "real_ocr": real_ocr,
         "fuzzy_ratio_worst": worst_ratio,
@@ -606,7 +832,22 @@ def _classify_surface(
     unreliable: bool = False,
     unreliable_reason: str = "",
 ) -> Classification:
-    """Classify surface based on OCR + heuristics per bbox."""
+    """Classify surface based on OCR + heuristics per bbox.
+
+    Guardrails (post-audit):
+      * if the largest bbox area_ratio > LARGEST_BBOX_GUARDRAIL without
+        clear localized text evidence, classification becomes
+        NEEDS_HUMAN_REVIEW with low confidence (fix #5). This avoids
+        emitting FIX_PRODUCT_REVIEW from garbage OCR on huge background
+        bboxes.
+      * TEXT_MISMATCH_PROBABLE is suppressed when OCR lines are noise or
+        the mockup/real pair is non-semantic (fix #6).
+      * CHROME_MISMATCH coming from border-touching bboxes is downgraded
+        to evidence-only — it does not push FIX_PRODUCT_REVIEW (fix #7).
+      * COLOR_MISMATCH now requires the crop to be smaller than the
+        whole-image bbox, otherwise it is treated as a background fill
+        change and not flagged actionable (fix #8).
+    """
     labels: list[str] = []
     severity = "low"
     confidence = "low"
@@ -663,22 +904,69 @@ def _classify_surface(
     worst_fuzzy = 100
     worst_color_delta = 0
     worst_stddev_delta = 0
+    largest_bbox_area = max((b.area_ratio for b in bboxes), default=0.0)
+    biggest_bbox_dominates = largest_bbox_area > LARGEST_BBOX_GUARDRAIL
 
+    # Count actionable evidence with guardrails applied per-bbox
     for analysis in non_artifact_analyses:
+        area = analysis.get("bbox_area_ratio", 0.0)
+        # Per-bbox: a single huge bbox can't drive text/colour decisions.
+        # We treat it as render noise regardless of fuzzy ratio, unless
+        # there's still clean localized text in BOTH crops.
+        bbox_is_huge = area > LARGEST_BBOX_GUARDRAIL
+
+        # ---- TEXT evidence (fix #5 + #6) ----
         if analysis["fuzzy_ratio_worst"] < 85 and analysis["fuzzy_ratio_worst_pair"][0]:
-            text_mismatch = True
-            worst_fuzzy = min(worst_fuzzy, analysis["fuzzy_ratio_worst"])
-        if analysis["color_delta"] > 30:
-            color_mismatch = True
-            worst_color_delta = max(worst_color_delta, analysis["color_delta"])
-        if analysis["stddev_delta"] > 40:
-            if analysis["mockup_std"] > analysis["real_std"]:
-                missing_component = True
+            if bbox_is_huge:
+                # Huge bboxes (>35% of image) are almost always background fill.
+                # If fuzzy is extremely low (<30) the OCR is garbage — skip entirely.
+                # Only accept text mismatch from a huge bbox when the OCR pair
+                # is clearly real text in both crops AND the fuzzy isn't noise-floor.
+                if analysis["fuzzy_ratio_worst"] < 30:
+                    # Garbage OCR on background — do not count as evidence
+                    pass
+                elif _looks_like_real_text_pair(
+                    analysis["mockup_ocr"], analysis["real_ocr"]
+                ):
+                    text_mismatch = True
+                    worst_fuzzy = min(worst_fuzzy, analysis["fuzzy_ratio_worst"])
             else:
-                extra_component = True
-            worst_stddev_delta = max(worst_stddev_delta, analysis["stddev_delta"])
+                # Smaller bbox: still require the pair to look real
+                if _looks_like_real_text_pair(
+                    analysis["mockup_ocr"], analysis["real_ocr"]
+                ):
+                    text_mismatch = True
+                    worst_fuzzy = min(worst_fuzzy, analysis["fuzzy_ratio_worst"])
+
+        # ---- COLOR evidence (fix #8) ----
+        if analysis["color_delta"] > 30:
+            # Color from a giant bbox is just background fill or theme
+            # bleed — not actionable. Require the crop to be small enough
+            # to be a real component.
+            if not bbox_is_huge:
+                color_mismatch = True
+                worst_color_delta = max(worst_color_delta, analysis["color_delta"])
+            # else: ignore, it's a background fill change
+
+        # ---- MISSING / EXTRA component ----
+        if analysis["stddev_delta"] > 40:
+            if not bbox_is_huge:
+                if analysis["mockup_std"] > analysis["real_std"]:
+                    missing_component = True
+                else:
+                    extra_component = True
+                worst_stddev_delta = max(worst_stddev_delta, analysis["stddev_delta"])
+            # else: huge bbox stddev delta is just background — ignore
+
+        # ---- CHROME evidence (fix #7) ----
         if analysis["touches_borders"]:
+            # Border-touching bboxes describe window chrome / scrollbar /
+            # titlebar — they should be reported as evidence but never
+            # push FIX_PRODUCT_REVIEW. We mark the label so downstream
+            # agents can still see it, but the decision logic below
+            # ignores chrome_mismatch when picking a decision.
             chrome_mismatch = True
+
         if analysis["fuzzy_ratio_worst"] < 100 or analysis["color_delta"] > 10:
             render_noise = False
 
@@ -720,10 +1008,39 @@ def _classify_surface(
     else:
         severity = "low"
 
-    # Determine decision
-    if confidence == "high" and (text_mismatch and worst_fuzzy < 70 or missing_component or extra_component):
+    # Guardrail #5: largest bbox dominates — this is almost certainly a background
+    # fill / theme bleed / scroll artifact. The OCR on a >35% bbox is unreliable.
+    # Force low confidence + human review regardless of other bboxes.
+    if biggest_bbox_dominates:
+        confidence = "low"
+        confidence_reason = (
+            f"largest_bbox_area_ratio={largest_bbox_area:.3f} "
+            f">{LARGEST_BBOX_GUARDRAIL}; background-dominated image — "
+            "OCR unreliable on oversized region"
+        )
+        # Avoid producing FIX_PRODUCT_STRONG/REVIEW from this signal.
+        decision = "NEEDS_HUMAN_REVIEW"
+        return Classification(
+            labels=labels,
+            severity="needs_review",
+            explanation=(
+                f"largest_bbox_dominates={biggest_bbox_dominates}; "
+                "insufficient localized evidence"
+            ),
+            decision=decision,
+            confidence=confidence,
+            confidence_reason=confidence_reason,
+        )
+
+    # Determine decision (chrome_mismatch is intentionally excluded — fix #7)
+    actionable_structural = missing_component or extra_component
+    actionable_text = text_mismatch and worst_fuzzy < 70
+    actionable_text_review = text_mismatch and worst_fuzzy < 85
+    actionable_color_review = color_mismatch and worst_color_delta > 60
+
+    if confidence == "high" and (actionable_structural or actionable_text):
         decision = "FIX_PRODUCT_STRONG"
-    elif confidence == "medium" and (text_mismatch and worst_fuzzy < 85 or color_mismatch and worst_color_delta > 60):
+    elif confidence == "medium" and (actionable_text_review or actionable_color_review):
         decision = "FIX_PRODUCT_REVIEW"
     elif render_noise and not any([text_mismatch, color_mismatch, missing_component, extra_component]):
         decision = "RENDER_NOISE_OK"
@@ -962,7 +1279,7 @@ def analyze_surface(
     """Analyze one surface and produce all outputs."""
     surface_key = pairing.surface_key
     # Sanitize surface_key for filesystem (Windows forbids colons)
-    safe_surface_key = surface_key.replace(":", "_").replace("@", "_")
+    safe_surface_key = _safe_folder_name(surface_key)
     surface_out = out_dir / "surfaces" / safe_surface_key
     surface_out.mkdir(parents=True, exist_ok=True)
 
@@ -1084,13 +1401,10 @@ def analyze_surface(
 
         bbox_analyses.append(analysis)
 
-    # Metrics
-    metrics = Metrics(
-        bbox_count=len(bboxes),
-        bbox_total_area_ratio=sum(b.area_ratio for b in bboxes),
-        bbox_largest_area_ratio=bboxes[0].area_ratio if bboxes else 0.0,
-        bbox_largest_geometry=list(bboxes[0].geometry) if bboxes else [],
-    )
+    # Metrics — computed honestly from the actual pixels + bbox list.
+    # pHash is intentionally not computed; SSIM uses a documented
+    # numpy fallback. See _compute_metrics docstring for the audit note.
+    metrics = _compute_metrics(mockup_img, real_img, bboxes)
 
     # Classification
     classification = _classify_surface(
@@ -1124,6 +1438,16 @@ def analyze_surface(
 # ---------------------------------------------------------------------------
 
 
+def _safe_folder_name(surface_key: str) -> str:
+    """Sanitize a surface_key into a safe filesystem/URL folder name.
+
+    Mirrors the same transform used by analyze_surface() when it creates
+    the per-surface output directory. Used by the HTML report so links
+    resolve on Windows (colons in 'C:' would break file:// URLs).
+    """
+    return surface_key.replace(":", "_").replace("@", "_")
+
+
 def generate_html(results: list[dict], out_path: Path) -> None:
     """Generate navigable HTML report."""
     rows = []
@@ -1135,6 +1459,11 @@ def generate_html(results: list[dict], out_path: Path) -> None:
         confidence = cls.get("confidence", "low")
         labels = ", ".join(cls.get("labels", []))
         surface_key = pkg.get("surface_key", "")
+        # Use a sanitized folder name in the URL so the link resolves
+        # on Windows (which forbids ':' in paths and breaks 'C:' in
+        # file:// links). The on-page label still shows the canonical
+        # surface_key so users can copy/paste it.
+        safe_folder = _safe_folder_name(surface_key)
         rows.append(
             f"""
         <tr class="severity-{severity}">
@@ -1143,7 +1472,7 @@ def generate_html(results: list[dict], out_path: Path) -> None:
             <td>{confidence}</td>
             <td>{decision}</td>
             <td>{labels}</td>
-            <td><a href="surfaces/{surface_key}/agent_package.json">agent_package</a></td>
+            <td><a href="surfaces/{safe_folder}/agent_package.json">agent_package</a></td>
         </tr>"""
         )
 
@@ -1232,11 +1561,32 @@ def doctor() -> bool:
     else:
         print("[OK] Capture manifest exists")
 
-    # 3. Fidelity report (optional, warn only)
+    # 3. Fidelity report (optional, warn only) — validate it has real comparisons,
+    # not an empty shell. Windows-safe read with errors='replace'.
     if not _FIDELITY_REPORT.exists():
         print("[WARN] qa/_fidelity_current/FIDELITY_REPORT.json — run diff_fidelity.py")
     else:
-        print("[OK] Fidelity report exists")
+        try:
+            fidelity_text = _FIDELITY_REPORT.read_text(encoding="utf-8", errors="replace")
+            fidelity_data = json.loads(fidelity_text)
+            # Handle both dict-shaped and list-shaped reports
+            if isinstance(fidelity_data, list):
+                comparisons = fidelity_data
+            elif isinstance(fidelity_data, dict):
+                comparisons = fidelity_data.get("comparisons", [])
+            else:
+                comparisons = []
+            if not comparisons:
+                print(
+                    "[WARN] FIDELITY_REPORT.json exists but has no comparisons "
+                    "— regenerate via diff_fidelity.py"
+                )
+            else:
+                print(
+                    f"[OK] Fidelity report exists ({len(comparisons)} comparisons)"
+                )
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"[WARN] FIDELITY_REPORT.json could not be parsed: {e}")
 
     # 4. Dependencies
     import importlib
@@ -1274,9 +1624,13 @@ def doctor() -> bool:
     else:
         print("[WARN] V2 missing — should be preserved until Fase 3")
 
-    # 8. Output dir gitignored
+    # 8. Output dir gitignored (Windows-safe read: explicit utf-8 with replace)
     gitignore = _PROJ / ".gitignore"
-    if gitignore.exists() and "qa/_visual_auditor_v3/" in gitignore.read_text():
+    try:
+        gitignore_text = gitignore.read_text(encoding="utf-8", errors="replace") if gitignore.exists() else ""
+    except OSError:
+        gitignore_text = ""
+    if gitignore.exists() and "qa/_visual_auditor_v3/" in gitignore_text:
         print("[OK] qa/_visual_auditor_v3/ is gitignored")
     else:
         print("[WARN] qa/_visual_auditor_v3/ should be in .gitignore")
@@ -1322,18 +1676,28 @@ def main() -> int:
             print("Usage: analyze --all | --surface <key>")
             return 1
 
-        # Load manifest lookup
+        # Load manifest lookup. Derive app from surface_key (no separate
+        # 'app' field on entries). Index by both canonical surface_key and
+        # the colon-theme alias for tolerant --surface lookups.
         manifest_items = _load_norm_manifest()
         manifest_lookup: dict[str, dict] = {}
         for item in manifest_items:
-            key = f"{item.get('app', 'suite')}:{item.get('view', '')}@{item.get('theme', 'light')}"
-            manifest_lookup[key] = item
+            sk = item.get("surface_key", "")
+            if sk:
+                manifest_lookup[sk] = item
+                manifest_lookup[_normalize_surface_alias(sk)] = item
 
         pairings = pair_surfaces()
         if args.surface:
-            pairings = [p for p in pairings if p.surface_key == args.surface]
+            # Accept both canonical ('suite:avisos@light') and the
+            # colon-theme alias ('suite:avisos-search:light') forms.
+            requested = _normalize_surface_alias(args.surface)
+            pairings = [p for p in pairings if p.surface_key == requested]
             if not pairings:
-                print(f"Surface not found: {args.surface}")
+                print(
+                    f"Surface not found: {args.surface} "
+                    f"(normalized: {requested}). Use canonical 'app:view@theme'."
+                )
                 return 1
 
         _OUT_DIR.mkdir(parents=True, exist_ok=True)
