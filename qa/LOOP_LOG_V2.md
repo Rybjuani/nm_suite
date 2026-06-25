@@ -113,6 +113,48 @@ Pendientes para próximas sesiones (no es PASS visual global):
 - Con VLM funcional, **recién entonces** cablear `_call_vlm_zai_sdk` (o el que corresponda) en `qa/visual_auditor_v2.py` con patch ≤30 líneas, regenerar la queue, y entrar al loop 1-discrepancia-por-ciclo.
 - Hasta entonces, el loop 1-discrepancia-por-ciclo sigue bloqueado en pre-loop.
 
+### Turno 4: Kimi OAuth destrabó el bloqueador (BREAKTHROUGH)
+
+**Owner sugirió probar Kimi por OAuth.** Investigado y cableado:
+
+- **Kimi Code CLI** está instalado en `C:\Users\nosom\.kimi-code\bin\kimi` con provider OAuth `managed:kimi-code` configurado.
+- **Modelo usable**: `kimi-code/kimi-for-coding` → `k2p6` (Moonshot Kimi K2), capabilities declaradas: `thinking, image_in, video_in` — visión nativa.
+- **Endpoint**: `https://agent-gw.kimi.com/coding/v1` (OpenAI-compatible).
+- **Auth**: API key con prefijo `sk-kimi-...` (auto-gestionada por la CLI de Kimi vía OAuth).
+- **Test multimodal**: lee `qa/_visual_auditor_v2/latest/surfaces/suite_avisos-search_light/mockup.png` y responde "beige"/"cream" — **funciona**.
+
+**Cableo en `qa/visual_auditor_v2.py`** (commit `3037c87`):
+- Función nueva `_call_vlm_kimi()` (126 líneas agregadas, ~120 líneas reales con docstring).
+- Lee `api_key`/`base_url` automáticamente del config.toml de Kimi en `%APPDATA%\kimi-desktop\daimon-share\config.toml`.
+- Override por env: `NM_KIMI_API_KEY`, `NM_KIMI_BASE_URL`, `NM_KIMI_MODEL`, `KIMI_CONFIG`.
+- Activación: `NM_VLM_BACKEND=kimi`.
+- Stack: stdlib (`urllib.request` + `json`) — sin SDK nueva.
+- Validación end-to-end sobre `suite:avisos-search:light`: Kimi+V2 clasifica como `PRODUCT_FIX_CANDIDATE / confidence=high / labels=[LAYOUT_SHIFT, EXTRA_COMPONENT, SIZE_MISMATCH, COLOR_MISMATCH]` — exactamente lo que la inspección estructural (PIL+block-diff) ya sugería.
+
+**Cambio funcional neto**:
+- `qa/visual_auditor_v2.py`: 1 file changed, 126 insertions(+), 1 deletion(-). Solo agrega `_call_vlm_kimi()` y un branch `if backend == "kimi":` en `_call_vlm`. No rompe el path GLM-4V anterior.
+- `qa/_visual_auditor_v2/cache/*.json`: 74 archivos borrados (cache stale, regenerables).
+- **Análisis completo (`analyze --all`) corriendo en background** (PID 13820, session_id `proc_b5f48ea3413e`, ETA estimada 20-45 min para 86 superficies).
+
+### Commits de la sesión (actualizado)
+
+- `c1f84ba` docs(qa): LOOP_LOG_V2 initial blocker report (no VLM backend, 0 fixes)
+- `577376e` docs(qa): LOOP_LOG_V2 attempt 2 — VLM cableado bloqueado por cuota
+- `ec44467` docs(qa): LOOP_LOG_V2 turn 3 — skill canónico aplicado, blocker persiste
+- `3037c87` feat(qa): add Kimi (k2p6) OAuth VLM backend to visual_auditor_v2.py
+
+### Próximo paso concreto
+
+Esperar `analyze --all` (en background). Al terminar:
+1. `qa/visual_auditor_v2.py queue` → queue real con severities/confidences accionables.
+2. Elegir 1 superficie con `confidence=high` + `recommendation=PRODUCT_FIX_CANDIDATE`.
+3. Inspeccionar evidencia (mockup.png, real.png, diff.png, overlay.png, crops, metrics).
+4. Aplicar 1 fix pequeño y reversible.
+5. Regenerar evidencia y comparar antes/después.
+6. Commit con formato `fix(ui): align <surface/component> with mockup`.
+
+**NO es PASS visual global.** Pero el loop ya no está bloqueado.
+
 ## Ciclos
 
 (ninguno — ver Decisión arriba)
