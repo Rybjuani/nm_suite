@@ -196,6 +196,8 @@ class AgentPackage:
     do_not_touch_if: str = ""
     normalization_warning: str | None = None
     pairing_concerns: str | None = None
+    fidelity_available: bool = True  # owner audit rule A — False when
+    # FIDELITY_REPORT.json is missing/empty/has 0 comparisons.
 
 
 # ---------------------------------------------------------------------------
@@ -259,6 +261,26 @@ def _load_fidelity_report() -> dict:
     if not _FIDELITY_REPORT.exists():
         return {}
     return json.loads(_FIDELITY_REPORT.read_text(encoding="utf-8"))
+
+
+def _check_fidelity_available() -> bool:
+    """Owner audit rule A: True iff FIDELITY_REPORT.json exists, parses,
+    and has at least 1 comparison. False means diff_fidelity was not
+    run or produced 0 targets — the metric numbers in the report should
+    not be treated as real signal.
+    """
+    if not _FIDELITY_REPORT.exists():
+        return False
+    try:
+        data = json.loads(_FIDELITY_REPORT.read_text(encoding="utf-8", errors="replace"))
+    except Exception:
+        return False
+    if isinstance(data, list):
+        return len(data) > 0
+    if isinstance(data, dict):
+        comparisons = data.get("comparisons", [])
+        return len(comparisons) > 0
+    return False
 
 
 def _load_rgb(path: Path) -> Image.Image:
@@ -529,6 +551,63 @@ def _ocr_image(img: Image.Image) -> str:
 # text/colour decisions — the evidence almost certainly comes from a big
 # background region (render noise, theme fill, scroll artifact, etc.).
 LARGEST_BBOX_GUARDRAIL = 0.35
+
+# Threshold above which a fuzzy ratio means "OCR matches well" — i.e. we
+# must NOT emit TEXT_MISMATCH_PROBABLE or a FIX_PRODUCT_* decision driven
+# by text. Owner audit rule: if fuzzy >= 95, no text-based decision.
+FUZZY_MATCH_THRESHOLD = 95
+
+# Threshold below which fuzzy ratio means "OCR noise / garbage". When
+# fuzzy < 30 and we don't have a real-text pair, we treat the result as
+# not-actionable evidence.
+FUZZY_NOISE_THRESHOLD = 30
+
+# Generic phrases that are forbidden in what_to_check_first / decision_reason
+# when the decision is FIX_PRODUCT_STRONG or FIX_PRODUCT_REVIEW. If we can
+# only produce one of these phrases, the decision must be downgraded to
+# NEEDS_HUMAN_REVIEW (owner audit rule E).
+FORBIDDEN_GENERIC_PHRASES = (
+    "Review OCR diff and color evidence before applying fix",
+    "Check visual difference",
+    "Review manually",
+    "No significant OCR difference",
+    "Insufficient evidence",
+    "Apply fix with high confidence",
+    "General visual inspection needed",
+)
+
+
+def _is_generic_phrase(text: str) -> bool:
+    """True if text contains any of the forbidden generic phrases."""
+    if not text:
+        return True
+    t = text.strip()
+    if not t:
+        return True
+    for phrase in FORBIDDEN_GENERIC_PHRASES:
+        if phrase.lower() in t.lower():
+            return True
+    return False
+
+
+def _real_fuzzy_in_evidence(bbox_analyses: list[dict]) -> int:
+    """Worst fuzzy ratio across all bboxes (unfiltered, no min-via-mismatch
+    trick). Used to detect contradictions between decision_reason and
+    text_evidence (owner audit rule C)."""
+    worst = 100
+    for a in bbox_analyses:
+        r = int(a.get("fuzzy_ratio_worst", 100))
+        if r < worst:
+            worst = r
+    return worst
+
+
+def _has_real_text_pair(bbox_analyses: list[dict]) -> bool:
+    """True if at least one bbox has a real (non-noise) OCR pair."""
+    for a in bbox_analyses:
+        if _looks_like_real_text_pair(a.get("mockup_ocr", ""), a.get("real_ocr", "")):
+            return True
+    return False
 
 
 def _is_ocr_noise(text: str) -> bool:
@@ -894,6 +973,12 @@ def _classify_surface(
         a for b, a in zip(bboxes, bbox_analyses) if not b.normalization_artifact
     ]
 
+    # Owner audit rule C: compute the REAL worst fuzzy across all non-artifact
+    # bboxes (unfiltered). Used to verify decision_reason / confidence claims
+    # against the actual text_evidence. This is independent of the
+    # text_mismatch threshold (85) used to label TEXT_MISMATCH_PROBABLE.
+    worst_fuzzy_real = _real_fuzzy_in_evidence(non_artifact_analyses)
+
     text_mismatch = False
     color_mismatch = False
     missing_component = False
@@ -970,6 +1055,16 @@ def _classify_surface(
         if analysis["fuzzy_ratio_worst"] < 100 or analysis["color_delta"] > 10:
             render_noise = False
 
+    # Owner audit rule B (coherence): if the worst fuzzy across all
+    # non-artifact bboxes is >= FUZZY_MATCH_THRESHOLD (95), there is no
+    # text-based actionable evidence. Strip TEXT_MISMATCH_PROBABLE and
+    # clear text_mismatch so the downstream decision logic doesn't claim
+    # text-driven fixes.
+    if worst_fuzzy_real >= FUZZY_MATCH_THRESHOLD:
+        text_mismatch = False
+        # Don't touch worst_fuzzy; let the confidence block reflect the
+        # real evidence. But strip the label and disable text decisions.
+
     if text_mismatch:
         labels.append("TEXT_MISMATCH_PROBABLE")
     if color_mismatch:
@@ -983,22 +1078,39 @@ def _classify_surface(
     if render_noise and not any([text_mismatch, color_mismatch, missing_component, extra_component]):
         labels.append("RENDER_NOISE")
 
-    # Determine confidence
-    if worst_fuzzy > 90 and not color_mismatch and not missing_component and not extra_component:
+    # Determine confidence — owner audit rule C: confidence_reason must
+    # be consistent with the REAL worst fuzzy across all non-artifact
+    # bboxes. The previous version said "OCR matches well" whenever
+    # worst_fuzzy (the min-via-text_mismatch filter) was > 90, even when
+    # other bboxes had fuzzy < 70. We now require worst_fuzzy_real >= 95
+    # to claim "OCR matches well".
+    if worst_fuzzy_real >= FUZZY_MATCH_THRESHOLD and not color_mismatch and not missing_component and not extra_component:
         confidence = "high"
-        confidence_reason = "OCR matches well, no structural differences"
+        confidence_reason = (
+            f"OCR matches well (worst_fuzzy_real={worst_fuzzy_real} "
+            f">={FUZZY_MATCH_THRESHOLD}); no structural differences"
+        )
     elif text_mismatch and worst_fuzzy < 85:
         confidence = "medium"
-        confidence_reason = f"OCR detected text mismatch (fuzzy={worst_fuzzy})"
+        confidence_reason = (
+            f"OCR detected text mismatch (worst_fuzzy={worst_fuzzy}, "
+            f"worst_fuzzy_real={worst_fuzzy_real})"
+        )
     elif color_mismatch and worst_color_delta > 60:
         confidence = "medium"
         confidence_reason = f"Color mismatch detected (delta={worst_color_delta})"
-    elif worst_fuzzy > 90:
+    elif worst_fuzzy_real >= FUZZY_MATCH_THRESHOLD:
         confidence = "high"
-        confidence_reason = "OCR matches well, no structural differences"
+        confidence_reason = (
+            f"OCR matches well (worst_fuzzy_real={worst_fuzzy_real} "
+            f">={FUZZY_MATCH_THRESHOLD}); no structural differences"
+        )
     else:
         confidence = "low"
-        confidence_reason = "No strong textual or color evidence"
+        confidence_reason = (
+            f"No strong textual or color evidence "
+            f"(worst_fuzzy_real={worst_fuzzy_real}, worst_fuzzy={worst_fuzzy})"
+        )
 
     # Determine severity
     if text_mismatch or missing_component or extra_component:
@@ -1018,6 +1130,13 @@ def _classify_surface(
             f">{LARGEST_BBOX_GUARDRAIL}; background-dominated image — "
             "OCR unreliable on oversized region"
         )
+        # Owner audit rule C: also strip TEXT_MISMATCH_PROBABLE and
+        # COLOR_MISMATCH from labels when bbox dominates — those came
+        # from noisy background diffs, not from a real component diff.
+        labels = [
+            lbl for lbl in labels
+            if lbl not in ("TEXT_MISMATCH_PROBABLE", "COLOR_MISMATCH")
+        ]
         # Avoid producing FIX_PRODUCT_STRONG/REVIEW from this signal.
         decision = "NEEDS_HUMAN_REVIEW"
         return Classification(
@@ -1224,13 +1343,238 @@ def _guess_lines_hint(surface_key: str, labels: list[str]) -> str:
 
 
 def _what_to_check(classification: Classification, bbox_analyses: list[dict]) -> str:
-    if classification.decision == "FIX_PRODUCT_STRONG":
-        return "Apply fix with high confidence — OCR and structural evidence are strong"
-    elif classification.decision == "FIX_PRODUCT_REVIEW":
-        return "Review OCR diff and color evidence before applying fix"
-    elif classification.decision == "RENDER_NOISE_OK":
+    """Build a concrete, actionable hint for the agent.
+
+    Owner audit rule E: what_to_check_first MUST NOT be generic. If we
+    can only produce a generic phrase for a FIX_PRODUCT_* decision, the
+    decision must be downgraded to NEEDS_HUMAN_REVIEW by the caller.
+    """
+    # Pick the best (most informative) bbox analysis. Strategy:
+    # 1. For FIX_PRODUCT_* on COLOR_MISMATCH, prefer the bbox with
+    #    highest color_delta (that's the one driving the decision).
+    # 2. For other cases, prefer the bbox with the lowest fuzzy_ratio_worst
+    #    (most interesting text evidence).
+    best = None
+    if "COLOR_MISMATCH" in classification.labels and classification.decision in (
+        "FIX_PRODUCT_STRONG", "FIX_PRODUCT_REVIEW"
+    ):
+        for a in bbox_analyses:
+            if not a:
+                continue
+            if best is None:
+                best = a
+                continue
+            if a.get("color_delta", 0) > best.get("color_delta", 0):
+                best = a
+    else:
+        for a in bbox_analyses:
+            if not a:
+                continue
+            if best is None:
+                best = a
+                continue
+            if a.get("fuzzy_ratio_worst", 100) < best.get("fuzzy_ratio_worst", 100):
+                best = a
+
+    if classification.decision == "RENDER_NOISE_OK":
         return "No action needed — differences are render noise"
-    return "Insufficient evidence — needs human review or better capture"
+
+    if classification.decision in ("FIX_PRODUCT_STRONG", "FIX_PRODUCT_REVIEW"):
+        parts: list[str] = []
+        if best:
+            pair = best.get("fuzzy_ratio_worst_pair", ["", ""])
+            if pair and pair[0] and pair[1] and pair[0] != pair[1]:
+                parts.append(
+                    f"OCR mismatch: '{pair[0]}' vs '{pair[1]}' "
+                    f"(fuzzy={best.get('fuzzy_ratio_worst', 0):.0f})"
+                )
+            elif pair and pair[0]:
+                parts.append(
+                    f"OCR matched line: '{pair[0]}' "
+                    f"(fuzzy={best.get('fuzzy_ratio_worst', 0):.0f})"
+                )
+            color = best.get("color_delta", 0)
+            if color > 30:
+                m_rgb = best.get("mockup_color", (0, 0, 0))
+                r_rgb = best.get("real_color", (0, 0, 0))
+                m_hex = _rgb_to_hex(m_rgb)
+                r_hex = _rgb_to_hex(r_rgb)
+                parts.append(
+                    f"color delta={color} (mockup={m_hex} vs real={r_hex})"
+                )
+            if best.get("touches_borders"):
+                parts.append("bbox touches window border (chrome)")
+            area = best.get("bbox_area_ratio", 0.0)
+            if area > 0:
+                parts.append(f"top_bbox area_ratio={area:.3f}")
+        if classification.labels:
+            parts.append("labels=" + ",".join(classification.labels))
+        if classification.suspected_module:
+            parts.append(f"suspected={classification.suspected_module}")
+        if parts:
+            return "; ".join(parts)
+        # Fallback: still actionable, includes labels + confidence
+        return (
+            f"Inspect: decision={classification.decision}, "
+            f"confidence={classification.confidence}, "
+            f"labels={','.join(classification.labels)}"
+        )
+
+    # NEEDS_HUMAN_REVIEW or PAIRING_FIX — must be concrete about WHY
+    # review is needed, not generic.
+    parts_nhr: list[str] = []
+    if best:
+        worst_fuzzy = int(best.get("fuzzy_ratio_worst", 100))
+        if worst_fuzzy < FUZZY_NOISE_THRESHOLD:
+            parts_nhr.append(
+                f"OCR noise on this surface (worst_fuzzy={worst_fuzzy}); "
+                "capture diff likely too small for clean OCR"
+            )
+        elif worst_fuzzy < FUZZY_MATCH_THRESHOLD:
+            pair = best.get("fuzzy_ratio_worst_pair", ["", ""])
+            if pair and pair[0] and pair[1] and pair[0] != pair[1]:
+                parts_nhr.append(
+                    f"OCR diff between '{pair[0]}' and '{pair[1]}' but no "
+                    "real-text pair confirmed (different content/units); "
+                    "human review needed to disambiguate"
+                )
+        area = best.get("bbox_area_ratio", 0.0)
+        if area > LARGEST_BBOX_GUARDRAIL:
+            parts_nhr.append(
+                f"bbox too broad (area_ratio={area:.3f} "
+                f">{LARGEST_BBOX_GUARDRAIL}); no localized actionable "
+                "evidence"
+            )
+    if not parts_nhr:
+        parts_nhr.append(
+            f"Insufficient localized evidence (confidence="
+            f"{classification.confidence}, labels="
+            f"{','.join(classification.labels)})"
+        )
+    return "; ".join(parts_nhr)
+
+
+def _enforce_decision_guardrails(
+    surface_key: str,
+    classification: Classification,
+    agent_pkg: AgentPackage,
+    bbox_analyses: list[dict],
+    fidelity_available: bool,
+) -> tuple[Classification, AgentPackage]:
+    """Final coherence guardrails (owner audit rules A-F).
+
+    Called at the end of agent_package construction. Mutates and
+    returns both objects with consistent fields. Order matters:
+      1. confidence == low  =>  decision MUST be NEEDS_HUMAN_REVIEW
+         (owner audit rule D — hard rule, no exceptions).
+      2. fuzzy_ratio_worst >= 95  =>  TEXT_MISMATCH_PROBABLE forbidden,
+         FIX_PRODUCT_* by text forbidden (owner audit rule B).
+      3. diff_summary == "No significant OCR difference"  =>
+         TEXT_MISMATCH_PROBABLE forbidden, FIX_PRODUCT_REVIEW by text
+         forbidden (owner audit rule B).
+      4. decision_reason cannot say "OCR matches well" if there is a
+         bbox with fuzzy < 85 anywhere (owner audit rule C).
+      5. FIX_PRODUCT_STRONG requires confidence == high (rule D).
+      6. FIX_PRODUCT_STRONG/REVIEW cannot ship with a generic
+         what_to_check_first (rule E) — downgrade to NEEDS_HUMAN_REVIEW.
+      7. FIDELITY_REPORT.json missing/empty => warn and set
+         fidelity_available=False on the agent package; do NOT present
+         fidelity numbers as real metrics (owner audit rule A).
+    """
+    cls = classification
+    pkg = agent_pkg
+    diff_summary = pkg.text_evidence.diff_summary if pkg.text_evidence else ""
+    fuzzy_worst = (
+        int(pkg.text_evidence.fuzzy_ratio_worst)
+        if pkg.text_evidence else 100
+    )
+
+    # Rule 7: fidelity_available flag (informational; not a downgrade)
+    pkg.fidelity_available = fidelity_available  # type: ignore[attr-defined]
+    if not fidelity_available:
+        # Don't fail anything — just stamp the field so downstream can
+        # see that the diff_fidelity numbers are not real.
+        pass
+
+    # Rule 1: confidence == low => decision == NEEDS_HUMAN_REVIEW (HARD)
+    if cls.confidence == "low" and cls.decision != "NEEDS_HUMAN_REVIEW":
+        cls.decision = "NEEDS_HUMAN_REVIEW"
+        cls.severity = "needs_review"
+        cls.explanation = (
+            (cls.explanation or "")
+            + "; downgraded by guardrail: confidence==low requires "
+            "NEEDS_HUMAN_REVIEW"
+        ).strip("; ")
+
+    # Rule 2: fuzzy_ratio_worst >= 95 forbids TEXT_MISMATCH and text-decisions
+    if fuzzy_worst >= FUZZY_MATCH_THRESHOLD:
+        if "TEXT_MISMATCH_PROBABLE" in cls.labels:
+            cls.labels = [lbl for lbl in cls.labels if lbl != "TEXT_MISMATCH_PROBABLE"]
+        if cls.decision == "FIX_PRODUCT_REVIEW":
+            # FIX_PRODUCT_REVIEW may still be valid on structural evidence,
+            # but if it's text-only we downgrade.
+            has_structural = (
+                "MISSING_COMPONENT" in cls.labels
+                or "EXTRA_COMPONENT" in cls.labels
+            )
+            if not has_structural:
+                cls.decision = "NEEDS_HUMAN_REVIEW"
+                cls.severity = "needs_review"
+
+    # Rule 3: diff_summary == "No significant OCR difference"
+    if diff_summary.strip() == "No significant OCR difference":
+        if "TEXT_MISMATCH_PROBABLE" in cls.labels:
+            cls.labels = [lbl for lbl in cls.labels if lbl != "TEXT_MISMATCH_PROBABLE"]
+        if cls.decision == "FIX_PRODUCT_REVIEW":
+            has_structural = (
+                "MISSING_COMPONENT" in cls.labels
+                or "EXTRA_COMPONENT" in cls.labels
+            )
+            if not has_structural:
+                cls.decision = "NEEDS_HUMAN_REVIEW"
+                cls.severity = "needs_review"
+
+    # Rule 4: decision_reason "OCR matches well" while fuzzy < 85 somewhere
+    if pkg.decision_reason and "OCR matches well" in pkg.decision_reason:
+        worst_real = _real_fuzzy_in_evidence(bbox_analyses)
+        if worst_real < FUZZY_MATCH_THRESHOLD:
+            # Conflict — replace decision_reason with something derived
+            # from the actual evidence. Keep the decision (will be
+            # checked by rule 5/6 below) but mark the contradiction.
+            pkg.decision_reason = (
+                f"confidence_reason inconsistent with text_evidence "
+                f"(worst_fuzzy_real={worst_real}); see text_evidence"
+            )
+            cls.confidence_reason = pkg.decision_reason
+
+    # Rule 5: FIX_PRODUCT_STRONG requires confidence == high
+    if cls.decision == "FIX_PRODUCT_STRONG" and cls.confidence != "high":
+        # Downgrade to FIX_PRODUCT_REVIEW if confidence is medium, else
+        # NEEDS_HUMAN_REVIEW.
+        if cls.confidence == "medium":
+            cls.decision = "FIX_PRODUCT_REVIEW"
+        else:
+            cls.decision = "NEEDS_HUMAN_REVIEW"
+            cls.severity = "needs_review"
+
+    # Rule 6: FIX_PRODUCT_* with generic what_to_check_first => downgrade
+    if cls.decision in ("FIX_PRODUCT_STRONG", "FIX_PRODUCT_REVIEW"):
+        if _is_generic_phrase(pkg.what_to_check_first):
+            cls.decision = "NEEDS_HUMAN_REVIEW"
+            cls.severity = "needs_review"
+            cls.explanation = (
+                (cls.explanation or "")
+                + "; downgraded by guardrail: generic what_to_check_first "
+                "forbids FIX_PRODUCT_*"
+            ).strip("; ")
+
+    # Mirror decision back into agent package (decision_reason kept as
+    # set in rule 4 or original from classification).
+    pkg.decision = cls.decision
+    pkg.severity = cls.severity
+    pkg.labels = list(cls.labels)
+
+    return cls, pkg
 
 
 # ---------------------------------------------------------------------------
@@ -1413,6 +1757,13 @@ def analyze_surface(
 
     # Agent package
     agent_pkg = _build_agent_package(surface_key, classification, bboxes, bbox_analyses, manifest_entry)
+
+    # Owner audit rule A+F: enforce decision coherence and stamp
+    # fidelity_available. Fidelity must be computed BEFORE this call.
+    fidelity_available = _check_fidelity_available()
+    classification, agent_pkg = _enforce_decision_guardrails(
+        surface_key, classification, agent_pkg, bbox_analyses, fidelity_available
+    )
 
     # Save outputs
     (surface_out / "metrics.json").write_text(

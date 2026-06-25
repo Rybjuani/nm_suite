@@ -20,6 +20,7 @@ from visual_auditor_v3 import (
     BBoxInfo,
     Classification,
     Metrics,
+    Pairing,
     SurfaceKey,
     _build_surface_key_from_manifest,
     _cache_key,
@@ -707,3 +708,501 @@ def test_v3_marks_unreliable_only_on_technical_conditions():
     assert "unreliable" in cls["confidence_reason"] or "missing" in str(result).lower()
 
     pairing.mockup_path = original_mockup
+
+
+# ---------------------------------------------------------------------------
+# Owner audit guardrails (Fase 2 amend)
+# ---------------------------------------------------------------------------
+
+
+def test_fuzzy_match_threshold_forbids_text_mismatch_label():
+    """Owner audit rule B: if fuzzy_ratio_worst >= 95, TEXT_MISMATCH_PROBABLE
+    is forbidden even if decision logic initially set it."""
+    from visual_auditor_v3 import _enforce_decision_guardrails, FUZZY_MATCH_THRESHOLD
+
+    # Build a synthetic Classification with text_mismatch set and high fuzzy
+    cls = Classification(
+        labels=["TEXT_MISMATCH_PROBABLE", "CHROME_MISMATCH"],
+        severity="high",
+        decision="FIX_PRODUCT_REVIEW",
+        confidence="medium",
+        confidence_reason="OCR detected text mismatch (fuzzy=96)",
+        explanation="synthetic",
+    )
+    # Synthetic bbox with high fuzzy
+    bbox_analyses = [{
+        "fuzzy_ratio_worst": FUZZY_MATCH_THRESHOLD,
+        "fuzzy_ratio_worst_pair": ["Activos", "Activos"],
+        "color_delta": 0,
+        "mockup_color": (255, 255, 255),
+        "real_color": (255, 255, 255),
+        "bbox_area_ratio": 0.02,
+        "touches_borders": False,
+    }]
+    from visual_auditor_v3 import AgentPackage, TextEvidence
+
+    pkg = AgentPackage(
+        surface_key="suite:test@light",
+        decision="FIX_PRODUCT_REVIEW",
+        decision_reason="OCR detected text mismatch (fuzzy=96)",
+        text_evidence=TextEvidence(
+            fuzzy_ratio_worst=FUZZY_MATCH_THRESHOLD,
+            fuzzy_ratio_worst_pair=["Activos", "Activos"],
+            diff_summary="Activos vs Activos (fuzzy=95)",
+        ),
+        confidence="medium",
+        labels=["TEXT_MISMATCH_PROBABLE", "CHROME_MISMATCH"],
+    )
+    new_cls, new_pkg = _enforce_decision_guardrails(
+        "suite:test@light", cls, pkg, bbox_analyses, True
+    )
+    assert "TEXT_MISMATCH_PROBABLE" not in new_cls.labels, (
+        f"Guardrail B failed: TEXT_MISMATCH_PROBABLE still present with "
+        f"fuzzy={FUZZY_MATCH_THRESHOLD}"
+    )
+    # No structural evidence (no MISSING/EXTRA), so FIX_PRODUCT_REVIEW
+    # should downgrade to NEEDS_HUMAN_REVIEW.
+    assert new_cls.decision == "NEEDS_HUMAN_REVIEW", (
+        f"Guardrail B failed: text-only FIX_PRODUCT_REVIEW should downgrade "
+        f"when fuzzy >= 95, got {new_cls.decision}"
+    )
+
+
+def test_diff_summary_no_significant_ocr_forbids_text_decision():
+    """Owner audit rule B: if diff_summary == 'No significant OCR
+    difference', TEXT_MISMATCH_PROBABLE is forbidden and FIX_PRODUCT_REVIEW
+    by text alone must downgrade."""
+    from visual_auditor_v3 import _enforce_decision_guardrails, AgentPackage, TextEvidence
+
+    cls = Classification(
+        labels=["TEXT_MISMATCH_PROBABLE"],
+        severity="high",
+        decision="FIX_PRODUCT_REVIEW",
+        confidence="medium",
+        confidence_reason="synthetic",
+        explanation="synthetic",
+    )
+    bbox_analyses = [{
+        "fuzzy_ratio_worst": 100,
+        "fuzzy_ratio_worst_pair": ["", ""],
+        "color_delta": 0,
+        "mockup_color": (255, 255, 255),
+        "real_color": (255, 255, 255),
+        "bbox_area_ratio": 0.02,
+        "touches_borders": False,
+    }]
+    pkg = AgentPackage(
+        surface_key="suite:test@light",
+        decision="FIX_PRODUCT_REVIEW",
+        decision_reason="synthetic",
+        text_evidence=TextEvidence(
+            fuzzy_ratio_worst=100,
+            fuzzy_ratio_worst_pair=["", ""],
+            diff_summary="No significant OCR difference",
+        ),
+        confidence="medium",
+        labels=["TEXT_MISMATCH_PROBABLE"],
+    )
+    new_cls, _ = _enforce_decision_guardrails(
+        "suite:test@light", cls, pkg, bbox_analyses, True
+    )
+    assert "TEXT_MISMATCH_PROBABLE" not in new_cls.labels
+    assert new_cls.decision == "NEEDS_HUMAN_REVIEW"
+
+
+def test_decision_reason_cannot_say_ocr_matches_well_with_low_fuzzy():
+    """Owner audit rule C: decision_reason saying 'OCR matches well' is
+    forbidden when any bbox has fuzzy < 95."""
+    from visual_auditor_v3 import _enforce_decision_guardrails, AgentPackage, TextEvidence
+
+    cls = Classification(
+        labels=["MISSING_COMPONENT"],
+        severity="high",
+        decision="FIX_PRODUCT_STRONG",
+        confidence="high",
+        confidence_reason="OCR matches well, no structural differences",
+        explanation="synthetic",
+    )
+    bbox_analyses = [{
+        "fuzzy_ratio_worst": 30,
+        "fuzzy_ratio_worst_pair": ["Activos", "ctivo"],
+        "color_delta": 0,
+        "mockup_color": (255, 255, 255),
+        "real_color": (255, 255, 255),
+        "bbox_area_ratio": 0.05,
+        "touches_borders": False,
+    }]
+    pkg = AgentPackage(
+        surface_key="suite:test@light",
+        decision="FIX_PRODUCT_STRONG",
+        decision_reason="OCR matches well, no structural differences",
+        text_evidence=TextEvidence(
+            fuzzy_ratio_worst=30,
+            fuzzy_ratio_worst_pair=["Activos", "ctivo"],
+            diff_summary="'Activos' vs 'ctivo' (fuzzy=30)",
+        ),
+        confidence="high",
+        labels=["MISSING_COMPONENT"],
+    )
+    new_cls, new_pkg = _enforce_decision_guardrails(
+        "suite:test@light", cls, pkg, bbox_analyses, True
+    )
+    assert "OCR matches well" not in (new_pkg.decision_reason or ""), (
+        f"Guardrail C failed: decision_reason still says 'OCR matches well' "
+        f"with fuzzy=30; got '{new_pkg.decision_reason}'"
+    )
+
+
+def test_fix_product_strong_requires_high_confidence():
+    """Owner audit rule D: FIX_PRODUCT_STRONG requires confidence==high."""
+    from visual_auditor_v3 import _enforce_decision_guardrails, AgentPackage, TextEvidence
+
+    for conf in ("medium", "low"):
+        cls = Classification(
+            labels=["MISSING_COMPONENT"],
+            severity="high",
+            decision="FIX_PRODUCT_STRONG",
+            confidence=conf,
+            confidence_reason=f"synthetic confidence={conf}",
+            explanation="synthetic",
+        )
+        bbox_analyses = [{
+            "fuzzy_ratio_worst": 95,
+            "fuzzy_ratio_worst_pair": ["", ""],
+            "color_delta": 0,
+            "mockup_color": (255, 255, 255),
+            "real_color": (255, 255, 255),
+            "bbox_area_ratio": 0.05,
+            "touches_borders": False,
+        }]
+        pkg = AgentPackage(
+            surface_key="suite:test@light",
+            decision="FIX_PRODUCT_STRONG",
+            decision_reason=f"synthetic confidence={conf}",
+            text_evidence=TextEvidence(fuzzy_ratio_worst=95),
+            confidence=conf,
+            labels=["MISSING_COMPONENT"],
+        )
+        new_cls, _ = _enforce_decision_guardrails(
+            "suite:test@light", cls, pkg, bbox_analyses, True
+        )
+        assert new_cls.decision != "FIX_PRODUCT_STRONG", (
+            f"Guardrail D failed: FIX_PRODUCT_STRONG emitted with "
+            f"confidence={conf}"
+        )
+
+
+def test_low_confidence_forces_needs_human_review_already_in_helper():
+    """Owner audit rule D (hard rule): confidence == low MUST force
+    NEEDS_HUMAN_REVIEW. The helper must enforce it."""
+    from visual_auditor_v3 import _enforce_decision_guardrails, AgentPackage, TextEvidence
+
+    cls = Classification(
+        labels=["TEXT_MISMATCH_PROBABLE"],
+        severity="high",
+        decision="FIX_PRODUCT_STRONG",
+        confidence="low",
+        confidence_reason="low confidence but somehow FIX_PRODUCT_STRONG",
+        explanation="synthetic",
+    )
+    bbox_analyses = [{
+        "fuzzy_ratio_worst": 30,
+        "fuzzy_ratio_worst_pair": ["Activos", "ctivo"],
+        "color_delta": 0,
+        "mockup_color": (255, 255, 255),
+        "real_color": (255, 255, 255),
+        "bbox_area_ratio": 0.05,
+        "touches_borders": False,
+    }]
+    pkg = AgentPackage(
+        surface_key="suite:test@light",
+        decision="FIX_PRODUCT_STRONG",
+        decision_reason="synthetic",
+        text_evidence=TextEvidence(fuzzy_ratio_worst=30),
+        confidence="low",
+        labels=["TEXT_MISMATCH_PROBABLE"],
+    )
+    new_cls, _ = _enforce_decision_guardrails(
+        "suite:test@light", cls, pkg, bbox_analyses, True
+    )
+    assert new_cls.decision == "NEEDS_HUMAN_REVIEW", (
+        f"Hard rule failed: confidence=low must force NEEDS_HUMAN_REVIEW, "
+        f"got {new_cls.decision}"
+    )
+
+
+def test_generic_what_to_check_first_forbids_fix_product():
+    """Owner audit rule E: if what_to_check_first is generic,
+    FIX_PRODUCT_* must downgrade to NEEDS_HUMAN_REVIEW."""
+    from visual_auditor_v3 import _enforce_decision_guardrails, AgentPackage, TextEvidence
+
+    cls = Classification(
+        labels=["MISSING_COMPONENT"],
+        severity="high",
+        decision="FIX_PRODUCT_STRONG",
+        confidence="high",
+        confidence_reason="structural evidence",
+        explanation="synthetic",
+    )
+    bbox_analyses = [{
+        "fuzzy_ratio_worst": 100,
+        "fuzzy_ratio_worst_pair": ["", ""],
+        "color_delta": 0,
+        "mockup_color": (255, 255, 255),
+        "real_color": (255, 255, 255),
+        "bbox_area_ratio": 0.05,
+        "touches_borders": False,
+    }]
+    pkg = AgentPackage(
+        surface_key="suite:test@light",
+        decision="FIX_PRODUCT_STRONG",
+        decision_reason="structural evidence",
+        text_evidence=TextEvidence(fuzzy_ratio_worst=100),
+        confidence="high",
+        labels=["MISSING_COMPONENT"],
+        what_to_check_first="Review OCR diff and color evidence before applying fix",
+    )
+    new_cls, _ = _enforce_decision_guardrails(
+        "suite:test@light", cls, pkg, bbox_analyses, True
+    )
+    assert new_cls.decision == "NEEDS_HUMAN_REVIEW", (
+        f"Guardrail E failed: generic what_to_check_first should downgrade "
+        f"FIX_PRODUCT_STRONG, got {new_cls.decision}"
+    )
+
+
+def test_fidelity_empty_reports_fidelity_available_false():
+    """Owner audit rule A: when FIDELITY_REPORT.json is empty/missing,
+    _check_fidelity_available returns False and agent_package.fidelity_available
+    is set to False."""
+    import os
+    from visual_auditor_v3 import (
+        _FIDELITY_REPORT, _check_fidelity_available,
+    )
+
+    # Move the real report aside
+    backup = None
+    if _FIDELITY_REPORT.exists():
+        backup = _FIDELITY_REPORT.with_suffix(".json.backup_test")
+        os.rename(_FIDELITY_REPORT, backup)
+    try:
+        # Create empty file
+        _FIDELITY_REPORT.write_text("[]", encoding="utf-8")
+        assert _check_fidelity_available() is False
+        # Create valid file
+        _FIDELITY_REPORT.write_text(
+            json.dumps([{"app": "suite", "view": "test"}]), encoding="utf-8"
+        )
+        assert _check_fidelity_available() is True
+    finally:
+        _FIDELITY_REPORT.unlink(missing_ok=True)
+        if backup is not None and backup.exists():
+            os.rename(backup, _FIDELITY_REPORT)
+
+
+def test_hub_pairing_count_unchanged():
+    """Owner audit rule F.9: Hub pairing still 16 hub / 70 suite."""
+    pairings = pair_surfaces()
+    hub_count = sum(1 for p in pairings if p.app == "hub")
+    suite_count = sum(1 for p in pairings if p.app == "suite")
+    assert hub_count == 16, f"Expected 16 hub pairings, got {hub_count}"
+    assert suite_count == 70, f"Expected 70 suite pairings, got {suite_count}"
+    assert len(pairings) == 86, f"Expected 86 total pairings, got {len(pairings)}"
+    # NOTE: pre-existing pairing bug — hub:detalle-resumen-ia light/dark
+    # have state_id="0" in CAPTURE_MANIFEST but manifest normalizado has
+    # view="detalle-resumen-ia" (no state_id), so they fall back to
+    # filename_fallback with pairing_confidence=low. Not introduced by
+    # the Fase 2 amend. The analyze_surface path still emits unreliable=
+    # missing_file for these 2 surfaces (no capture_path found by
+    # filename convention). Verifying that count here:
+    missing_fallback = sum(
+        1 for p in pairings
+        if not p.real_capture_path and p.pairing_confidence == "low"
+    )
+    assert missing_fallback == 2, (
+        f"Expected exactly 2 fallback-missing hub pairings "
+        f"(detalle-resumen-ia x2), got {missing_fallback}"
+    )
+
+
+def test_surface_alias_normalization_both_forms():
+    """Owner audit rule F.10: alias for surface works."""
+    from visual_auditor_v3 import _normalize_surface_alias, analyze_surface
+
+    canonical = "suite:avisos-search@light"
+    alias = "suite:avisos-search:light"
+    normalized = _normalize_surface_alias(alias)
+    assert normalized == canonical, f"Alias normalization failed: {normalized!r}"
+
+    manifest_items = json.loads(_NORM_MANIFEST.read_text(encoding="utf-8"))
+    manifest_lookup = {
+        f"{item.get('app', 'suite')}:{item.get('view', '')}@{item.get('theme', 'light')}"
+        if "surface_key" not in item
+        else item["surface_key"]: item
+        for item in manifest_items
+    }
+    # Resolve canonical key
+    pairings = pair_surfaces()
+    canonical_pair = next(p for p in pairings if p.surface_key == canonical)
+    out_dir = _PROJ / "qa" / "_visual_auditor_v3" / "test_scratch_alias"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    # Canonical key works
+    res_canon = analyze_surface(canonical_pair, out_dir, manifest_lookup)
+    # Alias key produces same result
+    alias_pair = Pairing(
+        surface_key=alias,
+        app=canonical_pair.app,
+        view=canonical_pair.view,
+        theme=canonical_pair.theme,
+        mockup_path=canonical_pair.mockup_path,
+        real_capture_path=canonical_pair.real_capture_path,
+        diff_path="",
+        overlay_path="",
+        pairing_source="alias",
+        pairing_method="alias",
+        pairing_confidence="alias",
+    )
+    res_alias = analyze_surface(alias_pair, out_dir, manifest_lookup)
+    # Both must produce equivalent decisions/confidence (we don't compare
+    # raw bytes because cache may differ between runs).
+    assert res_canon["classification"]["decision"] == res_alias["classification"]["decision"]
+
+
+def test_huge_bbox_synthetic_produces_low_confidence_needs_review():
+    """Owner audit rule F (synthetic): image with single huge background
+    diff and noisy OCR must produce confidence=low, decision=NEEDS_HUMAN_REVIEW."""
+    from PIL import Image
+    from visual_auditor_v3 import (
+        _classify_surface, BBoxInfo, Metrics, LARGEST_BBOX_GUARDRAIL,
+    )
+
+    # Synthetic mockup: 960x600 white
+    _mockup = Image.new("RGB", (960, 600), "white")
+    # Synthetic real: 960x600 green (huge background diff)
+    _real = Image.new("RGB", (960, 600), (50, 200, 50))
+
+    bboxes = [BBoxInfo(
+        label=0,
+        geometry=(0, 0, 960, 600),
+        area=960 * 600,
+        area_ratio=1.0,  # entire image
+        normalization_artifact=False,
+    )]
+    bbox_analyses = [{
+        "fuzzy_ratio_worst": 0,
+        "fuzzy_ratio_worst_pair": ["", ""],
+        "mockup_ocr": "garbage",
+        "real_ocr": "noise",
+        "color_delta": 400,
+        "mockup_color": (255, 255, 255),
+        "real_color": (50, 200, 50),
+        "mockup_edge": 0.0,
+        "real_edge": 0.0,
+        "edge_delta": 0.0,
+        "mockup_std": 0.0,
+        "real_std": 0.0,
+        "stddev_delta": 0.0,
+        "touches_borders": True,
+        "bbox_area_ratio": 1.0,
+    }]
+    metrics = Metrics()
+    cls = _classify_surface(bboxes, bbox_analyses, {}, metrics)
+    assert cls.confidence == "low", (
+        f"Giant bbox should force confidence=low, got {cls.confidence}"
+    )
+    assert cls.decision == "NEEDS_HUMAN_REVIEW", (
+        f"Giant bbox should force NEEDS_HUMAN_REVIEW, got {cls.decision}"
+    )
+    assert cls.severity == "needs_review"
+    # TEXT_MISMATCH_PROBABLE must NOT be in labels (stripped by guardrail)
+    assert "TEXT_MISMATCH_PROBABLE" not in cls.labels
+    assert "COLOR_MISMATCH" not in cls.labels
+
+
+def test_what_to_check_concrete_with_real_pair():
+    """Owner audit rule E: when a bbox has real OCR evidence, the produced
+    hint must be concrete (mention OCR pair / fuzzy / bbox coords / labels),
+    not generic."""
+    from visual_auditor_v3 import _what_to_check, Classification
+
+    cls = Classification(
+        labels=["MISSING_COMPONENT"],
+        severity="high",
+        decision="FIX_PRODUCT_STRONG",
+        confidence="high",
+        confidence_reason="structural evidence",
+        explanation="synthetic",
+        suspected_module="app/modules/test.py",
+    )
+    bbox_analyses = [{
+        "fuzzy_ratio_worst": 35.0,
+        "fuzzy_ratio_worst_pair": ["Activos", "ctivo:"],
+        "color_delta": 0,
+        "mockup_color": (255, 255, 255),
+        "real_color": (255, 255, 255),
+        "bbox_area_ratio": 0.05,
+        "touches_borders": False,
+    }]
+    hint = _what_to_check(cls, bbox_analyses)
+    assert "Activos" in hint and "ctivo" in hint, (
+        f"Hint should mention OCR pair, got: {hint}"
+    )
+    assert "MISSING_COMPONENT" in hint
+    assert "app/modules/test.py" in hint
+    # Must not be a forbidden generic phrase
+    from visual_auditor_v3 import _is_generic_phrase
+    assert not _is_generic_phrase(hint), (
+        f"Hint matched a forbidden generic phrase: {hint}"
+    )
+
+
+def test_is_generic_phrase_detects_forbidden():
+    from visual_auditor_v3 import _is_generic_phrase, FORBIDDEN_GENERIC_PHRASES
+
+    for phrase in FORBIDDEN_GENERIC_PHRASES:
+        assert _is_generic_phrase(phrase), f"Should flag: {phrase!r}"
+        assert _is_generic_phrase(f"prefix {phrase} suffix"), (
+            f"Should flag embedded: {phrase!r}"
+        )
+    assert not _is_generic_phrase(
+        "OCR mismatch: 'Activos' vs 'ctivo:' (fuzzy=35)"
+    )
+    assert _is_generic_phrase("")
+    assert _is_generic_phrase("   ")
+
+
+def test_real_fuzzy_in_evidence_min():
+    from visual_auditor_v3 import _real_fuzzy_in_evidence
+    assert _real_fuzzy_in_evidence([]) == 100
+    assert _real_fuzzy_in_evidence(
+        [{"fuzzy_ratio_worst": 95}, {"fuzzy_ratio_worst": 30}]
+    ) == 30
+    assert _real_fuzzy_in_evidence(
+        [{"fuzzy_ratio_worst": 100}, {"fuzzy_ratio_worst": 100}]
+    ) == 100
+
+
+def test_check_fidelity_available_shape_handling():
+    """_check_fidelity_available handles list, dict, and dict-with-empty."""
+    import os
+    from visual_auditor_v3 import _FIDELITY_REPORT, _check_fidelity_available
+
+    backup = None
+    if _FIDELITY_REPORT.exists():
+        backup = _FIDELITY_REPORT.with_suffix(".json.backup_shape")
+        os.rename(_FIDELITY_REPORT, backup)
+    try:
+        _FIDELITY_REPORT.write_text("[]", encoding="utf-8")
+        assert _check_fidelity_available() is False
+        _FIDELITY_REPORT.write_text(
+            json.dumps({"comparisons": []}), encoding="utf-8"
+        )
+        assert _check_fidelity_available() is False
+        _FIDELITY_REPORT.write_text(
+            json.dumps({"comparisons": [{"app": "suite"}]}), encoding="utf-8"
+        )
+        assert _check_fidelity_available() is True
+    finally:
+        _FIDELITY_REPORT.unlink(missing_ok=True)
+        if backup is not None and backup.exists():
+            os.rename(backup, _FIDELITY_REPORT)
