@@ -160,7 +160,7 @@ Esperar `analyze --all` (en background). Al terminar:
 ### Ciclo 1 — surface `suite:avisos-search:light` (turno 4)
 
 - **SHA antes**: `e4f5d29`
-- **SHA después** (al cierre de este log): pendiente
+- **SHA después**: `847e908` (fix(ui): make Avisos filter track invisible...)
 - **Surface key**: `suite:avisos-search:light`
 - **App/Módulo/Vista/Estado/Tema**: `suite / avisos / search (filtro "Todos") / light`
 - **Componente**: `_StepPill` filter track (`#FilterSegment`)
@@ -181,11 +181,12 @@ Esperar `analyze --all` (en background). Al terminar:
     - MAD: 0.01580 → 0.01605 ↑ +0.00025 (marginal, dentro de ruido)
     - changed: 0.0728 → 0.0767 ↑ +0.4% (marginal, dentro de ruido)
     - Status: FAIL (`ssim<0.92`) — no llegó al gate pero acercó.
-  - `qa/visual_auditor_v2.py analyze --surface suite:avisos-search:light` con `NM_VLM_BACKEND=kimi` (re-validación VLM post-fix): **Kimi timeouts intermitentes**, reintentos en background (proc_b519af7719b8). Resultado del VLM post-fix: **pendiente al cierre de este log**.
+  - `qa/visual_auditor_v2.py analyze --surface suite:avisos-search:light` con `NM_VLM_BACKEND=kimi` (re-validación VLM post-fix): **5 reintentos con timeouts** (Kimi inestable). Sin re-clasificación VLM post-fix. La validación queda en métricas estructurales (SSIM/MAD/changed).
 - **Comparación antes/después**:
   - Métricas mixtas: SSIM ↑ (mejor), MAD ↑ y changed ↑ (peor marginal). Ruido dentro del margen de captura.
   - Inspección estructural: track segmentado invisible ahora — **coincide con el label `LAYOUT_SHIFT` que Kimi identificó**. Pero Kimi también reportó `EXTRA_COMPONENT` (botón X en search) que **no fue tocado** en este ciclo.
   - **Conclusión**: mejora parcial coherente. NO revertí. NO es PASS. Quedan 3 labels (EXTRA_COMPONENT, SIZE_MISMATCH, COLOR_MISMATCH) por atacar.
-- **Pendiente del ciclo 1**:
-  - Verificar re-análisis VLM post-fix (cuando termine proc_b519af7719b8).
+- **Resultado final del ciclo 1**:
+  - VLM post-fix NO se pudo obtener (5/5 timeouts Kimi). Decisión: mantener commit porque (a) SSIM mejoró +0.4 puntos (métrica principal acercándose al gate), (b) el fix es estructuralmente coherente con label `LAYOUT_SHIFT` que Kimi identificó pre-fix, (c) cambio pequeño y reversible.
+  - Limitación: el ciclo no llegó al gate (SSIM 0.909 < 0.92) y NO se verificó mejora con VLM. **El ciclo es válido pero incompleto** — quedan `EXTRA_COMPONENT / SIZE_MISMATCH / COLOR_MISMATCH` por atacar.
   - Siguiente ciclo sugerido: atacar `EXTRA_COMPONENT` (botón X en search bar — quitar el `clear-button` de `NMSearchInput` o filtrar el search).
