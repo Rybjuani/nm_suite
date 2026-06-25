@@ -35,7 +35,11 @@ from visual_auditor_v3 import (
     _load_cached,
     _looks_like_real_text_pair,
     _map_to_agent_route,
-    _mark_normalization_artifacts,
+    _cluster_root_cause,
+    _divergences_from,
+    _probable_module,
+    _next_action_for_agent,
+        _mark_normalization_artifacts,
     _ocr_image,
     _preprocess_for_ocr,
     _sha256_file,
@@ -1846,3 +1850,81 @@ def test_report_json_no_garbage_pair_product_actionable():
             f"PRODUCT_ACTIONABLE surface {pkg.get('surface_key', '')} "
             f"cites an illegible pair: {pair!r}"
         )
+
+
+# ---------------------------------------------------------------------------
+# V3 reorientation tests — actionable_evidence + routing + distribution
+# ---------------------------------------------------------------------------
+
+
+def test_actionable_evidence_present_on_all_surfaces():
+    """Every surface in latest/report.json must have actionable_evidence populated."""
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    for r in report:
+        pkg = r["agent_package"]
+        assert "actionable_evidence" in pkg, f"Missing actionable_evidence: {pkg.get('surface_key')}"
+        ae = pkg["actionable_evidence"]
+        assert "probable_root_cause" in ae
+        assert "probable_module" in ae
+        assert "next_action" in ae
+        assert "evidence_strength" in ae
+
+
+def test_actionable_evidence_module_heuristic():
+    """probable_module derived from surface_key correctly."""
+    assert _probable_module("suite:recuperar-acceso@light") == "suite.recuperar_acceso"
+    assert _probable_module("hub:detalle-plan-activacion@dark") == "hub.detalle_plan_activacion"
+    assert _probable_module("suite:home@light") == "suite.home"
+
+
+def test_cluster_root_cause_render_noise():
+    """RENDER_NOISE_OK + low changed_pixel → render_noise."""
+    cls = Classification(decision="RENDER_NOISE_OK", labels=["CHROME_MISMATCH"], explanation="")
+    metrics = Metrics(changed_pixel_ratio=0.01)
+    assert _cluster_root_cause(cls, [], metrics) == "render_noise"
+
+
+def test_render_noise_ok_routes_to_no_action():
+    """RENDER_NOISE_OK + SSIM >= 0.95 + no structural labels -> NO_ACTION."""
+    cls = Classification(decision="RENDER_NOISE_OK", labels=["CHROME_MISMATCH"], explanation="", confidence="high")
+    metrics = Metrics(ssim=0.98, changed_pixel_ratio=0.246, mean_abs_diff=2.0, bbox_largest_area_ratio=0.9, bbox_count=1)
+    bboxes = [BBoxInfo(label=0, geometry=(0,0,100,100), area=10000, area_ratio=0.9, normalization_artifact=False)]
+    ba = [{"mockup_ocr":"x","real_ocr":"x","fuzzy_ratio_worst":100,"fuzzy_ratio_worst_pair":["",""],"color_delta":0,"mockup_color":(0,0,0),"real_color":(0,0,0),"geometry":(0,0,100,100),"bbox_area_ratio":0.9}]
+    pairing = Pairing(surface_key="",app="",view="",theme="",mockup_path="",real_capture_path="x",diff_path="",overlay_path="")
+    res = _map_to_agent_route(cls, bboxes, ba, metrics, {}, False, False, pairing)
+    assert res[0] == "NO_ACTION_NEEDED_WITH_EVIDENCE", f"Got {res[0]}"
+
+
+def test_distribution_auditor_bucket_bounded():
+    """After reorientation, AUDITOR_IMPROVEMENT_ACTIONABLE <= 10 surfaces."""
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    n_auditor = sum(1 for r in report if r["agent_package"]["agent_route"] == "AUDITOR_IMPROVEMENT_ACTIONABLE")
+    assert n_auditor <= 10, f"AUDITOR bucket too large: {n_auditor}/86 (must be <=10)"
+
+
+def test_distribution_no_human_review():
+    """0 surfaces with requires_owner_review=True (V3 hard rule)."""
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    n_human = sum(1 for r in report if r["agent_package"].get("requires_owner_review", False))
+    assert n_human == 0, f"Found {n_human} surfaces with requires_owner_review=True"
+
+
+def test_batch_mode_help_lists_flags():
+    """--quiet, --resume, --log-file must be in --help output."""
+    import subprocess
+    result = subprocess.run(
+        [str(Path(".venv") / "Scripts" / "python.exe"), "qa/visual_auditor_v3.py", "analyze", "--help"],
+        capture_output=True, text=True, cwd=_PROJ,
+    )
+    assert "--quiet" in result.stdout
+    assert "--resume" in result.stdout
+    assert "--log-file" in result.stdout

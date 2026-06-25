@@ -19,6 +19,7 @@ Surface key canonical form: 'app:view@theme' (e.g. 'suite:avisos@light',
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import hashlib
 import json
 import os
@@ -169,6 +170,21 @@ class ColorEvidence:
 
 
 @dataclass
+class ActionableEvidence:
+    """Per-surface actionable payload emitted on every surface (no matter the
+    route). Consumed by agents — never by humans. Independent of
+    agent_route: a NO_ACTION_NEEDED surface still gets this so consumers
+    can audit why V3 concluded stability.
+    """
+    divergences: list[str] = field(default_factory=list)
+    probable_module: str = ""
+    probable_root_cause: str = ""  # render_noise | real_text_mismatch | ocr_garbage | color_theme_bleed | structural_component | unknown
+    real_visual_signals: list[str] = field(default_factory=list)
+    next_action: str = ""
+    evidence_strength: str = "weak"  # strong | medium | weak
+
+
+@dataclass
 class Classification:
     labels: list[str] = field(default_factory=list)
     severity: str = "needs_review"
@@ -224,6 +240,7 @@ class AgentPackage:
     product_action_allowed: bool = False
     qa_action_allowed: bool = False
     capture_action_allowed: bool = False
+    actionable_evidence: ActionableEvidence = field(default_factory=ActionableEvidence)
 
 
 # ---------------------------------------------------------------------------
@@ -710,6 +727,33 @@ def _map_to_agent_route(
     qa_action_allowed = False
     capture_action_allowed = False
 
+    # Case 0: Auditor internal decision is RENDER_NOISE_OK and nothing contradicts.
+    # SSIM near 1.0 IS the actionable evidence: visual content matches, pixel-level
+    # diffs are theme/chrome/scrollbar noise. changed_pixel_ratio is NOT used as
+    # a hard gate because a 25% diff at SSIM 0.9999 is still render noise.
+    if (
+        classification.decision == "RENDER_NOISE_OK"
+        and metrics.ssim >= 0.95
+        and "MISSING_COMPONENT" not in labels
+        and "EXTRA_COMPONENT" not in labels
+    ):
+        agent_route = "NO_ACTION_NEEDED_WITH_EVIDENCE"
+        agent_next_action = (
+            f"V3 verified visual stability. SSIM={metrics.ssim:.3f}, "
+            f"changed_pixel_ratio={metrics.changed_pixel_ratio:.4f}, "
+            f"largest_bbox_area_ratio={metrics.bbox_largest_area_ratio:.3f} "
+            f"(theme/chrome variance, not a bug)."
+        )
+        why_not_owner_review = (
+            "Auditor internal decision is RENDER_NOISE_OK with high SSIM and "
+            "no structural labels. No actionable product change."
+        )
+        return (
+            agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+            diagnostic_labels, product_action_allowed, qa_action_allowed,
+            capture_action_allowed,
+        )
+
     # Case 1: No bboxes at all → no signal
     if metrics.bbox_count == 0:
         agent_route = "NO_ACTION_NEEDED_WITH_EVIDENCE"
@@ -935,6 +979,39 @@ def _map_to_agent_route(
             capture_action_allowed,
         )
 
+    # Case 3c: Auditor saw a real signal but the OCR pair is partial/imprecise.
+    # The verdict is FIX_PRODUCT_REVIEW — there IS something to investigate.
+    # Routing it to AUDITOR is inoperancia; send to QA_TOOLING with a concrete
+    # next step: improve OCR preprocessing for this surface and rerun V3.
+    has_aggregate_real_pair = _has_real_text_pair(bbox_analyses) if bbox_analyses else False
+    if (
+        classification.decision == "FIX_PRODUCT_REVIEW"
+        and confidence in ("high", "medium")
+        and (has_real_text or has_color or has_structural or has_aggregate_real_pair)
+    ):
+        agent_route = "QA_TOOLING_ACTIONABLE"
+        diag_desc = (
+            ",".join(diagnostic_labels[:3])
+            if diagnostic_labels
+            else (classification.labels[0] if classification.labels else "unknown")
+        )
+        agent_next_action = (
+            f"Auditor flagged FIX_PRODUCT_REVIEW ({diag_desc}) with partial OCR evidence. "
+            f"Improve OCR preprocessing (upscale, contrast, sharpen crops) for this surface "
+            f"and rerun V3. If OCR still illegible after preprocessing, escalate to VLM."
+        )
+        qa_action_allowed = True
+        product_action_allowed = False
+        why_not_owner_review = (
+            "Auditor saw a real signal but OCR evidence is partial. QA tooling "
+            "should improve preprocessing and rerun before any product action."
+        )
+        return (
+            agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+            diagnostic_labels, product_action_allowed, qa_action_allowed,
+            capture_action_allowed,
+        )
+
     # Case 4: Weak text/color evidence → QA_TOOLING_ACTIONABLE
     if has_real_text and worst_fuzzy_real < 85 and confidence == "low":
         agent_route = "QA_TOOLING_ACTIONABLE"
@@ -1025,20 +1102,48 @@ def _map_to_agent_route(
             capture_action_allowed,
         )
 
-    # Case 8: Default fallback — never human, always auditor improvement
+    # Case 8: Real fallback — only when nothing else decided and the auditor
+    # itself has no opinion. Legacy NEEDS_HUMAN_REVIEW with no signals means
+    # the auditor's heuristic chain ended without a verdict; that IS an
+    # auditor improvement task, not a product bug.
+    if (
+        classification.decision == "NEEDS_HUMAN_REVIEW"
+        and not has_real_text
+        and not has_color
+        and not has_structural
+        and not classification.suspected_module
+        and metrics.changed_pixel_ratio >= 0.05
+    ):
+        agent_route = "AUDITOR_IMPROVEMENT_ACTIONABLE"
+        agent_next_action = (
+            f"V3 could not classify this surface into a confident route. "
+            f"Evidence: diagnostic_labels={diagnostic_labels}, "
+            f"confidence={confidence}, worst_fuzzy={worst_fuzzy_real}. "
+            f"Improve bbox extraction, OCR preprocessing, or add heuristic rules "
+            f"for this surface pattern."
+        )
+        qa_action_allowed = True
+        why_not_owner_review = (
+            "Unclear signal is an auditor limitation, not a human task. "
+            "The agent should improve V3 heuristics or tooling for this surface type."
+        )
+        return (
+            agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+            diagnostic_labels, product_action_allowed, qa_action_allowed,
+            capture_action_allowed,
+        )
+
+    # Case 9: Fallback when verdict was decided but routing missed all
+    # branches. Should be rare. Points the agent at the routing gap.
     agent_route = "AUDITOR_IMPROVEMENT_ACTIONABLE"
     agent_next_action = (
-        f"V3 could not classify this surface into a confident route. "
-        f"Evidence: diagnostic_labels={diagnostic_labels}, "
-        f"confidence={confidence}, worst_fuzzy={worst_fuzzy_real}. "
-        f"Improve bbox extraction, OCR preprocessing, or add heuristic rules "
-        f"for this surface pattern."
+        f"V3 routed a {classification.decision} surface but matched no branch. "
+        f"diagnostic_labels={diagnostic_labels}, has_real_text={has_real_text}, "
+        f"has_color={has_color}, has_structural={has_structural}. "
+        f"Add a routing rule for this pattern or improve the upstream classifier."
     )
     qa_action_allowed = True
-    why_not_owner_review = (
-        "Unclear signal is an auditor limitation, not a human task. "
-        "The agent should improve V3 heuristics or tooling for this surface type."
-    )
+    why_not_owner_review = "Routing gap. Improve V3 routing rules."
     return (
         agent_route, agent_next_action, evidence_quality, why_not_owner_review,
         diagnostic_labels, product_action_allowed, qa_action_allowed,
@@ -1107,6 +1212,91 @@ def _build_product_action(
         "Investigate the suspected module. Evidence suggests visual differences "
         "in the captured region. Confirm locally before changing product."
     )
+
+
+def _cluster_root_cause(classification: Classification, bbox_analyses: list[dict], metrics: Metrics) -> str:
+    """Cluster visual evidence into a small fixed vocabulary of root causes.
+    Independent of agent_route.
+    """
+    labels = classification.labels or []
+    explanation = classification.explanation or ""
+    has_text_signal = "TEXT_MISMATCH" in labels or "text_mismatch=True" in explanation
+    has_color_signal = "COLOR_MISMATCH" in labels or "color_mismatch=True" in explanation
+    has_structural = (
+        "MISSING_COMPONENT" in labels
+        or "EXTRA_COMPONENT" in labels
+        or "missing=True" in explanation
+        or "extra=True" in explanation
+    )
+    real_text = _has_real_text_pair(bbox_analyses) if bbox_analyses else False
+
+    if classification.decision == "RENDER_NOISE_OK" and metrics.changed_pixel_ratio < 0.05:
+        return "render_noise"
+    if has_text_signal and real_text:
+        return "real_text_mismatch"
+    if has_text_signal and not real_text:
+        return "ocr_garbage"
+    if has_color_signal and not has_text_signal:
+        return "color_theme_bleed"
+    if has_structural:
+        return "structural_component"
+    return "unknown"
+
+
+def _divergences_from(bbox_analyses: list[dict], limit: int = 3) -> list[str]:
+    """Top divergences from bbox analyses, sorted by worst fuzzy."""
+    if not bbox_analyses:
+        return []
+    sorted_bas = sorted(bbox_analyses, key=lambda a: a.get("fuzzy_ratio_worst", 100) if a else 100)
+    out: list[str] = []
+    for a in sorted_bas[:limit]:
+        if not a:
+            continue
+        pair = a.get("fuzzy_ratio_worst_pair") or ["", ""]
+        if pair and len(pair) == 2 and pair[0] and pair[1] and pair[0] != pair[1]:
+            out.append(f"text: '{pair[0]}' vs '{pair[1]}' (fuzzy={a.get('fuzzy_ratio_worst', 0):.0f})")
+        color_delta = a.get("color_delta", 0) or 0
+        if color_delta > 30:
+            geom = a.get("geometry", (0, 0, 0, 0))
+            out.append(f"color delta={color_delta:.0f} at bbox {geom}")
+    return out
+
+
+def _probable_module(surface_key: str) -> str:
+    """Heuristic: derive probable module from surface_key.
+
+    Examples:
+        'suite:recuperar-acceso@light' -> 'suite.recuperar_acceso'
+        'hub:detalle-plan-activacion@dark' -> 'hub.detalle_plan_activacion'
+    """
+    if not surface_key or ":" not in surface_key:
+        return surface_key or "unknown"
+    app = surface_key.split(":")[0]
+    rest = surface_key.split(":", 1)[1]
+    view = rest.split("@")[0]
+    return f"{app}.{view.replace('-', '_')}"
+
+
+def _next_action_for_agent(route: str, root_cause: str, divergences: list[str], module: str) -> str:
+    """Concrete agent-facing next action for the given cluster."""
+    if route == "NO_ACTION_NEEDED_WITH_EVIDENCE" or root_cause == "render_noise":
+        return "No action. V3 verified visual stability (theme/chrome variance only)."
+    if root_cause == "real_text_mismatch":
+        first = divergences[0] if divergences else "text mismatch"
+        return (
+            f"Investigate {module}. Evidence: {first}. "
+            "Likely font metrics, padding, or truncation. Confirm locally before changing product."
+        )
+    if root_cause == "ocr_garbage":
+        return (
+            f"Improve OCR preprocessing for {module} (upscale, contrast, sharpen crops). "
+            "Current OCR is illegible; rerun V3 after fix or escalate to VLM."
+        )
+    if root_cause == "color_theme_bleed":
+        return f"Inspect QSS/palette for {module}. Verify theme switching does not leak between surfaces."
+    if root_cause == "structural_component":
+        return f"Inspect {module} for missing/extra component. Compare against mockup reference."
+    return "V3 could not classify this surface. Improve bbox extraction or add a heuristic rule for this surface pattern."
 
 
 def _is_ocr_noise(text: str) -> bool:
@@ -1788,6 +1978,38 @@ def _build_agent_package(
         pkg.normalization_warning = (
             f"review_required=true: {manifest_entry.get('review_reason', '')}"
         )
+
+    # Actionable evidence — concrete per-surface payload for downstream agents.
+    root_cause = _cluster_root_cause(classification, bbox_analyses, metrics)
+    divergences = _divergences_from(bbox_analyses)
+    module = _probable_module(surface_key)
+    base_action = _next_action_for_agent(agent_route, root_cause, divergences, module)
+    if agent_route == "QA_TOOLING_ACTIONABLE" and root_cause == "real_text_mismatch":
+        next_act = (
+            f"Tooling step: improve OCR preprocessing for {module} "
+            "(upscale, contrast, sharpen crops) and rerun V3 before any "
+            f"product investigation. If OCR still illegible, escalate to VLM. "
+            f"Underlying signal: {base_action}"
+        )
+    else:
+        next_act = base_action
+    real_signals: list[str] = []
+    for ba in bbox_analyses[:3]:
+        if not ba:
+            continue
+        geom = ba.get("geometry", (0, 0, 0, 0))
+        real_signals.append(
+            f"bbox@{geom} fuzzy={ba.get('fuzzy_ratio_worst', 100):.0f} "
+            f"color_delta={ba.get('color_delta', 0):.0f}"
+        )
+    pkg.actionable_evidence = ActionableEvidence(
+        divergences=divergences,
+        probable_module=module,
+        probable_root_cause=root_cause,
+        real_visual_signals=real_signals,
+        next_action=next_act,
+        evidence_strength=evidence_quality,
+    )
 
     return pkg
 
@@ -2666,6 +2888,9 @@ def main() -> int:
     analyze_parser = sub.add_parser("analyze", help="Analyze surfaces")
     analyze_parser.add_argument("--all", action="store_true", help="Analyze all surfaces")
     analyze_parser.add_argument("--surface", type=str, help="Analyze one surface")
+    analyze_parser.add_argument("--quiet", action="store_true", help="Suppress per-surface stdout; only summary at end.")
+    analyze_parser.add_argument("--resume", action="store_true", help="Skip surfaces already in .hermes/qa_progress.json.")
+    analyze_parser.add_argument("--log-file", type=Path, default=None, help="Append per-surface status to this file.")
 
     sub.add_parser("queue", help="Generate prioritized queue")
     sub.add_parser("clear-cache", help="Clear OCR cache")
@@ -2723,10 +2948,67 @@ def main() -> int:
 
         results: list[dict] = []
 
-        for pairing in pairings:
-            print(f"Analyzing {pairing.surface_key}...")
-            result = analyze_surface(pairing, _OUT_DIR, manifest_lookup)
-            results.append(result)
+        # --- Batch mode setup: progress + log + quiet ---
+        progress_path = Path(".hermes") / "qa_progress.json"
+        done: set[str] = set()
+        if args.resume and progress_path.exists():
+            try:
+                done = set(json.loads(progress_path.read_text(encoding="utf-8")).get("done", []))
+            except Exception:
+                done = set()
+
+        log_fp = None
+        if args.log_file:
+            args.log_file.parent.mkdir(parents=True, exist_ok=True)
+            log_fp = open(args.log_file, "a", encoding="utf-8")
+
+        if log_fp:
+            log_fp.write(
+                f"[{datetime.now().isoformat()}] === analyze started (quiet={args.quiet}, resume={args.resume}) ===\n"
+            )
+            log_fp.flush()
+
+        def _emit(msg: str) -> None:
+            if not args.quiet:
+                print(msg)
+            if log_fp:
+                log_fp.write(f"[{datetime.now().isoformat()}] {msg}\n")
+                log_fp.flush()
+
+        surfaces_to_analyze = [p.surface_key for p in pairings]
+
+        try:
+            for pairing in pairings:
+                surface_key = pairing.surface_key
+                if args.resume and surface_key in done:
+                    _emit(f"[skip] {surface_key} (already done)")
+                    continue
+                _emit(f"Analyzing {surface_key}...")
+                try:
+                    result = analyze_surface(pairing, _OUT_DIR, manifest_lookup)
+                    results.append(result)
+                    if args.resume:
+                        done.add(surface_key)
+                        progress_path.parent.mkdir(parents=True, exist_ok=True)
+                        progress_path.write_text(
+                            json.dumps({"done": sorted(done), "updated_at": datetime.now().isoformat() + "Z"}, indent=2),
+                            encoding="utf-8",
+                        )
+                    _emit(f"[OK] {surface_key}")
+                except Exception as e:
+                    _emit(f"[FAIL] {surface_key}: {e}")
+                    if not args.resume:
+                        raise
+                    continue
+        finally:
+            if log_fp:
+                log_fp.write(
+                    f"[{datetime.now().isoformat()}] === analyze finished ({len(results)}/{len(surfaces_to_analyze)} completed) ===\n"
+                )
+                log_fp.flush()
+                log_fp.close()
+
+        print(f"=== analyze --all done: {len(results)}/{len(surfaces_to_analyze)} surfaces processed ===")
 
         # Save report
         report_path = _OUT_DIR / "report.json"
