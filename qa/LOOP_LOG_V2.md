@@ -52,11 +52,34 @@ Análisis independiente con `execute_code` + PIL sobre `metrics.json`:
 
 **STOP reportado al owner con este LOOP_LOG_V2.md como evidencia.** No se tocó producto en este turno. No se cometió fix ciego.
 
-Pendientes (no es PASS visual global):
+### Intento 2: cablear VLM backend (turno 2 de la sesión, owner pidió "instala lo necesario")
 
-- Configurar `NM_VLM_BACKEND` para activar V2 con visión real (opciones: `z-ai-web-dev-sdk` con `VisionClient` — único backend cableado en `qa/visual_auditor_v2.py:541`; o extender V2 con backend Gemini CLI / MiniMax-vision si están disponibles).
-- Con VLM activo, regenerar `qa/_visual_auditor_v2/latest/{report.json,queue.md,index.html}` y entrar al loop 1-discrepancia-por-ciclo sobre la queue real.
-- Sin VLM, alternativa `B` aceptable: 1 ciclo blind por sesión con leyenda explícita `blind attempt, unverified` en el commit, midiendo solo MAD/SSIM, pero solo después de confirmación explícita del owner.
+- **Instalado**: `zai-sdk` 0.2.3 en `.venv/` (paquete PyPI oficial de Z.AI; el nombre `z_ai_web_dev_sdk` que importa `qa/visual_auditor_v2.py:541` **no existe en PyPI** — el path GLM-4V del código está roto de origen).
+- **Probé la key GLM-4V que pasó el owner**:
+  - Auth OK (`zai.ZaiClient` instancia sin error).
+  - Modelos testeados: `glm-4v`, `glm-4v-plus-0111`, `glm-4v-flash`, `glm-4.6v`, `glm-4.6v-flash`, `glm-4.5v`, `glm-4.5v-flash`.
+  - **Único que responde contenido**: `glm-4.6v-flash` (devuelve `content=''` con reasoning de 299 tokens — el modelo gasta todo el budget en pensar).
+  - Resto: 429 `code:1113 Insufficient balance or no resource package`.
+  - **Diagnóstico final**: la key autentica pero **no tiene saldo/paquete de vision**. No es error de integración, es saldo.
+- **Probé Gemini CLI OAuth (gemini-3.1-pro-preview, gemini-3.5-flash)**:
+  - Texto plano: funciona (`gemini-3.5-flash -p "OK"` responde OK).
+  - **Con imagen adjunta**: el CLI routea internamente a `generativelanguage.googleapis.com` (free tier API-key) y devuelve 429 `Quota exceeded for metric: ... free_tier_requests, limit: 0`. El OAuth Advanced **no se está usando para vision** — bug o limitación del CLI actual.
+- **No modifiqué `qa/visual_auditor_v2.py`** — el cambio mínimo habría sido agregar `_call_vlm_gemini_cli` que envuelva `subprocess.run(['gemini.cmd', ...])`, pero al estar el endpoint de visión bloqueado por cuota en todos los backends probados, no tiene sentido cablear algo que no va a funcionar.
+
+### Estado consolidado al cierre del turno 2
+
+- `zai-sdk` instalado en `.venv/` (listo para cuando haya saldo o key con paquete de vision).
+- `qa/visual_auditor_v2.py` **NO modificado** (no introduje código que no se pueda probar).
+- `GLM_API_KEY` queda en memoria operativa para uso futuro cuando se recargue saldo.
+- No se tocó producto en esta sesión (0 fixes).
+- 1 commit previo: `c1f84ba docs(qa): LOOP_LOG_V2 initial blocker report`.
+
+Pendientes para próximas sesiones (no es PASS visual global):
+
+- **Recargar saldo / comprar paquete vision en Z.AI** para que la key GLM-4V (provista por owner en este turno) pueda usarse para `glm-4.6v-flash`.
+- **O** habilitar vision en otro backend (Gemini Advanced con imagen vía CLI/mcp, MiniMax vision, etc.).
+- Con VLM funcional, **recién entonces** cablear `_call_vlm_gemini_cli` (o `_call_vlm_zai_sdk`) en `qa/visual_auditor_v2.py` y regenerar la queue.
+- Hasta entonces, el loop 1-discrepancia-por-ciclo sigue bloqueado en pre-loop.
 
 ## Ciclos
 
