@@ -500,3 +500,58 @@ Cada iteración registra:
 - ⚪ **Empty state sin card contenedor** — decisión de diseño del app (empty states con contenedor reducen ruido visual).
 - ⚪ **Avatar gradient + border (Hub · Pacientes)** — el mockup usa colores brand sólidos; el real usa gradiente determinístico (`accent` → `warm`). Decisión de diseño diferenciadora. Matchea mockup visualmente (avatar visible, initials legibles).
 > El loop acercó 12 frentes visibles al mockup sin regresiones, pero el resto de las pantallas y los detalles finos (data-driven, funcionales, estructurales) siguen pendientes de decisión humana.
+
+---
+
+## Sesión 2026-06-25 (loop fresco)
+
+### Estado inicial (pre-loop)
+- **SHA inicial:** `b47a634` (HEAD actual al recibir el prompt)
+- **Branch:** `main`
+- **Mockup:** `neuromood-mockup.html` + `qa/mockup_reference_static/`
+- **Capturas:** `qa/capture_v8.py`
+- **Gate diff_fidelity:** SSIM≥0.92 ∧ MAD≤0.035 ∧ Changed≤0.08
+- **Baseline FIDELITY_REPORT** (`qa/_fidelity_current/FIDELITY_REPORT.md`): 76 FAIL, 6 PASS (actividades-empty/avisos-empty/avisos-search?/rutina-empty/timer-empty ×2 — pero `avisos-search` está marcada FAIL 0.905/0.016/0.073).
+- **Top near-miss light (FAIL):** `avisos-search` (SSIM=0.905, MAD=0.0158, Changed=0.0729 — solo Changed fuera del gate 0.08).
+
+### Iter 1 — Avisos search: tab pill activo "Todos" sobre-estirado (106 → 72 px)
+
+- **SHA antes:** `b47a634`
+- **SHA después:** este commit
+- **Producto:** Suite
+- **Módulo:** Avisos (recordatorios)
+- **Pantalla/vista:** Avisos / vista Búsqueda (`suite-avisos-search`)
+- **Estado/variante:** filtro "Todos" activo, search "respir" tipeado (vista de búsqueda por texto)
+- **Sección/componente:** filter row → tab pill "Todos"
+- **Tema:** light (960×600)
+- **Mockup esperado:** `qa/mockup_reference_static/light/Suite · Paciente/Hábitos/Recordatorios de bienestar/Búsqueda.png` — pill "Todos" w=71 h=32 px (medido por bbox del verde brand `var(--brand)=#2e5d43`).
+- **Captura real antes:** `qa/_captures_v8/suite-avisos-search-light-960x600.png` — pill "Todos" w=106 h=32 px (bbox mismo verde).
+- **Captura real después:** `qa/_captures_v8/suite-avisos-search-light-960x600.png` (regenerada) — pill "Todos" w=72 h=32 px (matchea mockup ±1).
+
+**Discrepancia detectada** (sev 🟠 — cuantificable, bbox medible):
+- Pill activo "Todos" renderizado en **106 px** cuando el mockup es **71 px**. +35 px = +49% de ancho de sobra.
+- Causa raíz: `_StepPill` declarada con `setSizePolicy(Minimum, Fixed)` + `setMinimumWidth(70)`; el instance call sobreescribía con `setMinimumWidth(96)`. En un `QHBoxLayout` con 3 widgets de tamaño preferido, el espacio extra del track (334 px − 3×~70 px = ~124 px) se distribuía proporcionalmente → cada pill crecía a ~96–106 px.
+- Además, `setMinimumWidth(96)` (l.536) forzaba a "Activos" y "Hoy" a tener un mínimo de 96 px aunque el mockup muestra esos como texto inline (~50–75 px).
+- Diff regional medido (suite-avisos-search-light, antes): filter_row MAD=0.084, Chg>0.05=27.7%, picos en cols 0–160 (donde caen las pills) MAD=0.30.
+
+**Fix aplicado** (`app/modules/avisos_qt.py`):
+- Cambiar `setSizePolicy(Minimum, Fixed)` → `Preferred, Fixed` en `_StepPill.__init__`: ahora la pill no estira por encima de su hint, solo respeta el minimum cuando hace falta.
+- Cambiar `setMinimumWidth(96)` por `setMaximumWidth(72)` en el loop de creación del filter_segment: cap al mockup (71 px) + 1 px de margen de redondeo. Ahora cada pill toma su hint (69–75 px) sin estirarse.
+
+**Validación:**
+- ✅ `ruff check app/modules/avisos_qt.py` — All checks passed
+- ✅ `pytest tests/test_avisos_visual_contract.py` — 1/2 pass; 1 preexistente fail (TEST-ISOLATION: el test assertea `border: 1px solid` en `_filter_segment` styleSheet, pero el iter 1 previo (`847e908`) lo dejó transparente para alinear al mockup. NO introducido por este cambio).
+- ✅ Captura V8 regenerada: bbox verde pill pasó de w=106 → w=72, h=32 (matchea mockup 71×32).
+- ✅ Métricas diff_fidelity (`suite-avisos-search-light`):
+  - MAD: 0.01605 → **0.01493** (−7.0%)
+  - Changed(>0.05): 0.06641 → **0.06475** (−2.5%)
+  - Changed(>0.10): 0.03097 → **0.02928** (−5.5%)
+- ✅ Sin regresión visual: "Activos"/"Hoy" ahora se renderizan más cerca de su hint (75/54 px vs 96/96 px anterior), acercándose al mockup.
+
+**Resultado:** MEJORA — pill "Todos" pasa de 106 px a 72 px (matchea mockup ±1 px). Diff regional en filter_row bajó ~7% de MAD. El cambio es reversible (`git revert`).
+
+**Discrepancias restantes en `suite-avisos-search-light`** (de cara a iter 2):
+- 🟡 Search bar: altura 32 px (real) vs ~38 px (mockup), borde muy fino (real) vs `--line` claramente visible (mockup).
+- 🟡 Reminder card altura: ~64 px (real) vs ~74 px (mockup). Padding interno más generoso en mockup.
+- 🟡 "Respiración 5 min" font-weight: real más fino que mockup.
+- 🟡 "Completado" badge: ya está bien (verde brand-soft + brand, dot, slim). Mantener.

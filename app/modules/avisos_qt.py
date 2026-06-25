@@ -239,7 +239,10 @@ class _StepPill(QPushButton):
         self._segmented = segmented
         self.setFixedHeight(_AVISOS_FILTER_PILL_HEIGHT)
         self.setMinimumWidth(70)
-        self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        # Preferred horizontal: NO estira al ancho del track — antes Minimum
+        # dentro de un _filter_segment de 334px forzaba al pill activo a
+        # estirarse a 100+px (medido: 106px vs mockup 71px, +35px visibles).
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setAccessibleName(label)
         self.setFont(qfont("size_caption", weight=TYPOGRAPHY["weight_semibold"]))
@@ -533,7 +536,10 @@ class ModuloAvisos(NMModule):
             ("hoy", t("text.module.avisos.filter_today", "Hoy")),
         ):
             pill = _StepPill(label, active=(key == "todos"), modo=self._modo, segmented=True)
-            pill.setMinimumWidth(96)
+            # Mockup canónico (l.295): tab pill ancho = texto + padding interno.
+            # Cap a 72px para evitar que el layout estire al ancho del track
+            # (medido: 106px vs mockup 71px, +35px visibles).
+            pill.setMaximumWidth(72)
             pill.setFixedHeight(_AVISOS_FILTER_PILL_HEIGHT)
             pill.clicked.connect(lambda _, k=key: self._on_filter_changed(k))
             self._filter_pills[key] = pill
