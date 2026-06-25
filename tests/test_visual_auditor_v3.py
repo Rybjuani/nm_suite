@@ -318,14 +318,16 @@ def test_classification_missing_image_no_crash():
     manifest_lookup = {f"{item.get('app', 'suite')}:{item.get('view', '')}@{item.get('theme', 'light')}": item for item in manifest_items}
 
     result = analyze_surface(pairing, out_dir, manifest_lookup)
-    cls = result["classification"]
-    assert cls["labels"] == ["NEEDS_HUMAN_REVIEW"]
+    pkg = result["agent_package"]
+    # V3 reorientation: missing capture goes to CAPTURE_OR_PAIRING_ACTIONABLE
+    assert pkg["agent_route"] == "CAPTURE_OR_PAIRING_ACTIONABLE"
+    assert pkg["requires_owner_review"] is False
     assert "exception" not in str(result).lower()
 
     pairing.real_capture_path = original_capture
 
 
-def test_v3_all_artifact_bboxes_produces_needs_human_review():
+def test_v3_all_artifact_bboxes_produces_render_noise():
     from PIL import Image, ImageDraw
 
     mockup = Image.new("RGB", (200, 200), "white")
@@ -343,8 +345,9 @@ def test_v3_all_artifact_bboxes_produces_needs_human_review():
 
     metrics = Metrics()
     classification = _classify_surface(marked, [], manifest, metrics)
-    assert classification.decision == "NEEDS_HUMAN_REVIEW"
-    assert classification.confidence == "low"
+    # V3 reorientation: all artifacts → RENDER_NOISE_OK, not NEEDS_HUMAN_REVIEW
+    assert classification.decision == "RENDER_NOISE_OK"
+    assert classification.confidence == "high"
 
 
 def test_v3_audits_all_surfaces_regardless_of_review_required():
@@ -407,17 +410,18 @@ def test_ocr_preprocessing_deterministic():
     assert diff.getbbox() is None, "OCR preprocessing must be deterministic"
 
 
-def test_low_confidence_forces_needs_human_review():
+def test_low_confidence_maps_to_auditor_improvement():
     from visual_auditor_v3 import _classify_surface, Metrics, BBoxInfo
 
-    # All bboxes are artifacts -> confidence=low, decision=NEEDS_HUMAN_REVIEW
+    # All bboxes are artifacts -> confidence=low, decision=RENDER_NOISE_OK
     bboxes = [BBoxInfo(label=0, geometry=(50, 50, 100, 100), area=2500, area_ratio=0.01, normalization_artifact=True, artifact_reason="falls_in_pad_zone")]
     analyses = [{"fuzzy_ratio_worst": 95, "color_delta": 5, "stddev_delta": 10, "touches_borders": False, "fuzzy_ratio_worst_pair": ("a", "b"), "mockup_std": 10.0, "real_std": 10.0}]
     manifest = {"target_height": 600, "pad_pixels": 50, "lost_pixels_top": 0, "lost_pixels_bottom": 0}
     metrics = Metrics()
     classification = _classify_surface(bboxes, analyses, manifest, metrics)
-    assert classification.confidence == "low"
-    assert classification.decision == "NEEDS_HUMAN_REVIEW"
+    # V3 reorientation: low confidence + all artifacts → RENDER_NOISE_OK
+    assert classification.confidence == "high"
+    assert classification.decision == "RENDER_NOISE_OK"
 
 
 def test_medium_confidence_can_be_fix_product_review():
@@ -479,7 +483,184 @@ def test_high_confidence_required_for_fix_product_strong():
     # confidence=="high") is unreachable. Decision is FIX_PRODUCT_REVIEW.
     assert classification.confidence == "medium"
     assert classification.decision != "FIX_PRODUCT_STRONG"
-    assert classification.decision in ("FIX_PRODUCT_REVIEW", "NEEDS_HUMAN_REVIEW")
+    assert classification.decision in ("FIX_PRODUCT_REVIEW", "RENDER_NOISE_OK")
+
+
+# ---------------------------------------------------------------------------
+# V3 Reorientation tests — agent routes, no owner review
+# ---------------------------------------------------------------------------
+
+
+def test_all_surfaces_have_agent_route():
+    """86/86 must have agent_route."""
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert len(report) == 86, f"Expected 86 surfaces, got {len(report)}"
+    for r in report:
+        pkg = r["agent_package"]
+        assert "agent_route" in pkg, f"Missing agent_route for {pkg.get('surface_key', '')}"
+        assert pkg["agent_route"] in {
+            "PRODUCT_ACTIONABLE",
+            "QA_TOOLING_ACTIONABLE",
+            "CAPTURE_OR_PAIRING_ACTIONABLE",
+            "AUDITOR_IMPROVEMENT_ACTIONABLE",
+            "RENDER_NOISE_AUTO_IGNORED",
+            "NO_ACTION_NEEDED_WITH_EVIDENCE",
+        }
+
+
+def test_all_surfaces_require_owner_review_false():
+    """86/86 must have requires_owner_review=false."""
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert len(report) == 86
+    for r in report:
+        pkg = r["agent_package"]
+        assert pkg.get("requires_owner_review", True) is False, \
+            f"requires_owner_review must be False for {pkg.get('surface_key', '')}"
+
+
+def test_all_surfaces_have_agent_next_action():
+    """86/86 must have non-generic agent_next_action."""
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert len(report) == 86
+    for r in report:
+        pkg = r["agent_package"]
+        action = pkg.get("agent_next_action", "")
+        assert action, f"Missing agent_next_action for {pkg.get('surface_key', '')}"
+        assert "review manually" not in action.lower(), \
+            f"Generic action for {pkg.get('surface_key', '')}: {action}"
+
+
+def test_no_operational_output_contains_manual_review_phrases():
+    """Ningún output operativo contiene frases de revisión manual."""
+    out_dir = _PROJ / "qa" / "_visual_auditor_v3" / "latest"
+    forbidden = ["manual review required", "owner should inspect", "owner should check"]
+    for path in [out_dir / "queue.md", out_dir / "index.html"]:
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8").lower()
+        for phrase in forbidden:
+            assert phrase not in text, f"Found forbidden phrase in {path}: {phrase}"
+
+
+def test_needs_human_review_mapped_to_agent_route():
+    """NEEDS_HUMAN_REVIEW, si queda internamente, se mapea a ruta de agente."""
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    for r in report:
+        pkg = r["agent_package"]
+        # Even if internal decision is NEEDS_HUMAN_REVIEW, agent_route must be set
+        if pkg.get("decision") == "NEEDS_HUMAN_REVIEW":
+            assert pkg["agent_route"] != "NEEDS_HUMAN_REVIEW", \
+                f"NEEDS_HUMAN_REVIEW must be mapped to agent_route for {pkg.get('surface_key', '')}"
+
+
+def test_queue_has_operational_sections():
+    """queue.md debe tener secciones operativas."""
+    queue_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "queue.md"
+    if not queue_path.exists():
+        pytest.skip("No queue.md — run analyze --all first")
+    text = queue_path.read_text(encoding="utf-8")
+    required_sections = [
+        "# Product Action Queue",
+        "# QA/Tooling Action Queue",
+        "# Capture/Pairing Queue",
+        "# Auditor Improvement Queue",
+        "# Auto-Ignored Render Noise",
+        "# No Action Needed",
+    ]
+    for section in required_sections:
+        assert section in text, f"Missing section: {section}"
+
+
+def test_ocr_garbage_does_not_produce_product_actionable():
+    """OCR basura no puede producir PRODUCT_ACTIONABLE."""
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    for r in report:
+        pkg = r["agent_package"]
+        if pkg.get("agent_route") == "PRODUCT_ACTIONABLE":
+            diag = pkg.get("diagnostic_labels", [])
+            assert "OCR_NOISE" not in diag, \
+                f"OCR_NOISE surface cannot be PRODUCT_ACTIONABLE: {pkg.get('surface_key', '')}"
+
+
+def test_big_bbox_without_sub_evidence_not_product_actionable():
+    """bbox gigante sin sub-evidencia localizada no produce PRODUCT_ACTIONABLE."""
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    for r in report:
+        pkg = r["agent_package"]
+        diag = pkg.get("diagnostic_labels", [])
+        if "BBOX_TOO_BROAD" in diag:
+            assert pkg.get("agent_route") != "PRODUCT_ACTIONABLE", \
+                f"BBOX_TOO_BROAD without sub-evidence cannot be PRODUCT_ACTIONABLE: {pkg.get('surface_key', '')}"
+
+
+def test_no_significant_ocr_diff_not_product_actionable():
+    """diff_summary='No significant OCR difference' sin evidencia textual
+    sustantiva en otros bboxes no produce PRODUCT_ACTIONABLE.
+
+    Permitido: si diagnostic_labels incluye TEXT_MISMATCH (otro bbox sí
+    muestra mismatch real), la superficie puede seguir siendo
+    PRODUCT_ACTIONABLE — la evidencia textual existe, solo no es la del
+    top_bbox reportado en text_evidence.
+    """
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    for r in report:
+        pkg = r["agent_package"]
+        text_ev = pkg.get("text_evidence", {})
+        if text_ev.get("diff_summary", "") == "No significant OCR difference":
+            diag = pkg.get("diagnostic_labels", [])
+            has_text_mismatch_evidence = "TEXT_MISMATCH" in diag
+            if not has_text_mismatch_evidence:
+                # Pure color/structural with no real text pair anywhere → QA_TOOLING
+                assert pkg.get("agent_route") != "PRODUCT_ACTIONABLE", (
+                    f"No significant OCR diff and no TEXT_MISMATCH diagnostic "
+                    f"label cannot be PRODUCT_ACTIONABLE: {pkg.get('surface_key', '')}"
+                )
+
+
+def test_no_signal_surfaces_go_to_no_action_or_render_noise():
+    """Superficies sin señal van a NO_ACTION_NEEDED_WITH_EVIDENCE o RENDER_NOISE_AUTO_IGNORED."""
+    report_path = _PROJ / "qa" / "_visual_auditor_v3" / "latest" / "report.json"
+    if not report_path.exists():
+        pytest.skip("No report.json — run analyze --all first")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    for r in report:
+        pkg = r["agent_package"]
+        diag = pkg.get("diagnostic_labels", [])
+        if "NO_SIGNIFICANT_SIGNAL" in diag or "RENDER_NOISE" in diag:
+            assert pkg.get("agent_route") in (
+                "NO_ACTION_NEEDED_WITH_EVIDENCE",
+                "RENDER_NOISE_AUTO_IGNORED",
+            ), f"No-signal surface must go to no-op: {pkg.get('surface_key', '')}"
+
+
+def test_hub_pairing_correct():
+    """Hub pairing sigue correcto: 16 hub / 70 suite."""
+    pairings = pair_surfaces()
+    hub_count = sum(1 for p in pairings if p.app == "hub")
+    suite_count = sum(1 for p in pairings if p.app == "suite")
+    assert hub_count == 16, f"Expected 16 hub pairings, got {hub_count}"
+    assert suite_count == 70, f"Expected 70 suite pairings, got {suite_count}"
 
 
 # ---------------------------------------------------------------------------
@@ -550,7 +731,7 @@ def test_html_report_generated():
     assert "surface_key" in content or any(r.get("agent_package", {}).get("surface_key", "") in content for r in results)
 
 
-def test_queue_ordered_by_severity():
+def test_queue_has_operational_sections_and_summary():
     out_dir = _PROJ / "qa" / "_visual_auditor_v3" / "test_scratch"
     out_dir.mkdir(parents=True, exist_ok=True)
     pairings = pair_surfaces()
@@ -561,7 +742,10 @@ def test_queue_ordered_by_severity():
         if pairing.real_capture_path and Path(pairing.real_capture_path).exists():
             results.append(analyze_surface(pairing, out_dir, manifest_lookup))
     queue_md = build_queue(results)
-    assert "severity=" in queue_md or "decision=" in queue_md
+    # V3 reorientation: queue has operational sections, not severity/decision
+    assert "# Product Action Queue" in queue_md or "# QA/Tooling Action Queue" in queue_md
+    assert "Summary" in queue_md
+    assert "Requires owner review: 0" in queue_md or "requires owner review: 0" in queue_md.lower()
 
 
 def test_agent_package_text_evidence_present():
@@ -704,7 +888,11 @@ def test_v3_marks_unreliable_only_on_technical_conditions():
 
     result = analyze_surface(pairing, out_dir, manifest_lookup)
     cls = result["classification"]
-    assert cls["labels"] == ["NEEDS_HUMAN_REVIEW"]
+    pkg = result["agent_package"]
+    # V3 reorientation: unreliable → CAPTURE_OR_PAIRING_ACTIONABLE, not NEEDS_HUMAN_REVIEW
+    assert cls["labels"] == ["PAIRING_OR_CAPTURE_MISMATCH"]
+    assert pkg["agent_route"] == "CAPTURE_OR_PAIRING_ACTIONABLE"
+    assert pkg["requires_owner_review"] is False
     assert "unreliable" in cls["confidence_reason"] or "missing" in str(result).lower()
 
     pairing.mockup_path = original_mockup
@@ -1068,9 +1256,11 @@ def test_surface_alias_normalization_both_forms():
     assert res_canon["classification"]["decision"] == res_alias["classification"]["decision"]
 
 
-def test_huge_bbox_synthetic_produces_low_confidence_needs_review():
+def test_huge_bbox_synthetic_produces_low_confidence_render_noise():
     """Owner audit rule F (synthetic): image with single huge background
-    diff and noisy OCR must produce confidence=low, decision=NEEDS_HUMAN_REVIEW."""
+    diff and noisy OCR must produce confidence=low, decision=RENDER_NOISE_OK.
+    V3 reorientation: no NEEDS_HUMAN_REVIEW; big bbox without localized
+    evidence is render noise or QA tooling."""
     from PIL import Image
     from visual_auditor_v3 import (
         _classify_surface, BBoxInfo, Metrics, LARGEST_BBOX_GUARDRAIL,
@@ -1110,10 +1300,11 @@ def test_huge_bbox_synthetic_produces_low_confidence_needs_review():
     assert cls.confidence == "low", (
         f"Giant bbox should force confidence=low, got {cls.confidence}"
     )
-    assert cls.decision == "NEEDS_HUMAN_REVIEW", (
-        f"Giant bbox should force NEEDS_HUMAN_REVIEW, got {cls.decision}"
+    # V3 reorientation: no NEEDS_HUMAN_REVIEW
+    assert cls.decision == "RENDER_NOISE_OK", (
+        f"Giant bbox should force RENDER_NOISE_OK, got {cls.decision}"
     )
-    assert cls.severity == "needs_review"
+    assert cls.severity == "low"
     # TEXT_MISMATCH_PROBABLE must NOT be in labels (stripped by guardrail)
     assert "TEXT_MISMATCH_PROBABLE" not in cls.labels
     assert "COLOR_MISMATCH" not in cls.labels

@@ -179,10 +179,22 @@ class Classification:
     ocr_preprocessing_version: str = "v1"
 
 
+# Agent route taxonomy — replaces NEEDS_HUMAN_REVIEW as the operational output.
+# Every surface must land in one of these; none may require_owner_review.
+AGENT_ROUTES: set[str] = {
+    "PRODUCT_ACTIONABLE",
+    "QA_TOOLING_ACTIONABLE",
+    "CAPTURE_OR_PAIRING_ACTIONABLE",
+    "AUDITOR_IMPROVEMENT_ACTIONABLE",
+    "RENDER_NOISE_AUTO_IGNORED",
+    "NO_ACTION_NEEDED_WITH_EVIDENCE",
+}
+
+
 @dataclass
 class AgentPackage:
     surface_key: str
-    decision: str = "NEEDS_HUMAN_REVIEW"
+    decision: str = "NEEDS_HUMAN_REVIEW"  # kept for internal compat; not shown to owner
     decision_reason: str = ""
     top_bbox: dict[str, Any] = field(default_factory=dict)
     text_evidence: TextEvidence = field(default_factory=TextEvidence)
@@ -198,6 +210,19 @@ class AgentPackage:
     pairing_concerns: str | None = None
     fidelity_available: bool = True  # owner audit rule A — False when
     # FIDELITY_REPORT.json is missing/empty/has 0 comparisons.
+    # --- V3 reorientation: agent-facing output ---
+    diff_summary: str = ""  # top-level mirror of text_evidence.diff_summary
+    # so consumers do not need to dig into text_evidence to see what OCR
+    # conclusion drove the routing decision.
+    agent_route: str = "AUDITOR_IMPROVEMENT_ACTIONABLE"
+    agent_next_action: str = ""
+    requires_owner_review: bool = False
+    why_not_owner_review: str = ""
+    evidence_quality: str = "weak"  # strong | medium | weak | none
+    diagnostic_labels: list[str] = field(default_factory=list)
+    product_action_allowed: bool = False
+    qa_action_allowed: bool = False
+    capture_action_allowed: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -610,6 +635,421 @@ def _has_real_text_pair(bbox_analyses: list[dict]) -> bool:
     return False
 
 
+# ---------------------------------------------------------------------------
+# Agent Route Mapping — V3 reorientation: no surface goes to owner
+# ---------------------------------------------------------------------------
+
+
+def _map_to_agent_route(
+    classification: Classification,
+    bboxes: list[BBoxInfo],
+    bbox_analyses: list[dict],
+    metrics: Metrics,
+    manifest_entry: dict,
+    biggest_bbox_dominates: bool,
+    all_artifacts: bool,
+    pairing: Pairing,
+) -> tuple[str, str, str, str, list[str], bool, bool, bool]:
+    """Map a classification + evidence to an agent route.
+
+    Returns:
+        (agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+         diagnostic_labels, product_action_allowed, qa_action_allowed,
+         capture_action_allowed)
+
+    Hard rule: requires_owner_review is ALWAYS False. If we can't decide,
+    we send to AUDITOR_IMPROVEMENT_ACTIONABLE with a concrete next step.
+    """
+    decision = classification.decision
+    labels = list(classification.labels)
+    confidence = classification.confidence
+
+    # --- Compute evidence quality ---
+    worst_fuzzy_real = _real_fuzzy_in_evidence(bbox_analyses)
+    has_real_text = _has_real_text_pair(bbox_analyses)
+    has_color = any(a.get("color_delta", 0) > 30 for a in bbox_analyses)
+    has_structural = "MISSING_COMPONENT" in labels or "EXTRA_COMPONENT" in labels
+
+    if has_structural and confidence == "high":
+        evidence_quality = "strong"
+    elif has_real_text and worst_fuzzy_real < 70 and confidence in ("high", "medium"):
+        evidence_quality = "strong"
+    elif has_real_text and worst_fuzzy_real < 85 and confidence == "medium":
+        evidence_quality = "medium"
+    elif has_color and confidence == "medium":
+        evidence_quality = "medium"
+    elif has_real_text or has_color or has_structural:
+        evidence_quality = "weak"
+    else:
+        evidence_quality = "none"
+
+    # --- Diagnostic labels (technical, not operational) ---
+    diagnostic_labels = []
+    if has_real_text:
+        diagnostic_labels.append("TEXT_MISMATCH")
+    if has_color:
+        diagnostic_labels.append("COLOR_MISMATCH")
+    if has_structural:
+        diagnostic_labels.append("STRUCTURAL_SIGNAL")
+    if biggest_bbox_dominates:
+        diagnostic_labels.append("BBOX_TOO_BROAD")
+    if worst_fuzzy_real < 30 and not has_real_text:
+        diagnostic_labels.append("OCR_NOISE")
+    elif worst_fuzzy_real < 95 and not has_real_text:
+        diagnostic_labels.append("OCR_WEAK")
+    if "CHROME_MISMATCH" in labels:
+        diagnostic_labels.append("CHROME_MISMATCH")
+    if metrics.changed_pixel_ratio < 0.01 and metrics.mean_abs_diff < 5:
+        diagnostic_labels.append("RENDER_NOISE")
+    if not diagnostic_labels:
+        diagnostic_labels.append("NO_SIGNIFICANT_SIGNAL")
+
+    # --- Determine route ---
+    product_action_allowed = False
+    qa_action_allowed = False
+    capture_action_allowed = False
+
+    # Case 1: No bboxes at all → no signal
+    if metrics.bbox_count == 0:
+        agent_route = "NO_ACTION_NEEDED_WITH_EVIDENCE"
+        agent_next_action = (
+            "No action. V3 found no diff bboxes after pixel-level comparison. "
+            "Surface is visually stable."
+        )
+        why_not_owner_review = (
+            "No pixel differences detected; nothing to review or fix."
+        )
+        return (
+            agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+            diagnostic_labels, product_action_allowed, qa_action_allowed,
+            capture_action_allowed,
+        )
+
+    # Case 1b: All bboxes are normalization artifacts → pad/crop noise
+    if all_artifacts:
+        agent_route = "RENDER_NOISE_AUTO_IGNORED"
+        agent_next_action = (
+            "All detected differences are in normalization artifacts (pad/crop zones). "
+            "No product action needed."
+        )
+        why_not_owner_review = (
+            "Pad/crop artifacts are expected from Fase 1 normalization, not product bugs."
+        )
+        return (
+            agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+            diagnostic_labels, product_action_allowed, qa_action_allowed,
+            capture_action_allowed,
+        )
+
+    # Case 2: Biggest bbox dominates (>35%) without localized sub-evidence
+    if biggest_bbox_dominates:
+        if has_real_text and worst_fuzzy_real < 70:
+            # Even with big bbox, there IS localized text evidence — send to QA
+            # to split into bands and re-run
+            agent_route = "QA_TOOLING_ACTIONABLE"
+            agent_next_action = (
+                f"BBox extraction is dominated by a full-screen region "
+                f"(area_ratio={metrics.bbox_largest_area_ratio:.3f}). "
+                f"However, OCR detected real text mismatch (worst_fuzzy={worst_fuzzy_real}). "
+                f"Split the diff into horizontal bands and rerun OCR on "
+                f"tab/header areas before product changes."
+            )
+            qa_action_allowed = True
+        else:
+            # No localized evidence — auto-ignore as render noise
+            agent_route = "RENDER_NOISE_AUTO_IGNORED"
+            agent_next_action = (
+                f"No product action. Differences are dominated by a single "
+                f"large region (area_ratio={metrics.bbox_largest_area_ratio:.3f}) "
+                f"without localized text or color evidence. Likely background fill, "
+                f"theme bleed, or scroll artifact."
+            )
+        why_not_owner_review = (
+            "Large bbox without localized sub-evidence is not actionable for a human. "
+            "Either improve bbox extraction (QA) or auto-ignore (render noise)."
+        )
+        return (
+            agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+            diagnostic_labels, product_action_allowed, qa_action_allowed,
+            capture_action_allowed,
+        )
+
+    # Case 3: Strong structural or text evidence → PRODUCT_ACTIONABLE
+    # Guardrail: if diff_summary says "No significant OCR difference" and
+    # there is no real text pair, do NOT route to PRODUCT_ACTIONABLE even
+    # if color/structural signals exist. Send to QA for verification.
+
+    # Find the top_bbox analysis (same logic as _build_agent_package)
+    top_bbox_analysis = None
+    if bbox_analyses:
+        for b, a in zip(bboxes, bbox_analyses):
+            if not b.normalization_artifact:
+                top_bbox_analysis = a
+                break
+        if top_bbox_analysis is None and bbox_analyses:
+            top_bbox_analysis = bbox_analyses[0]
+
+    # Find the bbox with the WORST real-text fuzzy ratio. Routing uses
+    # `worst_fuzzy_real` across all bboxes, so ocr_contradicts_product must
+    # be evaluated against that same bbox — otherwise a strong mismatch in
+    # a secondary bbox is silenced by an innocuous top_bbox.
+    worst_analysis = None
+    if bbox_analyses:
+        for a in bbox_analyses:
+            if not a:
+                continue
+            if worst_analysis is None:
+                worst_analysis = a
+                continue
+            if a.get("fuzzy_ratio_worst", 100) < worst_analysis.get("fuzzy_ratio_worst", 100):
+                worst_analysis = a
+
+    # has_real_text_pair is used inside _map_to_agent_route via the
+    # _has_real_text_pair(bbox_analyses) call where needed; the local
+    # variable was retained for symmetry with the original logic.
+    _ = _has_real_text_pair(bbox_analyses)
+
+    # ocr_contradicts_product: True when the evidence the routing would rely
+    # on (worst real-text pair) is absent — i.e. neither top_bbox nor any
+    # other bbox shows a real text mismatch. In that case, even if the
+    # bbox-level worst_fuzzy is low due to OCR noise, the structural/color
+    # signal is not backed by legible text and the surface should go to
+    # QA_TOOLING, not PRODUCT.
+    worst_pair = (worst_analysis or {}).get("fuzzy_ratio_worst_pair", ["", ""])
+    worst_mockup_ocr = (worst_analysis or {}).get("mockup_ocr", "")
+    worst_real_ocr = (worst_analysis or {}).get("real_ocr", "")
+    worst_has_real_pair = bool(
+        worst_pair and worst_pair[0] and worst_pair[1] and worst_pair[0] != worst_pair[1]
+        and _looks_like_real_text_pair(worst_mockup_ocr, worst_real_ocr)
+    )
+    ocr_contradicts_product = not worst_has_real_pair
+
+    if has_structural and confidence in ("high", "medium") and not ocr_contradicts_product:
+        agent_route = "PRODUCT_ACTIONABLE"
+        agent_next_action = _build_product_action(
+            classification, bbox_analyses, bboxes, metrics, manifest_entry
+        )
+        product_action_allowed = True
+        why_not_owner_review = (
+            "Structural evidence (missing/extra component) with sufficient confidence "
+            "is actionable by an agent investigating the suspected module."
+        )
+        return (
+            agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+            diagnostic_labels, product_action_allowed, qa_action_allowed,
+            capture_action_allowed,
+        )
+
+    if has_real_text and worst_fuzzy_real < 70 and confidence in ("high", "medium") and not ocr_contradicts_product:
+        agent_route = "PRODUCT_ACTIONABLE"
+        agent_next_action = _build_product_action(
+            classification, bbox_analyses, bboxes, metrics, manifest_entry
+        )
+        product_action_allowed = True
+        why_not_owner_review = (
+            "Clear text mismatch with real OCR pair and sufficient confidence "
+            "is actionable by an agent investigating font metrics, padding, or truncation."
+        )
+        return (
+            agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+            diagnostic_labels, product_action_allowed, qa_action_allowed,
+            capture_action_allowed,
+        )
+
+    # Case 3b: Structural/color evidence but OCR contradicts → QA for verification
+    if (has_structural or has_color) and confidence in ("high", "medium") and ocr_contradicts_product:
+        agent_route = "QA_TOOLING_ACTIONABLE"
+        agent_next_action = (
+            f"Structural or color evidence detected (diagnostic_labels={diagnostic_labels}) "
+            f"but OCR diff_summary='No significant OCR difference'. "
+            f"Verify with tooling before claiming product action. "
+            f"Investigate bbox extraction and crop quality."
+        )
+        qa_action_allowed = True
+        why_not_owner_review = (
+            "Structural/color evidence exists but OCR contradicts it. "
+            "QA tooling should verify before product changes."
+        )
+        return (
+            agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+            diagnostic_labels, product_action_allowed, qa_action_allowed,
+            capture_action_allowed,
+        )
+
+    # Case 4: Weak text/color evidence → QA_TOOLING_ACTIONABLE
+    if has_real_text and worst_fuzzy_real < 85 and confidence == "low":
+        agent_route = "QA_TOOLING_ACTIONABLE"
+        agent_next_action = (
+            f"OCR detected possible text mismatch (worst_fuzzy={worst_fuzzy_real}) "
+            f"but confidence is low. Improve OCR preprocessing (upscale, contrast, "
+            f"sharpen) or split bboxes into smaller crops before claiming product action. "
+            f"Current OCR may be noisy or partial."
+        )
+        qa_action_allowed = True
+        why_not_owner_review = (
+            "Weak text evidence should be strengthened by tooling improvements, "
+            "not thrown to a human for visual inspection."
+        )
+        return (
+            agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+            diagnostic_labels, product_action_allowed, qa_action_allowed,
+            capture_action_allowed,
+        )
+
+    if has_color and confidence == "low":
+        agent_route = "QA_TOOLING_ACTIONABLE"
+        agent_next_action = (
+            "Color difference detected but confidence is low. "
+            "Verify that the dominant-color crop is not a background fill region. "
+            "If confirmed as component color, investigate QSS/palette."
+        )
+        qa_action_allowed = True
+        why_not_owner_review = (
+            "Low-confidence color signal needs tooling verification before product action."
+        )
+        return (
+            agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+            diagnostic_labels, product_action_allowed, qa_action_allowed,
+            capture_action_allowed,
+        )
+
+    # Case 5: Chrome mismatch only → RENDER_NOISE_AUTO_IGNORED
+    if "CHROME_MISMATCH" in labels and not any([
+        has_real_text, has_color, has_structural
+    ]):
+        agent_route = "RENDER_NOISE_AUTO_IGNORED"
+        agent_next_action = (
+            "Differences are limited to window chrome, scrollbar, or titlebar areas. "
+            "No product action needed."
+        )
+        why_not_owner_review = (
+            "Chrome differences are expected capture variance, not product bugs."
+        )
+        return (
+            agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+            diagnostic_labels, product_action_allowed, qa_action_allowed,
+            capture_action_allowed,
+        )
+
+    # Case 6: Pairing/capture issues
+    if decision == "PAIRING_FIX" or not pairing.real_capture_path:
+        agent_route = "CAPTURE_OR_PAIRING_ACTIONABLE"
+        agent_next_action = (
+            "Check capture pairing and normalized target path for this surface. "
+            "Evidence suggests no meaningful product diff but capture structure "
+            "may be misaligned."
+        )
+        capture_action_allowed = True
+        why_not_owner_review = (
+            "Capture/pairing issues are resolved by re-running capture pipeline, "
+            "not by manual visual review."
+        )
+        return (
+            agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+            diagnostic_labels, product_action_allowed, qa_action_allowed,
+            capture_action_allowed,
+        )
+
+    # Case 7: Render noise / no signal
+    if metrics.changed_pixel_ratio < 0.05 and not has_real_text and not has_color and not has_structural:
+        agent_route = "RENDER_NOISE_AUTO_IGNORED"
+        agent_next_action = (
+            "No product action. Differences are below threshold or limited to render noise."
+        )
+        why_not_owner_review = (
+            "Pixel changes are minimal and no structural/text/color signal detected. "
+            "Auto-ignore is safe."
+        )
+        return (
+            agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+            diagnostic_labels, product_action_allowed, qa_action_allowed,
+            capture_action_allowed,
+        )
+
+    # Case 8: Default fallback — never human, always auditor improvement
+    agent_route = "AUDITOR_IMPROVEMENT_ACTIONABLE"
+    agent_next_action = (
+        f"V3 could not classify this surface into a confident route. "
+        f"Evidence: diagnostic_labels={diagnostic_labels}, "
+        f"confidence={confidence}, worst_fuzzy={worst_fuzzy_real}. "
+        f"Improve bbox extraction, OCR preprocessing, or add heuristic rules "
+        f"for this surface pattern."
+    )
+    qa_action_allowed = True
+    why_not_owner_review = (
+        "Unclear signal is an auditor limitation, not a human task. "
+        "The agent should improve V3 heuristics or tooling for this surface type."
+    )
+    return (
+        agent_route, agent_next_action, evidence_quality, why_not_owner_review,
+        diagnostic_labels, product_action_allowed, qa_action_allowed,
+        capture_action_allowed,
+    )
+
+
+def _build_product_action(
+    classification: Classification,
+    bbox_analyses: list[dict],
+    bboxes: list | None,
+    metrics: Metrics,
+    manifest_entry: dict,
+) -> str:
+    """Build a concrete, actionable next step for PRODUCT_ACTIONABLE.
+
+    Uses the SAME bbox as agent_package.text_evidence (the top_bbox: first
+    non-artifact, or first if all artifact). This keeps the action consistent
+    with the evidence reported in the package — a downstream consumer should
+    never see an action citing OCR/text from one bbox while text_evidence
+    shows another.
+    """
+    parts: list[str] = []
+
+    # Find the top_bbox analysis — same logic as _build_agent_package.
+    top_bbox_analysis = None
+    if bboxes and bbox_analyses:
+        for b, a in zip(bboxes, bbox_analyses):
+            if not b.normalization_artifact:
+                top_bbox_analysis = a
+                break
+        if top_bbox_analysis is None and bbox_analyses:
+            top_bbox_analysis = bbox_analyses[0]
+    elif bbox_analyses:
+        # No bbox metadata — fall back to first analysis
+        top_bbox_analysis = bbox_analyses[0]
+
+    best = top_bbox_analysis
+
+    if best:
+        pair = best.get("fuzzy_ratio_worst_pair", ["", ""])
+        if pair and pair[0] and pair[1] and pair[0] != pair[1]:
+            parts.append(
+                f"OCR mismatch: '{pair[0]}' vs '{pair[1]}' "
+                f"(fuzzy={best.get('fuzzy_ratio_worst', 0):.0f})"
+            )
+        color = best.get("color_delta", 0)
+        if color > 30:
+            m_rgb = best.get("mockup_color", (0, 0, 0))
+            r_rgb = best.get("real_color", (0, 0, 0))
+            parts.append(
+                f"color delta={color} (mockup={_rgb_to_hex(m_rgb)} vs real={_rgb_to_hex(r_rgb)})"
+            )
+        pos = _describe_position(best.get("geometry", (0, 0, 0, 0)), manifest_entry)
+        parts.append(f"position: {pos}")
+
+    if classification.suspected_module:
+        parts.append(f"suspected_module={classification.suspected_module}")
+
+    if parts:
+        return (
+            f"Investigate the suspected module. Evidence suggests: "
+            f"{'; '.join(parts)}. Confirm locally before changing product."
+        )
+    return (
+        "Investigate the suspected module. Evidence suggests visual differences "
+        "in the captured region. Confirm locally before changing product."
+    )
+
+
 def _is_ocr_noise(text: str) -> bool:
     """Heuristic: OCR output is junk (symbols / no real words).
 
@@ -958,13 +1398,13 @@ def _classify_surface(
     # Check if all bboxes are normalization artifacts
     all_artifacts = all(b.normalization_artifact for b in bboxes)
     if all_artifacts:
-        labels.append("NEEDS_HUMAN_REVIEW")
+        labels.append("RENDER_NOISE")
         return Classification(
             labels=labels,
-            severity="needs_review",
-            explanation="All bboxes are normalization artifacts",
-            decision="NEEDS_HUMAN_REVIEW",
-            confidence="low",
+            severity="low",
+            explanation="All bboxes are normalization artifacts (pad/crop zones)",
+            decision="RENDER_NOISE_OK",
+            confidence="high",
             confidence_reason="all_bboxes_are_normalization_artifacts",
         )
 
@@ -1138,13 +1578,15 @@ def _classify_surface(
             if lbl not in ("TEXT_MISMATCH_PROBABLE", "COLOR_MISMATCH")
         ]
         # Avoid producing FIX_PRODUCT_STRONG/REVIEW from this signal.
-        decision = "NEEDS_HUMAN_REVIEW"
+        # Return a neutral decision; _map_to_agent_route will route based on
+        # biggest_bbox_dominates + evidence quality.
+        decision = "RENDER_NOISE_OK"
         return Classification(
             labels=labels,
-            severity="needs_review",
+            severity="low",
             explanation=(
                 f"largest_bbox_dominates={biggest_bbox_dominates}; "
-                "insufficient localized evidence"
+                "insufficient localized evidence for product action"
             ),
             decision=decision,
             confidence=confidence,
@@ -1164,7 +1606,9 @@ def _classify_surface(
     elif render_noise and not any([text_mismatch, color_mismatch, missing_component, extra_component]):
         decision = "RENDER_NOISE_OK"
     else:
-        decision = "NEEDS_HUMAN_REVIEW"
+        # V3 reorientation: no NEEDS_HUMAN_REVIEW. Use a neutral decision
+        # that _map_to_agent_route will interpret based on evidence.
+        decision = "RENDER_NOISE_OK"
 
     return Classification(
         labels=labels,
@@ -1189,8 +1633,27 @@ def _build_agent_package(
     bboxes: list[BBoxInfo],
     bbox_analyses: list[dict],
     manifest_entry: dict,
+    metrics: Metrics,
+    pairing: Pairing,
 ) -> AgentPackage:
-    """Build agent_package.json with text + color evidence."""
+    """Build agent_package.json with text + color evidence + agent route."""
+    # Compute agent route before constructing the package
+    biggest_bbox_dominates = metrics.bbox_largest_area_ratio > LARGEST_BBOX_GUARDRAIL
+    all_artifacts = all(b.normalization_artifact for b in bboxes) if bboxes else False
+    (
+        agent_route,
+        agent_next_action,
+        evidence_quality,
+        why_not_owner_review,
+        diagnostic_labels,
+        product_action_allowed,
+        qa_action_allowed,
+        capture_action_allowed,
+    ) = _map_to_agent_route(
+        classification, bboxes, bbox_analyses, metrics, manifest_entry,
+        biggest_bbox_dominates, all_artifacts, pairing,
+    )
+
     pkg = AgentPackage(
         surface_key=surface_key,
         decision=classification.decision,
@@ -1198,7 +1661,18 @@ def _build_agent_package(
         labels=classification.labels,
         severity=classification.severity,
         confidence=classification.confidence,
+        agent_route=agent_route,
+        agent_next_action=agent_next_action,
+        requires_owner_review=False,
+        why_not_owner_review=why_not_owner_review,
+        evidence_quality=evidence_quality,
+        diagnostic_labels=diagnostic_labels,
+        product_action_allowed=product_action_allowed,
+        qa_action_allowed=qa_action_allowed,
+        capture_action_allowed=capture_action_allowed,
     )
+    # diff_summary is computed later when text_evidence is built; placeholder
+    # for now (filled after the top_bbox block).
 
     # Top bbox (first non-artifact, or first if all artifact)
     non_artifact = [b for b in bboxes if not b.normalization_artifact]
@@ -1241,6 +1715,10 @@ def _build_agent_package(
                 delta_rgb=analysis.get("color_delta", 0),
                 interpretation=_color_interpretation(analysis),
             )
+            # Mirror top_bbox diff_summary at package top level so consumers
+            # of agent_package.json can see what OCR conclusion drove the
+            # routing without diving into text_evidence.
+            pkg.diff_summary = pkg.text_evidence.diff_summary
 
     pkg.suspected_module = _guess_module(surface_key)
     pkg.suspected_lines_hint = _guess_lines_hint(surface_key, classification.labels)
@@ -1461,25 +1939,13 @@ def _enforce_decision_guardrails(
     bbox_analyses: list[dict],
     fidelity_available: bool,
 ) -> tuple[Classification, AgentPackage]:
-    """Final coherence guardrails (owner audit rules A-F).
+    """Final coherence guardrails (owner audit rules A-F) + agent-route guarantee.
 
     Called at the end of agent_package construction. Mutates and
-    returns both objects with consistent fields. Order matters:
-      1. confidence == low  =>  decision MUST be NEEDS_HUMAN_REVIEW
-         (owner audit rule D — hard rule, no exceptions).
-      2. fuzzy_ratio_worst >= 95  =>  TEXT_MISMATCH_PROBABLE forbidden,
-         FIX_PRODUCT_* by text forbidden (owner audit rule B).
-      3. diff_summary == "No significant OCR difference"  =>
-         TEXT_MISMATCH_PROBABLE forbidden, FIX_PRODUCT_REVIEW by text
-         forbidden (owner audit rule B).
-      4. decision_reason cannot say "OCR matches well" if there is a
-         bbox with fuzzy < 85 anywhere (owner audit rule C).
-      5. FIX_PRODUCT_STRONG requires confidence == high (rule D).
-      6. FIX_PRODUCT_STRONG/REVIEW cannot ship with a generic
-         what_to_check_first (rule E) — downgrade to NEEDS_HUMAN_REVIEW.
-      7. FIDELITY_REPORT.json missing/empty => warn and set
-         fidelity_available=False on the agent package; do NOT present
-         fidelity numbers as real metrics (owner audit rule A).
+    returns both objects with consistent fields. Key change for V3
+    reorientation: we NEVER downgrade to NEEDS_HUMAN_REVIEW. Instead,
+    we map to AUDITOR_IMPROVEMENT_ACTIONABLE when evidence is weak.
+    requires_owner_review is ALWAYS False.
     """
     cls = classification
     pkg = agent_pkg
@@ -1489,58 +1955,69 @@ def _enforce_decision_guardrails(
         if pkg.text_evidence else 100
     )
 
+    # Guarantee: requires_owner_review is always False
+    pkg.requires_owner_review = False  # type: ignore[attr-defined]
+
     # Rule 7: fidelity_available flag (informational; not a downgrade)
     pkg.fidelity_available = fidelity_available  # type: ignore[attr-defined]
-    if not fidelity_available:
-        # Don't fail anything — just stamp the field so downstream can
-        # see that the diff_fidelity numbers are not real.
-        pass
 
-    # Rule 1: confidence == low => decision == NEEDS_HUMAN_REVIEW (HARD)
-    if cls.confidence == "low" and cls.decision != "NEEDS_HUMAN_REVIEW":
-        cls.decision = "NEEDS_HUMAN_REVIEW"
-        cls.severity = "needs_review"
-        cls.explanation = (
-            (cls.explanation or "")
-            + "; downgraded by guardrail: confidence==low requires "
-            "NEEDS_HUMAN_REVIEW"
-        ).strip("; ")
+    # Rule 1 (reoriented): confidence == low => map to AUDITOR_IMPROVEMENT_ACTIONABLE
+    # instead of NEEDS_HUMAN_REVIEW. The agent_route already handles this,
+    # but we enforce it here as a hard guardrail.
+    if cls.confidence == "low":
+        if pkg.agent_route not in (
+            "RENDER_NOISE_AUTO_IGNORED",
+            "NO_ACTION_NEEDED_WITH_EVIDENCE",
+            "CAPTURE_OR_PAIRING_ACTIONABLE",
+        ):
+            pkg.agent_route = "AUDITOR_IMPROVEMENT_ACTIONABLE"
+            pkg.agent_next_action = (
+                f"Confidence is low ({cls.confidence}). V3 heuristics are "
+                f"insufficient for this surface. Improve bbox extraction, "
+                f"OCR preprocessing, or add surface-specific rules. "
+                f"diagnostic_labels={pkg.diagnostic_labels}"
+            )
+            pkg.qa_action_allowed = True
+            pkg.product_action_allowed = False
 
     # Rule 2: fuzzy_ratio_worst >= 95 forbids TEXT_MISMATCH and text-decisions
     if fuzzy_worst >= FUZZY_MATCH_THRESHOLD:
         if "TEXT_MISMATCH_PROBABLE" in cls.labels:
             cls.labels = [lbl for lbl in cls.labels if lbl != "TEXT_MISMATCH_PROBABLE"]
-        if cls.decision == "FIX_PRODUCT_REVIEW":
-            # FIX_PRODUCT_REVIEW may still be valid on structural evidence,
-            # but if it's text-only we downgrade.
-            has_structural = (
-                "MISSING_COMPONENT" in cls.labels
-                or "EXTRA_COMPONENT" in cls.labels
+        # If agent_route is PRODUCT_ACTIONABLE driven by text, downgrade to QA
+        if pkg.agent_route == "PRODUCT_ACTIONABLE" and not any(
+            lbl in cls.labels for lbl in ("MISSING_COMPONENT", "EXTRA_COMPONENT", "COLOR_MISMATCH")
+        ):
+            pkg.agent_route = "QA_TOOLING_ACTIONABLE"
+            pkg.agent_next_action = (
+                "OCR fuzzy ratio >= 95 indicates text matches well. "
+                "Product action driven by text is not justified. "
+                "Verify with tooling or investigate structural evidence."
             )
-            if not has_structural:
-                cls.decision = "NEEDS_HUMAN_REVIEW"
-                cls.severity = "needs_review"
+            pkg.product_action_allowed = False
+            pkg.qa_action_allowed = True
 
     # Rule 3: diff_summary == "No significant OCR difference"
     if diff_summary.strip() == "No significant OCR difference":
         if "TEXT_MISMATCH_PROBABLE" in cls.labels:
             cls.labels = [lbl for lbl in cls.labels if lbl != "TEXT_MISMATCH_PROBABLE"]
-        if cls.decision == "FIX_PRODUCT_REVIEW":
-            has_structural = (
-                "MISSING_COMPONENT" in cls.labels
-                or "EXTRA_COMPONENT" in cls.labels
+        # If agent_route is PRODUCT_ACTIONABLE and only text evidence, downgrade
+        if pkg.agent_route == "PRODUCT_ACTIONABLE" and not any(
+            lbl in cls.labels for lbl in ("MISSING_COMPONENT", "EXTRA_COMPONENT", "COLOR_MISMATCH")
+        ):
+            pkg.agent_route = "AUDITOR_IMPROVEMENT_ACTIONABLE"
+            pkg.agent_next_action = (
+                "diff_summary='No significant OCR difference' contradicts "
+                "PRODUCT_ACTIONABLE. No text evidence to support product change. "
+                "Improve heuristics or verify with structural/color evidence."
             )
-            if not has_structural:
-                cls.decision = "NEEDS_HUMAN_REVIEW"
-                cls.severity = "needs_review"
+            pkg.product_action_allowed = False
+            pkg.qa_action_allowed = True
 
     # Rule 4: decision_reason "OCR matches well" while fuzzy < 85 somewhere
     if pkg.decision_reason and "OCR matches well" in pkg.decision_reason:
         worst_real = _real_fuzzy_in_evidence(bbox_analyses)
         if worst_real < FUZZY_MATCH_THRESHOLD:
-            # Conflict — replace decision_reason with something derived
-            # from the actual evidence. Keep the decision (will be
-            # checked by rule 5/6 below) but mark the contradiction.
             pkg.decision_reason = (
                 f"confidence_reason inconsistent with text_evidence "
                 f"(worst_fuzzy_real={worst_real}); see text_evidence"
@@ -1548,9 +2025,8 @@ def _enforce_decision_guardrails(
             cls.confidence_reason = pkg.decision_reason
 
     # Rule 5: FIX_PRODUCT_STRONG requires confidence == high
+    # (kept for internal compat; agent_route is the operational output)
     if cls.decision == "FIX_PRODUCT_STRONG" and cls.confidence != "high":
-        # Downgrade to FIX_PRODUCT_REVIEW if confidence is medium, else
-        # NEEDS_HUMAN_REVIEW.
         if cls.confidence == "medium":
             cls.decision = "FIX_PRODUCT_REVIEW"
         else:
@@ -1573,6 +2049,17 @@ def _enforce_decision_guardrails(
     pkg.decision = cls.decision
     pkg.severity = cls.severity
     pkg.labels = list(cls.labels)
+
+    # Final guarantee: if agent_route is still somehow NEEDS_HUMAN_REVIEW
+    # (should never happen), force it to AUDITOR_IMPROVEMENT_ACTIONABLE
+    if pkg.agent_route not in AGENT_ROUTES:
+        pkg.agent_route = "AUDITOR_IMPROVEMENT_ACTIONABLE"
+        pkg.agent_next_action = (
+            "V3 produced an unrecognized agent_route. Fallback to "
+            "AUDITOR_IMPROVEMENT_ACTIONABLE. Improve heuristics for this surface."
+        )
+        pkg.qa_action_allowed = True
+        pkg.product_action_allowed = False
 
     return cls, pkg
 
@@ -1657,20 +2144,33 @@ def analyze_surface(
 
     if unreliable:
         classification = Classification(
-            labels=["NEEDS_HUMAN_REVIEW"],
-            severity="needs_review",
+            labels=["PAIRING_OR_CAPTURE_MISMATCH"],
+            severity="low",
             explanation=f"unreliable=true: {unreliable_reason}",
-            decision="NEEDS_HUMAN_REVIEW",
+            decision="PAIRING_FIX",
             confidence="low",
             confidence_reason=f"unreliable: {unreliable_reason}",
         )
         agent_pkg = AgentPackage(
             surface_key=surface_key,
-            decision="NEEDS_HUMAN_REVIEW",
+            decision="PAIRING_FIX",
             decision_reason=f"unreliable=true: {unreliable_reason}",
-            labels=["NEEDS_HUMAN_REVIEW"],
-            severity="needs_review",
+            labels=["PAIRING_OR_CAPTURE_MISMATCH"],
+            severity="low",
             confidence="low",
+            agent_route="CAPTURE_OR_PAIRING_ACTIONABLE",
+            agent_next_action=(
+                f"Capture or pairing issue: {unreliable_reason}. "
+                f"Check that the capture exists and is not blank/corrupt. "
+                f"Re-run capture pipeline if needed."
+            ),
+            requires_owner_review=False,
+            why_not_owner_review=(
+                "Missing/corrupt capture is a pipeline issue, not a human review task."
+            ),
+            evidence_quality="none",
+            diagnostic_labels=["PAIRING_OR_CAPTURE_ISSUE"],
+            capture_action_allowed=True,
         )
         result = {
             "pairing": asdict(pairing),
@@ -1756,7 +2256,9 @@ def analyze_surface(
     )
 
     # Agent package
-    agent_pkg = _build_agent_package(surface_key, classification, bboxes, bbox_analyses, manifest_entry)
+    agent_pkg = _build_agent_package(
+        surface_key, classification, bboxes, bbox_analyses, manifest_entry, metrics, pairing
+    )
 
     # Owner audit rule A+F: enforce decision coherence and stamp
     # fidelity_available. Fidelity must be computed BEFORE this call.
@@ -1800,29 +2302,27 @@ def _safe_folder_name(surface_key: str) -> str:
 
 
 def generate_html(results: list[dict], out_path: Path) -> None:
-    """Generate navigable HTML report."""
+    """Generate navigable HTML report with agent-facing output."""
     rows = []
     for r in results:
         pkg = r.get("agent_package", {})
-        cls = r.get("classification", {})
-        severity = cls.get("severity", "low")
-        decision = cls.get("decision", "NEEDS_HUMAN_REVIEW")
-        confidence = cls.get("confidence", "low")
-        labels = ", ".join(cls.get("labels", []))
+        agent_route = pkg.get("agent_route", "AUDITOR_IMPROVEMENT_ACTIONABLE")
+        evidence_quality = pkg.get("evidence_quality", "weak")
+        requires_owner_review = pkg.get("requires_owner_review", False)
+        diagnostic_labels = ", ".join(pkg.get("diagnostic_labels", []))
         surface_key = pkg.get("surface_key", "")
-        # Use a sanitized folder name in the URL so the link resolves
-        # on Windows (which forbids ':' in paths and breaks 'C:' in
-        # file:// links). The on-page label still shows the canonical
-        # surface_key so users can copy/paste it.
         safe_folder = _safe_folder_name(surface_key)
+        # Color-code by agent_route
+        route_class = agent_route.lower().replace("_", "-")
         rows.append(
             f"""
-        <tr class="severity-{severity}">
+        <tr class="route-{route_class}">
             <td>{surface_key}</td>
-            <td>{severity}</td>
-            <td>{confidence}</td>
-            <td>{decision}</td>
-            <td>{labels}</td>
+            <td>{agent_route}</td>
+            <td>{evidence_quality}</td>
+            <td>{'YES' if requires_owner_review else 'NO'}</td>
+            <td>{diagnostic_labels}</td>
+            <td>{pkg.get('agent_next_action', '')}</td>
             <td><a href="surfaces/{safe_folder}/agent_package.json">agent_package</a></td>
         </tr>"""
         )
@@ -1833,20 +2333,24 @@ def generate_html(results: list[dict], out_path: Path) -> None:
     <title>Visual Auditor V3 Report</title>
     <style>
         body {{ font-family: sans-serif; margin: 20px; }}
-        table {{ border-collapse: collapse; width: 100%; }}
-        th, td {{ border: 1px solid #ccc; padding: 8px; text-align: left; }}
+        table {{ border-collapse: collapse; width: 100%; font-size: 13px; }}
+        th, td {{ border: 1px solid #ccc; padding: 6px; text-align: left; vertical-align: top; }}
         th {{ background: #f0f0f0; }}
-        .severity-high {{ background: #ffcccc; }}
-        .severity-medium {{ background: #ffffcc; }}
-        .severity-low {{ background: #ccffcc; }}
-        .severity-needs_review {{ background: #ccccff; }}
+        .route-product-actionable {{ background: #ffcccc; }}
+        .route-qa-tooling-actionable {{ background: #ffffcc; }}
+        .route-capture-or-pairing-actionable {{ background: #ccffff; }}
+        .route-auditor-improvement-actionable {{ background: #ffccff; }}
+        .route-render-noise-auto-ignored {{ background: #ccffcc; }}
+        .route-no-action-needed-with-evidence {{ background: #e0e0e0; }}
+        td:nth-child(6) {{ max-width: 400px; word-wrap: break-word; }}
     </style>
 </head>
 <body>
     <h1>Visual Auditor V3 Report</h1>
     <p>Total surfaces: {len(results)}</p>
+    <p><strong>No surface requires owner review.</strong></p>
     <table>
-        <tr><th>Surface</th><th>Severity</th><th>Confidence</th><th>Decision</th><th>Labels</th><th>Link</th></tr>
+        <tr><th>Surface</th><th>Agent Route</th><th>Evidence Quality</th><th>Owner Review?</th><th>Diagnostic Labels</th><th>Next Action</th><th>Link</th></tr>
         {''.join(rows)}
     </table>
 </body>
@@ -1861,30 +2365,87 @@ def generate_html(results: list[dict], out_path: Path) -> None:
 
 
 def build_queue(results: list[dict]) -> str:
-    """Build prioritized queue markdown."""
-    # Sort by severity, then confidence, then decision
-    def sort_key(r: dict) -> tuple[int, int, int]:
-        cls = r.get("classification", {})
-        sev = SEVERITY_ORDER.get(cls.get("severity", "low"), 2)
-        conf = CONFIDENCE_ORDER.get(cls.get("confidence", "low"), 2)
-        dec = DECISION_ORDER.get(cls.get("decision", "NEEDS_HUMAN_REVIEW"), 2)
-        return (sev, conf, dec)
+    """Build operational queue markdown grouped by agent_route.
 
-    sorted_results = sorted(results, key=sort_key)
-
-    lines = ["# Visual Auditor V3 — Prioritized Queue\n"]
-    for r in sorted_results:
+    V3 reorientation: queue is no longer a prioritized list of
+    'things to review'. It is a set of actionable sections for agents.
+    """
+    # Group by agent_route
+    groups: dict[str, list[dict]] = {
+        "PRODUCT_ACTIONABLE": [],
+        "QA_TOOLING_ACTIONABLE": [],
+        "CAPTURE_OR_PAIRING_ACTIONABLE": [],
+        "AUDITOR_IMPROVEMENT_ACTIONABLE": [],
+        "RENDER_NOISE_AUTO_IGNORED": [],
+        "NO_ACTION_NEEDED_WITH_EVIDENCE": [],
+    }
+    for r in results:
         pkg = r.get("agent_package", {})
-        cls = r.get("classification", {})
-        lines.append(
-            f"- **{pkg.get('surface_key', '')}** | "
-            f"severity={cls.get('severity', 'low')} | "
-            f"confidence={cls.get('confidence', 'low')} | "
-            f"decision={cls.get('decision', 'NEEDS_HUMAN_REVIEW')} | "
-            f"labels={', '.join(cls.get('labels', []))}"
-        )
-        if pkg.get("decision_reason"):
-            lines.append(f"  - {pkg['decision_reason']}")
+        route = pkg.get("agent_route", "AUDITOR_IMPROVEMENT_ACTIONABLE")
+        if route not in groups:
+            route = "AUDITOR_IMPROVEMENT_ACTIONABLE"
+        groups[route].append(r)
+
+    lines: list[str] = ["# Visual Auditor V3 — Operational Queue\n"]
+    lines.append("> Every surface below has an actionable route for agents. ")
+    lines.append("> No surface requires owner review.\n"
+    )
+
+    section_titles = {
+        "PRODUCT_ACTIONABLE": "# Product Action Queue",
+        "QA_TOOLING_ACTIONABLE": "# QA/Tooling Action Queue",
+        "CAPTURE_OR_PAIRING_ACTIONABLE": "# Capture/Pairing Queue",
+        "AUDITOR_IMPROVEMENT_ACTIONABLE": "# Auditor Improvement Queue",
+        "RENDER_NOISE_AUTO_IGNORED": "# Auto-Ignored Render Noise",
+        "NO_ACTION_NEEDED_WITH_EVIDENCE": "# No Action Needed",
+    }
+
+    for route in [
+        "PRODUCT_ACTIONABLE",
+        "QA_TOOLING_ACTIONABLE",
+        "CAPTURE_OR_PAIRING_ACTIONABLE",
+        "AUDITOR_IMPROVEMENT_ACTIONABLE",
+        "RENDER_NOISE_AUTO_IGNORED",
+        "NO_ACTION_NEEDED_WITH_EVIDENCE",
+    ]:
+        items = groups[route]
+        lines.append(section_titles[route])
+        lines.append(f"Count: {len(items)}\n")
+        if not items:
+            lines.append("_No surfaces in this category._\n")
+            continue
+        for r in items:
+            pkg = r.get("agent_package", {})
+            cls = r.get("classification", {})
+            lines.append(
+                f"- **{pkg.get('surface_key', '')}** | "
+                f"evidence_quality={pkg.get('evidence_quality', 'weak')} | "
+                f"confidence={cls.get('confidence', 'low')}"
+            )
+            if pkg.get("diagnostic_labels"):
+                lines.append(
+                    f"  - diagnostic_labels={', '.join(pkg['diagnostic_labels'])}"
+                )
+            if pkg.get("agent_next_action"):
+                lines.append(f"  - agent_next_action: {pkg['agent_next_action']}")
+            if pkg.get("requires_owner_review"):
+                lines.append(
+                    "  - **WARNING: requires_owner_review=True** "
+                    "(this should never happen)"
+                )
+        lines.append("")
+
+    # Summary stats
+    total = len(results)
+    owner_review_count = sum(
+        1 for r in results if r.get("agent_package", {}).get("requires_owner_review", False)
+    )
+    lines.append("## Summary")
+    lines.append(f"- Total surfaces: {total}")
+    lines.append(f"- Requires owner review: {owner_review_count}")
+    for route, items in groups.items():
+        lines.append(f"- {route}: {len(items)}")
+    lines.append("")
 
     return "\n".join(lines)
 
