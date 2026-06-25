@@ -114,8 +114,12 @@ qa/_baseline_*/
 # Visual Auditor V2 — placeholder para el próximo sistema de auditoría visual.
 # Sentinel fue retirado en 2026-06-24. V8 (qa/capture_v8.py) sigue siendo el
 # harness de capturas reales; el auditor visual autónomo será reemplazado en
-# una tarea futura. Ver qa/SENTINEL_REMOVAL.md.
+# Visual Auditor V2/V3 outputs (regenerables)
 qa/_visual_auditor_v2/
+qa/_visual_auditor_v3/
+qa/_fidelity_current/
+qa/_mockup_targets_normalized/
+qa/tessdata/
 
 # Mockup reference normalized — regenerable con qa/normalize_mockup_reference.py.
 # manifest.json SÍ se commitea (metadata). Los PNGs NO.
