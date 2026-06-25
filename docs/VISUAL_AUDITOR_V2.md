@@ -37,6 +37,93 @@ qa/visual_auditor_v2.py analyze --all ← NUEVO
 6. **Outputs** — `index.html`, `report.json`, `queue.md`, per-surface
    `metrics.json` + `classification.json` + `agent_package.json`.
 
+## Quickstart for agents
+
+```powershell
+# 1. Validate que todo está en orden
+.\.venv\Scripts\python.exe qa\visual_auditor_v2.py doctor
+
+# 2. Generar capturas frescas (si hiciste cambios de UI)
+.\.venv\Scripts\python.exe qa\capture_v8.py --all --theme both
+
+# 3. Correr el auditor (offline si no tenés VLM configurado)
+.\.venv\Scripts\python.exe qa\visual_auditor_v2.py analyze --all --no-vlm
+
+# 4. Ver el reporte HTML
+start qa\_visual_auditor_v2\latest\index.html
+
+# 5. Ver la cola priorizada
+Get-Content qa\_visual_auditor_v2\latest\queue.md
+```
+
+## Workflow paso a paso para agentes
+
+### Paso 0: Pre-requisitos
+- `qa/_captures_v8/CAPTURE_MANIFEST.json` debe existir (generado por `capture_v8.py`).
+- `qa/mockup_reference_static/manifest.json` debe existir (canónico, versionado).
+- Si querés VLM real: exportar `NM_VLM_BACKEND` y tener `z-ai-web-dev-sdk` instalado.
+
+### Paso 1: Correr `doctor`
+Si falla algo, arreglarlo antes de continuar. Los issues comunes:
+- `MISSING: qa/_fidelity_current/FIDELITY_REPORT.json` → correr `diff_fidelity.py` con `--target-dir qa/_mockup_targets`.
+- `MISSING DEP` → `pip install scipy imagehash scikit-image`.
+- `NM_VLM_BACKEND not set` → normal si no tenés VLM; el sistema degrada a `NEEDS_HUMAN_REVIEW`.
+
+### Paso 2: Analizar
+```powershell
+# Modo offline (sin VLM) — todo es NEEDS_HUMAN_REVIEW
+.\.venv\Scripts\python.exe qa\visual_auditor_v2.py analyze --all --no-vlm
+
+# Modo con VLM (si NM_VLM_BACKEND está seteado)
+.\.venv\Scripts\python.exe qa\visual_auditor_v2.py analyze --all
+```
+
+### Paso 3: Leer los outputs
+
+#### `report.json`
+Array de 86 objetos (una por superficie). Cada objeto tiene:
+- `pairing` — cómo se emparejó mockup↔captura.
+- `metrics` — SSIM, MAD, changed_pixel_ratio, bbox_count, phash_distance.
+- `classification` — labels, severity, explanation, recommendation, suspected_module, confidence.
+- `agent_package` — resumen accionable para agentes sin visión.
+
+#### `queue.md`
+Lista priorizada. Orden: severity → confidence → recommendation → cross_theme → cross_state.
+
+#### `index.html`
+Tabla navegable con filtros (app, theme, severity, recommendation, search).
+
+#### Per-surface (`surfaces/<surface_key>/`)
+- `mockup.png` — referencia canónica.
+- `real.png` — captura real.
+- `diff.png` — mockup | real | abs diff ×4.
+- `overlay.png` — captura real con bboxes de regiones divergentes.
+- `metrics.json` — métricas heredadas de diff_fidelity + bbox info nueva.
+- `classification.json` — resultado del VLM (o NEEDS_HUMAN_REVIEW si offline).
+- `agent_package.json` — paquete para agente sin visión.
+- `crops/bbox_N/` — recortes ampliables de cada región.
+
+### Paso 4: Decidir el próximo fix
+
+Leer `agent_package.json` de la superficie top de `queue.md`.
+
+```json
+{
+  "surface_key": "suite:rutina-empty:default@light",
+  "decision": "FIX_PRODUCT",
+  "suspected_module": "shared/components/empty_states.py",
+  "evidence_summary": "Empty state en light renderiza sobre bg (#E9E3D6) en vez de surface card (#FBF8F1). Cambió 92% de pixeles.",
+  "confidence": "high",
+  "what_to_check_first": "Buscar dónde se construye el empty state de rutina...",
+  "do_not_touch_if": "confidence == 'low' o si el diff parece RENDER_NOISE"
+}
+```
+
+**Regla de oro:** Si `confidence == 'low'`, `decision` siempre es `NEEDS_HUMAN_REVIEW`. No tocar código.
+
+### Paso 5: Iterar
+Después de hacer un fix, regenerar capturas (`capture_v8.py --all --theme both`) y re-correr `analyze --all`. El cache evita reclasificar lo que no cambió.
+
 ## Commands
 
 ```powershell
@@ -125,6 +212,62 @@ Designed for agents without vision. Contains:
 - `what_to_check_first` — next step suggestion
 - `do_not_touch_if` — guardrail rule
 
+## Decision tree para agentes
+
+```
+┌─────────────────────────────────────┐
+│  Leer agent_package.json            │
+│  de la superficie top en queue.md   │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────┐
+│  confidence == 'low'?               │
+└──────────────┬──────────────────────┘
+               │
+      ┌────────┴────────┐
+      │                 │
+     YES               NO
+      │                 │
+      ▼                 ▼
+┌─────────────┐   ┌─────────────────────────┐
+│ NEEDS_HUMAN │   │ decision == FIX_PRODUCT?│
+│ _REVIEW     │   └────────────┬────────────┘
+│ No tocar.   │                │
+└─────────────┘       ┌────────┴────────┐
+                      │                 │
+                     YES               NO
+                      │                 │
+                      ▼                 ▼
+            ┌──────────────┐    ┌──────────────┐
+            │ Revisar      │    │ decision ==  │
+            │ suspected_   │    │ FIX_FIXTURE? │
+            │ module y     │    └──────┬───────┘
+            │ aplicar fix│           │
+            └──────────────┘    ┌────┴────┐
+                                │         │
+                               YES       NO
+                                │         │
+                                ▼         ▼
+                        ┌──────────┐ ┌──────────┐
+                        │ Revisar  │ │ decision │
+                        │ fixtures │ │ == FIX_  │
+                        │ /estado  │ │ PAIRING? │
+                        └──────────┘ └────┬─────┘
+                                           │
+                                    ┌──────┴──────┐
+                                    │             │
+                                   YES           NO
+                                    │             │
+                                    ▼             ▼
+                            ┌──────────┐   ┌──────────┐
+                            │ Revisar  │   │ SKIP o   │
+                            │ pairing  │   │ NEEDS_   │
+                            │ /capture │   │ HUMAN_   │
+                            └──────────┘   │ REVIEW   │
+                                           └──────────┘
+```
+
 ## Guardrails
 
 - If `confidence == 'low'`, `decision` is forced to `NEEDS_HUMAN_REVIEW`.
@@ -141,6 +284,17 @@ Designed for agents without vision. Contains:
   interaction. Those still need manual validation.
 - Cache can theoretically go stale if images change but SHA-256 collisions occur
   (extremely rare). `clear-cache` resolves this.
+
+## Troubleshooting
+
+| Síntoma | Causa probable | Fix |
+|---------|---------------|-----|
+| `0 surfaces analyzed` | `manifest.json` vacío o mal parseado | Verificar `qa/mockup_reference_static/manifest.json` |
+| `all unpaired` | Capturas faltantes o nombres de archivo no coinciden | Correr `capture_v8.py --all --theme both` |
+| `TypeError: np.int64 not JSON serializable` | Bug de sanitización | Reportar; workaround: usar `--no-vlm` |
+| `VLM call failed` | `NM_VLM_BACKEND` mal configurado o SDK no instalado | Verificar env var e instalar `z-ai-web-dev-sdk` |
+| `Cache stale` | Imágenes cambiaron pero SHA-256 coincide (raro) | `clear-cache` y re-correr |
+| `doctor` reporta `MISSING DEP` | Dependencia no instalada | `pip install scipy imagehash scikit-image` |
 
 ## Git hygiene
 
