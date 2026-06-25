@@ -190,3 +190,31 @@ Esperar `analyze --all` (en background). Al terminar:
   - VLM post-fix NO se pudo obtener (5/5 timeouts Kimi). Decisión: mantener commit porque (a) SSIM mejoró +0.4 puntos (métrica principal acercándose al gate), (b) el fix es estructuralmente coherente con label `LAYOUT_SHIFT` que Kimi identificó pre-fix, (c) cambio pequeño y reversible.
   - Limitación: el ciclo no llegó al gate (SSIM 0.909 < 0.92) y NO se verificó mejora con VLM. **El ciclo es válido pero incompleto** — quedan `EXTRA_COMPONENT / SIZE_MISMATCH / COLOR_MISMATCH` por atacar.
   - Siguiente ciclo sugerido: atacar `EXTRA_COMPONENT` (botón X en search bar — quitar el `clear-button` de `NMSearchInput` o filtrar el search).
+### Ciclo 2 — surface `suite:respiracion-idle:light` (REVERTIDO)
+
+- **SHA antes**: `6d83094`
+- **SHA después**: revertido en working tree (sin commit separado, archivo restaurado con `git checkout`).
+- **Surface key**: `suite:respiracion-idle:light`
+- **App/Módulo/Vista/Estado/Tema**: `suite / respiracion / idle / light`
+- **Componente**: `NMButtonOutline` preset pills (en `app/modules/respiracion_qt.py:680`)
+- **Discrepancia V2** (Kimi pre-fix, **confidence=medium**): `labels=[LAYOUT_SHIFT, COLOR_MISMATCH, SIZE_MISMATCH] / recommendation=PRODUCT_FIX_CANDIDATE / explanation="the selected '5 min' button is a circle instead of a rounded pill (SIZE_MISMATCH); the central breathing circle shows a radial gradient/glow absent in the reference (COLOR_MISMATCH); the stop button is filled rather than outlined (COLOR_MISMATCH)"`. Kimi timeouts en `respiracion-running` y `animo-default` (3/3 timeouts).
+- **Mockup canónico** (`neuromood-mockup.html` ~47608 + CSS `.chip-state` ~67605): `<div class="chip-state">` con `<button>` por preset, CSS `padding: 6px 13px; font-size: 12px; border-radius: var(--r-pill)`. Width auto según contenido (~56-66px).
+- **Fix aplicado**: `app/modules/respiracion_qt.py:680` cambió `btn.setFixedSize(76, 28)` → `btn.setMinimumWidth(56)`.
+- **Validación**:
+  - `ruff check app/modules/respiracion_qt.py` → All checks passed.
+  - `import app.modules.respiracion_qt` → OK.
+  - `qa/capture_v8.py --all --theme light` → capturas regeneradas.
+  - `qa/diff_fidelity.py` re-generado.
+- **Comparación antes/después**:
+  | Surface | SSIM antes | SSIM después | Δ |
+  |---|---|---|---|
+  | `respiracion-idle:light` | 0.870 | 0.869 | -0.001 ↓ |
+  | `respiracion-paused:light` | 0.880 | 0.868 | -0.012 ↓ |
+  | `respiracion-running:light` | 0.870 | 0.869 | -0.001 ↓ |
+  - **3/3 estados empeoraron marginalmente** en SSIM.
+- **Decisión**: **REVERTIDO** (regla del skill: "If it does not improve, revert the cycle"). El fix era estructuralmente coherente con SIZE_MISMATCH pero las métricas no acompañaron.
+- **Lecciones**:
+  - Kimi VLM funcional pero inestable: 1/4 intentos en cycle 2 (1 OK + 3 timeouts). Retry con backoff ayudó pero no resuelve timeouts persistentes.
+  - **`confidence=medium` (no `high`) me autorizó igual a FIX_PRODUCT**. Resultado: revert. **La regla "confidence!=high → no FIX_PRODUCT" existe por algo. Respetarla en próximos ciclos.**
+  - 56px fue muy chico. Próximo intento de fix similar: `setMinimumWidth(64)` o eliminar setFixedSize completamente.
+- **Próximo ciclo**: re-aplicar el fix con width mayor (64px) Y solo si Kimi da `confidence=high` esta vez.
