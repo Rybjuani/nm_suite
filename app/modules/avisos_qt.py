@@ -374,7 +374,7 @@ class _ReminderCardV3(QFrame):
 
         # Mensaje (título)
         self._msg_lbl = QLabel(self._mensaje)
-        self._msg_lbl.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_semibold"]))
+        self._msg_lbl.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_semibold"]))
         self._msg_lbl.setWordWrap(True)
         content.addWidget(self._msg_lbl)
 
