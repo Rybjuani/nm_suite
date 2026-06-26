@@ -408,7 +408,7 @@ class ModuloTimer(NMModule):
         # persistencia existente.
         chips_row = QHBoxLayout()
         chips_row.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        chips_row.setSpacing(6)
+        chips_row.setSpacing(8)
         self._duration_chip_btns: list[tuple[_TimerChip, int]] = []
         duration_seconds = sorted({secs for _, secs, *_ in self._presets})
         for secs in duration_seconds[:8]:
