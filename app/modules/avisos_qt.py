@@ -348,19 +348,20 @@ class _ReminderCardV3(QFrame):
         lay.setContentsMargins(14, 8, 14, 8)
         lay.setSpacing(10)
 
-        # Icon tile: mockup l.636 define 32x32 con surface-3 + radius 10.
-        # Antes era solo NMIcon 18px sin contenedor, lo que lo dejaba "flotando"
-        # y rompía la consistencia con el resto de icon tiles del sistema.
+        # Icon tile: mockup l.1057 (av-row) define 34x34 con svg 17, surface-3
+        # + radius 10. Antes era 32x32 + svg 18 (contrato copiado de homeCard
+        # l.636, que NO aplica a esta fila), dejando el icono 2px más chico
+        # respecto al mockup canónico y rompiendo proporción con el resto.
         self._icon_tile = QFrame(self)
         self._icon_tile.setObjectName("AvisoRowIconTile")
-        self._icon_tile.setFixedSize(32, 32)
+        self._icon_tile.setFixedSize(34, 34)
         self._icon_tile.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         tile_lay = QVBoxLayout(self._icon_tile)
         tile_lay.setContentsMargins(0, 0, 0, 0)
         tile_lay.setSpacing(0)
         self._icon = NMIcon(
             self._icon_name,
-            size=18,
+            size=17,
             color=v3c(self._color_token, self._modo).name(),
             modo=self._modo,
         )
