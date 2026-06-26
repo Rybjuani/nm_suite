@@ -246,7 +246,7 @@
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=26.0 (expected #dddecf, got ~#f7f3ec)",
+        "message": "Component card_group color delta=26.4 (expected #dddecf, got ~#f7f4ed)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -256,14 +256,14 @@
             175
           ],
           "expected": "#dddecf",
-          "actual": "#f7f3ec",
-          "delta": 25.959947859712514
+          "actual": "#f7f4ed",
+          "delta": 26.399221857715656
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=56.6 (expected #b3c8b4, got ~#f7f4ed)",
+        "message": "Component icons color delta=57.0 (expected #b3c8b4, got ~#f7f4ed)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -274,7 +274,7 @@
           ],
           "expected": "#b3c8b4",
           "actual": "#f7f4ed",
-          "delta": 56.56098605756608
+          "delta": 56.99452804377565
         }
       }
     ],
@@ -848,7 +848,7 @@
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=26.1 (expected #d7ddd2, got ~#f5f2ec)",
+        "message": "Component card_group color delta=26.2 (expected #d7ddd2, got ~#f5f3ec)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -858,8 +858,8 @@
             454
           ],
           "expected": "#d7ddd2",
-          "actual": "#f5f2ec",
-          "delta": 26.12431116237344
+          "actual": "#f5f3ec",
+          "delta": 26.174491862104315
         }
       }
     ],
@@ -875,7 +875,7 @@
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=14.0 (expected #eae6db, got ~#f5f3ec)",
+        "message": "Component card_group color delta=13.9 (expected #eae6db, got ~#f5f3ec)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -886,7 +886,7 @@
           ],
           "expected": "#eae6db",
           "actual": "#f5f3ec",
-          "delta": 13.996644880174292
+          "delta": 13.946464180443419
         }
       }
     ],
@@ -973,7 +973,7 @@
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=25.1 (expected #e8e3d6, got ~#fcfaf5)",
+        "message": "Component score_widget color delta=25.5 (expected #e8e3d6, got ~#fcfaf6)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -983,8 +983,8 @@
             90
           ],
           "expected": "#e8e3d6",
-          "actual": "#fcfaf5",
-          "delta": 25.07752343420583
+          "actual": "#fcfaf6",
+          "delta": 25.516858032499755
         }
       }
     ],
@@ -1000,7 +1000,7 @@
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=25.1 (expected #e8e3d6, got ~#fcfaf5)",
+        "message": "Component score_widget color delta=25.5 (expected #e8e3d6, got ~#fcfaf6)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1010,8 +1010,8 @@
             90
           ],
           "expected": "#e8e3d6",
-          "actual": "#fcfaf5",
-          "delta": 25.075670591287984
+          "actual": "#fcfaf6",
+          "delta": 25.515978236190847
         }
       }
     ],
@@ -1027,7 +1027,7 @@
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=25.1 (expected #e8e3d6, got ~#fcfaf5)",
+        "message": "Component score_widget color delta=25.5 (expected #e8e3d6, got ~#fcfaf6)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1037,8 +1037,8 @@
             90
           ],
           "expected": "#e8e3d6",
-          "actual": "#fcfaf5",
-          "delta": 25.07752343420583
+          "actual": "#fcfaf6",
+          "delta": 25.516858032499755
         }
       }
     ],
@@ -1098,7 +1098,7 @@
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=13.1 (expected #e9e4d8, got ~#f2f0e8)",
+        "message": "Component score_widget color delta=12.7 (expected #e9e4d8, got ~#f2f0e8)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1109,13 +1109,13 @@
           ],
           "expected": "#e9e4d8",
           "actual": "#f2f0e8",
-          "delta": 13.052276929064902
+          "delta": 12.717589439200813
         }
       },
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=22.5 (expected #e2dfd0, got ~#f5f2eb)",
+        "message": "Component card_group color delta=22.2 (expected #e2dfd0, got ~#f5f2eb)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1126,13 +1126,13 @@
           ],
           "expected": "#e2dfd0",
           "actual": "#f5f2eb",
-          "delta": 22.51343744632884
+          "delta": 22.178617648410608
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=55.9 (expected #bac2b1, got ~#f5f3eb)",
+        "message": "Component icons color delta=55.5 (expected #bac2b1, got ~#f5f2eb)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1142,8 +1142,8 @@
             348
           ],
           "expected": "#bac2b1",
-          "actual": "#f5f3eb",
-          "delta": 55.907491770202824
+          "actual": "#f5f2eb",
+          "delta": 55.545914303918444
         }
       }
     ],
@@ -1170,7 +1170,7 @@
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=15.0 (expected #e7e2d6, got ~#f2f0e8)",
+        "message": "Component score_widget color delta=14.3 (expected #e7e2d6, got ~#f1f0e8)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1180,14 +1180,14 @@
             90
           ],
           "expected": "#e7e2d6",
-          "actual": "#f2f0e8",
-          "delta": 15.026795270993489
+          "actual": "#f1f0e8",
+          "delta": 14.253101586065972
         }
       },
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=21.9 (expected #e2dfd0, got ~#f5f2eb)",
+        "message": "Component card_group color delta=21.4 (expected #e2dfd0, got ~#f4f1ea)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1197,14 +1197,14 @@
             202
           ],
           "expected": "#e2dfd0",
-          "actual": "#f5f2eb",
-          "delta": 21.861141293412203
+          "actual": "#f4f1ea",
+          "delta": 21.426797859068774
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=56.3 (expected #b9c1b0, got ~#f5f2eb)",
+        "message": "Component icons color delta=55.9 (expected #b9c1b0, got ~#f4f2ea)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1214,8 +1214,8 @@
             181
           ],
           "expected": "#b9c1b0",
-          "actual": "#f5f2eb",
-          "delta": 56.26500528854836
+          "actual": "#f4f2ea",
+          "delta": 55.90557490390321
         }
       }
     ],
@@ -1231,7 +1231,7 @@
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=12.4 (expected #eae5d9, got ~#f2f1e9)",
+        "message": "Component score_widget color delta=12.1 (expected #eae5d9, got ~#f2f0e8)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1241,8 +1241,8 @@
             90
           ],
           "expected": "#eae5d9",
-          "actual": "#f2f1e9",
-          "delta": 12.36717508351984
+          "actual": "#f2f0e8",
+          "delta": 12.111892251305505
         }
       },
       {
@@ -1303,7 +1303,7 @@
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=14.9 (expected #e7e2d6, got ~#f2f0e8)",
+        "message": "Component score_widget color delta=14.5 (expected #e7e2d6, got ~#f1f0e8)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1313,14 +1313,14 @@
             90
           ],
           "expected": "#e7e2d6",
-          "actual": "#f2f0e8",
-          "delta": 14.856256689695442
+          "actual": "#f1f0e8",
+          "delta": 14.539785443222721
         }
       },
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=21.9 (expected #e2dfd0, got ~#f5f2eb)",
+        "message": "Component card_group color delta=21.4 (expected #e2dfd0, got ~#f4f1ea)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1330,14 +1330,14 @@
             202
           ],
           "expected": "#e2dfd0",
-          "actual": "#f5f2eb",
-          "delta": 21.861141293412203
+          "actual": "#f4f1ea",
+          "delta": 21.426797859068774
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=56.3 (expected #b9c1b0, got ~#f5f2eb)",
+        "message": "Component icons color delta=55.9 (expected #b9c1b0, got ~#f4f2ea)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1347,8 +1347,8 @@
             181
           ],
           "expected": "#b9c1b0",
-          "actual": "#f5f2eb",
-          "delta": 56.26500528854836
+          "actual": "#f4f2ea",
+          "delta": 55.90557490390321
         }
       }
     ],
@@ -2823,7 +2823,7 @@
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=22.1 (expected #10141f, got ~#232937)",
+        "message": "Component score_widget color delta=22.0 (expected #10141f, got ~#232937)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -2834,7 +2834,7 @@
           ],
           "expected": "#10141f",
           "actual": "#232937",
-          "delta": 22.093128669196588
+          "delta": 22.046312964224317
         }
       }
     ],
@@ -2867,7 +2867,7 @@
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=22.2 (expected #10141f, got ~#232937)",
+        "message": "Component score_widget color delta=22.1 (expected #10141f, got ~#232937)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -2878,7 +2878,7 @@
           ],
           "expected": "#10141f",
           "actual": "#232937",
-          "delta": 22.157657876812305
+          "delta": 22.109828581622395
         }
       }
     ],
@@ -2911,7 +2911,7 @@
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=22.1 (expected #10141f, got ~#232937)",
+        "message": "Component score_widget color delta=22.0 (expected #10141f, got ~#232937)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -2922,7 +2922,7 @@
           ],
           "expected": "#10141f",
           "actual": "#232937",
-          "delta": 22.093128669196588
+          "delta": 22.046312964224317
         }
       }
     ],
@@ -3000,13 +3000,13 @@
           ],
           "expected": "#10131e",
           "actual": "#1c2431",
-          "delta": 16.323587195579872
+          "delta": 16.313173881557773
         }
       },
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=18.9 (expected #10131e, got ~#1d2734)",
+        "message": "Component score_widget color delta=19.2 (expected #10131e, got ~#1e2734)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3016,14 +3016,14 @@
             90
           ],
           "expected": "#10131e",
-          "actual": "#1d2734",
-          "delta": 18.868861697641986
+          "actual": "#1e2734",
+          "delta": 19.233883915539554
         }
       },
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=21.5 (expected #29374a, got ~#1a202e)",
+        "message": "Component card_group color delta=21.2 (expected #29374a, got ~#1a202e)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3034,13 +3034,13 @@
           ],
           "expected": "#29374a",
           "actual": "#1a202e",
-          "delta": 21.544039737479604
+          "delta": 21.213485919120906
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=43.9 (expected #335b5f, got ~#1a202e)",
+        "message": "Component icons color delta=43.6 (expected #335b5f, got ~#1a202e)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3051,7 +3051,7 @@
           ],
           "expected": "#335b5f",
           "actual": "#1a202e",
-          "delta": 43.92333014760539
+          "delta": 43.56301369863013
         }
       }
     ],
@@ -3074,7 +3074,7 @@
       {
         "component_id": "header_band",
         "kind": "COLOR_MISMATCH",
-        "message": "Component header_band color delta=14.7 (expected #111520, got ~#1c2431)",
+        "message": "Component header_band color delta=15.0 (expected #111520, got ~#1c2431)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3085,13 +3085,13 @@
           ],
           "expected": "#111520",
           "actual": "#1c2431",
-          "delta": 14.67576909666345
+          "delta": 15.001414816006866
         }
       },
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=17.2 (expected #111520, got ~#1d2734)",
+        "message": "Component score_widget color delta=17.9 (expected #111520, got ~#1e2835)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3101,14 +3101,14 @@
             90
           ],
           "expected": "#111520",
-          "actual": "#1d2734",
-          "delta": 17.224988647789562
+          "actual": "#1e2835",
+          "delta": 17.853564594077387
         }
       },
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=21.3 (expected #29374a, got ~#1a202e)",
+        "message": "Component card_group color delta=20.8 (expected #29374a, got ~#1b212f)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3118,14 +3118,14 @@
             205
           ],
           "expected": "#29374a",
-          "actual": "#1a202e",
-          "delta": 21.252928549120007
+          "actual": "#1b212f",
+          "delta": 20.826697634726457
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=44.7 (expected #335c60, got ~#1a202e)",
+        "message": "Component icons color delta=44.4 (expected #335c60, got ~#1a202e)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3136,7 +3136,7 @@
           ],
           "expected": "#335c60",
           "actual": "#1a202e",
-          "delta": 44.734110330507185
+          "delta": 44.37655251300362
         }
       }
     ],
@@ -3163,13 +3163,13 @@
           ],
           "expected": "#0f121d",
           "actual": "#1b2431",
-          "delta": 17.185511881772342
+          "delta": 17.175098567750243
         }
       },
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=19.7 (expected #0f121d, got ~#1d2634)",
+        "message": "Component score_widget color delta=19.9 (expected #0f121d, got ~#1d2734)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3179,8 +3179,8 @@
             90
           ],
           "expected": "#0f121d",
-          "actual": "#1d2634",
-          "delta": 19.66441244202264
+          "actual": "#1d2734",
+          "delta": 19.947544679056794
         }
       },
       {
@@ -3248,13 +3248,13 @@
           ],
           "expected": "#111520",
           "actual": "#1c2431",
-          "delta": 14.801878822014805
+          "delta": 14.778011345349208
         }
       },
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=17.4 (expected #111520, got ~#1d2734)",
+        "message": "Component score_widget color delta=17.7 (expected #111520, got ~#1e2735)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3264,14 +3264,14 @@
             90
           ],
           "expected": "#111520",
-          "actual": "#1d2734",
-          "delta": 17.377493431935388
+          "actual": "#1e2735",
+          "delta": 17.726245499659434
         }
       },
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=21.3 (expected #29374a, got ~#1a202e)",
+        "message": "Component card_group color delta=20.8 (expected #29374a, got ~#1b212f)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3281,14 +3281,14 @@
             205
           ],
           "expected": "#29374a",
-          "actual": "#1a202e",
-          "delta": 21.252928549120007
+          "actual": "#1b212f",
+          "delta": 20.826697634726457
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=44.7 (expected #335c60, got ~#1a202e)",
+        "message": "Component icons color delta=44.4 (expected #335c60, got ~#1a202e)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3299,7 +3299,7 @@
           ],
           "expected": "#335c60",
           "actual": "#1a202e",
-          "delta": 44.734110330507185
+          "delta": 44.37655251300362
         }
       }
     ],

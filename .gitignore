@@ -66,6 +66,8 @@ installers/nsis/Output/
 # Local tower scratch artifacts
 _scratch_trash/
 .harness/
+.hermes/
+graphify-out/
 pr_body*.md
 
 # Local agent scratch artifacts, quarantines, reports and temporary captures
