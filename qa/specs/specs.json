@@ -77,7 +77,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-home.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-home-light-960x600.png",
         "surface_key": "suite:home@light",
         "card_count": 10,
         "text_block_count": 84,
@@ -154,7 +154,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-home-no-score.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-home-no-score-light-960x600.png",
         "surface_key": "suite:home-no-score@light",
         "card_count": 10,
         "text_block_count": 89,
@@ -201,7 +201,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-onboarding.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-onboarding-light-520x600.png",
         "surface_key": "suite:onboarding@light",
         "card_count": 0,
         "text_block_count": 75,
@@ -248,7 +248,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-onboarding-error.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-onboarding-error-light-520x600.png",
         "surface_key": "suite:onboarding-error@light",
         "card_count": 0,
         "text_block_count": 82,
@@ -295,7 +295,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-recuperar-acceso.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-recuperar-acceso-light-520x600.png",
         "surface_key": "suite:recuperar-acceso@light",
         "card_count": 0,
         "text_block_count": 84,
@@ -372,7 +372,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-animo.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-animo-light-960x600.png",
         "surface_key": "suite:animo@light",
         "card_count": 3,
         "text_block_count": 34,
@@ -449,7 +449,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-dbt-now.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-dbt-now-light-960x600.png",
         "surface_key": "suite:dbt-now@light",
         "card_count": 4,
         "text_block_count": 52,
@@ -496,7 +496,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-dbt-library.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-dbt-library-light-960x600.png",
         "surface_key": "suite:dbt-library@light",
         "card_count": 0,
         "text_block_count": 112,
@@ -543,7 +543,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-dbt-practice-stop.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-dbt-practice-stop-light-960x600.png",
         "surface_key": "suite:dbt-practice-stop@light",
         "card_count": 0,
         "text_block_count": 38,
@@ -590,7 +590,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-respiracion.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-respiracion-light-960x600.png",
         "surface_key": "suite:respiracion@light",
         "card_count": 0,
         "text_block_count": 27,
@@ -637,7 +637,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-respiracion-running.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-respiracion-running-light-960x600.png",
         "surface_key": "suite:respiracion-running@light",
         "card_count": 0,
         "text_block_count": 27,
@@ -684,7 +684,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-respiracion-paused.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-respiracion-paused-light-960x600.png",
         "surface_key": "suite:respiracion-paused@light",
         "card_count": 0,
         "text_block_count": 27,
@@ -731,7 +731,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-registro.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-registro-light-960x600.png",
         "surface_key": "suite:registro@light",
         "card_count": 0,
         "text_block_count": 40,
@@ -808,7 +808,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-registro-step1-emotion.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-registro-step1-emotion-light-960x600.png",
         "surface_key": "suite:registro-step1-emotion@light",
         "card_count": 5,
         "text_block_count": 38,
@@ -855,7 +855,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-registro-step1-emotion-otro.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-registro-step1-emotion-otro-light-960x600.png",
         "surface_key": "suite:registro-step1-emotion-otro@light",
         "card_count": 0,
         "text_block_count": 39,
@@ -902,7 +902,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-registro-step2-distortions.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-registro-step2-distortions-light-960x600.png",
         "surface_key": "suite:registro-step2-distortions@light",
         "card_count": 0,
         "text_block_count": 65,
@@ -949,7 +949,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-registro-step3-filled.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-registro-step3-filled-light-960x600.png",
         "surface_key": "suite:registro-step3-filled@light",
         "card_count": 0,
         "text_block_count": 46,
@@ -1020,7 +1020,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-registro-success.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-registro-success-light-960x600.png",
         "surface_key": "suite:registro-success@light",
         "card_count": 1,
         "text_block_count": 24,
@@ -1079,7 +1079,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-rutina.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-rutina-light-960x600.png",
         "surface_key": "suite:rutina@light",
         "card_count": 1,
         "text_block_count": 60,
@@ -1144,7 +1144,7 @@
         "shadow": true
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-rutina-all-completed.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-rutina-all-completed-light-960x600.png",
         "surface_key": "suite:rutina-all-completed@light",
         "card_count": 4,
         "text_block_count": 59,
@@ -1203,7 +1203,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-rutina-add-task.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-rutina-add-task-light-960x600.png",
         "surface_key": "suite:rutina-add-task@light",
         "card_count": 1,
         "text_block_count": 63,
@@ -1274,7 +1274,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-rutina-empty.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-rutina-empty-light-960x600.png",
         "surface_key": "suite:rutina-empty@light",
         "card_count": 1,
         "text_block_count": 25,
@@ -1351,7 +1351,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-actividades.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-actividades-light-960x600.png",
         "surface_key": "suite:actividades@light",
         "card_count": 9,
         "text_block_count": 80,
@@ -1428,7 +1428,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-actividades-marked-hice.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-actividades-marked-hice-light-960x600.png",
         "surface_key": "suite:actividades-marked-hice@light",
         "card_count": 8,
         "text_block_count": 78,
@@ -1505,7 +1505,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-actividades-filtered.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-actividades-filtered-light-960x600.png",
         "surface_key": "suite:actividades-filtered@light",
         "card_count": 5,
         "text_block_count": 37,
@@ -1576,7 +1576,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-actividades-empty.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-actividades-empty-light-960x600.png",
         "surface_key": "suite:actividades-empty@light",
         "card_count": 1,
         "text_block_count": 24,
@@ -1623,7 +1623,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-timer.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-timer-light-960x600.png",
         "surface_key": "suite:timer@light",
         "card_count": 0,
         "text_block_count": 23,
@@ -1670,7 +1670,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-timer-running.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-timer-running-light-960x600.png",
         "surface_key": "suite:timer-running@light",
         "card_count": 0,
         "text_block_count": 23,
@@ -1717,7 +1717,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-timer-paused.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-timer-paused-light-960x600.png",
         "surface_key": "suite:timer-paused@light",
         "card_count": 0,
         "text_block_count": 22,
@@ -1788,7 +1788,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-timer-empty.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-timer-empty-light-960x600.png",
         "surface_key": "suite:timer-empty@light",
         "card_count": 1,
         "text_block_count": 25,
@@ -1865,7 +1865,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-avisos.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-avisos-light-960x600.png",
         "surface_key": "suite:avisos@light",
         "card_count": 7,
         "text_block_count": 59,
@@ -1942,7 +1942,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-avisos-filter-activos.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-avisos-filter-activos-light-960x600.png",
         "surface_key": "suite:avisos-filter-activos@light",
         "card_count": 5,
         "text_block_count": 44,
@@ -2013,7 +2013,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-avisos-search.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-avisos-search-light-960x600.png",
         "surface_key": "suite:avisos-search@light",
         "card_count": 1,
         "text_block_count": 18,
@@ -2090,7 +2090,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-avisos-today.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-avisos-today-light-960x600.png",
         "surface_key": "suite:avisos-today@light",
         "card_count": 5,
         "text_block_count": 43,
@@ -2161,7 +2161,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\suite-avisos-empty.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-avisos-empty-light-960x600.png",
         "surface_key": "suite:avisos-empty@light",
         "card_count": 1,
         "text_block_count": 22,
@@ -2208,7 +2208,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\hub-pacientes.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-pacientes-light-960x600.png",
         "surface_key": "hub:pacientes@light",
         "card_count": 0,
         "text_block_count": 92,
@@ -2279,7 +2279,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\hub-pacientes-empty.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-pacientes-empty-light-960x600.png",
         "surface_key": "hub:pacientes-empty@light",
         "card_count": 1,
         "text_block_count": 32,
@@ -2326,7 +2326,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\hub-detalle.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-detalle-light-960x600.png",
         "surface_key": "hub:detalle@light",
         "card_count": 0,
         "text_block_count": 48,
@@ -2373,7 +2373,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\hub-detalle-plan-timer.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-detalle-plan-timer-light-960x600.png",
         "surface_key": "hub:detalle-plan-timer@light",
         "card_count": 0,
         "text_block_count": 50,
@@ -2420,7 +2420,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\hub-detalle-plan-rutina.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-detalle-plan-rutina-light-960x600.png",
         "surface_key": "hub:detalle-plan-rutina@light",
         "card_count": 0,
         "text_block_count": 45,
@@ -2467,7 +2467,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\hub-detalle-plan-activacion.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-detalle-plan-activacion-light-960x600.png",
         "surface_key": "hub:detalle-plan-activacion@light",
         "card_count": 0,
         "text_block_count": 61,
@@ -2514,7 +2514,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\hub-textos-globales.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-textos-globales-light-960x600.png",
         "surface_key": "hub:textos-globales@light",
         "card_count": 0,
         "text_block_count": 66,
@@ -2561,7 +2561,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\light\\hub-detalle-resumen-ia-0.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-detalle-resumen-ia-0-light-480x325.png",
         "surface_key": "hub:detalle-resumen-ia-0@light",
         "card_count": 0,
         "text_block_count": 29,
@@ -2638,7 +2638,7 @@
         "shadow": true
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-home.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-home-dark-960x600.png",
         "surface_key": "suite:home@dark",
         "card_count": 10,
         "text_block_count": 27,
@@ -2715,7 +2715,7 @@
         "shadow": true
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-home-no-score.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-home-no-score-dark-960x600.png",
         "surface_key": "suite:home-no-score@dark",
         "card_count": 10,
         "text_block_count": 28,
@@ -2762,7 +2762,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-onboarding.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-onboarding-dark-520x600.png",
         "surface_key": "suite:onboarding@dark",
         "card_count": 0,
         "text_block_count": 11,
@@ -2809,7 +2809,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-onboarding-error.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-onboarding-error-dark-520x600.png",
         "surface_key": "suite:onboarding-error@dark",
         "card_count": 0,
         "text_block_count": 11,
@@ -2856,7 +2856,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-recuperar-acceso.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-recuperar-acceso-dark-520x600.png",
         "surface_key": "suite:recuperar-acceso@dark",
         "card_count": 0,
         "text_block_count": 11,
@@ -2933,7 +2933,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-animo.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-animo-dark-960x600.png",
         "surface_key": "suite:animo@dark",
         "card_count": 3,
         "text_block_count": 10,
@@ -3010,7 +3010,7 @@
         "shadow": true
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-dbt-now.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-dbt-now-dark-960x600.png",
         "surface_key": "suite:dbt-now@dark",
         "card_count": 4,
         "text_block_count": 16,
@@ -3057,7 +3057,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-dbt-library.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-dbt-library-dark-960x600.png",
         "surface_key": "suite:dbt-library@dark",
         "card_count": 0,
         "text_block_count": 15,
@@ -3104,7 +3104,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-dbt-practice-stop.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-dbt-practice-stop-dark-960x600.png",
         "surface_key": "suite:dbt-practice-stop@dark",
         "card_count": 0,
         "text_block_count": 4,
@@ -3151,7 +3151,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-respiracion.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-respiracion-dark-960x600.png",
         "surface_key": "suite:respiracion@dark",
         "card_count": 0,
         "text_block_count": 13,
@@ -3198,7 +3198,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-respiracion-running.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-respiracion-running-dark-960x600.png",
         "surface_key": "suite:respiracion-running@dark",
         "card_count": 0,
         "text_block_count": 13,
@@ -3245,7 +3245,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-respiracion-paused.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-respiracion-paused-dark-960x600.png",
         "surface_key": "suite:respiracion-paused@dark",
         "card_count": 0,
         "text_block_count": 12,
@@ -3292,7 +3292,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-registro.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-registro-dark-960x600.png",
         "surface_key": "suite:registro@dark",
         "card_count": 0,
         "text_block_count": 12,
@@ -3369,7 +3369,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-registro-step1-emotion.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-registro-step1-emotion-dark-960x600.png",
         "surface_key": "suite:registro-step1-emotion@dark",
         "card_count": 5,
         "text_block_count": 16,
@@ -3416,7 +3416,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-registro-step1-emotion-otro.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-registro-step1-emotion-otro-dark-960x600.png",
         "surface_key": "suite:registro-step1-emotion-otro@dark",
         "card_count": 0,
         "text_block_count": 16,
@@ -3463,7 +3463,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-registro-step2-distortions.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-registro-step2-distortions-dark-960x600.png",
         "surface_key": "suite:registro-step2-distortions@dark",
         "card_count": 0,
         "text_block_count": 15,
@@ -3510,7 +3510,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-registro-step3-filled.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-registro-step3-filled-dark-960x600.png",
         "surface_key": "suite:registro-step3-filled@dark",
         "card_count": 0,
         "text_block_count": 17,
@@ -3581,7 +3581,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-registro-success.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-registro-success-dark-960x600.png",
         "surface_key": "suite:registro-success@dark",
         "card_count": 1,
         "text_block_count": 18,
@@ -3658,7 +3658,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-rutina.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-rutina-dark-960x600.png",
         "surface_key": "suite:rutina@dark",
         "card_count": 4,
         "text_block_count": 28,
@@ -3723,7 +3723,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-rutina-all-completed.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-rutina-all-completed-dark-960x600.png",
         "surface_key": "suite:rutina-all-completed@dark",
         "card_count": 4,
         "text_block_count": 37,
@@ -3800,7 +3800,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-rutina-add-task.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-rutina-add-task-dark-960x600.png",
         "surface_key": "suite:rutina-add-task@dark",
         "card_count": 4,
         "text_block_count": 29,
@@ -3847,7 +3847,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-rutina-empty.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-rutina-empty-dark-960x600.png",
         "surface_key": "suite:rutina-empty@dark",
         "card_count": 0,
         "text_block_count": 6,
@@ -3912,7 +3912,7 @@
         "shadow": true
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-actividades.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-actividades-dark-960x600.png",
         "surface_key": "suite:actividades@dark",
         "card_count": 9,
         "text_block_count": 12,
@@ -3977,7 +3977,7 @@
         "shadow": true
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-actividades-marked-hice.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-actividades-marked-hice-dark-960x600.png",
         "surface_key": "suite:actividades-marked-hice@dark",
         "card_count": 8,
         "text_block_count": 12,
@@ -4042,7 +4042,7 @@
         "shadow": true
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-actividades-filtered.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-actividades-filtered-dark-960x600.png",
         "surface_key": "suite:actividades-filtered@dark",
         "card_count": 5,
         "text_block_count": 7,
@@ -4077,7 +4077,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-actividades-empty.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-actividades-empty-dark-960x600.png",
         "surface_key": "suite:actividades-empty@dark",
         "card_count": 0,
         "text_block_count": 1,
@@ -4124,7 +4124,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-timer.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-timer-dark-960x600.png",
         "surface_key": "suite:timer@dark",
         "card_count": 0,
         "text_block_count": 14,
@@ -4171,7 +4171,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-timer-running.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-timer-running-dark-960x600.png",
         "surface_key": "suite:timer-running@dark",
         "card_count": 0,
         "text_block_count": 14,
@@ -4218,7 +4218,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-timer-paused.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-timer-paused-dark-960x600.png",
         "surface_key": "suite:timer-paused@dark",
         "card_count": 0,
         "text_block_count": 14,
@@ -4265,7 +4265,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-timer-empty.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-timer-empty-dark-960x600.png",
         "surface_key": "suite:timer-empty@dark",
         "card_count": 0,
         "text_block_count": 4,
@@ -4342,7 +4342,7 @@
         "shadow": true
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-avisos.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-avisos-dark-960x600.png",
         "surface_key": "suite:avisos@dark",
         "card_count": 7,
         "text_block_count": 4,
@@ -4419,7 +4419,7 @@
         "shadow": true
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-avisos-filter-activos.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-avisos-filter-activos-dark-960x600.png",
         "surface_key": "suite:avisos-filter-activos@dark",
         "card_count": 5,
         "text_block_count": 3,
@@ -4490,7 +4490,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-avisos-search.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-avisos-search-dark-960x600.png",
         "surface_key": "suite:avisos-search@dark",
         "card_count": 1,
         "text_block_count": 3,
@@ -4567,7 +4567,7 @@
         "shadow": true
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-avisos-today.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-avisos-today-dark-960x600.png",
         "surface_key": "suite:avisos-today@dark",
         "card_count": 5,
         "text_block_count": 3,
@@ -4614,7 +4614,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\suite-avisos-empty.png",
+        "generated_from": "qa\\_mockup_canonical\\suite-avisos-empty-dark-960x600.png",
         "surface_key": "suite:avisos-empty@dark",
         "card_count": 0,
         "text_block_count": 3,
@@ -4691,7 +4691,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\hub-pacientes.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-pacientes-dark-960x600.png",
         "surface_key": "hub:pacientes@dark",
         "card_count": 5,
         "text_block_count": 18,
@@ -4738,7 +4738,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\hub-pacientes-empty.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-pacientes-empty-dark-960x600.png",
         "surface_key": "hub:pacientes-empty@dark",
         "card_count": 0,
         "text_block_count": 5,
@@ -4785,7 +4785,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\hub-detalle.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-detalle-dark-960x600.png",
         "surface_key": "hub:detalle@dark",
         "card_count": 0,
         "text_block_count": 21,
@@ -4832,7 +4832,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\hub-detalle-plan-timer.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-detalle-plan-timer-dark-960x600.png",
         "surface_key": "hub:detalle-plan-timer@dark",
         "card_count": 0,
         "text_block_count": 23,
@@ -4879,7 +4879,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\hub-detalle-plan-rutina.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-detalle-plan-rutina-dark-960x600.png",
         "surface_key": "hub:detalle-plan-rutina@dark",
         "card_count": 0,
         "text_block_count": 23,
@@ -4926,7 +4926,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\hub-detalle-plan-activacion.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-detalle-plan-activacion-dark-960x600.png",
         "surface_key": "hub:detalle-plan-activacion@dark",
         "card_count": 0,
         "text_block_count": 27,
@@ -4973,7 +4973,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\hub-textos-globales.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-textos-globales-dark-960x600.png",
         "surface_key": "hub:textos-globales@dark",
         "card_count": 0,
         "text_block_count": 14,
@@ -5020,7 +5020,7 @@
         "shadow": false
       },
       "_meta": {
-        "generated_from": "qa\\_mockup_canonical\\dark\\hub-detalle-resumen-ia-0.png",
+        "generated_from": "qa\\_mockup_canonical\\hub-detalle-resumen-ia-0-dark-480x325.png",
         "surface_key": "hub:detalle-resumen-ia-0@dark",
         "card_count": 0,
         "text_block_count": 6,

@@ -26,15 +26,16 @@ import vas_engine
 
 
 def resolve_mockup_path(mockup_dir: Path, view: str, theme: str, app: str = "") -> Path | None:
-    candidates = [
-        mockup_dir / theme / f"{view}.png",
-        mockup_dir / theme / f"{view.rsplit('-', 1)[0]}.png",
-    ]
+    # Canonical source is flat: {app}-{view}-{theme}-{WxH}.png
+    # (single owner-approved source; no nested {theme}/{view}.png layout).
+    patterns = []
     if app:
-        candidates.insert(0, mockup_dir / theme / f"{app}-{view}.png")
-    for c in candidates:
-        if c.exists():
-            return c
+        patterns.append(f"{app}-{view}-{theme}-*.png")
+    patterns.append(f"*-{view}-{theme}-*.png")
+    for pat in patterns:
+        matches = sorted(mockup_dir.glob(pat))
+        if matches:
+            return matches[0]
     return None
 
 
