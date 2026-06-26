@@ -119,17 +119,12 @@ qa/_baseline_*/
 # Visual Auditor V2/V3 outputs (regenerables)
 qa/_visual_auditor_v2/
 qa/_visual_auditor_v3/
-qa/_fidelity_current/
-qa/_mockup_targets_normalized/
-qa/tessdata/
 
-# Mockup reference normalized — regenerable con qa/normalize_mockup_reference.py.
-# manifest.json SÍ se commitea (metadata). Los PNGs NO.
-qa/mockup_reference_normalized/*
-!qa/mockup_reference_normalized/manifest.json
-
-# Mockup reference static — 86 PNGs (43 estados × 2 temas) canónicos contra
-# neuromood-mockup.html. Regenerable con qa/capture_mockup.py. ESTÁ TRACKED en
-# el repo como snapshot estático canónico (NO es gitignored).
+# Canonical mockup outputs — fuente única qa/_mockup_canonical/ (tracked).
+# Diff outputs son regenerables (gitignored).
+qa/_diff_results/
 qa/_inspect/
-qa/_mockup_targets/
+
+# tessdata (modelos OCR eng/spa) — sin uso en código Python hoy; se conserva en
+# disco para posible OCR futuro (deuda fina), NO se commitea (binarios grandes).
+qa/tessdata/
