@@ -1,7 +1,7 @@
 [
   {
     "surface_key": "suite:home@light",
-    "capture_path": "_captures_v8\\suite-home-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-home-light-960x600.png",
     "pass_count": 6,
     "fail_count": 3,
     "divergences": [
@@ -62,7 +62,7 @@
   },
   {
     "surface_key": "suite:home-no-score@light",
-    "capture_path": "_captures_v8\\suite-home-no-score-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-home-no-score-light-960x600.png",
     "pass_count": 4,
     "fail_count": 5,
     "divergences": [
@@ -151,7 +151,7 @@
   },
   {
     "surface_key": "suite:onboarding@light",
-    "capture_path": "_captures_v8\\suite-onboarding-light-520x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-onboarding-light-520x600.png",
     "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
@@ -160,7 +160,7 @@
   },
   {
     "surface_key": "suite:onboarding-error@light",
-    "capture_path": "_captures_v8\\suite-onboarding-error-light-520x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-onboarding-error-light-520x600.png",
     "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
@@ -169,7 +169,7 @@
   },
   {
     "surface_key": "suite:recuperar-acceso@light",
-    "capture_path": "_captures_v8\\suite-recuperar-acceso-light-520x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-recuperar-acceso-light-520x600.png",
     "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
@@ -178,7 +178,7 @@
   },
   {
     "surface_key": "suite:animo@light",
-    "capture_path": "_captures_v8\\suite-animo-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-animo-light-960x600.png",
     "pass_count": 7,
     "fail_count": 2,
     "divergences": [
@@ -222,7 +222,7 @@
   },
   {
     "surface_key": "suite:dbt-now@light",
-    "capture_path": "_captures_v8\\suite-dbt-now-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-dbt-now-light-960x600.png",
     "pass_count": 6,
     "fail_count": 3,
     "divergences": [
@@ -283,7 +283,7 @@
   },
   {
     "surface_key": "suite:dbt-library@light",
-    "capture_path": "_captures_v8\\suite-dbt-library-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-dbt-library-light-960x600.png",
     "pass_count": 5,
     "fail_count": 1,
     "divergences": [
@@ -310,7 +310,7 @@
   },
   {
     "surface_key": "suite:dbt-practice-stop@light",
-    "capture_path": "_captures_v8\\suite-dbt-practice-stop-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-dbt-practice-stop-light-960x600.png",
     "pass_count": 2,
     "fail_count": 4,
     "divergences": [
@@ -381,7 +381,7 @@
   },
   {
     "surface_key": "suite:respiracion@light",
-    "capture_path": "_captures_v8\\suite-respiracion-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-respiracion-light-960x600.png",
     "pass_count": 5,
     "fail_count": 1,
     "divergences": [
@@ -408,7 +408,7 @@
   },
   {
     "surface_key": "suite:respiracion-running@light",
-    "capture_path": "_captures_v8\\suite-respiracion-running-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-respiracion-running-light-960x600.png",
     "pass_count": 5,
     "fail_count": 1,
     "divergences": [
@@ -435,7 +435,7 @@
   },
   {
     "surface_key": "suite:respiracion-paused@light",
-    "capture_path": "_captures_v8\\suite-respiracion-paused-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-respiracion-paused-light-960x600.png",
     "pass_count": 5,
     "fail_count": 1,
     "divergences": [
@@ -462,7 +462,7 @@
   },
   {
     "surface_key": "suite:registro@light",
-    "capture_path": "_captures_v8\\suite-registro-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-registro-light-960x600.png",
     "pass_count": 5,
     "fail_count": 1,
     "divergences": [
@@ -489,7 +489,7 @@
   },
   {
     "surface_key": "suite:registro-step1-emotion@light",
-    "capture_path": "_captures_v8\\suite-registro-step1-emotion-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-registro-step1-emotion-light-960x600.png",
     "pass_count": 5,
     "fail_count": 1,
     "divergences": [
@@ -516,7 +516,7 @@
   },
   {
     "surface_key": "suite:registro-step1-emotion-otro@light",
-    "capture_path": "_captures_v8\\suite-registro-step1-emotion-otro-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-registro-step1-emotion-otro-light-960x600.png",
     "pass_count": 5,
     "fail_count": 1,
     "divergences": [
@@ -543,7 +543,7 @@
   },
   {
     "surface_key": "suite:registro-step2-distortions@light",
-    "capture_path": "_captures_v8\\suite-registro-step2-distortions-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-registro-step2-distortions-light-960x600.png",
     "pass_count": 5,
     "fail_count": 1,
     "divergences": [
@@ -570,7 +570,7 @@
   },
   {
     "surface_key": "suite:registro-step3-filled@light",
-    "capture_path": "_captures_v8\\suite-registro-step3-filled-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-registro-step3-filled-light-960x600.png",
     "pass_count": 5,
     "fail_count": 1,
     "divergences": [
@@ -597,7 +597,7 @@
   },
   {
     "surface_key": "suite:registro-success@light",
-    "capture_path": "_captures_v8\\suite-registro-success-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-registro-success-light-960x600.png",
     "pass_count": 5,
     "fail_count": 3,
     "divergences": [
@@ -658,7 +658,7 @@
   },
   {
     "surface_key": "suite:rutina@light",
-    "capture_path": "_captures_v8\\suite-rutina-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-rutina-light-960x600.png",
     "pass_count": 5,
     "fail_count": 2,
     "divergences": [
@@ -702,7 +702,7 @@
   },
   {
     "surface_key": "suite:rutina-all-completed@light",
-    "capture_path": "_captures_v8\\suite-rutina-all-completed-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-rutina-all-completed-light-960x600.png",
     "pass_count": 6,
     "fail_count": 3,
     "divergences": [
@@ -753,7 +753,7 @@
   },
   {
     "surface_key": "suite:rutina-add-task@light",
-    "capture_path": "_captures_v8\\suite-rutina-add-task-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-rutina-add-task-light-960x600.png",
     "pass_count": 5,
     "fail_count": 2,
     "divergences": [
@@ -797,7 +797,7 @@
   },
   {
     "surface_key": "suite:rutina-empty@light",
-    "capture_path": "_captures_v8\\suite-rutina-empty-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-rutina-empty-light-960x600.png",
     "pass_count": 6,
     "fail_count": 2,
     "divergences": [
@@ -841,14 +841,14 @@
   },
   {
     "surface_key": "suite:actividades@light",
-    "capture_path": "_captures_v8\\suite-actividades-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-actividades-light-960x600.png",
     "pass_count": 8,
     "fail_count": 1,
     "divergences": [
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=26.2 (expected #d7ddd2, got ~#f5f3ec)",
+        "message": "Component card_group color delta=26.1 (expected #d7ddd2, got ~#f5f2ec)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -858,8 +858,8 @@
             454
           ],
           "expected": "#d7ddd2",
-          "actual": "#f5f3ec",
-          "delta": 26.191218762014604
+          "actual": "#f5f2ec",
+          "delta": 26.12431116237344
         }
       }
     ],
@@ -868,7 +868,7 @@
   },
   {
     "surface_key": "suite:actividades-marked-hice@light",
-    "capture_path": "_captures_v8\\suite-actividades-marked-hice-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-actividades-marked-hice-light-960x600.png",
     "pass_count": 8,
     "fail_count": 1,
     "divergences": [
@@ -886,7 +886,7 @@
           ],
           "expected": "#eae6db",
           "actual": "#f5f3ec",
-          "delta": 13.96319108035371
+          "delta": 13.996644880174292
         }
       }
     ],
@@ -895,7 +895,7 @@
   },
   {
     "surface_key": "suite:actividades-filtered@light",
-    "capture_path": "_captures_v8\\suite-actividades-filtered-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-actividades-filtered-light-960x600.png",
     "pass_count": 7,
     "fail_count": 2,
     "divergences": [
@@ -913,13 +913,13 @@
           ],
           "expected": "#eae6db",
           "actual": "#f7f4ed",
-          "delta": 15.711942643067943
+          "delta": 15.657893065873793
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=63.8 (expected #bbb6aa, got ~#f7f4ee)",
+        "message": "Component icons color delta=63.7 (expected #bbb6aa, got ~#f7f4ee)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -930,7 +930,7 @@
           ],
           "expected": "#bbb6aa",
           "actual": "#f7f4ee",
-          "delta": 63.764014809581745
+          "delta": 63.69998168426286
         }
       }
     ],
@@ -939,7 +939,7 @@
   },
   {
     "surface_key": "suite:actividades-empty@light",
-    "capture_path": "_captures_v8\\suite-actividades-empty-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-actividades-empty-light-960x600.png",
     "pass_count": 7,
     "fail_count": 1,
     "divergences": [
@@ -966,7 +966,7 @@
   },
   {
     "surface_key": "suite:timer@light",
-    "capture_path": "_captures_v8\\suite-timer-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-timer-light-960x600.png",
     "pass_count": 5,
     "fail_count": 1,
     "divergences": [
@@ -993,7 +993,7 @@
   },
   {
     "surface_key": "suite:timer-running@light",
-    "capture_path": "_captures_v8\\suite-timer-running-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-timer-running-light-960x600.png",
     "pass_count": 5,
     "fail_count": 1,
     "divergences": [
@@ -1011,7 +1011,7 @@
           ],
           "expected": "#e8e3d6",
           "actual": "#fcfaf5",
-          "delta": 25.075804385196715
+          "delta": 25.075670591287984
         }
       }
     ],
@@ -1020,7 +1020,7 @@
   },
   {
     "surface_key": "suite:timer-paused@light",
-    "capture_path": "_captures_v8\\suite-timer-paused-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-timer-paused-light-960x600.png",
     "pass_count": 5,
     "fail_count": 1,
     "divergences": [
@@ -1047,7 +1047,7 @@
   },
   {
     "surface_key": "suite:timer-empty@light",
-    "capture_path": "_captures_v8\\suite-timer-empty-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-timer-empty-light-960x600.png",
     "pass_count": 6,
     "fail_count": 2,
     "divergences": [
@@ -1091,14 +1091,31 @@
   },
   {
     "surface_key": "suite:avisos@light",
-    "capture_path": "_captures_v8\\suite-avisos-light-960x600.png",
-    "pass_count": 7,
-    "fail_count": 2,
+    "capture_path": "qa\\_captures_v8\\suite-avisos-light-960x600.png",
+    "pass_count": 6,
+    "fail_count": 3,
     "divergences": [
+      {
+        "component_id": "score_widget",
+        "kind": "COLOR_MISMATCH",
+        "message": "Component score_widget color delta=13.1 (expected #e9e4d8, got ~#f2f0e8)",
+        "severity": "high",
+        "evidence": {
+          "region": [
+            0,
+            60,
+            960,
+            90
+          ],
+          "expected": "#e9e4d8",
+          "actual": "#f2f0e8",
+          "delta": 13.052276929064902
+        }
+      },
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=25.0 (expected #e2dfd0, got ~#f8f5ee)",
+        "message": "Component card_group color delta=22.5 (expected #e2dfd0, got ~#f5f2eb)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1108,14 +1125,14 @@
             370
           ],
           "expected": "#e2dfd0",
-          "actual": "#f8f5ee",
-          "delta": 25.02618790170223
+          "actual": "#f5f2eb",
+          "delta": 22.51343744632884
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=58.4 (expected #bac2b1, got ~#f8f5ee)",
+        "message": "Component icons color delta=55.9 (expected #bac2b1, got ~#f5f3eb)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1125,17 +1142,17 @@
             348
           ],
           "expected": "#bac2b1",
-          "actual": "#f8f5ee",
-          "delta": 58.41039874694701
+          "actual": "#f5f3eb",
+          "delta": 55.907491770202824
         }
       }
     ],
-    "summary": "suite:avisos@light: 7 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:avisos@light: 6 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:avisos-filter-activos@light",
-    "capture_path": "_captures_v8\\suite-avisos-filter-activos-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-avisos-filter-activos-light-960x600.png",
     "pass_count": 5,
     "fail_count": 4,
     "divergences": [
@@ -1153,7 +1170,7 @@
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=12.2 (expected #e7e2d6, got ~#efeee5)",
+        "message": "Component score_widget color delta=15.0 (expected #e7e2d6, got ~#f2f0e8)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1163,14 +1180,14 @@
             90
           ],
           "expected": "#e7e2d6",
-          "actual": "#efeee5",
-          "delta": 12.214033764717328
+          "actual": "#f2f0e8",
+          "delta": 15.026795270993489
         }
       },
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=24.6 (expected #e2dfd0, got ~#f7f5ed)",
+        "message": "Component card_group color delta=21.9 (expected #e2dfd0, got ~#f5f2eb)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1180,14 +1197,14 @@
             202
           ],
           "expected": "#e2dfd0",
-          "actual": "#f7f5ed",
-          "delta": 24.608616040886954
+          "actual": "#f5f2eb",
+          "delta": 21.861141293412203
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=59.3 (expected #b9c1b0, got ~#f8f5ee)",
+        "message": "Component icons color delta=56.3 (expected #b9c1b0, got ~#f5f2eb)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1197,8 +1214,8 @@
             181
           ],
           "expected": "#b9c1b0",
-          "actual": "#f8f5ee",
-          "delta": 59.27630472357661
+          "actual": "#f5f2eb",
+          "delta": 56.26500528854836
         }
       }
     ],
@@ -1207,14 +1224,31 @@
   },
   {
     "surface_key": "suite:avisos-search@light",
-    "capture_path": "_captures_v8\\suite-avisos-search-light-960x600.png",
-    "pass_count": 6,
-    "fail_count": 2,
+    "capture_path": "qa\\_captures_v8\\suite-avisos-search-light-960x600.png",
+    "pass_count": 5,
+    "fail_count": 3,
     "divergences": [
+      {
+        "component_id": "score_widget",
+        "kind": "COLOR_MISMATCH",
+        "message": "Component score_widget color delta=12.4 (expected #eae5d9, got ~#f2f1e9)",
+        "severity": "high",
+        "evidence": {
+          "region": [
+            0,
+            60,
+            960,
+            90
+          ],
+          "expected": "#eae5d9",
+          "actual": "#f2f1e9",
+          "delta": 12.36717508351984
+        }
+      },
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=23.9 (expected #e5e2d4, got ~#faf7f0)",
+        "message": "Component card_group color delta=17.5 (expected #e5e2d4, got ~#f3f1ea)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1224,14 +1258,14 @@
             34
           ],
           "expected": "#e5e2d4",
-          "actual": "#faf7f0",
-          "delta": 23.933333333333326
+          "actual": "#f3f1ea",
+          "delta": 17.45555555555555
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=56.3 (expected #b8cbb8, got ~#fbf8f1)",
+        "message": "Component icons color delta=41.5 (expected #b8cbb8, got ~#ebe9e2)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1241,19 +1275,19 @@
             13
           ],
           "expected": "#b8cbb8",
-          "actual": "#fbf8f1",
-          "delta": 56.333333333333336
+          "actual": "#ebe9e2",
+          "delta": 41.48148148148149
         }
       }
     ],
-    "summary": "suite:avisos-search@light: 6 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:avisos-search@light: 5 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:avisos-today@light",
-    "capture_path": "_captures_v8\\suite-avisos-today-light-960x600.png",
-    "pass_count": 6,
-    "fail_count": 3,
+    "capture_path": "qa\\_captures_v8\\suite-avisos-today-light-960x600.png",
+    "pass_count": 5,
+    "fail_count": 4,
     "divergences": [
       {
         "component_id": "canvas",
@@ -1267,9 +1301,26 @@
         }
       },
       {
+        "component_id": "score_widget",
+        "kind": "COLOR_MISMATCH",
+        "message": "Component score_widget color delta=14.9 (expected #e7e2d6, got ~#f2f0e8)",
+        "severity": "high",
+        "evidence": {
+          "region": [
+            0,
+            60,
+            960,
+            90
+          ],
+          "expected": "#e7e2d6",
+          "actual": "#f2f0e8",
+          "delta": 14.856256689695442
+        }
+      },
+      {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=24.6 (expected #e2dfd0, got ~#f7f5ed)",
+        "message": "Component card_group color delta=21.9 (expected #e2dfd0, got ~#f5f2eb)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1279,14 +1330,14 @@
             202
           ],
           "expected": "#e2dfd0",
-          "actual": "#f7f5ed",
-          "delta": 24.608616040886954
+          "actual": "#f5f2eb",
+          "delta": 21.861141293412203
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=59.3 (expected #b9c1b0, got ~#f8f5ee)",
+        "message": "Component icons color delta=56.3 (expected #b9c1b0, got ~#f5f2eb)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -1296,17 +1347,17 @@
             181
           ],
           "expected": "#b9c1b0",
-          "actual": "#f8f5ee",
-          "delta": 59.27630472357661
+          "actual": "#f5f2eb",
+          "delta": 56.26500528854836
         }
       }
     ],
-    "summary": "suite:avisos-today@light: 6 pass, 3 fail — NEEDS_FIX",
+    "summary": "suite:avisos-today@light: 5 pass, 4 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:avisos-empty@light",
-    "capture_path": "_captures_v8\\suite-avisos-empty-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-avisos-empty-light-960x600.png",
     "pass_count": 5,
     "fail_count": 3,
     "divergences": [
@@ -1367,7 +1418,7 @@
   },
   {
     "surface_key": "hub:pacientes@light",
-    "capture_path": "_captures_v8\\hub-pacientes-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\hub-pacientes-light-960x600.png",
     "pass_count": 5,
     "fail_count": 1,
     "divergences": [
@@ -1394,7 +1445,7 @@
   },
   {
     "surface_key": "hub:pacientes-empty@light",
-    "capture_path": "_captures_v8\\hub-pacientes-empty-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\hub-pacientes-empty-light-960x600.png",
     "pass_count": 7,
     "fail_count": 1,
     "divergences": [
@@ -1421,7 +1472,7 @@
   },
   {
     "surface_key": "hub:detalle@light",
-    "capture_path": "_captures_v8\\hub-detalle-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\hub-detalle-light-960x600.png",
     "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
@@ -1430,7 +1481,7 @@
   },
   {
     "surface_key": "hub:detalle-plan-timer@light",
-    "capture_path": "_captures_v8\\hub-detalle-plan-timer-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\hub-detalle-plan-timer-light-960x600.png",
     "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
@@ -1439,7 +1490,7 @@
   },
   {
     "surface_key": "hub:detalle-plan-rutina@light",
-    "capture_path": "_captures_v8\\hub-detalle-plan-rutina-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\hub-detalle-plan-rutina-light-960x600.png",
     "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
@@ -1448,7 +1499,7 @@
   },
   {
     "surface_key": "hub:detalle-plan-activacion@light",
-    "capture_path": "_captures_v8\\hub-detalle-plan-activacion-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\hub-detalle-plan-activacion-light-960x600.png",
     "pass_count": 5,
     "fail_count": 1,
     "divergences": [
@@ -1475,7 +1526,7 @@
   },
   {
     "surface_key": "hub:textos-globales@light",
-    "capture_path": "_captures_v8\\hub-textos-globales-light-960x600.png",
+    "capture_path": "qa\\_captures_v8\\hub-textos-globales-light-960x600.png",
     "pass_count": 4,
     "fail_count": 2,
     "divergences": [
@@ -1513,7 +1564,7 @@
   },
   {
     "surface_key": "hub:detalle-resumen-ia-0@light",
-    "capture_path": "_captures_v8\\hub-detalle-resumen-ia-0-light-480x325.png",
+    "capture_path": "qa\\_captures_v8\\hub-detalle-resumen-ia-0-light-480x325.png",
     "pass_count": 3,
     "fail_count": 3,
     "divergences": [
@@ -1568,7 +1619,7 @@
   },
   {
     "surface_key": "suite:home@dark",
-    "capture_path": "_captures_v8\\suite-home-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-home-dark-960x600.png",
     "pass_count": 4,
     "fail_count": 2,
     "divergences": [
@@ -1612,7 +1663,7 @@
   },
   {
     "surface_key": "suite:home-no-score@dark",
-    "capture_path": "_captures_v8\\suite-home-no-score-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-home-no-score-dark-960x600.png",
     "pass_count": 5,
     "fail_count": 5,
     "divergences": [
@@ -1697,7 +1748,7 @@
   },
   {
     "surface_key": "suite:onboarding@dark",
-    "capture_path": "_captures_v8\\suite-onboarding-dark-520x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-onboarding-dark-520x600.png",
     "pass_count": 5,
     "fail_count": 1,
     "divergences": [
@@ -1724,7 +1775,7 @@
   },
   {
     "surface_key": "suite:onboarding-error@dark",
-    "capture_path": "_captures_v8\\suite-onboarding-error-dark-520x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-onboarding-error-dark-520x600.png",
     "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
@@ -1733,7 +1784,7 @@
   },
   {
     "surface_key": "suite:recuperar-acceso@dark",
-    "capture_path": "_captures_v8\\suite-recuperar-acceso-dark-520x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-recuperar-acceso-dark-520x600.png",
     "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
@@ -1742,7 +1793,7 @@
   },
   {
     "surface_key": "suite:animo@dark",
-    "capture_path": "_captures_v8\\suite-animo-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-animo-dark-960x600.png",
     "pass_count": 5,
     "fail_count": 4,
     "divergences": [
@@ -1810,7 +1861,7 @@
   },
   {
     "surface_key": "suite:dbt-now@dark",
-    "capture_path": "_captures_v8\\suite-dbt-now-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-dbt-now-dark-960x600.png",
     "pass_count": 4,
     "fail_count": 2,
     "divergences": [
@@ -1854,7 +1905,7 @@
   },
   {
     "surface_key": "suite:dbt-library@dark",
-    "capture_path": "_captures_v8\\suite-dbt-library-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-dbt-library-dark-960x600.png",
     "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
@@ -1863,7 +1914,7 @@
   },
   {
     "surface_key": "suite:dbt-practice-stop@dark",
-    "capture_path": "_captures_v8\\suite-dbt-practice-stop-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-dbt-practice-stop-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 2,
     "divergences": [
@@ -1900,7 +1951,7 @@
   },
   {
     "surface_key": "suite:respiracion@dark",
-    "capture_path": "_captures_v8\\suite-respiracion-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-respiracion-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 3,
     "divergences": [
@@ -1955,7 +2006,7 @@
   },
   {
     "surface_key": "suite:respiracion-running@dark",
-    "capture_path": "_captures_v8\\suite-respiracion-running-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-respiracion-running-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 3,
     "divergences": [
@@ -2010,19 +2061,19 @@
   },
   {
     "surface_key": "suite:respiracion-paused@dark",
-    "capture_path": "_captures_v8\\suite-respiracion-paused-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-respiracion-paused-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 3,
     "divergences": [
       {
         "component_id": "canvas",
         "kind": "COLOR_MISMATCH",
-        "message": "Canvas background delta=16.9 (expected #10141f, got ~#1b2634)",
+        "message": "Canvas background delta=16.7 (expected #10141f, got ~#1b2634)",
         "severity": "high",
         "evidence": {
           "expected": "#10141f",
           "actual_approx": "#1b2634",
-          "delta": 16.86666666666667
+          "delta": 16.733333333333334
         }
       },
       {
@@ -2065,7 +2116,7 @@
   },
   {
     "surface_key": "suite:registro@dark",
-    "capture_path": "_captures_v8\\suite-registro-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-registro-dark-960x600.png",
     "pass_count": 4,
     "fail_count": 2,
     "divergences": [
@@ -2103,7 +2154,7 @@
   },
   {
     "surface_key": "suite:registro-step1-emotion@dark",
-    "capture_path": "_captures_v8\\suite-registro-step1-emotion-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-registro-step1-emotion-dark-960x600.png",
     "pass_count": 4,
     "fail_count": 2,
     "divergences": [
@@ -2147,7 +2198,7 @@
   },
   {
     "surface_key": "suite:registro-step1-emotion-otro@dark",
-    "capture_path": "_captures_v8\\suite-registro-step1-emotion-otro-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-registro-step1-emotion-otro-dark-960x600.png",
     "pass_count": 4,
     "fail_count": 2,
     "divergences": [
@@ -2191,7 +2242,7 @@
   },
   {
     "surface_key": "suite:registro-step2-distortions@dark",
-    "capture_path": "_captures_v8\\suite-registro-step2-distortions-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-registro-step2-distortions-dark-960x600.png",
     "pass_count": 4,
     "fail_count": 2,
     "divergences": [
@@ -2235,7 +2286,7 @@
   },
   {
     "surface_key": "suite:registro-step3-filled@dark",
-    "capture_path": "_captures_v8\\suite-registro-step3-filled-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-registro-step3-filled-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 3,
     "divergences": [
@@ -2290,7 +2341,7 @@
   },
   {
     "surface_key": "suite:registro-success@dark",
-    "capture_path": "_captures_v8\\suite-registro-success-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-registro-success-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 3,
     "divergences": [
@@ -2345,7 +2396,7 @@
   },
   {
     "surface_key": "suite:rutina@dark",
-    "capture_path": "_captures_v8\\suite-rutina-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-rutina-dark-960x600.png",
     "pass_count": 5,
     "fail_count": 4,
     "divergences": [
@@ -2423,7 +2474,7 @@
   },
   {
     "surface_key": "suite:rutina-all-completed@dark",
-    "capture_path": "_captures_v8\\suite-rutina-all-completed-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-rutina-all-completed-dark-960x600.png",
     "pass_count": 5,
     "fail_count": 3,
     "divergences": [
@@ -2484,7 +2535,7 @@
   },
   {
     "surface_key": "suite:rutina-add-task@dark",
-    "capture_path": "_captures_v8\\suite-rutina-add-task-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-rutina-add-task-dark-960x600.png",
     "pass_count": 5,
     "fail_count": 4,
     "divergences": [
@@ -2562,7 +2613,7 @@
   },
   {
     "surface_key": "suite:rutina-empty@dark",
-    "capture_path": "_captures_v8\\suite-rutina-empty-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-rutina-empty-dark-960x600.png",
     "pass_count": 4,
     "fail_count": 2,
     "divergences": [
@@ -2606,7 +2657,7 @@
   },
   {
     "surface_key": "suite:actividades@dark",
-    "capture_path": "_captures_v8\\suite-actividades-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-actividades-dark-960x600.png",
     "pass_count": 4,
     "fail_count": 1,
     "divergences": [
@@ -2633,7 +2684,7 @@
   },
   {
     "surface_key": "suite:actividades-marked-hice@dark",
-    "capture_path": "_captures_v8\\suite-actividades-marked-hice-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-actividades-marked-hice-dark-960x600.png",
     "pass_count": 4,
     "fail_count": 1,
     "divergences": [
@@ -2660,7 +2711,7 @@
   },
   {
     "surface_key": "suite:actividades-filtered@dark",
-    "capture_path": "_captures_v8\\suite-actividades-filtered-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-actividades-filtered-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 2,
     "divergences": [
@@ -2704,7 +2755,7 @@
   },
   {
     "surface_key": "suite:actividades-empty@dark",
-    "capture_path": "_captures_v8\\suite-actividades-empty-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-actividades-empty-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 2,
     "divergences": [
@@ -2748,7 +2799,7 @@
   },
   {
     "surface_key": "suite:timer@dark",
-    "capture_path": "_captures_v8\\suite-timer-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-timer-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 2,
     "divergences": [
@@ -2792,7 +2843,7 @@
   },
   {
     "surface_key": "suite:timer-running@dark",
-    "capture_path": "_captures_v8\\suite-timer-running-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-timer-running-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 2,
     "divergences": [
@@ -2827,7 +2878,7 @@
           ],
           "expected": "#10141f",
           "actual": "#232937",
-          "delta": 22.157787616360157
+          "delta": 22.157657876812305
         }
       }
     ],
@@ -2836,7 +2887,7 @@
   },
   {
     "surface_key": "suite:timer-paused@dark",
-    "capture_path": "_captures_v8\\suite-timer-paused-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-timer-paused-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 2,
     "divergences": [
@@ -2880,7 +2931,7 @@
   },
   {
     "surface_key": "suite:timer-empty@dark",
-    "capture_path": "_captures_v8\\suite-timer-empty-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-timer-empty-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 2,
     "divergences": [
@@ -2924,14 +2975,21 @@
   },
   {
     "surface_key": "suite:avisos@dark",
-    "capture_path": "_captures_v8\\suite-avisos-dark-960x600.png",
-    "pass_count": 6,
-    "fail_count": 4,
+    "capture_path": "qa\\_captures_v8\\suite-avisos-dark-960x600.png",
+    "pass_count": 5,
+    "fail_count": 5,
     "divergences": [
+      {
+        "component_id": "effects",
+        "kind": "SHADOW_MISMATCH",
+        "message": "Mockup declares a shadow but capture renders flat (no elevation detected)",
+        "severity": "medium",
+        "evidence": {}
+      },
       {
         "component_id": "header_band",
         "kind": "COLOR_MISMATCH",
-        "message": "Component header_band color delta=18.7 (expected #10131e, got ~#1d2733)",
+        "message": "Component header_band color delta=16.3 (expected #10131e, got ~#1c2431)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -2941,14 +2999,14 @@
             108
           ],
           "expected": "#10131e",
-          "actual": "#1d2733",
-          "delta": 18.677180560025747
+          "actual": "#1c2431",
+          "delta": 16.323587195579872
         }
       },
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=21.1 (expected #10131e, got ~#1f2a36)",
+        "message": "Component score_widget color delta=18.9 (expected #10131e, got ~#1d2734)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -2958,14 +3016,14 @@
             90
           ],
           "expected": "#10131e",
-          "actual": "#1f2a36",
-          "delta": 21.056473192565925
+          "actual": "#1d2734",
+          "delta": 18.868861697641986
         }
       },
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=20.1 (expected #29374a, got ~#1b2130)",
+        "message": "Component card_group color delta=21.5 (expected #29374a, got ~#1a202e)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -2975,14 +3033,14 @@
             373
           ],
           "expected": "#29374a",
-          "actual": "#1b2130",
-          "delta": 20.10140197776867
+          "actual": "#1a202e",
+          "delta": 21.544039737479604
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=42.5 (expected #335b5f, got ~#1b2130)",
+        "message": "Component icons color delta=43.9 (expected #335b5f, got ~#1a202e)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -2992,24 +3050,31 @@
             348
           ],
           "expected": "#335b5f",
-          "actual": "#1b2130",
-          "delta": 42.47468673675268
+          "actual": "#1a202e",
+          "delta": 43.92333014760539
         }
       }
     ],
-    "summary": "suite:avisos@dark: 6 pass, 4 fail — NEEDS_FIX",
+    "summary": "suite:avisos@dark: 5 pass, 5 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:avisos-filter-activos@dark",
-    "capture_path": "_captures_v8\\suite-avisos-filter-activos-dark-960x600.png",
-    "pass_count": 6,
-    "fail_count": 4,
+    "capture_path": "qa\\_captures_v8\\suite-avisos-filter-activos-dark-960x600.png",
+    "pass_count": 5,
+    "fail_count": 5,
     "divergences": [
+      {
+        "component_id": "effects",
+        "kind": "SHADOW_MISMATCH",
+        "message": "Mockup declares a shadow but capture renders flat (no elevation detected)",
+        "severity": "medium",
+        "evidence": {}
+      },
       {
         "component_id": "header_band",
         "kind": "COLOR_MISMATCH",
-        "message": "Component header_band color delta=16.9 (expected #111520, got ~#1d2733)",
+        "message": "Component header_band color delta=14.7 (expected #111520, got ~#1c2431)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3019,14 +3084,14 @@
             108
           ],
           "expected": "#111520",
-          "actual": "#1d2733",
-          "delta": 16.9461364124021
+          "actual": "#1c2431",
+          "delta": 14.67576909666345
         }
       },
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=19.3 (expected #111520, got ~#1f2a36)",
+        "message": "Component score_widget color delta=17.2 (expected #111520, got ~#1d2734)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3036,14 +3101,14 @@
             90
           ],
           "expected": "#111520",
-          "actual": "#1f2a36",
-          "delta": 19.302305309590995
+          "actual": "#1d2734",
+          "delta": 17.224988647789562
         }
       },
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=19.7 (expected #29374a, got ~#1b2230)",
+        "message": "Component card_group color delta=21.3 (expected #29374a, got ~#1a202e)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3053,14 +3118,14 @@
             205
           ],
           "expected": "#29374a",
-          "actual": "#1b2230",
-          "delta": 19.725565365040403
+          "actual": "#1a202e",
+          "delta": 21.252928549120007
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=43.0 (expected #335c60, got ~#1b2130)",
+        "message": "Component icons color delta=44.7 (expected #335c60, got ~#1a202e)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3070,24 +3135,24 @@
             181
           ],
           "expected": "#335c60",
-          "actual": "#1b2130",
-          "delta": 43.03731183709852
+          "actual": "#1a202e",
+          "delta": 44.734110330507185
         }
       }
     ],
-    "summary": "suite:avisos-filter-activos@dark: 6 pass, 4 fail — NEEDS_FIX",
+    "summary": "suite:avisos-filter-activos@dark: 5 pass, 5 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:avisos-search@dark",
-    "capture_path": "_captures_v8\\suite-avisos-search-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-avisos-search-dark-960x600.png",
     "pass_count": 4,
     "fail_count": 4,
     "divergences": [
       {
         "component_id": "header_band",
         "kind": "COLOR_MISMATCH",
-        "message": "Component header_band color delta=19.5 (expected #0f121d, got ~#1d2733)",
+        "message": "Component header_band color delta=17.2 (expected #0f121d, got ~#1b2431)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3097,14 +3162,14 @@
             108
           ],
           "expected": "#0f121d",
-          "actual": "#1d2733",
-          "delta": 19.539105246218217
+          "actual": "#1b2431",
+          "delta": 17.185511881772342
         }
       },
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=21.9 (expected #0f121d, got ~#1f2936)",
+        "message": "Component score_widget color delta=19.7 (expected #0f121d, got ~#1d2634)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3114,14 +3179,14 @@
             90
           ],
           "expected": "#0f121d",
-          "actual": "#1f2936",
-          "delta": 21.85202393694658
+          "actual": "#1d2634",
+          "delta": 19.66441244202264
         }
       },
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=21.3 (expected #293549, got ~#191f2e)",
+        "message": "Component card_group color delta=25.2 (expected #293549, got ~#161b29)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3131,14 +3196,14 @@
             36
           ],
           "expected": "#293549",
-          "actual": "#191f2e",
-          "delta": 21.333333333333332
+          "actual": "#161b29",
+          "delta": 25.177083333333332
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=51.3 (expected #376366, got ~#191f2e)",
+        "message": "Component icons color delta=59.9 (expected #376366, got ~#121722)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3148,8 +3213,8 @@
             13
           ],
           "expected": "#376366",
-          "actual": "#191f2e",
-          "delta": 51.333333333333336
+          "actual": "#121722",
+          "delta": 59.925925925925924
         }
       }
     ],
@@ -3158,14 +3223,21 @@
   },
   {
     "surface_key": "suite:avisos-today@dark",
-    "capture_path": "_captures_v8\\suite-avisos-today-dark-960x600.png",
-    "pass_count": 6,
-    "fail_count": 4,
+    "capture_path": "qa\\_captures_v8\\suite-avisos-today-dark-960x600.png",
+    "pass_count": 5,
+    "fail_count": 5,
     "divergences": [
+      {
+        "component_id": "effects",
+        "kind": "SHADOW_MISMATCH",
+        "message": "Mockup declares a shadow but capture renders flat (no elevation detected)",
+        "severity": "medium",
+        "evidence": {}
+      },
       {
         "component_id": "header_band",
         "kind": "COLOR_MISMATCH",
-        "message": "Component header_band color delta=17.2 (expected #111520, got ~#1d2734)",
+        "message": "Component header_band color delta=14.8 (expected #111520, got ~#1c2431)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3175,14 +3247,14 @@
             108
           ],
           "expected": "#111520",
-          "actual": "#1d2734",
-          "delta": 17.151003111254155
+          "actual": "#1c2431",
+          "delta": 14.801878822014805
         }
       },
       {
         "component_id": "score_widget",
         "kind": "COLOR_MISMATCH",
-        "message": "Component score_widget color delta=19.6 (expected #111520, got ~#1f2a37)",
+        "message": "Component score_widget color delta=17.4 (expected #111520, got ~#1d2734)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3192,14 +3264,14 @@
             90
           ],
           "expected": "#111520",
-          "actual": "#1f2a37",
-          "delta": 19.559700463818885
+          "actual": "#1d2734",
+          "delta": 17.377493431935388
         }
       },
       {
         "component_id": "card_group",
         "kind": "COLOR_MISMATCH",
-        "message": "Component card_group color delta=19.7 (expected #29374a, got ~#1b2230)",
+        "message": "Component card_group color delta=21.3 (expected #29374a, got ~#1a202e)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3209,14 +3281,14 @@
             205
           ],
           "expected": "#29374a",
-          "actual": "#1b2230",
-          "delta": 19.725565365040403
+          "actual": "#1a202e",
+          "delta": 21.252928549120007
         }
       },
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=43.0 (expected #335c60, got ~#1b2130)",
+        "message": "Component icons color delta=44.7 (expected #335c60, got ~#1a202e)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -3226,17 +3298,17 @@
             181
           ],
           "expected": "#335c60",
-          "actual": "#1b2130",
-          "delta": 43.03731183709852
+          "actual": "#1a202e",
+          "delta": 44.734110330507185
         }
       }
     ],
-    "summary": "suite:avisos-today@dark: 6 pass, 4 fail — NEEDS_FIX",
+    "summary": "suite:avisos-today@dark: 5 pass, 5 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:avisos-empty@dark",
-    "capture_path": "_captures_v8\\suite-avisos-empty-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\suite-avisos-empty-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 2,
     "divergences": [
@@ -3280,7 +3352,7 @@
   },
   {
     "surface_key": "hub:pacientes@dark",
-    "capture_path": "_captures_v8\\hub-pacientes-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\hub-pacientes-dark-960x600.png",
     "pass_count": 5,
     "fail_count": 4,
     "divergences": [
@@ -3358,7 +3430,7 @@
   },
   {
     "surface_key": "hub:pacientes-empty@dark",
-    "capture_path": "_captures_v8\\hub-pacientes-empty-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\hub-pacientes-empty-dark-960x600.png",
     "pass_count": 4,
     "fail_count": 2,
     "divergences": [
@@ -3402,7 +3474,7 @@
   },
   {
     "surface_key": "hub:detalle@dark",
-    "capture_path": "_captures_v8\\hub-detalle-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\hub-detalle-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 2,
     "divergences": [
@@ -3446,7 +3518,7 @@
   },
   {
     "surface_key": "hub:detalle-plan-timer@dark",
-    "capture_path": "_captures_v8\\hub-detalle-plan-timer-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\hub-detalle-plan-timer-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 2,
     "divergences": [
@@ -3490,7 +3562,7 @@
   },
   {
     "surface_key": "hub:detalle-plan-rutina@dark",
-    "capture_path": "_captures_v8\\hub-detalle-plan-rutina-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\hub-detalle-plan-rutina-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 2,
     "divergences": [
@@ -3534,7 +3606,7 @@
   },
   {
     "surface_key": "hub:detalle-plan-activacion@dark",
-    "capture_path": "_captures_v8\\hub-detalle-plan-activacion-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\hub-detalle-plan-activacion-dark-960x600.png",
     "pass_count": 4,
     "fail_count": 2,
     "divergences": [
@@ -3578,7 +3650,7 @@
   },
   {
     "surface_key": "hub:textos-globales@dark",
-    "capture_path": "_captures_v8\\hub-textos-globales-dark-960x600.png",
+    "capture_path": "qa\\_captures_v8\\hub-textos-globales-dark-960x600.png",
     "pass_count": 3,
     "fail_count": 3,
     "divergences": [
@@ -3633,7 +3705,7 @@
   },
   {
     "surface_key": "hub:detalle-resumen-ia-0@dark",
-    "capture_path": "_captures_v8\\hub-detalle-resumen-ia-0-dark-480x325.png",
+    "capture_path": "qa\\_captures_v8\\hub-detalle-resumen-ia-0-dark-480x325.png",
     "pass_count": 3,
     "fail_count": 3,
     "divergences": [
