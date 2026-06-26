@@ -181,3 +181,60 @@ Commit único del ciclo: este LOOP_LOG_V3.md (docs only).
 - Catch inicial cerrado: `_ReminderCardV3` SHADOW_MISSING × 30 (sesión anterior, commit `3bdc718`).
 - VAS estable: 86/86 superficies, 0 contratos fallidos, 180 divergencias de imagen todas no accionables (bugs del spec_generator o FP del detector).
 - Loop sigue abierto: próximo ciclo = ciclo 3 = re-DETECTAR con la misma metodología.
+
+---
+
+# Ciclo 3 — re-DETECTAR con cross-check mockup CSS (2026-06-26 continuación)
+
+- **SHA antes**: `f602b73`
+- **Acción**: re-leer `qa/_visual_auditor_spec/introspection.json` (sin cambios de código → no stale). Cruzar `with_shadow` por clase contra selectores CSS que declaran `box-shadow` en `neuromood-mockup.html`.
+
+## Paso 1 — DETECTAR (cross-check)
+
+### 1.1 Selectores mockup con `box-shadow`
+
+Extraídos con regex sobre `neuromood-mockup.html`:
+```
+.nav, .brandmark, .nav__search input, .chip-state, .window, .bigring .core,
+.ctl, .card, .card.hov, .btn, .btn--primary, .input, .toast, .modal,
+.menu-fab, .pstatus, .tg-row.dirty
+```
+
+### 1.2 Cross-check contra inventario de introspección
+
+| Clase inventario | count | with_shadow | CSS mockup relacionado | Veredicto |
+|---|---|---|---|---|
+| NMCard / ModuleCard / _ReminderCardV3 / _SkillCard / _SectionCard / _SuggestedCard / _NeedCard / _HeroDayCard / _CareStatCard / _TipCard / _EmotionTile / NMChartPanel | 280 | 280 (100%) | `.card` y variantes | ✅ |
+| NMPlayButton | 36 | 36 (100%) | `.btn--primary` (variant) | ✅ |
+| NMButton (gradient/secondary) | 78 | 78 | `.btn` (gradient+secondary sí) | ✅ |
+| NMButton (ghost variant) | 28 | 0 | `.btn` pero ghost es by-design flat | ✅ by-design |
+| NMChip | 18 | 0 | **`.badge` (no `.chip-state`)** — el uso real de `NMChip` (chips de fase en `respiracion_qt.py:704-714`) son `<span class="badge">` en mockup, y `.badge` no tiene `box-shadow` | ✅ by-design (validado) |
+| NMInput | 344 | 6 | `.input:focus` (sombra solo en focus) | ✅ by-design (focus-only) |
+| NMWindowChrome / NMTabs / NMIcon / NMBadge / NMEmptyState / NMStepper / NMSearchInput / NMTextArea / NMButtonOutline / NMCustomCheck / _NMAnimCheckBox / NMAvatar / NMElidedLabel / NMFadeWidget / _ChromeThemeToggle / _TimerChip / NMModuleRing / NMFocusArc / NMSparkline / NMWaveChart / NMHeatBar / NMPatientRowPremium / _ConsentCheckBox / NMSectionHeader / QPushButton / QLabel | 100% planos | 0 | Sin `box-shadow` en mockup | ✅ by-design |
+
+### 1.3 Conclusión cross-check
+
+**El cross-check mockup↔introspección no revela ningún ítem accionable**. Todas las clases con `with_shadow=0` son by-design (NMInput focus-only, NMButton ghost, NMChip en su uso real como `.badge` sin shadow, todos los widgets chrome/non-elevated).
+
+El inventario cubre correctamente la sombra. El catch inicial (`_ReminderCardV3`) era genuino y masivo (30 cards × shadow faltante). Después de eso, **0 cards o widgets elevated quedan sin sombra**.
+
+## Paso 2 — ELEGIR
+
+Sin ítem elegible. Mismo bloqueo.
+
+## Paso 3 — CORREGIR
+
+Nada.
+
+## Paso 4 — VALIDAR + COMMIT
+
+- `ruff check` no se corre.
+- Re-verificación no se corre.
+- Commit único: este LOOP_LOG_V3.md extendido.
+
+## Estado del loop al cierre del ciclo 3
+
+- 3 ciclos ejecutados, 0 fixes de producto aplicados.
+- Catch inicial cerrado (`_ReminderCardV3` × 30) sigue siendo el último fix accionable.
+- VAS estable: cross-check mockup↔introspección limpio. Verificador de imagen con 180 divergencias todas no accionables.
+- Loop sigue abierto.
