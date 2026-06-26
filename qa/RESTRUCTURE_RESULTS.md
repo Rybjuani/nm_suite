@@ -70,3 +70,23 @@ sobre elementos aislados (no superficie completa).
 
 - Triage del defecto real hub-detalle (offset vertical).
 - Aprobación de merge (otorgada).
+
+## Fase 5 — Cierre (5.D: cerrar y mantener)
+
+Decisión owner: **5.D**. No se ejecutan 5.A (VLM sidecar), 5.B (QWebEngineView),
+5.C (Applitools). Criterio cumplido: FP ≈ **1/86 ≈ 1.2%** (≤15%). Roadmap **CERRADO**.
+
+**Estado final del pipeline (mantener):**
+
+| Componente | Fuente / comando |
+|---|---|
+| Canonical (única) | `qa/_mockup_canonical/` ← `qa/pack canonico/generate_captures.js` + `neuromood-mockup_reparado.html` (ver README) |
+| Specs | `qa/spec_generator.py` → `qa/specs/specs.json` |
+| Auditor visual | `qa/visual_auditor_spec.py verify-all` |
+| Diff píxeles | `qa/diff_fidelity.py --engine odiff` (threshold 0.3, accept 8%) |
+| Introspección Qt | `qa/vas_introspect.py` (opt-in `--introspect`) |
+| Probe runtime | `qa/runtime_live_probe.py` (PROBE_RUNTIME/VISUAL) |
+| Grafo agentes | `graphify update qa/` (oficial, out-of-band) |
+
+**Deuda abierta entregada al owner:** hub-detalle offset vertical (UI migration).
+

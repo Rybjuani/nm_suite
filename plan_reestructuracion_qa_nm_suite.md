@@ -504,8 +504,14 @@ Antes de entregar este `.md`, se verificó:
 - **PoCs ejecutadas**: 5 (graphify tokens, odiff sintético, odiff imágenes reales, Playwright vs 4 carpetas, captura V8 vs 4 carpetas).
 - **Hallazgo crítico nuevo**: las 4 carpetas canónicas son inconsistentes entre sí y vs HTML fresco. Deben eliminarse y reemplazarse por una única canonical generada vía Playwright.
 - **Basado en**: 15 logs históricos auditados + research web (delta-qa, OverlayQA, Trilogy AI, odiff GitHub, PerceptualDiff paper) + 5 PoCs reales.
-- **Estado**: listo para entregar a agente ejecutor.
-- **Decisiones pendientes del owner**:
-  - Fase 0.2: aprobar o rechazar el collage de 5 superficies canónicas.
-  - Fase 4: aprobar PR a main tras validar métricas.
-  - Fase 5: decidir entre 5.A / 5.B / 5.C / 5.D al cierre de Fase 4.
+- **Estado**: **CERRADO (2026-06-26)**. Fases 0-4 ejecutadas en branch `qa/canonical-source`,
+  mergeadas a `main` vía PR #4. Fase 5 = **5.D (cerrar y mantener)**. Resultados en
+  `qa/RESTRUCTURE_RESULTS.md`.
+- **Decisiones del owner (resueltas)**:
+  - Fase 0.2: canonical aprobada (pack `neuromood-mockup_reparado.html` + `generate_captures.js`).
+  - Fase 4: PR #4 mergeado a main.
+  - Fase 5: **5.D** elegida (FP ≈1.2% ≤15%); no se ejecutan 5.A/5.B/5.C.
+- **Nota de ejecución**: la canonical NO se generó vía Playwright (§2.1 obsoleto); la
+  receta ÚNICA y oficial aprobada por el owner es `generate_captures.js` (puppeteer)
+  sobre `neuromood-mockup_reparado.html`. graphify = herramienta oficial out-of-band.
+- **Deuda real abierta**: hub-detalle offset vertical sistemático (~10-15px) → UI migration.
