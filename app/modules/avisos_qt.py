@@ -551,9 +551,13 @@ class ModuloAvisos(NMModule):
         ):
             pill = _StepPill(label, active=(key == "todos"), modo=self._modo, segmented=True)
             # Mockup canónico (l.295): tab pill ancho = texto + padding interno.
-            # Cap a 72px para evitar que el layout estire al ancho del track
-            # (medido: 106px vs mockup 71px, +35px visibles).
-            pill.setMaximumWidth(72)
+            # Cap por label (no uniforme) para evitar el over-stretch del
+            # pill ACTIVO (commit f37eaca midió 106 px sin cap) sin clippear
+            # labels largas ("Activos", 8 chars, sizeHint=82 px). El cap
+            # uniforme a 72 px de ese commit clippeaba "Activos" contra el
+            # borde curvo derecho; aquí se ensancha solo lo necesario por
+            # longitud de texto respetando minW=70 del chip.
+            pill.setMaximumWidth(max(70, 40 + len(label) * 6))
             pill.setFixedHeight(_AVISOS_FILTER_PILL_HEIGHT)
             pill.clicked.connect(lambda _, k=key: self._on_filter_changed(k))
             self._filter_pills[key] = pill
