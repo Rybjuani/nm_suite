@@ -2196,6 +2196,43 @@ def _navigate_hub(win, view_id: str, qapp) -> None:
     _drain(qapp)
 
 
+def _introspect_sidecar_path(out_dir: Path) -> Path:
+    return out_dir.parent / "_visual_auditor_spec" / "introspection.json"
+
+
+def _record_introspection(win, app_key: str, view_id: str, modo: str, out_dir: Path) -> None:
+    """Opt-in (NM_VAS_INTROSPECT=1) renderer-independent design audit.
+
+    Walks the live, *settled* widget tree and checks design contracts (e.g. cards
+    must carry a drop-shadow). Settling matters: fade-in animations swap a card's
+    drop-shadow for an opacity effect mid-animation, so we drain extra cycles
+    first to avoid false positives. Failures are appended to a sidecar JSON.
+    Wrapped so it can never break a capture.
+    """
+    if os.environ.get("NM_VAS_INTROSPECT", "").strip().lower() not in {"1", "true", "yes", "on"}:
+        return
+    try:
+        from PyQt6.QtWidgets import QApplication  # noqa: F811
+        import vas_introspect
+
+        _drain(QApplication.instance(), cycles=20)  # let animations settle past ~1s
+        surface_key = f"{app_key}:{view_id}@{_short_theme(modo)}"
+        report = vas_introspect.audit_tree(win, surface_key)
+
+        path = _introspect_sidecar_path(out_dir)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        existing = []
+        if path.exists():
+            try:
+                existing = json.loads(path.read_text(encoding="utf-8"))
+            except Exception:
+                existing = []
+        existing.append(report)
+        path.write_text(json.dumps(existing, indent=2, ensure_ascii=False), encoding="utf-8")
+    except Exception as exc:  # never break a capture
+        print(f"[introspect skip {view_id}: {exc}]", end="", flush=True)
+
+
 def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Path,
                scale: float, is_dialog_or_auxiliary: bool) -> dict | None:
     from PyQt6.QtWidgets import QApplication  # noqa: F811
@@ -2229,6 +2266,7 @@ def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Pa
         fname = f"{app_key}-{view_id}-{st}-{real_w}x{real_h}{suffix}.png"
         out_path = out_dir / fname
         ok = pm.save(str(out_path))
+        _record_introspection(win, app_key, view_id, modo, out_dir)
         return {"file": fname, "app": app_key, "view": view_id, "theme": st,
                 "resolution": f"{real_w}x{real_h}",
                 "requested_resolution": f"{w}x{h}",
@@ -2617,6 +2655,16 @@ def main() -> int:
     out_dir = Path(args.out_dir)
     scale = float(args.scale)
     os.environ["QT_SCALE_FACTOR"] = str(scale)
+
+    # Reset the introspection sidecar once per parent run (children append to it).
+    if (
+        os.environ.get("NM_VAS_INTROSPECT", "").strip().lower() in {"1", "true", "yes", "on"}
+        and os.environ.get("NM_V8_CHILD") != "1"
+    ):
+        try:
+            _introspect_sidecar_path(out_dir).unlink(missing_ok=True)
+        except Exception:
+            pass
 
     if args.list:
         _list_all()
