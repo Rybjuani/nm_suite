@@ -167,7 +167,7 @@ class DetallePacienteView(QWidget):
         top_wrap = QWidget()
         top_wrap.setStyleSheet("background: transparent;")
         top_lay = QVBoxLayout(top_wrap)
-        top_lay.setContentsMargins(12, 4, 12, 2)
+        top_lay.setContentsMargins(12, 28, 12, 2)
         top_lay.setSpacing(0)
         top_lay.addWidget(top)
         layout.addWidget(top_wrap)
