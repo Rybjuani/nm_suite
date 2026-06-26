@@ -104,7 +104,7 @@ def _categorize(msg: str) -> tuple[str, str, str]:
     """Infiere (categoria, icon_v3, color_token) según keywords del mensaje."""
     m = (msg or "").lower()
     if any(k in m for k in ("medic", "remedio", "pastilla", "pildora")):
-        return ("Salud", "medicine", "brand")
+        return ("Salud", "medicine", "amber")
     if any(k in m for k in ("agua", "hidrat", "beber")):
         return ("Hidratación", "water", "cyan")
     # 2026-06-24: mockup "Respiración 5 min" usa icono "water" (gota).
