@@ -309,4 +309,13 @@ Mientras tanto, el loop sigue abierto y este log queda como evidencia de que el 
 
 ## Commits del ciclo 4
 
-- (próximo) `docs(qa): LOOP_LOG_V3 cycle 4 — VAS areas ciegas + recomendación` — extiende este archivo.
+- `1bae4f9 docs(qa): LOOP_LOG_V3 cycle 4 — VAS areas ciegas + owner recommendation` — extiende este archivo.
+
+## Commits consolidados de la sesión 2026-06-26
+
+- `752cb7d docs(qa): LOOP_LOG_V3 cycle 1 — loop blocked, no actionable app debt`
+- `f602b73 docs(qa): LOOP_LOG_V3 cycle 2 — confirms cycle 1 blocker, no new debt`
+- `3b3a0b5 docs(qa): LOOP_LOG_V3 cycle 3 — cross-check mockup CSS, no actionable debt`
+- `1bae4f9 docs(qa): LOOP_LOG_V3 cycle 4 — VAS areas ciegas + owner recommendation`
+
+Catch inicial cerrado por sesión anterior: `3bdc718 fix(avisos): elevate _ReminderCardV3 reminder rows (were flat)`.
