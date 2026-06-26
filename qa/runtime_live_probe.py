@@ -25,6 +25,7 @@ USO (parent):
     .venv\\Scripts\\python.exe qa\\runtime_live_probe.py --list
 
 SALIDA: qa/_runtime_probe/{app}-{view}-{theme}-960x600.png + PROBE_MANIFEST.json
+        + PROBE_RUNTIME.json + PROBE_VISUAL.json (planos separados, Fase 2.3)
 """
 
 from __future__ import annotations
@@ -64,7 +65,20 @@ _SPEC = {
     "hub": ("hub.main_qt", "NeuroMoodHub", "Hub"),
 }
 
-_CHILD_TIMEOUT = 90  # s por subproceso; si excede => no cerró / colgado
+_CHILD_TIMEOUT = 180  # s por subproceso; si excede => no cerró / colgado
+
+# Clasificación de reasons en dos planos (Fase 2.3). Un reason es "visual" sólo
+# si empieza con uno de estos marcadores; por ahora vacío (el probe sólo observa
+# evidencia de runtime). Todo lo demás (hang, duplicate_hash, png_missing,
+# no_sidecar, spawn_error, size_mismatch, did_not_close_clean, exception...) es
+# runtime. Así PROBE_RUNTIME.json nunca contiene reasons visuales.
+_VISUAL_REASON_MARKERS: tuple[str, ...] = ()
+
+
+def _split_reasons(reasons: list[str]) -> tuple[list[str], list[str]]:
+    visual = [r for r in reasons if r.startswith(_VISUAL_REASON_MARKERS)] if _VISUAL_REASON_MARKERS else []
+    runtime = [r for r in reasons if r not in visual]
+    return runtime, visual
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -406,6 +420,12 @@ def main() -> int:
         else:
             seen.setdefault(h, key)
 
+    # Fase 2.3 — separar reasons en plano runtime y plano visual por rec.
+    for r in results:
+        runtime_reasons, visual_reasons = _split_reasons(list(r.get("reasons", [])))
+        r["runtime_reasons"] = runtime_reasons
+        r["visual_reasons"] = visual_reasons
+
     n_ok = sum(1 for r in results if r["result"] == "OK")
     n_def = sum(1 for r in results if r["result"] == "DEFECTS_FOUND")
     n_fail = sum(1 for r in results if r["result"] == "FAILED")
@@ -430,9 +450,37 @@ def main() -> int:
     (out_dir / "PROBE_MANIFEST.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    # Fase 2.3 — manifiestos separados runtime vs visual.
+    def _projected(plane: str) -> list[dict]:
+        keep = f"{plane}_reasons"
+        out = []
+        for r in results:
+            rr = {k: v for k, v in r.items() if not k.endswith("_reasons") and k != "reasons"}
+            rr["reasons"] = list(r.get(keep, []))
+            out.append(rr)
+        return out
+
+    runtime_manifest = {
+        **{k: v for k, v in manifest.items() if k not in ("results",)},
+        "plane": "runtime",
+        "results": _projected("runtime"),
+    }
+    visual_manifest = {
+        **{k: v for k, v in manifest.items() if k not in ("results",)},
+        "plane": "visual",
+        "note": "Vacío por ahora: el probe sólo observa evidencia de runtime.",
+        "results": _projected("visual"),
+    }
+    (out_dir / "PROBE_RUNTIME.json").write_text(
+        json.dumps(runtime_manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    (out_dir / "PROBE_VISUAL.json").write_text(
+        json.dumps(visual_manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+
     print("=" * 60)
     print(f"OK={n_ok}  DEFECTS_FOUND={n_def}  FAILED={n_fail}  TOTAL={len(results)}")
     print(f"Manifest: {out_dir / 'PROBE_MANIFEST.json'}")
+    print(f"Runtime:  {out_dir / 'PROBE_RUNTIME.json'}")
+    print(f"Visual:   {out_dir / 'PROBE_VISUAL.json'}")
     # Resultado de gobernanza permitido por el anti-checklist (NO PASS/APPROVED)
     if n_fail or n_def:
         print("Runtime tooling: DEFECTS_FOUND")

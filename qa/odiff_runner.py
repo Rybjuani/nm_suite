@@ -56,7 +56,7 @@ def compare_with_odiff(
     actual: Path,
     diff_png: Path | None = None,
     *,
-    threshold: float = 0.1,
+    threshold: float = 0.3,
     antialiasing: bool = True,
 ) -> dict[str, int | float | str | bool]:
     """Compare two images with odiff, returning structured diff metrics.
@@ -70,7 +70,11 @@ def compare_with_odiff(
     diff_png : Path | None
         Where to write the visual diff overlay. If None, a temp file is used.
     threshold : float
-        Color difference threshold (0-1). Pixels below this are ignored.
+        Per-pixel color difference threshold (0-1). Pixels below this are
+        ignored. Default 0.3 = piso de ruido cross-renderer validado por
+        inspección visual: a 0.1 el % se infla con tinte de fondo uniforme
+        (backdrops de modal) + antialiasing de fuentes, que NO son defectos.
+        A 0.3 esos artefactos se suprimen y sólo persisten diffs reales.
     antialiasing : bool
         If True, enables odiff's --antialiasing flag to suppress cross-renderer
         sub-pixel rasterization noise.
@@ -96,6 +100,10 @@ def compare_with_odiff(
         str(diff_png),
         "--threshold",
         str(threshold),
+        # Machine-readable stdout: "<diffCount>" when equal, or
+        # "<diffCount>;<diffPercentage>" when different. Without this, odiff
+        # prints a human sentence that cannot be parsed.
+        "--parsable-stdout",
     ]
     if antialiasing:
         cmd.append("--antialiasing")
@@ -106,41 +114,27 @@ def compare_with_odiff(
         text=True,
         timeout=30,
     )
-    # odiff exit codes: 0=match, 1=diff found, 2+=error
-    if result.returncode >= 2:
-        raise RuntimeError(
-            f"odiff failed (exit {result.returncode}): {result.stderr.strip()}"
-        )
 
+    # odiff exit codes are NOT a simple 0/1: 0=identical, 22=pixel difference
+    # found (a normal result, not an error), and a layout/size mismatch or a
+    # genuine failure produces non-numeric stdout. So the source of truth is the
+    # parsable stdout, not the return code.
     output = result.stdout.strip()
-    # Parse odiff JSON output if available, otherwise parse text
-    diff_pixels = 0
-    diff_percentage: float = 0.0
+    parts = output.split(";")
     try:
-        data = json.loads(output)
-        diff_pixels = int(data.get("diffCount", 0))
-        # odiff reports "diffPercentage" as 0-1 float
-        diff_percentage = float(data.get("diffPercentage", 0.0)) * 100.0
-    except (json.JSONDecodeError, ValueError):
-        # Fallback: parse text output lines like "diffCount: 123"
-        for line in output.splitlines():
-            line = line.strip()
-            if "diffCount" in line and ":" in line:
-                try:
-                    diff_pixels = int(line.split(":")[1].strip())
-                except ValueError:
-                    pass
-            if "diffPercentage" in line and ":" in line:
-                try:
-                    diff_percentage = float(line.split(":")[1].strip()) * 100.0
-                except ValueError:
-                    pass
+        diff_pixels = int(parts[0])
+        diff_percentage = float(parts[1]) if len(parts) > 1 else 0.0
+    except (ValueError, IndexError):
+        raise RuntimeError(
+            f"odiff produced unparsable output (exit {result.returncode}): "
+            f"stdout={output!r} stderr={result.stderr.strip()!r}"
+        )
 
     return {
         "diff_pixels": diff_pixels,
         "diff_percentage": round(diff_percentage, 4),
         "diff_png_path": str(diff_png),
-        "match": result.returncode == 0,
+        "match": diff_pixels == 0,
     }
 
 
