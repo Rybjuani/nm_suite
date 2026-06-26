@@ -42,6 +42,8 @@ def generate_spec_for_mockup(mockup_path: Path, surface_key: str) -> dict[str, A
     w, h = img.size
 
     bg_color = vas_engine.sample_bg_color(arr, w, h)
+    bg_rgb = tuple(int(bg_color[i:i + 2], 16) for i in (1, 3, 5))
+    content_top_pct = round(vas_engine.content_top_margin(arr, bg_rgb) * 100, 2)
     components = vas_engine.detect_components(arr, w, h)
 
     # Filter to card-like components (exclude very large panels)
@@ -151,6 +153,7 @@ def generate_spec_for_mockup(mockup_path: Path, surface_key: str) -> dict[str, A
             "background_color": bg_color,
             "width": w,
             "height": h,
+            "content_top_pct": content_top_pct,
         },
         "layout": layout,
         "components": spec_components,

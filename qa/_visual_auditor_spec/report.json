@@ -2,7 +2,7 @@
   {
     "surface_key": "suite:home@light",
     "capture_path": "_captures_v8\\suite-home-light-960x600.png",
-    "pass_count": 5,
+    "pass_count": 6,
     "fail_count": 3,
     "divergences": [
       {
@@ -57,13 +57,13 @@
         }
       }
     ],
-    "summary": "suite:home@light: 5 pass, 3 fail — NEEDS_FIX",
+    "summary": "suite:home@light: 6 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:home-no-score@light",
     "capture_path": "_captures_v8\\suite-home-no-score-light-960x600.png",
-    "pass_count": 3,
+    "pass_count": 4,
     "fail_count": 5,
     "divergences": [
       {
@@ -146,40 +146,40 @@
         }
       }
     ],
-    "summary": "suite:home-no-score@light: 3 pass, 5 fail — NEEDS_FIX",
+    "summary": "suite:home-no-score@light: 4 pass, 5 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:onboarding@light",
     "capture_path": "_captures_v8\\suite-onboarding-light-520x600.png",
-    "pass_count": 5,
+    "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
-    "summary": "suite:onboarding@light: 5 pass, 0 fail — CANONICAL",
+    "summary": "suite:onboarding@light: 6 pass, 0 fail — CANONICAL",
     "canonical": true
   },
   {
     "surface_key": "suite:onboarding-error@light",
     "capture_path": "_captures_v8\\suite-onboarding-error-light-520x600.png",
-    "pass_count": 5,
+    "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
-    "summary": "suite:onboarding-error@light: 5 pass, 0 fail — CANONICAL",
+    "summary": "suite:onboarding-error@light: 6 pass, 0 fail — CANONICAL",
     "canonical": true
   },
   {
     "surface_key": "suite:recuperar-acceso@light",
     "capture_path": "_captures_v8\\suite-recuperar-acceso-light-520x600.png",
-    "pass_count": 5,
+    "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
-    "summary": "suite:recuperar-acceso@light: 5 pass, 0 fail — CANONICAL",
+    "summary": "suite:recuperar-acceso@light: 6 pass, 0 fail — CANONICAL",
     "canonical": true
   },
   {
     "surface_key": "suite:animo@light",
     "capture_path": "_captures_v8\\suite-animo-light-960x600.png",
-    "pass_count": 6,
+    "pass_count": 7,
     "fail_count": 2,
     "divergences": [
       {
@@ -217,13 +217,13 @@
         }
       }
     ],
-    "summary": "suite:animo@light: 6 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:animo@light: 7 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:dbt-now@light",
     "capture_path": "_captures_v8\\suite-dbt-now-light-960x600.png",
-    "pass_count": 5,
+    "pass_count": 6,
     "fail_count": 3,
     "divergences": [
       {
@@ -278,13 +278,13 @@
         }
       }
     ],
-    "summary": "suite:dbt-now@light: 5 pass, 3 fail — NEEDS_FIX",
+    "summary": "suite:dbt-now@light: 6 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:dbt-library@light",
     "capture_path": "_captures_v8\\suite-dbt-library-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 1,
     "divergences": [
       {
@@ -305,13 +305,13 @@
         }
       }
     ],
-    "summary": "suite:dbt-library@light: 4 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:dbt-library@light: 5 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:dbt-practice-stop@light",
     "capture_path": "_captures_v8\\suite-dbt-practice-stop-light-960x600.png",
-    "pass_count": 1,
+    "pass_count": 2,
     "fail_count": 4,
     "divergences": [
       {
@@ -376,13 +376,13 @@
         }
       }
     ],
-    "summary": "suite:dbt-practice-stop@light: 1 pass, 4 fail — NEEDS_FIX",
+    "summary": "suite:dbt-practice-stop@light: 2 pass, 4 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:respiracion@light",
     "capture_path": "_captures_v8\\suite-respiracion-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 1,
     "divergences": [
       {
@@ -403,13 +403,13 @@
         }
       }
     ],
-    "summary": "suite:respiracion@light: 4 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:respiracion@light: 5 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:respiracion-running@light",
     "capture_path": "_captures_v8\\suite-respiracion-running-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 1,
     "divergences": [
       {
@@ -430,13 +430,13 @@
         }
       }
     ],
-    "summary": "suite:respiracion-running@light: 4 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:respiracion-running@light: 5 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:respiracion-paused@light",
     "capture_path": "_captures_v8\\suite-respiracion-paused-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 1,
     "divergences": [
       {
@@ -457,13 +457,13 @@
         }
       }
     ],
-    "summary": "suite:respiracion-paused@light: 4 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:respiracion-paused@light: 5 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:registro@light",
     "capture_path": "_captures_v8\\suite-registro-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 1,
     "divergences": [
       {
@@ -484,13 +484,13 @@
         }
       }
     ],
-    "summary": "suite:registro@light: 4 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:registro@light: 5 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:registro-step1-emotion@light",
     "capture_path": "_captures_v8\\suite-registro-step1-emotion-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 1,
     "divergences": [
       {
@@ -511,13 +511,13 @@
         }
       }
     ],
-    "summary": "suite:registro-step1-emotion@light: 4 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:registro-step1-emotion@light: 5 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:registro-step1-emotion-otro@light",
     "capture_path": "_captures_v8\\suite-registro-step1-emotion-otro-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 1,
     "divergences": [
       {
@@ -538,13 +538,13 @@
         }
       }
     ],
-    "summary": "suite:registro-step1-emotion-otro@light: 4 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:registro-step1-emotion-otro@light: 5 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:registro-step2-distortions@light",
     "capture_path": "_captures_v8\\suite-registro-step2-distortions-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 1,
     "divergences": [
       {
@@ -565,13 +565,13 @@
         }
       }
     ],
-    "summary": "suite:registro-step2-distortions@light: 4 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:registro-step2-distortions@light: 5 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:registro-step3-filled@light",
     "capture_path": "_captures_v8\\suite-registro-step3-filled-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 1,
     "divergences": [
       {
@@ -592,13 +592,13 @@
         }
       }
     ],
-    "summary": "suite:registro-step3-filled@light: 4 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:registro-step3-filled@light: 5 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:registro-success@light",
     "capture_path": "_captures_v8\\suite-registro-success-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 3,
     "divergences": [
       {
@@ -653,13 +653,13 @@
         }
       }
     ],
-    "summary": "suite:registro-success@light: 4 pass, 3 fail — NEEDS_FIX",
+    "summary": "suite:registro-success@light: 5 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:rutina@light",
     "capture_path": "_captures_v8\\suite-rutina-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 2,
     "divergences": [
       {
@@ -697,20 +697,20 @@
         }
       }
     ],
-    "summary": "suite:rutina@light: 4 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:rutina@light: 5 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:rutina-all-completed@light",
     "capture_path": "_captures_v8\\suite-rutina-all-completed-light-960x600.png",
-    "pass_count": 5,
-    "fail_count": 2,
+    "pass_count": 6,
+    "fail_count": 3,
     "divergences": [
       {
         "component_id": "effects",
-        "kind": "MISSING_SHADOW",
-        "message": "Shadow effect not detected in capture (may be render difference)",
-        "severity": "low",
+        "kind": "SHADOW_MISMATCH",
+        "message": "Mockup declares a shadow but capture renders flat (no elevation detected)",
+        "severity": "medium",
         "evidence": {}
       },
       {
@@ -748,13 +748,13 @@
         }
       }
     ],
-    "summary": "suite:rutina-all-completed@light: 5 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:rutina-all-completed@light: 6 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:rutina-add-task@light",
     "capture_path": "_captures_v8\\suite-rutina-add-task-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 2,
     "divergences": [
       {
@@ -792,13 +792,13 @@
         }
       }
     ],
-    "summary": "suite:rutina-add-task@light: 4 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:rutina-add-task@light: 5 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:rutina-empty@light",
     "capture_path": "_captures_v8\\suite-rutina-empty-light-960x600.png",
-    "pass_count": 5,
+    "pass_count": 6,
     "fail_count": 2,
     "divergences": [
       {
@@ -836,13 +836,13 @@
         }
       }
     ],
-    "summary": "suite:rutina-empty@light: 5 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:rutina-empty@light: 6 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:actividades@light",
     "capture_path": "_captures_v8\\suite-actividades-light-960x600.png",
-    "pass_count": 7,
+    "pass_count": 8,
     "fail_count": 1,
     "divergences": [
       {
@@ -863,13 +863,13 @@
         }
       }
     ],
-    "summary": "suite:actividades@light: 7 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:actividades@light: 8 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:actividades-marked-hice@light",
     "capture_path": "_captures_v8\\suite-actividades-marked-hice-light-960x600.png",
-    "pass_count": 7,
+    "pass_count": 8,
     "fail_count": 1,
     "divergences": [
       {
@@ -890,13 +890,13 @@
         }
       }
     ],
-    "summary": "suite:actividades-marked-hice@light: 7 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:actividades-marked-hice@light: 8 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:actividades-filtered@light",
     "capture_path": "_captures_v8\\suite-actividades-filtered-light-960x600.png",
-    "pass_count": 6,
+    "pass_count": 7,
     "fail_count": 2,
     "divergences": [
       {
@@ -934,13 +934,13 @@
         }
       }
     ],
-    "summary": "suite:actividades-filtered@light: 6 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:actividades-filtered@light: 7 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:actividades-empty@light",
     "capture_path": "_captures_v8\\suite-actividades-empty-light-960x600.png",
-    "pass_count": 6,
+    "pass_count": 7,
     "fail_count": 1,
     "divergences": [
       {
@@ -961,13 +961,13 @@
         }
       }
     ],
-    "summary": "suite:actividades-empty@light: 6 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:actividades-empty@light: 7 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:timer@light",
     "capture_path": "_captures_v8\\suite-timer-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 1,
     "divergences": [
       {
@@ -988,13 +988,13 @@
         }
       }
     ],
-    "summary": "suite:timer@light: 4 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:timer@light: 5 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:timer-running@light",
     "capture_path": "_captures_v8\\suite-timer-running-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 1,
     "divergences": [
       {
@@ -1015,13 +1015,13 @@
         }
       }
     ],
-    "summary": "suite:timer-running@light: 4 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:timer-running@light: 5 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:timer-paused@light",
     "capture_path": "_captures_v8\\suite-timer-paused-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 1,
     "divergences": [
       {
@@ -1042,13 +1042,13 @@
         }
       }
     ],
-    "summary": "suite:timer-paused@light: 4 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:timer-paused@light: 5 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:timer-empty@light",
     "capture_path": "_captures_v8\\suite-timer-empty-light-960x600.png",
-    "pass_count": 5,
+    "pass_count": 6,
     "fail_count": 2,
     "divergences": [
       {
@@ -1086,13 +1086,13 @@
         }
       }
     ],
-    "summary": "suite:timer-empty@light: 5 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:timer-empty@light: 6 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:avisos@light",
     "capture_path": "_captures_v8\\suite-avisos-light-960x600.png",
-    "pass_count": 6,
+    "pass_count": 7,
     "fail_count": 2,
     "divergences": [
       {
@@ -1130,13 +1130,13 @@
         }
       }
     ],
-    "summary": "suite:avisos@light: 6 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:avisos@light: 7 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:avisos-filter-activos@light",
     "capture_path": "_captures_v8\\suite-avisos-filter-activos-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 4,
     "divergences": [
       {
@@ -1202,13 +1202,13 @@
         }
       }
     ],
-    "summary": "suite:avisos-filter-activos@light: 4 pass, 4 fail — NEEDS_FIX",
+    "summary": "suite:avisos-filter-activos@light: 5 pass, 4 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:avisos-search@light",
     "capture_path": "_captures_v8\\suite-avisos-search-light-960x600.png",
-    "pass_count": 5,
+    "pass_count": 6,
     "fail_count": 2,
     "divergences": [
       {
@@ -1246,13 +1246,13 @@
         }
       }
     ],
-    "summary": "suite:avisos-search@light: 5 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:avisos-search@light: 6 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:avisos-today@light",
     "capture_path": "_captures_v8\\suite-avisos-today-light-960x600.png",
-    "pass_count": 5,
+    "pass_count": 6,
     "fail_count": 3,
     "divergences": [
       {
@@ -1301,13 +1301,13 @@
         }
       }
     ],
-    "summary": "suite:avisos-today@light: 5 pass, 3 fail — NEEDS_FIX",
+    "summary": "suite:avisos-today@light: 6 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:avisos-empty@light",
     "capture_path": "_captures_v8\\suite-avisos-empty-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 3,
     "divergences": [
       {
@@ -1362,13 +1362,13 @@
         }
       }
     ],
-    "summary": "suite:avisos-empty@light: 4 pass, 3 fail — NEEDS_FIX",
+    "summary": "suite:avisos-empty@light: 5 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "hub:pacientes@light",
     "capture_path": "_captures_v8\\hub-pacientes-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 1,
     "divergences": [
       {
@@ -1389,13 +1389,13 @@
         }
       }
     ],
-    "summary": "hub:pacientes@light: 4 pass, 1 fail — NEEDS_FIX",
+    "summary": "hub:pacientes@light: 5 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "hub:pacientes-empty@light",
     "capture_path": "_captures_v8\\hub-pacientes-empty-light-960x600.png",
-    "pass_count": 6,
+    "pass_count": 7,
     "fail_count": 1,
     "divergences": [
       {
@@ -1416,40 +1416,40 @@
         }
       }
     ],
-    "summary": "hub:pacientes-empty@light: 6 pass, 1 fail — NEEDS_FIX",
+    "summary": "hub:pacientes-empty@light: 7 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "hub:detalle@light",
     "capture_path": "_captures_v8\\hub-detalle-light-960x600.png",
-    "pass_count": 5,
+    "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
-    "summary": "hub:detalle@light: 5 pass, 0 fail — CANONICAL",
+    "summary": "hub:detalle@light: 6 pass, 0 fail — CANONICAL",
     "canonical": true
   },
   {
     "surface_key": "hub:detalle-plan-timer@light",
     "capture_path": "_captures_v8\\hub-detalle-plan-timer-light-960x600.png",
-    "pass_count": 5,
+    "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
-    "summary": "hub:detalle-plan-timer@light: 5 pass, 0 fail — CANONICAL",
+    "summary": "hub:detalle-plan-timer@light: 6 pass, 0 fail — CANONICAL",
     "canonical": true
   },
   {
     "surface_key": "hub:detalle-plan-rutina@light",
     "capture_path": "_captures_v8\\hub-detalle-plan-rutina-light-960x600.png",
-    "pass_count": 5,
+    "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
-    "summary": "hub:detalle-plan-rutina@light: 5 pass, 0 fail — CANONICAL",
+    "summary": "hub:detalle-plan-rutina@light: 6 pass, 0 fail — CANONICAL",
     "canonical": true
   },
   {
     "surface_key": "hub:detalle-plan-activacion@light",
     "capture_path": "_captures_v8\\hub-detalle-plan-activacion-light-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 1,
     "divergences": [
       {
@@ -1470,13 +1470,13 @@
         }
       }
     ],
-    "summary": "hub:detalle-plan-activacion@light: 4 pass, 1 fail — NEEDS_FIX",
+    "summary": "hub:detalle-plan-activacion@light: 5 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "hub:textos-globales@light",
     "capture_path": "_captures_v8\\hub-textos-globales-light-960x600.png",
-    "pass_count": 3,
+    "pass_count": 4,
     "fail_count": 2,
     "divergences": [
       {
@@ -1508,13 +1508,13 @@
         }
       }
     ],
-    "summary": "hub:textos-globales@light: 3 pass, 2 fail — NEEDS_FIX",
+    "summary": "hub:textos-globales@light: 4 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "hub:detalle-resumen-ia-0@light",
     "capture_path": "_captures_v8\\hub-detalle-resumen-ia-0-light-480x325.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 3,
     "divergences": [
       {
@@ -1563,13 +1563,13 @@
         }
       }
     ],
-    "summary": "hub:detalle-resumen-ia-0@light: 2 pass, 3 fail — NEEDS_FIX",
+    "summary": "hub:detalle-resumen-ia-0@light: 3 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:home@dark",
     "capture_path": "_captures_v8\\suite-home-dark-960x600.png",
-    "pass_count": 3,
+    "pass_count": 4,
     "fail_count": 2,
     "divergences": [
       {
@@ -1607,20 +1607,20 @@
         }
       }
     ],
-    "summary": "suite:home@dark: 3 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:home@dark: 4 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:home-no-score@dark",
     "capture_path": "_captures_v8\\suite-home-no-score-dark-960x600.png",
-    "pass_count": 4,
-    "fail_count": 4,
+    "pass_count": 5,
+    "fail_count": 5,
     "divergences": [
       {
         "component_id": "effects",
-        "kind": "MISSING_SHADOW",
-        "message": "Shadow effect not detected in capture (may be render difference)",
-        "severity": "low",
+        "kind": "SHADOW_MISMATCH",
+        "message": "Mockup declares a shadow but capture renders flat (no elevation detected)",
+        "severity": "medium",
         "evidence": {}
       },
       {
@@ -1692,13 +1692,13 @@
         }
       }
     ],
-    "summary": "suite:home-no-score@dark: 4 pass, 4 fail — NEEDS_FIX",
+    "summary": "suite:home-no-score@dark: 5 pass, 5 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:onboarding@dark",
     "capture_path": "_captures_v8\\suite-onboarding-dark-520x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 1,
     "divergences": [
       {
@@ -1719,38 +1719,38 @@
         }
       }
     ],
-    "summary": "suite:onboarding@dark: 4 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:onboarding@dark: 5 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:onboarding-error@dark",
     "capture_path": "_captures_v8\\suite-onboarding-error-dark-520x600.png",
-    "pass_count": 5,
+    "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
-    "summary": "suite:onboarding-error@dark: 5 pass, 0 fail — CANONICAL",
+    "summary": "suite:onboarding-error@dark: 6 pass, 0 fail — CANONICAL",
     "canonical": true
   },
   {
     "surface_key": "suite:recuperar-acceso@dark",
     "capture_path": "_captures_v8\\suite-recuperar-acceso-dark-520x600.png",
-    "pass_count": 5,
+    "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
-    "summary": "suite:recuperar-acceso@dark: 5 pass, 0 fail — CANONICAL",
+    "summary": "suite:recuperar-acceso@dark: 6 pass, 0 fail — CANONICAL",
     "canonical": true
   },
   {
     "surface_key": "suite:animo@dark",
     "capture_path": "_captures_v8\\suite-animo-dark-960x600.png",
-    "pass_count": 4,
-    "fail_count": 3,
+    "pass_count": 5,
+    "fail_count": 4,
     "divergences": [
       {
         "component_id": "effects",
-        "kind": "MISSING_SHADOW",
-        "message": "Shadow effect not detected in capture (may be render difference)",
-        "severity": "low",
+        "kind": "SHADOW_MISMATCH",
+        "message": "Mockup declares a shadow but capture renders flat (no elevation detected)",
+        "severity": "medium",
         "evidence": {}
       },
       {
@@ -1805,13 +1805,13 @@
         }
       }
     ],
-    "summary": "suite:animo@dark: 4 pass, 3 fail — NEEDS_FIX",
+    "summary": "suite:animo@dark: 5 pass, 4 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:dbt-now@dark",
     "capture_path": "_captures_v8\\suite-dbt-now-dark-960x600.png",
-    "pass_count": 3,
+    "pass_count": 4,
     "fail_count": 2,
     "divergences": [
       {
@@ -1849,22 +1849,22 @@
         }
       }
     ],
-    "summary": "suite:dbt-now@dark: 3 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:dbt-now@dark: 4 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:dbt-library@dark",
     "capture_path": "_captures_v8\\suite-dbt-library-dark-960x600.png",
-    "pass_count": 5,
+    "pass_count": 6,
     "fail_count": 0,
     "divergences": [],
-    "summary": "suite:dbt-library@dark: 5 pass, 0 fail — CANONICAL",
+    "summary": "suite:dbt-library@dark: 6 pass, 0 fail — CANONICAL",
     "canonical": true
   },
   {
     "surface_key": "suite:dbt-practice-stop@dark",
     "capture_path": "_captures_v8\\suite-dbt-practice-stop-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 2,
     "divergences": [
       {
@@ -1895,13 +1895,13 @@
         }
       }
     ],
-    "summary": "suite:dbt-practice-stop@dark: 2 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:dbt-practice-stop@dark: 3 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:respiracion@dark",
     "capture_path": "_captures_v8\\suite-respiracion-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 3,
     "divergences": [
       {
@@ -1950,13 +1950,13 @@
         }
       }
     ],
-    "summary": "suite:respiracion@dark: 2 pass, 3 fail — NEEDS_FIX",
+    "summary": "suite:respiracion@dark: 3 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:respiracion-running@dark",
     "capture_path": "_captures_v8\\suite-respiracion-running-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 3,
     "divergences": [
       {
@@ -2005,13 +2005,13 @@
         }
       }
     ],
-    "summary": "suite:respiracion-running@dark: 2 pass, 3 fail — NEEDS_FIX",
+    "summary": "suite:respiracion-running@dark: 3 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:respiracion-paused@dark",
     "capture_path": "_captures_v8\\suite-respiracion-paused-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 3,
     "divergences": [
       {
@@ -2060,13 +2060,13 @@
         }
       }
     ],
-    "summary": "suite:respiracion-paused@dark: 2 pass, 3 fail — NEEDS_FIX",
+    "summary": "suite:respiracion-paused@dark: 3 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:registro@dark",
     "capture_path": "_captures_v8\\suite-registro-dark-960x600.png",
-    "pass_count": 3,
+    "pass_count": 4,
     "fail_count": 2,
     "divergences": [
       {
@@ -2098,13 +2098,13 @@
         }
       }
     ],
-    "summary": "suite:registro@dark: 3 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:registro@dark: 4 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:registro-step1-emotion@dark",
     "capture_path": "_captures_v8\\suite-registro-step1-emotion-dark-960x600.png",
-    "pass_count": 3,
+    "pass_count": 4,
     "fail_count": 2,
     "divergences": [
       {
@@ -2142,13 +2142,13 @@
         }
       }
     ],
-    "summary": "suite:registro-step1-emotion@dark: 3 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:registro-step1-emotion@dark: 4 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:registro-step1-emotion-otro@dark",
     "capture_path": "_captures_v8\\suite-registro-step1-emotion-otro-dark-960x600.png",
-    "pass_count": 3,
+    "pass_count": 4,
     "fail_count": 2,
     "divergences": [
       {
@@ -2186,13 +2186,13 @@
         }
       }
     ],
-    "summary": "suite:registro-step1-emotion-otro@dark: 3 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:registro-step1-emotion-otro@dark: 4 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:registro-step2-distortions@dark",
     "capture_path": "_captures_v8\\suite-registro-step2-distortions-dark-960x600.png",
-    "pass_count": 3,
+    "pass_count": 4,
     "fail_count": 2,
     "divergences": [
       {
@@ -2230,13 +2230,13 @@
         }
       }
     ],
-    "summary": "suite:registro-step2-distortions@dark: 3 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:registro-step2-distortions@dark: 4 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:registro-step3-filled@dark",
     "capture_path": "_captures_v8\\suite-registro-step3-filled-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 3,
     "divergences": [
       {
@@ -2285,13 +2285,13 @@
         }
       }
     ],
-    "summary": "suite:registro-step3-filled@dark: 2 pass, 3 fail — NEEDS_FIX",
+    "summary": "suite:registro-step3-filled@dark: 3 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:registro-success@dark",
     "capture_path": "_captures_v8\\suite-registro-success-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 3,
     "divergences": [
       {
@@ -2340,13 +2340,13 @@
         }
       }
     ],
-    "summary": "suite:registro-success@dark: 2 pass, 3 fail — NEEDS_FIX",
+    "summary": "suite:registro-success@dark: 3 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:rutina@dark",
     "capture_path": "_captures_v8\\suite-rutina-dark-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 4,
     "divergences": [
       {
@@ -2418,13 +2418,13 @@
         }
       }
     ],
-    "summary": "suite:rutina@dark: 4 pass, 4 fail — NEEDS_FIX",
+    "summary": "suite:rutina@dark: 5 pass, 4 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:rutina-all-completed@dark",
     "capture_path": "_captures_v8\\suite-rutina-all-completed-dark-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 3,
     "divergences": [
       {
@@ -2479,13 +2479,13 @@
         }
       }
     ],
-    "summary": "suite:rutina-all-completed@dark: 4 pass, 3 fail — NEEDS_FIX",
+    "summary": "suite:rutina-all-completed@dark: 5 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:rutina-add-task@dark",
     "capture_path": "_captures_v8\\suite-rutina-add-task-dark-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 4,
     "divergences": [
       {
@@ -2557,13 +2557,13 @@
         }
       }
     ],
-    "summary": "suite:rutina-add-task@dark: 4 pass, 4 fail — NEEDS_FIX",
+    "summary": "suite:rutina-add-task@dark: 5 pass, 4 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:rutina-empty@dark",
     "capture_path": "_captures_v8\\suite-rutina-empty-dark-960x600.png",
-    "pass_count": 3,
+    "pass_count": 4,
     "fail_count": 2,
     "divergences": [
       {
@@ -2601,13 +2601,13 @@
         }
       }
     ],
-    "summary": "suite:rutina-empty@dark: 3 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:rutina-empty@dark: 4 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:actividades@dark",
     "capture_path": "_captures_v8\\suite-actividades-dark-960x600.png",
-    "pass_count": 3,
+    "pass_count": 4,
     "fail_count": 1,
     "divergences": [
       {
@@ -2628,13 +2628,13 @@
         }
       }
     ],
-    "summary": "suite:actividades@dark: 3 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:actividades@dark: 4 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:actividades-marked-hice@dark",
     "capture_path": "_captures_v8\\suite-actividades-marked-hice-dark-960x600.png",
-    "pass_count": 3,
+    "pass_count": 4,
     "fail_count": 1,
     "divergences": [
       {
@@ -2655,13 +2655,13 @@
         }
       }
     ],
-    "summary": "suite:actividades-marked-hice@dark: 3 pass, 1 fail — NEEDS_FIX",
+    "summary": "suite:actividades-marked-hice@dark: 4 pass, 1 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:actividades-filtered@dark",
     "capture_path": "_captures_v8\\suite-actividades-filtered-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 2,
     "divergences": [
       {
@@ -2699,13 +2699,13 @@
         }
       }
     ],
-    "summary": "suite:actividades-filtered@dark: 2 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:actividades-filtered@dark: 3 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:actividades-empty@dark",
     "capture_path": "_captures_v8\\suite-actividades-empty-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 2,
     "divergences": [
       {
@@ -2743,13 +2743,13 @@
         }
       }
     ],
-    "summary": "suite:actividades-empty@dark: 2 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:actividades-empty@dark: 3 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:timer@dark",
     "capture_path": "_captures_v8\\suite-timer-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 2,
     "divergences": [
       {
@@ -2787,13 +2787,13 @@
         }
       }
     ],
-    "summary": "suite:timer@dark: 2 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:timer@dark: 3 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:timer-running@dark",
     "capture_path": "_captures_v8\\suite-timer-running-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 2,
     "divergences": [
       {
@@ -2831,13 +2831,13 @@
         }
       }
     ],
-    "summary": "suite:timer-running@dark: 2 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:timer-running@dark: 3 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:timer-paused@dark",
     "capture_path": "_captures_v8\\suite-timer-paused-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 2,
     "divergences": [
       {
@@ -2875,13 +2875,13 @@
         }
       }
     ],
-    "summary": "suite:timer-paused@dark: 2 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:timer-paused@dark: 3 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "suite:timer-empty@dark",
     "capture_path": "_captures_v8\\suite-timer-empty-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 2,
     "divergences": [
       {
@@ -2919,7 +2919,7 @@
         }
       }
     ],
-    "summary": "suite:timer-empty@dark: 2 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:timer-empty@dark: 3 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
@@ -3081,7 +3081,7 @@
   {
     "surface_key": "suite:avisos-search@dark",
     "capture_path": "_captures_v8\\suite-avisos-search-dark-960x600.png",
-    "pass_count": 3,
+    "pass_count": 4,
     "fail_count": 4,
     "divergences": [
       {
@@ -3153,7 +3153,7 @@
         }
       }
     ],
-    "summary": "suite:avisos-search@dark: 3 pass, 4 fail — NEEDS_FIX",
+    "summary": "suite:avisos-search@dark: 4 pass, 4 fail — NEEDS_FIX",
     "canonical": false
   },
   {
@@ -3237,7 +3237,7 @@
   {
     "surface_key": "suite:avisos-empty@dark",
     "capture_path": "_captures_v8\\suite-avisos-empty-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 2,
     "divergences": [
       {
@@ -3275,13 +3275,13 @@
         }
       }
     ],
-    "summary": "suite:avisos-empty@dark: 2 pass, 2 fail — NEEDS_FIX",
+    "summary": "suite:avisos-empty@dark: 3 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "hub:pacientes@dark",
     "capture_path": "_captures_v8\\hub-pacientes-dark-960x600.png",
-    "pass_count": 4,
+    "pass_count": 5,
     "fail_count": 4,
     "divergences": [
       {
@@ -3353,13 +3353,13 @@
         }
       }
     ],
-    "summary": "hub:pacientes@dark: 4 pass, 4 fail — NEEDS_FIX",
+    "summary": "hub:pacientes@dark: 5 pass, 4 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "hub:pacientes-empty@dark",
     "capture_path": "_captures_v8\\hub-pacientes-empty-dark-960x600.png",
-    "pass_count": 3,
+    "pass_count": 4,
     "fail_count": 2,
     "divergences": [
       {
@@ -3397,13 +3397,13 @@
         }
       }
     ],
-    "summary": "hub:pacientes-empty@dark: 3 pass, 2 fail — NEEDS_FIX",
+    "summary": "hub:pacientes-empty@dark: 4 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "hub:detalle@dark",
     "capture_path": "_captures_v8\\hub-detalle-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 2,
     "divergences": [
       {
@@ -3441,13 +3441,13 @@
         }
       }
     ],
-    "summary": "hub:detalle@dark: 2 pass, 2 fail — NEEDS_FIX",
+    "summary": "hub:detalle@dark: 3 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "hub:detalle-plan-timer@dark",
     "capture_path": "_captures_v8\\hub-detalle-plan-timer-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 2,
     "divergences": [
       {
@@ -3485,13 +3485,13 @@
         }
       }
     ],
-    "summary": "hub:detalle-plan-timer@dark: 2 pass, 2 fail — NEEDS_FIX",
+    "summary": "hub:detalle-plan-timer@dark: 3 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "hub:detalle-plan-rutina@dark",
     "capture_path": "_captures_v8\\hub-detalle-plan-rutina-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 2,
     "divergences": [
       {
@@ -3529,13 +3529,13 @@
         }
       }
     ],
-    "summary": "hub:detalle-plan-rutina@dark: 2 pass, 2 fail — NEEDS_FIX",
+    "summary": "hub:detalle-plan-rutina@dark: 3 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "hub:detalle-plan-activacion@dark",
     "capture_path": "_captures_v8\\hub-detalle-plan-activacion-dark-960x600.png",
-    "pass_count": 3,
+    "pass_count": 4,
     "fail_count": 2,
     "divergences": [
       {
@@ -3573,13 +3573,13 @@
         }
       }
     ],
-    "summary": "hub:detalle-plan-activacion@dark: 3 pass, 2 fail — NEEDS_FIX",
+    "summary": "hub:detalle-plan-activacion@dark: 4 pass, 2 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "hub:textos-globales@dark",
     "capture_path": "_captures_v8\\hub-textos-globales-dark-960x600.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 3,
     "divergences": [
       {
@@ -3628,13 +3628,13 @@
         }
       }
     ],
-    "summary": "hub:textos-globales@dark: 2 pass, 3 fail — NEEDS_FIX",
+    "summary": "hub:textos-globales@dark: 3 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   },
   {
     "surface_key": "hub:detalle-resumen-ia-0@dark",
     "capture_path": "_captures_v8\\hub-detalle-resumen-ia-0-dark-480x325.png",
-    "pass_count": 2,
+    "pass_count": 3,
     "fail_count": 3,
     "divergences": [
       {
@@ -3683,7 +3683,7 @@
         }
       }
     ],
-    "summary": "hub:detalle-resumen-ia-0@dark: 2 pass, 3 fail — NEEDS_FIX",
+    "summary": "hub:detalle-resumen-ia-0@dark: 3 pass, 3 fail — NEEDS_FIX",
     "canonical": false
   }
 ]

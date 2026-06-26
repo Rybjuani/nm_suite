@@ -263,6 +263,31 @@ def detect_text_regions(arr: np.ndarray, w: int, h: int) -> list[dict[str, Any]]
     return regions
 
 
+def content_top_margin(arr: np.ndarray, bg_rgb: tuple[int, int, int]) -> float:
+    """Fraction of canvas height before content begins (first row differing from
+    the background).
+
+    This is the one layout measure that proved renderer-robust: across the 86
+    captures it agreed with the mockup within 0.014 on average (max 0.033, 0/86
+    over a 0.05 tolerance), because it only needs the coarse vertical start of
+    content, not exact sub-component geometry. Exact padding/gaps and the full
+    content bounding box are NOT robust (the bottom/side extent collapses on
+    dark-theme surfaces where content barely differs from the background), so
+    only the top margin is exposed. Catches a UI that shifted vertically or
+    gained/lost top padding.
+    """
+    h, w = arr.shape[:2]
+    if h == 0 or w == 0:
+        return 0.0
+    bg = np.array(bg_rgb, dtype=np.float32)
+    diff = np.linalg.norm(arr.astype(np.float32) - bg, axis=2) > 22
+    row_cov = diff.mean(axis=1)
+    rows = np.where(row_cov > 0.01)[0]
+    if len(rows) == 0:
+        return 0.0
+    return float(rows[0] / h)
+
+
 def region_text_presence(arr: np.ndarray, x: int, y: int, rw: int, rh: int) -> float:
     """Edge-density proxy for "this region contains rendered glyphs".
 

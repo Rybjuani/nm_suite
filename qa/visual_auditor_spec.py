@@ -52,6 +52,11 @@ MIN_PRESENCE_REGION_PX = 10
 # count check only runs for genuine groups. Single elements are still covered by
 # the color check.
 MIN_CARD_GROUP_COUNT = 2
+# Layout: tolerance (in % of canvas height) for where content begins. The
+# content top margin agreed mockup-vs-capture within 0.014 (max 0.033) across
+# the 86 captures, so a 5% band flags a real vertical shift with no false
+# positives. See vas_engine.content_top_margin.
+LAYOUT_TOP_TOL_PCT = 5.0
 
 
 @dataclass
@@ -182,25 +187,52 @@ class SpecVerifier:
             else:
                 pass_count += 1
 
-        # 3. Effects (shadows) — warning only, render-dependent
+        # 3. Shadow / elevation. Coverage is limited (only a handful of surfaces
+        # declare a shadow in the spec, because the mockup reference is mostly
+        # flat) and detection is approximate (Qt renders box-shadow differently
+        # from Chromium, and detect_shadows rides on color-based component
+        # detection). But where the mockup declares a shadow and the capture is
+        # flat, that is real elevation debt, so it is reported as a fail.
         effects = surface_spec.get("effects", {})
         if effects.get("shadow") is True:
             shadow_evidence = vas_engine.detect_shadows(arr, w, h, vas_engine.detect_components(arr, w, h))
             has_shadow = any(s["has_shadow"] for s in shadow_evidence)
             if not has_shadow:
+                fail_count += 1
                 divergences.append(
                     Divergence(
                         component_id="effects",
-                        kind="MISSING_SHADOW",
-                        message="Shadow effect not detected in capture (may be render difference)",
-                        severity="low",
+                        kind="SHADOW_MISMATCH",
+                        message="Mockup declares a shadow but capture renders flat (no elevation detected)",
+                        severity="medium",
                     )
                 )
             else:
                 pass_count += 1
+
+        # 4. Layout — vertical start of content. Exact sub-component layout
+        # (padding, gaps, grid alignment) is not robust across renderers, but the
+        # row where content begins is (0/86 outside a 5% band). This catches a UI
+        # that shifted vertically or gained/lost top padding.
+        content_top_pct = canvas.get("content_top_pct")
+        if content_top_pct is not None and expected_bg:
+            bg_rgb = ColorSpec(expected_bg).to_rgb()
+            actual_top = vas_engine.content_top_margin(arr, bg_rgb) * 100.0
+            if abs(actual_top - content_top_pct) > LAYOUT_TOP_TOL_PCT:
+                fail_count += 1
+                divergences.append(
+                    Divergence(
+                        component_id="layout",
+                        kind="LAYOUT_SHIFT",
+                        message=f"Content starts at {actual_top:.1f}% of height vs expected {content_top_pct:.1f}% (>{LAYOUT_TOP_TOL_PCT}% shift)",
+                        severity="medium",
+                        evidence={"actual_top_pct": round(actual_top, 1), "expected_top_pct": content_top_pct},
+                    )
+                )
+            else:
                 pass_count += 1
 
-        # 4. Components
+        # 5. Components
         for comp in surface_spec.get("components", []):
             passed, comp_divs = self._check_component(img, arr, w, h, comp)
             pass_count += passed
@@ -344,10 +376,36 @@ class SpecVerifier:
             else:
                 passed += 1
 
-        # ICON check — intentionally NOT re-enabled. Icon presence has a 16%
-        # false-positive rate (4/25 groups detect 0 blobs in capture vs >=1 in
-        # mockup) and exact icon counts are detector noise (mockup "icon" counts
-        # reach 200+). Not achievable robustly without OCR/template matching.
+        # ----------------------------------------------------------------------
+        # Dimensions measured against the 86-capture set and INTENTIONALLY
+        # DISABLED — each fails the "robust between HTML mockup and Qt capture"
+        # bar (>15% divergence) or only works on a generic region that does not
+        # map to the component-specific debt it would claim to check. The common
+        # root cause is the same as text-color: these properties live in
+        # individual elements (avatars, checkboxes, icons, charts, buttons) that
+        # cannot be isolated reliably across two renderers without OCR/segmentation.
+        #
+        #   SHAPE (corner roundedness)  — 25% disagree mockup-vs-capture on the
+        #       card_group bbox corners (max diff 1.0). Per-element shape (square
+        #       vs round avatar/checkbox) needs element isolation; not robust.
+        #   PROPORTION (content area frac) — 14% disagree, but the failures are
+        #       dark-theme dialogs where content barely differs from background,
+        #       i.e. detector noise that would false-positive, not real debt.
+        #   GRADIENT — stable (~10%) only on the generic card_group region, which
+        #       is not where the real gradient debt lives (chart fill, radial
+        #       breathing circle). Those are unlabeled in the spec; not shippable
+        #       without per-component regions that don't detect robustly.
+        #   TYPOGRAPHY (line count) — 40% diverge >30% relative. Line/band counts
+        #       are render-dependent, same instability as exact card counts.
+        #   CONTRAST (WCAG text vs bg) — 62% false positives. Needs glyph
+        #       isolation; real text already measures ~1.0-1.9 like "invisible".
+        #   ICON (presence/count) — 16% false positives; exact counts are noise
+        #       (mockup "icon" counts reach 200+). Needs OCR/template matching.
+        #   BORDER (outline) — region-perimeter edge density is renderer-stable
+        #       but only measures the card_group bbox edge, not per-card outlines,
+        #       and overlaps the card-structure check; omitted to avoid a
+        #       misleadingly-named assertion.
+        # ----------------------------------------------------------------------
 
         return passed, divs
 
