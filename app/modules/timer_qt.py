@@ -270,7 +270,38 @@ class _TimerChip(NMButtonOutline):
     """Chip local de Timer. El estado activo se hereda de NMButtonOutline:
     primary SÓLIDO (verde oscuro) + texto claro, para coincidir con el mockup
     canónico. (Antes pintaba un activo 'suave' con primary_soft que no coincidía
-    con la referencia.)"""
+    con la referencia.)
+
+    Sobrescribe el QSS global de QPushButton (``padding: 11px 20px; min-height: 32px``
+    en ``shared/theme_qt.stylesheet_base``) que en runtime infla el widget de
+    32-34 px a ~56 px efectivos (Qt toma ``max(minHeight, maxHeight)`` cuando el
+    padding del stylesheet supera el ``setFixedHeight``). Sin esto, el chip
+    activo renderiza ~22 px más alto que el inactivo lado a lado en
+    ``suite:timer@light`` (mockup l.169-173: alto de pill uniforme). Patrón
+    copiado del sibling ``NMButton._nm_button_stylesheet``.
+
+    Acepta ``chip_height`` para forzar el alto exacto tras ``super().__init__``
+    (los chips de duración usan 32 px y los de modo 34 px; el setFixedHeight
+    externo se respeta y esta stylesheet lo blinda contra el QSS global).
+    """
+
+    def __init__(self, *args, chip_height: int | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        from shared.components.buttons import _NM_BUTTON_HEIGHT
+        from shared.theme_qt import focus_ring_stylesheet
+        height = chip_height if chip_height is not None else _NM_BUTTON_HEIGHT[self._size]
+        self.setStyleSheet(
+            focus_ring_stylesheet(self._modo)
+            + f"""
+QPushButton {{
+    background: transparent;
+    border: none;
+    padding: 0px;
+    min-height: {height}px;
+    max-height: {height}px;
+}}
+"""
+        )
 
 
 class ModuloTimer(NMModule):
@@ -412,7 +443,7 @@ class ModuloTimer(NMModule):
         self._duration_chip_btns: list[tuple[_TimerChip, int]] = []
         duration_seconds = sorted({secs for _, secs, *_ in self._presets})
         for secs in duration_seconds[:8]:
-            btn = _TimerChip(_duration_chip_label(secs), modo=self._modo, toggleable=False, size="sm")
+            btn = _TimerChip(_duration_chip_label(secs), modo=self._modo, toggleable=False, size="sm", chip_height=32)
             btn.setFixedHeight(32)
             btn.setMinimumWidth(64)
             btn.clicked.connect(lambda _, s=secs: self._select_duration(s))
@@ -430,7 +461,7 @@ class ModuloTimer(NMModule):
         mode_chips_row.setSpacing(8)
         self._chip_btns: list[tuple[_TimerChip, int]] = []
         for label, secs, description, categoria in self._presets[:8]:
-            btn = _TimerChip(label, modo=self._modo, toggleable=False, size="sm")
+            btn = _TimerChip(label, modo=self._modo, toggleable=False, size="sm", chip_height=34)
             btn.setFixedHeight(34)
             btn.setMinimumWidth(max(76, min(150, 20 + len(label) * 9)))
             if description:
