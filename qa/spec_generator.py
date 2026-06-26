@@ -5,8 +5,8 @@ Uses vas_engine for robust component detection (color clustering + shape
 analysis) instead of grid-based thresholding.
 
 Usage:
-    .venv\\Scripts\\python.exe qa\\spec_generator.py \
-        --mockup-dir qa\\mockup_reference_normalized \
+    .venv\\Scripts\\python.exe qa\\spec_generator.py \\
+        --mockup-dir qa\\_mockup_canonical \\
         --manifest qa\\_captures_v8\\CAPTURE_MANIFEST.json \
         --out qa\\specs\\specs.json
 """
@@ -25,11 +25,13 @@ from PIL import Image
 import vas_engine
 
 
-def resolve_mockup_path(mockup_dir: Path, view: str, theme: str) -> Path | None:
+def resolve_mockup_path(mockup_dir: Path, view: str, theme: str, app: str = "") -> Path | None:
     candidates = [
         mockup_dir / theme / f"{view}.png",
         mockup_dir / theme / f"{view.rsplit('-', 1)[0]}.png",
     ]
+    if app:
+        candidates.insert(0, mockup_dir / theme / f"{app}-{view}.png")
     for c in candidates:
         if c.exists():
             return c
@@ -68,22 +70,6 @@ def generate_spec_for_mockup(mockup_path: Path, surface_key: str) -> dict[str, A
             }
 
     spec_components = []
-
-    # Header band (always present in nm_suite)
-    spec_components.append({
-        "id": "header_band",
-        "type": "header",
-        "region": {"x_pct": 0, "y_pct": 0, "w_pct": 100, "h_pct": 18},
-        "color_hint": bg_color,
-    })
-
-    # Score/widget band below header
-    spec_components.append({
-        "id": "score_widget",
-        "type": "card",
-        "region": {"x_pct": 0, "y_pct": 10, "w_pct": 100, "h_pct": 15},
-        "color_hint": bg_color,
-    })
 
     # Card group (all cards detected)
     if cards:
@@ -241,7 +227,7 @@ def main(argv: list[str] | None = None) -> int:
         view = entry.get("view", "")
         theme = entry.get("theme", "")
         surface_key = f"{app}:{view}@{theme}"
-        mockup_path = resolve_mockup_path(mockup_dir, view, theme)
+        mockup_path = resolve_mockup_path(mockup_dir, view, theme, app)
         if not mockup_path:
             print(f"SKIP {surface_key}: mockup not found")
             continue

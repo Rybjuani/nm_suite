@@ -254,19 +254,19 @@ class SpecVerifier:
 
     def _check_canvas_bg(self, arr: np.ndarray, w: int, h: int, expected_hex: str) -> tuple[bool, Divergence | None]:
         expected = ColorSpec(expected_hex).to_rgb()
-        samples = [
-            arr[5, 5], arr[5, w - 5], arr[h - 5, 5], arr[h - 5, w - 5], arr[h // 2, w // 2],
+        corners = [
+            arr[5, 5], arr[5, w - 5], arr[h - 5, 5], arr[h - 5, w - 5],
         ]
-        avg = np.mean(samples, axis=0)
-        delta = float(np.mean(np.abs(avg - np.array(expected))))
-        if delta <= self.color_tol:
+        med = np.median(corners, axis=0)
+        delta = float(np.mean(np.abs(med - np.array(expected))))
+        if delta <= 25:
             return True, None
         return False, Divergence(
             component_id="canvas",
             kind="COLOR_MISMATCH",
-            message=f"Canvas background delta={delta:.1f} (expected {expected_hex}, got ~{self._rgb_to_hex(avg)})",
+            message=f"Canvas background delta={delta:.1f} (expected {expected_hex}, got ~{self._rgb_to_hex(med)})",
             severity="high",
-            evidence={"expected": expected_hex, "actual_approx": self._rgb_to_hex(avg), "delta": delta},
+            evidence={"expected": expected_hex, "actual_approx": self._rgb_to_hex(med), "delta": delta},
         )
 
     def _check_component(

@@ -22,7 +22,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 
 _PROJ = Path(__file__).resolve().parent.parent
-_DEFAULT_TARGETS = _PROJ / "qa" / "_mockup_targets"
+_DEFAULT_TARGETS = _PROJ / "qa" / "_mockup_canonical"
 _DEFAULT_ACTUALS = _PROJ / "qa" / "_captures_v8"
 _DEFAULT_OUT = _PROJ / "qa" / "_fidelity_diff"
 _NAME_RE = re.compile(r"^(suite|hub)-(.+)-(light|dark)-(\d+x\d+)\.png$")
@@ -294,7 +294,7 @@ def _write_reports(rows: list[dict], out_dir: Path, thresholds: FidelityThreshol
     return {"csv": str(csv_path), "markdown": str(md_path), "json": str(json_path)}
 
 
-def compare(
+def compare_legacy(
     target_dir: Path,
     actual_dir: Path,
     out_dir: Path,
@@ -353,6 +353,100 @@ def compare(
     return failures, rows, report_paths
 
 
+def compare_odiff(
+    target_dir: Path,
+    actual_dir: Path,
+    out_dir: Path,
+    *,
+    app: str | None,
+    view: str,
+    theme: str,
+    write_images: bool = True,
+    threshold: float = 0.1,
+    max_diff_pct: float = 1.0,
+) -> tuple[int, list[dict], dict[str, str]]:
+    """Compare images using odiff with --antialiasing (preferred over SSIM legacy).
+
+    Returns (failures, rows, report_paths) shaped like compare_legacy so the
+    CLI can use either engine interchangeably.
+    """
+    from qa.odiff_runner import compare_with_odiff
+
+    targets = _index_images(target_dir)
+    actuals = _index_images(actual_dir)
+    rows: list[dict] = []
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    for key in sorted(targets):
+        target = targets[key]
+        if not _matches_filters(target, app, view, theme):
+            continue
+        actual = actuals.get(key)
+        row: dict = {
+            "app": target.app,
+            "view": target.view,
+            "theme": target.theme,
+            "resolution": target.resolution,
+            "target_file": str(target.path),
+            "actual_file": str(actual.path) if actual else "",
+        }
+        if actual is None:
+            row["status"] = "MISSING_ACTUAL"
+            rows.append(row)
+            continue
+
+        diff_png = out_dir / f"{target.app}-{target.view}-{target.theme}-{target.resolution}-odiff.png" if write_images else None
+        try:
+            result = compare_with_odiff(target.path, actual.path, diff_png, threshold=threshold)
+            row["diff_pixels"] = result["diff_pixels"]
+            row["diff_percentage"] = result["diff_percentage"]
+            row["diff_png_path"] = result["diff_png_path"]
+            if result["match"]:
+                row["status"] = "PASS"
+            elif float(result["diff_percentage"]) <= max_diff_pct:
+                row["status"] = "PASS"
+            else:
+                row["status"] = "FAIL"
+                row["acceptance_failures"] = f"odiff_diff_pct>{max_diff_pct:g}"
+            row["diff_file"] = result["diff_png_path"]
+        except Exception as exc:
+            row["status"] = "FAIL"
+            row["acceptance_failures"] = f"odiff_error:{exc}"
+        rows.append(row)
+
+    report_paths = _write_reports(rows, out_dir, FidelityThresholds())
+    failures = sum(1 for row in rows if row.get("status") != "PASS")
+    return failures, rows, report_paths
+
+
+# Backwards-compat alias: compare() now dispatches to the requested engine.
+def compare(
+    target_dir: Path,
+    actual_dir: Path,
+    out_dir: Path,
+    *,
+    app: str | None,
+    view: str,
+    theme: str,
+    thresholds: FidelityThresholds,
+    write_images: bool,
+    use_capture_manifest: bool = True,
+    engine: str = "odiff",
+) -> tuple[int, list[dict], dict[str, str]]:
+    if engine == "odiff":
+        return compare_odiff(
+            target_dir, actual_dir, out_dir,
+            app=app, view=view, theme=theme,
+            write_images=write_images,
+        )
+    return compare_legacy(
+        target_dir, actual_dir, out_dir,
+        app=app, view=view, theme=theme,
+        thresholds=thresholds, write_images=write_images,
+        use_capture_manifest=use_capture_manifest,
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Diff mockup targets against PyQt captures")
     parser.add_argument("--target-dir", default=str(_DEFAULT_TARGETS))
@@ -366,6 +460,8 @@ def main() -> int:
     parser.add_argument("--max-changed-pixel-ratio", type=float, default=_DEFAULT_MAX_CHANGED_PIXEL_RATIO)
     parser.add_argument("--ignore-capture-manifest", action="store_true")
     parser.add_argument("--no-images", action="store_true", help="Skip side-by-side diff images")
+    parser.add_argument("--engine", choices=["odiff", "ssim"], default="odiff",
+                        help="Comparison engine: 'odiff' (default, antialiasing-aware) or 'ssim' (legacy)")
     args = parser.parse_args()
     thresholds = FidelityThresholds(
         min_ssim=args.fail_under,
@@ -383,6 +479,7 @@ def main() -> int:
         thresholds=thresholds,
         write_images=not args.no_images,
         use_capture_manifest=not args.ignore_capture_manifest,
+        engine=args.engine,
     )
 
     compared = sum(1 for row in rows if row.get("status") in {"PASS", "FAIL"})

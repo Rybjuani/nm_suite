@@ -211,7 +211,63 @@ def _contract_playbutton_shadow(info: WidgetInfo) -> dict[str, Any] | None:
     }
 
 
-CONTRACTS = (_contract_card_shadow, _contract_playbutton_shadow)
+def _contract_radius_present(info: WidgetInfo) -> dict[str, Any] | None:
+    """Cards and avatars must carry a border-radius (QSS or shape attr).
+
+    A flat rectangle on an NMCard/NMAvatar is debt — the mockup always rounds
+    these surfaces. We skip widgets where a radius is set via either QSS
+    ``border-radius`` or the ``_radius``/``_radius_override`` shape attribute.
+    """
+    if not _is_card(info) and info.cls != "NMAvatar":
+        return None
+    if not info.visible or not info.enabled or info.disabled_attr:
+        return None
+    if info.qss_radius is not None and info.qss_radius > 0:
+        return None
+    if info.shape_radius_attr is not None and float(info.shape_radius_attr) > 0:
+        return None
+    return {
+        "kind": "RADIUS_MISSING",
+        "component": info.cls,
+        "object_name": info.object_name,
+        "rect": [info.x, info.y, info.w, info.h],
+        "severity": "medium",
+        "message": f"{info.cls} has no border-radius (renders as sharp rectangle)",
+    }
+
+
+def _contract_gradient_when_specified(info: WidgetInfo) -> dict[str, Any] | None:
+    """Flag NMCard widgets that look like hero/score surfaces but lack a gradient.
+
+    The mockup uses gradients on prominent cards (hero score, dbt cards). If an
+    NMCard is large (>= 280px wide AND >= 80px tall) and has neither a gradient
+    nor a drop-shadow, it is likely a flat rectangle where the mockup intended
+    depth. Conservative: only fires on size-qualified NMCard instances.
+    """
+    if not _is_card(info):
+        return None
+    if not info.visible or not info.enabled or info.disabled_attr:
+        return None
+    if info.has_gradient_bg or info.has_shadow:
+        return None
+    if info.w < 280 or info.h < 80:
+        return None
+    return {
+        "kind": "GRADIENT_LIKELY_MISSING",
+        "component": info.cls,
+        "object_name": info.object_name,
+        "rect": [info.x, info.y, info.w, info.h],
+        "severity": "low",
+        "message": f"{info.cls} ({info.w}x{info.h}) is a large card with no gradient and no shadow — mockup likely intended depth here",
+    }
+
+
+CONTRACTS = (
+    _contract_card_shadow,
+    _contract_playbutton_shadow,
+    _contract_radius_present,
+    _contract_gradient_when_specified,
+)
 
 
 _INVENTORY_TOKENS = ("Card", "Check", "Avatar", "Button", "Toggle", "Chip", "Tile", "Ring", "Panel")

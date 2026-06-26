@@ -2629,8 +2629,13 @@ def main() -> int:
     p.add_argument("--out-dir", default=str(_DEFAULT_OUT))
     p.add_argument("--matrix-doc", default="", help="Ruta opcional para escribir una matriz Markdown versionable")
     p.add_argument("--scale", type=_parse_scale, default=1.0, help="Qt scale factor for capture subprocesses (for example: 1.25)")
+    p.add_argument("--introspect", action="store_true", help="Habilitar vas_introspect (audit del arbol de widgets Qt, opt-in). Setea NM_VAS_INTROSPECT=1 para subprocesses.")
     p.add_argument("--_child-single", action="store_true", help=argparse.SUPPRESS)
     args = p.parse_args()
+
+    # --introspect propagates to subprocess children via env var
+    if args.introspect:
+        os.environ["NM_VAS_INTROSPECT"] = "1"
 
     if not args.list and not os.environ.get("NEUROMOOD_TEST_DB"):
         import tempfile
