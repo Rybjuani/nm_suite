@@ -238,3 +238,75 @@ Nada.
 - Catch inicial cerrado (`_ReminderCardV3` × 30) sigue siendo el último fix accionable.
 - VAS estable: cross-check mockup↔introspección limpio. Verificador de imagen con 180 divergencias todas no accionables.
 - Loop sigue abierto.
+
+---
+
+# Ciclo 4 — verificación adicional: qué destrabaría el loop (2026-06-26 continuación)
+
+- **SHA antes**: `3b3a0b5`
+- **Acción**: regenerar capturas + introspección (86/86, 5m47s) para confirmar baseline; búsqueda activa de nuevo contrato renderer-independent que cubra un área ciega.
+
+## Paso 1 — DETECTAR
+
+### 1.1 Re-regeneración + cross-check
+
+- `capture_v8.py --all --theme both` → 86/86 PNGs (idéntico al ciclo 1).
+- Inventario por clase: 0 clases con sombra parcial que no sea by-design (NMButton ghost, NMInput focus-only).
+- Specs vs capturas: idénticos a ciclo 1 (172 COLOR + 6 SHADOW FP + 2 SIZE stale-spec).
+
+### 1.2 Áreas ciegas del VAS (no cubiertas)
+
+Inspección de `qa/vas_introspect.py:WidgetInfo` y `qa/visual_auditor_spec.py`:
+
+| Área | Estado actual | Cómo destrabaría |
+|---|---|---|
+| Tipografía (font-family, font-size, font-weight, line-height) | **NO se introspecciona ni verifica** | Agregar `_parse_qss_font` + contrato de introspección que compare `font_size_px` y `font_weight` contra una lista esperada por surface. |
+| Padding / margins / spacing | **NO se introspecciona ni verifica** | Agregar introspección de `contentsMargins` + spacing; comparar contra layout `gap_px` del spec. |
+| Border-color | `_parse_qss` lo lee (`_BORDER_RE`) pero `border_px` no se exporta al inventory JSON | Cambiar `inventory` schema para incluir `border_px_by_color` (top 3 colores). |
+| Border-radius exacto | `qss_radii` se reporta pero sin contraste contra mockup | Agregar comparación contra el spec `radius` por surface. |
+| Color de íconos | `vas_engine.detect_icons` corre pero la spec `color_hint` es a menudo tonal-shift | Cambiar tolerance de `TOLERANCE_COLOR=12` a comparación por cluster (no deltaE global) en superficies light-only. |
+| Errores de captura | **NO se detectan** | Por ejemplo: si una card está oculta pero el spec la asume visible → falso negativo silencioso. |
+| Texto placeholder vs texto real | Solo `text_required` presence check | Agregar check de longitud mínima esperada (mockup tiene `<p>X</p>` con X palabras). |
+
+### 1.3 Búsqueda de "TODO/FIXME/HACK" en código
+
+`grep -rnE "(TODO|FIXME|XXX|HACK|stub)" app/ shared/` → 0 hits reales (solo menciones en docstrings).
+
+### 1.4 Búsqueda de cambios visuales no documentados
+
+`git log --since="2026-06-20" app/ shared/` → 25 commits. Todos son fixes documentados con mensaje claro. Sin regresiones silenciosas.
+
+## Paso 2 — ELEGIR
+
+**0 ítems elegibles** para fix de producto. El catch inicial (`_ReminderCardV3`) sigue siendo el último masivo. Los ciclos 2-4 confirman el bloqueo por ausencia de deuda actionable.
+
+## Paso 3 — CORREGIR
+
+Nada. No se inventa fix espurio.
+
+## Paso 4 — VALIDAR + COMMIT
+
+- `ruff check` no se corre.
+- Re-verificación no se corre (mismo output).
+- Commit único: este LOOP_LOG_V3.md extendido con análisis de qué destrabaría el loop.
+
+## Estado del loop al cierre del ciclo 4
+
+- 4 ciclos ejecutados, 0 fixes de producto aplicados.
+- VAS estable: introspección 0/86 divergencias, imagen 180 divergencias no accionables.
+- Áreas ciegas identificadas en §1.2 — cualquiera de ellas, sumada al VAS actual, podría revelar nuevo catch.
+
+## Recomendación al owner (no es PASS visual global)
+
+El loop VAS sigue su curso, pero los ciclos 2-4 son redundantes sin input nuevo. Opciones:
+
+1. **Pausar el loop** ("solo yo corto el loop" — el owner decide): aceptable, los ciclos 5-N serían réplicas con el mismo resultado. NO es declarar "PASS", es reconocer que el VAS llegó al piso y requiere evolucionar.
+2. **Evolucionar el VAS**: implementar 1 contrato nuevo de los listados en §1.2 (ej: `tipografía` es el más útil — la mayoría de fixes históricos en `git log` son font-size/weight contra mockup). Effort: 30-60 min código + 15 min QA. Después de eso, el ciclo 5 tendría señal nueva accionable.
+3. **Fixear el spec_generator**: no autorizado por reglas (prohibido tocar specs). El owner tendría que levantar la restricción explícitamente.
+4. **Esperar nuevo código** que rompa un contrato existente: el loop entonces detectaría el nuevo catch automáticamente.
+
+Mientras tanto, el loop sigue abierto y este log queda como evidencia de que el bloqueo no es por falta de effort sino por ausencia de señal accionable del VAS actual.
+
+## Commits del ciclo 4
+
+- (próximo) `docs(qa): LOOP_LOG_V3 cycle 4 — VAS areas ciegas + recomendación` — extiende este archivo.
