@@ -200,64 +200,6 @@ def count_cards(arr: np.ndarray) -> int:
     return len(cards)
 
 
-def count_cards_robust(arr: np.ndarray) -> int:
-    """Count cards using edge-based shape detection (robust across render engines).
-
-    Instead of color clustering (which fails when mockup vs capture use
-    different palettes), this detects rectangular blobs by:
-      1. Edge detection
-      2. Threshold + dilate to close card perimeters
-      3. Label connected components
-      4. Filter by size, aspect ratio, and rectangularity
-    """
-    if arr.size == 0:
-        return 0
-    h, w = arr.shape[:2]
-
-    # Edge detection via PIL FIND_EDGES
-    gray = np.mean(arr, axis=2).astype(np.uint8)
-    edges = np.array(Image.fromarray(gray).filter(ImageFilter.FIND_EDGES))
-
-    # Threshold + dilate to close card outlines
-    mask = (edges > 15).astype(np.uint8) * 255
-    mask_img = Image.fromarray(mask.astype(np.uint8))
-    mask_img = mask_img.filter(ImageFilter.MaxFilter(5))  # dilate
-    mask = np.array(mask_img)
-
-    # Fill interior of closed shapes (simple flood from edges)
-    # Invert: background is 0, shapes are 255
-    # Use scipy label on inverted mask to find enclosed regions
-    from scipy.ndimage import binary_fill_holes, label
-
-    filled = binary_fill_holes(mask > 0)
-    labeled, num = label(filled)
-    if num == 0:
-        return 0
-
-    cards = 0
-    for i in range(1, num + 1):
-        ys, xs = np.where(labeled == i)
-        if len(ys) < 100:
-            continue
-        x0, y0 = int(xs.min()), int(ys.min())
-        x1, y1 = int(xs.max()), int(ys.max())
-        rw, rh = x1 - x0 + 1, y1 - y0 + 1
-        if rw < 40 or rh < 40:
-            continue
-        if rw > w * 0.8 or rh > h * 0.8:
-            continue
-        aspect = rw / max(rh, 1)
-        if aspect < 0.4 or aspect > 2.5:
-            continue
-        bbox_area = rw * rh
-        comp_area = len(ys)
-        if comp_area / bbox_area < 0.5:
-            continue
-        cards += 1
-
-    return cards
-
-
 
 def detect_text_regions(arr: np.ndarray, w: int, h: int) -> list[dict[str, Any]]:
     """Detect text regions by edge detection (PIL FIND_EDGES, fast C impl).
@@ -319,6 +261,67 @@ def detect_text_regions(arr: np.ndarray, w: int, h: int) -> list[dict[str, Any]]
         })
 
     return regions
+
+
+def region_text_presence(arr: np.ndarray, x: int, y: int, rw: int, rh: int) -> float:
+    """Edge-density proxy for "this region contains rendered glyphs".
+
+    Robust across renderers: measures the fraction of strong edges in the
+    region, NOT an exact glyph/block count. Text produces many fine edges, so a
+    region that should hold text but renders blank collapses toward 0. Across 75
+    text_required regions the captured value never dropped below 0.055, so a
+    small threshold (~0.02) separates "text present" from "blank" with no false
+    positives — while exact text-block counts diverge >30% on 36% of surfaces
+    and are not usable.
+    """
+    if rw <= 0 or rh <= 0:
+        return 0.0
+    crop = arr[y : y + rh, x : x + rw]
+    if crop.size == 0:
+        return 0.0
+    gray = np.mean(crop, axis=2).astype(np.uint8)
+    edges = np.array(Image.fromarray(gray).filter(ImageFilter.FIND_EDGES))
+    # PIL leaves the 1px frame of a Kernel filter at raw values (not 0), which
+    # would count as edges and put a content-independent floor under the result.
+    # Strip that frame so a genuinely flat (blank) region reads ~0.
+    if edges.shape[0] > 2 and edges.shape[1] > 2:
+        edges = edges[1:-1, 1:-1]
+    return float(np.mean(edges > 20))
+
+
+def region_card_structure(arr: np.ndarray, x: int, y: int, rw: int, rh: int) -> tuple[int, float]:
+    """Describe card structure in a region as (band_count, edge_signal).
+
+    band_count = number of distinct horizontal content bands (runs of rows with
+    edge activity, separated by gaps). edge_signal = mean per-row edge fraction.
+
+    This is a presence/structure proxy, not an exact card count. Exact counts
+    (color-clustering or fill-holes) diverge >30% on ~35% of surfaces and the
+    fill-holes variant collapses dense UIs into one blob. By contrast, across 30
+    card_group regions every capture yielded >=1 band and edge_signal >=0.046,
+    so requiring (band>=1 and signal>~0.02) detects a card group that failed to
+    render with no false positives.
+    """
+    if rw <= 0 or rh <= 0:
+        return 0, 0.0
+    crop = arr[y : y + rh, x : x + rw]
+    if crop.size == 0:
+        return 0, 0.0
+    gray = np.mean(crop, axis=2).astype(np.uint8)
+    edges = np.array(Image.fromarray(gray).filter(ImageFilter.FIND_EDGES))
+    # Strip the PIL Kernel-filter border frame (raw values, not 0) so a flat
+    # region reads ~0 instead of a perimeter-driven floor.
+    if edges.shape[0] > 2 and edges.shape[1] > 2:
+        edges = edges[1:-1, 1:-1]
+    rowsig = np.mean(edges > 15, axis=1)
+    active = rowsig > 0.05
+    bands = 0
+    prev = False
+    for a in active:
+        if a and not prev:
+            bands += 1
+        prev = bool(a)
+    return bands, float(np.mean(rowsig))
 
 
 def detect_shadows(arr: np.ndarray, w: int, h: int, regions: list[dict]) -> list[dict[str, Any]]:

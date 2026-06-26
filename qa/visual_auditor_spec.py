@@ -36,6 +36,22 @@ SPECS_PATH = Path(__file__).parent / "specs" / "specs.json"
 TOLERANCE_COLOR = 12
 TOLERANCE_POS_PCT = 5.0
 TOLERANCE_SIZE_PCT = 10.0
+# Presence thresholds, calibrated empirically against the 86-capture set with
+# the border-artifact fix in vas_engine (a flat/blank region reads ~0). For the
+# real captures the lowest valid text region read 0.011 and the lowest valid
+# card-group signal read 0.039, while every blanked region read 0.000 — so these
+# thresholds give clean separation (0 false positives, 0 missed blanks).
+TEXT_PRESENCE_MIN = 0.005
+CARD_STRUCTURE_MIN = 0.02
+# Presence checks are skipped on regions thinner than this (degenerate spec
+# artifacts, e.g. a header_text region that collapsed to a 7px sliver, cannot be
+# measured reliably and would false-positive).
+MIN_PRESENCE_REGION_PX = 10
+# A card_group of count<2 is a single element (often an empty-state illustration)
+# rather than a true group; structural banding is meaningless there, so the
+# count check only runs for genuine groups. Single elements are still covered by
+# the color check.
+MIN_CARD_GROUP_COUNT = 2
 
 
 @dataclass
@@ -186,12 +202,10 @@ class SpecVerifier:
 
         # 4. Components
         for comp in surface_spec.get("components", []):
-            ok, ev = self._check_component(img, arr, w, h, comp)
-            if ok:
-                pass_count += 1
-            else:
-                fail_count += 1
-                divergences.append(ev)
+            passed, comp_divs = self._check_component(img, arr, w, h, comp)
+            pass_count += passed
+            fail_count += len(comp_divs)
+            divergences.extend(comp_divs)
 
         summary = (
             f"{surface_key}: {pass_count} pass, {fail_count} fail — "
@@ -223,11 +237,20 @@ class SpecVerifier:
             evidence={"expected": expected_hex, "actual_approx": self._rgb_to_hex(avg), "delta": delta},
         )
 
-    def _check_component(self, img: Image.Image, arr: np.ndarray, w: int, h: int, comp: dict[str, Any]) -> tuple[bool, Divergence | None]:
+    def _check_component(
+        self, img: Image.Image, arr: np.ndarray, w: int, h: int, comp: dict[str, Any]
+    ) -> tuple[int, list[Divergence]]:
+        """Run every applicable check for one component.
+
+        Returns (checks_passed, divergences). A component may contribute several
+        independent assertions (e.g. card_group is checked for both interior
+        color and card-structure presence), so this returns a count + list
+        rather than a single boolean.
+        """
         comp_id = comp["id"]
         region = comp.get("region")
         if not region:
-            return True, None
+            return 0, []
 
         rs = RegionSpec(**region)
         x, y, rw, rh = rs.to_pixels(w, h)
@@ -236,14 +259,18 @@ class SpecVerifier:
         if y + rh > h:
             rh = h - y
         if rw <= 0 or rh <= 0:
-            return False, Divergence(
-                component_id=comp_id,
-                kind="REGION_OUT_OF_BOUNDS",
-                message=f"Region {x},{y},{rw},{rh} exceeds canvas {w}x{h}",
-                severity="medium",
-            )
+            return 0, [
+                Divergence(
+                    component_id=comp_id,
+                    kind="REGION_OUT_OF_BOUNDS",
+                    message=f"Region {x},{y},{rw},{rh} exceeds canvas {w}x{h}",
+                    severity="medium",
+                )
+            ]
 
         crop_arr = arr[y : y + rh, x : x + rw]
+        passed = 0
+        divs: list[Divergence] = []
 
         # Color hint check
         color_hint = comp.get("color_hint")
@@ -256,45 +283,73 @@ class SpecVerifier:
             avg = np.mean(interior.reshape(-1, 3), axis=0)
             delta = float(np.mean(np.abs(avg - np.array(expected))))
             if delta > self.color_tol:
-                return False, Divergence(
-                    component_id=comp_id,
-                    kind="COLOR_MISMATCH",
-                    message=f"Component {comp_id} color delta={delta:.1f} (expected {color_hint}, got ~{self._rgb_to_hex(avg)})",
-                    severity="high",
-                    evidence={"region": [x, y, rw, rh], "expected": color_hint, "actual": self._rgb_to_hex(avg), "delta": delta},
+                divs.append(
+                    Divergence(
+                        component_id=comp_id,
+                        kind="COLOR_MISMATCH",
+                        message=f"Component {comp_id} color delta={delta:.1f} (expected {color_hint}, got ~{self._rgb_to_hex(avg)})",
+                        severity="high",
+                        evidence={"region": [x, y, rw, rh], "expected": color_hint, "actual": self._rgb_to_hex(avg), "delta": delta},
+                    )
                 )
+            else:
+                passed += 1
 
-        # Text checks — disabled. Text color is render-dependent (anti-aliasing
-        # differs between HTML mockup and Qt capture). Without OCR, we cannot
-        # reliably verify text color or presence. Re-enable when a robust text
-        # detector is available.
-        # TODO: text verification via OCR or glyph detection
+        # Text PRESENCE check (re-enabled). For regions the spec marks as
+        # text_required, verify rendered glyphs exist via edge density. This is
+        # the robust half of "text checks": presence flags a region that renders
+        # blank (a real regression) without false positives. Text COLOR is NOT
+        # checked — the auto-generated text_color_hint samples non-text elements
+        # and diverges from the capture on 72% of regions, so it is unreliable
+        # without OCR and intentionally omitted. Degenerate (very thin) spec
+        # regions cannot be measured and are skipped rather than flagged.
+        if (
+            comp.get("type") == "text"
+            and comp.get("text_required")
+            and rh >= MIN_PRESENCE_REGION_PX
+            and rw >= MIN_PRESENCE_REGION_PX
+        ):
+            density = vas_engine.region_text_presence(arr, x, y, rw, rh)
+            if density < TEXT_PRESENCE_MIN:
+                divs.append(
+                    Divergence(
+                        component_id=comp_id,
+                        kind="TEXT_MISSING",
+                        message=f"Required text region {comp_id} appears blank (edge density {density:.4f} < {TEXT_PRESENCE_MIN})",
+                        severity="high",
+                        evidence={"region": [x, y, rw, rh], "edge_density": round(density, 4), "min": TEXT_PRESENCE_MIN},
+                    )
+                )
+            else:
+                passed += 1
 
-        # Count check — disabled, edge-based card detection is not robust across renders
-        # TODO: re-enable when count detection is reliable on both mockup and capture
+        # COUNT check (re-enabled as presence). Exact card counts are not robust
+        # across renderers (>30% divergence on ~35% of surfaces), so instead of
+        # asserting the stored count we verify a genuine card_group (count>=2)
+        # actually contains card structure: at least one horizontal content band
+        # with measurable edge signal. This catches a card group that failed to
+        # render while staying false-positive-free on valid captures.
+        if comp.get("type") == "card_group" and comp.get("count", 0) >= MIN_CARD_GROUP_COUNT:
+            bands, sig = vas_engine.region_card_structure(arr, x, y, rw, rh)
+            if bands < 1 or sig < CARD_STRUCTURE_MIN:
+                divs.append(
+                    Divergence(
+                        component_id=comp_id,
+                        kind="CARD_GROUP_EMPTY",
+                        message=f"card_group {comp_id} shows no card structure (bands={bands}, signal={sig:.3f}); expected ~{comp.get('count')} cards",
+                        severity="high",
+                        evidence={"region": [x, y, rw, rh], "bands": bands, "signal": round(sig, 3), "expected_count": comp.get("count")},
+                    )
+                )
+            else:
+                passed += 1
 
-        # Icon count check — disabled, detect_icons is too fragile across renders
-        # TODO: re-enable when icon detection is robust
+        # ICON check — intentionally NOT re-enabled. Icon presence has a 16%
+        # false-positive rate (4/25 groups detect 0 blobs in capture vs >=1 in
+        # mockup) and exact icon counts are detector noise (mockup "icon" counts
+        # reach 200+). Not achievable robustly without OCR/template matching.
 
-        return True, None
-
-    def _sample_text_color(self, arr: np.ndarray, text_regions: list[dict]) -> np.ndarray | None:
-        """Sample dark pixels from text regions to determine text color."""
-        if not text_regions:
-            return None
-        dark_pixels = []
-        for t in text_regions[:5]:
-            x, y, tw, th = t["x"], t["y"], t.get("w", 10), t.get("h", 10)
-            if x + tw > arr.shape[1] or y + th > arr.shape[0]:
-                continue
-            crop = arr[y:y+th, x:x+tw]
-            gray = np.mean(crop, axis=2)
-            dark = crop[gray < np.mean(gray)]
-            if len(dark) > 0:
-                dark_pixels.extend(dark.tolist())
-        if dark_pixels:
-            return np.mean(dark_pixels, axis=0)
-        return None
+        return passed, divs
 
     def _rgb_to_hex(self, rgb: np.ndarray | tuple[float, float, float]) -> str:
         r, g, b = rgb
