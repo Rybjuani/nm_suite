@@ -747,7 +747,7 @@ class _HeroBienestar(QFrame):
         filled_lay.setSpacing(2)
 
         score_row = QHBoxLayout()
-        score_row.setSpacing(4)
+        score_row.setSpacing(10)
         score_row.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         self._score = QLabel("—")
         # Mockup hero: <span class="h-serif" style="font-size:40px; color:var(--brand)">.
