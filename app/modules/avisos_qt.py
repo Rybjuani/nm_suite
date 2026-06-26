@@ -54,6 +54,7 @@ try:
         qcolor_to_rgba_css,
         v3c,
         V3_SP,
+        shadow_effect,
         stylesheet_scrollarea,
         eyebrow_font,
     )
@@ -80,6 +81,7 @@ except ImportError:
         qfont,
         v3c,
         V3_SP,
+        shadow_effect,
         stylesheet_scrollarea,
         eyebrow_font,
     )
@@ -331,6 +333,15 @@ class _ReminderCardV3(QFrame):
 
         self._build()
         self._apply_card_styles()
+        # Elevación v3: el mockup define `.rem` con box-shadow var(--shadow-card),
+        # igual que el resto de las cards. Antes esta fila era un QFrame plano
+        # (no hereda la sombra de NMCard), quedando chata frente a sus hermanas.
+        self._shadow = None
+        self._apply_card_shadow()
+
+    def _apply_card_shadow(self):
+        self._shadow = shadow_effect("card", self._modo, self)
+        self.setGraphicsEffect(self._shadow)
 
     def _build(self):
         lay = QHBoxLayout(self)
@@ -478,6 +489,8 @@ class _ReminderCardV3(QFrame):
             self._icon._modo = self._modo
             self._icon._render()
         self._apply_card_styles()
+        # La sombra depende del modo (alpha distinto en dark/light): refrescar.
+        self._apply_card_shadow()
 
 
 # ── ModuloAvisos v3 ─────────────────────────────────────────────────────────

@@ -2814,7 +2814,7 @@
       },
       "_ReminderCardV3": {
         "count": 5,
-        "with_shadow": 0,
+        "with_shadow": 5,
         "qss_radii": [
           14.0
         ],
@@ -2823,74 +2823,8 @@
         ]
       }
     },
-    "divergences": [
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          94,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          170,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          246,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          322,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          398,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      }
-    ],
-    "fail_count": 5
+    "divergences": [],
+    "fail_count": 0
   },
   {
     "surface_key": "suite:avisos-filter-activos@light",
@@ -2975,7 +2909,7 @@
       },
       "_ReminderCardV3": {
         "count": 4,
-        "with_shadow": 0,
+        "with_shadow": 4,
         "qss_radii": [
           14.0
         ],
@@ -2984,61 +2918,8 @@
         ]
       }
     },
-    "divergences": [
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          94,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          170,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          246,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          322,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      }
-    ],
-    "fail_count": 4
+    "divergences": [],
+    "fail_count": 0
   },
   {
     "surface_key": "suite:avisos-search@light",
@@ -3114,7 +2995,7 @@
       },
       "_ReminderCardV3": {
         "count": 1,
-        "with_shadow": 0,
+        "with_shadow": 1,
         "qss_radii": [
           14.0
         ],
@@ -3123,22 +3004,8 @@
         ]
       }
     },
-    "divergences": [
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          94,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      }
-    ],
-    "fail_count": 1
+    "divergences": [],
+    "fail_count": 0
   },
   {
     "surface_key": "suite:avisos-today@light",
@@ -3223,7 +3090,7 @@
       },
       "_ReminderCardV3": {
         "count": 5,
-        "with_shadow": 0,
+        "with_shadow": 5,
         "qss_radii": [
           14.0
         ],
@@ -3232,74 +3099,8 @@
         ]
       }
     },
-    "divergences": [
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          94,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          170,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          246,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          322,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          398,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      }
-    ],
-    "fail_count": 5
+    "divergences": [],
+    "fail_count": 0
   },
   {
     "surface_key": "suite:avisos-empty@light",
@@ -6992,7 +6793,7 @@
       },
       "_ReminderCardV3": {
         "count": 5,
-        "with_shadow": 0,
+        "with_shadow": 5,
         "qss_radii": [
           14.0
         ],
@@ -7001,74 +6802,8 @@
         ]
       }
     },
-    "divergences": [
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          94,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          170,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          246,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          322,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          398,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      }
-    ],
-    "fail_count": 5
+    "divergences": [],
+    "fail_count": 0
   },
   {
     "surface_key": "suite:avisos-filter-activos@dark",
@@ -7153,7 +6888,7 @@
       },
       "_ReminderCardV3": {
         "count": 4,
-        "with_shadow": 0,
+        "with_shadow": 4,
         "qss_radii": [
           14.0
         ],
@@ -7162,61 +6897,8 @@
         ]
       }
     },
-    "divergences": [
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          94,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          170,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          246,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          322,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      }
-    ],
-    "fail_count": 4
+    "divergences": [],
+    "fail_count": 0
   },
   {
     "surface_key": "suite:avisos-search@dark",
@@ -7292,7 +6974,7 @@
       },
       "_ReminderCardV3": {
         "count": 1,
-        "with_shadow": 0,
+        "with_shadow": 1,
         "qss_radii": [
           14.0
         ],
@@ -7301,22 +6983,8 @@
         ]
       }
     },
-    "divergences": [
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          94,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      }
-    ],
-    "fail_count": 1
+    "divergences": [],
+    "fail_count": 0
   },
   {
     "surface_key": "suite:avisos-today@dark",
@@ -7401,7 +7069,7 @@
       },
       "_ReminderCardV3": {
         "count": 5,
-        "with_shadow": 0,
+        "with_shadow": 5,
         "qss_radii": [
           14.0
         ],
@@ -7410,74 +7078,8 @@
         ]
       }
     },
-    "divergences": [
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          94,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          170,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          246,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          322,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      },
-      {
-        "kind": "SHADOW_MISSING",
-        "component": "_ReminderCardV3",
-        "object_name": "",
-        "rect": [
-          14,
-          398,
-          932,
-          68
-        ],
-        "severity": "high",
-        "message": "_ReminderCardV3 is an elevated surface but has no drop-shadow (renders flat)"
-      }
-    ],
-    "fail_count": 5
+    "divergences": [],
+    "fail_count": 0
   },
   {
     "surface_key": "suite:avisos-empty@dark",
