@@ -1,0 +1,3811 @@
+{
+  "harness": "capture_mockup_canonical.py",
+  "plan": "plan_reestructuracion_qa_nm_suite.md (Fase 0)",
+  "generated_at": "2026-06-26T09:03:54",
+  "git": {
+    "commit": "805955d76f71c92811fe944b3d49db0c030ad18c",
+    "branch": "main"
+  },
+  "mockup": "neuromood-mockup.html",
+  "command": [
+    "qa/capture_mockup_canonical.py"
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "surfaces_expected": 86,
+  "captured": 86,
+  "failed": 0,
+  "wrong_size": 0,
+  "theme_inconsistent": 0,
+  "pair_violations": [],
+  "elapsed_seconds": 154.2,
+  "review_collage": "_review_collage.png",
+  "captures": [
+    {
+      "surface_key": "hub:detalle-plan-activacion@dark",
+      "app": "hub",
+      "view": "detalle-plan-activacion",
+      "theme": "dark",
+      "file": "dark/detalle-plan-activacion.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 40.51,
+      "theme_ok": true,
+      "sha256": "4a969b1deaa4b0fbcb8e72fb45759e93c0ed0e88dd5f3197fa78b5c86c137f4a",
+      "success": true
+    },
+    {
+      "surface_key": "hub:detalle-plan-activacion@light",
+      "app": "hub",
+      "view": "detalle-plan-activacion",
+      "theme": "light",
+      "file": "light/detalle-plan-activacion.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 234.97,
+      "theme_ok": true,
+      "sha256": "158566da3327db4b1e8de0a0be6a27e6038078f8f63302a9de4dae07ed5429ca",
+      "success": true
+    },
+    {
+      "surface_key": "hub:detalle-plan-rutina@dark",
+      "app": "hub",
+      "view": "detalle-plan-rutina",
+      "theme": "dark",
+      "file": "dark/detalle-plan-rutina.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 39.43,
+      "theme_ok": true,
+      "sha256": "bb9fb61d5dbaa5a25c7b7be0890e0c73de6371e4b8ae133f5f07e15dfae52c9b",
+      "success": true
+    },
+    {
+      "surface_key": "hub:detalle-plan-rutina@light",
+      "app": "hub",
+      "view": "detalle-plan-rutina",
+      "theme": "light",
+      "file": "light/detalle-plan-rutina.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 236.11,
+      "theme_ok": true,
+      "sha256": "cf2f081fd2702ae517b4abdbdeaa5d887d10ed83b8c3ddd1df6ceb34b1403fd4",
+      "success": true
+    },
+    {
+      "surface_key": "hub:detalle-plan-timer@dark",
+      "app": "hub",
+      "view": "detalle-plan-timer",
+      "theme": "dark",
+      "file": "dark/detalle-plan-timer.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 39.92,
+      "theme_ok": true,
+      "sha256": "28e32cfbf283e172b92ca602ef47b489ed83c5eaadbd499aaa32eb87fc28ce29",
+      "success": true
+    },
+    {
+      "surface_key": "hub:detalle-plan-timer@light",
+      "app": "hub",
+      "view": "detalle-plan-timer",
+      "theme": "light",
+      "file": "light/detalle-plan-timer.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 235.57,
+      "theme_ok": true,
+      "sha256": "95fad46af031ec840535b907daee5aeb8415db9e3701a6c9a1ec0e45a20df436",
+      "success": true
+    },
+    {
+      "surface_key": "hub:detalle-resumen-ia-0@dark",
+      "app": "hub",
+      "view": "detalle-resumen-ia-0",
+      "theme": "dark",
+      "file": "dark/detalle-resumen-ia-0.png",
+      "resolution": "480x325",
+      "size": [
+        480,
+        325
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          13,
+          14,
+          17
+        ],
+        "tr": [
+          14,
+          15,
+          18
+        ],
+        "bl": [
+          7,
+          7,
+          9
+        ],
+        "br": [
+          7,
+          7,
+          9
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 38.94,
+      "theme_ok": true,
+      "sha256": "cb2ea34acb0d69110a21564bf728b04d081acba4f744770e16b0371ae561986f",
+      "success": true
+    },
+    {
+      "surface_key": "hub:detalle-resumen-ia-0@light",
+      "app": "hub",
+      "view": "detalle-resumen-ia-0",
+      "theme": "light",
+      "file": "light/detalle-resumen-ia-0.png",
+      "resolution": "480x325",
+      "size": [
+        480,
+        325
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          123,
+          119,
+          111
+        ],
+        "tr": [
+          124,
+          120,
+          112
+        ],
+        "bl": [
+          110,
+          107,
+          99
+        ],
+        "br": [
+          111,
+          107,
+          100
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 238.98,
+      "theme_ok": true,
+      "sha256": "14abe95df9b982e57fff23da79b0687920c98512097ccabcad50e2ec23450e4d",
+      "success": true
+    },
+    {
+      "surface_key": "hub:detalle@dark",
+      "app": "hub",
+      "view": "detalle",
+      "theme": "dark",
+      "file": "dark/detalle.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 39.82,
+      "theme_ok": true,
+      "sha256": "334f6369133cbb7e9179ca692791960218e88dfb64865da06a72aaaf36cd226f",
+      "success": true
+    },
+    {
+      "surface_key": "hub:detalle@light",
+      "app": "hub",
+      "view": "detalle",
+      "theme": "light",
+      "file": "light/detalle.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 235.69,
+      "theme_ok": true,
+      "sha256": "ec06f6d64428b9fff092c7632b6c2d9b5856dd703aaae15ed059f728903a02d0",
+      "success": true
+    },
+    {
+      "surface_key": "hub:pacientes-empty@dark",
+      "app": "hub",
+      "view": "pacientes-empty",
+      "theme": "dark",
+      "file": "dark/pacientes-empty.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          153,
+          156,
+          147
+        ]
+      },
+      "mean_luminance": 33.34,
+      "theme_ok": true,
+      "sha256": "24a20bc9251cd025ebcd384c83792914eaa54fdafc3eabcad8855d0695bc88f9",
+      "success": true
+    },
+    {
+      "surface_key": "hub:pacientes-empty@light",
+      "app": "hub",
+      "view": "pacientes-empty",
+      "theme": "light",
+      "file": "light/pacientes-empty.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          125,
+          127,
+          168
+        ]
+      },
+      "mean_luminance": 243.43,
+      "theme_ok": true,
+      "sha256": "177b7bb157aa78b55225ad0ccd43f88474bfac5a3b2bbfce7a5eb4ebd0474fb8",
+      "success": true
+    },
+    {
+      "surface_key": "hub:pacientes@dark",
+      "app": "hub",
+      "view": "pacientes",
+      "theme": "dark",
+      "file": "dark/pacientes.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 38.44,
+      "theme_ok": true,
+      "sha256": "c22e0c53a2a4255bab4c9e4bd29b525d0282f72f26ffbc5b40199007a83baa46",
+      "success": true
+    },
+    {
+      "surface_key": "hub:pacientes@light",
+      "app": "hub",
+      "view": "pacientes",
+      "theme": "light",
+      "file": "light/pacientes.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 238.46,
+      "theme_ok": true,
+      "sha256": "5b91700e80e895d2f11202edfc2b5fba2276a85beee11620ee20482054531e69",
+      "success": true
+    },
+    {
+      "surface_key": "hub:textos-globales@dark",
+      "app": "hub",
+      "view": "textos-globales",
+      "theme": "dark",
+      "file": "dark/textos-globales.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          33,
+          40,
+          56
+        ]
+      },
+      "mean_luminance": 41.15,
+      "theme_ok": true,
+      "sha256": "05f1763ea70c904d3c80c759c53d94f8a7b5a9d551b40ab9f0fed5ec397ea49a",
+      "success": true
+    },
+    {
+      "surface_key": "hub:textos-globales@light",
+      "app": "hub",
+      "view": "textos-globales",
+      "theme": "light",
+      "file": "light/textos-globales.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          243,
+          239,
+          228
+        ]
+      },
+      "mean_luminance": 235.78,
+      "theme_ok": true,
+      "sha256": "c636a5e2b12c6b62e9a74416c95642718bd0566ee91670c016b7e10b8f488cca",
+      "success": true
+    },
+    {
+      "surface_key": "suite:actividades-empty@dark",
+      "app": "suite",
+      "view": "actividades-empty",
+      "theme": "dark",
+      "file": "dark/actividades-empty.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 32.75,
+      "theme_ok": true,
+      "sha256": "9992012e7054b83ac24a2e5ac19aa3c101e495c9676f985b64f417188e23a2f3",
+      "success": true
+    },
+    {
+      "surface_key": "suite:actividades-empty@light",
+      "app": "suite",
+      "view": "actividades-empty",
+      "theme": "light",
+      "file": "light/actividades-empty.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 243.9,
+      "theme_ok": true,
+      "sha256": "1ff07bc1b4a1178010efafbfac85b8356a5953213a1caebdfa7b50bac83ff2d0",
+      "success": true
+    },
+    {
+      "surface_key": "suite:actividades-filtered@dark",
+      "app": "suite",
+      "view": "actividades-filtered",
+      "theme": "dark",
+      "file": "dark/actividades-filtered.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 33.81,
+      "theme_ok": true,
+      "sha256": "d9611110c666451d1dbe996c33e3dbcb63a1929ef32d50d2bf5c317493fd7400",
+      "success": true
+    },
+    {
+      "surface_key": "suite:actividades-filtered@light",
+      "app": "suite",
+      "view": "actividades-filtered",
+      "theme": "light",
+      "file": "light/actividades-filtered.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 242.71,
+      "theme_ok": true,
+      "sha256": "ee052c315bbcdd2a82a7d55067998bfa9f1a4260c9a84face15e62abeebaf160",
+      "success": true
+    },
+    {
+      "surface_key": "suite:actividades-marked-hice@dark",
+      "app": "suite",
+      "view": "actividades-marked-hice",
+      "theme": "dark",
+      "file": "dark/actividades-marked-hice.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 36.17,
+      "theme_ok": true,
+      "sha256": "edf8f1b12c41616c5770cc9c1188c487ae62d414166c517357e630a1e0e65415",
+      "success": true
+    },
+    {
+      "surface_key": "suite:actividades-marked-hice@light",
+      "app": "suite",
+      "view": "actividades-marked-hice",
+      "theme": "light",
+      "file": "light/actividades-marked-hice.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 240.51,
+      "theme_ok": true,
+      "sha256": "b9c8b1f36280b2ee065545fec6d7ee9c07b9dc847fb88991c7192b5831c050c4",
+      "success": true
+    },
+    {
+      "surface_key": "suite:actividades@dark",
+      "app": "suite",
+      "view": "actividades",
+      "theme": "dark",
+      "file": "dark/actividades.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 36.25,
+      "theme_ok": true,
+      "sha256": "e1a3b688dddf45b96348a99cfa28e0257b7b25e1e4c81aef59f3658cb2c39e19",
+      "success": true
+    },
+    {
+      "surface_key": "suite:actividades@light",
+      "app": "suite",
+      "view": "actividades",
+      "theme": "light",
+      "file": "light/actividades.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 240.44,
+      "theme_ok": true,
+      "sha256": "da16f9b559e75f74188dc1b81150e2f1ef6c1e5b4c32e302c88f3800e0517b57",
+      "success": true
+    },
+    {
+      "surface_key": "suite:animo@dark",
+      "app": "suite",
+      "view": "animo",
+      "theme": "dark",
+      "file": "dark/animo.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 37.68,
+      "theme_ok": true,
+      "sha256": "5130bc1815800fb766c8a013bd123645936d663a2983530b585dc8412afe83d8",
+      "success": true
+    },
+    {
+      "surface_key": "suite:animo@light",
+      "app": "suite",
+      "view": "animo",
+      "theme": "light",
+      "file": "light/animo.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 237.57,
+      "theme_ok": true,
+      "sha256": "ac9b9cbd1343661f21f9057886ebd73bfe94da509f34ea2e274cf47f810ddf76",
+      "success": true
+    },
+    {
+      "surface_key": "suite:avisos-empty@dark",
+      "app": "suite",
+      "view": "avisos-empty",
+      "theme": "dark",
+      "file": "dark/avisos-empty.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 32.74,
+      "theme_ok": true,
+      "sha256": "ab44ecbf6bcf37d87056a320dd36125407466e9ca588bc8f59b4add54353c81a",
+      "success": true
+    },
+    {
+      "surface_key": "suite:avisos-empty@light",
+      "app": "suite",
+      "view": "avisos-empty",
+      "theme": "light",
+      "file": "light/avisos-empty.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 243.89,
+      "theme_ok": true,
+      "sha256": "0ae98375aef5df36b41de9f5a82de0561b723177396eec6e3aec2709f19dce20",
+      "success": true
+    },
+    {
+      "surface_key": "suite:avisos-filter-activos@dark",
+      "app": "suite",
+      "view": "avisos-filter-activos",
+      "theme": "dark",
+      "file": "dark/avisos-filter-activos.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 34.29,
+      "theme_ok": true,
+      "sha256": "4e9eddd4d7ddeb3f2b1f08eefb12986f4c565a8e88ea47b41756041488b896aa",
+      "success": true
+    },
+    {
+      "surface_key": "suite:avisos-filter-activos@light",
+      "app": "suite",
+      "view": "avisos-filter-activos",
+      "theme": "light",
+      "file": "light/avisos-filter-activos.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          249,
+          246,
+          239
+        ]
+      },
+      "mean_luminance": 242.1,
+      "theme_ok": true,
+      "sha256": "4ff5dbe39c5bc0c19130cddc0e6d468d3fb1fc391ea7363be7be767d345ca83b",
+      "success": true
+    },
+    {
+      "surface_key": "suite:avisos-search@dark",
+      "app": "suite",
+      "view": "avisos-search",
+      "theme": "dark",
+      "file": "dark/avisos-search.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 32.97,
+      "theme_ok": true,
+      "sha256": "fdff596a2350416d7436b92df92c5d07e714af7fa22a4be1abffb44a05279934",
+      "success": true
+    },
+    {
+      "surface_key": "suite:avisos-search@light",
+      "app": "suite",
+      "view": "avisos-search",
+      "theme": "light",
+      "file": "light/avisos-search.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 243.44,
+      "theme_ok": true,
+      "sha256": "2d9db4cb94ddc2d388230b5f0b5d1fbb48b3c9a52e6caa7c8a6fdbd4e523207d",
+      "success": true
+    },
+    {
+      "surface_key": "suite:avisos-today@dark",
+      "app": "suite",
+      "view": "avisos-today",
+      "theme": "dark",
+      "file": "dark/avisos-today.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 34.16,
+      "theme_ok": true,
+      "sha256": "d24b89f59f2ef75f4c488d44064b100f7836e956af873a72599ec0c0ca1f248e",
+      "success": true
+    },
+    {
+      "surface_key": "suite:avisos-today@light",
+      "app": "suite",
+      "view": "avisos-today",
+      "theme": "light",
+      "file": "light/avisos-today.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          249,
+          246,
+          239
+        ]
+      },
+      "mean_luminance": 242.26,
+      "theme_ok": true,
+      "sha256": "cdc49cf88f7a351b74dc7d94645b89f12519d0368af4847ecc9aceccc2290f8b",
+      "success": true
+    },
+    {
+      "surface_key": "suite:avisos@dark",
+      "app": "suite",
+      "view": "avisos",
+      "theme": "dark",
+      "file": "dark/avisos.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 35.28,
+      "theme_ok": true,
+      "sha256": "5e91b7413ff84dcbc2a15024a0677b0948aff67ba14f9a2365e1bec2b96df1c9",
+      "success": true
+    },
+    {
+      "surface_key": "suite:avisos@light",
+      "app": "suite",
+      "view": "avisos",
+      "theme": "light",
+      "file": "light/avisos.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          249,
+          246,
+          239
+        ]
+      },
+      "mean_luminance": 241.02,
+      "theme_ok": true,
+      "sha256": "42d7fb26a12219133e7778ebc542d04828230e7df9a9907430406159010936bb",
+      "success": true
+    },
+    {
+      "surface_key": "suite:dbt-library@dark",
+      "app": "suite",
+      "view": "dbt-library",
+      "theme": "dark",
+      "file": "dark/dbt-library.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 37.07,
+      "theme_ok": true,
+      "sha256": "53363ad09fd820678de4f2bee3ef91fc6b2552a3c9145289e439c43ab5b0206a",
+      "success": true
+    },
+    {
+      "surface_key": "suite:dbt-library@light",
+      "app": "suite",
+      "view": "dbt-library",
+      "theme": "light",
+      "file": "light/dbt-library.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 239.49,
+      "theme_ok": true,
+      "sha256": "dc6e935cef3c5ec3fe32f66eb8676468fac17f45474f47c538594050b4571d1c",
+      "success": true
+    },
+    {
+      "surface_key": "suite:dbt-now@dark",
+      "app": "suite",
+      "view": "dbt-now",
+      "theme": "dark",
+      "file": "dark/dbt-now.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 35.43,
+      "theme_ok": true,
+      "sha256": "ea6711f8fc8381054627682c4fd22d9a1c9f50cbcbb68b4dff97b6bf1051c8a1",
+      "success": true
+    },
+    {
+      "surface_key": "suite:dbt-now@light",
+      "app": "suite",
+      "view": "dbt-now",
+      "theme": "light",
+      "file": "light/dbt-now.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 241.4,
+      "theme_ok": true,
+      "sha256": "1e450fca4614ba0e6af926a7947701579d7c6469cade9887fd3b7041302191af",
+      "success": true
+    },
+    {
+      "surface_key": "suite:dbt-practice-stop@dark",
+      "app": "suite",
+      "view": "dbt-practice-stop",
+      "theme": "dark",
+      "file": "dark/dbt-practice-stop.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          16,
+          17,
+          19
+        ],
+        "tr": [
+          17,
+          18,
+          22
+        ],
+        "bl": [
+          13,
+          13,
+          14
+        ],
+        "br": [
+          14,
+          14,
+          15
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 32.06,
+      "theme_ok": true,
+      "sha256": "c6e5c7a3ac1b2a0c7489aa6e79f07f351e1ac20004c0482eb4629aabc7b9600e",
+      "success": true
+    },
+    {
+      "surface_key": "suite:dbt-practice-stop@light",
+      "app": "suite",
+      "view": "dbt-practice-stop",
+      "theme": "light",
+      "file": "light/dbt-practice-stop.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          125,
+          121,
+          112
+        ],
+        "tr": [
+          126,
+          123,
+          115
+        ],
+        "bl": [
+          115,
+          111,
+          102
+        ],
+        "br": [
+          118,
+          114,
+          106
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 192.78,
+      "theme_ok": true,
+      "sha256": "91d975566f183717c152e7df6a5b63df15fc131f8d97f8ec2239c1b7a09d9001",
+      "success": true
+    },
+    {
+      "surface_key": "suite:home-no-score@dark",
+      "app": "suite",
+      "view": "home-no-score",
+      "theme": "dark",
+      "file": "dark/home-no-score.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 40.0,
+      "theme_ok": true,
+      "sha256": "f2acd71a9f24e5364691791034fcac07540871064ce8364b96fecb2c38653427",
+      "success": true
+    },
+    {
+      "surface_key": "suite:home-no-score@light",
+      "app": "suite",
+      "view": "home-no-score",
+      "theme": "light",
+      "file": "light/home-no-score.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 236.61,
+      "theme_ok": true,
+      "sha256": "42a16cbd1210d72ccfcf60ae9328a4efa563bb681386b67b51335ff2e4269547",
+      "success": true
+    },
+    {
+      "surface_key": "suite:home@dark",
+      "app": "suite",
+      "view": "home",
+      "theme": "dark",
+      "file": "dark/home.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 40.77,
+      "theme_ok": true,
+      "sha256": "5a2def9e9e120a5bd28be159f381496245bc83189bce91b66069eea16d5bc610",
+      "success": true
+    },
+    {
+      "surface_key": "suite:home@light",
+      "app": "suite",
+      "view": "home",
+      "theme": "light",
+      "file": "light/home.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 235.98,
+      "theme_ok": true,
+      "sha256": "ade4f801e168f36232b0494f35bb58dd3e26aaa1eb2e2a6d8c0fefb0983060a8",
+      "success": true
+    },
+    {
+      "surface_key": "suite:onboarding-error@dark",
+      "app": "suite",
+      "view": "onboarding-error",
+      "theme": "dark",
+      "file": "dark/onboarding-error.png",
+      "resolution": "520x600",
+      "size": [
+        520,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          27
+        ],
+        "tr": [
+          15,
+          19,
+          32
+        ],
+        "bl": [
+          8,
+          10,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          33,
+          40,
+          56
+        ]
+      },
+      "mean_luminance": 41.8,
+      "theme_ok": true,
+      "sha256": "1bd8017182e63ab4a70ccf2068fee5946061f1b17e2a63f58608102d9fcc39ef",
+      "success": true
+    },
+    {
+      "surface_key": "suite:onboarding-error@light",
+      "app": "suite",
+      "view": "onboarding-error",
+      "theme": "light",
+      "file": "light/onboarding-error.png",
+      "resolution": "520x600",
+      "size": [
+        520,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          231,
+          225,
+          212
+        ],
+        "tr": [
+          234,
+          229,
+          217
+        ],
+        "bl": [
+          215,
+          209,
+          195
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          243,
+          239,
+          228
+        ]
+      },
+      "mean_luminance": 235.13,
+      "theme_ok": true,
+      "sha256": "4d6057bdd1001a33b7aa76d954a3e822831c3bd2c7eb309906e2d32b8e6efe6d",
+      "success": true
+    },
+    {
+      "surface_key": "suite:onboarding@dark",
+      "app": "suite",
+      "view": "onboarding",
+      "theme": "dark",
+      "file": "dark/onboarding.png",
+      "resolution": "520x600",
+      "size": [
+        520,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          27
+        ],
+        "tr": [
+          15,
+          19,
+          32
+        ],
+        "bl": [
+          8,
+          10,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          33,
+          40,
+          56
+        ]
+      },
+      "mean_luminance": 41.03,
+      "theme_ok": true,
+      "sha256": "9cae728067dfb2f5bf621630d52ff9627c77d0d50bcc822235cecc56c8f39c12",
+      "success": true
+    },
+    {
+      "surface_key": "suite:onboarding@light",
+      "app": "suite",
+      "view": "onboarding",
+      "theme": "light",
+      "file": "light/onboarding.png",
+      "resolution": "520x600",
+      "size": [
+        520,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          231,
+          225,
+          212
+        ],
+        "tr": [
+          234,
+          229,
+          217
+        ],
+        "bl": [
+          215,
+          209,
+          195
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          243,
+          239,
+          228
+        ]
+      },
+      "mean_luminance": 235.86,
+      "theme_ok": true,
+      "sha256": "e7c20a3872086824a44674231eccbef6f88f7f51ad3e048f48066f7fd926ac1c",
+      "success": true
+    },
+    {
+      "surface_key": "suite:recuperar-acceso@dark",
+      "app": "suite",
+      "view": "recuperar-acceso",
+      "theme": "dark",
+      "file": "dark/recuperar-acceso.png",
+      "resolution": "520x600",
+      "size": [
+        520,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          27
+        ],
+        "tr": [
+          15,
+          19,
+          32
+        ],
+        "bl": [
+          8,
+          10,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          33,
+          40,
+          56
+        ]
+      },
+      "mean_luminance": 41.66,
+      "theme_ok": true,
+      "sha256": "4e77c5e910bf16427cddabc7828f3bc11c26fc062a7001b931fe6dc001bd9da5",
+      "success": true
+    },
+    {
+      "surface_key": "suite:recuperar-acceso@light",
+      "app": "suite",
+      "view": "recuperar-acceso",
+      "theme": "light",
+      "file": "light/recuperar-acceso.png",
+      "resolution": "520x600",
+      "size": [
+        520,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          231,
+          225,
+          212
+        ],
+        "tr": [
+          234,
+          229,
+          217
+        ],
+        "bl": [
+          215,
+          209,
+          195
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          243,
+          239,
+          228
+        ]
+      },
+      "mean_luminance": 235.28,
+      "theme_ok": true,
+      "sha256": "22d3d8cd39076542212a5a40f9cb33b51cf73c3f70b7120766a39d5c0a7acd58",
+      "success": true
+    },
+    {
+      "surface_key": "suite:registro-step1-emotion-otro@dark",
+      "app": "suite",
+      "view": "registro-step1-emotion-otro",
+      "theme": "dark",
+      "file": "dark/registro-step1-emotion-otro.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          33,
+          40,
+          56
+        ]
+      },
+      "mean_luminance": 36.84,
+      "theme_ok": true,
+      "sha256": "7c364d4fa824d6d85ecef814c2b3ccf07306d9be08f649ca1c0ac4b9bd66dab4",
+      "success": true
+    },
+    {
+      "surface_key": "suite:registro-step1-emotion-otro@light",
+      "app": "suite",
+      "view": "registro-step1-emotion-otro",
+      "theme": "light",
+      "file": "light/registro-step1-emotion-otro.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          243,
+          239,
+          228
+        ]
+      },
+      "mean_luminance": 239.21,
+      "theme_ok": true,
+      "sha256": "5461a455f7fe4d22d1b152330347d65a6a8ffb5290f9fa961aa569a32e7a9697",
+      "success": true
+    },
+    {
+      "surface_key": "suite:registro-step1-emotion@dark",
+      "app": "suite",
+      "view": "registro-step1-emotion",
+      "theme": "dark",
+      "file": "dark/registro-step1-emotion.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 36.35,
+      "theme_ok": true,
+      "sha256": "55b983b44d7f7e23839137542a2dad4232e36142946adfc7eabc27540c44a7dd",
+      "success": true
+    },
+    {
+      "surface_key": "suite:registro-step1-emotion@light",
+      "app": "suite",
+      "view": "registro-step1-emotion",
+      "theme": "light",
+      "file": "light/registro-step1-emotion.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 239.7,
+      "theme_ok": true,
+      "sha256": "c83fc948d0a313e9503a0731ded79b170b51d105132b63241148da8433b2a00d",
+      "success": true
+    },
+    {
+      "surface_key": "suite:registro-step2-distortions@dark",
+      "app": "suite",
+      "view": "registro-step2-distortions",
+      "theme": "dark",
+      "file": "dark/registro-step2-distortions.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          33,
+          40,
+          56
+        ]
+      },
+      "mean_luminance": 38.38,
+      "theme_ok": true,
+      "sha256": "73fffd7bcccafeaea95730871cf3babbb3984b02a0d2098f32a49b6c3239a239",
+      "success": true
+    },
+    {
+      "surface_key": "suite:registro-step2-distortions@light",
+      "app": "suite",
+      "view": "registro-step2-distortions",
+      "theme": "light",
+      "file": "light/registro-step2-distortions.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          243,
+          239,
+          228
+        ]
+      },
+      "mean_luminance": 238.75,
+      "theme_ok": true,
+      "sha256": "de2badbfd52479df6dd88581ef5c8d6ad1e84c81923fcefc345bf147eb3fafb7",
+      "success": true
+    },
+    {
+      "surface_key": "suite:registro-step3-filled@dark",
+      "app": "suite",
+      "view": "registro-step3-filled",
+      "theme": "dark",
+      "file": "dark/registro-step3-filled.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          33,
+          40,
+          56
+        ]
+      },
+      "mean_luminance": 36.82,
+      "theme_ok": true,
+      "sha256": "25b0818919f043e591b115f2e3df1f857906870b597260ec38e9bda94c20be41",
+      "success": true
+    },
+    {
+      "surface_key": "suite:registro-step3-filled@light",
+      "app": "suite",
+      "view": "registro-step3-filled",
+      "theme": "light",
+      "file": "light/registro-step3-filled.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          243,
+          239,
+          228
+        ]
+      },
+      "mean_luminance": 239.46,
+      "theme_ok": true,
+      "sha256": "60303e55df205407f9854683f93ef62691780296bed416ca144ac0ef39a81ec5",
+      "success": true
+    },
+    {
+      "surface_key": "suite:registro-success@dark",
+      "app": "suite",
+      "view": "registro-success",
+      "theme": "dark",
+      "file": "dark/registro-success.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 33.24,
+      "theme_ok": true,
+      "sha256": "e0136a4174b0a3a58cc0425130e28c4aece09860d779b5900f413b6241305c6b",
+      "success": true
+    },
+    {
+      "surface_key": "suite:registro-success@light",
+      "app": "suite",
+      "view": "registro-success",
+      "theme": "light",
+      "file": "light/registro-success.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 243.23,
+      "theme_ok": true,
+      "sha256": "daa97af42d0e05038971557bcdae320a1454d7fcd9bde22b78aa74828e220b76",
+      "success": true
+    },
+    {
+      "surface_key": "suite:registro@dark",
+      "app": "suite",
+      "view": "registro",
+      "theme": "dark",
+      "file": "dark/registro.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          33,
+          40,
+          56
+        ]
+      },
+      "mean_luminance": 35.26,
+      "theme_ok": true,
+      "sha256": "dd5bad5e48457f90e545d94f4deefed854a5356d753e12e9d7d061d40ff6b5f7",
+      "success": true
+    },
+    {
+      "surface_key": "suite:registro@light",
+      "app": "suite",
+      "view": "registro",
+      "theme": "light",
+      "file": "light/registro.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          243,
+          239,
+          228
+        ]
+      },
+      "mean_luminance": 240.97,
+      "theme_ok": true,
+      "sha256": "998d678cc3205299ae3eadd2d1fb4e68a7dd6cc7fdfd59b3d4705d1af09a638e",
+      "success": true
+    },
+    {
+      "surface_key": "suite:respiracion-paused@dark",
+      "app": "suite",
+      "view": "respiracion-paused",
+      "theme": "dark",
+      "file": "dark/respiracion-paused.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          30,
+          37,
+          53
+        ]
+      },
+      "mean_luminance": 33.92,
+      "theme_ok": true,
+      "sha256": "2569a34eda784b1f54e54b3d573cc4d3127426ef7c9482fbfe9a53fd73d64f37",
+      "success": true
+    },
+    {
+      "surface_key": "suite:respiracion-paused@light",
+      "app": "suite",
+      "view": "respiracion-paused",
+      "theme": "light",
+      "file": "light/respiracion-paused.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          245,
+          242,
+          232
+        ]
+      },
+      "mean_luminance": 242.02,
+      "theme_ok": true,
+      "sha256": "6a2f0e48c8122afcccbf1f6f06c61685bb7dfa704ab065cb1d23e27dbe378aba",
+      "success": true
+    },
+    {
+      "surface_key": "suite:respiracion-running@dark",
+      "app": "suite",
+      "view": "respiracion-running",
+      "theme": "dark",
+      "file": "dark/respiracion-running.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          30,
+          37,
+          53
+        ]
+      },
+      "mean_luminance": 33.96,
+      "theme_ok": true,
+      "sha256": "10551ed8c66da885c17fa58ca0a2e7315b86c815d0ea647905334a22839dc962",
+      "success": true
+    },
+    {
+      "surface_key": "suite:respiracion-running@light",
+      "app": "suite",
+      "view": "respiracion-running",
+      "theme": "light",
+      "file": "light/respiracion-running.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          245,
+          242,
+          232
+        ]
+      },
+      "mean_luminance": 241.98,
+      "theme_ok": true,
+      "sha256": "24dd3c748074b035d85e81ba854b68df55dfb77a6e238e0f9e629376b69e82a4",
+      "success": true
+    },
+    {
+      "surface_key": "suite:respiracion@dark",
+      "app": "suite",
+      "view": "respiracion",
+      "theme": "dark",
+      "file": "dark/respiracion.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          30,
+          37,
+          53
+        ]
+      },
+      "mean_luminance": 33.97,
+      "theme_ok": true,
+      "sha256": "420065539688b13fd6ba79e85f4afa1a4d0dc6944201aa5481fd4884d00d91c1",
+      "success": true
+    },
+    {
+      "surface_key": "suite:respiracion@light",
+      "app": "suite",
+      "view": "respiracion",
+      "theme": "light",
+      "file": "light/respiracion.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          245,
+          242,
+          232
+        ]
+      },
+      "mean_luminance": 241.98,
+      "theme_ok": true,
+      "sha256": "44f7d05416aaeb4ba8cede8b18bea24f46c5b76120bcb9deabbf82c6b8a3b31e",
+      "success": true
+    },
+    {
+      "surface_key": "suite:rutina-add-task@dark",
+      "app": "suite",
+      "view": "rutina-add-task",
+      "theme": "dark",
+      "file": "dark/rutina-add-task.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 35.75,
+      "theme_ok": true,
+      "sha256": "1e69c8bd61b705dec2dddb0721456ea261e191d2e2967530ce5e330531ad9c66",
+      "success": true
+    },
+    {
+      "surface_key": "suite:rutina-add-task@light",
+      "app": "suite",
+      "view": "rutina-add-task",
+      "theme": "light",
+      "file": "light/rutina-add-task.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 240.67,
+      "theme_ok": true,
+      "sha256": "61306d50a2302cbd6608a28eb4496f3620e6a2cf0345875da14b0acdcec1f5f6",
+      "success": true
+    },
+    {
+      "surface_key": "suite:rutina-all-completed@dark",
+      "app": "suite",
+      "view": "rutina-all-completed",
+      "theme": "dark",
+      "file": "dark/rutina-all-completed.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 35.73,
+      "theme_ok": true,
+      "sha256": "02d676f8d8098654685ebc5410900219ca571cf5b7e98e00f6c341e29656c98f",
+      "success": true
+    },
+    {
+      "surface_key": "suite:rutina-all-completed@light",
+      "app": "suite",
+      "view": "rutina-all-completed",
+      "theme": "light",
+      "file": "light/rutina-all-completed.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 240.4,
+      "theme_ok": true,
+      "sha256": "1d491da024d1ecec3845e87c92d592f4a63a85ff9ad904d278008c2f049feb4c",
+      "success": true
+    },
+    {
+      "surface_key": "suite:rutina-empty@dark",
+      "app": "suite",
+      "view": "rutina-empty",
+      "theme": "dark",
+      "file": "dark/rutina-empty.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 32.77,
+      "theme_ok": true,
+      "sha256": "41de33c93244c8f23a477ff8093de41e98addd1137194e06c26c20919a795c89",
+      "success": true
+    },
+    {
+      "surface_key": "suite:rutina-empty@light",
+      "app": "suite",
+      "view": "rutina-empty",
+      "theme": "light",
+      "file": "light/rutina-empty.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 243.86,
+      "theme_ok": true,
+      "sha256": "38f86c81d3cbc9b5bbbacaa571016f5030e15ed7a7e9ce7f8f96d3769d2fcb92",
+      "success": true
+    },
+    {
+      "surface_key": "suite:rutina@dark",
+      "app": "suite",
+      "view": "rutina",
+      "theme": "dark",
+      "file": "dark/rutina.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 35.32,
+      "theme_ok": true,
+      "sha256": "999ee14659599448b8584f6b64964f5f427322e95283efc04694c83047eb7c23",
+      "success": true
+    },
+    {
+      "surface_key": "suite:rutina@light",
+      "app": "suite",
+      "view": "rutina",
+      "theme": "light",
+      "file": "light/rutina.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 241.18,
+      "theme_ok": true,
+      "sha256": "3ec775fb4eca430dd63b36db1c7f1a4f869ae5240e1136b346a929e518e0e198",
+      "success": true
+    },
+    {
+      "surface_key": "suite:timer-empty@dark",
+      "app": "suite",
+      "view": "timer-empty",
+      "theme": "dark",
+      "file": "dark/timer-empty.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          25,
+          31,
+          46
+        ]
+      },
+      "mean_luminance": 32.92,
+      "theme_ok": true,
+      "sha256": "2440f356636bbe4792d7839c278e31a28bc4927dff287005f8abf6f704b182ef",
+      "success": true
+    },
+    {
+      "surface_key": "suite:timer-empty@light",
+      "app": "suite",
+      "view": "timer-empty",
+      "theme": "light",
+      "file": "light/timer-empty.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          251,
+          248,
+          241
+        ]
+      },
+      "mean_luminance": 243.75,
+      "theme_ok": true,
+      "sha256": "216bf63a5f371591e7efd65a289489269ec74c5c79b71b9fb48de596a6f00170",
+      "success": true
+    },
+    {
+      "surface_key": "suite:timer-paused@dark",
+      "app": "suite",
+      "view": "timer-paused",
+      "theme": "dark",
+      "file": "dark/timer-paused.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          33,
+          40,
+          56
+        ]
+      },
+      "mean_luminance": 34.6,
+      "theme_ok": true,
+      "sha256": "a0bdd189bc1367bfe34323e5dc02c885f0954bc0c8a9c8c922c03bb036fc8f10",
+      "success": true
+    },
+    {
+      "surface_key": "suite:timer-paused@light",
+      "app": "suite",
+      "view": "timer-paused",
+      "theme": "light",
+      "file": "light/timer-paused.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          244,
+          240,
+          229
+        ]
+      },
+      "mean_luminance": 241.32,
+      "theme_ok": true,
+      "sha256": "1dd8012e00038a9cb9e7661dbdb2abc674026d9082a0d2ec4ed03c4915f3ce1f",
+      "success": true
+    },
+    {
+      "surface_key": "suite:timer-running@dark",
+      "app": "suite",
+      "view": "timer-running",
+      "theme": "dark",
+      "file": "dark/timer-running.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          33,
+          40,
+          56
+        ]
+      },
+      "mean_luminance": 34.78,
+      "theme_ok": true,
+      "sha256": "7f37890214cb15d4bc3a6b899ee151726d4d66fdfc566753ead162d55264e9ed",
+      "success": true
+    },
+    {
+      "surface_key": "suite:timer-running@light",
+      "app": "suite",
+      "view": "timer-running",
+      "theme": "light",
+      "file": "light/timer-running.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          244,
+          240,
+          229
+        ]
+      },
+      "mean_luminance": 241.16,
+      "theme_ok": true,
+      "sha256": "7bbe0ecfe1b90ed43dbd85c7702072360474a3fef677a4ff8c69e53da6c4601c",
+      "success": true
+    },
+    {
+      "surface_key": "suite:timer@dark",
+      "app": "suite",
+      "view": "timer",
+      "theme": "dark",
+      "file": "dark/timer.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          12,
+          16,
+          25
+        ],
+        "tr": [
+          15,
+          19,
+          31
+        ],
+        "bl": [
+          7,
+          9,
+          16
+        ],
+        "br": [
+          8,
+          10,
+          17
+        ],
+        "center": [
+          33,
+          40,
+          56
+        ]
+      },
+      "mean_luminance": 34.81,
+      "theme_ok": true,
+      "sha256": "51312d4fcf539ffb070b8d87ceee1c6c492922d131f72660d17965627886e2af",
+      "success": true
+    },
+    {
+      "surface_key": "suite:timer@light",
+      "app": "suite",
+      "view": "timer",
+      "theme": "light",
+      "file": "light/timer.png",
+      "resolution": "960x600",
+      "size": [
+        960,
+        600
+      ],
+      "size_ok": true,
+      "bg_color_sample": {
+        "tl": [
+          230,
+          224,
+          211
+        ],
+        "tr": [
+          234,
+          228,
+          216
+        ],
+        "bl": [
+          214,
+          207,
+          193
+        ],
+        "br": [
+          217,
+          211,
+          199
+        ],
+        "center": [
+          244,
+          240,
+          229
+        ]
+      },
+      "mean_luminance": 241.12,
+      "theme_ok": true,
+      "sha256": "886fff2600ad74ae54e056e222b1f2b866b064b8a1df892dc006405df28501e7",
+      "success": true
+    }
+  ]
+}

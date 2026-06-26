@@ -78,9 +78,9 @@ Los logs históricos muestran que V2, V3, Sentinel, V8 y revisión visual humana
 
 | PoC | Hipótesis | Resultado | Evidencia |
 |---|---|---|---|
-| **PoC 1 — graphify sobre `qa/`** | graphify ahorra tokens para navegar código | **PASS** — 50.79% ahorro | Baseline 59,356 tokens → grafo 29,211 tokens. Setup 0.83s, 291 nodos, 613 edges, sin LLM. `/home/z/my-project/scripts/poc1_graphify_results.json` |
-| **PoC 2 — odiff AA vs SSIM (sintético)** | odiff AA reduce ruido vs SSIM | **PASS parcial** — 50% reducción | Pair A solo ruido: odiff AA 1,482 px vs SSIM 2,943 px. `/home/z/my-project/scripts/poc2_odiff_results.json` |
-| **PoC 2b — odiff AA vs SSIM (imágenes reales)** | odiff AA reporta diff accionable | **PASS** — 57% menos píxeles que SSIM | Mockup vs captura V8: SSIM changed 80,116 px vs odiff AA 34,368 px. `/home/z/my-project/scripts/poc2b_real_images_results.json` |
+| **PoC 1 — graphify sobre `qa/`** | graphify ahorra tokens para navegar código | **PASS** — 50.79% ahorro | Baseline 59,356 tokens → grafo 29,211 tokens. Setup 0.83s, 291 nodos, 613 edges, sin LLM. |
+| **PoC 2 — odiff AA vs SSIM (sintético)** | odiff AA reduce ruido vs SSIM | **PASS parcial** — 50% reducción | Pair A solo ruido: odiff AA 1,482 px vs SSIM 2,943 px. |
+| **PoC 2b — odiff AA vs SSIM (imágenes reales)** | odiff AA reporta diff accionable | **PASS** — 57% menos píxeles que SSIM | Mockup vs captura V8: SSIM changed 80,116 px vs odiff AA 34,368 px. |
 | **PoC 3 — Playwright fresco vs 4 carpetas** | Las 4 carpetas no representan el HTML actual | **PASS** — confirmado | Playwright `home_light_score` vs las 3 carpetas: SSIM 0.07-0.12 (imágenes totalmente distintas). |
 | **PoC 4 — Captura V8 real vs 4 carpetas** | Las 4 carpetas dan 4 verdicts distintos | **PASS** — confirmado | SSIM varía 0.071-0.114 (60% variación) para la misma captura V8 contra las 4 carpetas. |
 
@@ -267,7 +267,7 @@ Si algún gate no cumple, **stop**. Diagnosticar antes de seguir.
 
 **2.2 — Integrar graphify como dev-tool out-of-band**
 
-- Instalar `graphify` en dev shell del owner (NO en `pyproject.toml` del proyecto). Documentar en `docs/dev-setup.md`.
+- Instalar `graphify` en dev shell del owner (NO en `pyproject.toml` del proyecto). Link oficial: https://github.com/safishamsi/graphify. Documentar en `docs/dev-setup.md`.
 - Correr `graphify extract qa/` → produce `docs/graphify-out/graph.json`.
 - Verificar que el grafo cubre los archivos `.py` de `qa/` (PoC 1 ya validó: 291 nodos, 613 edges, 50.79% ahorro de tokens).
 - Documentar en `docs/agent-protocol.md`: cuando un agente reciba una divergencia, consultar `docs/graphify-out/graph.json` para identificar archivos involucrados.
