@@ -148,5 +148,36 @@ Commit único del ciclo: este LOOP_LOG_V3.md (docs only).
 
 ## Pendientes (no terminal)
 
-- **Decisión del owner**: ¿priorizar mejorar el spec_generator (claramente roto en paleta light/dark) o agregar contratos de introspección para tipografía/spacing?
+- **Decisión del owner**: ¿priorizar mejorar el spec_generator (claramente roto en paleta light/dark) o agregar contratos de introspección para tipografía / spacing / borders?
 - **Mientras tanto**: el loop seguirá ejecutándose por turno, regenerando capturas + report.json, hasta encontrar deuda real nueva o el owner corte el loop.
+
+---
+
+# Ciclo 2 — re-DETECTAR (2026-06-26 continuación)
+
+- **SHA antes**: `752cb7d`
+- **Acción**: re-leer `qa/_visual_auditor_spec/introspection.json` (no stale — sin cambios de código entre ciclos) + cruzar con `report.json`.
+- **Hallazgos**:
+  - Introspección: `fail_count=0`, `divergences=[]` en las 86 superficies (idéntico al ciclo 1).
+  - Inventario: 13 clases elevated-by-design con 100% shadow (388/388). `NMButton` 73.6% (28 ghost by-design flat).
+  - Verificador: 180 divergencias (172 COLOR + 6 SHADOW + 2 SIZE), todas en las mismas categorías y superficies del ciclo 1.
+  - Cross-check adicional: 14 superficies tienen `QPushButton` con `qss_radii` mixtos (`[8, 10]`, `[8, 15, 16]`, etc.) — esperado: botones con `size=sm/md/lg` tienen radius distintos por diseño. **No es deuda.**
+  - Cross-check adicional: `shape_attrs` muestra `None` para casi todos los widgets — esperado: radius viene de stylesheet, no de `setShape()`. **No es señal.**
+- **Conclusión**: 0 deuda nueva respecto al ciclo 1. Mismo bloqueo.
+
+### Acción del ciclo 2
+
+- No se aplica fix (mismo motivo que ciclo 1).
+- `ruff check` no se corre (sin cambios de código).
+- Re-verificación `verify-all` no se corre (mismo output esperado).
+
+### Commits del ciclo 2
+
+- (próximo) `docs(qa): LOOP_LOG_V3 cycle 2 — confirms cycle 1 blocker, no new debt` — extiende este archivo.
+
+### Estado del loop al cierre del ciclo 2
+
+- 2 ciclos ejecutados, 0 fixes de producto aplicados (no por falta de effort, por ausencia de items elegibles).
+- Catch inicial cerrado: `_ReminderCardV3` SHADOW_MISSING × 30 (sesión anterior, commit `3bdc718`).
+- VAS estable: 86/86 superficies, 0 contratos fallidos, 180 divergencias de imagen todas no accionables (bugs del spec_generator o FP del detector).
+- Loop sigue abierto: próximo ciclo = ciclo 3 = re-DETECTAR con la misma metodología.
