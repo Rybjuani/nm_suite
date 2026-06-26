@@ -94,7 +94,7 @@ _DBT_SKILL_BAR_TOP_W = 54
 _DBT_SKILL_BAR_TOP_H = 5
 _DBT_LIBRARY_CARD_MIN_H = 116
 _DBT_LIBRARY_CARD_MAX_H = 122
-_DBT_NEED_BORDER_W = 5
+_DBT_NEED_BORDER_W = 3  # mockup l.232: .need-card{border-left:3px solid var(--brand); ...}
 _DBT_NEED_BORDER_Y = 14
 _DBT_NEED_BORDER_RADIUS = 2.5
 
