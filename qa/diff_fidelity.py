@@ -364,7 +364,9 @@ def compare_odiff(
     view: str,
     theme: str,
     write_images: bool = True,
-    threshold: float = 0.1,
+    # Per-pixel noise floor validated visually: 0.1 inflates % with uniform
+    # modal-backdrop tint + font antialiasing (not defects); 0.3 suppresses them.
+    threshold: float = 0.3,
     # Acceptance is aligned to the owner's existing changed-pixel tolerance
     # (FidelityThresholds.max_changed_pixel_ratio = 0.08 → 8%). odiff_pct measures
     # the same dimension (fraction of differing pixels) but antialiasing-aware, so

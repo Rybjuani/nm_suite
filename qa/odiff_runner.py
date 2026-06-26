@@ -56,7 +56,7 @@ def compare_with_odiff(
     actual: Path,
     diff_png: Path | None = None,
     *,
-    threshold: float = 0.1,
+    threshold: float = 0.3,
     antialiasing: bool = True,
 ) -> dict[str, int | float | str | bool]:
     """Compare two images with odiff, returning structured diff metrics.
@@ -70,7 +70,11 @@ def compare_with_odiff(
     diff_png : Path | None
         Where to write the visual diff overlay. If None, a temp file is used.
     threshold : float
-        Color difference threshold (0-1). Pixels below this are ignored.
+        Per-pixel color difference threshold (0-1). Pixels below this are
+        ignored. Default 0.3 = piso de ruido cross-renderer validado por
+        inspección visual: a 0.1 el % se infla con tinte de fondo uniforme
+        (backdrops de modal) + antialiasing de fuentes, que NO son defectos.
+        A 0.3 esos artefactos se suprimen y sólo persisten diffs reales.
     antialiasing : bool
         If True, enables odiff's --antialiasing flag to suppress cross-renderer
         sub-pixel rasterization noise.
