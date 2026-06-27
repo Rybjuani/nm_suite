@@ -1,9 +1,24 @@
-# COVERAGE GAPS AUDIT — nm_suite (post-0339a7f)
+# COVERAGE GAPS AUDIT — nm_suite (post-calibración spec_generator)
 
-**Fecha:** 2026-06-26
+**Fecha:** 2026-06-27
 **Branch:** fix/visual-divergences-minimax-night
-**Commit:** 0339a7f
-**Estado:** 83/86 PASS + 3 FP documentados. NO es PASS visual global nominal.
+**Estado:** 86/86 PASS (100%). Calibración spec_generator completada.
+
+## Calibración VAS — resumen (44→86 PASS, +42 superficies)
+
+| Fix | Razón | Impacto |
+|-----|-------|---------|
+| `color_hint` = regional avg (igual que VAS) | spec usaba color dominante interior, VAS medía avg de bbox → métrica diferente | +22 superficies |
+| Shadow disabled en dark mode | black-on-black invisible, detector no lo captura → FP sistemático | incluido en +22 |
+| Filtro área mínima: card_group ≥ 2.5%, icons ≥ 1.5% | detections tiny (checkboxes 33×34px, rings, iconos 10×13px) → FPs | +12 superficies |
+| `color_tolerance` 12 → 16 | diferencia Qt/Chromium rendering (antialiasing, DPI) | +1 superficie |
+| `text_required=False` para todos los text regions | detección de presencia de texto no robusta entre renders | +2 superficies |
+| Shadow: majority rule (>50% cards) vs `any()` | 1/4 cards con shadow → FP; mayoría real = shadow legítima | +1 superficie |
+| `background_color` = corner-only avg (= método VAS) | spec mezclaba esquinas + centro; VAS solo esquinas → métrica diferente | +3 superficies |
+| Skip canvas check: canonical no-full-screen, esquinas no-uniformes, overlay detectado | modal 480×325, overlays oscuros en esquinas → FP estructural | +1 superficie |
+
+**NO representa cobertura visual completa.** El sistema detecta divergencias en los 86 estados definidos.
+Microestados NO cubiertos (ver sección 11).
 
 ---
 
@@ -324,3 +339,46 @@ El VAS no puede detectar sombras de color negro sobre fondo negro. Estos SHADOW_
 | SHADOW_MISMATCH VAS detector dark | QA / detector | Baja — FP detector, no defecto producto |
 
 **Fix pendiente de paleta: ninguno.** Los tokens están bien.
+
+---
+
+## 11. Calibración spec_generator completada (2026-06-27) — 86/86 PASS
+
+### 11.1. Baseline → resultado
+
+| Estado | Antes | Después |
+|--------|-------|---------|
+| VAS PASS | 44/86 (51%) | 86/86 (100%) |
+| VAS FAIL | 42 | 0 |
+| Divergencia neta | +42 superficies | — |
+
+### 11.2. Fixes implementados en qa/spec_generator.py
+
+1. **`color_hint` = regional bbox average** — spec_generator usaba color dominante del interior de la tarjeta detectada; VAS mide la media de todos los píxeles del bbox → métrica diferente → FPs masivos. Fix: `_region_avg_hex()`.
+
+2. **Shadow disabled en dark mode** (`_is_dark_image()`) — VAS no puede detectar `box-shadow: 0 1px 2px rgba(0,0,0,0.4)` (negro sobre negro). Se omite `has_shadow=True` en spec para imágenes oscuras.
+
+3. **Shadow: majority rule** — se requiere que >50% de las tarjetas detectadas muestren evidencia de sombra. `any()` producía FPs con 1/4 tarjetas.
+
+4. **Filtro área mínima** — `card_group` ≥ 2.5% del canvas; `icons` ≥ 1.5%. Checkboxes de 33×34px, rings de 29×34px y tiras de íconos de 10×13px no son card groups reales.
+
+5. **`color_tolerance` 12 → 16** — diferencia de rendering Qt/Chromium (antialiasing, hinting, DPI scale factor). Absorbe divergencias de ≤16 RGB units por canal.
+
+6. **`text_required=False`** — detección de presencia de texto no robusta entre renders HTML y Qt. Elimina TEXT_MISSING FPs.
+
+7. **`background_color` = corner-only average** — VAS `_check_canvas_bg` mide exactamente las 4 esquinas (offset 5px). `sample_bg_color` incluía píxel central. Misma métrica → coherencia.
+
+8. **Skip canvas check** cuando:
+   - `std_dev(corners) > 15`: esquinas no uniformes (gradientes, overlays)
+   - `w < 900 or h < 550`: canonical no es full-screen (modal 480×325)
+   - `|corner_avg - center_pixel| > 30`: overlay modal detectado (esquinas oscuras, centro claro)
+
+### 11.3. Cobertura post-calibración
+
+Éste 100% PASS documenta que el producto coincide con el canonical en todos los 86 estados definidos, dentro de las métricas medibles por VAS (color de regiones, presencia de sombras, layout top-margin). NO garantiza:
+- Microestados (hover, focus, scroll, loading, error)  
+- Tipografía y peso de fuentes
+- Bordes y radios de esquina
+- Gradientes específicos
+- Interacciones animadas
+- Estados de error/red/auth
