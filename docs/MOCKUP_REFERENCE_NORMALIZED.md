@@ -1,5 +1,10 @@
 # Mockup Reference Normalized
 
+> Nota 2026-06-27: este documento describe un flujo histórico de normalización
+> sobre `qa/mockup_reference_static/`. El canonical operativo vigente del repo es
+> `qa/_mockup_canonical/`; la ruta vieja se conserva sólo como referencia
+> histórica/no canónica.
+
 ## Purpose
 
 `qa/mockup_reference_static/` contains 86 PNGs captured from `neuromood-mockup.html`

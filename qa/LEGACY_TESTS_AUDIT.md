@@ -1,5 +1,10 @@
 # Auditoría de tests visuales legacy contra el mockup canónico
 
+> Nota 2026-06-27: este archivo se conserva como auditoría histórica. Las
+> referencias a `qa/mockup_reference_static/` apuntan a un snapshot legado; el
+> canonical vigente del repo es `qa/_mockup_canonical/`. Los "fail pre-existentes"
+> mencionados abajo ya no representan el estado actual de la suite.
+
 > **Fecha:** 2026-06-24
 > **Mockup canónico:** `neuromood-mockup.html` + `qa/mockup_reference_static/`
 > **Alcance:** 11 archivos `tests/test_*visual_contract.py` (77 tests collected por pytest).

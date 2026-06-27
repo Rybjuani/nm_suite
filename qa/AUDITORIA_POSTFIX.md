@@ -1,5 +1,9 @@
 # Auditoría visual POST-FIX — pantalla por pantalla vs mockup
 
+> Nota 2026-06-27: documento histórico. La ruta `qa/mockup_reference_static/`
+> que aparece abajo refiere al snapshot legado; el canonical vigente del repo es
+> `qa/_mockup_canonical/`.
+
 **Fecha:** 2026-06-23 · **Tema:** light · **NO declara PASS visual global.**
 **Capturas actuales:** `qa/_postfix/*.png` (generadas con el Sentinel SOLO como
 generador de capturas — no aprueba nada; la comparación es manual).

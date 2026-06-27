@@ -1,5 +1,9 @@
 # Discrepancias Sentinel (app real) vs mockup canónico
 
+> Nota 2026-06-27: documento histórico. Donde este reporte menciona
+> `qa/mockup_reference_static/`, debe leerse como snapshot legado; la referencia
+> canónica vigente del repo hoy es `qa/_mockup_canonical/`.
+
 **Fecha:** 2026-06-22 · **Commit Sentinel:** `fd51354` · **Tema comparado:** light
 **Fuente repo:** capturas de `qa/visual_sentinel.py audit --all` en `qa/_visual_sentinel/latest/screenshots/`
 **Referencia canónica:** `qa/mockup_reference_static/` (86 capturas, 43/tema)

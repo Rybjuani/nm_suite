@@ -123,9 +123,9 @@ Total microestados excluidos: **6** (5 movidos a extended_runtime_qa, 1 eliminad
 **Evidence:** The success chip icon color IS correct (#bcc8bb in light, #2b5852 in dark). The chip is horizontally centered (x=478.5, matches title at x=479.5). But the chip vertical position is y=238-333 in capture vs y=192-247 in canonical — a 46px offset due to card/stack container constraints.  
 **Root cause:** The canonical shows the success page as a centered overlay without the card/stack container. The product has the success page inside `steps_card` → `QStackedWidget` with `maxHeight=244`, inside a 2-column grid. Even after hiding stepper/nav buttons, the card margins and stack positioning create a vertical offset.  
 **Partial fix applied:**
-- `AlignCenter` on success page layout (commit pending)
-- `alignment=AlignCenter` on chip widget (commit pending)
-- Hide stepper, nav buttons, and error label when showing success (commit pending)
+- `AlignCenter` on success page layout (**aplicado en código**)
+- `alignment=AlignCenter` on chip widget (**aplicado en código**)
+- Hide stepper, nav buttons, and error label when showing success (**aplicado en código**)
 **Remaining divergence:** Vertical position offset due to container hierarchy. Requires either full-screen overlay refactor or canonical regeneration.  
 **Action:** Documented. No further fix planned for this cycle.
 

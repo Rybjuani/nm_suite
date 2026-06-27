@@ -4,13 +4,13 @@
 
 Convert mockup↔capture comparisons into structured, navigable, prioritized visual
 evidence. Reuses existing stack (`capture_v8.py`, `diff_fidelity.py`,
-`mockup_reference_static/manifest.json`). Replaces heuristic classification with
+`_mockup_canonical/MANIFEST.json`). Replaces heuristic classification with
 VLM-driven analysis.
 
 ## Architecture
 
 ```
-qa/mockup_reference_static/manifest.json ← canónico, no se toca
+qa/_mockup_canonical/MANIFEST.json ← canónico vigente, no se toca
      ↓
 qa/capture_v8.py --all ← existe, no se toca
      ↓
@@ -60,7 +60,7 @@ Get-Content qa\_visual_auditor_v2\latest\queue.md
 
 ### Paso 0: Pre-requisitos
 - `qa/_captures_v8/CAPTURE_MANIFEST.json` debe existir (generado por `capture_v8.py`).
-- `qa/mockup_reference_static/manifest.json` debe existir (canónico, versionado).
+- `qa/_mockup_canonical/MANIFEST.json` debe existir (canónico, versionado).
 - Si querés VLM real: exportar `NM_VLM_BACKEND` y tener `z-ai-web-dev-sdk` instalado.
 
 ### Paso 1: Correr `doctor`
@@ -289,7 +289,7 @@ Designed for agents without vision. Contains:
 
 | Síntoma | Causa probable | Fix |
 |---------|---------------|-----|
-| `0 surfaces analyzed` | `manifest.json` vacío o mal parseado | Verificar `qa/mockup_reference_static/manifest.json` |
+| `0 surfaces analyzed` | `manifest.json` vacío o mal parseado | Verificar `qa/_mockup_canonical/MANIFEST.json` |
 | `all unpaired` | Capturas faltantes o nombres de archivo no coinciden | Correr `capture_v8.py --all --theme both` |
 | `TypeError: np.int64 not JSON serializable` | Bug de sanitización | Reportar; workaround: usar `--no-vlm` |
 | `VLM call failed` | `NM_VLM_BACKEND` mal configurado o SDK no instalado | Verificar env var e instalar `z-ai-web-dev-sdk` |

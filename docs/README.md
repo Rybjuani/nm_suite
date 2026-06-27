@@ -13,13 +13,16 @@ Estado actual: UI V2 cerrada operativamente, último reconcile visual en `5bad96
 Evidencia de cierre:
 
 - `runtime_live_probe.py --all --theme both` → OK=22, DEFECTS_FOUND=0, FAILED=0.
-- `pytest tests/` → 317 passed.
+- `pytest tests/` → 315 passed.
 - Barrido visual técnico de las capturas finales → sin deuda accionable.
-- `qa/mockup_reference_static/` (86 PNGs = 43 estados × 2 temas + `README.txt` + `manifest.{csv,json}`)
-  es la **referencia mockup canónica estática** contra `neuromood-mockup.html` (SHA256
-  `0944e6516c0da83cf3d68d5e1ae3ebdf1f9dd9fe3261a0d49131b03634587b4e`, verificado). **Está
-  trackeada en el repo** (89 archivos, NO gitignored) como snapshot canónico. Se regenera con
-  `qa/capture_mockup.py --all --theme both --clean --out-dir qa/mockup_reference_static`.
+- `qa/_mockup_canonical/` (86 PNGs = 43 estados × 2 temas + `README.md` + `MANIFEST.{csv,json}`)
+  es la **referencia mockup canónica estática** vigente. Su README apunta a
+  `qa/pack canonico/neuromood-mockup_reparado.html` como fuente única y el set
+  queda **trackeado en el repo** (89 archivos, NO gitignored) como snapshot
+  canónico.
+- `qa/mockup_reference_static/` queda sólo como snapshot **histórico/no canónico**
+  de flujos anteriores. No debe usarse como fuente de verdad operativa ni para
+  abrir deuda nueva.
 - `qa/capture_v8.py` produce el set **runtime v8** (recetas de la app corriendo, state_ids
   del harness). Es **distinto** del set mockup estático: las pantallas se solapan pero los
   `state_id` difieren. Ambos dominios se complementan, no se contradicen.
@@ -44,8 +47,8 @@ deben trackearse:
 - `_scratch_trash/` — scratch local; 155 MB de runs históricos pre-F0 y mockup_targets stale.
 
 Si un agente futuro necesita evidencia histórica, regenerar con `python qa/capture_v8.py
---all --clean --out-dir <dir>` y/o `python qa/capture_mockup.py --all --theme both --clean
---out-dir qa/mockup_reference_static`.
+--all --clean --out-dir <dir>`. Para el canonical vigente, seguir la receta
+documentada en `qa/_mockup_canonical/README.md`.
 
 ## Microestados fuera del gate canónico
 

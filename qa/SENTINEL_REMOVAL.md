@@ -1,5 +1,9 @@
 # SENTINEL_REMOVAL.md — Retiro de Visual Sentinel (2026-06-24)
 
+> Nota 2026-06-27: este documento registra una limpieza histórica. Donde habla
+> de `qa/mockup_reference_static/`, se refiere al snapshot legado conservado tras
+> esa remoción; el canonical operativo vigente hoy es `qa/_mockup_canonical/`.
+
 ## Por qué se elimina
 - Sentinel (qa/visual_sentinel.py, `audit-mockup` mode) no cumplió el objetivo
   de visión autónoma: el modo blind (sin herramienta `vision`) sólo podía
@@ -34,7 +38,7 @@
 |------------|--------|
 | `qa/capture_v8.py` (harness de capturas reales) | **Conservado** |
 | `qa/capture_mockup.py` (snapshot estático del mockup HTML) | **Conservado** |
-| `qa/mockup_reference_static/` (86 PNGs canónicos) | **Conservado** |
+| `qa/mockup_reference_static/` (snapshot histórico/no canónico) | **Conservado** |
 | `qa/diff_fidelity.py` | **Conservado** (no depende de Sentinel) |
 | `qa/runtime_live_probe.py` | **Conservado** (no depende de Sentinel) |
 | Tests visual-contract existentes (dbt, registro_tcc, rutina, hub, etc.) | **Conservados** |
@@ -100,5 +104,6 @@ preservan contexto histórico de decisiones de arquitectura visual.
 cambios visuales no validados. La auditoría visual autónoma será reemplazada
 por Visual Auditor V2 en una tarea futura. Hasta entonces, el repo queda
 con V8 (qa/capture_v8.py) como harness de capturas, mockup canónico en
-`qa/mockup_reference_static/` como referencia visual, y los visual-contract
+`qa/_mockup_canonical/` como referencia visual vigente, y `qa/mockup_reference_static/`
+como snapshot histórico, además de los visual-contract
 tests existentes como contrato de regresión.

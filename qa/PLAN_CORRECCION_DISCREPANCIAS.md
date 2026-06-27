@@ -1,10 +1,11 @@
 # Plan de corrección de discrepancias (por fases según gravedad)
 
-Referencia canónica: `qa/mockup_reference_static/`. Detalle de hallazgos en
+Referencia canónica vigente: `qa/_mockup_canonical/`. `qa/mockup_reference_static/`
+queda como snapshot histórico/no canónico. Detalle de hallazgos en
 [DISCREPANCIAS_SENTINEL_VS_MOCKUP.md](DISCREPANCIAS_SENTINEL_VS_MOCKUP.md).
 
 **Reglas:** el mockup estático es la referencia. NO tocar lógica clínica, DB/auth/sync/IA/PDF,
-builder, instaladores ni `qa/mockup_reference_static`. Cambios solo de UI/estilos. Validar cada
+builder, instaladores ni el canonical vigente. Cambios solo de UI/estilos. Validar cada
 fase capturando con el Sentinel y comparando contra el PNG del mockup. Commit por fase. No
 declarar PASS visual global.
 

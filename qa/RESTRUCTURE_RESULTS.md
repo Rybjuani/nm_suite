@@ -74,7 +74,12 @@ sobre elementos aislados (no superficie completa).
 ## Fase 5 — Cierre (5.D: cerrar y mantener)
 
 Decisión owner: **5.D**. No se ejecutan 5.A (VLM sidecar), 5.B (QWebEngineView),
-5.C (Applitools). Criterio cumplido: FP ≈ **1/86 ≈ 1.2%** (≤15%). Roadmap **CERRADO**.
+5.C (Applitools). **Nota histórica:** esta fase cerró con el conteo disponible en
+ese momento (`1/86`). El análisis post-`0339a7f` documentado luego en
+`qa/COVERAGE_GAPS.md` identificó **3 FP** en total
+(`suite-dbt-practice-stop-light` + `hub-detalle-resumen-ia-0-{dark,light}`) por
+transparencia/bordes del modal. El roadmap sigue **CERRADO** porque incluso el
+conteo revisado (`3/86 ≈ 3.5%`) queda dentro del umbral `≤15%`.
 
 **Estado final del pipeline (mantener):**
 
