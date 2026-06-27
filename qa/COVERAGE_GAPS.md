@@ -237,18 +237,90 @@ Este patrón se repite en todas las superficies dark con VAS FAIL. Layout correc
 
 Las otras 38 superficies en categoría B tienen layout idéntico al canonical. Son divergencias de calibración de paleta (36) o artefactos de detector (2), no divergencias estructurales.
 
-## 9. Recomendación
+## 9. Recomendación (revisada post-deep-dive)
 
 **El gate odiff 83/86 + 3 FP NO representa fidelidad visual suficiente**, pero el problema es más acotado de lo que parecía:
 
-- **Divergencias estructurales reales: 2** (una pantalla, dos temas) — requieren fix de producto TCC
-- **Divergencias de calibración dark theme: ~20+** — el dark theme tiene tokens de color más oscuros/desaturados que el mockup; se requiere calibración, no refactor estructural
-- **Divergencias de calibración light theme: ~16** — similares pero con deltas menores
-
-**Antes de nuevos fixes de producto:**
-1. ✅ Matriz cruzada completada (`qa/_night_session/cross_gate_matrix.csv` y `.md`)
-2. Decidir si el dark theme palette shift es deuda conocida aceptable o requiere fix
-3. Si se opta por fix TCC: `suite:registro-step1-emotion` (ambos temas) es el único fix estructural pendiente
+- **Divergencias estructurales reales: 2** → **✅ Corregidas** — `suite:registro-step1-emotion` (ambos temas), EmotionTile grid → pill/chip row
+- **Divergencias de calibración dark theme: ~20+** → **Ver § 10** — diagnóstico post-deep-dive: mayoría son FP de spec-staleness, no defectos de producto
+- **Divergencias de calibración light theme: ~16** — misma causa probable; pendiente de análisis
 
 **No tocar:** canonical, thresholds, diff_fidelity.py, visual_auditor_spec.py, QA infra persistente.  
 **No reabrir Fases 0-5.** El pipeline está cerrado operativamente.
+
+---
+
+## 10. Deep-dive dark theme COLOR_MISMATCH — diagnóstico definitivo (2026-06-27)
+
+### 10.1. Método
+
+Para cada superficie dark con VAS COLOR_MISMATCH se midió:
+- **Spec expected** — el `color_hint` en `qa/specs/specs.json`
+- **Canon measured** — promedio de píxeles de la región en el canonical PNG actual
+- **Capt measured** — promedio de píxeles de la región en el capture del producto
+
+Se calcularon tres deltas: D(spec-canon), D(spec-capt), D(canon-capt).
+
+### 10.2. Hallazgo central: spec-staleness FPs
+
+La mayoría de las 40 superficies categoría B (odiff PASS + VAS FAIL) tienen este patrón:
+
+| D(spec-canon) | D(spec-capt) | D(canon-capt) | Clasificación |
+|---|---|---|---|
+| Grande (15-40) | Grande (18-45) | **Pequeño (1-3)** | **Spec stale — FP** |
+
+El spec fue generado de un canonical anterior con render distinto al actual. El canonical actual y el capture del producto son prácticamente idénticos (1-3 RGB units, bien por debajo de la tolerancia 12). Los tokens V3_DARK ya son correctos.
+
+**Superficies afectadas por spec-staleness (FP confirmados):**
+
+| Superficie | D(canon-capt) | Nota |
+|---|---|---|
+| `suite:home@dark` card_group | 1.3 | Canon=#222a36, capt=#202835 |
+| `suite:home@dark` icons | 2.0 | Canon=#232a37, capt=#202834 |
+| `suite:home-no-score@dark` card_group | 1.7 | Similar pattern |
+| `suite:dbt-now@dark` card_group | 0.7 | Casi idéntico |
+| `suite:actividades@dark` card_group | 1.5 | Similar |
+| `suite:actividades-marked-hice@dark` card_group | 1.7 | Similar |
+| `suite:avisos@dark` card_group | 2.6 | Dentro de tolerancia |
+| `suite:avisos-filter-activos@dark` | 2.4 | Dentro de tolerancia |
+| `suite:avisos-today@dark` | 2.4 | Dentro de tolerancia |
+| `suite:rutina@dark` | 0.3 | Canon≈capt |
+| `suite:rutina-add-task@dark` | 0.3 | Canon≈capt |
+| `suite:actividades-filtered@dark` icons | 1.6 | Dentro de tolerancia |
+
+**Total FPs de spec-staleness: ~12-14 superficies dark (el grueso de la categoría B dark).**
+
+### 10.3. Casos con divergencia real (no spec-staleness)
+
+| Superficie | Comp | D(canon-capt) | Causa diagnósticada |
+|---|---|---|---|
+| `suite:avisos-search@dark` icons | icons | **51.3** | Artifact de captura: canonical muestra sidebar nav (columna izquierda), producto captura solo content-pane. La región del spec cruza la zona del sidebar. |
+| `hub:pacientes@dark` card_group | card_group | **17.8** | Ring sizing: canonical usa anillo de 46px, producto usa 36px (`_NM_PATIENT_RING_SIZE`). La región spec (4% ancho = 38px) en x=85.9% captura correctamente el anillo en el canonical pero el anillo del producto es más pequeño y puede no centrar exactamente. |
+| `hub:pacientes@dark` icons | icons | **23.8** | Misma causa: region del spec referencia el anillo de 46px que el producto no tiene. |
+| `suite:animo@dark` icons | icons | 22.7 (producto MÁS claro) | Chart gradient menor: el gradiente de área del gráfico rellena levemente diferente entre Chromium y Qt. Diferencia estética menor. |
+| `suite:registro-step1-emotion@dark` icons | icons | 15.8 | **Divergencia estructural — ✅ corregida** por fix EmotionChip. |
+
+### 10.4. SHADOW_MISMATCH — detección insuficiente en dark mode
+
+Ocho superficies dark tienen `SHADOW_MISMATCH`. El VAS `detect_shadows()` usa segmentación por color para detectar halos de elevación. En dark mode, el canonical HTML usa `box-shadow: 0 1px 2px rgba(0,0,0,0.4)` — sombra negra sobre fondo negro, diferencia de contraste casi nula. El producto usa `QGraphicsDropShadowEffect` con efecto equivalente.
+
+El VAS no puede detectar sombras de color negro sobre fondo negro. Estos SHADOW_MISMATCH son **FPs de detector**, no deuda de producto.
+
+### 10.5. Conclusión y estado de Option 2
+
+**Option 2 "dark theme palette calibration" está esencialmente cerrada sin cambios de tokens:**
+
+- Los tokens V3_DARK son correctos. `shared/theme.py` ya coincide con los CSS vars del canonical HTML.
+- Los VAS dark failures son en su mayoría spec-staleness FPs.
+- La deuda real residual (ring sizing hub:pacientes, chart gradient animo) no requiere cambio de paleta.
+
+**Deuda registrada:**
+
+| Deuda | Tipo | Urgencia |
+|---|---|---|
+| Spec stale para ~14 superficies dark | QA / spec regeneration | Baja — blocked por constraint specs |
+| Hub pacientes ring 36px vs canonical 46px | Layout/sizing | Media — visible en capture pero no en uso real |
+| Animo chart gradient menor | Estética | Baja |
+| SHADOW_MISMATCH VAS detector dark | QA / detector | Baja — FP detector, no defecto producto |
+
+**Fix pendiente de paleta: ninguno.** Los tokens están bien.
