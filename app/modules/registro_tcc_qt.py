@@ -30,7 +30,7 @@ import logging
 
 _log = logging.getLogger(__name__)
 
-from PyQt6.QtCore import Qt, QTimer, QRectF
+from PyQt6.QtCore import Qt, QTimer, QRectF, pyqtSignal
 from PyQt6 import sip
 from PyQt6.QtGui import QColor, QBrush, QPainter, QPen
 from PyQt6.QtWidgets import (
@@ -355,6 +355,66 @@ def _set_placeholder_palette(pal, color: QColor):
     from PyQt6.QtGui import QPalette
     pal.setColor(QPalette.ColorRole.PlaceholderText, color)
     return pal
+
+
+# ── _EmotionChip ─────────────────────────────────────────────────────────────
+
+
+class _EmotionChip(QFrame):
+    """Compact pill button for emotion selection. Matches mockup step1-emotion design."""
+
+    clicked = pyqtSignal()
+
+    def __init__(self, label: str, modo: str = None, parent=None):
+        super().__init__(parent)
+        self._label_text = label
+        self._modo = modo
+        self._selected = False
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(12, 5, 12, 5)
+        lay.setSpacing(0)
+        self._lbl = QLabel(label)
+        self._lbl.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_semibold"]))
+        self._lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        lay.addWidget(self._lbl)
+        self._apply_chip_style()
+
+    def set_selected(self, selected: bool):
+        if selected != self._selected:
+            self._selected = selected
+            self._apply_chip_style()
+
+    def is_selected(self) -> bool:
+        return self._selected
+
+    def label_text(self) -> str:
+        return self._label_text
+
+    def _apply_chip_style(self):
+        if self._selected:
+            bg = v3c("primary", self._modo).name()
+            fg = "#ffffff"
+            border = bg
+        else:
+            bg = "transparent"
+            fg = v3c("text", self._modo).name()
+            border = v3c("text2", self._modo).name()
+        self.setStyleSheet(
+            f"QFrame {{ background: {bg}; border: 1.5px solid {border}; "
+            f"border-radius: 999px; }}"
+        )
+        self._lbl.setStyleSheet(f"color: {fg}; background: transparent; border: none;")
+
+    def _apply_theme(self, modo: str):
+        self._modo = modo
+        self._apply_chip_style()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+        super().mousePressEvent(event)
 
 
 # ── _EmotionTile ─────────────────────────────────────────────────────────────
@@ -774,6 +834,12 @@ class ModuloRegistroTCC(NMModule):
             self._txt_pensamiento._apply_theme(self._modo)
         if hasattr(self, "_txt_respuesta"):
             self._txt_respuesta._apply_theme(self._modo)
+        if hasattr(self, "_emotion_tiles"):
+            for chip in self._emotion_tiles:
+                if hasattr(chip, "_apply_theme"):
+                    chip._apply_theme(self._modo)
+        if hasattr(self, "_custom_emotion_input") and hasattr(self._custom_emotion_input, "_apply_theme"):
+            self._custom_emotion_input._apply_theme(self._modo)
         if hasattr(self, "_eyebrow"):
             self._apply_text_styles()
         if hasattr(self, "_show_step"):
@@ -877,93 +943,49 @@ class ModuloRegistroTCC(NMModule):
         ):
             layout.addWidget(lbl)
 
-        # Grid 4×2 de _EmotionTile. La celda de "Otro" usa un QStackedWidget
-        # para que el campo de texto se "abra sobre" el tile (misma geometría
-        # exacta, sin huecos) cuando el paciente selecciona esa emoción. La pila
-        # tiene dos páginas: [0] tile, [1] input; al elegir "Otro" se hace raise
-        # al input, que ocupa la celda del tile sin moverse a una fila aparte.
-        # (2026-06: setColumnStretch(1,1,1,1) + sizePolicy Expanding en los tiles
-        # para que las 4 columnas tengan ancho uniforme — antes el QStackedWidget
-        # del "Otro" estiraba su columna y Miedo (mismo ancho de label) la
-        # acompañaba, rompiendo la grilla 4×2.)
-        grid = QGridLayout()
-        grid.setSpacing(V3_SP["sm"])
-        for c in range(4):
-            grid.setColumnStretch(c, 1)
-        self._otro_stack = None
+        # Pill/chip rows: 2×4 compact chips. Matches mockup step1-emotion design.
+        # Replaces previous grid of _EmotionTile (icon cards) with text-only pills.
+        pills_col = QVBoxLayout()
+        pills_col.setSpacing(V3_SP["xs"])
+        row_layouts = [QHBoxLayout(), QHBoxLayout()]
+        for r in row_layouts:
+            r.setSpacing(V3_SP["xs"])
         for i, emotion in enumerate(self._emotion_defs):
             label = emotion["label"]
-            icon_name = emotion.get("icon") or "dots"
-            color_token = emotion.get("color_token") or "text2"
-            tile = _EmotionTile(label, icon_name, color_token, modo=self._modo)
-            tile.clicked.connect(lambda lbl=label: self._on_emotion_picked(lbl))
-            # Expanding horizontal para que el grid distribuya el ancho 1/4
-            # por columna sin importar el sizeHint del label interno.
-            tile.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-            r, c = divmod(i, 4)
-            if label == "Otro":
-                # Pila con tile (página 0) + input (página 1) que aparece
-                # al seleccionar "Otro" ocupando TODA la celda del tile
-                # (mismo width/height). El input se expande verticalmente
-                # para llenar la celda completa, y el placeholder canónico
-                # queda visible y centrado.
-                # 2026-06 round 4: el input usa setPlaceholderText (campo
-                # realmente vacio, text()==""). El placeholder se hace
-                # visible via palette PlaceholderText role + ink_secondary.
-                stack = QStackedWidget()
-                stack.setObjectName("OtroTileStack")
-                stack.setStyleSheet("background: transparent;")
-                stack.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-                stack.addWidget(tile)  # index 0: tile visible por defecto
-                self._custom_emotion_input = NMInput("", modo=self._modo)
-                self._custom_emotion_input.setMaxLength(12)
-                self._custom_emotion_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                # Expanding vertical para que el input llene toda la celda
-                # del tile (72px) en vez de quedarse en 36px centrado.
-                # Sobreescribir maxHeight del NMInput (default 36px) para que
-                # crezca con la celda.
-                self._custom_emotion_input.setSizePolicy(
-                    QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
-                )
-                self._custom_emotion_input.setMinimumHeight(0)
-                self._custom_emotion_input.setMaximumHeight(16777215)
-                # 2026-06 round 4: placeholder nativo (campo realmente vacio,
-                # text()=="" siempre). El placeholder se hace visible via
-                # setPlaceholderText + palette color (placeholderText role).
-                self._custom_emotion_input.textChanged.connect(
-                    self._on_custom_emotion_changed
-                )
-                otro_placeholder = t(
-                    "text.module.registro.other_emotion_placeholder",
-                    "Nombrá tu emoción…",
-                )
-                self._custom_emotion_input.setPlaceholderText("Nombrá tu emoción…")
-                if otro_placeholder != "Nombrá tu emoción…":
-                    self._custom_emotion_input.setPlaceholderText(otro_placeholder)
-                # Palette: color tenue para el placeholder (placeholderText role).
-                _ink2_c = QColor(v3c("ink_secondary", self._modo).name())
-                self._custom_emotion_input.setPalette(
-                    _set_placeholder_palette(self._custom_emotion_input.palette(), _ink2_c)
-                )
-                stack.addWidget(self._custom_emotion_input)  # index 1: input
-                grid.addWidget(stack, r, c)
-                self._otro_stack = stack
-            else:
-                grid.addWidget(tile, r, c)
-            self._emotion_tiles.append(tile)
-        layout.addLayout(grid)
+            chip = _EmotionChip(label, modo=self._modo)
+            chip.clicked.connect(lambda lbl=label: self._on_emotion_picked(lbl))
+            row_layouts[i // 4].addWidget(chip)
+            self._emotion_tiles.append(chip)
+        for r in row_layouts:
+            r.addStretch()
+            pills_col.addLayout(r)
+        layout.addLayout(pills_col)
 
-        # Intensidad: header + NMHeatBar.
-        # Mockup TCC línea 1235-1236:
-        #   <div class="field-lbl">Intensidad <span>(0–100)</span></div>
-        #   <input type="range" min="0" max="100" value="70"
-        #     style="background:linear-gradient(90deg,var(--brand),var(--accent));">
-        # Slider visual 0–100 con gradiente brand→accent (NO arcoíris genérico).
-        # Internamente se persiste intensidad 0-10 (div por 10 en _on_intensidad_heat).
+        # "Otro" custom input — shown below chip rows when "Otro" is selected.
+        otro_placeholder = t(
+            "text.module.registro.other_emotion_placeholder",
+            "Nombrá tu emoción…",
+        )
+        self._custom_emotion_wrap = QWidget()
+        self._custom_emotion_wrap.setStyleSheet("background: transparent;")
+        _otro_lay = QHBoxLayout(self._custom_emotion_wrap)
+        _otro_lay.setContentsMargins(0, V3_SP["xs"], 0, 0)
+        _otro_lay.setSpacing(0)
+        self._custom_emotion_input = NMInput("", modo=self._modo)
+        self._custom_emotion_input.setMaxLength(12)
+        self._custom_emotion_input.setPlaceholderText(otro_placeholder)
+        _ink2_c = QColor(v3c("ink_secondary", self._modo).name())
+        self._custom_emotion_input.setPalette(
+            _set_placeholder_palette(self._custom_emotion_input.palette(), _ink2_c)
+        )
+        self._custom_emotion_input.textChanged.connect(self._on_custom_emotion_changed)
+        _otro_lay.addWidget(self._custom_emotion_input, stretch=1)
+        self._custom_emotion_wrap.hide()
+        layout.addWidget(self._custom_emotion_wrap)
+
+        # Intensidad: header + NMHeatBar full-width (mockup TCC línea 1235-1236).
         _intens_init = self._data.get("intensidad")
-        _intens_val = _intens_init if _intens_init is not None else 5
-        _intens_visual = int(_intens_val * 10)  # 0-10 → 0-100 visual
-        _intens_lbl = "Intensidad (0–100)"  # mockup l.1235: sin valor numérico en el label
+        _intens_lbl = "Intensidad (0–100)"
         self._lbl_intensidad_header = QLabel(_intens_lbl)
         self._lbl_intensidad_header.setFont(
             qfont("size_small", weight=TYPOGRAPHY["weight_semibold"])
@@ -977,18 +999,12 @@ class ModuloRegistroTCC(NMModule):
         self._heat_bar = NMHeatBar(
             value=int((_intens_init or 5) * 10),
             modo=self._modo,
-            gradient="brand_accent",  # mockup TCC: linear-gradient(90deg, brand, accent)
-            value_max=100,            # mockup TCC: min=0 max=100 (escala visual)
+            gradient="brand_accent",
+            value_max=100,
             parent=page,
         )
         self._heat_bar.value_changed.connect(self._on_intensidad_heat)
-        heat_row = QHBoxLayout()
-        heat_row.setContentsMargins(0, 0, 0, 0)
-        heat_row.addStretch(1)
-        self._heat_bar.setMaximumWidth(720)
-        heat_row.addWidget(self._heat_bar, stretch=1)
-        heat_row.addStretch(1)
-        layout.addLayout(heat_row)
+        layout.addWidget(self._heat_bar)
         layout.addStretch()
         self._pages.append(page)
 
@@ -1112,12 +1128,8 @@ class ModuloRegistroTCC(NMModule):
             tile.set_selected(tile.label_text() == label)
         
         is_otro = (label == "Otro")
-        # "Otro" se "abre sobre" el tile: la celda de la grilla es un
-        # QStackedWidget con la tile y el input. Cambiar la página activa
-        # muestra el input exactamente en la misma posición que el tile.
-        otro_stack = getattr(self, "_otro_stack", None)
-        if otro_stack is not None:
-            otro_stack.setCurrentIndex(1 if is_otro else 0)
+        if hasattr(self, "_custom_emotion_wrap"):
+            self._custom_emotion_wrap.setVisible(is_otro)
         if hasattr(self, "_custom_emotion_input"):
             if is_otro:
                 custom_text = self._custom_emotion_input.text().strip()
@@ -1583,7 +1595,8 @@ class ModuloRegistroTCC(NMModule):
                 tile.set_selected(False)
             if hasattr(self, "_custom_emotion_input"):
                 self._custom_emotion_input.clear()
-                self._custom_emotion_input.setVisible(False)
+            if hasattr(self, "_custom_emotion_wrap"):
+                self._custom_emotion_wrap.hide()
             self._txt_pensamiento.clear()
             self._txt_respuesta.clear()
             if hasattr(self, "_heat_bar"):
