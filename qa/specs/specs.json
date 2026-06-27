@@ -2,7 +2,7 @@
   "schema_version": "1.1.0",
   "description": "Auto-generated visual specs from mockup reference (vas_engine). Human review recommended.",
   "verification_engine": {
-    "color_tolerance": 16,
+    "color_tolerance": 12,
     "position_tolerance_pct": 5,
     "size_tolerance_pct": 10
   },
@@ -354,6 +354,18 @@
           },
           "text_color_hint": "#aaa394",
           "text_required": false
+        },
+        {
+          "id": "icons",
+          "type": "icon_group",
+          "count": 2,
+          "region": {
+            "x_pct": 6.4,
+            "y_pct": 53.0,
+            "w_pct": 1.2,
+            "h_pct": 20.2
+          },
+          "color_hint": "#e8e5da"
         }
       ],
       "effects": {
@@ -944,6 +956,18 @@
       },
       "components": [
         {
+          "id": "card_group",
+          "type": "card_group",
+          "count": 1,
+          "region": {
+            "x_pct": 47.0,
+            "y_pct": 31.8,
+            "w_pct": 6.0,
+            "h_pct": 9.7
+          },
+          "color_hint": "#e4e7dd"
+        },
+        {
           "id": "header_text",
           "type": "text",
           "region": {
@@ -966,6 +990,18 @@
           },
           "text_color_hint": "#b9b4a6",
           "text_required": false
+        },
+        {
+          "id": "icons",
+          "type": "icon_group",
+          "count": 1,
+          "region": {
+            "x_pct": 49.1,
+            "y_pct": 35.3,
+            "w_pct": 1.9,
+            "h_pct": 2.3
+          },
+          "color_hint": "#bcc8bb"
         }
       ],
       "effects": {
@@ -990,6 +1026,18 @@
         "type": "free"
       },
       "components": [
+        {
+          "id": "card_group",
+          "type": "card_group",
+          "count": 1,
+          "region": {
+            "x_pct": 27.2,
+            "y_pct": 37.0,
+            "w_pct": 3.5,
+            "h_pct": 5.7
+          },
+          "color_hint": "#b7c5b7"
+        },
         {
           "id": "header_text",
           "type": "text",
@@ -1081,7 +1129,7 @@
         }
       ],
       "effects": {
-        "shadow": false
+        "shadow": true
       },
       "_meta": {
         "generated_from": "qa\\_mockup_canonical\\suite-rutina-all-completed-light-960x600.png",
@@ -1102,6 +1150,18 @@
         "type": "free"
       },
       "components": [
+        {
+          "id": "card_group",
+          "type": "card_group",
+          "count": 1,
+          "region": {
+            "x_pct": 27.2,
+            "y_pct": 37.0,
+            "w_pct": 3.5,
+            "h_pct": 5.7
+          },
+          "color_hint": "#b7c5b7"
+        },
         {
           "id": "header_text",
           "type": "text",
@@ -1150,6 +1210,18 @@
       },
       "components": [
         {
+          "id": "card_group",
+          "type": "card_group",
+          "count": 1,
+          "region": {
+            "x_pct": 46.6,
+            "y_pct": 20.5,
+            "w_pct": 6.9,
+            "h_pct": 11.0
+          },
+          "color_hint": "#d8dcd1"
+        },
+        {
           "id": "header_text",
           "type": "text",
           "region": {
@@ -1172,6 +1244,18 @@
           },
           "text_color_hint": "#50765f",
           "text_required": false
+        },
+        {
+          "id": "icons",
+          "type": "icon_group",
+          "count": 6,
+          "region": {
+            "x_pct": 46.8,
+            "y_pct": 20.8,
+            "w_pct": 6.5,
+            "h_pct": 10.3
+          },
+          "color_hint": "#d5dace"
         }
       ],
       "effects": {
@@ -1428,6 +1512,18 @@
       },
       "components": [
         {
+          "id": "card_group",
+          "type": "card_group",
+          "count": 1,
+          "region": {
+            "x_pct": 46.6,
+            "y_pct": 20.5,
+            "w_pct": 6.9,
+            "h_pct": 11.0
+          },
+          "color_hint": "#dbdfd4"
+        },
+        {
           "id": "header_text",
           "type": "text",
           "region": {
@@ -1450,6 +1546,18 @@
           },
           "text_color_hint": "#4d745d",
           "text_required": false
+        },
+        {
+          "id": "icons",
+          "type": "icon_group",
+          "count": 5,
+          "region": {
+            "x_pct": 46.8,
+            "y_pct": 20.8,
+            "w_pct": 6.5,
+            "h_pct": 10.3
+          },
+          "color_hint": "#d8dcd1"
         }
       ],
       "effects": {
@@ -1616,6 +1724,18 @@
       },
       "components": [
         {
+          "id": "card_group",
+          "type": "card_group",
+          "count": 1,
+          "region": {
+            "x_pct": 46.6,
+            "y_pct": 20.5,
+            "w_pct": 6.9,
+            "h_pct": 11.0
+          },
+          "color_hint": "#d9ddd2"
+        },
+        {
           "id": "header_text",
           "type": "text",
           "region": {
@@ -1638,6 +1758,18 @@
           },
           "text_color_hint": "#507760",
           "text_required": false
+        },
+        {
+          "id": "icons",
+          "type": "icon_group",
+          "count": 5,
+          "region": {
+            "x_pct": 46.8,
+            "y_pct": 20.8,
+            "w_pct": 6.5,
+            "h_pct": 10.3
+          },
+          "color_hint": "#d6dbd0"
         }
       ],
       "effects": {
@@ -1817,6 +1949,18 @@
       },
       "components": [
         {
+          "id": "card_group",
+          "type": "card_group",
+          "count": 1,
+          "region": {
+            "x_pct": 4.7,
+            "y_pct": 25.7,
+            "w_pct": 3.8,
+            "h_pct": 6.0
+          },
+          "color_hint": "#e9e6d9"
+        },
+        {
           "id": "header_text",
           "type": "text",
           "region": {
@@ -1839,6 +1983,18 @@
           },
           "text_color_hint": "#8e887b",
           "text_required": false
+        },
+        {
+          "id": "icons",
+          "type": "icon_group",
+          "count": 1,
+          "region": {
+            "x_pct": 6.0,
+            "y_pct": 27.5,
+            "w_pct": 1.1,
+            "h_pct": 2.3
+          },
+          "color_hint": "#c0cfbd"
         }
       ],
       "effects": {
@@ -1941,6 +2097,18 @@
       },
       "components": [
         {
+          "id": "card_group",
+          "type": "card_group",
+          "count": 1,
+          "region": {
+            "x_pct": 46.6,
+            "y_pct": 20.5,
+            "w_pct": 6.9,
+            "h_pct": 11.0
+          },
+          "color_hint": "#daded3"
+        },
+        {
           "id": "header_text",
           "type": "text",
           "region": {
@@ -1963,6 +2131,18 @@
           },
           "text_color_hint": "#557a64",
           "text_required": false
+        },
+        {
+          "id": "icons",
+          "type": "icon_group",
+          "count": 5,
+          "region": {
+            "x_pct": 46.8,
+            "y_pct": 20.8,
+            "w_pct": 6.5,
+            "h_pct": 10.3
+          },
+          "color_hint": "#d7dbd0"
         }
       ],
       "effects": {
@@ -2035,6 +2215,18 @@
       },
       "components": [
         {
+          "id": "card_group",
+          "type": "card_group",
+          "count": 1,
+          "region": {
+            "x_pct": 46.6,
+            "y_pct": 29.2,
+            "w_pct": 6.9,
+            "h_pct": 11.0
+          },
+          "color_hint": "#dbdfd5"
+        },
+        {
           "id": "header_text",
           "type": "text",
           "region": {
@@ -2057,6 +2249,18 @@
           },
           "text_color_hint": "#517761",
           "text_required": false
+        },
+        {
+          "id": "icons",
+          "type": "icon_group",
+          "count": 6,
+          "region": {
+            "x_pct": 46.8,
+            "y_pct": 29.5,
+            "w_pct": 6.5,
+            "h_pct": 10.3
+          },
+          "color_hint": "#d8ddd2"
         }
       ],
       "effects": {
@@ -2699,6 +2903,18 @@
           },
           "text_color_hint": "#244943",
           "text_required": false
+        },
+        {
+          "id": "icons",
+          "type": "icon_group",
+          "count": 2,
+          "region": {
+            "x_pct": 6.4,
+            "y_pct": 53.0,
+            "w_pct": 1.2,
+            "h_pct": 20.2
+          },
+          "color_hint": "#283239"
         }
       ],
       "effects": {
@@ -3123,6 +3339,18 @@
           },
           "text_color_hint": "#3b404f",
           "text_required": false
+        },
+        {
+          "id": "icons",
+          "type": "icon_group",
+          "count": 8,
+          "region": {
+            "x_pct": 16.6,
+            "y_pct": 40.2,
+            "w_pct": 57.8,
+            "h_pct": 2.0
+          },
+          "color_hint": "#3a4151"
         }
       ],
       "effects": {
@@ -3289,6 +3517,18 @@
       },
       "components": [
         {
+          "id": "card_group",
+          "type": "card_group",
+          "count": 1,
+          "region": {
+            "x_pct": 47.0,
+            "y_pct": 31.8,
+            "w_pct": 6.0,
+            "h_pct": 9.7
+          },
+          "color_hint": "#1f343b"
+        },
+        {
           "id": "header_text",
           "type": "text",
           "region": {
@@ -3311,6 +3551,18 @@
           },
           "text_color_hint": "#21393e",
           "text_required": false
+        },
+        {
+          "id": "icons",
+          "type": "icon_group",
+          "count": 1,
+          "region": {
+            "x_pct": 49.1,
+            "y_pct": 35.3,
+            "w_pct": 1.9,
+            "h_pct": 2.3
+          },
+          "color_hint": "#2b5852"
         }
       ],
       "effects": {
@@ -4174,6 +4426,18 @@
       },
       "components": [
         {
+          "id": "card_group",
+          "type": "card_group",
+          "count": 1,
+          "region": {
+            "x_pct": 4.7,
+            "y_pct": 25.7,
+            "w_pct": 3.8,
+            "h_pct": 6.0
+          },
+          "color_hint": "#263245"
+        },
+        {
           "id": "header_text",
           "type": "text",
           "region": {
@@ -4196,6 +4460,18 @@
           },
           "text_color_hint": "#1a4634",
           "text_required": false
+        },
+        {
+          "id": "icons",
+          "type": "icon_group",
+          "count": 1,
+          "region": {
+            "x_pct": 6.0,
+            "y_pct": 27.5,
+            "w_pct": 1.1,
+            "h_pct": 2.3
+          },
+          "color_hint": "#355a60"
         }
       ],
       "effects": {
@@ -4351,6 +4627,18 @@
       },
       "components": [
         {
+          "id": "card_group",
+          "type": "card_group",
+          "count": 5,
+          "region": {
+            "x_pct": 85.9,
+            "y_pct": 30.0,
+            "w_pct": 4.0,
+            "h_pct": 58.3
+          },
+          "color_hint": "#3e3b38"
+        },
+        {
           "id": "header_text",
           "type": "text",
           "region": {
@@ -4373,6 +4661,18 @@
           },
           "text_color_hint": "#454a57",
           "text_required": false
+        },
+        {
+          "id": "icons",
+          "type": "icon_group",
+          "count": 3,
+          "region": {
+            "x_pct": 86.6,
+            "y_pct": 43.3,
+            "w_pct": 3.1,
+            "h_pct": 5.7
+          },
+          "color_hint": "#3e3b38"
         }
       ],
       "effects": {

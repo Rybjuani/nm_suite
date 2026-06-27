@@ -92,9 +92,9 @@ def generate_spec_for_mockup(mockup_path: Path, surface_key: str) -> dict[str, A
     spec_components = []
 
     # Card group (all cards detected)
-    # Only include if the bounding box covers >= 2.5% of the canvas to avoid
-    # detecting tiny checkboxes / progress rings / nav items as card groups.
-    _MIN_CARD_GROUP_PCT = 2.5
+    # Exclude only degenerate single-pixel artifacts (< 0.1% of canvas = ~576px²).
+    # Even a 24×24 checkbox represents a real visual element and should be included.
+    _MIN_CARD_GROUP_PCT = 0.1
     if cards:
         min_x = min(c["x"] for c in cards)
         min_y = min(c["y"] for c in cards)
@@ -150,15 +150,11 @@ def generate_spec_for_mockup(mockup_path: Path, surface_key: str) -> dict[str, A
         has_shadow = False
     else:
         shadow_evidence = vas_engine.detect_shadows(arr, w, h, cards)
-        # Require majority of cards to show shadow evidence (not just one) to
-        # avoid flagging surfaces where a single card artifact triggers the spec.
-        shadow_count = sum(1 for s in shadow_evidence if s["has_shadow"])
-        has_shadow = shadow_count > 0 and shadow_count > len(shadow_evidence) / 2
+        has_shadow = any(s["has_shadow"] for s in shadow_evidence)
 
     # Detect icons — color_hint = regional bbox average (same metric VAS measures)
-    # Only include if the bounding box covers >= 1.5% of the canvas to avoid
-    # detecting thin text-baseline strips or tiny decorative elements.
-    _MIN_ICON_GROUP_PCT = 1.5
+    # Exclude degenerate strips (width or height < 15px): thin horizontal/vertical
+    # artifacts from text baselines or chart axes that aren't real icon areas.
     icons = vas_engine.detect_icons(arr, w, h, cards)
     if icons:
         icon_region = _merge_regions_pct(icons, w, h)
@@ -166,8 +162,7 @@ def generate_spec_for_mockup(mockup_path: Path, surface_key: str) -> dict[str, A
         iy = int(icon_region["y_pct"] / 100 * h)
         iw = int(icon_region["w_pct"] / 100 * w)
         ih = int(icon_region["h_pct"] / 100 * h)
-        icon_bbox_pct = (iw * ih) / (w * h) * 100
-        if icon_bbox_pct >= _MIN_ICON_GROUP_PCT:
+        if iw >= 10 and ih >= 10:
             icon_color = _region_avg_hex(arr, ix, iy, ix + iw, iy + ih)
             spec_components.append({
                 "id": "icons",
@@ -306,7 +301,7 @@ def main(argv: list[str] | None = None) -> int:
         "schema_version": "1.1.0",
         "description": "Auto-generated visual specs from mockup reference (vas_engine). Human review recommended.",
         "verification_engine": {
-            "color_tolerance": 16,
+            "color_tolerance": 12,
             "position_tolerance_pct": 5,
             "size_tolerance_pct": 10,
         },
