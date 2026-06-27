@@ -59,6 +59,7 @@ try:
         NMTextArea,
         NMInput,
     )
+    from shared.components.overlays import _NMSuccessIconChip
     from shared.theme_qt import (
         C,
         colors,
@@ -95,6 +96,7 @@ except ImportError:
         NMTextArea,
         NMInput,
     )
+    from shared.components.overlays import _NMSuccessIconChip
     from shared.theme_qt import (
         C,
         qfont,
@@ -1540,8 +1542,16 @@ class ModuloRegistroTCC(NMModule):
         success.setStyleSheet("background: transparent;")
         layout = QVBoxLayout(success)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(V3_SP["sm"])
-        check_icon = NMIcon("check", size=64, color_key="success", modo=self._modo)
+        check_icon = _NMSuccessIconChip(
+            size=96,
+            bg_color=QColor(v3c("successChipBg", self._modo)),
+            icon_key="check",
+            icon_size=40,
+            icon_color=v3c("successChipIcon", self._modo),
+            modo=self._modo,
+        )
         layout.addWidget(check_icon, alignment=Qt.AlignmentFlag.AlignCenter)
         title_lbl = QLabel(t("text.module.registro.success_title", "Registro guardado"))
         title_lbl.setFont(qfont("size_h2", weight=TYPOGRAPHY["weight_semibold"]))
@@ -1564,6 +1574,11 @@ class ModuloRegistroTCC(NMModule):
         self._stack.addWidget(success)
         self._success_page = success
         self._stack.setCurrentWidget(success)
+        # Hide stepper and nav when showing success to match canonical layout
+        self._stepper.hide()
+        self._btn_prev.hide()
+        self._btn_next.hide()
+        self._error_lbl.hide()
         # Anclar el foco (y al lector de pantalla) en la confirmación: sin
         # esto, tras recargar "registros previos" el navegador de
         # accesibilidad podía aterrizar en widgets transitorios y dibujar su

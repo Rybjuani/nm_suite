@@ -714,15 +714,9 @@ class ModuloAvisos(NMModule):
                 else t("text.module.avisos.empty_filter_desc", "Probá cambiar los filtros.")
             )
             empty = NMEmptyState("bell", empty_msg, empty_sub, parent=self._list_widget)
-            # 4.2: empty state centrado verticalmente dentro del scroll (no
-            # alineado al top como una fila más). El AlignTop del layout (modo
-            # lista) anularía los stretches y comprimiría el NMEmptyState a su
-            # sizeHint (título pisando el ícono, subtítulo cortado): se
-            # neutraliza mientras no haya filas.
-            self._list_layout.setAlignment(Qt.AlignmentFlag(0))
-            self._list_layout.addStretch(1)
+            # Empty state alineado al top (spec canónica y=20.5% para el chip)
             self._list_layout.addWidget(empty)
-            self._list_layout.addStretch(1)
+            # Mockup: empty state domina el viewport sin competir con la card de Silencio
             # 4.2: la card de Silencio no aporta cuando no hay recordatorios
             # (el paciente no tiene avisos que silenciar). Ocultarla para que
             # el empty state domine el viewport y no compita por altura.

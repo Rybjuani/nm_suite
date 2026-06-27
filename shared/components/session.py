@@ -168,8 +168,8 @@ class _NMAnimCheckBox(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        border_col = v3c("primary" if self._checked else "line", self._modo)
-        bg_col = v3c("primary" if self._checked else "surface", self._modo)
+        border_col = v3c("primaryCheck" if self._checked else "line", self._modo)
+        bg_col = v3c("primaryCheck" if self._checked else "surface", self._modo)
 
         p.setPen(QPen(border_col, _NM_RT_CHECK_BORDER))
         p.setBrush(QBrush(bg_col))

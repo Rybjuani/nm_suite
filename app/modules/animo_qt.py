@@ -233,7 +233,7 @@ class _CareStatCard(NMCard):
         # Tile bg sigue al tone: brand-soft para 7d, accent-soft para 30d
         # (mockup l.715 / l.721). Antes siempre primary_soft (verde) — no
         # se diferenciaban las 2 cards.
-        tile_bg_token = (self._tone + "_soft") if self._tone else "primary_soft"
+        tile_bg_token = (self._tone + "-soft") if self._tone else "primary-soft"
         tile_bg = qcolor_to_rgba_css(v3c(tile_bg_token, self._modo))
         border = qcolor_to_rgba_css(v3c("border", self._modo))
         self._icon_tile.setStyleSheet(

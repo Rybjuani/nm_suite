@@ -62,6 +62,64 @@ _NM_EMPTY_TITLE_SIZE = 20
 _NM_EMPTY_SUBTITLE_WIDTH = 340
 
 
+class _NMEmptyStateChip(QWidget):
+    """Chip de icono con fondo sólido redondeado (workaround para QLabel
+    que ignora background-color en offscreen renderer)."""
+
+    def __init__(self, size: int, radius: int, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(size, size)
+        self._radius = radius
+        self._bg_color = QColor("transparent")
+        self._icon_lbl = QLabel(self)
+        self._icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._icon_lbl.setFixedSize(size, size)
+        self._icon_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+
+    def set_bg_color(self, color: QColor):
+        self._bg_color = color
+        self.update()
+
+    def set_pixmap(self, pixmap: QPixmap):
+        self._icon_lbl.setPixmap(pixmap)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setBrush(QBrush(self._bg_color))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawRoundedRect(self.rect(), self._radius, self._radius)
+        painter.end()
+
+
+class _NMSuccessIconChip(QWidget):
+    """Chip circular con icono de éxito (fondo sólido, icono centrado)."""
+
+    def __init__(self, size: int, bg_color: QColor, icon_key: str, icon_size: int, icon_color: str, modo: str, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(size, size)
+        self._bg_color = bg_color
+        self._icon_lbl = QLabel(self)
+        self._icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._icon_lbl.setFixedSize(size, size)
+        self._icon_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self._icon_lbl.setPixmap(
+            nm_icon(icon_key, icon_color, size=icon_size).pixmap(icon_size, icon_size)
+        )
+
+    def set_bg_color(self, color: QColor):
+        self._bg_color = color
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setBrush(QBrush(self._bg_color))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawEllipse(self.rect())
+        painter.end()
+
+
 class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
     """Widget de estado vacío con icono, título y subtítulo (runtime spec §2.11).
 
@@ -86,7 +144,6 @@ class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
         self._icon_key = icon_key
         self._modo = norm_modo(_tm().modo)
 
-        self.setStyleSheet("background: transparent;")
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         layout = QVBoxLayout(self)
@@ -100,16 +157,7 @@ class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
         # centra con alignment por-widget.
 
         # Chip contenedor del icono (64×64, PRIMARY_SOFT bg, r18)
-        self._icon_chip = QFrame()
-        self._icon_chip.setFixedSize(_NM_EMPTY_ICON_CHIP_SIZE, _NM_EMPTY_ICON_CHIP_SIZE)
-        self._icon_chip.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        chip_lay = QHBoxLayout(self._icon_chip)
-        chip_lay.setContentsMargins(0, 0, 0, 0)
-        self._icon_lbl = QLabel()
-        self._icon_lbl.setFixedSize(_NM_EMPTY_ICON_SIZE, _NM_EMPTY_ICON_SIZE)
-        self._icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._icon_lbl.setStyleSheet("background: transparent;")
-        chip_lay.addWidget(self._icon_lbl, 0, Qt.AlignmentFlag.AlignCenter)
+        self._icon_chip = _NMEmptyStateChip(_NM_EMPTY_ICON_CHIP_SIZE, _NM_EMPTY_ICON_CHIP_RADIUS)
         layout.addWidget(self._icon_chip, alignment=Qt.AlignmentFlag.AlignCenter)
 
         layout.addSpacing(V3_SP["sm"])
@@ -172,14 +220,11 @@ class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         c = colors(self._modo)
-        # Chip: brand-soft del mockup (primarySoft) con r18.
-        bg_css = qcolor_to_rgba_css(v3c("primarySoft", self._modo))
-        self._icon_chip.setStyleSheet(
-            f"QFrame {{ background-color: {bg_css}; "
-            f"border-radius: {_NM_EMPTY_ICON_CHIP_RADIUS}px; }}"
-        )
+        # Chip: brand-soft del mockup (primarySoftSolid) con r18.
+        chip_bg = QColor(v3c("primarySoftSolid", self._modo))
+        self._icon_chip.set_bg_color(chip_bg)
         icon_col = v3c("primary", self._modo)
-        self._icon_lbl.setPixmap(
+        self._icon_chip.set_pixmap(
             nm_icon(self._icon_key, icon_col, size=_NM_EMPTY_ICON_SIZE).pixmap(
                 _NM_EMPTY_ICON_SIZE, _NM_EMPTY_ICON_SIZE
             )

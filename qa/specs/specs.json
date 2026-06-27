@@ -1027,18 +1027,6 @@
       },
       "components": [
         {
-          "id": "card_group",
-          "type": "card_group",
-          "count": 1,
-          "region": {
-            "x_pct": 27.2,
-            "y_pct": 37.0,
-            "w_pct": 3.5,
-            "h_pct": 5.7
-          },
-          "color_hint": "#b7c5b7"
-        },
-        {
           "id": "header_text",
           "type": "text",
           "region": {

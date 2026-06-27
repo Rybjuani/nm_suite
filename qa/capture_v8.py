@@ -963,7 +963,7 @@ def _tcc_fill_and_guardar(win, qapp, action):
         texts3[0].textChanged.emit()
     _drain(qapp, cycles=2)
     # Guardar
-    btns_g = [b for b in target.findChildren(QPushButton) if b.isVisible() and b.text() == "Guardar"]
+    btns_g = [b for b in target.findChildren(QPushButton) if b.isVisible() and "Guardar" in b.text()]
     if btns_g:
         btns_g[0].click()
     _drain(qapp, cycles=8)
