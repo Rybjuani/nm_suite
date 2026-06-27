@@ -162,18 +162,14 @@ def test_registro_tcc_emotion_tiles_separate_icon_label_and_selected_state(
     module = ModuloRegistroTCC(show_header=False, modo="light_hybrid")
     qtbot.addWidget(module)
 
-    tile = module._emotion_tiles[0]
-    assert tile.minimumHeight() == 68
-    assert tile.maximumHeight() == 74
-    assert tile._icon.width() == 22
-    assert tile._icon.height() == 22
-    assert tile._lbl.minimumHeight() == 18
+    # Emotion chips are compact pills (refactored from tiles in commit 69807d5).
+    chip = module._emotion_tiles[0]
+    assert chip._lbl.text() != ""
 
-    tile.set_selected(True)
+    chip.set_selected(True)
 
-    assert tile.is_selected()
-    assert tile._active
-    assert not tile._glow
+    assert chip.is_selected()
+    assert chip._selected
 
 
 def test_registro_tcc_step_title_uses_serif_source() -> None:

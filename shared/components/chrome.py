@@ -272,6 +272,7 @@ class NMWindowChrome(QWidget):
         ctx_l.setSpacing(_NM_CHROME_GAP)
         self._ctx_back = QPushButton("←", ctx_wrap)
         self._ctx_back.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._ctx_back.setMinimumSize(0, 0)
         self._ctx_back.setFixedSize(_NM_CHROME_BACK_SIZE, _NM_CHROME_BACK_SIZE)
         self._ctx_back.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_medium"]))
         self._ctx_back.setAccessibleName("Volver")

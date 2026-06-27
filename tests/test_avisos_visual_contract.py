@@ -69,8 +69,10 @@ def test_avisos_filters_and_search_are_visible_and_drive_state(qtbot, monkeypatc
     assert module._filter_segment.maximumWidth() == 334
     segment_qss = module._filter_segment.styleSheet()
     assert "background:" in segment_qss
-    assert "border: 1px solid" in segment_qss
-    assert "border-radius: 20px" in segment_qss
+    # Mockup canónico: tabs individuales sin track segmentado visible.
+    # El contenedor sigue existiendo para layout, pero sin background/border.
+    assert "border: none" in segment_qss
+    assert "border-radius: 0px" in segment_qss
     active_qss = module._filter_pills["todos"].styleSheet()
     assert module._filter_pills["todos"].height() == _AVISOS_FILTER_PILL_HEIGHT == 32
     # Activo = primary SÓLIDO (verde oscuro) + texto claro, como el mockup canónico

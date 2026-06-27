@@ -147,7 +147,10 @@ def test_input_otro_no_settext_como_contenido(tcc_modulo):
         f"Encontrado {forbidden!r} en registro_tcc_qt — el placeholder debe "
         "usarse via setPlaceholderText, nunca como contenido."
     )
-    # Y debe estar el setPlaceholderText
-    assert 'setPlaceholderText("Nombrá tu emoción…")' in src, (
-        "Falta setPlaceholderText('Nombrá tu emoción…') en registro_tcc_qt"
+    # Y debe estar el setPlaceholderText (refactored to use t() i18n variable)
+    assert 'setPlaceholderText' in src, (
+        "Falta setPlaceholderText en registro_tcc_qt"
+    )
+    assert 'Nombrá tu emoción…' in src, (
+        "Falta el texto del placeholder 'Nombrá tu emoción…' en registro_tcc_qt"
     )

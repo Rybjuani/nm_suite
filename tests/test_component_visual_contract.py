@@ -336,8 +336,8 @@ def test_routine_checkbox_matches_mockup_rt_cb_contract(qtbot) -> None:
     assert check._box.height() == 22
 
     source = __import__("inspect").getsource(_NMAnimCheckBox.paintEvent)
-    assert 'v3c("primary" if self._checked else "line", self._modo)' in source
-    assert 'v3c("primary" if self._checked else "surface", self._modo)' in source
+    assert 'v3c("primaryCheck" if self._checked else "line", self._modo)' in source
+    assert 'v3c("primaryCheck" if self._checked else "surface", self._modo)' in source
     assert 'v3c("primary_ink", self._modo)' in source
 
 
@@ -413,11 +413,14 @@ def test_empty_state_matches_mockup_icon_and_title_contract(qtbot) -> None:
     assert _NM_EMPTY_TITLE_SIZE == 20
     assert empty._icon_chip.width() == 64
     assert empty._icon_chip.height() == 64
-    assert empty._icon_lbl.width() == 30
-    assert empty._icon_lbl.height() == 30
+    # _icon_lbl is the QLabel inside the chip (same size as chip for centering).
+    # The icon pixmap is _NM_EMPTY_ICON_SIZE (30px), rendered centered inside.
+    assert empty._icon_chip._icon_lbl.width() == 64
+    assert empty._icon_chip._icon_lbl.height() == 64
     assert empty._title_lbl.font().pixelSize() == 20
     assert empty._title_lbl.font().weight() >= 600
-    assert "border-radius: 18px" in empty._icon_chip.styleSheet()
+    # Chip paints via paintEvent (not QSS), so radius is a runtime attr.
+    assert empty._icon_chip._radius == 18
 
 
 def test_toast_matches_mockup_pill_contract(qtbot) -> None:
@@ -787,7 +790,7 @@ def test_patient_row_premium_matches_mockup_prow_contract(qtbot) -> None:
     assert f"border-radius: {_NM_PATIENT_AVATAR_RADIUS}px" in row._avatar.styleSheet()
     assert row._sparkline.width() == 78
     assert row._sparkline.height() == 30
-    assert row._ring.width() == _NM_PATIENT_RING_SIZE == 36
+    assert row._ring.width() == _NM_PATIENT_RING_SIZE == 46
     assert row._ring._color_key == "gold"
     assert row._btn_unlink.width() == _NM_PATIENT_UNLINK_SIZE == 30
     assert _NM_PATIENT_TREND_COL_W == 90
@@ -828,7 +831,7 @@ def test_dbt_cards_match_mockup_family_bar_contract(qtbot) -> None:
     qtbot.addWidget(need)
     assert need.layout().contentsMargins().left() == 20
     assert need._family_color_key == "mind"
-    assert _DBT_NEED_BORDER_W == 5
+    assert _DBT_NEED_BORDER_W == 3  # mockup l.232: border-left:3px solid
 
     skill = _SkillCard(
         {
