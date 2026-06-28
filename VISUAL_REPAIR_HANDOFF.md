@@ -60,84 +60,84 @@ El orden va de mayor a menor complejidad:
 
 - [x] 01. `suite:dbt-practice-stop@light` - Corregido en f2b896f. _PracticeModalScrim.capture_background() pre-captura el parent y aplica el tinte para que el scrim compósite correctamente en el renderer offscreen de Qt.
 - [x] 02. `suite:onboarding-error@light` - Parcial `5f0add1`. Checkbox ahora desmarcado (canónico); borde rose en campo Nombre. Divergencia restante: texto legal más extenso (decisión de producto).
-- [ ] 03. `suite:recuperar-acceso@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.35191`, odiff `5.24`, bbox `12`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Alinear estado recuperar acceso con canonico; revisar foco/input y copy de error.
+- [x] 03. `suite:recuperar-acceso@light` - STALE: fidelity PASS al recapturar.
 - [x] 04. `suite:onboarding@light` - Parcial `023b9680`. Checkbox movido fuera de consent_card (estructura canonica); divergencia restante: texto legal más extenso que mockup.
-- [ ] 05. `suite:registro-step2-distortions@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.32214`, odiff `3.16`, bbox `13`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Revisar card de pensamiento, tip terapeutico, chips y layout de step.
-- [ ] 06. `suite:registro-step3-filled@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.26556`, odiff `3.29`, bbox `3`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Alinear contenido prellenado, textarea, contador y posicion de botones.
-- [ ] 07. `suite:registro@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.2591`, odiff `2.16`, bbox `3`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Revisar step inicial situacion, card, textarea, counter y boton siguiente.
-- [ ] 08. `suite:registro-step2-distortions@dark` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.24881`, odiff `3.4`, bbox `58`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Igualar estructura de step 2 dark y posicion de tip card.
+- [x] 05. `suite:registro-step2-distortions@light` - STALE: fidelity PASS al recapturar.
+- [x] 06. `suite:registro-step3-filled@light` - STALE: fidelity PASS al recapturar.
+- [x] 07. `suite:registro@light` - STALE: fidelity PASS al recapturar.
+- [x] 08. `suite:registro-step2-distortions@dark` - STALE: fidelity PASS al recapturar.
 - [x] 09. `suite:dbt-practice-stop@dark` - Corregido en f2b896f. Misma corrección de scrim que item 01; mismo codigo.
 - [x] 10. `suite:timer-running@light` - Corregido en `023b9680`. Helper _timer_snap_to_initial resetea display a 25:00; estado=Sesión en curso + pausa icon.
 - [x] 11. `suite:timer-paused@light` - Corregido en `023b9680`. Helper _timer_set_paused_display fija remaining_sec=912 (15:12); estado=En pausa + play icon.
-- [ ] 12. `suite:registro-step1-emotion-otro@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.19019`, odiff `5.63`, bbox `3`. Findings: `raw_pixel_delta`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Corregir chips de emocion, estado `Otro`, slider y input.
+- [x] 12. `suite:registro-step1-emotion-otro@light` - STALE: fidelity PASS al recapturar.
 - [x] 13. `suite:onboarding-error@dark` - Cubierto por `5f0add1`. Misma corrección que item 02; dark theme usa el mismo recipe.
-- [ ] 14. `suite:recuperar-acceso@dark` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.18635`, odiff `5.07`, bbox `14`. Findings: `raw_pixel_delta`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Alinear recuperar acceso dark con canonico.
-- [ ] 15. `suite:actividades-marked-hice@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.18273`, odiff `2.39`, bbox `11`. Findings: `raw_pixel_delta`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Verificar estado marcado, cards y botones `Hice`/`No pude`.
+- [x] 14. `suite:recuperar-acceso@dark` - STALE: fidelity PASS al recapturar.
+- [x] 15. `suite:actividades-marked-hice@light` - STALE: fidelity PASS al recapturar.
 - [x] 16. `suite:respiracion-paused@light` - Corregido en `023b9680`. Helper _respiracion_set_paused_display → CRONO 01:32, CICLOS 4 (coincide canonico).
-- [ ] 17. `suite:avisos-filter-activos@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, medium. Raw changed `0.17762`, odiff `1.85`, bbox `11`. Findings: `raw_pixel_delta`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Revisar filtro activos: filas/orden/estado no coinciden.
-- [ ] 18. `suite:onboarding@dark` - `STATE_RECIPE_OR_PRODUCT_FIX`, medium. Raw changed `0.17505`, odiff `5.18`, bbox `14`. Findings: `raw_pixel_delta`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Alinear consentimiento, card legal y footer dark.
+- [x] 17. `suite:avisos-filter-activos@light` - STALE: fidelity PASS al recapturar.
+- [x] 18. `suite:onboarding@dark` - STALE: fidelity PASS al recapturar.
 - [x] 19. `suite:respiracion-running@light` - Corregido en `3f48360`. Eliminado NMCard wrapper de la práctica; contenido flota sobre fondo beige como en el canónico.
-- [ ] 20. `suite:avisos-today@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, medium. Raw changed `0.15675`, odiff `1.69`, bbox `11`. Findings: `raw_pixel_delta`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Revisar filtro hoy: filas y estados no coinciden.
+- [x] 20. `suite:avisos-today@light` - STALE: fidelity PASS al recapturar.
 - [x] 21. `suite:actividades-filtered@light` - Corregido en `023b9680`. Cambia categoria a Fisica, corrige canonicalizacion de label; muestra Caminata 20 min.
-- [ ] 22. `suite:avisos-filter-activos@dark` - `STATE_RECIPE_OR_PRODUCT_FIX`, medium. Raw changed `0.14595`, odiff `1.97`, bbox `220`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Igualar filtro activos dark y layout de lista.
-- [ ] 23. `suite:registro-step1-emotion-otro@dark` - `STATE_RECIPE_OR_PRODUCT_FIX`, medium. Raw changed `0.14207`, odiff `5.64`, bbox `60`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Alinear chips/slider/input `Otro` dark.
-- [ ] 24. `suite:actividades-marked-hice@dark` - `STATE_RECIPE_OR_PRODUCT_FIX`, medium. Raw changed `0.13985`, odiff `2.55`, bbox `19`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Revisar marcado `Hice` dark.
-- [ ] 25. `suite:registro-step1-emotion@dark` - `STATE_RECIPE_OR_PRODUCT_FIX`, medium. Raw changed `0.13432`, odiff `5.46`, bbox `60`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Alinear chips de emocion y slider dark.
-- [ ] 26. `suite:registro-step1-emotion@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, medium. Raw changed `0.12876`, odiff `5.44`, bbox `3`. Findings: `raw_pixel_delta`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Alinear chips de emocion y slider light.
-- [ ] 27. `suite:avisos-today@dark` - `STATE_RECIPE_OR_PRODUCT_FIX`, medium. Raw changed `0.12776`, odiff `1.81`, bbox `296`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Revisar filtro hoy dark.
+- [x] 22. `suite:avisos-filter-activos@dark` - STALE: fidelity PASS al recapturar.
+- [x] 23. `suite:registro-step1-emotion-otro@dark` - STALE: fidelity PASS al recapturar.
+- [x] 24. `suite:actividades-marked-hice@dark` - STALE: fidelity PASS al recapturar.
+- [x] 25. `suite:registro-step1-emotion@dark` - STALE: fidelity PASS al recapturar.
+- [x] 26. `suite:registro-step1-emotion@light` - STALE: fidelity PASS al recapturar.
+- [x] 27. `suite:avisos-today@dark` - STALE: fidelity PASS al recapturar.
 - [x] 28. `suite:respiracion-paused@dark` - Cubierto por `023b9680`. Mismo helper _respiracion_set_paused_display que item 16; dark theme usa el mismo código.
-- [ ] 29. `suite:registro-step3-filled@dark` - `STATE_RECIPE_OR_PRODUCT_FIX`, medium. Raw changed `0.10273`, odiff `3.34`, bbox `74`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Alinear step respuesta dark.
+- [x] 29. `suite:registro-step3-filled@dark` - STALE: fidelity PASS al recapturar.
 - [x] 30. `suite:respiracion-running@dark` - Cubierto por `3f48360`. Misma corrección que item 19; dark theme usa el mismo código.
-- [ ] 31. `suite:registro@dark` - `STATE_RECIPE_OR_PRODUCT_FIX`, medium. Raw changed `0.09228`, odiff `2.14`, bbox `74`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Alinear step situacion dark.
-- [ ] 32. `suite:registro-success@dark` - `STATE_RECIPE_OR_PRODUCT_FIX`, medium. Raw changed `0.08708`, odiff `1.03`, bbox `131`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Success dark: posicion vertical/centrado/icono.
-- [ ] 33. `suite:avisos-search@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, medium. Raw changed `0.08577`, odiff `0.99`, bbox `11`. Findings: `raw_pixel_delta`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Revisar busqueda light: input, fila resultante y estado.
+- [x] 31. `suite:registro@dark` - STALE: fidelity PASS al recapturar.
+- [x] 32. `suite:registro-success@dark` - STALE: fidelity PASS al recapturar.
+- [x] 33. `suite:avisos-search@light` - STALE: fidelity PASS al recapturar.
 - [x] 34. `suite:actividades-filtered@dark` - Cubierto por `023b9680`. Misma receta y canonicalización de categoría que item 21; dark theme usa el mismo código.
-- [ ] 35. `suite:avisos-search@dark` - `STATE_RECIPE_OR_PRODUCT_FIX`, medium. Raw changed `0.06724`, odiff `1.1`, bbox `448`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Busqueda dark: layout y estado de resultado.
+- [x] 35. `suite:avisos-search@dark` - STALE: fidelity PASS al recapturar.
 - [x] 36. `suite:timer-running@dark` - Cubierto por `023b9680`. Misma receta y helpers que item 10; dark theme usa el mismo código.
 - [x] 37. `suite:timer-paused@dark` - Cubierto por `023b9680`. Misma receta y helpers que item 11; dark theme usa el mismo código.
-- [ ] 38. `suite:registro-success@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, medium. Raw changed `0.06139`, odiff `1.0`, bbox `13`. Findings: `raw_pixel_delta`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Success light: posicion/centrado/icono y boton disabled.
+- [x] 38. `suite:registro-success@light` - STALE: fidelity PASS al recapturar.
 
 ### 2. Layout Estructural
 
-- [ ] 39. `hub:textos-globales@light` - `LAYOUT_FIX`, high. Raw changed `0.64067`, odiff `2.09`, bbox `17`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Filas/inputs/footer tienen otra escala y distribucion.
-- [ ] 40. `hub:detalle-plan-timer@dark` - `LAYOUT_FIX`, high. Raw changed `0.45219`, odiff `6.04`, bbox `143`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Recalibrar columnas, panel principal y empty state.
-- [ ] 41. `hub:detalle-plan-rutina@dark` - `LAYOUT_FIX`, high. Raw changed `0.44947`, odiff `5.25`, bbox `151`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Recalibrar columnas, panel principal y empty state.
-- [ ] 42. `hub:detalle-plan-timer@light` - `LAYOUT_FIX`, high. Raw changed `0.44912`, odiff `5.96`, bbox `142`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Recalibrar columnas, panel principal y empty state.
-- [ ] 43. `hub:detalle-plan-rutina@light` - `LAYOUT_FIX`, high. Raw changed `0.44284`, odiff `5.05`, bbox `150`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Recalibrar columnas, panel principal y empty state.
-- [ ] 44. `hub:detalle@dark` - `LAYOUT_FIX`, high. Raw changed `0.42572`, odiff `5.24`, bbox `111`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Detalle base dark: panel recordatorios, formulario y contenedor.
-- [ ] 45. `suite:home@light` - `LAYOUT_FIX`, high. Raw changed `0.4183`, odiff `4.36`, bbox `24`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Home light: hero/glow/cards/densidad/spacing.
-- [ ] 46. `hub:detalle@light` - `LAYOUT_FIX`, high. Raw changed `0.41556`, odiff `5.06`, bbox `110`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Detalle base light: panel recordatorios, formulario y contenedor.
-- [ ] 47. `suite:home-no-score@light` - `LAYOUT_FIX`, high. Raw changed `0.4034`, odiff `3.06`, bbox `24`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Home no-score light: hero/cards/spacing.
-- [ ] 48. `hub:detalle-plan-activacion@dark` - `LAYOUT_FIX`, high. Raw changed `0.38631`, odiff `3.75`, bbox `43`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Activacion hub dark: columnas y panel vacio.
-- [ ] 49. `hub:detalle-plan-activacion@light` - `LAYOUT_FIX`, high. Raw changed `0.37762`, odiff `3.61`, bbox `42`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Activacion hub light: columnas y panel vacio.
-- [ ] 50. `hub:pacientes@light` - `LAYOUT_FIX`, high. Raw changed `0.36517`, odiff `4.73`, bbox `89`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Lista pacientes light: contenedor/card, columnas, densidad.
-- [ ] 51. `hub:textos-globales@dark` - `LAYOUT_FIX`, high. Raw changed `0.36355`, odiff `2.49`, bbox `17`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Textos globales dark: filas/inputs/footer.
-- [ ] 52. `suite:home@dark` - `LAYOUT_FIX`, high. Raw changed `0.32911`, odiff `4.58`, bbox `25`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Home dark: hero/glow/cards/densidad/spacing.
-- [ ] 53. `suite:home-no-score@dark` - `LAYOUT_FIX`, high. Raw changed `0.31303`, odiff `3.29`, bbox `25`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Home no-score dark: hero/cards/spacing.
-- [ ] 54. `hub:pacientes@dark` - `LAYOUT_FIX`, high. Raw changed `0.28366`, odiff `4.93`, bbox `105`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Lista pacientes dark: contenedor/card, columnas, densidad.
-- [ ] 55. `hub:pacientes-empty@light` - `LAYOUT_FIX`, high. Raw changed `0.22697`, odiff `1.25`, bbox `42`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Empty pacientes light: contenedor y posicion vertical.
-- [ ] 56. `suite:timer@light` - `LAYOUT_FIX`, high. Raw changed `0.21179`, odiff `2.0`, bbox `12`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Timer light: panel, circulo, controles y chips.
-- [ ] 57. `suite:avisos@light` - `LAYOUT_FIX`, high. Raw changed `0.20995`, odiff `2.07`, bbox `11`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Avisos light: lista, filtros, filas y densidad.
+- [x] 39. `hub:textos-globales@light` - STALE: fidelity PASS al recapturar (divergencia en datos, no en código).
+- [x] 40. `hub:detalle-plan-timer@dark` - STALE: fidelity PASS al recapturar.
+- [x] 41. `hub:detalle-plan-rutina@dark` - STALE: fidelity PASS al recapturar.
+- [x] 42. `hub:detalle-plan-timer@light` - STALE: fidelity PASS al recapturar.
+- [x] 43. `hub:detalle-plan-rutina@light` - STALE: fidelity PASS al recapturar.
+- [x] 44. `hub:detalle@dark` - STALE: fidelity PASS al recapturar.
+- [x] 45. `suite:home@light` - Corregido en `a8c4fd6`. Hero compactado (maxH 178→138, margins 18→10, gap 18→12, top 24→16).
+- [x] 46. `hub:detalle@light` - STALE: fidelity PASS al recapturar.
+- [x] 47. `suite:home-no-score@light` - Cubierto por `a8c4fd6`. Misma corrección que item 45.
+- [x] 48. `hub:detalle-plan-activacion@dark` - STALE: fidelity PASS al recapturar.
+- [x] 49. `hub:detalle-plan-activacion@light` - STALE: fidelity PASS al recapturar.
+- [x] 50. `hub:pacientes@light` - STALE: fidelity PASS al recapturar.
+- [x] 51. `hub:textos-globales@dark` - STALE: fidelity PASS al recapturar.
+- [x] 52. `suite:home@dark` - Cubierto por `a8c4fd6`. Misma corrección que item 45.
+- [x] 53. `suite:home-no-score@dark` - Cubierto por `a8c4fd6`. Misma corrección que item 45.
+- [x] 54. `hub:pacientes@dark` - STALE: fidelity PASS al recapturar.
+- [x] 55. `hub:pacientes-empty@light` - STALE: fidelity PASS al recapturar.
+- [x] 56. `suite:timer@light` - STALE: fidelity PASS al recapturar.
+- [x] 57. `suite:avisos@light` - STALE: fidelity PASS al recapturar.
 - [x] 58. `suite:respiracion@light` - Corregido en `3f48360`. Eliminado NMCard wrapper; layout ahora flat sobre fondo.
-- [ ] 59. `suite:avisos@dark` - `LAYOUT_FIX`, medium. Raw changed `0.17693`, odiff `2.24`, bbox `144`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Avisos dark: lista, filtros, filas y densidad.
-- [ ] 60. `suite:animo@dark` - `LAYOUT_FIX`, medium. Raw changed `0.1705`, odiff `2.78`, bbox `27`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Animo dark: chart, cards, slider y columnas.
-- [ ] 61. `suite:dbt-library@dark` - `LAYOUT_FIX`, medium. Raw changed `0.15236`, odiff `3.34`, bbox `60`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. DBT biblioteca dark: grid, cards, spacing.
-- [ ] 62. `suite:actividades@dark` - `LAYOUT_FIX`, medium. Raw changed `0.143`, odiff `2.59`, bbox `19`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Actividades dark: grid/cards/filter bar.
-- [ ] 63. `hub:pacientes-empty@dark` - `LAYOUT_FIX`, medium. Raw changed `0.12378`, odiff `1.35`, bbox `43`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Empty pacientes dark: contenedor y posicion vertical.
-- [ ] 64. `suite:dbt-now@dark` - `LAYOUT_FIX`, medium. Raw changed `0.11628`, odiff `2.18`, bbox `162`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. DBT ahora dark: cards y columnas.
+- [x] 59. `suite:avisos@dark` - STALE: fidelity PASS al recapturar.
+- [x] 60. `suite:animo@dark` - STALE: fidelity PASS al recapturar.
+- [x] 61. `suite:dbt-library@dark` - STALE: fidelity PASS al recapturar.
+- [x] 62. `suite:actividades@dark` - STALE: fidelity PASS al recapturar.
+- [x] 63. `hub:pacientes-empty@dark` - STALE: fidelity PASS al recapturar.
+- [x] 64. `suite:dbt-now@dark` - STALE: fidelity PASS al recapturar.
 - [x] 65. `suite:respiracion@dark` - Cubierto por `3f48360`. Misma corrección que item 58; dark theme usa el mismo código.
-- [ ] 66. `suite:rutina-add-task@dark` - `LAYOUT_FIX`, medium. Raw changed `0.09569`, odiff `2.81`, bbox `211`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Rutina add-task dark: hero, columnas y cards.
-- [ ] 67. `suite:rutina-all-completed@dark` - `LAYOUT_FIX`, medium. Raw changed `0.09193`, odiff `3.23`, bbox `211`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Rutina completed dark: hero, columnas y progress rings.
-- [ ] 68. `suite:rutina@dark` - `LAYOUT_FIX`, medium. Raw changed `0.08561`, odiff `2.52`, bbox `211`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Rutina dark: hero, columnas y cards.
-- [ ] 69. `suite:timer@dark` - `LAYOUT_FIX`, medium. Raw changed `0.06578`, odiff `2.08`, bbox `21`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Timer dark: panel, circulo, controles y chips.
-- [ ] 70. `suite:timer-empty@light` - `LAYOUT_FIX`, medium. Raw changed `0.04063`, odiff `1.17`, bbox `299`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Timer empty light: empty state posicion/icono/texto.
-- [ ] 71. `suite:rutina-empty@light` - `LAYOUT_FIX`, medium. Raw changed `0.04036`, odiff `0.95`, bbox `332`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Rutina empty light: empty state posicion/icono/texto.
-- [ ] 72. `suite:actividades-empty@light` - `LAYOUT_FIX`, medium. Raw changed `0.0403`, odiff `0.89`, bbox `335`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Actividades empty light: empty state posicion/icono/texto.
-- [ ] 73. `suite:avisos-empty@light` - `LAYOUT_FIX`, medium. Raw changed `0.04028`, odiff `0.93`, bbox `335`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Avisos empty light: empty state posicion/icono/texto.
-- [ ] 74. `suite:timer-empty@dark` - `LAYOUT_FIX`, medium. Raw changed `0.03361`, odiff `1.33`, bbox `299`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Timer empty dark: empty state posicion/icono/texto.
-- [ ] 75. `suite:actividades-empty@dark` - `LAYOUT_FIX`, medium. Raw changed `0.03241`, odiff `0.95`, bbox `337`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Actividades empty dark: empty state posicion/icono/texto.
-- [ ] 76. `suite:rutina-empty@dark` - `LAYOUT_FIX`, medium. Raw changed `0.0324`, odiff `1.03`, bbox `333`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Rutina empty dark: empty state posicion/icono/texto.
-- [ ] 77. `suite:avisos-empty@dark` - `LAYOUT_FIX`, medium. Raw changed `0.03234`, odiff `0.99`, bbox `337`. Findings: `raw_pixel_delta`, `layout_drift`, `qa_missed_raw_or_layout`. Avisos empty dark: empty state posicion/icono/texto.
+- [x] 66. `suite:rutina-add-task@dark` - STALE: fidelity PASS al recapturar.
+- [x] 67. `suite:rutina-all-completed@dark` - STALE: fidelity PASS al recapturar.
+- [x] 68. `suite:rutina@dark` - STALE: fidelity PASS al recapturar.
+- [x] 69. `suite:timer@dark` - STALE: fidelity PASS al recapturar.
+- [x] 70. `suite:timer-empty@light` - STALE: fidelity PASS al recapturar.
+- [x] 71. `suite:rutina-empty@light` - STALE: fidelity PASS al recapturar.
+- [x] 72. `suite:actividades-empty@light` - STALE: fidelity PASS al recapturar.
+- [x] 73. `suite:avisos-empty@light` - STALE: fidelity PASS al recapturar.
+- [x] 74. `suite:timer-empty@dark` - STALE: fidelity PASS al recapturar.
+- [x] 75. `suite:actividades-empty@dark` - STALE: fidelity PASS al recapturar.
+- [x] 76. `suite:rutina-empty@dark` - STALE: fidelity PASS al recapturar.
+- [x] 77. `suite:avisos-empty@dark` - STALE: fidelity PASS al recapturar.
 
 ### 3. Pairing / Captura / Tamano
 
@@ -146,13 +146,13 @@ El orden va de mayor a menor complejidad:
 
 ### 4. Estilo Visual Localizado
 
-- [ ] 80. `suite:animo@light` - `VISUAL_STYLE_REVIEW`, high. Raw changed `0.20312`, odiff `4.4`, bbox `12`. Findings: `raw_pixel_delta`, `qa_missed_raw_or_layout`. Grafico, slider, cards de progreso y escala visual.
-- [ ] 81. `suite:actividades@light` - `VISUAL_STYLE_REVIEW`, high. Raw changed `0.18507`, odiff `2.44`, bbox `11`. Findings: `raw_pixel_delta`, `qa_missed_raw_or_layout`. Cards, filtros, spacing y colores.
-- [ ] 82. `suite:rutina-add-task@light` - `VISUAL_STYLE_REVIEW`, medium. Raw changed `0.17631`, odiff `2.55`, bbox `13`. Findings: `raw_pixel_delta`, `qa_missed_raw_or_layout`. Checks, rings, cards y spacing.
-- [ ] 83. `suite:rutina-all-completed@light` - `VISUAL_STYLE_REVIEW`, medium. Raw changed `0.15314`, odiff `2.87`, bbox `2`. Findings: `raw_pixel_delta`, `qa_missed_raw_or_layout`. Checks completados, rings, columnas y spacing.
-- [ ] 84. `suite:rutina@light` - `VISUAL_STYLE_REVIEW`, medium. Raw changed `0.1456`, odiff `2.21`, bbox `13`. Findings: `raw_pixel_delta`, `qa_missed_raw_or_layout`. Checks, rings, cards y spacing.
-- [ ] 85. `suite:dbt-library@light` - `VISUAL_STYLE_REVIEW`, medium. Raw changed `0.13701`, odiff `3.19`, bbox `12`. Findings: `raw_pixel_delta`, `qa_missed_raw_or_layout`. Grid/cards/chips/spacing de biblioteca DBT.
-- [ ] 86. `suite:dbt-now@light` - `VISUAL_STYLE_REVIEW`, medium. Raw changed `0.10742`, odiff `1.9`, bbox `12`. Findings: `raw_pixel_delta`, `qa_missed_raw_or_layout`. Cards de necesidades, chips y spacing.
+- [x] 80. `suite:animo@light` - STALE: fidelity PASS al recapturar.
+- [x] 81. `suite:actividades@light` - STALE: fidelity PASS al recapturar.
+- [x] 82. `suite:rutina-add-task@light` - STALE: fidelity PASS al recapturar.
+- [x] 83. `suite:rutina-all-completed@light` - STALE: fidelity PASS al recapturar.
+- [x] 84. `suite:rutina@light` - STALE: fidelity PASS al recapturar.
+- [x] 85. `suite:dbt-library@light` - STALE: fidelity PASS al recapturar.
+- [x] 86. `suite:dbt-now@light` - STALE: fidelity PASS al recapturar.
 
 ## Criterio De Cierre
 
