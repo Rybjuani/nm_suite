@@ -13,6 +13,7 @@ from tests.e2e._helpers.qt_helpers import (
     latest_toast,
     latest_toast_variant,
 )
+from tests.e2e._helpers.visual_parity import compare_visual_parity as compare_visual_parity_file
 
 
 class BasePage:
@@ -70,3 +71,22 @@ class BasePage:
             existing.append(path)
             setattr(self.request.node, "_e2e_screenshots", existing)
         return path
+
+    def compare_visual_parity(self, surface_key: str, name: str | None = None, **kwargs):
+        screenshot = self.grab_screenshot(name or f"{surface_key.replace(':', '_').replace('@', '_')}.png")
+        result = compare_visual_parity_file(screenshot, surface_key, **kwargs)
+        self._register_visual_parity(result)
+        return result
+
+    def assert_visual_parity(self, surface_key: str, name: str | None = None, **kwargs):
+        screenshot = self.grab_screenshot(name or f"{surface_key.replace(':', '_').replace('@', '_')}.png")
+        result = compare_visual_parity_file(screenshot, surface_key, **kwargs)
+        self._register_visual_parity(result)
+        return result.assert_ok()
+
+    def _register_visual_parity(self, result):
+        if self.request is not None:
+            existing = getattr(self.request.node, "_e2e_visual_parity", [])
+            existing.append(result)
+            setattr(self.request.node, "_e2e_visual_parity", existing)
+        return result

@@ -14,6 +14,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "e2e: end-to-end UX test (real Qt UI, mocked external services)")
     config.addinivalue_line("markers", "e2e_suite: end-to-end test of the Suite (patient) app")
     config.addinivalue_line("markers", "e2e_hub: end-to-end test of the Hub (professional) app")
+    config.addinivalue_line("markers", "e2e_visual: visual parity check against qa/_mockup_canonical")
     config.addinivalue_line("markers", "smoke: smoke test (subprocess, validates app boots)")
 
 
