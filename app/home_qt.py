@@ -692,7 +692,7 @@ class _HeroBienestar(QFrame):
 
     def _build_ui(self):
         root = QVBoxLayout(self)
-        root.setContentsMargins(24, 18, 24, 18)
+        root.setContentsMargins(20, 10, 20, 10)
         root.setSpacing(4)
 
         # Eyebrow row + badge derecho
@@ -1034,8 +1034,8 @@ class HomeView(QWidget):
         content.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
 
         content_lay = QVBoxLayout(content)
-        # Mockup `.screen`: 24px de padding antes del hero.
-        content_lay.setContentsMargins(24, 24, 24, 12)
+        # Mockup `.screen`: 16px de padding antes del hero.
+        content_lay.setContentsMargins(24, 16, 24, 12)
         content_lay.setSpacing(0)
 
         self._hero = _HeroBienestar(
@@ -1045,16 +1045,16 @@ class HomeView(QWidget):
             on_module_open=self._open_cb,
             parent=content,
         )
-        # Mockup Home: hero desde y=72 hasta ~250 a 960x600.
+        # Mockup Home: hero desde y=60 hasta ~190 a 960x600.
         # Bienvenida PRIMERO (decisión owner): el hero de bienestar abre el Home.
-        self._hero.setMaximumHeight(178)
+        self._hero.setMaximumHeight(138)
         self._hero.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
         self._session_card = _ProximaSesionCard(self._modo, parent=content)
         self._session_card.hide()
         content_lay.addWidget(self._hero, stretch=1)
-        content_lay.addSpacing(18)
+        content_lay.addSpacing(12)
 
         # P2.C: cards de "Progreso de Ánimo" y "Resumen Semanal" removidas.
         # El espacio liberado se usa para agrandar las 8 cards de módulo (la grilla
