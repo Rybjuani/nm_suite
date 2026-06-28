@@ -44,8 +44,8 @@ node ./generate_captures.js ./neuromood-mockup_reparado.html ./capturas_test
 |---|---|---|
 | `.window` (suite/hub normal) | 960 x 600 | 76 |
 | `.window.narrow` (onboarding/recuperar) | 520 x 600 | 6 |
-| `.modal` (Resumen IA) | 480 x 325 | 2 |
-| `.modal.large` (DBT practice) | 960 x 600 | 2 |
+| `.modal` (Resumen IA) | 560 x 220 | 2 |
+| `.window` con modal abierto (DBT practice) | 960 x 600 | 2 |
 | **Total** | | **86** |
 
 Todos los PNG miden **exactamente** el tamano indicado en el nombre. No hay
@@ -125,6 +125,8 @@ Todos los PNG miden **exactamente** el tamano indicado en el nombre. No hay
 - **0 nombres fuera de la lista obligatoria**
 - **0 tamanos fuera del tamano indicado en el nombre**
 - **light/dark mismo tamano** para cada surface
-- **MANIFEST.json coincide con archivos reales** (sha256 + size + size_match = 86/86)
+- **MANIFEST.json coincide con archivos reales** (sha256 + size + DOM size = 86/86)
+- **Sin recortes falsos:** cada captura valida que el bounding box DOM del selector
+  (`.window` o `.modal`) coincide con el tamano declarado antes de disparar el screenshot
 - **Sin :hover** residual (mouse movido fuera del viewport antes de capturar)
 - Collage de revision incluido

@@ -22,7 +22,7 @@ const CHROMIUM_PATH = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromiu
 
 const SIZE_WINDOW  = '960x600';
 const SIZE_NARROW  = '520x600';
-const SIZE_MODAL   = '480x325';
+const SIZE_MODAL   = '560x220';
 const SIZE_MODAL_L = '960x600';
 
 const VIEWS = [
@@ -119,11 +119,37 @@ function parseSize(s) {
   return { w, h };
 }
 
+async function resetTransientUi(page) {
+  await page.evaluate(() => {
+    if (typeof window.closeModal === 'function') {
+      try { window.closeModal(); } catch (_) {}
+    }
+    const bg = document.querySelector('.modal-bg');
+    if (bg) bg.classList.remove('show');
+    const modal = document.querySelector('.modal');
+    if (modal) {
+      modal.classList.remove('large');
+      modal.style.position = '';
+      modal.style.left = '';
+      modal.style.top = '';
+    }
+  });
+  await sleep(80);
+}
+
+function surfaceKind(view, captureSel, openedModal) {
+  if (captureSel === '.modal') return 'modal';
+  if (openedModal) return 'window_modal';
+  return view.size === SIZE_NARROW ? 'narrow' : 'window';
+}
+
 /* ---------------------------------------------------------------------------
  * 3) Flujo de captura por vista
  * ------------------------------------------------------------------------ */
 
 async function captureView(page, view, theme, outDir) {
+  await resetTransientUi(page);
+
   // 3.1 — Tema
   await page.evaluate((t) => {
     document.documentElement.dataset.theme = t;
@@ -152,7 +178,8 @@ async function captureView(page, view, theme, outDir) {
   }
 
   // 3.5 — Abrir modal si corresponde
-  let isModal = !!view.captureSel && view.captureSel === '.modal';
+  const captureSel = view.captureSel || '.window';
+  const openedModal = !!view.openModalSel;
   if (view.openModalSel) {
     await page.evaluate((sel) => {
       const btn = document.querySelector(sel);
@@ -213,14 +240,13 @@ async function captureView(page, view, theme, outDir) {
       if (screen) screen.scrollTop = 0;
       el.scrollTop = 0;
     }
-  }, view.captureSel || '.window');
+  }, captureSel);
 
   // 3.8 — Mouse fuera del viewport para limpiar :hover
   await page.mouse.move(-100, -100);
   await sleep(140);
 
   // 3.9 — Capturar elemento .window o .modal
-  const captureSel = view.captureSel || '.window';
   const handle = await page.$(captureSel);
   if (!handle) throw new Error(`No se encontro elemento para capturar: ${captureSel}`);
 
@@ -230,27 +256,30 @@ async function captureView(page, view, theme, outDir) {
 
   const box = await handle.boundingBox();
   if (!box) throw new Error(`boundingBox vacio para ${captureSel}`);
+  const domBox = {
+    x: Math.round(box.x),
+    y: Math.round(box.y),
+    w: Math.round(box.width),
+    h: Math.round(box.height),
+  };
+  const domSizeMatch = Math.abs(domBox.w - expected.w) <= 1 && Math.abs(domBox.h - expected.h) <= 1;
+  if (!domSizeMatch) {
+    throw new Error(
+      `DOM size mismatch ${captureSel}: real=${domBox.w}x${domBox.h} expected=${expected.w}x${expected.h}`
+    );
+  }
   await page.screenshot({
     path: filePath,
     clip: {
-      x: Math.round(box.x),
-      y: Math.round(box.y),
+      x: domBox.x,
+      y: domBox.y,
       width: expected.w,
       height: expected.h,
     },
   });
 
   // 3.10 — Cerrar modal si quedo abierto
-  if (isModal) {
-    await page.evaluate(() => {
-      if (typeof window.closeModal === 'function') window.closeModal();
-      const bg = document.querySelector('.modal-bg');
-      if (bg) bg.classList.remove('show');
-      const m = document.querySelector('.modal');
-      if (m) m.classList.remove('large');
-    });
-    await sleep(150);
-  }
+  if (openedModal) await resetTransientUi(page);
 
   // 3.11 — Medidas reales + sha256
   const dims = pngDims(filePath);
@@ -262,13 +291,17 @@ async function captureView(page, view, theme, outDir) {
     view: view.name,
     screen: view.screen,
     state: view.state || view.hubTab || '',
-    surface: isModal ? 'modal' : (view.size === SIZE_NARROW ? 'narrow' : 'window'),
+    surface: surfaceKind(view, captureSel, openedModal),
     theme,
     real_w: dims.w,
     real_h: dims.h,
     expected_w: expected.w,
     expected_h: expected.h,
     size_match: sizeMatch,
+    dom_w: domBox.w,
+    dom_h: domBox.h,
+    dom_size_match: domSizeMatch,
+    capture_selector: captureSel,
     sha256: sh,
     bytes: fs.statSync(filePath).size,
   };
@@ -289,6 +322,17 @@ async function captureView(page, view, theme, outDir) {
   if (!fs.existsSync(htmlPath)) {
     console.error(`No existe el mockup: ${htmlPath}`);
     process.exit(2);
+  }
+  if (fs.existsSync(outDir)) {
+    for (const entry of fs.readdirSync(outDir)) {
+      if (
+        entry.endsWith('.png') ||
+        entry === 'INDICE_CAPTURAS.csv' ||
+        entry === 'MANIFEST.json'
+      ) {
+        fs.unlinkSync(path.join(outDir, entry));
+      }
+    }
   }
   fs.mkdirSync(outDir, { recursive: true });
 
@@ -334,7 +378,12 @@ async function captureView(page, view, theme, outDir) {
           surface: 'error', theme,
           real_w: 0, real_h: 0,
           expected_w: parseSize(view.size).w, expected_h: parseSize(view.size).h,
-          size_match: false, sha256: '', bytes: 0,
+          size_match: false,
+          dom_w: 0,
+          dom_h: 0,
+          dom_size_match: false,
+          capture_selector: view.captureSel || '.window',
+          sha256: '', bytes: 0,
           error: err.message,
         });
       }
@@ -346,13 +395,14 @@ async function captureView(page, view, theme, outDir) {
   // ---- INDICE_CAPTURAS.csv ----
   const csvPath = path.join(outDir, 'INDICE_CAPTURAS.csv');
   const csvLines = [
-    'file,view,screen,state,surface,theme,real_w,real_h,expected_w,expected_h,size_match,sha256,bytes',
+    'file,view,screen,state,surface,theme,real_w,real_h,expected_w,expected_h,size_match,dom_w,dom_h,dom_size_match,capture_selector,sha256,bytes',
   ];
   for (const r of records) {
     csvLines.push([
       r.file, r.view, r.screen, r.state, r.surface, r.theme,
       r.real_w, r.real_h, r.expected_w, r.expected_h,
       r.size_match ? 'yes' : 'no',
+      r.dom_w, r.dom_h, r.dom_size_match ? 'yes' : 'no', r.capture_selector,
       r.sha256, r.bytes,
     ].join(','));
   }
@@ -364,19 +414,30 @@ async function captureView(page, view, theme, outDir) {
   const manifest = {
     generator: 'generate_captures.js',
     mockup: path.basename(htmlPath),
+    mockup_path: htmlPath,
+    mockup_sha256: sha256(htmlPath),
+    generated_at: new Date().toISOString(),
+    chromium: CHROMIUM_PATH,
     total_captures: records.length,
     expected_captures: expected,
     all_captured: records.length === expected && records.every(r => r.bytes > 0),
     all_sizes_match: records.every(r => r.size_match),
+    all_dom_sizes_match: records.every(r => r.dom_size_match),
     themes: THEMES,
     surfaces: {
       window: records.filter(r => r.surface === 'window').length,
       narrow: records.filter(r => r.surface === 'narrow').length,
       modal:  records.filter(r => r.surface === 'modal').length,
+      window_modal: records.filter(r => r.surface === 'window_modal').length,
     },
     size_mismatches: records.filter(r => !r.size_match).map(r => ({
       file: r.file, real_w: r.real_w, real_h: r.real_h,
       expected_w: r.expected_w, expected_h: r.expected_h,
+    })),
+    dom_size_mismatches: records.filter(r => !r.dom_size_match).map(r => ({
+      file: r.file, dom_w: r.dom_w, dom_h: r.dom_h,
+      expected_w: r.expected_w, expected_h: r.expected_h,
+      selector: r.capture_selector,
     })),
     captures: records,
   };
@@ -388,17 +449,24 @@ async function captureView(page, view, theme, outDir) {
   const ok = records.filter(r => r.bytes > 0).length;
   const fail = records.length - ok;
   const mismatches = manifest.size_mismatches.length;
+  const domMismatches = manifest.dom_size_mismatches.length;
   console.log('\n=========== RESUMEN ===========');
   console.log(`Capturas OK : ${ok}/${records.length}`);
   console.log(`Fallos      : ${fail}`);
   console.log(`Tamano OK   : ${records.length - mismatches}/${records.length}`);
+  console.log(`DOM OK      : ${records.length - domMismatches}/${records.length}`);
   if (mismatches > 0) {
     for (const m of manifest.size_mismatches) {
       console.log(`  BAD  ${m.file}  real=${m.real_w}x${m.real_h}  expected=${m.expected_w}x${m.expected_h}`);
     }
   }
+  if (domMismatches > 0) {
+    for (const m of manifest.dom_size_mismatches) {
+      console.log(`  DOM  ${m.file}  selector=${m.selector} real=${m.dom_w}x${m.dom_h}  expected=${m.expected_w}x${m.expected_h}`);
+    }
+  }
   console.log('===============================');
-  if (fail > 0 || mismatches > 0) process.exit(1);
+  if (fail > 0 || mismatches > 0 || domMismatches > 0) process.exit(1);
 })().catch((err) => {
   console.error('Error fatal:', err);
   process.exit(1);
