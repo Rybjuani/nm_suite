@@ -92,8 +92,8 @@ _DBT_FAMILY_COLOR_KEYS = {
 }
 _DBT_SKILL_BAR_TOP_W = 54
 _DBT_SKILL_BAR_TOP_H = 5
-_DBT_LIBRARY_CARD_MIN_H = 107
-_DBT_LIBRARY_CARD_MAX_H = 113
+_DBT_LIBRARY_CARD_MIN_H = 128
+_DBT_LIBRARY_CARD_MAX_H = 128
 _DBT_NEED_BORDER_W = 3  # mockup l.232: .need-card{border-left:3px solid var(--brand); ...}
 _DBT_NEED_BORDER_Y = 14
 _DBT_NEED_BORDER_RADIUS = 2.5
@@ -606,27 +606,36 @@ class _SkillPracticeView(QWidget):
         self.step_card.setMaximumHeight(190)
         self.step_card_lay = QVBoxLayout(self.step_card)
         self.step_card_lay.setContentsMargins(20, 16, 20, 16)
-        self.step_card_lay.setSpacing(8)
+        self.step_card_lay.setSpacing(14)
+        self.step_card_lay.addStretch(1)
 
         self.step_title_lbl = QLabel()
-        self.step_title_lbl.setFont(v3_font(19, weight=TYPOGRAPHY["weight_bold"], serif=True))
+        self.step_title_lbl.setFont(v3_font(18, weight=TYPOGRAPHY["weight_semibold"], serif=True))
         self.step_title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)  # mockup: centrado
-        self.step_card_lay.addWidget(self.step_title_lbl)
+        self.step_title_lbl.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self.step_card_lay.addWidget(self.step_title_lbl, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.step_body_lbl = QLabel()
-        self.step_body_lbl.setFont(qfont("size_body"))
+        self.step_body_lbl.setFont(qfont(13))
         self.step_body_lbl.setWordWrap(True)
-        self.step_card_lay.addWidget(self.step_body_lbl)
+        self.step_body_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.step_body_lbl.setFixedWidth(390)
+        self.step_body_lbl.setMinimumHeight(32)
+        self.step_body_lbl.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self.step_card_lay.addWidget(self.step_body_lbl, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.step_card_lay.addStretch(1)
 
         lay.addWidget(self.step_card)
 
         self.safety_lbl = None
         if self._skill.get("safety_note"):
             self.safety_lbl = QLabel(self._skill["safety_note"])
-            self.safety_lbl.setFont(qfont("size_caption"))
+            self.safety_lbl.setFont(qfont(10))
             self.safety_lbl.setWordWrap(True)
             self.safety_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            lay.addWidget(self.safety_lbl)
+            self.safety_lbl.setFixedWidth(340)
+            self.safety_lbl.setMinimumHeight(24)
+            lay.addWidget(self.safety_lbl, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # 2026-06: removido `lay.addStretch()` que generaba un vacío
         # excesivo entre el safety_note y los botones de navegación.
@@ -666,9 +675,11 @@ class _SkillPracticeView(QWidget):
         self.title_lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
         self.progress_lbl.setStyleSheet(f"color: {v3c('ink_secondary', self._modo).name()};")
         self.step_title_lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
-        self.step_body_lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
+        self.step_body_lbl.setStyleSheet(f"color: {v3c('ink_secondary', self._modo).name()};")
         if self.safety_lbl:
-            self.safety_lbl.setStyleSheet(f"color: {v3c('rose', self._modo).name()};")
+            rose = v3c("rose", self._modo)
+            rose.setAlpha(184)
+            self.safety_lbl.setStyleSheet(f"color: {qcolor_to_rgba_css(rose)};")
         if hasattr(self, "step_indicator") and self.step_indicator:
             self.step_indicator._apply_theme(self._modo)
             
@@ -720,7 +731,7 @@ class _PracticeModalScrim(QWidget):
     """
 
     _SCRIM_RGBA = (20, 18, 14, 127)  # mockup .modal-bg rgba(20,18,14,.5)
-    _SCRIM_BLUR_RADIUS = 3  # mockup backdrop-filter:blur(3px)
+    _SCRIM_BLUR_RADIUS = 40  # Qt blur radius tuned to match CSS backdrop-filter: blur(3px)
 
     def __init__(self, parent: QWidget, modo: str):
         super().__init__(parent)
@@ -768,6 +779,7 @@ class _PracticeModalScrim(QWidget):
         # Sin minimum, el card colapsa al sizeHint del contenido (~460px)
         # generando wrapping excesivo del body vs el mockup de 560px.
         self._card.setFixedWidth(max_width)
+        self._card.setMinimumHeight(360)
         self._card_lay.addWidget(content)
         content.show()
 
@@ -1083,7 +1095,7 @@ class ModuloDBT(NMModule):
         # La práctica es un MODAL sobre la biblioteca dimmed, no un reemplazo
         # full-screen. Los controles de fondo se ocultan mientras el scrim está
         # activo para no dejar botones visualmente tapados/no clickeables.
-        self._show_modal(self._practice_view, 560)
+        self._show_modal(self._practice_view, 554)
 
     def _on_practice_cancelled(self):
         # Cerramos el modal y restauramos la tab de origen.

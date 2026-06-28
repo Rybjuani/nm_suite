@@ -55,6 +55,7 @@ def test_dbt_stop_practice_uses_modal_stepper_contract(qtbot, monkeypatch) -> No
     assert practice.title_lbl.text() == "STOP · Tolerancia"
     assert practice.progress_lbl.text() == "Paso 1 de 4"
     assert practice.step_card.maximumHeight() == 190
+    assert practice.step_body_lbl.alignment() & Qt.AlignmentFlag.AlignHCenter
     assert practice.safety_lbl is not None
     assert practice.safety_lbl.alignment() & Qt.AlignmentFlag.AlignHCenter
 
@@ -112,6 +113,9 @@ def test_dbt_skill_card_title_uses_serif_font(qtbot, monkeypatch) -> None:
 
     card = _SkillCard(DBT_SKILLS["distress_stop"], modo="light_hybrid")
     qtbot.addWidget(card)
+
+    assert card.minimumHeight() == 128
+    assert card.maximumHeight() == 128
 
     font_serif = _fonts_mod.FONT_SERIF
     font = card.title_lbl.font()
