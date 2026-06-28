@@ -82,7 +82,7 @@ const VIEWS = [
   { name: 'suite-dbt-now',                  screen: 'dbtnow', size: SIZE_WINDOW },
   { name: 'suite-dbt-library',              screen: 'dbtlib', size: SIZE_WINDOW },
   { name: 'suite-dbt-practice-stop',        screen: 'dbtlib',
-    openModalSel: '.dbt-card', captureSel: '.modal', size: SIZE_MODAL_L },
+    openModalSel: '.dbt-card[data-skill="Tolerancia"]', afterOpenClickSel: '#dbtNext', captureSel: '.window', size: SIZE_WINDOW },
 
   // ---------- Suite · Acceso ----------
   { name: 'suite-onboarding',               screen: 'onboarding', state: 'normal', size: SIZE_NARROW },
@@ -162,6 +162,43 @@ async function captureView(page, view, theme, outDir) {
     await page.waitForSelector('.modal-bg.show');
     await sleep(380);
     await page.waitForSelector('.modal');
+  }
+
+  // 3.5b — Acciones dentro del modal antes de capturar.
+  // DBT "practice-stop" es un estado intermedio: la app PyQt y el contrato de
+  // test capturan Paso 2, por eso el mockup canónico debe avanzar una vez.
+  if (view.afterOpenClickSel) {
+    const clicks = view.afterOpenClickCount || 1;
+    for (let i = 0; i < clicks; i++) {
+      await page.evaluate((sel) => {
+        const btn = document.querySelector(sel);
+        if (!btn) throw new Error(`No se encontro accion post-modal ${sel}`);
+        btn.click();
+      }, view.afterOpenClickSel);
+      await sleep(220);
+      await page.waitForSelector('.modal');
+    }
+  }
+
+  if (view.name === 'suite-dbt-practice-stop') {
+    await page.evaluate(() => {
+      const win = document.querySelector('.window');
+      const titlebar = win ? win.querySelector('.titlebar') : null;
+      const bg = document.querySelector('.modal-bg');
+      const modal = document.querySelector('.modal');
+      if (!win || !bg || !modal) return;
+      const wb = win.getBoundingClientRect();
+      const tb = titlebar ? titlebar.getBoundingClientRect() : { height: 47 };
+      bg.style.position = 'fixed';
+      bg.style.left = `${wb.left}px`;
+      bg.style.top = `${wb.top + tb.height}px`;
+      bg.style.width = `${wb.width}px`;
+      bg.style.height = `${wb.height - tb.height}px`;
+      modal.style.position = '';
+      modal.style.left = '';
+      modal.style.top = '';
+    });
+    await sleep(80);
   }
 
   // 3.6 — Fuentes listas

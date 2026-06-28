@@ -204,7 +204,7 @@ def test_hub_config_textos_has_search_and_filter(qtbot) -> None:
 
 def test_hub_resumen_ia_uses_nm_dialog_overlay(qtbot, monkeypatch) -> None:
     """E4-H-MODALES: Resumen IA usa el modal canonico con scrim/scale, no QDialog nativo."""
-    from PyQt6.QtWidgets import QTextBrowser, QWidget
+    from PyQt6.QtWidgets import QLabel, QWidget
     import hub.plan_terapeutico as plan_module
     from hub.pacientes_qt import DetallePacienteView
     from shared.components.dialogs import NMDialog, _NM_MODAL_SCALE_FROM
@@ -239,9 +239,12 @@ def test_hub_resumen_ia_uses_nm_dialog_overlay(qtbot, monkeypatch) -> None:
     assert view._btn_resumen_ia.isEnabled()
     assert view._btn_resumen_ia.text() == "Resumen IA"
 
-    text_browser = dialog.findChild(QTextBrowser)
-    assert text_browser is not None
-    assert text_browser.toPlainText() == "Texto de prueba IA"
+    body_labels = [
+        w.text()
+        for w in dialog.findChildren(QLabel)
+        if w.objectName() == "ResumenIALabel"
+    ]
+    assert body_labels == ["Texto de prueba IA"]
 
     dialog.close()
     qtbot.wait(20)

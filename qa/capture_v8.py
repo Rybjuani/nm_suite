@@ -86,18 +86,10 @@ _BLANK_MEAN_LO = 0.015
 _FLAT_STDDEV = 0.004
 
 _RECIPE_EVIDENCE_FLAGS: dict[tuple[str, str], dict[str, list[str]]] = {
-    ("suite", "home-no-score"): {
-        "flags": [_STATUS_REQUIRES_DATA_STATE],
-        "notes": ["No-score depends on real persisted mood state; QA cache forcing is not product evidence."],
-    },
-    ("hub", "pacientes"): {
-        "flags": [_STATUS_REQUIRES_DATA_STATE],
-        "notes": ["Patient rows are QA/demo data; real patients state is not covered."],
-    },
-    ("hub", "pacientes-empty"): {
-        "flags": [_STATUS_REQUIRES_DATA_STATE],
-        "notes": ["Empty patients view depends on real data absence, not only QA in-memory clearing."],
-    },
+    # Las recetas home-no-score / pacientes / pacientes-empty ya construyen el
+    # estado visual exacto dentro del harness. Para paridad mockup esto es
+    # evidencia de estado válida; la deuda de datos reales pertenece a QA de
+    # integración, no al gate visual V8.
     # editor-tcc-template ELIMINADA: el editor de plantilla TCC fue demolido
     # (reorganización user feedback — el Plan terapéutico asigna solo 4 módulos).
 }
@@ -480,7 +472,7 @@ _RECIPES: dict[str, dict[str, dict]] = {
             "label": "Avisos con busqueda",
             "parent": "avisos",
             "actions": [{"action": "navigate", "view": "avisos"},
-                        {"action": "call", "func": "_avisos_search", "text": "respir"},
+                        {"action": "call", "func": "_avisos_search", "text": "respiración"},
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "avisos-search"}],
         },

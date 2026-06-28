@@ -13,7 +13,6 @@ from PyQt6.QtWidgets import (
     QLabel,
     QFrame,
     QSizePolicy,
-    QTextBrowser,
 )
 
 try:
@@ -362,15 +361,19 @@ class DetallePacienteView(QWidget):
         self._btn_resumen_ia.setText("Resumen IA")
 
         host = self.window() or self
-        dialog = NMDialog("Resumen IA", modo=self._modo, width=480, parent=host)
+        dialog = NMDialog("", modo=self._modo, width=480, parent=host)
         self._resumen_dialog = dialog
         dialog.closed.connect(lambda: setattr(self, "_resumen_dialog", None))
-
-        body = QWidget()
-        body.setStyleSheet("background: transparent;")
-        bl = QVBoxLayout(body)
-        bl.setContentsMargins(0, 0, 0, 0)
-        bl.setSpacing(V3_SP["md"])
+        dialog._title.hide()
+        dialog._close_btn.hide()
+        panel_lay = dialog._panel.layout()
+        if panel_lay is not None:
+            while panel_lay.count():
+                panel_lay.takeAt(0)
+            panel_lay.setContentsMargins(
+                V3_SP["3xl"], V3_SP["3xl"], V3_SP["3xl"], V3_SP["3xl"]
+            )
+            panel_lay.setSpacing(V3_SP["md"])
 
         # 2026-06-24: mockup Resumen IA — eyebrow UPPERCASE del nombre del
         # paciente sobre el título del diálogo. Antes era title-case en
@@ -380,21 +383,30 @@ class DetallePacienteView(QWidget):
         patient_lbl.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
         )
-        bl.addWidget(patient_lbl)
+        panel_lay.addWidget(patient_lbl)
 
-        tb = QTextBrowser()
-        tb.setPlainText(text)
-        tb.setReadOnly(True)
-        tb.setFrameShape(QFrame.Shape.NoFrame)
-        tb.setStyleSheet(
-            f"QTextBrowser {{ background: transparent; color: {v3c('text', self._modo).name()}; "
-            f"border: none; font-size: 13px; }}"
+        title_lbl = QLabel("Resumen IA")
+        title_lbl.setFont(v3_font(21, weight=600, serif=True))
+        title_lbl.setStyleSheet(
+            f"color: {v3c('text', self._modo).name()}; background: transparent;"
         )
-        tb.setMinimumHeight(160)
-        tb.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        bl.addWidget(tb, 1)
+        panel_lay.addWidget(title_lbl)
 
-        dialog.set_body_widget(body)
+        for paragraph in [p.strip() for p in (text or "").split("\n\n") if p.strip()]:
+            lbl = QLabel(paragraph)
+            lbl.setObjectName("ResumenIALabel")
+            lbl.setWordWrap(True)
+            lbl.setFont(qfont("size_body"))
+            lbl.setStyleSheet(
+                f"color: {v3c('ink_secondary', self._modo).name()}; "
+                "background: transparent; line-height: 1.6;"
+            )
+            lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            panel_lay.addWidget(lbl)
+        panel_lay.addSpacing(V3_SP["4xl"])
+        panel_lay.addLayout(dialog._footer_row)
+        panel_lay.addStretch(1)
+
         # 2026-06-24: mockup Resumen IA — botón "Cerrar" filled green (primary),
         # no ghost. Antes era texto estilo ghost.
         dialog.add_footer_button("Cerrar", role="primary", callback=dialog.close)
