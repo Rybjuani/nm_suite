@@ -164,6 +164,7 @@ class NMButton(QPushButton):
         self._hover = False
         self._pressed = False
         self._press_scale = 1.0
+        self._disabled_opacity = 0.65
         self._success_anim: QSequentialAnimationGroup | None = None
         self._scale_anim: QPropertyAnimation | None = None
         self._btn_shadow: QGraphicsDropShadowEffect | None = None
@@ -226,7 +227,7 @@ class NMButton(QPushButton):
         # pleno, no en sage claro. El real con 0.4 daba un verde sage que no
         # matcheaba el mockup.
         if not self.isEnabled():
-            p.setOpacity(0.65)
+            p.setOpacity(getattr(self, "_disabled_opacity", 0.65))
 
         if self._variant == "gradient":
             primary = v3c("primary", self._modo)

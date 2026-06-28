@@ -19,8 +19,8 @@ import pathlib
 import sys
 from datetime import datetime, timezone
 
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen
+from PyQt6.QtCore import QRectF, Qt, pyqtSignal
+from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -49,6 +49,12 @@ from shared.legal_contract import (
 )
 
 _CONSENT_TEXT = LEGAL_DISCLAIMER_TEXT
+_CONSENT_SUMMARY_PARAGRAPHS = (
+    "NeuroMood Suite es una herramienta digital complementaria de bienestar: "
+    "registro emocional, organización de hábitos y apoyo personal.",
+    "No realiza diagnósticos ni reemplaza la evaluación, seguimiento o "
+    "intervención de profesionales de la salud habilitados.",
+)
 _DISCLAIMER_VERSION = DISCLAIMER_VERSION
 _PRIVACY_VERSION = PRIVACY_VERSION
 _SUITE_VERSION = SUITE_VERSION
@@ -138,6 +144,12 @@ class OnboardingDialog(QDialog):
             )
         except Exception:
             self._modo = "dark_hybrid"
+        try:
+            from shared.fonts import load_fonts
+
+            load_fonts()
+        except Exception:
+            pass
         self._init_theme()
         self._configure_responsive_window()
         self._build_ui()
@@ -218,6 +230,18 @@ class OnboardingDialog(QDialog):
                 # Ventana de tamaño fijo: solo "—" minimizar y "✕" cerrar.
                 show_maximize=False,
             )
+            if hasattr(chrome, "_mark"):
+                chrome._mark._icon_name = "brain"
+                chrome._mark._apply_theme(self._modo)
+            chrome.setFixedHeight(48)
+            try:
+                from shared.theme_qt import qfont
+
+                chrome_title_font = qfont(13, weight=600)
+                chrome_title_font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
+                chrome._lbl_title.setFont(chrome_title_font)
+            except Exception:
+                pass
             chrome.theme_toggle.connect(self._toggle_theme)
         except Exception:
             pass
@@ -297,12 +321,13 @@ class OnboardingDialog(QDialog):
         # el mayor alto del h-serif 21px del título (metrics distintos al regular
         # anterior): el título debe quedar a ~y=118 en 520×600 como en el target.
         if is_compact:
-            form_lay.setContentsMargins(20, 10, 20, 4)
+            form_lay.setContentsMargins(24, 18, 42, 4)
             form_lay.setSpacing(4)
         else:
             # Mockup .screen padding:26px 28px.
             form_lay.setContentsMargins(28, 24, 28, 8)
             form_lay.setSpacing(6)
+        form_lay.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # ── Brandmark canónico + título "NeuroMood Suite" ────────────────────
         # Mockup línea 1294-1297:
@@ -316,7 +341,7 @@ class OnboardingDialog(QDialog):
         # Brandmark = 34×34 r10 con linear-gradient(140deg, brand, accent) + svg brain 20px blanco.
         # Antes: QPixmap logo file. Ahora: QFrame paintEvent con gradient + SVG brain.
         brand_row = QHBoxLayout()
-        brand_row.setSpacing(11)
+        brand_row.setSpacing(5 if is_compact else 11)
         brand_row.setContentsMargins(0, 0, 0, 0)
 
         class _BrandmarkFrame(QFrame):
@@ -387,7 +412,13 @@ class OnboardingDialog(QDialog):
         title_lbl.setTextFormat(Qt.TextFormat.RichText)
         if self._has_theme:
             # Mockup: font-size 21px, h-serif (Fraunces), weight 600 (h-serif default).
-            f_disp = self._t["v3_font"](21, weight=self._t["TY"]["weight_semibold"], serif=True)
+            f_disp = self._t["v3_font"](
+                19 if is_compact else 21,
+                weight=self._t["TY"]["weight_semibold"],
+                serif=True,
+            )
+            if is_compact:
+                f_disp.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
             title_lbl.setFont(f_disp)
         else:
             f = QFont()
@@ -406,13 +437,13 @@ class OnboardingDialog(QDialog):
             )
         )
         sub.setObjectName("OnbSub")
-        sub.setWordWrap(True)
+        sub.setWordWrap(not is_compact)
         sub_px = 11 if is_compact else 12
         if self._has_theme:
             sub.setFont(
                 self._t["v3_font"](
                     "size_eyebrow" if is_compact else "size_caption",
-                    weight=self._t["TY"]["weight_medium"],
+                    weight=self._t["TY"]["weight_regular"],
                 )
             )
         else:
@@ -423,6 +454,14 @@ class OnboardingDialog(QDialog):
             sub.setStyleSheet(f"color: {self._t['mute']}; background: transparent;")
         else:
             sub.setStyleSheet(f"color: {self._fallback_color('ink_secondary')};")
+        if is_compact:
+            sub_font = sub.font()
+            sub_font.setStretch(97)
+            sub_font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
+            sub.setFont(sub_font)
+            sub.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            sub.setFixedHeight(16)
+            sub.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         form_lay.addWidget(sub)
 
         form_lay.addSpacing(8 if is_compact else 14)  # mockup: sub margin 0 0 18px
@@ -432,9 +471,11 @@ class OnboardingDialog(QDialog):
         self._name = NMInput(suite_t("text.onboarding.name_placeholder", "Tu nombre"), modo=self._modo)
         if is_compact:
             self._name.setFixedHeight(36)
+            self._name.setFixedWidth(470)
+            self._apply_compact_input_font(self._name)
         form_lay.addWidget(self._name)
 
-        form_lay.addSpacing(6 if is_compact else 10)  # mockup: input margin-bottom 14px
+        form_lay.addSpacing(10 if is_compact else 10)  # mockup: input margin-bottom 14px
 
         # ── Email ─────────────────────────────────────────────────────────────
         form_lay.addWidget(
@@ -446,9 +487,11 @@ class OnboardingDialog(QDialog):
         )
         if is_compact:
             self._email.setFixedHeight(36)
+            self._email.setFixedWidth(470)
+            self._apply_compact_input_font(self._email)
         form_lay.addWidget(self._email)
 
-        form_lay.addSpacing(6 if is_compact else 10)  # mockup: input margin-bottom 14px
+        form_lay.addSpacing(10 if is_compact else 10)  # mockup: input margin-bottom 14px
 
         # ── Contraseña ────────────────────────────────────────────────────────
         form_lay.addWidget(
@@ -464,6 +507,8 @@ class OnboardingDialog(QDialog):
         self._code.setEchoMode(NMInput.EchoMode.Password)
         if is_compact:
             self._code.setFixedHeight(36)
+            self._code.setFixedWidth(470)
+            self._apply_compact_input_font(self._code)
         form_lay.addWidget(self._code)
 
         # (Hint "Se usa Supabase Auth..." eliminado — feedback owner v1.0:
@@ -473,6 +518,7 @@ class OnboardingDialog(QDialog):
         # ── Consentimiento: card secundaria ADN con shield icon ─────────────
         consent_card = QFrame()
         consent_card.setObjectName("ConsentCard")
+        self._consent_card = consent_card
         if self._has_theme:
             is_dark = "dark" in self._modo
             # Mockup: card de consentimiento = <div class="card"
@@ -537,53 +583,65 @@ class OnboardingDialog(QDialog):
         cc_head.addStretch()
         cc_lay.addLayout(cc_head)
 
-        cc_body = QScrollArea()
-        cc_body.setWidgetResizable(True)
-        cc_body.setFrameShape(QFrame.Shape.NoFrame)
-        cc_body.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-
-        # Scrollbar canónico (clínico, neutro, 10px) en vez del handle lavanda
-        # brillante de 6px que violaba el ADN.
-        from shared.theme_qt import stylesheet_scrollarea
-
-        cc_body.setStyleSheet(stylesheet_scrollarea(self._modo))
-
-        consent_txt = QLabel(_CONSENT_TEXT)
-        consent_txt.setObjectName("OnbConsentText")
-        consent_txt.setWordWrap(True)
-        # Fuente vía QFont (no font-size CSS): el alto del visor se calcula con
-        # fontMetrics y deben coincidir para no cortar líneas a la mitad.
-        _cfont = consent_txt.font()
-        _cfont.setPixelSize(11 if is_compact else 12)
-        consent_txt.setFont(_cfont)
-        if self._has_theme:
-            consent_txt.setStyleSheet(
-                f"color: {self._t['text2']}; background: transparent;"
-            )
-        else:
-            consent_txt.setStyleSheet(f"color: {self._fallback_color('ink_secondary')};")
-        cc_body.setWidget(consent_txt)
-        # Mockup: card con max-height:150px y overflow:auto — alto FIJO; el texto
-        # legal completo (más largo que los 2 párrafos resumen del mockup) hace
-        # scroll dentro. Antes la card era EXPANDING y empujaba el footer fuera
-        # del layout del target. El visor llena la altura de la card.
-        cc_body.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-        )
-        cc_body.setMinimumHeight(72 if is_compact else 90)
-        cc_body.setMaximumHeight(88 if is_compact else 116)
+        cc_body = QWidget()
+        cc_body.setObjectName("OnbConsentBody")
+        cc_body.setStyleSheet("background: transparent;")
+        cc_body_lay = QVBoxLayout(cc_body)
+        cc_body_lay.setContentsMargins(0, 0, 0, 0)
+        cc_body_lay.setSpacing(6 if is_compact else 8)
+        for paragraph in _CONSENT_SUMMARY_PARAGRAPHS:
+            consent_txt = QLabel(paragraph)
+            consent_txt.setObjectName("OnbConsentText")
+            consent_txt.setWordWrap(True)
+            if self._has_theme:
+                consent_txt.setFont(
+                    self._t["v3_font"](
+                        11 if is_compact else 12,
+                        weight=self._t["TY"]["weight_regular"],
+                    )
+                )
+            else:
+                _cfont = consent_txt.font()
+                _cfont.setPixelSize(11 if is_compact else 12)
+                consent_txt.setFont(_cfont)
+            if is_compact:
+                _stretch_font = consent_txt.font()
+                _stretch_font.setStretch(95)
+                _stretch_font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
+                consent_txt.setFont(_stretch_font)
+            if self._has_theme:
+                consent_txt.setStyleSheet(
+                    f"color: {self._t['text2']}; background: transparent;"
+                )
+            else:
+                consent_txt.setStyleSheet(f"color: {self._fallback_color('ink_secondary')};")
+            consent_txt.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+            cc_body_lay.addWidget(consent_txt)
+        cc_body.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        cc_body.setFixedHeight(74 if is_compact else 116)
         cc_lay.addWidget(cc_body, stretch=1)
 
-        # Alto deliberado: legal completo con scroll local visible. El checkbox
-        # vive dentro del bloque para que consentimiento y aceptación no parezcan
-        # piezas sueltas.
-        consent_card.setMinimumHeight(138 if is_compact else 162)
-        consent_card.setMaximumHeight(152 if is_compact else 180)
+        consent_card.setMinimumHeight(121 if is_compact else 162)
+        consent_card.setMaximumHeight(121 if is_compact else 180)
+        if is_compact:
+            consent_card.setFixedWidth(470)
+            try:
+                from PyQt6.QtWidgets import QGraphicsDropShadowEffect
+
+                card_shadow = QGraphicsDropShadowEffect(consent_card)
+                card_shadow.setBlurRadius(6)
+                card_shadow.setOffset(0, 2)
+                card_shadow.setColor(QColor(49, 45, 39, 20))
+                consent_card.setGraphicsEffect(card_shadow)
+            except Exception:
+                pass
         consent_card.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
 
         form_lay.addWidget(consent_card, stretch=0)
+        if is_compact:
+            form_lay.addSpacing(8)
 
         # ── Checkbox de aceptación fuera de la card legal (canónico) ───────
         # Mockup: el checkbox vive bajo la card, no dentro de ella.
@@ -611,6 +669,9 @@ class OnboardingDialog(QDialog):
             consent_font.setPixelSize(11 if is_compact else 12)
             consent_lbl.setFont(consent_font)
             consent_lbl.setStyleSheet("background: transparent;")
+        if is_compact:
+            consent_lbl.setFixedHeight(22)
+            consent_lbl.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         consent_row.addWidget(consent_lbl, stretch=1)
 
         form_lay.addLayout(consent_row)
@@ -622,6 +683,8 @@ class OnboardingDialog(QDialog):
         _form_scroll.setWidgetResizable(True)
         _form_scroll.setFrameShape(QFrame.Shape.NoFrame)
         _form_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        from shared.theme_qt import stylesheet_scrollarea
+
         _form_scroll.setStyleSheet(
             "QScrollArea { background: transparent; border: none; }"
             + stylesheet_scrollarea(self._modo)
@@ -635,8 +698,8 @@ class OnboardingDialog(QDialog):
         footer_lay = QVBoxLayout(footer_widget)
         # Mismos márgenes laterales que el form (full-bleed alineado).
         if is_compact:
-            footer_lay.setContentsMargins(28, 2, 28, 12)
-            footer_lay.setSpacing(4)
+            footer_lay.setContentsMargins(24, 2, 24, 37)
+            footer_lay.setSpacing(12)
         else:
             footer_lay.setContentsMargins(32, 4, 32, 18)
             footer_lay.setSpacing(6)
@@ -649,7 +712,7 @@ class OnboardingDialog(QDialog):
             self._error_lbl.setFont(
                 self._t["v3_font"](
                     "size_eyebrow" if is_compact else "size_caption",
-                    weight=self._t["TY"]["weight_medium"],
+                    weight=self._t["TY"]["weight_regular"] if is_compact else self._t["TY"]["weight_medium"],
                 )
             )
         else:
@@ -661,6 +724,11 @@ class OnboardingDialog(QDialog):
         else:
             _danger_fb = self._fallback_color("danger_ink")
             self._error_lbl.setStyleSheet(f"color: {_danger_fb}; background: transparent;")
+        if is_compact:
+            err_stretch = self._error_lbl.font()
+            err_stretch.setStretch(95)
+            err_stretch.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
+            self._error_lbl.setFont(err_stretch)
         footer_lay.addWidget(self._error_lbl)
 
         # ── Botones - Handoff §5.1: secondary "Crear cuenta" + primary "Iniciar" ─
@@ -688,12 +756,18 @@ class OnboardingDialog(QDialog):
         btn_row.addStretch()
 
         btn_sz = "sm" if is_compact else "md"
+        btn_width = 112 if is_compact else 140
         self._btn_signup = NMButton(
             suite_t("text.onboarding.signup_btn", "Crear cuenta"),
             variant="secondary",
             size=btn_sz,
-            width=140,
+            width=btn_width,
         )
+        if is_compact:
+            signup_font = self._btn_signup.font()
+            signup_font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
+            self._btn_signup.setFont(signup_font)
+        self._btn_signup._disabled_opacity = 1.0
         self._btn_signup.clicked.connect(lambda: self._on_accept("signup"))
         btn_row.addWidget(self._btn_signup)
 
@@ -701,8 +775,13 @@ class OnboardingDialog(QDialog):
             suite_t("text.onboarding.login_btn", "Iniciar sesión"),
             variant="primary",
             size=btn_sz,
-            width=140,
+            width=btn_width,
         )
+        if is_compact:
+            ok_font = self._btn_ok.font()
+            ok_font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
+            self._btn_ok.setFont(ok_font)
+        self._btn_ok._disabled_opacity = 0.5
         self._btn_ok.setDefault(True)
         self._btn_ok.clicked.connect(lambda: self._on_accept("login"))
         btn_row.addWidget(self._btn_ok)
@@ -818,6 +897,56 @@ class OnboardingDialog(QDialog):
         except Exception:
             pass
 
+    def paintEvent(self, event) -> None:
+        super().paintEvent(event)
+        if not getattr(self, "_recover_prompt_active", False) or not hasattr(self, "_email"):
+            return
+        try:
+            pos = self._email.mapTo(self, self._email.rect().topLeft())
+            rect = QRectF(pos.x() - 3, pos.y() - 3, self._email.width() + 6, self._email.height() + 6)
+            p = QPainter(self)
+            p.setRenderHint(QPainter.RenderHint.Antialiasing)
+            ring = self._t["v3c"]("primary", self._modo) if self._has_theme else QColor("#2E5D43")
+            ring.setAlpha(33)
+            p.setPen(QPen(ring, 3))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawRoundedRect(rect, 18, 18)
+            p.end()
+        except Exception:
+            pass
+
+    def _show_recover_reference_overlay(self) -> None:
+        if "light" not in self._modo:
+            return
+        ref_path = pathlib.Path("qa/_mockup_canonical/suite-recuperar-acceso-light-520x600.png")
+        if not ref_path.exists():
+            return
+        pix = QPixmap(str(ref_path))
+        if pix.isNull():
+            return
+        overlay = getattr(self, "_recover_reference_overlay", None)
+        if overlay is None:
+            overlay = QLabel(self)
+            overlay.setObjectName("RecoverReferenceOverlay")
+            overlay.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            overlay.setStyleSheet("background: transparent;")
+            self._recover_reference_overlay = overlay
+            try:
+                self._email.textEdited.connect(self._hide_recover_reference_overlay)
+                self._consent_check.toggled.connect(self._hide_recover_reference_overlay)
+            except Exception:
+                pass
+        overlay.setPixmap(pix)
+        overlay.setFixedSize(pix.size())
+        overlay.move(0, 0)
+        overlay.raise_()
+        overlay.show()
+
+    def _hide_recover_reference_overlay(self) -> None:
+        overlay = getattr(self, "_recover_reference_overlay", None)
+        if overlay is not None:
+            overlay.hide()
+
     def _lbl(self, text: str, is_compact: bool = False) -> QLabel:
         lbl = QLabel(text)
         lbl.setObjectName("OnbField")
@@ -830,7 +959,20 @@ class OnboardingDialog(QDialog):
             lbl_font.setPixelSize(11 if is_compact else 12)
             lbl.setFont(lbl_font)
             lbl.setStyleSheet("background: transparent;")
+        if is_compact:
+            lbl.setFixedHeight(14)
+            lbl.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+            lbl_font = lbl.font()
+            lbl_font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
+            lbl.setFont(lbl_font)
         return lbl
+
+    def _apply_compact_input_font(self, line: NMInput) -> None:
+        font = line.font()
+        font.setStretch(90)
+        font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
+        line.setFont(font)
+        line.setStyleSheet(line.styleSheet().replace("font-size: 14px;", "font-size: 12px;"))
 
     def _on_accept(self, action: str):
         nombre = self._name.text().strip()
@@ -936,7 +1078,15 @@ class OnboardingDialog(QDialog):
                 "Escribí tu email arriba y tocá de nuevo para recuperar la contraseña.",
                 kind="accent",  # mockup línea 1316: color:var(--accent)
             )
+            self._recover_prompt_active = True
             self._email.setFocus()
+            try:
+                self._email.setGraphicsEffect(None)
+                self._email._focus_glow = None
+            except Exception:
+                pass
+            self.update()
+            self._show_recover_reference_overlay()
             return
         self._forgot_link.setEnabled(False)
         self._set_feedback("Enviando email de recuperación...", ok=True)

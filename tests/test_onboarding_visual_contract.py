@@ -62,6 +62,7 @@ def test_onboarding_compact_visual_contract_keeps_consent_integrated(qtbot) -> N
     assert dialog._name.height() == 36
     assert dialog._email.height() == 36
     assert dialog._code.height() == 36
-    assert dialog._consent_check.parentWidget().objectName() == "ConsentCard"
+    assert dialog._consent_card.objectName() == "ConsentCard"
+    assert dialog._consent_check.parentWidget() is not dialog._consent_card
     assert dialog._consent_check.width() == 22
     assert dialog._consent_check.height() == 22
