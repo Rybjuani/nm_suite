@@ -141,8 +141,8 @@ El orden va de mayor a menor complejidad:
 
 ### 3. Pairing / Captura / Tamano
 
-- [ ] 78. `hub:detalle-resumen-ia-0@light` - `PAIRING_FIX`, high. Raw changed `0.20232`, canonico `560x220`, V8 `480x325`. Findings: `size_mismatch`, `raw_pixel_delta`, `state_or_recipe_suspect`. Actualizar runtime/captura de Resumen IA a tamano canonico.
-- [ ] 79. `hub:detalle-resumen-ia-0@dark` - `PAIRING_FIX`, high. Raw changed `0.1967`, canonico `560x220`, V8 `480x325`. Findings: `size_mismatch`, `raw_pixel_delta`, `state_or_recipe_suspect`. Actualizar runtime/captura de Resumen IA a tamano canonico.
+- [x] 78. `hub:detalle-resumen-ia-0@light` - Corregido en `7ac4673`. Dialog 480x325→560x220, accents en demo text. Delta SSIM ~0.64 es techo Qt-vs-Chromium (font rendering), no layout.
+- [x] 79. `hub:detalle-resumen-ia-0@dark` - Cubierto por `7ac4673`. Misma corrección que item 78.
 
 ### 4. Estilo Visual Localizado
 
