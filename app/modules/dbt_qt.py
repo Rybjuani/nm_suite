@@ -92,8 +92,8 @@ _DBT_FAMILY_COLOR_KEYS = {
 }
 _DBT_SKILL_BAR_TOP_W = 54
 _DBT_SKILL_BAR_TOP_H = 5
-_DBT_LIBRARY_CARD_MIN_H = 116
-_DBT_LIBRARY_CARD_MAX_H = 122
+_DBT_LIBRARY_CARD_MIN_H = 107
+_DBT_LIBRARY_CARD_MAX_H = 113
 _DBT_NEED_BORDER_W = 3  # mockup l.232: .need-card{border-left:3px solid var(--brand); ...}
 _DBT_NEED_BORDER_Y = 14
 _DBT_NEED_BORDER_RADIUS = 2.5
@@ -429,7 +429,7 @@ class _SkillCard(NMCard):
         lay.addSpacing(3)
 
         family_title = _DBT_FAMILY_LONG_TITLES.get(skill["family"], "")
-        
+
         self.family_lbl = QLabel(family_title.upper())
         self.family_lbl.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
         self.family_lbl.setContentsMargins(6, 2, 6, 2)
@@ -437,19 +437,19 @@ class _SkillCard(NMCard):
         self.family_lbl.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
         lay.addWidget(self.family_lbl)
         self.family_lbl.hide()
-        
+
         self.title_lbl = QLabel(skill["title"])
         self.title_lbl.setFont(v3_font("size_h4", weight=TYPOGRAPHY["weight_bold"], serif=True))
         self.title_lbl.setWordWrap(True)
         self.title_lbl.setMaximumHeight(34)
         lay.addWidget(self.title_lbl)
-        
+
         self.summary_lbl = QLabel(skill["summary"])
         self.summary_lbl.setFont(qfont("size_small"))
         self.summary_lbl.setWordWrap(True)
         self.summary_lbl.setMaximumHeight(46)
         lay.addWidget(self.summary_lbl)
-        
+
         info_lay = QHBoxLayout()
         info_lay.setSpacing(14)
 
@@ -790,21 +790,47 @@ class _PracticeModalScrim(QWidget):
         pix = parent.grab()
         # mockup backdrop-filter:blur(3px) — se aplica sobre el snapshot del
         # parent antes del tinte del scrim para reproducir el defocus del fondo.
+        # El QGraphicsBlurEffect oscurece los bordes del pixmap porque la kernel
+        # de blur no tiene soporte completo en los extremos (→ vignette edge).
+        # Para reproducir el clamp-to-edge del CSS blur, extendemos el pixmap
+        # por _SCRIM_BLUR_RADIUS*4 px en cada lado antes de blur y luego
+        # recortamos de vuelta al tamaño original.
         if self._SCRIM_BLUR_RADIUS > 0:
             from PyQt6.QtWidgets import QGraphicsBlurEffect, QGraphicsScene, QGraphicsPixmapItem
+            pad = self._SCRIM_BLUR_RADIUS * 4
+            pw, ph = pix.width(), pix.height()
+            padded = QPixmap(pw + 2 * pad, ph + 2 * pad)
+            pp = QPainter(padded)
+            # Fill with edge-replicated content to simulate clamp-to-edge
+            pp.drawPixmap(pad, pad, pix)
+            # Top strip: replicate top row
+            pp.drawPixmap(pad, 0, pix.copy(0, 0, pw, 1).scaled(pw, pad))
+            # Bottom strip: replicate bottom row
+            pp.drawPixmap(pad, ph + pad, pix.copy(0, ph - 1, pw, 1).scaled(pw, pad))
+            # Left strip: replicate left column
+            pp.drawPixmap(0, pad, pix.copy(0, 0, 1, ph).scaled(pad, ph))
+            # Right strip: replicate right column
+            pp.drawPixmap(pw + pad, pad, pix.copy(pw - 1, 0, 1, ph).scaled(pad, ph))
+            # Corners
+            top_left = pix.copy(0, 0, 1, 1).scaled(pad, pad)
+            pp.drawPixmap(0, 0, top_left)
+            pp.drawPixmap(pw + pad, 0, pix.copy(pw - 1, 0, 1, 1).scaled(pad, pad))
+            pp.drawPixmap(0, ph + pad, pix.copy(0, ph - 1, 1, 1).scaled(pad, pad))
+            pp.drawPixmap(pw + pad, ph + pad, pix.copy(pw - 1, ph - 1, 1, 1).scaled(pad, pad))
+            pp.end()
             scene = QGraphicsScene()
-            item = QGraphicsPixmapItem(pix)
+            item = QGraphicsPixmapItem(padded)
             blur = QGraphicsBlurEffect()
             blur.setBlurRadius(self._SCRIM_BLUR_RADIUS)
             blur.setBlurHints(QGraphicsBlurEffect.BlurHint.QualityHint)
             item.setGraphicsEffect(blur)
             scene.addItem(item)
-            blurred = QPixmap(pix.size())
-            bp = QPainter(blurred)
+            blurred_padded = QPixmap(padded.size())
+            bp = QPainter(blurred_padded)
             bp.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-            scene.render(bp, QRectF(0, 0, pix.width(), pix.height()), QRectF(0, 0, pix.width(), pix.height()))
+            scene.render(bp, QRectF(0, 0, padded.width(), padded.height()), QRectF(0, 0, padded.width(), padded.height()))
             bp.end()
-            pix = blurred
+            pix = blurred_padded.copy(pad, pad, pw, ph)
         tinted = QPixmap(pix.size())
         p = QPainter(tinted)
         p.drawPixmap(0, 0, pix)
@@ -986,8 +1012,8 @@ class ModuloDBT(NMModule):
         self._library_container.setStyleSheet("background: transparent;")
         self._library_grid = QGridLayout(self._library_container)
         self._library_grid.setContentsMargins(0, 0, 8, 0)
-        self._library_grid.setHorizontalSpacing(12)
-        self._library_grid.setVerticalSpacing(12)
+        self._library_grid.setHorizontalSpacing(10)
+        self._library_grid.setVerticalSpacing(10)
         self._library_grid.setAlignment(Qt.AlignmentFlag.AlignTop)
         for col in range(3):
             self._library_grid.setColumnStretch(col, 1)
@@ -1020,13 +1046,14 @@ class ModuloDBT(NMModule):
                 
     def _show_modal(self, content, max_width: int):
         """Muestra `content` en el overlay modal (scrim + card centrada),
-        dejando el fondo dimmed sin controles interactivos visibles detrás."""
-        self._set_modal_background_controls_visible(False)
+        dejando el fondo dimmed con controles visibles pero no interactivos."""
         if self._modal_scrim is None:
             self._modal_scrim = _PracticeModalScrim(self._content, self._modo)
-        # Captura el fondo ANTES de mostrar el scrim para que el tinte compósite
-        # correctamente incluso en el renderer offscreen de Qt.
+        # Captura el fondo ANTES de ocultar controles para que los tabs aparezcan
+        # dimmed en el scrim (igual que el mockup). El scrim cubre los controles
+        # reales, haciéndolos no interactivos sin necesidad de ocultarlos.
         self._modal_scrim.capture_background()
+        self._set_modal_background_controls_visible(False)
         self._modal_scrim.set_content(content, max_width)
         self._modal_scrim.setGeometry(self._content.rect())
         self._modal_scrim.show()
