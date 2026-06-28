@@ -361,7 +361,7 @@ class DetallePacienteView(QWidget):
         self._btn_resumen_ia.setText("Resumen IA")
 
         host = self.window() or self
-        dialog = NMDialog("", modo=self._modo, width=480, parent=host)
+        dialog = NMDialog("", modo=self._modo, width=560, parent=host)
         self._resumen_dialog = dialog
         dialog.closed.connect(lambda: setattr(self, "_resumen_dialog", None))
         dialog._title.hide()
@@ -371,9 +371,9 @@ class DetallePacienteView(QWidget):
             while panel_lay.count():
                 panel_lay.takeAt(0)
             panel_lay.setContentsMargins(
-                V3_SP["3xl"], V3_SP["3xl"], V3_SP["3xl"], V3_SP["3xl"]
+                V3_SP["lg"], V3_SP["xs"], V3_SP["lg"], V3_SP["sm"]
             )
-            panel_lay.setSpacing(V3_SP["md"])
+            panel_lay.setSpacing(V3_SP["xs"])
 
         # 2026-06-24: mockup Resumen IA — eyebrow UPPERCASE del nombre del
         # paciente sobre el título del diálogo. Antes era title-case en
@@ -403,14 +403,13 @@ class DetallePacienteView(QWidget):
             )
             lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
             panel_lay.addWidget(lbl)
-        panel_lay.addSpacing(V3_SP["4xl"])
-        panel_lay.addLayout(dialog._footer_row)
         panel_lay.addStretch(1)
+        panel_lay.addLayout(dialog._footer_row)
 
         # 2026-06-24: mockup Resumen IA — botón "Cerrar" filled green (primary),
         # no ghost. Antes era texto estilo ghost.
         dialog.add_footer_button("Cerrar", role="primary", callback=dialog.close)
-        dialog._panel.setFixedHeight(325)
+        dialog._panel.setFixedHeight(220)
         dialog.show_centered()
 
     def _on_resumen_ia_error(self, msg: str):

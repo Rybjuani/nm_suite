@@ -1410,9 +1410,9 @@ def _detalle_open_resumen_ia_dialog(win, qapp, action):
         return
     sample = (
         "Resumen de evidencia (muestra QA).\n\n"
-        "El paciente muestra adherencia irregular al registro de animo y "
-        "respiracion. Se observan distorsiones cognitivas recurrentes "
-        "(catastrofizacion). Sugerencia: reforzar TCC y activacion conductual."
+        "El paciente muestra adherencia irregular al registro de ánimo y "
+        "respiración. Se observan distorsiones cognitivas recurrentes "
+        "(catastrofización). Sugerencia: reforzar TCC y activación conductual."
     )
     try:
         det._show_resumen_dialog(sample)
