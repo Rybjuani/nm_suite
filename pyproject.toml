@@ -28,6 +28,12 @@ ignore = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v"
+markers = [
+  "e2e: end-to-end UX test (real Qt UI, mocked external services)",
+  "e2e_suite: end-to-end test of the Suite (patient) app",
+  "e2e_hub: end-to-end test of the Hub (professional) app",
+  "smoke: smoke test (subprocess, validates app boots)",
+]
 
 [tool.coverage.run]
 source = ["app", "hub", "shared"]
