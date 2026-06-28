@@ -58,7 +58,7 @@ El orden va de mayor a menor complejidad:
 
 ### 1. Estado, Receta O Producto
 
-- [x] 01. `suite:dbt-practice-stop@light` - Corregido en COMMIT_HASH. _PracticeModalScrim.capture_background() pre-captura el parent y aplica el tinte para que el scrim compósite correctamente en el renderer offscreen de Qt.
+- [x] 01. `suite:dbt-practice-stop@light` - Corregido en f2b896f. _PracticeModalScrim.capture_background() pre-captura el parent y aplica el tinte para que el scrim compósite correctamente en el renderer offscreen de Qt.
 - [ ] 02. `suite:onboarding-error@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.35589`, odiff `6.18`, bbox `12`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Revisar error state y footer (checkbox movido 023b9680).
 - [ ] 03. `suite:recuperar-acceso@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.35191`, odiff `5.24`, bbox `12`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Alinear estado recuperar acceso con canonico; revisar foco/input y copy de error.
 - [x] 04. `suite:onboarding@light` - Parcial `023b9680`. Checkbox movido fuera de consent_card (estructura canonica); divergencia restante: texto legal más extenso que mockup.
@@ -66,7 +66,7 @@ El orden va de mayor a menor complejidad:
 - [ ] 06. `suite:registro-step3-filled@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.26556`, odiff `3.29`, bbox `3`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Alinear contenido prellenado, textarea, contador y posicion de botones.
 - [ ] 07. `suite:registro@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.2591`, odiff `2.16`, bbox `3`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Revisar step inicial situacion, card, textarea, counter y boton siguiente.
 - [ ] 08. `suite:registro-step2-distortions@dark` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.24881`, odiff `3.4`, bbox `58`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Igualar estructura de step 2 dark y posicion de tip card.
-- [x] 09. `suite:dbt-practice-stop@dark` - Corregido en COMMIT_HASH. Misma corrección de scrim que item 01; mismo codigo.
+- [x] 09. `suite:dbt-practice-stop@dark` - Corregido en f2b896f. Misma corrección de scrim que item 01; mismo codigo.
 - [x] 10. `suite:timer-running@light` - Corregido en `023b9680`. Helper _timer_snap_to_initial resetea display a 25:00; estado=Sesión en curso + pausa icon.
 - [x] 11. `suite:timer-paused@light` - Corregido en `023b9680`. Helper _timer_set_paused_display fija remaining_sec=912 (15:12); estado=En pausa + play icon.
 - [ ] 12. `suite:registro-step1-emotion-otro@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.19019`, odiff `5.63`, bbox `3`. Findings: `raw_pixel_delta`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Corregir chips de emocion, estado `Otro`, slider y input.
