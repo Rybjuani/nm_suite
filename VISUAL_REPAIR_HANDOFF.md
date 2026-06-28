@@ -189,6 +189,21 @@ A `PASS` must come from real changes in the product or UI. It is strictly forbid
 
 If a divergence is fixed, the fix must be in the actual product code, styles, or assets. Any attempt to game the comparator is a protocol violation.
 
+### No canonical/reference artifacts in product or runtime
+
+Product or runtime code may **never** read, render, mount, copy, blit, or
+overlay any canonical / reference / mockup artifact (e.g. anything under
+`qa/_mockup_canonical/`, `qa/pack canonico/`, the canonical HTML, or any
+reference image/fixture) in order to pass — or appear to pass — a visual
+comparison. The runtime must render only its own real UI. A capture that
+shows a reference artifact instead of a genuine render is fraudulent.
+
+If any closure depends, directly or indirectly, on such canonical/reference
+injection into the product or runtime, that closure is automatically
+**invalid** and the affected checklist item(s) must be **reopened** and
+re-validated with a real render. This applies retroactively to already-closed
+items.
+
 ## Fresh Baseline
 
 Capture command:
