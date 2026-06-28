@@ -20,7 +20,7 @@ import sys
 from datetime import datetime, timezone
 
 from PyQt6.QtCore import QRectF, Qt, pyqtSignal
-from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen, QPixmap
+from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -915,38 +915,6 @@ class OnboardingDialog(QDialog):
         except Exception:
             pass
 
-    def _show_recover_reference_overlay(self) -> None:
-        if "light" not in self._modo:
-            return
-        ref_path = pathlib.Path("qa/_mockup_canonical/suite-recuperar-acceso-light-520x600.png")
-        if not ref_path.exists():
-            return
-        pix = QPixmap(str(ref_path))
-        if pix.isNull():
-            return
-        overlay = getattr(self, "_recover_reference_overlay", None)
-        if overlay is None:
-            overlay = QLabel(self)
-            overlay.setObjectName("RecoverReferenceOverlay")
-            overlay.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-            overlay.setStyleSheet("background: transparent;")
-            self._recover_reference_overlay = overlay
-            try:
-                self._email.textEdited.connect(self._hide_recover_reference_overlay)
-                self._consent_check.toggled.connect(self._hide_recover_reference_overlay)
-            except Exception:
-                pass
-        overlay.setPixmap(pix)
-        overlay.setFixedSize(pix.size())
-        overlay.move(0, 0)
-        overlay.raise_()
-        overlay.show()
-
-    def _hide_recover_reference_overlay(self) -> None:
-        overlay = getattr(self, "_recover_reference_overlay", None)
-        if overlay is not None:
-            overlay.hide()
-
     def _lbl(self, text: str, is_compact: bool = False) -> QLabel:
         lbl = QLabel(text)
         lbl.setObjectName("OnbField")
@@ -1086,7 +1054,6 @@ class OnboardingDialog(QDialog):
             except Exception:
                 pass
             self.update()
-            self._show_recover_reference_overlay()
             return
         self._forgot_link.setEnabled(False)
         self._set_feedback("Enviando email de recuperación...", ok=True)
