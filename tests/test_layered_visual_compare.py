@@ -105,3 +105,6 @@ def test_compare_sources_writes_reports(tmp_path):
     assert Path(reports["json"]).exists()
     payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
     assert payload["summary"]["pass"] == 1
+    assert payload["authority"] == "LAYERED_VISUAL_COMPARE"
+    assert payload["handoff_closure_allowed"] is False
+    assert "Zip inputs are archive/forensics only" in payload["source_policy"]

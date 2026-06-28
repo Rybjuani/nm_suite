@@ -31,6 +31,12 @@ _NAME_RE = re.compile(r"^(suite|hub)-(.+)-(light|dark)-(\d+x\d+)\.png$")
 _DEFAULT_MIN_SSIM = 0.92
 _DEFAULT_MAX_MEAN_ABS_DIFF = 0.035
 _DEFAULT_MAX_CHANGED_PIXEL_RATIO = 0.08
+_LEGACY_GATE_WARNING = (
+    "WARNING: diff_fidelity/odiff is a legacy pixel-diff signal, not visual "
+    "fidelity approval. Do not mark VISUAL_REPAIR_HANDOFF.md items PASS, "
+    "STALE, or complete from this report. Use qa/layered_visual_compare.py "
+    "against fresh qa/_captures_v8 and inspect the side-by-side panels."
+)
 
 
 @dataclass(frozen=True)
@@ -266,6 +272,10 @@ def _write_reports(rows: list[dict], out_dir: Path, thresholds: FidelityThreshol
         "# Fidelity diff report",
         "",
         f"Generated: {_dt.datetime.now().isoformat(timespec='seconds')}",
+        "",
+        "Handoff policy:",
+        f"- {_LEGACY_GATE_WARNING}",
+        "- HANDOFF_CLOSURE_ALLOWED: NO",
         "",
         "Acceptance gate:",
         f"- SSIM >= {thresholds.min_ssim:g}",
@@ -503,6 +513,8 @@ def main() -> int:
 
     print("=" * 60)
     print("FIDELITY DIFF")
+    print("HANDOFF_CLOSURE_ALLOWED: NO")
+    print(_LEGACY_GATE_WARNING)
     print(
         "Gate:                "
         f"SSIM>={thresholds.min_ssim:g}, "

@@ -56,6 +56,13 @@ _DEFAULT_OUT = _PROJ / "qa" / "_captures_v8"
 _DEFAULT_RES = ["960x600"]
 _THEME_MAP = {"light": "light_hybrid", "dark": "dark_hybrid"}
 _CHILD_PREFIX = "popup"
+_VISUAL_FIDELITY_GATE = "NOT_A_GATE_USE_LAYERED_VISUAL_COMPARE"
+_HANDOFF_CLOSURE_WARNING = (
+    "capture_v8 produces fresh technical captures only. Do not mark "
+    "VISUAL_REPAIR_HANDOFF.md items complete from CAPTURE_MANIFEST alone; "
+    "run qa/layered_visual_compare.py against qa/_mockup_canonical and "
+    "qa/_captures_v8, then inspect the panels."
+)
 
 _STATUS_CAPTURED_VALID = "CAPTURED_VALID"
 _STATUS_CAPTURE_FAILED = "CAPTURE_FAILED"
@@ -1849,6 +1856,9 @@ def _finalize_evidence(results: list[dict], out_dir: Path) -> dict[str, Any]:
         "semantic_visual_review": "NOT_RUN",
         "visual_review_outcome": "REVIEW_INCOMPLETE",
         "technical_capture_only": True,
+        "handoff_closure_allowed": False,
+        "visual_fidelity_gate": _VISUAL_FIDELITY_GATE,
+        "closure_warning": _HANDOFF_CLOSURE_WARNING,
         "state_valid_capture_count": sum(
             1 for result in results if result.get("state_evidence_valid")
         ),
@@ -2825,6 +2835,9 @@ def main() -> int:
         "cwd": str(_PROJ),
         "isolation_scope": "fresh_window_per_recipe" if args._child_single else "subprocess_per_recipe",
         "auto_residual_popup_capture": False,
+        "handoff_closure_allowed": False,
+        "visual_fidelity_gate": _VISUAL_FIDELITY_GATE,
+        "closure_warning": _HANDOFF_CLOSURE_WARNING,
         "success": success,
         "failed": failed,
         "total": total,
@@ -2849,6 +2862,9 @@ def main() -> int:
     print("TECHNICAL_CAPTURE_ONLY")
     print("Semantic visual review: NOT_RUN")
     print("Visual review outcome: REVIEW_INCOMPLETE")
+    print("HANDOFF_CLOSURE_ALLOWED: NO")
+    print(f"Visual fidelity gate: {_VISUAL_FIDELITY_GATE}")
+    print(_HANDOFF_CLOSURE_WARNING)
     print("=" * 60)
 
     return 0 if failed == 0 else 1

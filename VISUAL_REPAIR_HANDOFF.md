@@ -1,171 +1,194 @@
 # Visual Repair Handoff
 
-Branch base: `main`
+Status: RESET on 2026-06-28 after a false stale/pass closure.
+Branch base: `main`.
 
-Este handoff viene de comparar:
+Read first: `VISUAL_QA_AGENT_PROTOCOL.md`.
 
-- Canonico: `C:\Users\nosom\Desktop\_mockup_canonical.zip`
-- Runtime V8: `C:\Users\nosom\Desktop\captures_v8_2026-06-28_031100.zip`
-- Comparador: `qa/layered_visual_compare.py`
+## Reset Reason
 
-Resultado base: 86/86 superficies con divergencia o necesidad de revision.
+The prior checked items in this file are not trusted. Many were closed as
+`STALE: fidelity PASS al recapturar`, but that evidence came from auxiliary or
+incomplete signals, not from the layered comparator plus manual review. Those
+closures are invalid until revalidated with the workflow below.
 
-Resumen:
+Forbidden closure words/reasons: `STALE`, `fidelity PASS`, `diff_fidelity PASS`,
+`capture_v8 success`, zip-based comparison, or any report marked
+`HANDOFF_CLOSURE_ALLOWED: NO`.
 
-- `STATE_RECIPE_OR_PRODUCT_FIX`: 38
-- `LAYOUT_FIX`: 39
-- `PAIRING_FIX`: 2
-- `VISUAL_STYLE_REVIEW`: 7
-- Casos que el gate QA viejo dejaba pasar: 83
+## Active Sources
 
-## Workflow Obligatorio
+- Canonical images: `qa/_mockup_canonical/`
+- Canonical HTML: `qa/pack canonico/neuromood-mockup_reparado.html`
+- Runtime captures: fresh full run in `qa/_captures_v8/`
+- Comparator: `qa/layered_visual_compare.py`
+- Fresh report used to seed this handoff:
+  `reports/qa/layered_visual_compare_fresh/LAYERED_VISUAL_REPORT.json`
 
-1. Trabajar desde `main` actualizado.
-2. Elegir un item sin marcar de esta lista.
-3. Reparar solo ese item o una familia estrechamente acoplada.
-4. Regenerar la captura afectada o correr el comparador por capas.
-5. Marcar el checkbox como completado en este archivo, agregando commit hash y breve nota.
-6. Hacer commit por cada fix o familia pequena de fixes.
-7. Push a `main`.
+Do not use desktop zips as operational evidence. They are archival only.
 
-No editar `qa/_mockup_canonical/` para hacer pasar el test. El canonico vigente es fuente de verdad.
+## Fresh Baseline
 
-Comando de referencia para regenerar el reporte amplio:
+Capture command:
+
+```powershell
+.\.venv\Scripts\python.exe qa\capture_v8.py --all --clean --out-dir qa\_captures_v8
+```
+
+Capture result:
+
+- Generated: `2026-06-28T11:30:56.170088`
+- Git short head at capture time: `80561110`
+- Saved captures: 86
+- Failed captures: 0
+- Manifest status: `TECHNICAL_CAPTURE_ONLY`, `REVIEW_INCOMPLETE`,
+  `HANDOFF_CLOSURE_ALLOWED: NO`
+
+Comparator command:
 
 ```powershell
 .\.venv\Scripts\python.exe qa\layered_visual_compare.py `
-  --canonical "C:\Users\nosom\Desktop\_mockup_canonical.zip" `
-  --actual "C:\Users\nosom\Desktop\captures_v8_2026-06-28_031100.zip" `
-  --out-dir reports\qa\layered_zip_compare_20260628
+  --canonical qa\_mockup_canonical `
+  --actual qa\_captures_v8 `
+  --out-dir reports\qa\layered_visual_compare_fresh
 ```
 
-Artefactos locales utiles, si existen:
+Comparator result:
 
-- `reports/qa/layered_zip_compare_20260628/LAYERED_VISUAL_REPORT.md`
-- `reports/qa/layered_zip_compare_20260628/panels/`
-- `reports/manual_zip_compare_20260628/manual_review/index.html`
+- Total: 86
+- Pass: 0
+- Real divergences/review items: 86
+- High severity: 36
+- Medium severity: 50
+- State or recipe suspects: 40
+- QA missed raw/layout: 85
+- Buckets: `STATE_RECIPE_OR_PRODUCT_FIX` 40, `LAYOUT_FIX` 38,
+  `VISUAL_STYLE_REVIEW` 8
 
-## Orden De Reparacion
+## Required Closure Evidence
 
-El orden va de mayor a menor complejidad:
+An item may be changed from `[ ]` to `[x]` only when its note includes:
 
-1. Estado/receta/producto: la pantalla probablemente llega a otro estado, otro dato demo, otro step, otro timer, otro filtro o hay diferencias de estructura funcional.
-2. Layout estructural: la pantalla llega al estado correcto pero el esqueleto, columnas, contenedores, cards o empty states no calzan.
-3. Pairing/captura: nombre, selector o tamano runtime no empareja con el canonico.
-4. Estilo visual localizado: spacing/color/tipo/card visual con menor riesgo funcional.
+- Fix commit hash.
+- Fresh capture command for that exact surface or tightly coupled family.
+- Fresh layered comparator report path.
+- Exact key status is `PASS`, or the owner explicitly accepts the remaining
+  divergence.
+- One short manual side-by-side confirmation from the panel.
+
+If any evidence is missing, leave the checkbox open and add a note.
+
+## Repair Order
+
+Work from higher to lower complexity:
+
+1. `STATE_RECIPE_OR_PRODUCT_FIX`: state, recipe, data, timer, filter, modal, or
+   product structure probably differs.
+2. `LAYOUT_FIX`: state likely matches, but geometry, cards, columns, spacing, or
+   empty states differ.
+3. `PAIRING_FIX`: capture name, size, or selector mismatch. None in this fresh
+   baseline.
+4. `VISUAL_STYLE_REVIEW`: localized visual style, color, text rendering, or
+   spacing differences after structure is correct.
 
 ## Checklist
 
-### 1. Estado, Receta O Producto
+### STATE_RECIPE_OR_PRODUCT_FIX (40)
 
-- [x] 01. `suite:dbt-practice-stop@light` - Corregido en f2b896f. _PracticeModalScrim.capture_background() pre-captura el parent y aplica el tinte para que el scrim compósite correctamente en el renderer offscreen de Qt.
-- [x] 02. `suite:onboarding-error@light` - Parcial `5f0add1`. Checkbox ahora desmarcado (canónico); borde rose en campo Nombre. Divergencia restante: texto legal más extenso (decisión de producto).
-- [x] 03. `suite:recuperar-acceso@light` - STALE: fidelity PASS al recapturar.
-- [x] 04. `suite:onboarding@light` - Parcial `023b9680`. Checkbox movido fuera de consent_card (estructura canonica); divergencia restante: texto legal más extenso que mockup.
-- [x] 05. `suite:registro-step2-distortions@light` - STALE: fidelity PASS al recapturar.
-- [x] 06. `suite:registro-step3-filled@light` - STALE: fidelity PASS al recapturar.
-- [x] 07. `suite:registro@light` - STALE: fidelity PASS al recapturar.
-- [x] 08. `suite:registro-step2-distortions@dark` - STALE: fidelity PASS al recapturar.
-- [x] 09. `suite:dbt-practice-stop@dark` - Corregido en f2b896f. Misma corrección de scrim que item 01; mismo codigo.
-- [x] 10. `suite:timer-running@light` - Corregido en `023b9680`. Helper _timer_snap_to_initial resetea display a 25:00; estado=Sesión en curso + pausa icon.
-- [x] 11. `suite:timer-paused@light` - Corregido en `023b9680`. Helper _timer_set_paused_display fija remaining_sec=912 (15:12); estado=En pausa + play icon.
-- [x] 12. `suite:registro-step1-emotion-otro@light` - STALE: fidelity PASS al recapturar.
-- [x] 13. `suite:onboarding-error@dark` - Cubierto por `5f0add1`. Misma corrección que item 02; dark theme usa el mismo recipe.
-- [x] 14. `suite:recuperar-acceso@dark` - STALE: fidelity PASS al recapturar.
-- [x] 15. `suite:actividades-marked-hice@light` - STALE: fidelity PASS al recapturar.
-- [x] 16. `suite:respiracion-paused@light` - Corregido en `023b9680`. Helper _respiracion_set_paused_display → CRONO 01:32, CICLOS 4 (coincide canonico).
-- [x] 17. `suite:avisos-filter-activos@light` - STALE: fidelity PASS al recapturar.
-- [x] 18. `suite:onboarding@dark` - STALE: fidelity PASS al recapturar.
-- [x] 19. `suite:respiracion-running@light` - Corregido en `3f48360`. Eliminado NMCard wrapper de la práctica; contenido flota sobre fondo beige como en el canónico.
-- [x] 20. `suite:avisos-today@light` - STALE: fidelity PASS al recapturar.
-- [x] 21. `suite:actividades-filtered@light` - Corregido en `023b9680`. Cambia categoria a Fisica, corrige canonicalizacion de label; muestra Caminata 20 min.
-- [x] 22. `suite:avisos-filter-activos@dark` - STALE: fidelity PASS al recapturar.
-- [x] 23. `suite:registro-step1-emotion-otro@dark` - STALE: fidelity PASS al recapturar.
-- [x] 24. `suite:actividades-marked-hice@dark` - STALE: fidelity PASS al recapturar.
-- [x] 25. `suite:registro-step1-emotion@dark` - STALE: fidelity PASS al recapturar.
-- [x] 26. `suite:registro-step1-emotion@light` - STALE: fidelity PASS al recapturar.
-- [x] 27. `suite:avisos-today@dark` - STALE: fidelity PASS al recapturar.
-- [x] 28. `suite:respiracion-paused@dark` - Cubierto por `023b9680`. Mismo helper _respiracion_set_paused_display que item 16; dark theme usa el mismo código.
-- [x] 29. `suite:registro-step3-filled@dark` - STALE: fidelity PASS al recapturar.
-- [x] 30. `suite:respiracion-running@dark` - Cubierto por `3f48360`. Misma corrección que item 19; dark theme usa el mismo código.
-- [x] 31. `suite:registro@dark` - STALE: fidelity PASS al recapturar.
-- [x] 32. `suite:registro-success@dark` - STALE: fidelity PASS al recapturar.
-- [x] 33. `suite:avisos-search@light` - STALE: fidelity PASS al recapturar.
-- [x] 34. `suite:actividades-filtered@dark` - Cubierto por `023b9680`. Misma receta y canonicalización de categoría que item 21; dark theme usa el mismo código.
-- [x] 35. `suite:avisos-search@dark` - STALE: fidelity PASS al recapturar.
-- [x] 36. `suite:timer-running@dark` - Cubierto por `023b9680`. Misma receta y helpers que item 10; dark theme usa el mismo código.
-- [x] 37. `suite:timer-paused@dark` - Cubierto por `023b9680`. Misma receta y helpers que item 11; dark theme usa el mismo código.
-- [x] 38. `suite:registro-success@light` - STALE: fidelity PASS al recapturar.
+- [ ] `suite:dbt-practice-stop@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,odiff_delta; changed=0.70399; odiff=8.83; bbox=64; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-practice-stop_light.png`.
+- [ ] `suite:recuperar-acceso@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.3327; odiff=5.47; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_recuperar-acceso_light.png`.
+- [ ] `suite:onboarding-error@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.33185; odiff=6.07; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding-error_light.png`.
+- [ ] `suite:registro-step2-distortions@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.32214; odiff=3.16; bbox=13; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step2-distortions_light.png`.
+- [ ] `suite:onboarding@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.3006; odiff=5.64; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding_light.png`.
+- [ ] `suite:registro-step3-filled@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.26556; odiff=3.29; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step3-filled_light.png`.
+- [ ] `suite:registro@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.2591; odiff=2.16; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro_light.png`.
+- [ ] `suite:registro-step2-distortions@dark` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.24881; odiff=3.4; bbox=58; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step2-distortions_dark.png`.
+- [ ] `suite:timer-running@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.21044; odiff=1.98; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-running_light.png`.
+- [ ] `suite:timer-paused@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.20767; odiff=2.07; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-paused_light.png`.
+- [ ] `suite:dbt-practice-stop@dark` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.1998; odiff=2.56; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-practice-stop_dark.png`.
+- [ ] `suite:recuperar-acceso@dark` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.19032; odiff=5.3; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_recuperar-acceso_dark.png`.
+- [ ] `suite:registro-step1-emotion-otro@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.19019; odiff=5.63; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step1-emotion-otro_light.png`.
+- [ ] `suite:onboarding-error@dark` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.18894; odiff=5.8; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding-error_dark.png`.
+- [ ] `suite:actividades-marked-hice@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.18298; odiff=2.4; bbox=11; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades-marked-hice_light.png`.
+- [ ] `suite:onboarding@dark` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.17923; odiff=5.29; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding_dark.png`.
+- [ ] `suite:avisos-filter-activos@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.17762; odiff=1.85; bbox=11; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_avisos-filter-activos_light.png`.
+- [ ] `hub:detalle-resumen-ia-0@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.16481; odiff=7.34; bbox=0; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-resumen-ia-0_light.png`.
+- [ ] `hub:detalle-resumen-ia-0@dark` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.16215; odiff=7.3; bbox=0; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-resumen-ia-0_dark.png`.
+- [ ] `suite:avisos-today@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.15675; odiff=1.69; bbox=11; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_avisos-today_light.png`.
+- [ ] `suite:actividades-filtered@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.1523; odiff=1.7; bbox=11; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades-filtered_light.png`.
+- [ ] `suite:avisos-filter-activos@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.14595; odiff=1.97; bbox=220; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_avisos-filter-activos_dark.png`.
+- [ ] `suite:registro-step1-emotion-otro@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.14207; odiff=5.64; bbox=60; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step1-emotion-otro_dark.png`.
+- [ ] `suite:actividades-marked-hice@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.13978; odiff=2.54; bbox=19; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades-marked-hice_dark.png`.
+- [ ] `suite:registro-step1-emotion@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.13432; odiff=5.46; bbox=60; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step1-emotion_dark.png`.
+- [ ] `suite:registro-step1-emotion@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.12876; odiff=5.44; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step1-emotion_light.png`.
+- [ ] `suite:avisos-today@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.12776; odiff=1.81; bbox=296; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_avisos-today_dark.png`.
+- [ ] `suite:registro-step3-filled@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.10273; odiff=3.34; bbox=74; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step3-filled_dark.png`.
+- [ ] `suite:registro@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.09228; odiff=2.14; bbox=74; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro_dark.png`.
+- [ ] `suite:respiracion-paused@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.09105; odiff=1.55; bbox=23; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion-paused_dark.png`.
+- [ ] `suite:respiracion-running@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08741; odiff=1.58; bbox=23; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion-running_dark.png`.
+- [ ] `suite:registro-success@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08708; odiff=1.03; bbox=131; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-success_dark.png`.
+- [ ] `suite:respiracion-paused@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08584; odiff=1.48; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion-paused_light.png`.
+- [ ] `suite:avisos-search@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08577; odiff=0.99; bbox=11; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_avisos-search_light.png`.
+- [ ] `suite:respiracion-running@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08381; odiff=1.5; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion-running_light.png`.
+- [ ] `suite:actividades-filtered@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.07988; odiff=1.78; bbox=19; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades-filtered_dark.png`.
+- [ ] `suite:avisos-search@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.06724; odiff=1.1; bbox=448; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_avisos-search_dark.png`.
+- [ ] `suite:timer-running@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.06445; odiff=2.07; bbox=21; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-running_dark.png`.
+- [ ] `suite:timer-paused@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.06273; odiff=2.16; bbox=21; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-paused_dark.png`.
+- [ ] `suite:registro-success@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.06139; odiff=1.0; bbox=13; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-success_light.png`.
 
-### 2. Layout Estructural
+### LAYOUT_FIX (38)
 
-- [x] 39. `hub:textos-globales@light` - STALE: fidelity PASS al recapturar (divergencia en datos, no en código).
-- [x] 40. `hub:detalle-plan-timer@dark` - STALE: fidelity PASS al recapturar.
-- [x] 41. `hub:detalle-plan-rutina@dark` - STALE: fidelity PASS al recapturar.
-- [x] 42. `hub:detalle-plan-timer@light` - STALE: fidelity PASS al recapturar.
-- [x] 43. `hub:detalle-plan-rutina@light` - STALE: fidelity PASS al recapturar.
-- [x] 44. `hub:detalle@dark` - STALE: fidelity PASS al recapturar.
-- [x] 45. `suite:home@light` - Corregido en `a8c4fd6`. Hero compactado (maxH 178→138, margins 18→10, gap 18→12, top 24→16).
-- [x] 46. `hub:detalle@light` - STALE: fidelity PASS al recapturar.
-- [x] 47. `suite:home-no-score@light` - Cubierto por `a8c4fd6`. Misma corrección que item 45.
-- [x] 48. `hub:detalle-plan-activacion@dark` - STALE: fidelity PASS al recapturar.
-- [x] 49. `hub:detalle-plan-activacion@light` - STALE: fidelity PASS al recapturar.
-- [x] 50. `hub:pacientes@light` - STALE: fidelity PASS al recapturar.
-- [x] 51. `hub:textos-globales@dark` - STALE: fidelity PASS al recapturar.
-- [x] 52. `suite:home@dark` - Cubierto por `a8c4fd6`. Misma corrección que item 45.
-- [x] 53. `suite:home-no-score@dark` - Cubierto por `a8c4fd6`. Misma corrección que item 45.
-- [x] 54. `hub:pacientes@dark` - STALE: fidelity PASS al recapturar.
-- [x] 55. `hub:pacientes-empty@light` - STALE: fidelity PASS al recapturar.
-- [x] 56. `suite:timer@light` - STALE: fidelity PASS al recapturar.
-- [x] 57. `suite:avisos@light` - STALE: fidelity PASS al recapturar.
-- [x] 58. `suite:respiracion@light` - Corregido en `3f48360`. Eliminado NMCard wrapper; layout ahora flat sobre fondo.
-- [x] 59. `suite:avisos@dark` - STALE: fidelity PASS al recapturar.
-- [x] 60. `suite:animo@dark` - STALE: fidelity PASS al recapturar.
-- [x] 61. `suite:dbt-library@dark` - STALE: fidelity PASS al recapturar.
-- [x] 62. `suite:actividades@dark` - STALE: fidelity PASS al recapturar.
-- [x] 63. `hub:pacientes-empty@dark` - STALE: fidelity PASS al recapturar.
-- [x] 64. `suite:dbt-now@dark` - STALE: fidelity PASS al recapturar.
-- [x] 65. `suite:respiracion@dark` - Cubierto por `3f48360`. Misma corrección que item 58; dark theme usa el mismo código.
-- [x] 66. `suite:rutina-add-task@dark` - STALE: fidelity PASS al recapturar.
-- [x] 67. `suite:rutina-all-completed@dark` - STALE: fidelity PASS al recapturar.
-- [x] 68. `suite:rutina@dark` - STALE: fidelity PASS al recapturar.
-- [x] 69. `suite:timer@dark` - STALE: fidelity PASS al recapturar.
-- [x] 70. `suite:timer-empty@light` - STALE: fidelity PASS al recapturar.
-- [x] 71. `suite:rutina-empty@light` - STALE: fidelity PASS al recapturar.
-- [x] 72. `suite:actividades-empty@light` - STALE: fidelity PASS al recapturar.
-- [x] 73. `suite:avisos-empty@light` - STALE: fidelity PASS al recapturar.
-- [x] 74. `suite:timer-empty@dark` - STALE: fidelity PASS al recapturar.
-- [x] 75. `suite:actividades-empty@dark` - STALE: fidelity PASS al recapturar.
-- [x] 76. `suite:rutina-empty@dark` - STALE: fidelity PASS al recapturar.
-- [x] 77. `suite:avisos-empty@dark` - STALE: fidelity PASS al recapturar.
+- [ ] `hub:textos-globales@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.64067; odiff=2.09; bbox=17; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_textos-globales_light.png`.
+- [ ] `hub:detalle-plan-timer@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.45219; odiff=6.04; bbox=143; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-timer_dark.png`.
+- [ ] `hub:detalle-plan-rutina@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.44947; odiff=5.25; bbox=151; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-rutina_dark.png`.
+- [ ] `hub:detalle-plan-timer@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.44912; odiff=5.96; bbox=142; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-timer_light.png`.
+- [ ] `hub:detalle-plan-rutina@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.44284; odiff=5.05; bbox=150; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-rutina_light.png`.
+- [ ] `hub:detalle@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.42572; odiff=5.24; bbox=111; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle_dark.png`.
+- [ ] `hub:detalle@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.41556; odiff=5.06; bbox=110; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle_light.png`.
+- [ ] `hub:detalle-plan-activacion@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.38631; odiff=3.75; bbox=43; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-activacion_dark.png`.
+- [ ] `suite:home@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.38609; odiff=4.65; bbox=24; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_home_light.png`.
+- [ ] `suite:home-no-score@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.3842; odiff=3.84; bbox=24; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_home-no-score_light.png`.
+- [ ] `hub:detalle-plan-activacion@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.37762; odiff=3.61; bbox=42; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-activacion_light.png`.
+- [ ] `hub:pacientes@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.36517; odiff=4.73; bbox=89; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_pacientes_light.png`.
+- [ ] `hub:textos-globales@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.36355; odiff=2.49; bbox=17; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_textos-globales_dark.png`.
+- [ ] `suite:home@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.29231; odiff=4.78; bbox=25; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_home_dark.png`.
+- [ ] `suite:home-no-score@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.29109; odiff=4.03; bbox=25; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_home-no-score_dark.png`.
+- [ ] `hub:pacientes@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.28366; odiff=4.93; bbox=105; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_pacientes_dark.png`.
+- [ ] `hub:pacientes-empty@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.22697; odiff=1.25; bbox=42; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_pacientes-empty_light.png`.
+- [ ] `suite:timer@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.21179; odiff=2.0; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer_light.png`.
+- [ ] `suite:avisos@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.20995; odiff=2.07; bbox=11; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_avisos_light.png`.
+- [ ] `suite:avisos@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.17693; odiff=2.24; bbox=144; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_avisos_dark.png`.
+- [ ] `suite:animo@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.1705; odiff=2.78; bbox=27; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_animo_dark.png`.
+- [ ] `suite:dbt-library@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.15236; odiff=3.34; bbox=60; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-library_dark.png`.
+- [ ] `suite:actividades@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.14331; odiff=2.61; bbox=19; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades_dark.png`.
+- [ ] `hub:pacientes-empty@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.12378; odiff=1.35; bbox=43; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_pacientes-empty_dark.png`.
+- [ ] `suite:dbt-now@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.11628; odiff=2.18; bbox=162; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-now_dark.png`.
+- [ ] `suite:respiracion@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.10211; odiff=1.58; bbox=23; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion_dark.png`.
+- [ ] `suite:rutina-add-task@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.09569; odiff=2.81; bbox=211; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_rutina-add-task_dark.png`.
+- [ ] `suite:rutina-all-completed@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.09193; odiff=3.23; bbox=211; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_rutina-all-completed_dark.png`.
+- [ ] `suite:rutina@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.08561; odiff=2.52; bbox=211; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_rutina_dark.png`.
+- [ ] `suite:timer@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.06578; odiff=2.08; bbox=21; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer_dark.png`.
+- [ ] `suite:timer-empty@light` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.04063; odiff=1.17; bbox=299; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-empty_light.png`.
+- [ ] `suite:rutina-empty@light` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.04036; odiff=0.95; bbox=332; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_rutina-empty_light.png`.
+- [ ] `suite:actividades-empty@light` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.0403; odiff=0.89; bbox=335; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades-empty_light.png`.
+- [ ] `suite:avisos-empty@light` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.04028; odiff=0.93; bbox=335; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_avisos-empty_light.png`.
+- [ ] `suite:timer-empty@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.03361; odiff=1.33; bbox=299; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-empty_dark.png`.
+- [ ] `suite:actividades-empty@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.03241; odiff=0.95; bbox=337; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades-empty_dark.png`.
+- [ ] `suite:rutina-empty@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.0324; odiff=1.03; bbox=333; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_rutina-empty_dark.png`.
+- [ ] `suite:avisos-empty@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.03234; odiff=0.99; bbox=337; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_avisos-empty_dark.png`.
 
-### 3. Pairing / Captura / Tamano
+### PAIRING_FIX (0)
 
-- [x] 78. `hub:detalle-resumen-ia-0@light` - Corregido en `7ac4673`. Dialog 480x325→560x220, accents en demo text. Delta SSIM ~0.64 es techo Qt-vs-Chromium (font rendering), no layout.
-- [x] 79. `hub:detalle-resumen-ia-0@dark` - Cubierto por `7ac4673`. Misma corrección que item 78.
+No pairing or size mismatches in the fresh baseline. Keep this section so new
+size/name regressions have a clear home.
 
-### 4. Estilo Visual Localizado
+### VISUAL_STYLE_REVIEW (8)
 
-- [x] 80. `suite:animo@light` - STALE: fidelity PASS al recapturar.
-- [x] 81. `suite:actividades@light` - STALE: fidelity PASS al recapturar.
-- [x] 82. `suite:rutina-add-task@light` - STALE: fidelity PASS al recapturar.
-- [x] 83. `suite:rutina-all-completed@light` - STALE: fidelity PASS al recapturar.
-- [x] 84. `suite:rutina@light` - STALE: fidelity PASS al recapturar.
-- [x] 85. `suite:dbt-library@light` - STALE: fidelity PASS al recapturar.
-- [x] 86. `suite:dbt-now@light` - STALE: fidelity PASS al recapturar.
-
-## Criterio De Cierre
-
-Un item se puede marcar como completado solo si:
-
-- La pantalla llega al mismo estado semantico que el canonico.
-- El tamano de captura coincide con el canonico.
-- El panel comparativo muestra mejora clara.
-- El comparador por capas deja de marcar el item o baja a una divergencia justificada y documentada.
-- Se agrego o actualizo test cuando el fix toca estado/receta/funcionalidad.
-
-Formato sugerido al marcar:
-
-```markdown
-- [x] 01. `surface@theme` - Corregido en `<commit>`. Nota breve.
-```
+- [ ] `suite:animo@light` - severity=high; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.20312; odiff=4.4; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_animo_light.png`.
+- [ ] `suite:actividades@light` - severity=high; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.18503; odiff=2.44; bbox=11; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades_light.png`.
+- [ ] `suite:rutina-add-task@light` - severity=medium; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.17631; odiff=2.55; bbox=13; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_rutina-add-task_light.png`.
+- [ ] `suite:rutina-all-completed@light` - severity=medium; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.15314; odiff=2.87; bbox=2; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_rutina-all-completed_light.png`.
+- [ ] `suite:rutina@light` - severity=medium; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.1456; odiff=2.21; bbox=13; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_rutina_light.png`.
+- [ ] `suite:dbt-library@light` - severity=medium; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.13701; odiff=3.19; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-library_light.png`.
+- [ ] `suite:dbt-now@light` - severity=medium; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.10742; odiff=1.9; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-now_light.png`.
+- [ ] `suite:respiracion@light` - severity=medium; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.09777; odiff=1.5; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion_light.png`.

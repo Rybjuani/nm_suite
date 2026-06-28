@@ -1,8 +1,16 @@
 # COVERAGE GAPS AUDIT — nm_suite (post-calibración spec_generator)
 
+> HISTORICAL SNAPSHOT ONLY. This file records the 2026-06-27 VAS/spec_generator
+> calibration state and is not an active visual approval source.
+> Do not mark `VISUAL_REPAIR_HANDOFF.md` items PASS, STALE, or complete from
+> this document. Current visual handoff decisions require
+> `qa/layered_visual_compare.py` against `qa/_mockup_canonical` and a fresh full
+> `qa/_captures_v8` run, plus manual panel review.
+
 **Fecha:** 2026-06-27
 **Branch:** fix/visual-divergences-minimax-night
-**Estado:** 86/86 PASS (100%). Calibración spec_generator completada.
+**Estado historico no activo:** 86/86 PASS (100%) en VAS/spec_generator.
+No usar como aprobacion visual actual.
 
 ## Calibración VAS — resumen (44→86 PASS, +42 superficies)
 
@@ -398,7 +406,7 @@ El VAS no puede detectar sombras de color negro sobre fondo negro. Estos SHADOW_
 
 ---
 
-## 11. Calibración spec_generator completada (2026-06-27) — 86/86 PASS
+## 11. Calibración spec_generator completada (2026-06-27) — snapshot historico, no gate actual
 
 ### 11.1. Baseline → resultado
 
@@ -431,7 +439,7 @@ El VAS no puede detectar sombras de color negro sobre fondo negro. Estos SHADOW_
 
 ### 11.3. Cobertura post-calibración
 
-Éste 100% PASS documenta que el producto coincide con el canonical en todos los 86 estados definidos, dentro de las métricas medibles por VAS (color de regiones, presencia de sombras, layout top-margin). NO garantiza:
+Este snapshot historico de 100% PASS documenta que el producto coincidia con el canonical en todos los 86 estados definidos, dentro de las metricas medibles por VAS (color de regiones, presencia de sombras, layout top-margin). NO garantiza:
 - Microestados (hover, focus, scroll, loading, error)  
 - Tipografía y peso de fuentes
 - Bordes y radios de esquina

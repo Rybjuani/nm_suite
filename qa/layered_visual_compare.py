@@ -30,6 +30,12 @@ _NAME_RE = re.compile(r"^(suite|hub)-(.+)-(light|dark)-(\d+)x(\d+)\.png$")
 _DEFAULT_CANONICAL = _PROJ / "qa" / "_mockup_canonical"
 _DEFAULT_ACTUAL = _PROJ / "qa" / "_captures_v8"
 _DEFAULT_OUT = _PROJ / "reports" / "qa" / "layered_visual_compare"
+_HANDOFF_AUTHORITY = "LAYERED_VISUAL_COMPARE"
+_ACTIVE_SOURCE_POLICY = (
+    "Use qa/_mockup_canonical plus a fresh complete qa/_captures_v8 run for "
+    "operational handoff decisions. Zip inputs are archive/forensics only and "
+    "must not close VISUAL_REPAIR_HANDOFF.md items."
+)
 
 _STATE_SENSITIVE_EXACT = {
     "suite:actividades-filtered",
@@ -249,7 +255,15 @@ def compare_sources(
         )
         results.append(result)
 
-    reports = write_reports(results, out_dir, thresholds)
+    reports = write_reports(
+        results,
+        out_dir,
+        thresholds,
+        canonical_source=canonical_source,
+        actual_source=actual_source,
+        canonical_root=canonical_root,
+        actual_root=actual_root,
+    )
     return results, reports
 
 
@@ -367,6 +381,11 @@ def write_reports(
     results: list[LayeredResult],
     out_dir: Path,
     thresholds: LayeredThresholds,
+    *,
+    canonical_source: Path | None = None,
+    actual_source: Path | None = None,
+    canonical_root: Path | None = None,
+    actual_root: Path | None = None,
 ) -> dict[str, str]:
     out_dir.mkdir(parents=True, exist_ok=True)
     json_path = out_dir / "LAYERED_VISUAL_REPORT.json"
@@ -375,6 +394,19 @@ def write_reports(
 
     payload = {
         "generated_at": _dt.datetime.now().isoformat(timespec="seconds"),
+        "authority": _HANDOFF_AUTHORITY,
+        "source_policy": _ACTIVE_SOURCE_POLICY,
+        "handoff_closure_allowed": _report_closure_allowed(
+            results,
+            canonical_source,
+            actual_source,
+        ),
+        "sources": _source_metadata(
+            canonical_source,
+            actual_source,
+            canonical_root,
+            actual_root,
+        ),
         "thresholds": thresholds.to_dict(),
         "summary": _summary(results),
         "results": [result.to_dict() for result in results],
@@ -388,7 +420,15 @@ def write_reports(
         for result in results:
             writer.writerow(result.csv_row())
 
-    md_path.write_text(_markdown_report(results, thresholds), encoding="utf-8")
+    md_path.write_text(
+        _markdown_report(
+            results,
+            thresholds,
+            canonical_source=canonical_source,
+            actual_source=actual_source,
+        ),
+        encoding="utf-8",
+    )
     return {"json": str(json_path), "csv": str(csv_path), "markdown": str(md_path)}
 
 
@@ -833,12 +873,80 @@ def _summary(results: list[LayeredResult]) -> dict[str, Any]:
     return summary
 
 
-def _markdown_report(results: list[LayeredResult], thresholds: LayeredThresholds) -> str:
+def _source_metadata(
+    canonical_source: Path | None,
+    actual_source: Path | None,
+    canonical_root: Path | None,
+    actual_root: Path | None,
+) -> dict[str, Any]:
+    return {
+        "canonical_source": str(canonical_source) if canonical_source else "",
+        "actual_source": str(actual_source) if actual_source else "",
+        "canonical_root": str(canonical_root) if canonical_root else "",
+        "actual_root": str(actual_root) if actual_root else "",
+        "canonical_source_kind": _source_kind(canonical_source),
+        "actual_source_kind": _source_kind(actual_source),
+        "active_repo_pair": _is_active_source_pair(canonical_source, actual_source),
+    }
+
+
+def _source_kind(source: Path | None) -> str:
+    if source is None:
+        return "unknown"
+    source = Path(source)
+    if source.suffix.lower() == ".zip":
+        return "zip_archive"
+    if source.is_dir():
+        return "directory"
+    return "unknown"
+
+
+def _is_active_source_pair(canonical_source: Path | None, actual_source: Path | None) -> bool:
+    if canonical_source is None or actual_source is None:
+        return False
+    try:
+        return (
+            Path(canonical_source).resolve() == _DEFAULT_CANONICAL.resolve()
+            and Path(actual_source).resolve() == _DEFAULT_ACTUAL.resolve()
+        )
+    except OSError:
+        return False
+
+
+def _report_closure_allowed(
+    results: list[LayeredResult],
+    canonical_source: Path | None,
+    actual_source: Path | None,
+) -> bool:
+    if not _is_active_source_pair(canonical_source, actual_source):
+        return False
+    if not results:
+        return False
+    if any(result.status in {"MISSING_ACTUAL", "EXTRA_ACTUAL", "SIZE_MISMATCH"} for result in results):
+        return False
+    return not any(result.real_divergence for result in results)
+
+
+def _markdown_report(
+    results: list[LayeredResult],
+    thresholds: LayeredThresholds,
+    *,
+    canonical_source: Path | None = None,
+    actual_source: Path | None = None,
+) -> str:
     summary = _summary(results)
+    handoff_closure_allowed = _report_closure_allowed(results, canonical_source, actual_source)
     lines = [
         "# Layered visual comparison report",
         "",
         f"Generated: {_dt.datetime.now().isoformat(timespec='seconds')}",
+        "",
+        "Handoff policy:",
+        f"- Authority: {_HANDOFF_AUTHORITY}",
+        f"- {_ACTIVE_SOURCE_POLICY}",
+        f"- Canonical source: `{canonical_source or _DEFAULT_CANONICAL}`",
+        f"- Actual source: `{actual_source or _DEFAULT_ACTUAL}`",
+        f"- HANDOFF_CLOSURE_ALLOWED: {'YES' if handoff_closure_allowed else 'NO'}",
         "",
         "Thresholds:",
         f"- raw SSIM >= {thresholds.min_ssim:g}",
@@ -918,6 +1026,14 @@ def main() -> int:
     summary = _summary(results)
     print("=" * 60)
     print("LAYERED VISUAL COMPARE")
+    print(f"Authority:             {_HANDOFF_AUTHORITY}")
+    print(f"Canonical source:      {Path(args.canonical)}")
+    print(f"Actual source:         {Path(args.actual)}")
+    print(
+        "Handoff closure:      "
+        f"{'YES' if _report_closure_allowed(results, Path(args.canonical), Path(args.actual)) else 'NO'}"
+    )
+    print(f"Source policy:         {_ACTIVE_SOURCE_POLICY}")
     print(f"Total:                 {summary['total']}")
     print(f"Pass:                  {summary['pass']}")
     print(f"Review/divergence:     {summary['real_divergence']}")
