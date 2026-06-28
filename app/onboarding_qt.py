@@ -577,15 +577,18 @@ class OnboardingDialog(QDialog):
         # Alto deliberado: legal completo con scroll local visible. El checkbox
         # vive dentro del bloque para que consentimiento y aceptación no parezcan
         # piezas sueltas.
-        consent_card.setMinimumHeight(170 if is_compact else 200)
-        consent_card.setMaximumHeight(186 if is_compact else 222)
+        consent_card.setMinimumHeight(138 if is_compact else 162)
+        consent_card.setMaximumHeight(152 if is_compact else 180)
         consent_card.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
 
-        # ── Checkbox de aceptación dentro de la card legal ─────────────────
+        form_lay.addWidget(consent_card, stretch=0)
+
+        # ── Checkbox de aceptación fuera de la card legal (canónico) ───────
+        # Mockup: el checkbox vive bajo la card, no dentro de ella.
         consent_row = QHBoxLayout()
-        consent_row.setContentsMargins(0, 0, 0, 0)
+        consent_row.setContentsMargins(2, 0, 0, 0)
         consent_row.setSpacing(9)  # mockup: gap:9px
         self._consent_check = _ConsentCheckBox(self._modo)
         consent_row.addWidget(self._consent_check, alignment=Qt.AlignmentFlag.AlignTop)
@@ -610,9 +613,7 @@ class OnboardingDialog(QDialog):
             consent_lbl.setStyleSheet("background: transparent;")
         consent_row.addWidget(consent_lbl, stretch=1)
 
-        cc_lay.addLayout(consent_row)
-
-        form_lay.addWidget(consent_card, stretch=0)
+        form_lay.addLayout(consent_row)
 
         # Scroll area para el formulario: el contenido puede exceder 600px en
         # pantallas compactas o cuando la card legal es grande. Los botones viven

@@ -286,9 +286,10 @@ _RECIPES: dict[str, dict[str, dict]] = {
             "parent": "respiracion",
             "actions": [{"action": "navigate", "view": "respiracion"},
                         {"action": "call", "func": "_respiracion_start"},
-                        {"action": "drain", "cycles": 8},
+                        {"action": "drain", "cycles": 4},
                         {"action": "call", "func": "_respiracion_pause"},
-                        {"action": "drain", "cycles": 6},
+                        {"action": "call", "func": "_respiracion_set_paused_display"},
+                        {"action": "drain", "cycles": 4},
                         {"action": "capture", "view": "respiracion-paused"}],
         },
 
@@ -397,7 +398,7 @@ _RECIPES: dict[str, dict[str, dict]] = {
             "label": "Actividades + filtro con resultados",
             "parent": "actividades",
             "actions": [{"action": "navigate", "view": "actividades"},
-                        {"action": "call", "func": "_actividades_filter_category", "category": "Placer"},
+                        {"action": "call", "func": "_actividades_filter_category", "category": "Fisica"},
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "actividades-filtered"}],
         },
@@ -422,7 +423,8 @@ _RECIPES: dict[str, dict[str, dict]] = {
             "parent": "timer",
             "actions": [{"action": "navigate", "view": "timer"},
                         {"action": "call", "func": "_timer_start"},
-                        {"action": "drain", "cycles": 12},
+                        {"action": "drain", "cycles": 4},
+                        {"action": "call", "func": "_timer_snap_to_initial"},
                         {"action": "capture", "view": "timer-running"}],
         },
         "timer-paused": {
@@ -430,9 +432,10 @@ _RECIPES: dict[str, dict[str, dict]] = {
             "parent": "timer",
             "actions": [{"action": "navigate", "view": "timer"},
                         {"action": "call", "func": "_timer_start"},
-                        {"action": "drain", "cycles": 8},
+                        {"action": "drain", "cycles": 4},
                         {"action": "call", "func": "_timer_pause"},
-                        {"action": "drain", "cycles": 6},
+                        {"action": "call", "func": "_timer_set_paused_display"},
+                        {"action": "drain", "cycles": 4},
                         {"action": "capture", "view": "timer-paused"}],
         },
         # timer-preset-5min / timer-preset-45min: microestados de interacción
@@ -1073,10 +1076,12 @@ def _actividades_filter_category(win, qapp, action):
     """Aplica un filtro de categoria con resultado esperado en Actividades."""
     target = _module_target(win)
     category = str(action.get("category", "Placer"))
+    canonical_label = category  # se actualiza al label real (con tilde) si se encuentra
     tabs = getattr(target, "_category_tabs", None)
     if tabs is not None and hasattr(tabs, "_labels"):
         for idx, label in enumerate(getattr(tabs, "_labels", []) or []):
             if _norm_text(str(label)) == _norm_text(category):
+                canonical_label = str(label)  # "Física" en vez de "Fisica"
                 try:
                     tabs._current = idx
                     for btn_idx, btn in enumerate(getattr(tabs, "_btns", []) or []):
@@ -1087,7 +1092,7 @@ def _actividades_filter_category(win, qapp, action):
                     pass
                 break
     if hasattr(target, '_on_category_filter'):
-        target._on_category_filter(category)
+        target._on_category_filter(canonical_label)
     _drain(qapp, cycles=6)
 
 
@@ -1134,6 +1139,59 @@ def _timer_pause(win, qapp, action):
     if hasattr(target, '_pause'):
         target._pause()
     _drain(qapp, cycles=4)
+
+
+@_register_helper
+def _timer_snap_to_initial(win, qapp, action):
+    """Resetea el display del timer a MM:SS inicial (total_sec) para captura estable.
+
+    El QTimer 1s puede dispararse durante los drain cycles y reducir remaining_sec
+    en 1-2 segundos, produciendo 24:58 en vez del 25:00 canónico. Este helper
+    restaura el display al valor inicial sin detener el timer.
+    """
+    target = _module_target(win)
+    if hasattr(target, '_remaining_sec') and hasattr(target, '_total_sec'):
+        target._remaining_sec = target._total_sec
+    if hasattr(target, '_update_canvas'):
+        target._update_canvas()
+
+
+@_register_helper
+def _timer_set_paused_display(win, qapp, action):
+    """Fija el display del timer en 15:12 para coincidir con el estado canónico.
+
+    El canonico muestra un timer de 25 min paused a 15:12 restantes (9:48 transcurridos).
+    Setear remaining_sec directamente produce el mismo display sin depender de ticks reales.
+    """
+    target = _module_target(win)
+    if hasattr(target, '_remaining_sec'):
+        target._remaining_sec = 15 * 60 + 12  # 912 segundos = 15:12
+    if hasattr(target, '_update_canvas'):
+        target._update_canvas()
+
+
+@_register_helper
+def _respiracion_set_paused_display(win, qapp, action):
+    """Fija el estado de display de respiracion-paused al estado canonico (01:32, 4 ciclos).
+
+    El canonico muestra CRONO 01:32 y CICLOS 4 en el estado paused.
+    La receta actual pausa inmediatamente sin haber corrido suficiente tiempo real,
+    produciendo 00:00 / 0. Este helper setea el estado de display directamente.
+    """
+    target = getattr(win, '_current_module', None) or win
+    elapsed_ms = 92000  # 1 min 32 s = 92 s = 92000 ms
+    ciclos = 4
+    if hasattr(target, '_elapsed_ms'):
+        target._elapsed_ms = elapsed_ms
+    if hasattr(target, '_session_ms'):
+        target._session_ms = elapsed_ms
+    if hasattr(target, '_ciclos'):
+        target._ciclos = ciclos
+    s_total = elapsed_ms // 1000
+    if hasattr(target, '_session_lbl'):
+        target._session_lbl.setText(f"{s_total // 60:02d}:{s_total % 60:02d}")
+    if hasattr(target, '_ciclos_value_lbl'):
+        target._ciclos_value_lbl.setText(str(ciclos))
 
 
 @_register_helper
