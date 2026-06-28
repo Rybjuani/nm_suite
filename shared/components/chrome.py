@@ -40,7 +40,7 @@ def _tm() -> ThemeManager:
 
 
 _NM_CHROME_PAD_X = 16
-_NM_CHROME_HEIGHT = 44
+_NM_CHROME_HEIGHT = 49  # mockup .titlebar{padding:11px 16px} + items 26px + border ≈ 49px
 _NM_CHROME_GAP = 10
 _NM_CHROME_TITLE_GAP = 8
 _NM_CHROME_STATUS_GAP = 14

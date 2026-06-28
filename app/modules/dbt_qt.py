@@ -609,7 +609,7 @@ class _SkillPracticeView(QWidget):
         self.step_card_lay.setSpacing(8)
 
         self.step_title_lbl = QLabel()
-        self.step_title_lbl.setFont(v3_font("size_h4", weight=TYPOGRAPHY["weight_bold"], serif=True))
+        self.step_title_lbl.setFont(v3_font(19, weight=TYPOGRAPHY["weight_bold"], serif=True))
         self.step_title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)  # mockup: centrado
         self.step_card_lay.addWidget(self.step_title_lbl)
 
@@ -764,7 +764,10 @@ class _PracticeModalScrim(QWidget):
             self._content.hide()
         self._content = content
         content.setParent(self._card)
-        self._card.setMaximumWidth(max_width)
+        # mockup .modal{width:min(560px,92vw)} — width fijo, no max.
+        # Sin minimum, el card colapsa al sizeHint del contenido (~460px)
+        # generando wrapping excesivo del body vs el mockup de 560px.
+        self._card.setFixedWidth(max_width)
         self._card_lay.addWidget(content)
         content.show()
 
