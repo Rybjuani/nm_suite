@@ -270,11 +270,29 @@
   {
     "surface_key": "suite:rutina-empty@light",
     "capture_path": "qa\\_captures_v8\\suite-rutina-empty-light-960x600.png",
-    "pass_count": 3,
-    "fail_count": 0,
-    "divergences": [],
-    "summary": "suite:rutina-empty@light: 3 pass, 0 fail — CANONICAL",
-    "canonical": true
+    "pass_count": 2,
+    "fail_count": 1,
+    "divergences": [
+      {
+        "component_id": "icons",
+        "kind": "COLOR_MISMATCH",
+        "message": "Component icons color delta=13.0 (expected #d5dace, got ~#e3e5db)",
+        "severity": "high",
+        "evidence": {
+          "region": [
+            449,
+            124,
+            62,
+            61
+          ],
+          "expected": "#d5dace",
+          "actual": "#e3e5db",
+          "delta": 12.968945351885472
+        }
+      }
+    ],
+    "summary": "suite:rutina-empty@light: 2 pass, 1 fail — NEEDS_FIX",
+    "canonical": false
   },
   {
     "surface_key": "suite:actividades@light",
@@ -895,7 +913,7 @@
       {
         "component_id": "icons",
         "kind": "COLOR_MISMATCH",
-        "message": "Component icons color delta=18.0 (expected #3e3b38, got ~#232630)",
+        "message": "Component icons color delta=16.1 (expected #3e3b38, got ~#262831)",
         "severity": "high",
         "evidence": {
           "region": [
@@ -905,8 +923,8 @@
             34
           ],
           "expected": "#3e3b38",
-          "actual": "#232630",
-          "delta": 17.985777777777777
+          "actual": "#262831",
+          "delta": 16.06222222222222
         }
       }
     ],

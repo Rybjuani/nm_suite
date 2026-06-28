@@ -60,8 +60,126 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_HeroBienestar",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          68,
+          912,
+          178
+        ],
+        "severity": "medium",
+        "message": "_HeroBienestar has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          24,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          255,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          486,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          717,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          24,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          255,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          486,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          717,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 9
   },
   {
     "surface_key": "suite:home-no-score@light",
@@ -133,8 +251,126 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_HeroBienestar",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          68,
+          912,
+          178
+        ],
+        "severity": "medium",
+        "message": "_HeroBienestar has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          24,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          255,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          486,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          717,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          24,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          255,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          486,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          717,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 9
   },
   {
     "surface_key": "suite:onboarding@light",
@@ -438,8 +674,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          58,
+          425,
+          262
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_CareStatCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          332,
+          425,
+          96
+        ],
+        "severity": "medium",
+        "message": "_CareStatCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_CareStatCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          440,
+          425,
+          96
+        ],
+        "severity": "medium",
+        "message": "_CareStatCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMChartPanel",
+        "object_name": "NMCard",
+        "rect": [
+          463,
+          58,
+          473,
+          528
+        ],
+        "severity": "medium",
+        "message": "NMChartPanel has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:dbt-now@light",
@@ -511,8 +800,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_NeedCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          150,
+          450,
+          144
+        ],
+        "severity": "medium",
+        "message": "_NeedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_NeedCard",
+        "object_name": "NMCard",
+        "rect": [
+          486,
+          150,
+          450,
+          144
+        ],
+        "severity": "medium",
+        "message": "_NeedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_NeedCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          306,
+          450,
+          144
+        ],
+        "severity": "medium",
+        "message": "_NeedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_NeedCard",
+        "object_name": "NMCard",
+        "rect": [
+          486,
+          306,
+          450,
+          144
+        ],
+        "severity": "medium",
+        "message": "_NeedCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:dbt-library@light",
@@ -586,8 +928,113 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          162,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          329,
+          162,
+          294,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          635,
+          162,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          296,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          329,
+          296,
+          294,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          635,
+          296,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          430,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          329,
+          430,
+          294,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 8
   },
   {
     "surface_key": "suite:dbt-practice-stop@light",
@@ -672,8 +1119,126 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          60,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          329,
+          60,
+          294,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          635,
+          60,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          194,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          329,
+          194,
+          294,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          635,
+          194,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          328,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          329,
+          328,
+          294,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          287,
+          239,
+          387,
+          150
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 9
   },
   {
     "surface_key": "suite:respiracion@light",
@@ -764,8 +1329,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          918,
+          462
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          322,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          630,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:respiracion-running@light",
@@ -856,8 +1474,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          918,
+          462
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          322,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          630,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:respiracion-paused@light",
@@ -948,8 +1619,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          918,
+          462
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          322,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          630,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:registro@light",
@@ -1040,27 +1764,40 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          214,
+          932,
+          324
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:registro-step1-emotion@light",
-    "widgets_audited": 49,
+    "widgets_audited": 32,
     "component_counts": {
       "NeuroMoodApp": 1,
       "_ShellWidget": 1,
       "NMWindowChrome": 1,
       "QWidget": 7,
       "QPushButton": 1,
-      "QLabel": 12,
+      "QLabel": 4,
       "_ChromeThemeToggle": 1,
       "NMFadeWidget": 1,
       "ModuloRegistroTCC": 1,
       "NMStepper": 1,
       "NMCard": 1,
-      "QStackedWidget": 2,
-      "_EmotionTile": 8,
-      "NMIcon": 8,
+      "QStackedWidget": 1,
+      "_EmotionChip": 8,
       "NMHeatBar": 1,
       "NMButton": 2
     },
@@ -1091,14 +1828,6 @@
       },
       "NMHeatBar": {
         "count": 1,
-        "with_shadow": 0,
-        "qss_radii": [],
-        "shape_attrs": [
-          "None"
-        ]
-      },
-      "NMIcon": {
-        "count": 8,
         "with_shadow": 0,
         "qss_radii": [],
         "shape_attrs": [
@@ -1139,36 +1868,51 @@
           "None"
         ]
       },
-      "_EmotionTile": {
+      "_EmotionChip": {
         "count": 8,
-        "with_shadow": 8,
-        "qss_radii": [],
+        "with_shadow": 0,
+        "qss_radii": [
+          999.0
+        ],
         "shape_attrs": [
           "None"
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          188,
+          932,
+          364
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:registro-step1-emotion-otro@light",
-    "widgets_audited": 47,
+    "widgets_audited": 34,
     "component_counts": {
       "NeuroMoodApp": 1,
       "_ShellWidget": 1,
       "NMWindowChrome": 1,
-      "QWidget": 7,
+      "QWidget": 8,
       "QPushButton": 1,
-      "QLabel": 11,
+      "QLabel": 4,
       "_ChromeThemeToggle": 1,
       "NMFadeWidget": 1,
       "ModuloRegistroTCC": 1,
       "NMStepper": 1,
       "NMCard": 1,
-      "QStackedWidget": 2,
-      "_EmotionTile": 7,
-      "NMIcon": 7,
+      "QStackedWidget": 1,
+      "_EmotionChip": 8,
       "NMInput": 1,
       "NMHeatBar": 1,
       "NMButton": 2
@@ -1200,14 +1944,6 @@
       },
       "NMHeatBar": {
         "count": 1,
-        "with_shadow": 0,
-        "qss_radii": [],
-        "shape_attrs": [
-          "None"
-        ]
-      },
-      "NMIcon": {
-        "count": 7,
         "with_shadow": 0,
         "qss_radii": [],
         "shape_attrs": [
@@ -1258,17 +1994,33 @@
           "None"
         ]
       },
-      "_EmotionTile": {
-        "count": 7,
-        "with_shadow": 7,
-        "qss_radii": [],
+      "_EmotionChip": {
+        "count": 8,
+        "with_shadow": 0,
+        "qss_radii": [
+          999.0
+        ],
         "shape_attrs": [
           "None"
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          188,
+          932,
+          364
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:registro-step2-distortions@light",
@@ -1378,8 +2130,35 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          182,
+          932,
+          372
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_TipCard",
+        "object_name": "NMCard",
+        "rect": [
+          485,
+          364,
+          429,
+          101
+        ],
+        "severity": "medium",
+        "message": "_TipCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 2
   },
   {
     "surface_key": "suite:registro-step3-filled@light",
@@ -1470,37 +2249,41 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          214,
+          932,
+          324
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:registro-success@light",
-    "widgets_audited": 26,
+    "widgets_audited": 22,
     "component_counts": {
       "NeuroMoodApp": 1,
       "_ShellWidget": 1,
       "NMWindowChrome": 1,
-      "QWidget": 8,
+      "QWidget": 7,
       "QPushButton": 1,
       "QLabel": 5,
       "_ChromeThemeToggle": 1,
       "NMFadeWidget": 1,
       "ModuloRegistroTCC": 1,
-      "NMStepper": 1,
       "NMCard": 1,
       "QStackedWidget": 1,
-      "NMTextArea": 1,
-      "NMButton": 2
+      "_NMSuccessIconChip": 1
     },
     "inventory": {
-      "NMButton": {
-        "count": 2,
-        "with_shadow": 2,
-        "qss_radii": [],
-        "shape_attrs": [
-          "None"
-        ]
-      },
       "NMCard": {
         "count": 1,
         "with_shadow": 1,
@@ -1513,24 +2296,6 @@
         "count": 1,
         "with_shadow": 0,
         "qss_radii": [],
-        "shape_attrs": [
-          "None"
-        ]
-      },
-      "NMStepper": {
-        "count": 1,
-        "with_shadow": 0,
-        "qss_radii": [],
-        "shape_attrs": [
-          "None"
-        ]
-      },
-      "NMTextArea": {
-        "count": 1,
-        "with_shadow": 0,
-        "qss_radii": [
-          16.0
-        ],
         "shape_attrs": [
           "None"
         ]
@@ -1560,10 +2325,32 @@
         "shape_attrs": [
           "None"
         ]
+      },
+      "_NMSuccessIconChip": {
+        "count": 1,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "None"
+        ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          157,
+          932,
+          324
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:rutina@light",
@@ -1670,8 +2457,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_HeroDayCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          104
+        ],
+        "severity": "medium",
+        "message": "_HeroDayCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          160,
+          307,
+          182
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          327,
+          160,
+          306,
+          242
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          639,
+          160,
+          307,
+          154
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:rutina-all-completed@light",
@@ -1778,8 +2618,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_HeroDayCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          104
+        ],
+        "severity": "medium",
+        "message": "_HeroDayCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          160,
+          307,
+          182
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          327,
+          160,
+          306,
+          242
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          639,
+          160,
+          307,
+          154
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:rutina-add-task@light",
@@ -1907,8 +2800,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_HeroDayCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          104
+        ],
+        "severity": "medium",
+        "message": "_HeroDayCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          160,
+          307,
+          182
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          327,
+          160,
+          306,
+          242
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          639,
+          160,
+          307,
+          154
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:rutina-empty@light",
@@ -1924,7 +2870,7 @@
       "NMFadeWidget": 1,
       "ModuloRutina": 1,
       "NMEmptyState": 1,
-      "QFrame": 1
+      "_NMEmptyStateChip": 1
     },
     "inventory": {
       "NMEmptyState": {
@@ -1967,6 +2913,14 @@
         "qss_radii": [],
         "shape_attrs": [
           "None"
+        ]
+      },
+      "_NMEmptyStateChip": {
+        "count": 1,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "18"
         ]
       }
     },
@@ -2092,8 +3046,74 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          116
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          172,
+          463,
+          188
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          483,
+          172,
+          463,
+          188
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          367,
+          463,
+          186
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          483,
+          366,
+          463,
+          188
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 5
   },
   {
     "surface_key": "suite:actividades-marked-hice@light",
@@ -2214,8 +3234,74 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          116
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          173,
+          463,
+          186
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          483,
+          172,
+          463,
+          188
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          367,
+          463,
+          186
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          483,
+          366,
+          463,
+          188
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 5
   },
   {
     "surface_key": "suite:actividades-filtered@light",
@@ -2325,8 +3411,35 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          116
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          172,
+          466,
+          188
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 2
   },
   {
     "surface_key": "suite:actividades-empty@light",
@@ -2343,7 +3456,7 @@
       "ModuloActividades": 1,
       "QScrollArea": 1,
       "NMEmptyState": 1,
-      "QFrame": 1
+      "_NMEmptyStateChip": 1
     },
     "inventory": {
       "NMEmptyState": {
@@ -2386,6 +3499,14 @@
         "qss_radii": [],
         "shape_attrs": [
           "None"
+        ]
+      },
+      "_NMEmptyStateChip": {
+        "count": 1,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "18"
         ]
       }
     },
@@ -2478,8 +3599,22 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          540
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:timer-running@light",
@@ -2567,8 +3702,22 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          540
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:timer-paused@light",
@@ -2656,8 +3805,22 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          540
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:timer-empty@light",
@@ -2674,7 +3837,7 @@
       "ModuloTimer": 1,
       "NMCard": 1,
       "NMEmptyState": 1,
-      "QFrame": 1
+      "_NMEmptyStateChip": 1
     },
     "inventory": {
       "NMCard": {
@@ -2726,10 +3889,32 @@
         "shape_attrs": [
           "None"
         ]
+      },
+      "_NMEmptyStateChip": {
+        "count": 1,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "18"
+        ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          540
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:avisos@light",
@@ -3009,30 +4194,30 @@
   },
   {
     "surface_key": "suite:avisos-today@light",
-    "widgets_audited": 63,
+    "widgets_audited": 48,
     "component_counts": {
       "NeuroMoodApp": 1,
       "_ShellWidget": 1,
       "NMWindowChrome": 1,
       "QWidget": 8,
       "QPushButton": 1,
-      "QLabel": 23,
+      "QLabel": 15,
       "_ChromeThemeToggle": 1,
       "NMFadeWidget": 1,
       "ModuloAvisos": 1,
-      "QFrame": 6,
+      "QFrame": 4,
       "_StepPill": 3,
       "NMSearchInput": 1,
       "QLineEdit": 1,
       "QScrollArea": 1,
-      "_ReminderCardV3": 5,
-      "NMIcon": 5,
-      "NMButton": 3
+      "_ReminderCardV3": 3,
+      "NMIcon": 3,
+      "NMButton": 2
     },
     "inventory": {
       "NMButton": {
-        "count": 3,
-        "with_shadow": 3,
+        "count": 2,
+        "with_shadow": 2,
         "qss_radii": [],
         "shape_attrs": [
           "None"
@@ -3047,7 +4232,7 @@
         ]
       },
       "NMIcon": {
-        "count": 5,
+        "count": 3,
         "with_shadow": 0,
         "qss_radii": [],
         "shape_attrs": [
@@ -3089,8 +4274,8 @@
         ]
       },
       "_ReminderCardV3": {
-        "count": 5,
-        "with_shadow": 5,
+        "count": 3,
+        "with_shadow": 3,
         "qss_radii": [
           14.0
         ],
@@ -3117,7 +4302,7 @@
       "ModuloAvisos": 1,
       "QScrollArea": 1,
       "NMEmptyState": 1,
-      "QFrame": 1
+      "_NMEmptyStateChip": 1
     },
     "inventory": {
       "NMEmptyState": {
@@ -3160,6 +4345,14 @@
         "qss_radii": [],
         "shape_attrs": [
           "None"
+        ]
+      },
+      "_NMEmptyStateChip": {
+        "count": 1,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "18"
         ]
       }
     },
@@ -3276,8 +4469,22 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          458
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "hub:pacientes-empty@light",
@@ -3297,7 +4504,7 @@
       "NMButtonOutline": 1,
       "QScrollArea": 1,
       "NMEmptyState": 1,
-      "QFrame": 1
+      "_NMEmptyStateChip": 1
     },
     "inventory": {
       "NMBadge": {
@@ -3357,10 +4564,32 @@
         "shape_attrs": [
           "None"
         ]
+      },
+      "_NMEmptyStateChip": {
+        "count": 1,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "18"
+        ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          520
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "hub:detalle@light",
@@ -3485,8 +4714,48 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          72,
+          936,
+          98
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          232,
+          308,
+          212
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          332,
+          232,
+          616,
+          230
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 3
   },
   {
     "surface_key": "hub:detalle-plan-timer@light",
@@ -3600,8 +4869,48 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          72,
+          936,
+          98
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          232,
+          308,
+          238
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          332,
+          232,
+          616,
+          230
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 3
   },
   {
     "surface_key": "hub:detalle-plan-rutina@light",
@@ -3716,8 +5025,48 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          72,
+          936,
+          98
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          232,
+          308,
+          212
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          332,
+          232,
+          616,
+          230
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 3
   },
   {
     "surface_key": "hub:detalle-plan-activacion@light",
@@ -3832,12 +5181,52 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          72,
+          936,
+          98
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          230,
+          309,
+          340
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          331,
+          230,
+          617,
+          236
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 3
   },
   {
     "surface_key": "hub:textos-globales@light",
-    "widgets_audited": 663,
+    "widgets_audited": 664,
     "component_counts": {
       "NeuroMoodHub": 1,
       "_ShellWidget": 1,
@@ -3855,7 +5244,7 @@
       "QScrollArea": 1,
       "_TextEntryRow": 158,
       "NMInput": 154,
-      "NMButtonOutline": 4,
+      "NMButtonOutline": 5,
       "NMTextArea": 4,
       "NMButton": 1
     },
@@ -3879,7 +5268,7 @@
         ]
       },
       "NMButtonOutline": {
-        "count": 4,
+        "count": 5,
         "with_shadow": 0,
         "qss_radii": [],
         "shape_attrs": [
@@ -3954,20 +5343,17 @@
   },
   {
     "surface_key": "hub:detalle-resumen-ia-0@light",
-    "widgets_audited": 7,
+    "widgets_audited": 5,
     "component_counts": {
       "QFrame": 1,
-      "QLabel": 1,
-      "QPushButton": 2,
-      "QWidget": 2,
-      "QTextBrowser": 1
+      "QLabel": 3,
+      "QPushButton": 1
     },
     "inventory": {
       "QPushButton": {
-        "count": 2,
+        "count": 1,
         "with_shadow": 0,
         "qss_radii": [
-          12.0,
           21.0
         ],
         "shape_attrs": [
@@ -4039,8 +5425,126 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_HeroBienestar",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          68,
+          912,
+          178
+        ],
+        "severity": "medium",
+        "message": "_HeroBienestar has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          24,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          255,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          486,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          717,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          24,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          255,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          486,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          717,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 9
   },
   {
     "surface_key": "suite:home-no-score@dark",
@@ -4112,8 +5616,126 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_HeroBienestar",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          68,
+          912,
+          178
+        ],
+        "severity": "medium",
+        "message": "_HeroBienestar has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          24,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          255,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          486,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          717,
+          264,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          24,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          255,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          486,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "ModuleCard",
+        "object_name": "",
+        "rect": [
+          717,
+          432,
+          219,
+          156
+        ],
+        "severity": "medium",
+        "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 9
   },
   {
     "surface_key": "suite:onboarding@dark",
@@ -4417,8 +6039,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          58,
+          425,
+          262
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_CareStatCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          332,
+          425,
+          96
+        ],
+        "severity": "medium",
+        "message": "_CareStatCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_CareStatCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          440,
+          425,
+          96
+        ],
+        "severity": "medium",
+        "message": "_CareStatCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMChartPanel",
+        "object_name": "NMCard",
+        "rect": [
+          463,
+          58,
+          473,
+          528
+        ],
+        "severity": "medium",
+        "message": "NMChartPanel has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:dbt-now@dark",
@@ -4490,8 +6165,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_NeedCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          150,
+          450,
+          144
+        ],
+        "severity": "medium",
+        "message": "_NeedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_NeedCard",
+        "object_name": "NMCard",
+        "rect": [
+          486,
+          150,
+          450,
+          144
+        ],
+        "severity": "medium",
+        "message": "_NeedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_NeedCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          306,
+          450,
+          144
+        ],
+        "severity": "medium",
+        "message": "_NeedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_NeedCard",
+        "object_name": "NMCard",
+        "rect": [
+          486,
+          306,
+          450,
+          144
+        ],
+        "severity": "medium",
+        "message": "_NeedCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:dbt-library@dark",
@@ -4565,8 +6293,113 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          162,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          329,
+          162,
+          294,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          635,
+          162,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          296,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          329,
+          296,
+          294,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          635,
+          296,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          430,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          329,
+          430,
+          294,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 8
   },
   {
     "surface_key": "suite:dbt-practice-stop@dark",
@@ -4651,8 +6484,126 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          60,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          329,
+          60,
+          294,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          635,
+          60,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          194,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          329,
+          194,
+          294,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          635,
+          194,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          24,
+          328,
+          293,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SkillCard",
+        "object_name": "NMCard",
+        "rect": [
+          329,
+          328,
+          294,
+          122
+        ],
+        "severity": "medium",
+        "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          287,
+          239,
+          387,
+          150
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 9
   },
   {
     "surface_key": "suite:respiracion@dark",
@@ -4743,8 +6694,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          918,
+          462
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          322,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          630,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:respiracion-running@dark",
@@ -4835,8 +6839,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          918,
+          462
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          322,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          630,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:respiracion-paused@dark",
@@ -4927,8 +6984,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          918,
+          462
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          322,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          630,
+          518,
+          302,
+          72
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:registro@dark",
@@ -5019,27 +7129,40 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          214,
+          932,
+          324
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:registro-step1-emotion@dark",
-    "widgets_audited": 49,
+    "widgets_audited": 32,
     "component_counts": {
       "NeuroMoodApp": 1,
       "_ShellWidget": 1,
       "NMWindowChrome": 1,
       "QWidget": 7,
       "QPushButton": 1,
-      "QLabel": 12,
+      "QLabel": 4,
       "_ChromeThemeToggle": 1,
       "NMFadeWidget": 1,
       "ModuloRegistroTCC": 1,
       "NMStepper": 1,
       "NMCard": 1,
-      "QStackedWidget": 2,
-      "_EmotionTile": 8,
-      "NMIcon": 8,
+      "QStackedWidget": 1,
+      "_EmotionChip": 8,
       "NMHeatBar": 1,
       "NMButton": 2
     },
@@ -5070,14 +7193,6 @@
       },
       "NMHeatBar": {
         "count": 1,
-        "with_shadow": 0,
-        "qss_radii": [],
-        "shape_attrs": [
-          "None"
-        ]
-      },
-      "NMIcon": {
-        "count": 8,
         "with_shadow": 0,
         "qss_radii": [],
         "shape_attrs": [
@@ -5118,36 +7233,51 @@
           "None"
         ]
       },
-      "_EmotionTile": {
+      "_EmotionChip": {
         "count": 8,
-        "with_shadow": 8,
-        "qss_radii": [],
+        "with_shadow": 0,
+        "qss_radii": [
+          999.0
+        ],
         "shape_attrs": [
           "None"
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          188,
+          932,
+          364
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:registro-step1-emotion-otro@dark",
-    "widgets_audited": 47,
+    "widgets_audited": 34,
     "component_counts": {
       "NeuroMoodApp": 1,
       "_ShellWidget": 1,
       "NMWindowChrome": 1,
-      "QWidget": 7,
+      "QWidget": 8,
       "QPushButton": 1,
-      "QLabel": 11,
+      "QLabel": 4,
       "_ChromeThemeToggle": 1,
       "NMFadeWidget": 1,
       "ModuloRegistroTCC": 1,
       "NMStepper": 1,
       "NMCard": 1,
-      "QStackedWidget": 2,
-      "_EmotionTile": 7,
-      "NMIcon": 7,
+      "QStackedWidget": 1,
+      "_EmotionChip": 8,
       "NMInput": 1,
       "NMHeatBar": 1,
       "NMButton": 2
@@ -5179,14 +7309,6 @@
       },
       "NMHeatBar": {
         "count": 1,
-        "with_shadow": 0,
-        "qss_radii": [],
-        "shape_attrs": [
-          "None"
-        ]
-      },
-      "NMIcon": {
-        "count": 7,
         "with_shadow": 0,
         "qss_radii": [],
         "shape_attrs": [
@@ -5237,17 +7359,33 @@
           "None"
         ]
       },
-      "_EmotionTile": {
-        "count": 7,
-        "with_shadow": 7,
-        "qss_radii": [],
+      "_EmotionChip": {
+        "count": 8,
+        "with_shadow": 0,
+        "qss_radii": [
+          999.0
+        ],
         "shape_attrs": [
           "None"
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          188,
+          932,
+          364
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:registro-step2-distortions@dark",
@@ -5357,8 +7495,35 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          182,
+          932,
+          372
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_TipCard",
+        "object_name": "NMCard",
+        "rect": [
+          485,
+          364,
+          429,
+          101
+        ],
+        "severity": "medium",
+        "message": "_TipCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 2
   },
   {
     "surface_key": "suite:registro-step3-filled@dark",
@@ -5449,37 +7614,41 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          214,
+          932,
+          324
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:registro-success@dark",
-    "widgets_audited": 26,
+    "widgets_audited": 22,
     "component_counts": {
       "NeuroMoodApp": 1,
       "_ShellWidget": 1,
       "NMWindowChrome": 1,
-      "QWidget": 8,
+      "QWidget": 7,
       "QPushButton": 1,
       "QLabel": 5,
       "_ChromeThemeToggle": 1,
       "NMFadeWidget": 1,
       "ModuloRegistroTCC": 1,
-      "NMStepper": 1,
       "NMCard": 1,
       "QStackedWidget": 1,
-      "NMTextArea": 1,
-      "NMButton": 2
+      "_NMSuccessIconChip": 1
     },
     "inventory": {
-      "NMButton": {
-        "count": 2,
-        "with_shadow": 2,
-        "qss_radii": [],
-        "shape_attrs": [
-          "None"
-        ]
-      },
       "NMCard": {
         "count": 1,
         "with_shadow": 1,
@@ -5492,24 +7661,6 @@
         "count": 1,
         "with_shadow": 0,
         "qss_radii": [],
-        "shape_attrs": [
-          "None"
-        ]
-      },
-      "NMStepper": {
-        "count": 1,
-        "with_shadow": 0,
-        "qss_radii": [],
-        "shape_attrs": [
-          "None"
-        ]
-      },
-      "NMTextArea": {
-        "count": 1,
-        "with_shadow": 0,
-        "qss_radii": [
-          16.0
-        ],
         "shape_attrs": [
           "None"
         ]
@@ -5539,10 +7690,32 @@
         "shape_attrs": [
           "None"
         ]
+      },
+      "_NMSuccessIconChip": {
+        "count": 1,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "None"
+        ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          157,
+          932,
+          324
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:rutina@dark",
@@ -5649,8 +7822,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_HeroDayCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          104
+        ],
+        "severity": "medium",
+        "message": "_HeroDayCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          160,
+          307,
+          182
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          327,
+          160,
+          306,
+          242
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          639,
+          160,
+          307,
+          154
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:rutina-all-completed@dark",
@@ -5757,8 +7983,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_HeroDayCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          104
+        ],
+        "severity": "medium",
+        "message": "_HeroDayCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          160,
+          307,
+          182
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          327,
+          160,
+          306,
+          242
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          639,
+          160,
+          307,
+          154
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:rutina-add-task@dark",
@@ -5886,8 +8165,61 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_HeroDayCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          104
+        ],
+        "severity": "medium",
+        "message": "_HeroDayCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          160,
+          307,
+          182
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          327,
+          160,
+          306,
+          242
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SectionCard",
+        "object_name": "NMCard",
+        "rect": [
+          639,
+          160,
+          307,
+          154
+        ],
+        "severity": "medium",
+        "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 4
   },
   {
     "surface_key": "suite:rutina-empty@dark",
@@ -5903,7 +8235,7 @@
       "NMFadeWidget": 1,
       "ModuloRutina": 1,
       "NMEmptyState": 1,
-      "QFrame": 1
+      "_NMEmptyStateChip": 1
     },
     "inventory": {
       "NMEmptyState": {
@@ -5946,6 +8278,14 @@
         "qss_radii": [],
         "shape_attrs": [
           "None"
+        ]
+      },
+      "_NMEmptyStateChip": {
+        "count": 1,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "18"
         ]
       }
     },
@@ -6071,8 +8411,74 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          116
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          172,
+          463,
+          188
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          483,
+          172,
+          463,
+          188
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          367,
+          463,
+          186
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          483,
+          366,
+          463,
+          188
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 5
   },
   {
     "surface_key": "suite:actividades-marked-hice@dark",
@@ -6193,8 +8599,74 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          116
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          173,
+          463,
+          186
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          483,
+          172,
+          463,
+          188
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          367,
+          463,
+          186
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          483,
+          366,
+          463,
+          188
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 5
   },
   {
     "surface_key": "suite:actividades-filtered@dark",
@@ -6304,8 +8776,35 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          116
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "_SuggestedCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          172,
+          466,
+          188
+        ],
+        "severity": "medium",
+        "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 2
   },
   {
     "surface_key": "suite:actividades-empty@dark",
@@ -6322,7 +8821,7 @@
       "ModuloActividades": 1,
       "QScrollArea": 1,
       "NMEmptyState": 1,
-      "QFrame": 1
+      "_NMEmptyStateChip": 1
     },
     "inventory": {
       "NMEmptyState": {
@@ -6365,6 +8864,14 @@
         "qss_radii": [],
         "shape_attrs": [
           "None"
+        ]
+      },
+      "_NMEmptyStateChip": {
+        "count": 1,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "18"
         ]
       }
     },
@@ -6457,8 +8964,22 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          540
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:timer-running@dark",
@@ -6546,8 +9067,22 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          540
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:timer-paused@dark",
@@ -6635,8 +9170,22 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          540
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:timer-empty@dark",
@@ -6653,7 +9202,7 @@
       "ModuloTimer": 1,
       "NMCard": 1,
       "NMEmptyState": 1,
-      "QFrame": 1
+      "_NMEmptyStateChip": 1
     },
     "inventory": {
       "NMCard": {
@@ -6705,10 +9254,32 @@
         "shape_attrs": [
           "None"
         ]
+      },
+      "_NMEmptyStateChip": {
+        "count": 1,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "18"
+        ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          540
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "suite:avisos@dark",
@@ -6988,30 +9559,30 @@
   },
   {
     "surface_key": "suite:avisos-today@dark",
-    "widgets_audited": 63,
+    "widgets_audited": 48,
     "component_counts": {
       "NeuroMoodApp": 1,
       "_ShellWidget": 1,
       "NMWindowChrome": 1,
       "QWidget": 8,
       "QPushButton": 1,
-      "QLabel": 23,
+      "QLabel": 15,
       "_ChromeThemeToggle": 1,
       "NMFadeWidget": 1,
       "ModuloAvisos": 1,
-      "QFrame": 6,
+      "QFrame": 4,
       "_StepPill": 3,
       "NMSearchInput": 1,
       "QLineEdit": 1,
       "QScrollArea": 1,
-      "_ReminderCardV3": 5,
-      "NMIcon": 5,
-      "NMButton": 3
+      "_ReminderCardV3": 3,
+      "NMIcon": 3,
+      "NMButton": 2
     },
     "inventory": {
       "NMButton": {
-        "count": 3,
-        "with_shadow": 3,
+        "count": 2,
+        "with_shadow": 2,
         "qss_radii": [],
         "shape_attrs": [
           "None"
@@ -7026,7 +9597,7 @@
         ]
       },
       "NMIcon": {
-        "count": 5,
+        "count": 3,
         "with_shadow": 0,
         "qss_radii": [],
         "shape_attrs": [
@@ -7068,8 +9639,8 @@
         ]
       },
       "_ReminderCardV3": {
-        "count": 5,
-        "with_shadow": 5,
+        "count": 3,
+        "with_shadow": 3,
         "qss_radii": [
           14.0
         ],
@@ -7096,7 +9667,7 @@
       "ModuloAvisos": 1,
       "QScrollArea": 1,
       "NMEmptyState": 1,
-      "QFrame": 1
+      "_NMEmptyStateChip": 1
     },
     "inventory": {
       "NMEmptyState": {
@@ -7139,6 +9710,14 @@
         "qss_radii": [],
         "shape_attrs": [
           "None"
+        ]
+      },
+      "_NMEmptyStateChip": {
+        "count": 1,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "18"
         ]
       }
     },
@@ -7255,8 +9834,22 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          458
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "hub:pacientes-empty@dark",
@@ -7276,7 +9869,7 @@
       "NMButtonOutline": 1,
       "QScrollArea": 1,
       "NMEmptyState": 1,
-      "QFrame": 1
+      "_NMEmptyStateChip": 1
     },
     "inventory": {
       "NMBadge": {
@@ -7336,10 +9929,32 @@
         "shape_attrs": [
           "None"
         ]
+      },
+      "_NMEmptyStateChip": {
+        "count": 1,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "18"
+        ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          14,
+          50,
+          932,
+          520
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 1
   },
   {
     "surface_key": "hub:detalle@dark",
@@ -7464,8 +10079,48 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          72,
+          936,
+          98
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          232,
+          308,
+          212
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          332,
+          232,
+          616,
+          230
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 3
   },
   {
     "surface_key": "hub:detalle-plan-timer@dark",
@@ -7579,8 +10234,48 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          72,
+          936,
+          98
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          232,
+          308,
+          238
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          332,
+          232,
+          616,
+          230
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 3
   },
   {
     "surface_key": "hub:detalle-plan-rutina@dark",
@@ -7695,8 +10390,48 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          72,
+          936,
+          98
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          232,
+          308,
+          212
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          332,
+          232,
+          616,
+          230
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 3
   },
   {
     "surface_key": "hub:detalle-plan-activacion@dark",
@@ -7811,12 +10546,52 @@
         ]
       }
     },
-    "divergences": [],
-    "fail_count": 0
+    "divergences": [
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          72,
+          936,
+          98
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          12,
+          230,
+          309,
+          340
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      },
+      {
+        "kind": "RADIUS_MISSING",
+        "component": "NMCard",
+        "object_name": "NMCard",
+        "rect": [
+          331,
+          230,
+          617,
+          236
+        ],
+        "severity": "medium",
+        "message": "NMCard has no border-radius (renders as sharp rectangle)"
+      }
+    ],
+    "fail_count": 3
   },
   {
     "surface_key": "hub:textos-globales@dark",
-    "widgets_audited": 663,
+    "widgets_audited": 664,
     "component_counts": {
       "NeuroMoodHub": 1,
       "_ShellWidget": 1,
@@ -7834,7 +10609,7 @@
       "QScrollArea": 1,
       "_TextEntryRow": 158,
       "NMInput": 154,
-      "NMButtonOutline": 4,
+      "NMButtonOutline": 5,
       "NMTextArea": 4,
       "NMButton": 1
     },
@@ -7858,7 +10633,7 @@
         ]
       },
       "NMButtonOutline": {
-        "count": 4,
+        "count": 5,
         "with_shadow": 0,
         "qss_radii": [],
         "shape_attrs": [
@@ -7933,20 +10708,17 @@
   },
   {
     "surface_key": "hub:detalle-resumen-ia-0@dark",
-    "widgets_audited": 7,
+    "widgets_audited": 5,
     "component_counts": {
       "QFrame": 1,
-      "QLabel": 1,
-      "QPushButton": 2,
-      "QWidget": 2,
-      "QTextBrowser": 1
+      "QLabel": 3,
+      "QPushButton": 1
     },
     "inventory": {
       "QPushButton": {
-        "count": 2,
+        "count": 1,
         "with_shadow": 0,
         "qss_radii": [
-          12.0,
           21.0
         ],
         "shape_attrs": [
