@@ -173,7 +173,102 @@ def test_closure_false_with_panels_disabled(tmp_path, monkeypatch):
     assert "panels_disabled" in payload["handoff_closure_reason"]
 
 
-def test_closure_true_with_active_sources_and_no_divergence(tmp_path, monkeypatch):
+def test_evidence_valid_true_with_one_pass_one_fail(tmp_path, monkeypatch):
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
+    (tmp_path / "c").mkdir()
+    (tmp_path / "a").mkdir()
+    # PASS pair
+    _png(tmp_path / "c" / "suite-home-light-120x80.png")
+    _png(tmp_path / "a" / "suite-home-light-120x80.png")
+    # FAIL pair
+    _png(tmp_path / "c" / "suite-timer-running-light-120x80.png")
+    _png(tmp_path / "a" / "suite-timer-running-light-120x80.png", color=(40, 80, 160))
+
+    results, reports = compare_sources(
+        tmp_path / "c",
+        tmp_path / "a",
+        tmp_path / "out",
+        thresholds=LayeredThresholds(),
+        use_odiff=True,
+        write_panels=True,
+    )
+    payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert payload["report_evidence_valid"] is True
+    assert payload["report_evidence_reason"] is None
+    assert payload["handoff_closure_allowed"] is False
+    assert "real_divergence_present" in payload["handoff_closure_reason"]
+    assert payload["summary"]["pass"] == 1
+    assert payload["summary"]["real_divergence"] == 1
+
+
+def test_evidence_valid_false_with_non_default_thresholds(tmp_path, monkeypatch):
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
+    (tmp_path / "c").mkdir()
+    (tmp_path / "a").mkdir()
+    _png(tmp_path / "c" / "suite-home-light-120x80.png")
+    _png(tmp_path / "a" / "suite-home-light-120x80.png")
+
+    results, reports = compare_sources(
+        tmp_path / "c",
+        tmp_path / "a",
+        tmp_path / "out",
+        thresholds=LayeredThresholds(min_ssim=0.5),
+        use_odiff=True,
+        write_panels=True,
+    )
+    payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert payload["report_evidence_valid"] is False
+    assert "non_default_thresholds" in payload["report_evidence_reason"]
+    assert payload["handoff_closure_allowed"] is False
+
+
+def test_evidence_valid_false_with_odiff_disabled(tmp_path, monkeypatch):
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
+    (tmp_path / "c").mkdir()
+    (tmp_path / "a").mkdir()
+    _png(tmp_path / "c" / "suite-home-light-120x80.png")
+    _png(tmp_path / "a" / "suite-home-light-120x80.png")
+
+    results, reports = compare_sources(
+        tmp_path / "c",
+        tmp_path / "a",
+        tmp_path / "out",
+        thresholds=LayeredThresholds(),
+        use_odiff=False,
+        write_panels=True,
+    )
+    payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert payload["report_evidence_valid"] is False
+    assert "odiff_disabled" in payload["report_evidence_reason"]
+    assert payload["handoff_closure_allowed"] is False
+
+
+def test_evidence_valid_false_with_panels_disabled(tmp_path, monkeypatch):
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
+    (tmp_path / "c").mkdir()
+    (tmp_path / "a").mkdir()
+    _png(tmp_path / "c" / "suite-home-light-120x80.png")
+    _png(tmp_path / "a" / "suite-home-light-120x80.png")
+
+    results, reports = compare_sources(
+        tmp_path / "c",
+        tmp_path / "a",
+        tmp_path / "out",
+        thresholds=LayeredThresholds(),
+        use_odiff=True,
+        write_panels=False,
+    )
+    payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert payload["report_evidence_valid"] is False
+    assert "panels_disabled" in payload["report_evidence_reason"]
+    assert payload["handoff_closure_allowed"] is False
+
+
+def test_evidence_valid_and_closure_true_with_all_pass(tmp_path, monkeypatch):
     monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
     monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
     (tmp_path / "c").mkdir()
@@ -190,5 +285,7 @@ def test_closure_true_with_active_sources_and_no_divergence(tmp_path, monkeypatc
         write_panels=True,
     )
     payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert payload["report_evidence_valid"] is True
+    assert payload["report_evidence_reason"] is None
     assert payload["handoff_closure_allowed"] is True
     assert payload["handoff_closure_reason"] is None

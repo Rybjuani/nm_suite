@@ -45,7 +45,8 @@ Do not mark an item complete because of:
 - A single filtered recapture when the item belongs to a broad handoff reset.
 - Any zip-based comparison.
 - Any report whose manifest says `technical_capture_only`,
-  `REVIEW_INCOMPLETE`, or `HANDOFF_CLOSURE_ALLOWED: NO`.
+  `REVIEW_INCOMPLETE`, or `REPORT_EVIDENCE_VALID: NO`.
+- `HANDOFF_CLOSURE_ALLOWED: NO` by itself does **not** invalidate a report for closing an individual checkbox. It only means the global handoff is not yet complete because other keys still have divergences. Individual closure requires `REPORT_EVIDENCE_VALID: YES` and the exact key status `PASS`.
 - Owner acceptance, human review, or "looks good enough".
 - Acceptable residue, partial progress, or "mostly fixed".
 - Blocked / too hard / won’t fix as a closure reason.
@@ -100,7 +101,18 @@ An item can be changed from `[ ]` to `[x]` only when the note includes:
 - Fix commit hash.
 - Fresh `qa/_captures_v8` capture command used for that exact surface or family.
 - Fresh `qa/layered_visual_compare.py` report path.
+- The report must show `REPORT_EVIDENCE_VALID: YES`.
 - The exact key status is `PASS` only.
+- `HANDOFF_CLOSURE_ALLOWED: NO` is acceptable for individual closure if the only reason is that other keys remain `FAIL`; the deciding factor is the exact key `PASS` in a valid report.
+- The comparator may exit non-zero while other items remain `FAIL`; for individual closure, read the exact key status in the JSON/MD report, not the global exit code.
 - One short manual side-by-side confirmation.
 
 If any evidence is missing, leave the checkbox open and add a note.
+
+## Collateral PASS Handling
+
+- If a real product/UI fix applied for the current item makes other pending checkboxes pass, that is allowed and expected.
+- You may not jump to work another item before the current item passes.
+- After closing the current item, continue reading the checklist in order.
+- When you reach a later item that is already `PASS` from the same commit/official report, you may mark it closed with the same evidence, citing the commit and the exact key `PASS`.
+- If a shared fix worsens any previously closed key, that is a regression and must be fixed before proceeding.

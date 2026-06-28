@@ -404,10 +404,20 @@ def write_reports(
         use_odiff,
         write_panels,
     )
+    evidence = _report_evidence_valid(
+        results,
+        canonical_source,
+        actual_source,
+        thresholds,
+        use_odiff,
+        write_panels,
+    )
     payload = {
         "generated_at": _dt.datetime.now().isoformat(timespec="seconds"),
         "authority": _HANDOFF_AUTHORITY,
         "source_policy": _ACTIVE_SOURCE_POLICY,
+        "report_evidence_valid": evidence["valid"],
+        "report_evidence_reason": evidence["reason"],
         "handoff_closure_allowed": closure["allowed"],
         "handoff_closure_reason": closure["reason"],
         "sources": _source_metadata(
@@ -924,7 +934,7 @@ def _is_active_source_pair(canonical_source: Path | None, actual_source: Path | 
         return False
 
 
-def _report_closure_allowed(
+def _report_evidence_valid(
     results: list[LayeredResult],
     canonical_source: Path | None,
     actual_source: Path | None,
@@ -943,6 +953,25 @@ def _report_closure_allowed(
         reasons.append("odiff_disabled")
     if not write_panels:
         reasons.append("panels_disabled")
+    if reasons:
+        return {"valid": False, "reason": "; ".join(reasons)}
+    return {"valid": True, "reason": None}
+
+
+def _report_closure_allowed(
+    results: list[LayeredResult],
+    canonical_source: Path | None,
+    actual_source: Path | None,
+    thresholds: LayeredThresholds,
+    use_odiff: bool,
+    write_panels: bool,
+) -> dict[str, Any]:
+    evidence = _report_evidence_valid(
+        results, canonical_source, actual_source, thresholds, use_odiff, write_panels
+    )
+    if not evidence["valid"]:
+        return {"allowed": False, "reason": evidence["reason"]}
+    reasons: list[str] = []
     if any(result.status in {"MISSING_ACTUAL", "EXTRA_ACTUAL", "SIZE_MISMATCH"} for result in results):
         reasons.append("pairing_or_size_mismatch")
     if any(result.real_divergence for result in results):
@@ -962,6 +991,7 @@ def _markdown_report(
     write_panels: bool = True,
 ) -> str:
     summary = _summary(results)
+    evidence = _report_evidence_valid(results, canonical_source, actual_source, thresholds, use_odiff, write_panels)
     closure = _report_closure_allowed(results, canonical_source, actual_source, thresholds, use_odiff, write_panels)
     lines = [
         "# Layered visual comparison report",
@@ -973,8 +1003,11 @@ def _markdown_report(
         f"- {_ACTIVE_SOURCE_POLICY}",
         f"- Canonical source: `{canonical_source or _DEFAULT_CANONICAL}`",
         f"- Actual source: `{actual_source or _DEFAULT_ACTUAL}`",
-        f"- HANDOFF_CLOSURE_ALLOWED: {'YES' if closure['allowed'] else 'NO'}",
+        f"- REPORT_EVIDENCE_VALID: {'YES' if evidence['valid'] else 'NO'}",
     ]
+    if evidence["reason"]:
+        lines.append(f"- REPORT_EVIDENCE_REASON: {evidence['reason']}")
+    lines.append(f"- HANDOFF_CLOSURE_ALLOWED: {'YES' if closure['allowed'] else 'NO'}")
     if closure["reason"]:
         lines.append(f"- HANDOFF_CLOSURE_REASON: {closure['reason']}")
     lines.extend([
@@ -1060,6 +1093,14 @@ def main() -> int:
     print(f"Authority:             {_HANDOFF_AUTHORITY}")
     print(f"Canonical source:      {Path(args.canonical)}")
     print(f"Actual source:         {Path(args.actual)}")
+    evidence = _report_evidence_valid(
+        results,
+        Path(args.canonical),
+        Path(args.actual),
+        thresholds,
+        not args.no_odiff,
+        not args.no_panels,
+    )
     closure = _report_closure_allowed(
         results,
         Path(args.canonical),
@@ -1068,6 +1109,12 @@ def main() -> int:
         not args.no_odiff,
         not args.no_panels,
     )
+    print(
+        "Report evidence valid: "
+        f"{'YES' if evidence['valid'] else 'NO'}"
+    )
+    if evidence["reason"]:
+        print(f"Evidence reason:       {evidence['reason']}")
     print(
         "Handoff closure:      "
         f"{'YES' if closure['allowed'] else 'NO'}"
