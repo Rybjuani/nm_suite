@@ -1015,6 +1015,7 @@ class NMTextArea(QTextEdit):
         min_height: int = 96,
         max_length: int | None = None,
         font_key: str = _NM_CONTROL_FONT,
+        wrap_placeholder: bool = False,
         parent=None,
     ):
         super().__init__(parent)
@@ -1035,8 +1036,46 @@ class NMTextArea(QTextEdit):
             # (auditoría v1.0 — pegar texto masivo rompía el responsive de la
             # Suite al sincronizar).
             self.textChanged.connect(self._enforce_max_length)
+        # Placeholder con wrap (opt-in): el placeholder nativo de QTextEdit NO
+        # wrappea (clipa en una línea), así que para textos largos del mockup
+        # (p.ej. "Mensaje del recordatorio (máx 150)" a 2 líneas) usamos un
+        # QLabel overlay con wordWrap. Transparente al mouse, se oculta al
+        # escribir. Gated: el resto de los text areas conserva el comportamiento.
+        self._ph_overlay: QLabel | None = None
+        if wrap_placeholder and placeholder:
+            self.setPlaceholderText("")
+            self._ph_overlay = QLabel(placeholder, self)
+            self._ph_overlay.setWordWrap(True)
+            self._ph_overlay.setAlignment(
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
+            )
+            self._ph_overlay.setAttribute(
+                Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
+            )
+            self._ph_overlay.setFont(qfont(self._font_key))
+            self.textChanged.connect(self._sync_placeholder_overlay)
+            self._position_placeholder_overlay()
         _tm().theme_changed.connect(self._apply_theme)
         self._apply_theme(self._modo)
+
+    def _position_placeholder_overlay(self) -> None:
+        if self._ph_overlay is None:
+            return
+        # Coincide con el padding del QSS (8px vertical, 12px horizontal).
+        pad_x, pad_y = 12, 8
+        self._ph_overlay.setGeometry(
+            pad_x, pad_y,
+            max(0, self.width() - 2 * pad_x),
+            max(0, self.height() - 2 * pad_y),
+        )
+
+    def _sync_placeholder_overlay(self) -> None:
+        if self._ph_overlay is not None:
+            self._ph_overlay.setVisible(not self.toPlainText())
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._position_placeholder_overlay()
 
     def _enforce_max_length(self):
         if self._max_length is None:
@@ -1075,6 +1114,10 @@ class NMTextArea(QTextEdit):
             f"QTextEdit:focus {{ border: 1px solid {qcolor_to_rgba_css(focus_border)}; }}"
             + _clinical_scrollbar_qss(self._modo)
         )
+        if getattr(self, "_ph_overlay", None) is not None:
+            self._ph_overlay.setStyleSheet(
+                f"color: {placeholder}; background: transparent;"
+            )
         # Solo el placeholder en color faint (vía palette). Antes se pintaba el
         # viewport con ese color, lo que también atenuaba el TEXTO escrito y lo
         # dejaba casi ilegible en light. El texto real usa text_col del QSS.

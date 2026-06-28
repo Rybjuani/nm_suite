@@ -530,11 +530,19 @@ class NMPatientRowPremium(QFrame):
 
         # Sparkline
         self._sparkline = None
+        self._no_mood_lbl = None
         if mood_data:
             self._sparkline = NMSparkline(data=mood_data, modo=self._modo)
             lay.addWidget(self._sparkline, 0, Qt.AlignmentFlag.AlignVCenter)
         else:
-            lay.addSpacing(_NM_PATIENT_TREND_COL_W)
+            # Sin datos de ánimo: marcador "—" muteado (convención del mockup,
+            # p.ej. ánimo "— / 10") en vez de dejar la columna ÁNIMO 7D en
+            # blanco — el hueco vacío leía como UI rota / placeholder.
+            self._no_mood_lbl = QLabel("—")
+            self._no_mood_lbl.setFixedWidth(_NM_PATIENT_TREND_COL_W)
+            self._no_mood_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self._no_mood_lbl.setFont(qfont("size_small"))
+            lay.addWidget(self._no_mood_lbl, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self._ring = NMModuleRing(
             size=_NM_PATIENT_RING_SIZE, pct=pct, modo=self._modo, color_key="gold"
@@ -685,6 +693,10 @@ class NMPatientRowPremium(QFrame):
         self._context_lbl.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
         )
+        if getattr(self, "_no_mood_lbl", None) is not None:
+            self._no_mood_lbl.setStyleSheet(
+                f"color: {v3c('text3', self._modo).name()}; background: transparent;"
+            )
         self._pid.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
         )
