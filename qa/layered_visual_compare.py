@@ -263,6 +263,8 @@ def compare_sources(
         actual_source=actual_source,
         canonical_root=canonical_root,
         actual_root=actual_root,
+        use_odiff=use_odiff,
+        write_panels=write_panels,
     )
     return results, reports
 
@@ -386,21 +388,28 @@ def write_reports(
     actual_source: Path | None = None,
     canonical_root: Path | None = None,
     actual_root: Path | None = None,
+    use_odiff: bool = True,
+    write_panels: bool = True,
 ) -> dict[str, str]:
     out_dir.mkdir(parents=True, exist_ok=True)
     json_path = out_dir / "LAYERED_VISUAL_REPORT.json"
     csv_path = out_dir / "LAYERED_VISUAL_REPORT.csv"
     md_path = out_dir / "LAYERED_VISUAL_REPORT.md"
 
+    closure = _report_closure_allowed(
+        results,
+        canonical_source,
+        actual_source,
+        thresholds,
+        use_odiff,
+        write_panels,
+    )
     payload = {
         "generated_at": _dt.datetime.now().isoformat(timespec="seconds"),
         "authority": _HANDOFF_AUTHORITY,
         "source_policy": _ACTIVE_SOURCE_POLICY,
-        "handoff_closure_allowed": _report_closure_allowed(
-            results,
-            canonical_source,
-            actual_source,
-        ),
+        "handoff_closure_allowed": closure["allowed"],
+        "handoff_closure_reason": closure["reason"],
         "sources": _source_metadata(
             canonical_source,
             actual_source,
@@ -426,6 +435,8 @@ def write_reports(
             thresholds,
             canonical_source=canonical_source,
             actual_source=actual_source,
+            use_odiff=use_odiff,
+            write_panels=write_panels,
         ),
         encoding="utf-8",
     )
@@ -917,14 +928,28 @@ def _report_closure_allowed(
     results: list[LayeredResult],
     canonical_source: Path | None,
     actual_source: Path | None,
-) -> bool:
+    thresholds: LayeredThresholds,
+    use_odiff: bool,
+    write_panels: bool,
+) -> dict[str, Any]:
+    reasons: list[str] = []
     if not _is_active_source_pair(canonical_source, actual_source):
-        return False
+        reasons.append("non_active_sources")
     if not results:
-        return False
+        reasons.append("empty_results")
+    if thresholds != LayeredThresholds():
+        reasons.append("non_default_thresholds")
+    if not use_odiff:
+        reasons.append("odiff_disabled")
+    if not write_panels:
+        reasons.append("panels_disabled")
     if any(result.status in {"MISSING_ACTUAL", "EXTRA_ACTUAL", "SIZE_MISMATCH"} for result in results):
-        return False
-    return not any(result.real_divergence for result in results)
+        reasons.append("pairing_or_size_mismatch")
+    if any(result.real_divergence for result in results):
+        reasons.append("real_divergence_present")
+    if reasons:
+        return {"allowed": False, "reason": "; ".join(reasons)}
+    return {"allowed": True, "reason": None}
 
 
 def _markdown_report(
@@ -933,9 +958,11 @@ def _markdown_report(
     *,
     canonical_source: Path | None = None,
     actual_source: Path | None = None,
+    use_odiff: bool = True,
+    write_panels: bool = True,
 ) -> str:
     summary = _summary(results)
-    handoff_closure_allowed = _report_closure_allowed(results, canonical_source, actual_source)
+    closure = _report_closure_allowed(results, canonical_source, actual_source, thresholds, use_odiff, write_panels)
     lines = [
         "# Layered visual comparison report",
         "",
@@ -946,7 +973,11 @@ def _markdown_report(
         f"- {_ACTIVE_SOURCE_POLICY}",
         f"- Canonical source: `{canonical_source or _DEFAULT_CANONICAL}`",
         f"- Actual source: `{actual_source or _DEFAULT_ACTUAL}`",
-        f"- HANDOFF_CLOSURE_ALLOWED: {'YES' if handoff_closure_allowed else 'NO'}",
+        f"- HANDOFF_CLOSURE_ALLOWED: {'YES' if closure['allowed'] else 'NO'}",
+    ]
+    if closure["reason"]:
+        lines.append(f"- HANDOFF_CLOSURE_REASON: {closure['reason']}")
+    lines.extend([
         "",
         "Thresholds:",
         f"- raw SSIM >= {thresholds.min_ssim:g}",
@@ -965,7 +996,7 @@ def _markdown_report(
         "",
         "| Severity | Status | Bucket | Key | Findings | Raw changed | ODiff % | BBox delta | Panel |",
         "|---|---|---|---|---|---:|---:|---:|---|",
-    ]
+    ])
     ordered = sorted(
         results,
         key=lambda r: (
@@ -1029,10 +1060,20 @@ def main() -> int:
     print(f"Authority:             {_HANDOFF_AUTHORITY}")
     print(f"Canonical source:      {Path(args.canonical)}")
     print(f"Actual source:         {Path(args.actual)}")
+    closure = _report_closure_allowed(
+        results,
+        Path(args.canonical),
+        Path(args.actual),
+        thresholds,
+        not args.no_odiff,
+        not args.no_panels,
+    )
     print(
         "Handoff closure:      "
-        f"{'YES' if _report_closure_allowed(results, Path(args.canonical), Path(args.actual)) else 'NO'}"
+        f"{'YES' if closure['allowed'] else 'NO'}"
     )
+    if closure["reason"]:
+        print(f"Closure reason:       {closure['reason']}")
     print(f"Source policy:         {_ACTIVE_SOURCE_POLICY}")
     print(f"Total:                 {summary['total']}")
     print(f"Pass:                  {summary['pass']}")

@@ -108,3 +108,87 @@ def test_compare_sources_writes_reports(tmp_path):
     assert payload["authority"] == "LAYERED_VISUAL_COMPARE"
     assert payload["handoff_closure_allowed"] is False
     assert "Zip inputs are archive/forensics only" in payload["source_policy"]
+
+
+def test_closure_false_with_non_default_thresholds(tmp_path, monkeypatch):
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
+    (tmp_path / "c").mkdir()
+    (tmp_path / "a").mkdir()
+    _png(tmp_path / "c" / "suite-home-light-120x80.png")
+    _png(tmp_path / "a" / "suite-home-light-120x80.png")
+
+    results, reports = compare_sources(
+        tmp_path / "c",
+        tmp_path / "a",
+        tmp_path / "out",
+        thresholds=LayeredThresholds(min_ssim=0.5),
+        use_odiff=True,
+        write_panels=True,
+    )
+    payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert payload["handoff_closure_allowed"] is False
+    assert "non_default_thresholds" in payload["handoff_closure_reason"]
+
+
+def test_closure_false_with_odiff_disabled(tmp_path, monkeypatch):
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
+    (tmp_path / "c").mkdir()
+    (tmp_path / "a").mkdir()
+    _png(tmp_path / "c" / "suite-home-light-120x80.png")
+    _png(tmp_path / "a" / "suite-home-light-120x80.png")
+
+    results, reports = compare_sources(
+        tmp_path / "c",
+        tmp_path / "a",
+        tmp_path / "out",
+        thresholds=LayeredThresholds(),
+        use_odiff=False,
+        write_panels=True,
+    )
+    payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert payload["handoff_closure_allowed"] is False
+    assert "odiff_disabled" in payload["handoff_closure_reason"]
+
+
+def test_closure_false_with_panels_disabled(tmp_path, monkeypatch):
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
+    (tmp_path / "c").mkdir()
+    (tmp_path / "a").mkdir()
+    _png(tmp_path / "c" / "suite-home-light-120x80.png")
+    _png(tmp_path / "a" / "suite-home-light-120x80.png")
+
+    results, reports = compare_sources(
+        tmp_path / "c",
+        tmp_path / "a",
+        tmp_path / "out",
+        thresholds=LayeredThresholds(),
+        use_odiff=True,
+        write_panels=False,
+    )
+    payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert payload["handoff_closure_allowed"] is False
+    assert "panels_disabled" in payload["handoff_closure_reason"]
+
+
+def test_closure_true_with_active_sources_and_no_divergence(tmp_path, monkeypatch):
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
+    (tmp_path / "c").mkdir()
+    (tmp_path / "a").mkdir()
+    _png(tmp_path / "c" / "suite-home-light-120x80.png")
+    _png(tmp_path / "a" / "suite-home-light-120x80.png")
+
+    results, reports = compare_sources(
+        tmp_path / "c",
+        tmp_path / "a",
+        tmp_path / "out",
+        thresholds=LayeredThresholds(),
+        use_odiff=True,
+        write_panels=True,
+    )
+    payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert payload["handoff_closure_allowed"] is True
+    assert payload["handoff_closure_reason"] is None

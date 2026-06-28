@@ -299,8 +299,8 @@ export NM_VISUAL_QA=1
 
 ## 8. Qué NO asumir como aprobado
 
-1. **NO asumir que un commit "fix(faseN): ..." cerró una fase** sin recaptura fresca + diff PASS. Validar siempre con `qa/diff_fidelity.py` después del fix.
-2. **NO asumir que `tests/*_visual_contract.py` pasando = fidelidad visual**. Son contratos estructurales. El gate real es `qa/diff_fidelity.py`.
+1. **NO asumir que un commit "fix(faseN): ..." cerró una fase** sin recaptura fresca + diff PASS. Validar siempre con `qa/layered_visual_compare.py` (comando fijo del protocolo) después del fix. `qa/diff_fidelity.py` es señal auxiliar histórica; no cierra checklist.
+2. **NO asumir que `tests/*_visual_contract.py` pasando = fidelidad visual**. Son contratos estructurales. El gate oficial es `qa/layered_visual_compare.py` con fuentes activas, thresholds default, odiff y paneles habilitados. `qa/diff_fidelity.py` es LEGACY/AUXILIARY PASS, no checklist PASS.
 3. **NO asumir que `_fidelity_selfcheck` valida algo**. Ya está purgado, pero si reaparece, ignorarlo.
 4. **NO asumir que SSIM alto (>=0.92) es suficiente**. El gate exige también `MAD<=0.035` y `changed_pixel_ratio<=0.08`. Casos conocidos: `rutina-empty-light` post-`c96c406` tenía SSIM 0.934 pero `changed=0.92` (falso positivo de SSIM solo).
 5. **NO asumir que la recaptura parcial del working tree refleja el estado post-`6bb732b`**. Las capturas en `qa/_captures_v8_fresh/` son pre-`6bb732b`. **Descartar y regenerar.**

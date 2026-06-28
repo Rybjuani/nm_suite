@@ -1,5 +1,7 @@
 # Visual Auditor V3
 
+> ⚠️ Gobernanza visual: `visual_auditor_v3.py` (y V2) es una herramienta de diagnóstico auxiliar. **No autoriza el cierre de ítems de `VISUAL_REPAIR_HANDOFF.md`.** El único gate de cierre válido es `qa/layered_visual_compare.py` con fuentes activas (`qa/_mockup_canonical` + `qa/_captures_v8`), thresholds default, odiff y paneles habilitados, más `PASS` exacto. Las decisiones `NEEDS_HUMAN_REVIEW` o `RENDER_NOISE_OK` de V3 no son sustitutos de `PASS` del comparador oficial.
+
 ## Purpose
 
 OCR-driven, 100% offline visual auditor. Replaces VLM classification with

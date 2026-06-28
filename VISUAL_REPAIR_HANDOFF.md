@@ -14,7 +14,11 @@ closures are invalid until revalidated with the workflow below.
 
 Forbidden closure words/reasons: `STALE`, `fidelity PASS`, `diff_fidelity PASS`,
 `capture_v8 success`, zip-based comparison, or any report marked
-`HANDOFF_CLOSURE_ALLOWED: NO`.
+`HANDOFF_CLOSURE_ALLOWED: NO`. Also forbidden: owner acceptance, human review,
+"looks good enough", acceptable residue, partial progress, "mostly fixed",
+blocked / too hard / won’t fix, degrading or reclassifying to skip, or any
+claim that a divergence is "minor", "cosmetic", or "acceptable" without a
+comparator `PASS`.
 
 ## Active Sources
 
@@ -26,6 +30,47 @@ Forbidden closure words/reasons: `STALE`, `fidelity PASS`, `diff_fidelity PASS`,
   `reports/qa/layered_visual_compare_fresh/LAYERED_VISUAL_REPORT.json`
 
 Do not use desktop zips as operational evidence. They are archival only.
+
+## Operational Discipline
+
+The checklist is a sequential queue, not a global audit. Rules:
+
+1. If the current item is still `FAIL`, the next action is to repair that same item.
+2. You may not ask the owner for a decision to skip or accept the item.
+3. You may not jump to the next item while the current one remains `FAIL`.
+4. You may not close, downgrade, or reclassify an item because it is difficult.
+5. The only way to advance the queue is a `PASS` from the active layered comparator (`qa/layered_visual_compare.py`).
+
+## Current Item Definition
+
+- `current item` = the first unchecked `[ ]` checkbox in this document, read strictly from top to bottom.
+- There is no discretionary selection of the next item.
+- You may not skip to a dark/light pair, family member, or related surface until the `current item` is `PASS`, unless the handoff note for that same item explicitly directs you to do so.
+
+## Comparator Command Lock
+
+The only valid comparator command for closure evidence is the fixed command documented in the Fresh Baseline section. Any report generated with the following overrides is **exploratory only** and **not valid** as closure evidence:
+
+- `--raw-changed-threshold`
+- `--raw-mad-threshold`
+- `--min-ssim`
+- `--max-odiff-diff-pct`
+- `--max-bbox-shift-px`
+- `--no-odiff`
+- `--no-panels`
+
+Do not use threshold overrides, disabled odiff, or disabled panels to close a checklist item.
+
+## Anti-Fraud Rule
+
+A `PASS` must come from real changes in the product or UI. It is strictly forbidden to modify any of the following in order to make a visual divergence pass:
+
+- QA scripts, tests, or assertions
+- Comparators, thresholds, or scoring logic
+- Capture scripts, canonical images, or fixtures
+- Reports, manifests, or baselines
+
+If a divergence is fixed, the fix must be in the actual product code, styles, or assets. Any attempt to game the comparator is a protocol violation.
 
 ## Fresh Baseline
 
@@ -72,8 +117,7 @@ An item may be changed from `[ ]` to `[x]` only when its note includes:
 - Fix commit hash.
 - Fresh capture command for that exact surface or tightly coupled family.
 - Fresh layered comparator report path.
-- Exact key status is `PASS`, or the owner explicitly accepts the remaining
-  divergence.
+- Exact key status is `PASS` only.
 - One short manual side-by-side confirmation from the panel.
 
 If any evidence is missing, leave the checkbox open and add a note.

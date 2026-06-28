@@ -4,7 +4,7 @@
 - Manifest activo: `qa/_captures_v8_fresh/CAPTURE_MANIFEST.json` — generado 2026-06-21T02:34:12 contra HEAD 51f4448.
 - Regenerar con: `python qa/capture_v8.py --all --clean --out-dir qa/_captures_v8_fresh`
 - Targets canónicos del mockup: `qa/_mockup_targets/` (96 PNGs, regenerados con Playwright contra HEAD 51f4448).
-- Diff de fidelidad fresco: `qa/_fidelity_fresh/FIDELITY_REPORT.md` (gate: SSIM>=0.92, MAD<=0.035, changed<=0.08).
+- Diff de fidelidad fresco: `qa/_fidelity_fresh/FIDELITY_REPORT.md` (gate: SSIM>=0.92, MAD<=0.035, changed<=0.08). **Nota:** este es un reporte auxiliar histórico; el gate oficial actual es `qa/layered_visual_compare.py` con fuentes activas, thresholds default, odiff y paneles habilitados, más `PASS` exacto.
 - Resumen versionable: `docs/CAPTURE_MANIFEST_SUMMARY.md`.
 - Capturas frescas: 98/98, 0 fallos tecnicos, 92 state-valid, 6 `REQUIRES_DATA_STATE`.
 - Estado global visual: 0/96 PASS en el gate endurecido. Ver `docs/VISUAL_QA_AUDIT.md` para deuda por pantalla.

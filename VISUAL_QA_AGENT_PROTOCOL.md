@@ -46,6 +46,52 @@ Do not mark an item complete because of:
 - Any zip-based comparison.
 - Any report whose manifest says `technical_capture_only`,
   `REVIEW_INCOMPLETE`, or `HANDOFF_CLOSURE_ALLOWED: NO`.
+- Owner acceptance, human review, or "looks good enough".
+- Acceptable residue, partial progress, or "mostly fixed".
+- Blocked / too hard / won’t fix as a closure reason.
+- Degrading or reclassifying the item to a lower severity to skip it.
+- Any claim that the divergence is "minor", "cosmetic", or "acceptable" without a `PASS` from the comparator.
+
+## Operational Discipline
+
+The checklist is a sequential queue, not a global audit. Rules:
+
+1. If the current item is still `FAIL`, the next action is to repair that same item.
+2. You may not ask the owner for a decision to skip or accept the item.
+3. You may not jump to the next item while the current one remains `FAIL`.
+4. You may not close, downgrade, or reclassify an item because it is difficult.
+5. The only way to advance the queue is a `PASS` from the active layered comparator (`qa/layered_visual_compare.py`).
+
+## Current Item Definition
+
+- `current item` = the first unchecked `[ ]` checkbox in this document, read strictly from top to bottom.
+- There is no discretionary selection of the next item.
+- You may not skip to a dark/light pair, family member, or related surface until the `current item` is `PASS`, unless the handoff note for that same item explicitly directs you to do so.
+
+## Comparator Command Lock
+
+The only valid comparator command for closure evidence is the fixed command documented in the Required Flow section. Any report generated with the following overrides is **exploratory only** and **not valid** as closure evidence:
+
+- `--raw-changed-threshold`
+- `--raw-mad-threshold`
+- `--min-ssim`
+- `--max-odiff-diff-pct`
+- `--max-bbox-shift-px`
+- `--no-odiff`
+- `--no-panels`
+
+Do not use threshold overrides, disabled odiff, or disabled panels to close a checklist item.
+
+## Anti-Fraud Rule
+
+A `PASS` must come from real changes in the product or UI. It is strictly forbidden to modify any of the following in order to make a visual divergence pass:
+
+- QA scripts, tests, or assertions
+- Comparators, thresholds, or scoring logic
+- Capture scripts, canonical images, or fixtures
+- Reports, manifests, or baselines
+
+If a divergence is fixed, the fix must be in the actual product code, styles, or assets. Any attempt to game the comparator is a protocol violation.
 
 ## Item Closure Evidence
 
@@ -54,8 +100,7 @@ An item can be changed from `[ ]` to `[x]` only when the note includes:
 - Fix commit hash.
 - Fresh `qa/_captures_v8` capture command used for that exact surface or family.
 - Fresh `qa/layered_visual_compare.py` report path.
-- The exact key status is `PASS`, or a remaining divergence is explicitly
-  accepted by the owner.
+- The exact key status is `PASS` only.
 - One short manual side-by-side confirmation.
 
 If any evidence is missing, leave the checkbox open and add a note.

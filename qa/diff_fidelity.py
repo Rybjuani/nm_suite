@@ -33,9 +33,10 @@ _DEFAULT_MAX_MEAN_ABS_DIFF = 0.035
 _DEFAULT_MAX_CHANGED_PIXEL_RATIO = 0.08
 _LEGACY_GATE_WARNING = (
     "WARNING: diff_fidelity/odiff is a legacy pixel-diff signal, not visual "
-    "fidelity approval. Do not mark VISUAL_REPAIR_HANDOFF.md items PASS, "
-    "STALE, or complete from this report. Use qa/layered_visual_compare.py "
-    "against fresh qa/_captures_v8 and inspect the side-by-side panels."
+    "fidelity approval. Any PASS here is a LEGACY/AUXILIARY PASS, not a checklist PASS. "
+    "Do not mark VISUAL_REPAIR_HANDOFF.md items PASS, STALE, or complete from this report. "
+    "Use qa/layered_visual_compare.py against fresh qa/_captures_v8 and inspect the "
+    "side-by-side panels."
 )
 
 
@@ -276,6 +277,8 @@ def _write_reports(rows: list[dict], out_dir: Path, thresholds: FidelityThreshol
         "Handoff policy:",
         f"- {_LEGACY_GATE_WARNING}",
         "- HANDOFF_CLOSURE_ALLOWED: NO",
+        "- ANY 'PASS' IN THIS REPORT IS A LEGACY/AUXILIARY PASS, NOT A CHECKLIST PASS.",
+        "- DO NOT USE THIS REPORT TO CLOSE VISUAL_REPAIR_HANDOFF.md ITEMS.",
         "",
         "Acceptance gate:",
         f"- SSIM >= {thresholds.min_ssim:g}",
@@ -514,6 +517,7 @@ def main() -> int:
     print("=" * 60)
     print("FIDELITY DIFF")
     print("HANDOFF_CLOSURE_ALLOWED: NO")
+    print("LEGACY/AUXILIARY PASS ONLY — NOT CHECKLIST PASS.")
     print(_LEGACY_GATE_WARNING)
     print(
         "Gate:                "

@@ -176,10 +176,12 @@ Deuda transversal observada en muchas pantallas:
 
 ## Criterio de avance
 
+> ⚠️ Nota de gobernanza: este criterio es histórico. El gate oficial actual es `qa/layered_visual_compare.py` con fuentes activas (`qa/_mockup_canonical` y `qa/_captures_v8`), thresholds default, odiff y paneles habilitados, más `PASS` exacto. `qa/diff_fidelity.py` es señal auxiliar (LEGACY/AUXILIARY PASS, no checklist PASS).
+
 No avanzar una pantalla como "fiel" hasta que:
 
 1. `qa/capture_v8.py` recapture el bloque/pantalla sin fallos tecnicos.
-2. `qa/diff_fidelity.py` pase con el gate compuesto.
+2. `qa/layered_visual_compare.py` pase con `PASS` exacto usando el comando fijo del protocolo.
 3. Cualquier excepcion por limitacion Qt quede documentada junto al diff y no oculte deuda de
    layout, color, texto o estado.
 
