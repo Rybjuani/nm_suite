@@ -40,6 +40,7 @@ from PyQt6.QtGui import (
 )
 from PyQt6.QtWidgets import (
     QWidget,
+    QFrame,
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
@@ -661,10 +662,9 @@ class ModuloRespiracion(NMModule):
         lay.setContentsMargins(V3_SP["lg"], 0, V3_SP["lg"], 0)
         lay.setSpacing(V3_SP["sm"])
 
-        # 1+2. Práctica de respiración principal en card. Los presets 3/5/10 min viven DENTRO
-        # de la card (centrados arriba, mockup l.663) en vez de flotar
-        # fuera; la card se expande para ocupar el espacio disponible.
-        practice_card = NMCard(modo=self._modo, clickable=False, glow=False)
+        # 1+2. Área de práctica — sin card wrapper (canónico: contenido flotante sobre fondo).
+        practice_card = QFrame()
+        practice_card.setStyleSheet("background: transparent; border: none;")
         practice_lay = QVBoxLayout(practice_card)
         practice_lay.setContentsMargins(V3_SP["lg"], V3_SP["md"], V3_SP["lg"], V3_SP["md"])
         practice_lay.setSpacing(V3_SP["sm"])
