@@ -671,18 +671,14 @@ def _onboarding_recovery_prompt(win, qapp, action):
 def _onboarding_error_prompt(win, qapp, action):
     """Dispara el estado de error de onboarding (Nombre requerido).
 
-    La receta antes hacía click en "Crear cuenta", pero ese botón está
-    deshabilitado hasta aceptar los términos, así que la validación nunca
-    corría y el estado error salía idéntico al normal. Aquí aceptamos los
-    términos y llamamos a la validación con el nombre vacío, que es como un
-    usuario real llega al error: borde rose en Nombre + mensaje rose.
+    Llama _on_accept directamente con nombre vacío y checkbox desmarcado.
+    El canónico muestra el checkbox sin marcar; marcar el checkbox antes
+    produce un estado de UI incorrecto que aumenta la divergencia.
     """
     dlg = globals().get("_CURRENT_STANDALONE")
     if dlg is None:
         return
     try:
-        if hasattr(dlg, "_consent_check"):
-            dlg._consent_check.setChecked(True)
         if hasattr(dlg, "_name"):
             dlg._name.setText("")
         if hasattr(dlg, "_on_accept"):
