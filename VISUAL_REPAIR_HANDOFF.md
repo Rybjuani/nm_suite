@@ -33,6 +33,22 @@ comparator `PASS`.
 
 Do not use desktop zips as operational evidence. They are archival only.
 
+## Graphify Preflight
+
+Before manual code exploration in this active visual repair flow, run:
+
+```powershell
+graphify . --update
+```
+
+If the environment exposes Graphify as a slash command, run:
+
+```text
+/graphify . --update
+```
+
+Consult the generated graph before opening product code by hand.
+
 ## Resource-Safe Validation
 
 Microfix de una pantalla:

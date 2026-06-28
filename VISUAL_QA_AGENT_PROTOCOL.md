@@ -17,6 +17,20 @@ handoff items.
 
 ## Required Flow
 
+0. Run Graphify before manual code exploration in every active visual repair flow:
+
+   ```powershell
+   graphify . --update
+   ```
+
+   If the shell environment exposes Graphify as a slash command instead, use:
+
+   ```text
+   /graphify . --update
+   ```
+
+   Consult the generated graph before opening product code by hand.
+
 1. Regenerate runtime captures before a broad visual decision or final regression:
 
    ```powershell
