@@ -633,17 +633,24 @@ class _SkillPracticeView(QWidget):
         # Los botones quedan pegados al bloque de contenido.
 
         btn_lay = QHBoxLayout()
-        self.btn_cancel = NMButton(t("text.module.dbt.cancel_btn", "Salir"), parent=self, variant="ghost", size="md")
+        btn_lay.setSpacing(8)
+        # width=0 → sin el minWidth=180 por defecto de NMButton: en un modal de
+        # ~480px tres botones con min 180px entran en contención y reparten el
+        # ancho de forma arbitraria (Anterior salía más ancho que Salir). Con
+        # ancho de contenido + stretch factor 1 en Salir, "Salir" crece para
+        # ocupar el espacio izquierdo (mockup) y Anterior/Siguiente quedan a la
+        # derecha con su ancho natural.
+        self.btn_cancel = NMButton(t("text.module.dbt.cancel_btn", "Salir"), parent=self, variant="ghost", size="md", width=0)
         self.btn_cancel.clicked.connect(self.cancelled.emit)
-        btn_lay.addWidget(self.btn_cancel)
+        btn_lay.addWidget(self.btn_cancel, 1)
 
-        btn_lay.addStretch()
-
-        self.btn_prev = NMButton(t("text.module.dbt.prev_btn", "Anterior"), parent=self, variant="secondary", size="md")
+        # Anterior/Siguiente: ancho fijo ~100px (mockup mide Siguiente=101px) para
+        # mantener el padding del mockup; Salir (width=0, stretch=1) absorbe el resto.
+        self.btn_prev = NMButton(t("text.module.dbt.prev_btn", "Anterior"), parent=self, variant="secondary", size="md", width=100)
         self.btn_prev.clicked.connect(self._prev_step)
         btn_lay.addWidget(self.btn_prev)
 
-        self.btn_next = NMButton(t("text.module.dbt.next_btn", "Siguiente"), parent=self, variant="gradient", size="md")
+        self.btn_next = NMButton(t("text.module.dbt.next_btn", "Siguiente"), parent=self, variant="gradient", size="md", width=100)
         self.btn_next.clicked.connect(self._next_step)
         btn_lay.addWidget(self.btn_next)
 

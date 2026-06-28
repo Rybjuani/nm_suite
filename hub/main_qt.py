@@ -907,9 +907,14 @@ class NeuroMoodHub(ThemeAwareWidgetMixin, QMainWindow):
         self._content_widget = content
         outer_layout.addWidget(content, 1)
         rl = QVBoxLayout(content)
-        # M3 premium: aire inferior/derecho para que ninguna vista quede
-        # pegada al borde de la ventana (respiración global, Hub-only).
-        rl.setContentsMargins(0, 0, 12, 8)
+        # Sin margen derecho/inferior: el content widget pinta `surface`
+        # (#191F2E) y un margen asimétrico (0,0,12,8) dejaba ese surface al
+        # descubierto SOLO a la derecha (12px) y abajo (8px) — la vista oscura
+        # no llegaba al borde —, produciendo el "marco azul" der/inf que NO está
+        # en el mockup (.window: borde uniforme). El aire lateral ya lo aportan
+        # los márgenes `lg` simétricos de cada vista; el stack debe llenar el
+        # content de borde a borde para no exponer surface.
+        rl.setContentsMargins(0, 0, 0, 0)
         rl.setSpacing(0)
 
         self._chrome.theme_toggle.connect(self._toggle_theme)

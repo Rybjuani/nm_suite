@@ -89,18 +89,22 @@ class _TextEntryRow(NMCard):
         self.editor.setMinimumWidth(230)
         lay.addWidget(self.editor, stretch=3)
 
-        side = QVBoxLayout()
-        side.setSpacing(V3_SP["xs"])
+        # Mockup: el contador y "Restaurar" van INLINE (contador a la izquierda
+        # del botón), ambos centrados verticalmente en la fila. Antes era un
+        # QVBoxLayout que los apilaba (contador arriba, botón abajo) + addStretch,
+        # lo que inflaba la altura de la fila (~112px vs ~64px del mockup) y
+        # rompía la alineación. HBox compacto.
+        side = QHBoxLayout()
+        side.setSpacing(V3_SP["sm"])
         self._count_lbl = QLabel()
-        self._count_lbl.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self._count_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         self._count_lbl.setFont(qfont("size_caption_xs"))
-        side.addWidget(self._count_lbl)
+        side.addWidget(self._count_lbl, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self._restore_btn = NMButtonOutline("Restaurar", modo=self._modo, size="sm")
         self._restore_btn.setFixedHeight(30)
         self._restore_btn.clicked.connect(self.restore)
-        side.addWidget(self._restore_btn)
-        side.addStretch()
+        side.addWidget(self._restore_btn, 0, Qt.AlignmentFlag.AlignVCenter)
         lay.addLayout(side)
 
         self._sync_counter()

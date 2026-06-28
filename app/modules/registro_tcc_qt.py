@@ -945,22 +945,22 @@ class ModuloRegistroTCC(NMModule):
         ):
             layout.addWidget(lbl)
 
-        # Pill/chip rows: 2×4 compact chips. Matches mockup step1-emotion design.
-        # Replaces previous grid of _EmotionTile (icon cards) with text-only pills.
+        # Mockup step1-emotion: TODOS los chips en UNA sola fila de píldoras
+        # text-only. El grid 2×4 previo los envolvía en dos filas (divergente
+        # del mockup, que muestra los 8 en una línea) y dejaba el contenido
+        # corrido hacia abajo.
         pills_col = QVBoxLayout()
         pills_col.setSpacing(V3_SP["xs"])
-        row_layouts = [QHBoxLayout(), QHBoxLayout()]
-        for r in row_layouts:
-            r.setSpacing(V3_SP["xs"])
-        for i, emotion in enumerate(self._emotion_defs):
+        chips_row = QHBoxLayout()
+        chips_row.setSpacing(V3_SP["xs"])
+        for emotion in self._emotion_defs:
             label = emotion["label"]
             chip = _EmotionChip(label, modo=self._modo)
             chip.clicked.connect(lambda lbl=label: self._on_emotion_picked(lbl))
-            row_layouts[i // 4].addWidget(chip)
+            chips_row.addWidget(chip)
             self._emotion_tiles.append(chip)
-        for r in row_layouts:
-            r.addStretch()
-            pills_col.addLayout(r)
+        chips_row.addStretch()
+        pills_col.addLayout(chips_row)
         layout.addLayout(pills_col)
 
         # "Otro" custom input — shown below chip rows when "Otro" is selected.

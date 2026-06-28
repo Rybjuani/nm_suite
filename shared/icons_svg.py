@@ -232,7 +232,10 @@ MOCKUP_ICON_BODIES: dict[str, str] = {
     "brain": '<path d="M9.5 3.5a3 3 0 0 0-3 3 3 3 0 0 0-1.5 5.6A3 3 0 0 0 6.5 18 3 3 0 0 0 12 19.5V4.2a3 3 0 0 0-2.5-.7Z"/><path d="M14.5 3.5a3 3 0 0 1 3 3 3 3 0 0 1 1.5 5.6A3 3 0 0 1 17.5 18 3 3 0 0 1 12 19.5"/>',
     "activity": '<circle cx="12" cy="5" r="2.4"/><path d="M9 21v-6l-2-2 1-5 4 2 3 1"/><path d="m9 13 4 1 1 7"/>',
     "bell": '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
-    "check": '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+    # Checkmark simple (mockup success = ✓, no el checkbox ☑). Antes esta entrada
+    # pisaba (vía ICON_BODIES.update) el check simple de ICON_BODIES con un
+    # check-en-caja, divergente del mockup. Único consumidor: página de éxito TCC.
+    "check": '<path d="M5 12l4 4 10-10"/>',
     "timer": '<circle cx="12" cy="13" r="8"/><path d="M12 13V9M9 2h6M19 6l-1.5 1.5"/>',
     "spark": '<path d="m12 3 1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M5 18l.7 1.8L7.5 20l-1.8.7L5 22l-.7-1.3L2.5 20l1.8-.2z"/>',
     "users": '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M16 6a3 3 0 0 1 0 5.6M21 20c0-2.6-1.4-4.2-3.5-4.8"/>',
