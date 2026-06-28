@@ -270,6 +270,124 @@ CONTRACTS = (
 )
 
 
+# ── Geometry contracts (parent/sibling-aware) ──────────────────────────────────
+# The per-widget contracts above only see one widget at a time, so they catch
+# elevation/shape debt but not layout debt (oversized controls, contention,
+# overlaps). These geometry contracts read the *applied* Qt geometry of a widget
+# relative to its parent and siblings — renderer-independent ground truth, so a
+# fired contract is real layout debt (e.g. three footer buttons that don't fit
+# their dialog because each carries a 180px min-width), never cross-render noise.
+#
+# They are deliberately conservative to keep zero false positives, matching the
+# discipline of the shadow/radius contracts:
+#   - only interactive CONTROL_CLASSES (buttons), which should never spill out of
+#     their container nor render on top of a sibling;
+#   - parents whose children legitimately exceed their bounds (scroll content)
+#     or overlap by design (stacked pages, fade/overlay containers) are skipped;
+#   - generous pixel tolerances so sub-pixel/rounding never fires.
+
+CONTROL_CLASSES = {
+    "NMButton",
+    "NMButtonOutline",
+    "NMButtonGhost",
+    "NMButtonSoft",
+    "NMIconButton",
+}
+# Containers where overflow/overlap of children is expected, not debt.
+_GEOM_SKIP_PARENT = {
+    "QScrollArea",
+    "QStackedWidget",
+    "NMFadeWidget",
+    "NMToast",
+}
+_OVERFLOW_TOL = 3   # px a control may exceed its parent before it counts as spill
+_OVERLAP_MIN = 3    # px of intersection (both axes) before two controls "overlap"
+
+
+def _control_enabled(info: WidgetInfo) -> bool:
+    return (
+        info.cls in CONTROL_CLASSES
+        and info.visible
+        and info.enabled
+        and not info.disabled_attr
+    )
+
+
+def _max_spill(child: WidgetInfo, parent: WidgetInfo) -> tuple[float, str]:
+    """Largest amount (px) by which child exceeds parent on any edge, + which."""
+    edges = {
+        "left": parent.x - child.x,
+        "right": (child.x + child.w) - (parent.x + parent.w),
+        "top": parent.y - child.y,
+        "bottom": (child.y + child.h) - (parent.y + parent.h),
+    }
+    edge = max(edges, key=edges.get)
+    return edges[edge], edge
+
+
+def geometry_divergences(
+    pairs: list[tuple[WidgetInfo, QWidget]]
+) -> list[dict[str, Any]]:
+    """Run parent/sibling geometry contracts over the introspected tree."""
+    out: list[dict[str, Any]] = []
+    by_id: dict[int, WidgetInfo] = {id(w): info for info, w in pairs}
+    children_by_parent: dict[int, list[WidgetInfo]] = {}
+    for info, w in pairs:
+        p = w.parentWidget()
+        if p is not None:
+            children_by_parent.setdefault(id(p), []).append(info)
+
+    # OVERFLOW — a control spilling beyond its direct parent's bounds.
+    for info, w in pairs:
+        if not _control_enabled(info):
+            continue
+        p = w.parentWidget()
+        if p is None:
+            continue
+        pinfo = by_id.get(id(p))
+        if pinfo is None or pinfo.cls in _GEOM_SKIP_PARENT:
+            continue
+        spill, edge = _max_spill(info, pinfo)
+        if spill > _OVERFLOW_TOL:
+            out.append({
+                "kind": "GEOMETRY_OVERFLOW",
+                "component": info.cls,
+                "object_name": info.object_name,
+                "rect": [info.x, info.y, info.w, info.h],
+                "severity": "high",
+                "message": (
+                    f"{info.cls} overflows its {pinfo.cls} parent by {int(spill)}px "
+                    f"on the {edge} (control {info.w}x{info.h} vs parent "
+                    f"{pinfo.w}x{pinfo.h}) — layout contention/oversize"
+                ),
+            })
+
+    # OVERLAP — two sibling controls whose rects intersect (rendered on top of
+    # each other). Adjacency (0px gap) does not fire; only real intersection.
+    for kids in children_by_parent.values():
+        ctrls = [i for i in kids if _control_enabled(i)]
+        for a in range(len(ctrls)):
+            for b in range(a + 1, len(ctrls)):
+                ia, ib = ctrls[a], ctrls[b]
+                ix = min(ia.x + ia.w, ib.x + ib.w) - max(ia.x, ib.x)
+                iy = min(ia.y + ia.h, ib.y + ib.h) - max(ia.y, ib.y)
+                if ix > _OVERLAP_MIN and iy > _OVERLAP_MIN:
+                    out.append({
+                        "kind": "GEOMETRY_OVERLAP",
+                        "component": f"{ia.cls}+{ib.cls}",
+                        "object_name": f"{ia.object_name}|{ib.object_name}",
+                        "rect": [
+                            max(ia.x, ib.x), max(ia.y, ib.y), int(ix), int(iy),
+                        ],
+                        "severity": "high",
+                        "message": (
+                            f"{ia.cls} and {ib.cls} overlap by {int(ix)}x{int(iy)}px "
+                            "(controls rendered on top of each other)"
+                        ),
+                    })
+    return out
+
+
 _INVENTORY_TOKENS = ("Card", "Check", "Avatar", "Button", "Toggle", "Chip", "Tile", "Ring", "Panel")
 
 
@@ -289,6 +407,10 @@ def audit_tree(root: QWidget, surface_key: str = "") -> dict[str, Any]:
     """
     infos = introspect_tree(root)
     divergences: list[dict[str, Any]] = []
+    # Parent/sibling geometry contracts (overflow, overlap) need the full tree
+    # with widget handles, so they run as a batch over `infos` rather than in the
+    # per-widget loop below.
+    divergences.extend(geometry_divergences(infos))
     counts: dict[str, int] = {}
     inventory: dict[str, dict[str, Any]] = {}
     for info, _w in infos:
