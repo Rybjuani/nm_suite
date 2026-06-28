@@ -719,7 +719,8 @@ class _PracticeModalScrim(QWidget):
     sigue el geometry del padre vía eventFilter.
     """
 
-    _SCRIM_RGBA = (20, 18, 14, 104)  # softer scrim; visual focus without hardening bg
+    _SCRIM_RGBA = (20, 18, 14, 127)  # mockup .modal-bg rgba(20,18,14,.5)
+    _SCRIM_BLUR_RADIUS = 3  # mockup backdrop-filter:blur(3px)
 
     def __init__(self, parent: QWidget, modo: str):
         super().__init__(parent)
@@ -784,6 +785,23 @@ class _PracticeModalScrim(QWidget):
         if parent is None:
             return
         pix = parent.grab()
+        # mockup backdrop-filter:blur(3px) — se aplica sobre el snapshot del
+        # parent antes del tinte del scrim para reproducir el defocus del fondo.
+        if self._SCRIM_BLUR_RADIUS > 0:
+            from PyQt6.QtWidgets import QGraphicsBlurEffect, QGraphicsScene, QGraphicsPixmapItem
+            scene = QGraphicsScene()
+            item = QGraphicsPixmapItem(pix)
+            blur = QGraphicsBlurEffect()
+            blur.setBlurRadius(self._SCRIM_BLUR_RADIUS)
+            blur.setBlurHints(QGraphicsBlurEffect.BlurHint.QualityHint)
+            item.setGraphicsEffect(blur)
+            scene.addItem(item)
+            blurred = QPixmap(pix.size())
+            bp = QPainter(blurred)
+            bp.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+            scene.render(bp, QRectF(0, 0, pix.width(), pix.height()), QRectF(0, 0, pix.width(), pix.height()))
+            bp.end()
+            pix = blurred
         tinted = QPixmap(pix.size())
         p = QPainter(tinted)
         p.drawPixmap(0, 0, pix)
