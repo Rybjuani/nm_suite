@@ -4593,14 +4593,14 @@
   },
   {
     "surface_key": "hub:detalle@light",
-    "widgets_audited": 40,
+    "widgets_audited": 41,
     "component_counts": {
       "NeuroMoodHub": 1,
       "_ShellWidget": 1,
       "NMWindowChrome": 1,
       "QWidget": 11,
       "QPushButton": 1,
-      "QLabel": 3,
+      "QLabel": 4,
       "_ChromeThemeToggle": 1,
       "NMFadeWidget": 1,
       "DetallePacienteView": 1,
@@ -4736,7 +4736,7 @@
           12,
           232,
           308,
-          212
+          270
         ],
         "severity": "medium",
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
@@ -9958,14 +9958,14 @@
   },
   {
     "surface_key": "hub:detalle@dark",
-    "widgets_audited": 40,
+    "widgets_audited": 41,
     "component_counts": {
       "NeuroMoodHub": 1,
       "_ShellWidget": 1,
       "NMWindowChrome": 1,
       "QWidget": 11,
       "QPushButton": 1,
-      "QLabel": 3,
+      "QLabel": 4,
       "_ChromeThemeToggle": 1,
       "NMFadeWidget": 1,
       "DetallePacienteView": 1,
@@ -10101,7 +10101,7 @@
           12,
           232,
           308,
-          212
+          270
         ],
         "severity": "medium",
         "message": "NMCard has no border-radius (renders as sharp rectangle)"

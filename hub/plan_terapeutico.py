@@ -586,7 +586,11 @@ class _PresetRecordatoriosTab(QWidget):
 
         # Form card (Left)
         form_card = NMCard(modo=self._modo, clickable=False)
-        _set_plan_card_height(form_card, 212)
+        # 270px: el contenido (Hora + Mensaje textarea 72px + Agregar +
+        # Completar con IA + spacing/márgenes) mide ~264px; el tope previo de
+        # 212px lo desbordaba y el botón "Agregar" se montaba sobre el campo
+        # Mensaje (detectado por el contrato GEOMETRY_OVERLAP de vas_introspect).
+        _set_plan_card_height(form_card, 270)
         form_lay = QVBoxLayout(form_card)
         form_lay.setContentsMargins(12, 12, 12, 12)
         form_lay.setSpacing(8)

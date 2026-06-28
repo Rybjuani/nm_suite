@@ -280,7 +280,8 @@ CONTRACTS = (
 #
 # They are deliberately conservative to keep zero false positives, matching the
 # discipline of the shadow/radius contracts:
-#   - only interactive CONTROL_CLASSES (buttons), which should never spill out of
+#   - only bounded layout surfaces — buttons (CONTROL_CLASSES), inputs/fields
+#     (INPUT_CLASSES) and cards (_is_card) — which should never spill out of
 #     their container nor render on top of a sibling;
 #   - parents whose children legitimately exceed their bounds (scroll content)
 #     or overlap by design (stacked pages, fade/overlay containers) are skipped;
@@ -293,6 +294,15 @@ CONTROL_CLASSES = {
     "NMButtonSoft",
     "NMIconButton",
 }
+# Input/field components — like buttons, they must fit inside their container
+# and never render on top of a sibling.
+INPUT_CLASSES = {
+    "NMInput",
+    "NMTextArea",
+    "NMComboBox",
+    "NMSearchInput",
+    "NMSegmentedControl",
+}
 # Containers where overflow/overlap of children is expected, not debt.
 _GEOM_SKIP_PARENT = {
     "QScrollArea",
@@ -300,13 +310,27 @@ _GEOM_SKIP_PARENT = {
     "NMFadeWidget",
     "NMToast",
 }
-_OVERFLOW_TOL = 3   # px a control may exceed its parent before it counts as spill
-_OVERLAP_MIN = 3    # px of intersection (both axes) before two controls "overlap"
+_OVERFLOW_TOL = 3   # px an element may exceed its parent before it counts as spill
+_OVERLAP_MIN = 3    # px of intersection (both axes) before two elements "overlap"
 
 
-def _control_enabled(info: WidgetInfo) -> bool:
+def _is_geom_element(info: WidgetInfo) -> bool:
+    """Elements we assert layout geometry on: buttons, inputs and cards.
+
+    These are bounded surfaces that the mockup lays out inside a container —
+    none should spill out of its parent nor render on top of a sibling. Cards
+    use the same _is_card() signal as the shadow/radius contracts.
+    """
     return (
         info.cls in CONTROL_CLASSES
+        or info.cls in INPUT_CLASSES
+        or _is_card(info)
+    )
+
+
+def _geom_enabled(info: WidgetInfo) -> bool:
+    return (
+        _is_geom_element(info)
         and info.visible
         and info.enabled
         and not info.disabled_attr
@@ -337,9 +361,9 @@ def geometry_divergences(
         if p is not None:
             children_by_parent.setdefault(id(p), []).append(info)
 
-    # OVERFLOW — a control spilling beyond its direct parent's bounds.
+    # OVERFLOW — a button/input/card spilling beyond its direct parent's bounds.
     for info, w in pairs:
-        if not _control_enabled(info):
+        if not _geom_enabled(info):
             continue
         p = w.parentWidget()
         if p is None:
@@ -357,18 +381,19 @@ def geometry_divergences(
                 "severity": "high",
                 "message": (
                     f"{info.cls} overflows its {pinfo.cls} parent by {int(spill)}px "
-                    f"on the {edge} (control {info.w}x{info.h} vs parent "
+                    f"on the {edge} (element {info.w}x{info.h} vs parent "
                     f"{pinfo.w}x{pinfo.h}) — layout contention/oversize"
                 ),
             })
 
-    # OVERLAP — two sibling controls whose rects intersect (rendered on top of
-    # each other). Adjacency (0px gap) does not fire; only real intersection.
+    # OVERLAP — two sibling elements (buttons/inputs/cards) whose rects intersect
+    # (rendered on top of each other). Adjacency (0px gap) does not fire; only
+    # real intersection.
     for kids in children_by_parent.values():
-        ctrls = [i for i in kids if _control_enabled(i)]
-        for a in range(len(ctrls)):
-            for b in range(a + 1, len(ctrls)):
-                ia, ib = ctrls[a], ctrls[b]
+        elems = [i for i in kids if _geom_enabled(i)]
+        for a in range(len(elems)):
+            for b in range(a + 1, len(elems)):
+                ia, ib = elems[a], elems[b]
                 ix = min(ia.x + ia.w, ib.x + ib.w) - max(ia.x, ib.x)
                 iy = min(ia.y + ia.h, ib.y + ib.h) - max(ia.y, ib.y)
                 if ix > _OVERLAP_MIN and iy > _OVERLAP_MIN:
@@ -382,7 +407,7 @@ def geometry_divergences(
                         "severity": "high",
                         "message": (
                             f"{ia.cls} and {ib.cls} overlap by {int(ix)}x{int(iy)}px "
-                            "(controls rendered on top of each other)"
+                            "(elements rendered on top of each other)"
                         ),
                     })
     return out
