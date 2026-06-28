@@ -17,7 +17,7 @@ handoff items.
 
 ## Required Flow
 
-1. Regenerate runtime captures before a broad visual decision:
+1. Regenerate runtime captures before a broad visual decision or final regression:
 
    ```powershell
    .\.venv\Scripts\python.exe qa\capture_v8.py --all --clean --out-dir qa\_captures_v8
@@ -34,6 +34,105 @@ handoff items.
 
 3. Inspect the side-by-side panel for each item before editing or closing it.
 
+## Resource-Safe Validation
+
+Microfix de una pantalla:
+
+- Nunca usar `capture_v8.py --all --clean` por defecto.
+- Usar `capture_v8.py --app ... --view ... --theme ... --out-dir qa\_captures_v8 --no-clean`.
+- Luego correr `layered_visual_compare.py` con filtro de key/app/view/theme para validar solo la superficie relevante.
+- El reporte puede ser `REPORT_SCOPE: PARTIAL` y sirve como evidencia individual si `REPORT_EVIDENCE_VALID: YES` y la exact key esta en `PASS`.
+
+Familia chica:
+
+- Capturar solo las vistas/temas afectados, repitiendo comandos puntuales con `--no-clean`.
+- Usar comparator filtrado por `--keys-file` o filtros equivalentes.
+- No correr `--all` salvo que la familia toque una base compartida amplia.
+
+Cambio transversal grande:
+
+- Si toca `theme`, `chrome`, `NMCard`, layout shell, tokens, navegacion base, helpers de captura compartidos o componentes globales, ahi si corresponde una regresion amplia con `capture_v8.py --all --clean`.
+
+Regresion final:
+
+- Solo para cierre global o verificacion amplia.
+- Usar `capture_v8.py --all --clean` + comparator full.
+
+Disciplina de recursos:
+
+- No correr varios harnesses pesados en simultaneo.
+- No correr `capture_v8 --all`, `runtime_live_probe --all`, E2E completo y comparator full al mismo tiempo.
+- En agentes baratos/Hermes Desktop, usar una sola validacion pesada por vez.
+- Para microfix, preferir validacion puntual, no matriz completa.
+- `REPORT_SCOPE: PARTIAL` nunca puede habilitar `HANDOFF_CLOSURE_ALLOWED: YES`.
+- `REPORT_SCOPE: PARTIAL` si puede servir para cerrar un checkbox individual si la exact key esta en `PASS` y `REPORT_EVIDENCE_VALID: YES`.
+- `REPORT_SCOPE: FULL` es requerido para cierre global del handoff.
+
+Ejemplos seguros:
+
+Microfix pantalla exacta:
+
+```powershell
+.\.venv\Scripts\python.exe qa\capture_v8.py `
+  --app suite `
+  --view dbt-practice-stop `
+  --theme light `
+  --out-dir qa\_captures_v8 `
+  --no-clean
+
+.\.venv\Scripts\python.exe qa\layered_visual_compare.py `
+  --canonical qa\_mockup_canonical `
+  --actual qa\_captures_v8 `
+  --out-dir reports\qa\layered_visual_compare_item `
+  --key "suite:dbt-practice-stop@light"
+```
+
+Familia chica:
+
+```powershell
+.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view timer-running --theme light --out-dir qa\_captures_v8 --no-clean
+.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view timer-paused  --theme light --out-dir qa\_captures_v8 --no-clean
+
+.\.venv\Scripts\python.exe qa\layered_visual_compare.py `
+  --canonical qa\_mockup_canonical `
+  --actual qa\_captures_v8 `
+  --out-dir reports\qa\layered_visual_compare_family `
+  --keys-file reports\qa\visual_family_keys.txt
+```
+
+Runtime probe puntual:
+
+```powershell
+.\.venv\Scripts\python.exe qa\runtime_live_probe.py `
+  --app suite `
+  --view timer `
+  --theme light `
+  --mode offscreen
+```
+
+E2E puntual:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests\e2e\suite\test_e2e_s07_timer.py -q
+```
+
+E2E smoke:
+
+```powershell
+.\scripts\e2e\run-e2e-smoke.ps1
+```
+
+Regresion final completa:
+
+```powershell
+.\.venv\Scripts\python.exe qa\capture_v8.py --all --clean --out-dir qa\_captures_v8
+
+.\.venv\Scripts\python.exe qa\layered_visual_compare.py `
+  --canonical qa\_mockup_canonical `
+  --actual qa\_captures_v8 `
+  --out-dir reports\qa\layered_visual_compare_fresh
+```
+
 ## Forbidden Closure Reasons
 
 Do not mark an item complete because of:
@@ -46,7 +145,7 @@ Do not mark an item complete because of:
 - Any zip-based comparison.
 - Any report whose manifest says `technical_capture_only`,
   `REVIEW_INCOMPLETE`, or `REPORT_EVIDENCE_VALID: NO`.
-- `HANDOFF_CLOSURE_ALLOWED: NO` by itself does **not** invalidate a report for closing an individual checkbox. It only means the global handoff is not yet complete because other keys still have divergences. Individual closure requires `REPORT_EVIDENCE_VALID: YES` and the exact key status `PASS`.
+- `HANDOFF_CLOSURE_ALLOWED: NO` by itself does **not** invalidate a report for closing an individual checkbox. It means the global handoff is not complete because the report is partial or other keys still have divergences. Individual closure requires `REPORT_EVIDENCE_VALID: YES` and the exact key status `PASS`.
 - Owner acceptance, human review, or "looks good enough".
 - Acceptable residue, partial progress, or "mostly fixed".
 - Blocked / too hard / won’t fix as a closure reason.
@@ -71,7 +170,7 @@ The checklist is a sequential queue, not a global audit. Rules:
 
 ## Comparator Command Lock
 
-The only valid comparator command for closure evidence is the fixed command documented in the Required Flow section. Any report generated with the following overrides is **exploratory only** and **not valid** as closure evidence:
+Valid comparator closure evidence must use the active comparator command documented in Required Flow or Resource-Safe Validation. Full reports are required for global handoff closure; filtered `REPORT_SCOPE: PARTIAL` reports are valid only for individual checkbox evidence. Any report generated with the following overrides is **exploratory only** and **not valid** as closure evidence:
 
 - `--raw-changed-threshold`
 - `--raw-mad-threshold`
@@ -103,7 +202,7 @@ An item can be changed from `[ ]` to `[x]` only when the note includes:
 - Fresh `qa/layered_visual_compare.py` report path.
 - The report must show `REPORT_EVIDENCE_VALID: YES`.
 - The exact key status is `PASS` only.
-- `HANDOFF_CLOSURE_ALLOWED: NO` is acceptable for individual closure if the only reason is that other keys remain `FAIL`; the deciding factor is the exact key `PASS` in a valid report.
+- `HANDOFF_CLOSURE_ALLOWED: NO` is acceptable for individual closure if the reason is `partial_scope` or that other keys remain `FAIL`; the deciding factor is the exact key `PASS` in a valid report.
 - The comparator may exit non-zero while other items remain `FAIL`; for individual closure, read the exact key status in the JSON/MD report, not the global exit code.
 - One short manual side-by-side confirmation.
 

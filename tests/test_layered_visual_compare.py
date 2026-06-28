@@ -7,8 +7,10 @@ from PIL import Image, ImageDraw
 
 from qa.layered_visual_compare import (
     LayeredThresholds,
+    ReportFilters,
     compare_pair,
     compare_sources,
+    load_keys_file,
     parse_capture_name,
 )
 
@@ -285,7 +287,132 @@ def test_evidence_valid_and_closure_true_with_all_pass(tmp_path, monkeypatch):
         write_panels=True,
     )
     payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert payload["report_scope"] == "FULL"
     assert payload["report_evidence_valid"] is True
     assert payload["report_evidence_reason"] is None
     assert payload["handoff_closure_allowed"] is True
     assert payload["handoff_closure_reason"] is None
+
+
+def test_report_scope_full_without_filters(tmp_path, monkeypatch):
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
+    (tmp_path / "c").mkdir()
+    (tmp_path / "a").mkdir()
+    _png(tmp_path / "c" / "suite-home-light-120x80.png")
+    _png(tmp_path / "a" / "suite-home-light-120x80.png")
+
+    _, reports = compare_sources(
+        tmp_path / "c",
+        tmp_path / "a",
+        tmp_path / "out",
+        thresholds=LayeredThresholds(),
+        use_odiff=True,
+        write_panels=True,
+    )
+
+    payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert payload["report_scope"] == "FULL"
+
+
+def test_report_scope_partial_with_key_filter(tmp_path, monkeypatch):
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
+    (tmp_path / "c").mkdir()
+    (tmp_path / "a").mkdir()
+    _png(tmp_path / "c" / "suite-home-light-120x80.png")
+    _png(tmp_path / "a" / "suite-home-light-120x80.png")
+
+    _, reports = compare_sources(
+        tmp_path / "c",
+        tmp_path / "a",
+        tmp_path / "out",
+        thresholds=LayeredThresholds(),
+        use_odiff=True,
+        write_panels=True,
+        filters=ReportFilters(key="suite:home@light"),
+    )
+
+    payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert payload["report_scope"] == "PARTIAL"
+    assert payload["report_filters"]["key"] == "suite:home@light"
+
+
+def test_partial_pass_key_does_not_allow_global_closure_when_out_of_scope_key_fails(tmp_path, monkeypatch):
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
+    (tmp_path / "c").mkdir()
+    (tmp_path / "a").mkdir()
+    _png(tmp_path / "c" / "suite-home-light-120x80.png")
+    _png(tmp_path / "a" / "suite-home-light-120x80.png")
+    _png(tmp_path / "c" / "suite-timer-running-light-120x80.png")
+    _png(tmp_path / "a" / "suite-timer-running-light-120x80.png", color=(40, 80, 160))
+
+    results, reports = compare_sources(
+        tmp_path / "c",
+        tmp_path / "a",
+        tmp_path / "out",
+        thresholds=LayeredThresholds(),
+        use_odiff=True,
+        write_panels=True,
+        filters=ReportFilters(key="suite:home@light"),
+    )
+
+    payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert [result.key for result in results] == ["suite:home@light"]
+    assert payload["summary"]["pass"] == 1
+    assert payload["report_evidence_valid"] is True
+    assert payload["handoff_closure_allowed"] is False
+    assert "partial_scope" in payload["handoff_closure_reason"]
+
+
+def test_keys_file_filters_only_listed_keys(tmp_path, monkeypatch):
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
+    (tmp_path / "c").mkdir()
+    (tmp_path / "a").mkdir()
+    _png(tmp_path / "c" / "suite-home-light-120x80.png")
+    _png(tmp_path / "a" / "suite-home-light-120x80.png")
+    _png(tmp_path / "c" / "suite-home-dark-120x80.png")
+    _png(tmp_path / "a" / "suite-home-dark-120x80.png")
+    keys_file = tmp_path / "keys.txt"
+    keys_file.write_text("# comment\n\nsuite:home@dark\n", encoding="utf-8")
+
+    results, reports = compare_sources(
+        tmp_path / "c",
+        tmp_path / "a",
+        tmp_path / "out",
+        thresholds=LayeredThresholds(),
+        use_odiff=True,
+        write_panels=True,
+        filters=ReportFilters(keys_file=str(keys_file), keys_file_keys=load_keys_file(keys_file)),
+    )
+
+    payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert [result.key for result in results] == ["suite:home@dark"]
+    assert payload["report_scope"] == "PARTIAL"
+    assert payload["summary"]["total"] == 1
+
+
+def test_filter_without_matches_invalidates_evidence(tmp_path, monkeypatch):
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
+    (tmp_path / "c").mkdir()
+    (tmp_path / "a").mkdir()
+    _png(tmp_path / "c" / "suite-home-light-120x80.png")
+    _png(tmp_path / "a" / "suite-home-light-120x80.png")
+
+    _, reports = compare_sources(
+        tmp_path / "c",
+        tmp_path / "a",
+        tmp_path / "out",
+        thresholds=LayeredThresholds(),
+        use_odiff=True,
+        write_panels=True,
+        filters=ReportFilters(key="suite:missing@light"),
+    )
+
+    payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert payload["report_scope"] == "PARTIAL"
+    assert payload["report_evidence_valid"] is False
+    assert "empty_results" in payload["report_evidence_reason"]

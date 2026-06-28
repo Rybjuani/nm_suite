@@ -200,6 +200,41 @@ class LayeredResult:
         }
 
 
+@dataclass(frozen=True)
+class ReportFilters:
+    app: str | None = None
+    view: str | None = None
+    theme: str | None = None
+    key: str | None = None
+    keys_file: str | None = None
+    keys_file_keys: tuple[str, ...] = ()
+
+    @property
+    def active(self) -> bool:
+        return any((self.app, self.view, self.theme, self.key, self.keys_file))
+
+    @property
+    def scope(self) -> str:
+        return "PARTIAL" if self.active else "FULL"
+
+    @property
+    def exact_keys(self) -> set[str]:
+        keys = set(self.keys_file_keys)
+        if self.key:
+            keys.add(self.key)
+        return keys
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "app": self.app,
+            "view": self.view,
+            "theme": self.theme,
+            "key": self.key,
+            "keys_file": self.keys_file,
+            "keys_file_keys": list(self.keys_file_keys),
+        }
+
+
 def parse_capture_name(path: Path) -> CaptureRef | None:
     match = _NAME_RE.match(path.name)
     if not match:
@@ -223,15 +258,17 @@ def compare_sources(
     thresholds: LayeredThresholds | None = None,
     use_odiff: bool = True,
     write_panels: bool = True,
+    filters: ReportFilters | None = None,
 ) -> tuple[list[LayeredResult], dict[str, str]]:
     thresholds = thresholds or LayeredThresholds()
+    filters = filters or ReportFilters()
     out_dir.mkdir(parents=True, exist_ok=True)
     canonical_root = _resolve_source(canonical_source, out_dir / "_sources" / "canonical")
     actual_root = _resolve_source(actual_source, out_dir / "_sources" / "actual")
 
     canonical = _index_images(canonical_root)
     actual = _index_images(actual_root)
-    keys = sorted(set(canonical) | set(actual))
+    keys = _filter_keys(sorted(set(canonical) | set(actual)), filters)
     results: list[LayeredResult] = []
     panel_dir = out_dir / "panels"
     if write_panels:
@@ -265,6 +302,7 @@ def compare_sources(
         actual_root=actual_root,
         use_odiff=use_odiff,
         write_panels=write_panels,
+        filters=filters,
     )
     return results, reports
 
@@ -390,7 +428,9 @@ def write_reports(
     actual_root: Path | None = None,
     use_odiff: bool = True,
     write_panels: bool = True,
+    filters: ReportFilters | None = None,
 ) -> dict[str, str]:
+    filters = filters or ReportFilters()
     out_dir.mkdir(parents=True, exist_ok=True)
     json_path = out_dir / "LAYERED_VISUAL_REPORT.json"
     csv_path = out_dir / "LAYERED_VISUAL_REPORT.csv"
@@ -403,6 +443,7 @@ def write_reports(
         thresholds,
         use_odiff,
         write_panels,
+        filters,
     )
     evidence = _report_evidence_valid(
         results,
@@ -416,6 +457,8 @@ def write_reports(
         "generated_at": _dt.datetime.now().isoformat(timespec="seconds"),
         "authority": _HANDOFF_AUTHORITY,
         "source_policy": _ACTIVE_SOURCE_POLICY,
+        "report_scope": filters.scope,
+        "report_filters": filters.to_dict(),
         "report_evidence_valid": evidence["valid"],
         "report_evidence_reason": evidence["reason"],
         "handoff_closure_allowed": closure["allowed"],
@@ -447,6 +490,7 @@ def write_reports(
             actual_source=actual_source,
             use_odiff=use_odiff,
             write_panels=write_panels,
+            filters=filters,
         ),
         encoding="utf-8",
     )
@@ -483,6 +527,33 @@ def _index_images(root: Path) -> dict[str, CaptureRef]:
         if parsed:
             indexed[parsed.key] = parsed
     return indexed
+
+
+def _filter_keys(keys: list[str], filters: ReportFilters) -> list[str]:
+    exact_keys = filters.exact_keys
+    filtered: list[str] = []
+    for key in keys:
+        app, view, theme = _split_key(key, None, None)
+        if exact_keys and key not in exact_keys:
+            continue
+        if filters.app and app != filters.app:
+            continue
+        if filters.view and view != filters.view:
+            continue
+        if filters.theme and filters.theme != "both" and theme != filters.theme:
+            continue
+        filtered.append(key)
+    return filtered
+
+
+def load_keys_file(path: Path) -> tuple[str, ...]:
+    keys: list[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        value = line.strip()
+        if not value or value.startswith("#"):
+            continue
+        keys.append(value)
+    return tuple(keys)
 
 
 def _split_key(
@@ -965,13 +1036,17 @@ def _report_closure_allowed(
     thresholds: LayeredThresholds,
     use_odiff: bool,
     write_panels: bool,
+    filters: ReportFilters | None = None,
 ) -> dict[str, Any]:
+    filters = filters or ReportFilters()
     evidence = _report_evidence_valid(
         results, canonical_source, actual_source, thresholds, use_odiff, write_panels
     )
     if not evidence["valid"]:
         return {"allowed": False, "reason": evidence["reason"]}
     reasons: list[str] = []
+    if filters.scope == "PARTIAL":
+        reasons.append("partial_scope")
     if any(result.status in {"MISSING_ACTUAL", "EXTRA_ACTUAL", "SIZE_MISMATCH"} for result in results):
         reasons.append("pairing_or_size_mismatch")
     if any(result.real_divergence for result in results):
@@ -989,10 +1064,14 @@ def _markdown_report(
     actual_source: Path | None = None,
     use_odiff: bool = True,
     write_panels: bool = True,
+    filters: ReportFilters | None = None,
 ) -> str:
+    filters = filters or ReportFilters()
     summary = _summary(results)
     evidence = _report_evidence_valid(results, canonical_source, actual_source, thresholds, use_odiff, write_panels)
-    closure = _report_closure_allowed(results, canonical_source, actual_source, thresholds, use_odiff, write_panels)
+    closure = _report_closure_allowed(
+        results, canonical_source, actual_source, thresholds, use_odiff, write_panels, filters
+    )
     lines = [
         "# Layered visual comparison report",
         "",
@@ -1003,6 +1082,8 @@ def _markdown_report(
         f"- {_ACTIVE_SOURCE_POLICY}",
         f"- Canonical source: `{canonical_source or _DEFAULT_CANONICAL}`",
         f"- Actual source: `{actual_source or _DEFAULT_ACTUAL}`",
+        f"- REPORT_SCOPE: {filters.scope}",
+        f"- REPORT_FILTERS: {filters.to_dict()}",
         f"- REPORT_EVIDENCE_VALID: {'YES' if evidence['valid'] else 'NO'}",
     ]
     if evidence["reason"]:
@@ -1063,6 +1144,11 @@ def main() -> int:
     parser.add_argument("--canonical", default=str(_DEFAULT_CANONICAL))
     parser.add_argument("--actual", default=str(_DEFAULT_ACTUAL))
     parser.add_argument("--out-dir", default=str(_DEFAULT_OUT))
+    parser.add_argument("--app", choices=("suite", "hub"), help="Filter report to one app")
+    parser.add_argument("--view", help="Filter report to one view id")
+    parser.add_argument("--theme", choices=("light", "dark", "both"), help="Filter report to one theme")
+    parser.add_argument("--key", help='Filter report to one exact key, e.g. "suite:dbt-practice-stop@light"')
+    parser.add_argument("--keys-file", help="Filter report to exact keys listed one per line")
     parser.add_argument("--no-odiff", action="store_true", help="Disable odiff layer")
     parser.add_argument("--no-panels", action="store_true", help="Do not write side-by-side panels")
     parser.add_argument("--raw-changed-threshold", type=float, default=LayeredThresholds.max_changed_pixel_ratio)
@@ -1079,6 +1165,14 @@ def main() -> int:
         max_odiff_diff_pct=args.max_odiff_diff_pct,
         max_bbox_shift_px=args.max_bbox_shift_px,
     )
+    filters = ReportFilters(
+        app=args.app,
+        view=args.view,
+        theme=args.theme,
+        key=args.key,
+        keys_file=args.keys_file,
+        keys_file_keys=load_keys_file(Path(args.keys_file)) if args.keys_file else (),
+    )
     results, reports = compare_sources(
         Path(args.canonical),
         Path(args.actual),
@@ -1086,6 +1180,7 @@ def main() -> int:
         thresholds=thresholds,
         use_odiff=not args.no_odiff,
         write_panels=not args.no_panels,
+        filters=filters,
     )
     summary = _summary(results)
     print("=" * 60)
@@ -1093,6 +1188,8 @@ def main() -> int:
     print(f"Authority:             {_HANDOFF_AUTHORITY}")
     print(f"Canonical source:      {Path(args.canonical)}")
     print(f"Actual source:         {Path(args.actual)}")
+    print(f"Report scope:          {filters.scope}")
+    print(f"Report filters:        {filters.to_dict()}")
     evidence = _report_evidence_valid(
         results,
         Path(args.canonical),
@@ -1108,6 +1205,7 @@ def main() -> int:
         thresholds,
         not args.no_odiff,
         not args.no_panels,
+        filters,
     )
     print(
         "Report evidence valid: "
