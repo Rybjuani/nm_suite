@@ -10,7 +10,7 @@ import uuid
 import logging
 
 from PyQt6.QtCore import Qt, pyqtSignal, QRectF, QEvent
-from PyQt6.QtGui import QPainter, QBrush, QColor
+from PyQt6.QtGui import QPainter, QBrush, QColor, QPixmap
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -725,8 +725,7 @@ class _PracticeModalScrim(QWidget):
         super().__init__(parent)
         self._modo = norm_modo(modo)
         self._content: QWidget | None = None
-        # No pinta fondo opaco: el fillRect translúcido del paintEvent oscurece
-        # el contenido que quedó debajo (efecto scrim).
+        self._bg_pixmap: "QPixmap | None" = None
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         parent.installEventFilter(self)
         self.setGeometry(parent.rect())
@@ -773,9 +772,31 @@ class _PracticeModalScrim(QWidget):
         self._apply_card_style()
         self.update()
 
+    def capture_background(self):
+        """Pre-captura el contenido del parent y aplica el tinte del scrim.
+
+        En el renderer offscreen de Qt los child widgets con alpha no compósitan
+        sobre su parent. Grabamos el parent mientras el scrim está oculto y
+        aplicamos el color del scrim manualmente para que paintEvent lo dibuje
+        de forma opaca — el resultado visual es idéntico al blend real.
+        """
+        parent = self.parent()
+        if parent is None:
+            return
+        pix = parent.grab()
+        tinted = QPixmap(pix.size())
+        p = QPainter(tinted)
+        p.drawPixmap(0, 0, pix)
+        p.fillRect(tinted.rect(), QColor(*self._SCRIM_RGBA))
+        p.end()
+        self._bg_pixmap = tinted
+
     def paintEvent(self, event):
         p = QPainter(self)
-        p.fillRect(self.rect(), QColor(*self._SCRIM_RGBA))
+        if self._bg_pixmap is not None:
+            p.drawPixmap(0, 0, self._bg_pixmap)
+        else:
+            p.fillRect(self.rect(), QColor(*self._SCRIM_RGBA))
 
     def eventFilter(self, obj, event):
         if obj is self.parent() and event.type() == QEvent.Type.Resize:
@@ -982,6 +1003,9 @@ class ModuloDBT(NMModule):
         self._set_modal_background_controls_visible(False)
         if self._modal_scrim is None:
             self._modal_scrim = _PracticeModalScrim(self._content, self._modo)
+        # Captura el fondo ANTES de mostrar el scrim para que el tinte compósite
+        # correctamente incluso en el renderer offscreen de Qt.
+        self._modal_scrim.capture_background()
         self._modal_scrim.set_content(content, max_width)
         self._modal_scrim.setGeometry(self._content.rect())
         self._modal_scrim.show()
