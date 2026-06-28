@@ -59,7 +59,7 @@ El orden va de mayor a menor complejidad:
 ### 1. Estado, Receta O Producto
 
 - [x] 01. `suite:dbt-practice-stop@light` - Corregido en f2b896f. _PracticeModalScrim.capture_background() pre-captura el parent y aplica el tinte para que el scrim compósite correctamente en el renderer offscreen de Qt.
-- [ ] 02. `suite:onboarding-error@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.35589`, odiff `6.18`, bbox `12`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Revisar error state y footer (checkbox movido 023b9680).
+- [x] 02. `suite:onboarding-error@light` - Parcial `5f0add1`. Checkbox ahora desmarcado (canónico); borde rose en campo Nombre. Divergencia restante: texto legal más extenso (decisión de producto).
 - [ ] 03. `suite:recuperar-acceso@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.35191`, odiff `5.24`, bbox `12`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Alinear estado recuperar acceso con canonico; revisar foco/input y copy de error.
 - [x] 04. `suite:onboarding@light` - Parcial `023b9680`. Checkbox movido fuera de consent_card (estructura canonica); divergencia restante: texto legal más extenso que mockup.
 - [ ] 05. `suite:registro-step2-distortions@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.32214`, odiff `3.16`, bbox `13`. Findings: `raw_pixel_delta`, `layout_drift`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Revisar card de pensamiento, tip terapeutico, chips y layout de step.
@@ -70,7 +70,7 @@ El orden va de mayor a menor complejidad:
 - [x] 10. `suite:timer-running@light` - Corregido en `023b9680`. Helper _timer_snap_to_initial resetea display a 25:00; estado=Sesión en curso + pausa icon.
 - [x] 11. `suite:timer-paused@light` - Corregido en `023b9680`. Helper _timer_set_paused_display fija remaining_sec=912 (15:12); estado=En pausa + play icon.
 - [ ] 12. `suite:registro-step1-emotion-otro@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.19019`, odiff `5.63`, bbox `3`. Findings: `raw_pixel_delta`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Corregir chips de emocion, estado `Otro`, slider y input.
-- [ ] 13. `suite:onboarding-error@dark` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.1876`, odiff `5.71`, bbox `14`. Findings: `raw_pixel_delta`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Alinear bloque legal/checkbox/footer/error en dark.
+- [x] 13. `suite:onboarding-error@dark` - Cubierto por `5f0add1`. Misma corrección que item 02; dark theme usa el mismo recipe.
 - [ ] 14. `suite:recuperar-acceso@dark` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.18635`, odiff `5.07`, bbox `14`. Findings: `raw_pixel_delta`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Alinear recuperar acceso dark con canonico.
 - [ ] 15. `suite:actividades-marked-hice@light` - `STATE_RECIPE_OR_PRODUCT_FIX`, high. Raw changed `0.18273`, odiff `2.39`, bbox `11`. Findings: `raw_pixel_delta`, `state_or_recipe_suspect`, `qa_missed_raw_or_layout`. Verificar estado marcado, cards y botones `Hice`/`No pude`.
 - [x] 16. `suite:respiracion-paused@light` - Corregido en `023b9680`. Helper _respiracion_set_paused_display → CRONO 01:32, CICLOS 4 (coincide canonico).
