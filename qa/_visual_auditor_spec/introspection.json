@@ -179,7 +179,22 @@
         "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 9
+    "fail_count": 9,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:home-no-score@light",
@@ -370,7 +385,22 @@
         "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 9
+    "fail_count": 9,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:onboarding@light",
@@ -434,7 +464,22 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          436,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:onboarding-error@light",
@@ -498,7 +543,22 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          436,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:recuperar-acceso@light",
@@ -562,7 +622,22 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          436,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:animo@light",
@@ -728,7 +803,35 @@
         "message": "NMChartPanel has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:dbt-now@light",
@@ -854,7 +957,35 @@
         "message": "_NeedCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:dbt-library@light",
@@ -1034,7 +1165,35 @@
         "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 8
+    "fail_count": 8,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:dbt-practice-stop@light",
@@ -1238,7 +1397,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 9
+    "fail_count": 9,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:respiracion@light",
@@ -1383,7 +1570,74 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          353,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          435,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          517,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:respiracion-running@light",
@@ -1528,7 +1782,74 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          353,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          435,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          517,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:respiracion-paused@light",
@@ -1673,7 +1994,74 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          353,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          435,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          517,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:registro@light",
@@ -1779,7 +2167,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:registro-step1-emotion@light",
@@ -1894,7 +2310,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:registro-step1-emotion-otro@light",
@@ -2020,7 +2464,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:registro-step2-distortions@light",
@@ -2158,7 +2630,35 @@
         "message": "_TipCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 2
+    "fail_count": 2,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:registro-step3-filled@light",
@@ -2264,7 +2764,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:registro-success@light",
@@ -2350,7 +2878,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:rutina@light",
@@ -2511,7 +3067,35 @@
         "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:rutina-all-completed@light",
@@ -2672,7 +3256,35 @@
         "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:rutina-add-task@light",
@@ -2854,7 +3466,35 @@
         "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:rutina-empty@light",
@@ -2925,7 +3565,35 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:actividades@light",
@@ -3113,7 +3781,35 @@
         "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 5
+    "fail_count": 5,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:actividades-marked-hice@light",
@@ -3301,7 +3997,35 @@
         "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 5
+    "fail_count": 5,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:actividades-filtered@light",
@@ -3439,7 +4163,35 @@
         "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 2
+    "fail_count": 2,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:actividades-empty@light",
@@ -3511,7 +4263,35 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:timer@light",
@@ -3614,7 +4394,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:timer-running@light",
@@ -3717,7 +4525,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:timer-paused@light",
@@ -3820,7 +4656,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:timer-empty@light",
@@ -3914,7 +4778,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:avisos@light",
@@ -4009,7 +4901,35 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:avisos-filter-activos@light",
@@ -4104,7 +5024,35 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:avisos-search@light",
@@ -4190,7 +5138,35 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:avisos-today@light",
@@ -4285,7 +5261,35 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:avisos-empty@light",
@@ -4357,7 +5361,35 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:pacientes@light",
@@ -4484,7 +5516,22 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:pacientes-empty@light",
@@ -4589,7 +5636,22 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:detalle@light",
@@ -4755,7 +5817,48 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 3
+    "fail_count": 3,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          730,
+          259,
+          198,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:detalle-plan-timer@light",
@@ -4910,7 +6013,48 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 3
+    "fail_count": 3,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          730,
+          259,
+          198,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:detalle-plan-rutina@light",
@@ -5066,7 +6210,48 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 3
+    "fail_count": 3,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          730,
+          259,
+          198,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:detalle-plan-activacion@light",
@@ -5222,7 +6407,61 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 3
+    "fail_count": 3,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          32,
+          514,
+          269,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 32px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          730,
+          257,
+          198,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:textos-globales@light",
@@ -5339,7 +6578,139 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          826,
+          147,
+          92,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 30px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          826,
+          245,
+          92,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 30px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          826,
+          343,
+          92,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 30px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          826,
+          441,
+          92,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 30px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMTextArea",
+        "object_name": "",
+        "rect": [
+          250,
+          737,
+          617,
+          90
+        ],
+        "severity": "medium",
+        "message": "NMTextArea exceeds its declared maximum size: height 90px > max 82px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMTextArea",
+        "object_name": "",
+        "rect": [
+          248,
+          4294,
+          613,
+          90
+        ],
+        "severity": "medium",
+        "message": "NMTextArea exceeds its declared maximum size: height 90px > max 82px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMTextArea",
+        "object_name": "",
+        "rect": [
+          249,
+          11908,
+          613,
+          90
+        ],
+        "severity": "medium",
+        "message": "NMTextArea exceeds its declared maximum size: height 90px > max 82px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMTextArea",
+        "object_name": "",
+        "rect": [
+          248,
+          12724,
+          613,
+          90
+        ],
+        "severity": "medium",
+        "message": "NMTextArea exceeds its declared maximum size: height 90px > max 82px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:detalle-resumen-ia-0@light",
@@ -5362,7 +6733,8 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": []
   },
   {
     "surface_key": "suite:home@dark",
@@ -5544,7 +6916,22 @@
         "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 9
+    "fail_count": 9,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:home-no-score@dark",
@@ -5735,7 +7122,22 @@
         "message": "ModuleCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 9
+    "fail_count": 9,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:onboarding@dark",
@@ -5799,7 +7201,22 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          436,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:onboarding-error@dark",
@@ -5863,7 +7280,22 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          436,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:recuperar-acceso@dark",
@@ -5927,7 +7359,22 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          436,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:animo@dark",
@@ -6093,7 +7540,35 @@
         "message": "NMChartPanel has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:dbt-now@dark",
@@ -6219,7 +7694,35 @@
         "message": "_NeedCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:dbt-library@dark",
@@ -6399,7 +7902,35 @@
         "message": "_SkillCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 8
+    "fail_count": 8,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:dbt-practice-stop@dark",
@@ -6603,7 +8134,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 9
+    "fail_count": 9,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:respiracion@dark",
@@ -6748,7 +8307,74 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          353,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          435,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          517,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:respiracion-running@dark",
@@ -6893,7 +8519,74 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          353,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          435,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          517,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:respiracion-paused@dark",
@@ -7038,7 +8731,74 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          353,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          435,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          517,
+          84,
+          76,
+          56
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 56px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:registro@dark",
@@ -7144,7 +8904,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:registro-step1-emotion@dark",
@@ -7259,7 +9047,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:registro-step1-emotion-otro@dark",
@@ -7385,7 +9201,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:registro-step2-distortions@dark",
@@ -7523,7 +9367,35 @@
         "message": "_TipCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 2
+    "fail_count": 2,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:registro-step3-filled@dark",
@@ -7629,7 +9501,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:registro-success@dark",
@@ -7715,7 +9615,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:rutina@dark",
@@ -7876,7 +9804,35 @@
         "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:rutina-all-completed@dark",
@@ -8037,7 +9993,35 @@
         "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:rutina-add-task@dark",
@@ -8219,7 +10203,35 @@
         "message": "_SectionCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 4
+    "fail_count": 4,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:rutina-empty@dark",
@@ -8290,7 +10302,35 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:actividades@dark",
@@ -8478,7 +10518,35 @@
         "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 5
+    "fail_count": 5,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:actividades-marked-hice@dark",
@@ -8666,7 +10734,35 @@
         "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 5
+    "fail_count": 5,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:actividades-filtered@dark",
@@ -8804,7 +10900,35 @@
         "message": "_SuggestedCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 2
+    "fail_count": 2,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:actividades-empty@dark",
@@ -8876,7 +11000,35 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:timer@dark",
@@ -8979,7 +11131,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:timer-running@dark",
@@ -9082,7 +11262,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:timer-paused@dark",
@@ -9185,7 +11393,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:timer-empty@dark",
@@ -9279,7 +11515,35 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:avisos@dark",
@@ -9374,7 +11638,35 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:avisos-filter-activos@dark",
@@ -9469,7 +11761,35 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:avisos-search@dark",
@@ -9555,7 +11875,35 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:avisos-today@dark",
@@ -9650,7 +11998,35 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "suite:avisos-empty@dark",
@@ -9722,7 +12098,35 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:pacientes@dark",
@@ -9849,7 +12253,22 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:pacientes-empty@dark",
@@ -9954,7 +12373,22 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 1
+    "fail_count": 1,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:detalle@dark",
@@ -10120,7 +12554,48 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 3
+    "fail_count": 3,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          730,
+          259,
+          198,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:detalle-plan-timer@dark",
@@ -10275,7 +12750,48 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 3
+    "fail_count": 3,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          730,
+          259,
+          198,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:detalle-plan-rutina@dark",
@@ -10431,7 +12947,48 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 3
+    "fail_count": 3,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          730,
+          259,
+          198,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:detalle-plan-activacion@dark",
@@ -10587,7 +13144,61 @@
         "message": "NMCard has no border-radius (renders as sharp rectangle)"
       }
     ],
-    "fail_count": 3
+    "fail_count": 3,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          32,
+          514,
+          269,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 32px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          730,
+          257,
+          198,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 28px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:textos-globales@dark",
@@ -10704,7 +13315,139 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          6,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          6,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          826,
+          147,
+          92,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 30px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          826,
+          245,
+          92,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 30px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          826,
+          343,
+          92,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 30px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMButtonOutline",
+        "object_name": "",
+        "rect": [
+          826,
+          441,
+          92,
+          42
+        ],
+        "severity": "medium",
+        "message": "NMButtonOutline exceeds its declared maximum size: height 42px > max 30px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMTextArea",
+        "object_name": "",
+        "rect": [
+          250,
+          737,
+          617,
+          90
+        ],
+        "severity": "medium",
+        "message": "NMTextArea exceeds its declared maximum size: height 90px > max 82px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMTextArea",
+        "object_name": "",
+        "rect": [
+          248,
+          4294,
+          613,
+          90
+        ],
+        "severity": "medium",
+        "message": "NMTextArea exceeds its declared maximum size: height 90px > max 82px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMTextArea",
+        "object_name": "",
+        "rect": [
+          249,
+          11908,
+          613,
+          90
+        ],
+        "severity": "medium",
+        "message": "NMTextArea exceeds its declared maximum size: height 90px > max 82px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "NMTextArea",
+        "object_name": "",
+        "rect": [
+          248,
+          12724,
+          613,
+          90
+        ],
+        "severity": "medium",
+        "message": "NMTextArea exceeds its declared maximum size: height 90px > max 82px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ]
   },
   {
     "surface_key": "hub:detalle-resumen-ia-0@dark",
@@ -10727,6 +13470,7 @@
       }
     },
     "divergences": [],
-    "fail_count": 0
+    "fail_count": 0,
+    "size_review": []
   }
 ]

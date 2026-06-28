@@ -85,6 +85,15 @@ class WidgetInfo:
     border_px: float | None
     shape_radius_attr: Any  # NMAvatar._radius / NMCard._radius_override (None or int)
     disabled_attr: bool
+    # Declared maximum size (maximumWidth/Height if explicitly bounded, i.e.
+    # setMaximumX/setFixedX was used; None when the axis is unbounded). Lets a
+    # contract flag widgets that render LARGER than the cap they declared — the
+    # symptom of a global QSS rule (e.g. QPushButton min-height) or a layout
+    # overriding setFixedSize/setMaximumSize. A QSS min-height pushes
+    # minimumHeight above maximumHeight, so "min==max" no longer holds; the
+    # robust signal is "rendered > declared maximum".
+    max_w: int | None = None
+    max_h: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -99,6 +108,8 @@ class WidgetInfo:
             "has_gradient_bg": self.has_gradient_bg,
             "border_px": self.border_px,
             "shape_radius_attr": self.shape_radius_attr,
+            "max_w": self.max_w,
+            "max_h": self.max_h,
         }
 
 
@@ -133,6 +144,15 @@ def introspect_widget(widget: QWidget, root: QWidget) -> WidgetInfo:
     geo = widget.geometry()
     # shape attribute: NMAvatar uses _radius, NMCard uses _radius_override
     shape_attr = getattr(widget, "_radius", getattr(widget, "_radius_override", None))
+    # Declared maximum (bounded) size. QWIDGETSIZE_MAX = 16777215 is the default
+    # "unbounded" value; anything below it means setMaximumX/setFixedX was used.
+    _QMAX = 16777215
+    try:
+        maxw, maxh = widget.maximumWidth(), widget.maximumHeight()
+        max_w = maxw if 0 < maxw < _QMAX else None
+        max_h = maxh if 0 < maxh < _QMAX else None
+    except Exception:
+        max_w = max_h = None
     return WidgetInfo(
         cls=type(widget).__name__,
         object_name=widget.objectName() or "",
@@ -149,6 +169,8 @@ def introspect_widget(widget: QWidget, root: QWidget) -> WidgetInfo:
         border_px=border,
         shape_radius_attr=shape_attr,
         disabled_attr=bool(getattr(widget, "_disabled", False)),
+        max_w=max_w,
+        max_h=max_h,
     )
 
 
@@ -262,12 +284,57 @@ def _contract_gradient_when_specified(info: WidgetInfo) -> dict[str, Any] | None
     }
 
 
+_FIXED_SIZE_TOL = 2  # px of slack before a fixed-size mismatch counts
+
+
+def _contract_fixed_size(info: WidgetInfo) -> dict[str, Any] | None:
+    """Flag widgets that render LARGER than the maximum size they declared.
+
+    A widget that called setFixedSize/setMaximumSize should never exceed that
+    cap. When it does, something overrode the constraint — most often a global
+    QSS rule (e.g. ``QPushButton { min-height }``) winning over setFixedSize, or
+    a layout that cannot honour it. Renderer-independent: compares the widget's
+    own declared maximum against its own rendered geometry, so a hit is real debt
+    (the component is bigger than it asked to be), never cross-render noise.
+    """
+    if not info.visible or not info.enabled or info.disabled_attr:
+        return None
+    parts: list[str] = []
+    if info.max_w is not None and info.w > info.max_w + _FIXED_SIZE_TOL:
+        parts.append(f"width {info.w}px > max {info.max_w}px")
+    if info.max_h is not None and info.h > info.max_h + _FIXED_SIZE_TOL:
+        parts.append(f"height {info.h}px > max {info.max_h}px")
+    if not parts:
+        return None
+    return {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": info.cls,
+        "object_name": info.object_name,
+        "rect": [info.x, info.y, info.w, info.h],
+        "severity": "medium",
+        "message": (
+            f"{info.cls} exceeds its declared maximum size: "
+            + "; ".join(parts)
+            + " (a global QSS rule or layout likely overrides setFixedSize)"
+        ),
+    }
+
+
 CONTRACTS = (
     _contract_card_shadow,
     _contract_playbutton_shadow,
     _contract_radius_present,
     _contract_gradient_when_specified,
 )
+
+# `_contract_fixed_size` is NOT in CONTRACTS on purpose: across the 86 surfaces
+# it fires ~198× on ~4 classes, all tracing to ONE systemic cause — the global
+# QSS `QPushButton { min-height }` floor overriding small controls that declared
+# a smaller max (theme toggle 32>24, QPushButton 32>26, NMButtonOutline 56>28,
+# NMTextArea 90>82). That is real debt but a single root cause, not 198 per-
+# surface failures, so shipping it as a 0-FP gate would be noise. It runs in
+# audit_tree into a separate `size_review` bucket: a per-class signal for a
+# focused fix, kept out of the divergence gate.
 
 
 # ── Geometry contracts (parent/sibling-aware) ──────────────────────────────────
@@ -438,12 +505,18 @@ def audit_tree(root: QWidget, surface_key: str = "") -> dict[str, Any]:
     divergences.extend(geometry_divergences(infos))
     counts: dict[str, int] = {}
     inventory: dict[str, dict[str, Any]] = {}
+    # Informational, NOT a gate: widgets rendering larger than their declared max
+    # (see note on _contract_fixed_size). Kept out of `divergences`.
+    size_review: list[dict[str, Any]] = []
     for info, _w in infos:
         counts[info.cls] = counts.get(info.cls, 0) + 1
         for contract in CONTRACTS:
             d = contract(info)
             if d:
                 divergences.append(d)
+        sv = _contract_fixed_size(info)
+        if sv:
+            size_review.append(sv)
         if _is_semantic(info.cls):
             inv = inventory.setdefault(
                 info.cls,
@@ -472,4 +545,5 @@ def audit_tree(root: QWidget, surface_key: str = "") -> dict[str, Any]:
         "inventory": inv_out,
         "divergences": divergences,
         "fail_count": len(divergences),
+        "size_review": size_review,
     }
