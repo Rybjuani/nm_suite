@@ -3,97 +3,13 @@
 from __future__ import annotations
 
 import os
-from types import SimpleNamespace
 
 import pytest
 
+from tests.e2e.fakes.supabase_fake import FakeSupabase as _FakeSupabase
+
 # Movido a tests/conftest.py (se aplica a todos los tests antes de
 # cualquier import de PyQt6, no solo a los que lo seteaban individualmente).
-
-
-class _FakeHubConfigQuery:
-    def __init__(self, client: "_FakeSupabase"):
-        self._client = client
-        self._operation = "select"
-        self._payload = None
-        self._filters: list[tuple[str, str, object]] = []
-
-    def select(self, *_args, **_kwargs):
-        self._operation = "select"
-        return self
-
-    def eq(self, field: str, value):
-        self._filters.append(("eq", field, value))
-        return self
-
-    def like(self, field: str, pattern: str):
-        self._filters.append(("like", field, pattern))
-        return self
-
-    def in_(self, field: str, values):
-        self._filters.append(("in", field, set(values)))
-        return self
-
-    def delete(self):
-        self._operation = "delete"
-        return self
-
-    def upsert(self, payload, on_conflict=None):
-        self._operation = "upsert"
-        self._payload = payload if isinstance(payload, list) else [payload]
-        self._on_conflict = on_conflict
-        return self
-
-    def execute(self):
-        if self._operation == "upsert":
-            payload = self._payload or []
-            for row in payload:
-                scope = str(row["scope"])
-                key = str(row["key"])
-                self._client.rows[(scope, key)] = row["value"]
-            return SimpleNamespace(data=payload)
-
-        if self._operation == "delete":
-            for scope, key, _value in list(self._iter_matching_rows()):
-                self._client.rows.pop((scope, key), None)
-            return SimpleNamespace(data=[])
-
-        data = [
-            {"scope": scope, "key": key, "value": value}
-            for scope, key, value in self._iter_matching_rows()
-        ]
-        return SimpleNamespace(data=data)
-
-    def _iter_matching_rows(self):
-        for (scope, key), value in sorted(self._client.rows.items()):
-            row = {"scope": scope, "key": key, "value": value}
-            if self._matches(row):
-                yield scope, key, value
-
-    def _matches(self, row: dict) -> bool:
-        for op, field, expected in self._filters:
-            value = row[field]
-            if op == "eq" and value != expected:
-                return False
-            if op == "in" and value not in expected:
-                return False
-            if op == "like":
-                pattern = str(expected)
-                if pattern.endswith("%"):
-                    if not str(value).startswith(pattern[:-1]):
-                        return False
-                elif value != pattern:
-                    return False
-        return True
-
-
-class _FakeSupabase:
-    def __init__(self):
-        self.rows: dict[tuple[str, str], object] = {}
-
-    def table(self, table_name: str):
-        assert table_name == "hub_config"
-        return _FakeHubConfigQuery(self)
 
 
 def _sync_fake_hub_config(sb: _FakeSupabase) -> None:
@@ -145,7 +61,16 @@ def _count_sensitive_tables() -> dict[str, int]:
 
 
 def _assert_remote_value(sb: _FakeSupabase, key: str, value: str) -> None:
-    assert sb.rows[("global", key)] == value
+    row = (
+        sb.table("hub_config")
+        .select("value")
+        .eq("scope", "global")
+        .eq("key", key)
+        .single()
+        .execute()
+        .data
+    )
+    assert row == {"value": value}
 
 
 def _edit_and_sync(key: str, value: str, qapp, sb: _FakeSupabase):
@@ -165,7 +90,15 @@ def _restore_and_sync(view, key: str, qapp, sb: _FakeSupabase) -> None:
     view._rows_by_key[key].restore()
     view._save_changes()
     qapp.processEvents()
-    assert ("global", key) not in sb.rows
+    assert (
+        sb.table("hub_config")
+        .select("*")
+        .eq("scope", "global")
+        .eq("key", key)
+        .execute()
+        .data
+        == []
+    )
     _sync_fake_hub_config(sb)
 
 

@@ -504,7 +504,7 @@ class PacientesView(QWidget):
                 mood_data=mood_data,
                 selected=False,
                 modo=self._modo,
-                on_unlink=lambda _pid=pid, _n=nombre, _e=email: self._confirm_unlink(
+                on_unlink=lambda _checked=False, _pid=pid, _n=nombre, _e=email: self._confirm_unlink(
                     _pid, _n, _e
                 ),
             )

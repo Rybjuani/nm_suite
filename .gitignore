@@ -72,6 +72,7 @@ pr_body*.md
 
 # Local agent scratch artifacts, quarantines, reports and temporary captures
 scratch/
+reports/
 
 qa/evidence/
 qa/_captures/
