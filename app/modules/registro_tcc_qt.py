@@ -782,6 +782,16 @@ class ModuloRegistroTCC(NMModule):
         self._steps_card = steps_card
         self._main_grid.addWidget(self._steps_card, 0, 0)
 
+        # Step-2 tip card: canonical mockup l.1361-1382 shows two separate cards
+        # in grid 1.4fr 1fr — left card (pensamiento) + right card (tip gold-soft).
+        # The tip card lives here as a sibling of steps_card, shown only on step 2
+        # at widths < 1000 (where resumen is hidden), replacing the right column.
+        self._tip_card = _TipCard(
+            self._tcc_template.get("tip_text") or DEFAULT_TCC_TEMPLATE["tip_text"], modo=self._modo
+        )
+        self._tip_card.setMinimumHeight(68)
+        self._tip_card.hide()
+
         # RIGHT: Asistente IA (fijo 280px)
         self._resumen = _ResumenCard(modo=self._modo)
         self._resumen.setFixedWidth(280)
@@ -799,21 +809,27 @@ class ModuloRegistroTCC(NMModule):
             return
         self._main_grid.removeWidget(self._steps_card)
         self._main_grid.removeWidget(self._resumen)
+        self._main_grid.removeWidget(self._tip_card)
         w = self.width()
-        if w >= 1000:
+        show_tip = getattr(self, "_step", -1) == 2
+        if w >= 1000 and not show_tip:
             self._steps_card.setMinimumWidth(480)
             self._resumen.setFixedWidth(280)
+            self._tip_card.setMaximumWidth(0)
             self._main_grid.addWidget(self._steps_card, 0, 0)
             self._main_grid.addWidget(self._resumen, 0, 1)
             self._main_grid.setColumnStretch(0, 1)
             self._main_grid.setColumnStretch(1, 0)
         else:
+            # Narrow (< 1000) OR step 2 with tip card visible: two-column layout
             self._steps_card.setMinimumWidth(0)
             self._resumen.setFixedWidth(0)
             self._main_grid.addWidget(self._steps_card, 0, 0)
+            self._main_grid.addWidget(self._tip_card, 0, 1)
+            self._main_grid.setAlignment(self._tip_card, Qt.AlignmentFlag.AlignTop)
+            self._main_grid.setColumnStretch(0, 58)  # canonical 1.4fr
+            self._main_grid.setColumnStretch(1, 42)  # canonical 1fr
             self._resumen.hide()
-            self._main_grid.setColumnStretch(0, 1)
-            self._main_grid.setColumnStretch(1, 0)
             return
         self._resumen.show()
 
@@ -1028,22 +1044,13 @@ class ModuloRegistroTCC(NMModule):
         self._txt_pensamiento.textChanged.connect(self._on_pensamiento_changed)
         layout.addWidget(self._txt_pensamiento, stretch=0)
 
-        # QHBoxLayout for 2 columns below the textarea
-        two_cols = QHBoxLayout()
-        two_cols.setSpacing(V3_SP["md"])
-
-        # Left column (counter + distortions)
-        left_col = QVBoxLayout()
-        left_col.setSpacing(V3_SP["xs"])
-        left_col.setAlignment(Qt.AlignmentFlag.AlignTop)
-
         self._pensamiento_count_lbl = QLabel("0 / 500")
         self._pensamiento_count_lbl.setFont(qfont("size_caption_xs"))
         self._pensamiento_count_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self._pensamiento_count_lbl.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
         )
-        left_col.addWidget(self._pensamiento_count_lbl)
+        layout.addWidget(self._pensamiento_count_lbl)
 
         self._dist_eyebrow = QLabel(
             t("text.module.registro.distortions_eyebrow", "Posibles distorsiones detectadas")
@@ -1054,7 +1061,7 @@ class ModuloRegistroTCC(NMModule):
             f"background: transparent;"
         )
         self._dist_eyebrow.setContentsMargins(0, 4, 0, 0)
-        left_col.addWidget(self._dist_eyebrow)
+        layout.addWidget(self._dist_eyebrow)
 
         self._distortion_frame = QWidget()
         self._distortion_frame.setStyleSheet("background: transparent;")
@@ -1062,27 +1069,7 @@ class ModuloRegistroTCC(NMModule):
         self._distortion_layout.setContentsMargins(0, 0, 0, 0)
         self._distortion_layout.setSpacing(V3_SP["xs"] + 2)
         self._distortion_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        left_col.addWidget(self._distortion_frame)
-
-        two_cols.addLayout(left_col, stretch=1)
-
-        # Right column (Tip terapéutico)
-        right_col = QVBoxLayout()
-        right_col.setSpacing(0)
-        right_col.setAlignment(Qt.AlignmentFlag.AlignTop)
-
-        tip = _TipCard(
-            self._tcc_template.get("tip_text") or DEFAULT_TCC_TEMPLATE["tip_text"], modo=self._modo
-        )
-        # Mínimo y no fijo (auditoría v1.0): el tip viene del Hub (texto libre)
-        # y con wordwrap a 2-3 líneas la altura fija lo recortaba contra el
-        # borde inferior de la card.
-        tip.setMinimumHeight(68)
-        right_col.addWidget(tip)
-        self._tip_card = tip
-
-        two_cols.addLayout(right_col, stretch=1)
-        layout.addLayout(two_cols)
+        layout.addWidget(self._distortion_frame)
 
         self._detect_distortions(None)
         self._pages.append(page)
@@ -1321,6 +1308,18 @@ class ModuloRegistroTCC(NMModule):
                     self._steps_card.setMinimumHeight(min(card_h, 352))
                     self._steps_card.setMaximumHeight(min(card_h, 372))
                 self._stack.setCurrentWidget(self._pages[self._step])
+
+            # Step 2 (Pensamiento): show tip card as a sibling in the grid
+            # (canonical mockup l.1361-1382: two separate cards side-by-side).
+            # On all other steps the tip card is hidden.
+            if hasattr(self, "_tip_card"):
+                if self._step == 2:
+                    self._tip_card.show()
+                    self._tip_card.setMaximumWidth(16777215)
+                    self._tip_card.setMaximumHeight(140)
+                else:
+                    self._tip_card.hide()
+                self._relayout_main_grid()
 
             for i, page in enumerate(self._pages):
                 # Header styling
