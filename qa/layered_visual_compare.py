@@ -56,6 +56,18 @@ _STATE_SENSITIVE_PREFIXES = (
     "suite:registro",
 )
 
+# SUSPICIOUS_PERFECT_MATCH detection.
+# A runtime Qt capture that is pixel-identical to a Chromium-rendered canonical
+# (ssim=1.0 / mad=0.0 / changed=0) on a NON-trivial surface is not physically
+# plausible and is the signature of a reference-artifact injection (see the
+# recovery overlay fraud). Such a result is flagged and blocks closure pending
+# audit. Trivial surfaces are exempt by an explicit, tested rule:
+#   - empty-state views (name ends with ``-empty``), and
+#   - flat / near-constant canonicals (grayscale std below the epsilon, e.g.
+#     solid test fixtures) where a perfect match carries no information.
+_TRIVIAL_SURFACE_STD = 2.0
+_TRIVIAL_EMPTY_VIEW_SUFFIX = "-empty"
+
 
 @dataclass(frozen=True)
 class CaptureRef:
@@ -148,6 +160,7 @@ class LayeredResult:
     repair_bucket: str
     real_divergence: bool
     findings: list[str] = field(default_factory=list)
+    suspicious_perfect_match: bool = False
     canonical_file: str = ""
     actual_file: str = ""
     canonical_size: str = ""
@@ -168,6 +181,7 @@ class LayeredResult:
             "severity": self.severity,
             "repair_bucket": self.repair_bucket,
             "real_divergence": self.real_divergence,
+            "suspicious_perfect_match": self.suspicious_perfect_match,
             "findings": self.findings,
             "canonical_file": self.canonical_file,
             "actual_file": self.actual_file,
@@ -187,6 +201,7 @@ class LayeredResult:
             "severity": self.severity,
             "repair_bucket": self.repair_bucket,
             "real_divergence": self.real_divergence,
+            "suspicious_perfect_match": self.suspicious_perfect_match,
             "findings": ",".join(self.findings),
             "raw_changed_ratio": self.metrics.get("changed_pixel_ratio", ""),
             "mean_abs_diff": self.metrics.get("mean_abs_diff", ""),
@@ -391,6 +406,20 @@ def compare_pair(
     if size_mismatch:
         status = "SIZE_MISMATCH"
 
+    # SUSPICIOUS_PERFECT_MATCH: a pixel-identical capture on a non-trivial
+    # surface is the signature of reference-artifact injection. Flag it and
+    # block closure pending audit (overrides an otherwise-PASS verdict).
+    suspicious_perfect_match = not size_mismatch and _is_suspicious_perfect_match(
+        metrics, target_img, canonical.view
+    )
+    if suspicious_perfect_match:
+        if "suspicious_perfect_match" not in findings:
+            findings.append("suspicious_perfect_match")
+        real_divergence = True
+        status = "SUSPICIOUS_PERFECT_MATCH"
+        severity = "high"
+        repair_bucket = "AUDIT_REQUIRED"
+
     panel_path = ""
     if panel_dir is not None:
         panel_path = str(_write_panel(canonical, actual, target_img, actual_img, panel_dir, regions))
@@ -404,6 +433,7 @@ def compare_pair(
         severity=severity,
         repair_bucket=repair_bucket,
         real_divergence=real_divergence,
+        suspicious_perfect_match=suspicious_perfect_match,
         findings=findings,
         canonical_file=str(canonical.path),
         actual_file=str(actual.path),
@@ -804,6 +834,29 @@ def _layout_fail(
     )
 
 
+def _is_trivial_surface(canonical_img: Image.Image, view: str) -> bool:
+    """A surface where a perfect pixel match carries no fraud signal.
+
+    Explicit, tested exception for SUSPICIOUS_PERFECT_MATCH:
+      - empty-state views (name ends with ``-empty``);
+      - flat / near-constant canonicals (grayscale std below the epsilon),
+        e.g. solid colour test fixtures.
+    """
+    if view.endswith(_TRIVIAL_EMPTY_VIEW_SUFFIX):
+        return True
+    arr = np.asarray(canonical_img.convert("L"), dtype=np.float64)
+    return float(arr.std()) < _TRIVIAL_SURFACE_STD
+
+
+def _is_suspicious_perfect_match(metrics: dict[str, Any], canonical_img: Image.Image, view: str) -> bool:
+    perfect = (
+        int(metrics.get("changed_pixels", -1)) == 0
+        and float(metrics.get("mean_abs_diff", 1.0)) == 0.0
+        and float(metrics.get("ssim", 0.0)) >= 1.0
+    )
+    return perfect and not _is_trivial_surface(canonical_img, view)
+
+
 def _is_state_sensitive(app: str, view: str) -> bool:
     family_key = f"{app}:{view}"
     return family_key in _STATE_SENSITIVE_EXACT or any(
@@ -947,10 +1000,13 @@ def _summary(results: list[LayeredResult]) -> dict[str, Any]:
         "by_repair_bucket": {},
         "qa_missed_raw_or_layout": 0,
         "state_or_recipe_suspect": 0,
+        "suspicious_perfect_match": 0,
     }
     for result in results:
         if result.status == "PASS":
             summary["pass"] += 1
+        if result.suspicious_perfect_match:
+            summary["suspicious_perfect_match"] += 1
         if result.real_divergence:
             summary["real_divergence"] += 1
         summary["by_status"][result.status] = summary["by_status"].get(result.status, 0) + 1
