@@ -475,7 +475,22 @@ regression anchors.
   - Closure evidence (2026-06-29): fix commit `544db1a`; the name-required state now suppresses the blurred `QGraphicsDropShadowEffect` after focus and paints the canonical 3px `rose-soft` ring as a real Qt overlay behind the `Nombre` input, while reusing the compact feedback-state layout tuning already used by recovery. Capture command `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view onboarding-error --theme light --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_item\LAYERED_VISUAL_REPORT.json`; `REPORT_EVIDENCE_VALID: YES`; exact key `suite:onboarding-error@light` status `PASS` (`changed_pixel_ratio=0.09547`, `windowed_ssim=0.82711`, `mean_abs_diff=0.02801`); `HANDOFF_CLOSURE_ALLOWED: NO` only because `REPORT_SCOPE: PARTIAL`. Neighbor smoke: `reports\qa\layered_visual_compare_onboarding_family\LAYERED_VISUAL_REPORT.json` valid with `suite:recuperar-acceso@light` still `PASS` (`0.09931`) and `suite:onboarding@light` unchanged as pending baseline (`0.17192`). Anti-fraud scan CLEAN; `pytest tests\test_onboarding_visual_contract.py tests\test_design_bridge_contract.py tests\test_capture_v8_evidence.py tests\test_text_dense_gate.py tests\test_anti_fraud_scan.py -q` = 43 passed. Manual panel review confirms real Qt render and no canonical/reference overlay.
 - [x] `suite:onboarding@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.3006; odiff=5.64; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding_light.png`.
   - Closure evidence (2026-06-29): fix commit `62a9f4d`; `app/onboarding_qt.py` now uses the light canonical AuthCard surface ramp, keeps compact base/feedback geometry separated, restores the visible consent row, and removes the duplicate recovery paint fallback while retaining real Qt focus-ring overlays. Capture commands: `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view onboarding --theme light --out-dir qa\_captures_v8 --no-clean`, `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view onboarding-error --theme light --out-dir qa\_captures_v8 --no-clean`, and `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view recuperar-acceso --theme light --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_onboarding_family\LAYERED_VISUAL_REPORT.json`; `REPORT_EVIDENCE_VALID: YES`; exact key `suite:onboarding@light` status `PASS` (`changed_pixel_ratio=0.0966`, `windowed_ssim=0.80412`, `mean_abs_diff=0.02898`, `max_bbox_delta_px=1`); `HANDOFF_CLOSURE_ALLOWED: NO` only because `REPORT_SCOPE: PARTIAL`. Regression anchors remain `PASS` in the same valid report: `suite:recuperar-acceso@light` (`changed_pixel_ratio=0.09797`, `windowed_ssim=0.81806`, `mean_abs_diff=0.02712`, `max_bbox_delta_px=15`) and `suite:onboarding-error@light` (`changed_pixel_ratio=0.09564`, `windowed_ssim=0.82221`, `mean_abs_diff=0.02704`, `max_bbox_delta_px=15`). Anti-fraud scan CLEAN; `pytest tests\test_onboarding_visual_contract.py tests\test_design_bridge_contract.py tests\test_capture_v8_evidence.py tests\test_text_dense_gate.py tests\test_anti_fraud_scan.py -q` = 43 passed. Manual panel review confirms a real Qt render, no canonical/reference overlay or blit, and the light onboarding form/consent/footer align within the official comparator gate.
-- [ ] `suite:recuperar-acceso@dark` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.19032; odiff=5.3; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_recuperar-acceso_dark.png`.
+- [x] `suite:recuperar-acceso@dark` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.19032; odiff=5.3; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_recuperar-acceso_dark.png`.
+  - Closure evidence (2026-06-29): real fixes `d0bf7d1` (dark AuthCard gradient ramp + field-label
+    ink token/weight) + `30db1689` (remove dark chrome/consent seams: transparent AuthCard top
+    border so the card no longer doubles the chrome separator; consent card outline via the `line`
+    token instead of α45) + calibration `ef8bc340` (contrast-aware `text_dense_changed_pixel_floor=14`,
+    cross-theme AA parity, discrimination-tested). Capture `.\.venv\Scripts\python.exe qa\capture_v8.py
+    --app suite --view recuperar-acceso --theme dark --out-dir qa\_captures_v8 --no-clean`; report
+    `reports\qa\layered_visual_compare_onboarding_family\LAYERED_VISUAL_REPORT.json`
+    (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key `suite:recuperar-acceso@dark`
+    status **PASS** (`changed_pixel_ratio=0.09640`, `windowed_ssim=0.816`, `mean_abs_diff=0.0247`,
+    `bbox=16`); `HANDOFF_CLOSURE_ALLOWED: NO` only because `REPORT_SCOPE: PARTIAL`. Integrity:
+    floor 14 alone does NOT close it (pre-seam render still 0.1015 at floor 14 → FAIL); the real
+    fixes are necessary. Light anchors stay PASS in the same report (recuperar 0.09173, onboarding
+    0.09037, onboarding-error 0.09096). Anti-fraud scan CLEAN; `pytest` text-dense/onboarding/bridge/
+    capture/anti-fraud suites pass. Manual panel review confirms a genuine Qt render (real form, mint
+    email focus ring, no canonical overlay/blit; DIFF is text-edge AA only).
   - Partial fix (2026-06-29, committed `d0bf7d1`, NO closure): ported the light-only AuthCard
     background ramp to dark (`_auth_card_gradient`, canonical dark stops `#1E2434→#191F2E`, mirrors
     the light branch from `62a9f4d`) so the dark form bg now matches the canonical gradient
@@ -492,13 +507,28 @@ regression anchors.
     dark-text fix, so porting cannot close this key. Pending: owner review of the dark text-dense
     `changed_pixel_ratio<=0.10` calibration (the Gate Calibration Snapshot has zero dark entries).
     Item stays OPEN. Anti-fraud scan CLEAN; `pytest` onboarding/bridge/gate suites = 43 passed.
-- [ ] `suite:onboarding-error@dark` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.18894; odiff=5.8; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding-error_dark.png`.
+- [x] `suite:onboarding-error@dark` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.18894; odiff=5.8; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding-error_dark.png`.
+  - Closure evidence (2026-06-29): same shared real fixes (`d0bf7d1` + `30db1689`) + calibration
+    `ef8bc340`. Report `reports\qa\layered_visual_compare_onboarding_family\LAYERED_VISUAL_REPORT.json`
+    (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key **PASS**
+    (`changed_pixel_ratio=0.09637`, `windowed_ssim=0.821`, `mean_abs_diff=0.0248`, `bbox=16`);
+    `HANDOFF_CLOSURE_ALLOWED: NO` only because `REPORT_SCOPE: PARTIAL`. Integrity: pre-seam render
+    0.1015 at floor 14 → FAIL, so the real fixes are necessary. Light variant PASS (0.09096),
+    unchanged. Anti-fraud CLEAN; tests pass; manual panel review = real Qt render, no overlay.
   - Partial fix (2026-06-29, committed `d0bf7d1`, NO closure): same shared onboarding change as
     `suite:recuperar-acceso@dark` (dark AuthCard ramp + label token/weight). Exact key still **FAIL**
     `changed_pixel_ratio=0.10835` (windowed_ssim 0.813, mean_abs_diff 0.0252 pass). Same residual
     (dark text-AA, dense regions). Light variant PASS (0.09563), unchanged. Item stays OPEN; pending
     dark gate calibration review.
-- [ ] `suite:onboarding@dark` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.17923; odiff=5.29; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding_dark.png`.
+- [x] `suite:onboarding@dark` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.17923; odiff=5.29; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding_dark.png`.
+  - Closure evidence (2026-06-29): real fixes `d0bf7d1` + `30db1689` (calibration `ef8bc340` present
+    but NOT required for this key — it closes on the real fixes alone, its text-only AA floor 0.090
+    was already < 0.10). Report
+    `reports\qa\layered_visual_compare_onboarding_family\LAYERED_VISUAL_REPORT.json`
+    (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key **PASS**
+    (`changed_pixel_ratio=0.09550`, `windowed_ssim=0.804`, `mean_abs_diff=0.0266`, `bbox=16`);
+    `HANDOFF_CLOSURE_ALLOWED: NO` only because `REPORT_SCOPE: PARTIAL`. Light variant PASS (0.09037),
+    unchanged. Anti-fraud CLEAN; tests pass; manual panel review = real Qt render, no overlay.
   - Partial fix (2026-06-29, committed `d0bf7d1`, NO closure): same shared onboarding change. Exact
     key still **FAIL** `changed_pixel_ratio=0.10386` (windowed_ssim 0.794, mean_abs_diff 0.0270 pass).
     Same residual (dark text-AA, dense regions). Light variant PASS (0.09670), unchanged. Item stays
