@@ -676,6 +676,12 @@ class NMInput(QLineEdit):
         self._modo = norm_modo(modo or _tm().modo)
         self._focus_glow: QGraphicsDropShadowEffect | None = None
         self._error_message = ""
+        # Anillo de foco forzado: en captura offscreen la ventana inactiva no
+        # concede foco visual al QLineEdit, así que `:focus` nunca pinta. Este
+        # flag permite forzar el visual de foco canónico (brand-line + halo
+        # brand-soft) cuando el campo es el activo del flujo (p.ej. el email en
+        # recuperar acceso). Default False → sin efecto en inputs normales.
+        self._force_focus_ring = False
         self.setObjectName("NMInput")
         self.setPlaceholderText(placeholder)
         self.setAccessibleName(placeholder)
@@ -738,11 +744,14 @@ class NMInput(QLineEdit):
             glow.setColor(dc)
             self.setGraphicsEffect(glow)
         else:
+            # Borde base: brand-line si el anillo de foco está forzado (campo
+            # activo del flujo en captura offscreen), border normal si no.
+            base_border = focus_c if self._force_focus_ring else border_c
             self.setStyleSheet(f"""
                 QLineEdit {{
                     background-color: {bg_c.name()};
                     color: {text_c.name()};
-                    border: 1px solid {qcolor_to_rgba_css(border_c)};
+                    border: 1px solid {qcolor_to_rgba_css(base_border)};
                     border-radius: {r}px;
                     padding: 0 12px;
                     font-size: {TYPOGRAPHY["size_body"]}px;
@@ -758,6 +767,20 @@ class NMInput(QLineEdit):
                 }}
             """)
 
+    def set_focus_ring(self, on: bool = True) -> None:
+        """Fuerza (o apaga) el borde brand-line del estado de foco canónico
+        (`.input:focus` línea 304: ``border-color:var(--brand-line)``)
+        independientemente del foco real de Qt. Necesario en captura offscreen,
+        donde la ventana inactiva no concede foco visual y `:focus` nunca se
+        aplica. El halo ``box-shadow:0 0 0 3px var(--brand-soft)`` lo pinta un
+        overlay dedicado (QGraphicsDropShadowEffect difumina el alpha y no lee
+        como el anillo 3px sólido del canónico)."""
+        self._force_focus_ring = bool(on)
+        self._apply_base_style()
+        if not self._error_message:
+            self.setGraphicsEffect(None)
+            self._focus_glow = None
+
     def focusInEvent(self, event):
         """Enciende halo brand-soft alrededor del input enfocado."""
         super().focusInEvent(event)
@@ -770,8 +793,10 @@ class NMInput(QLineEdit):
         self.setGraphicsEffect(self._focus_glow)
 
     def focusOutEvent(self, event):
-        """Apaga glow al perder foco."""
+        """Apaga glow al perder foco (salvo anillo forzado)."""
         super().focusOutEvent(event)
+        if self._force_focus_ring:
+            return
         self.setGraphicsEffect(None)
         self._focus_glow = None
 

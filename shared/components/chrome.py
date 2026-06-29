@@ -211,6 +211,7 @@ class NMWindowChrome(QWidget):
         status_label: str = None,
         show_theme_toggle: bool = False,
         show_maximize: bool = True,
+        show_amber_dot: bool | None = None,
         modo: str = "dark_hybrid",
         height: int = _NM_CHROME_HEIGHT,
         parent=None,
@@ -226,6 +227,11 @@ class NMWindowChrome(QWidget):
         # solo "—" minimizar y "✕" cerrar. Maximizar rompería el layout
         # fit-first y no aporta en una card centrada.
         self._show_maximize = show_maximize
+        # El semáforo canónico (`.tb-dots`, mockup línea 526) SIEMPRE muestra 3
+        # puntos (verde/ámbar/rojo). En ventanas de tamaño fijo no maximizamos,
+        # pero el punto ámbar debe seguir visible como decorativo para igualar el
+        # canónico. Default: sigue a show_maximize (back-compat).
+        self._show_amber_dot = show_maximize if show_amber_dot is None else show_amber_dot
         self._chrome_height = max(28, int(height))
         self._drag_pos = None
 
@@ -317,12 +323,25 @@ class NMWindowChrome(QWidget):
         win_controls_l.setSpacing(_NM_CHROME_WIN_DOT_GAP)
 
         self._btn_min = _ChromeWinBtn("min", self._modo, self._chrome_height, self)
-        self._btn_max = _ChromeWinBtn("max", self._modo, self._chrome_height, self) if self._show_maximize else None
+        # El punto ámbar (max) se crea si se maximiza O si se pidió decorativo.
+        self._btn_max = (
+            _ChromeWinBtn("max", self._modo, self._chrome_height, self)
+            if (self._show_maximize or self._show_amber_dot)
+            else None
+        )
         self._btn_close = _ChromeWinBtn("close", self._modo, self._chrome_height, self)
 
         self._btn_min.clicked.connect(lambda: self.window().showMinimized())
         if self._btn_max is not None:
-            self._btn_max.clicked.connect(self._toggle_maximize)
+            if self._show_maximize:
+                self._btn_max.clicked.connect(self._toggle_maximize)
+            else:
+                # Decorativo: sin maximizar (rompería el layout fit-first de la
+                # ventana fija). Transparente al mouse → solo igual visual.
+                self._btn_max.setAttribute(
+                    Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
+                )
+                self._btn_max.setCursor(Qt.CursorShape.ArrowCursor)
         self._btn_close.clicked.connect(self.window().close)
 
         win_controls_l.addWidget(self._btn_min)

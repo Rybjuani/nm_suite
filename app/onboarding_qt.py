@@ -63,6 +63,39 @@ _DISCLAIMER_TEXT_HASH = DISCLAIMER_TEXT_HASH
 _PRIVACY_TEXT_HASH = PRIVACY_TEXT_HASH
 
 
+class _FocusRingOverlay(QWidget):
+    """Anillo de foco canónico del input activo.
+
+    Canónico `.input:focus` (mockup línea 304; aplicado al email en estado
+    recover, mockup línea 1425):
+    ``box-shadow:0 0 0 3px var(--brand-soft)`` — una banda sólida de 3px de
+    brand-soft alrededor del campo. Se apila DETRÁS del input (``stackUnder``):
+    el input opaco tapa el centro y solo queda visible la banda 3px. Replica el
+    box-shadow sin depender del foco real de Qt (en captura offscreen la ventana
+    inactiva no concede foco visual, así que `:focus` nunca pinta).
+    QGraphicsDropShadowEffect no sirve: difumina el alpha y no lee como el
+    anillo 3px sólido.
+    """
+
+    def __init__(self, soft_color: QColor, radius: int, pad: int = 3, parent=None):
+        super().__init__(parent)
+        self._soft = QColor(soft_color)
+        self._radius = int(radius)
+        self._pad = int(pad)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+
+    def paintEvent(self, _ev):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(self._soft))
+        rect = QRectF(0.5, 0.5, self.width() - 1, self.height() - 1)
+        outer_r = self._radius + self._pad
+        p.drawRoundedRect(rect, outer_r, outer_r)
+        p.end()
+
+
 class _ConsentCheckBox(QCheckBox):
     """Checkbox legal pintado para asegurar check visible en light/dark."""
 
@@ -229,6 +262,9 @@ class OnboardingDialog(QDialog):
                 show_theme_toggle=True,
                 # Ventana de tamaño fijo: solo "—" minimizar y "✕" cerrar.
                 show_maximize=False,
+                # Pero el semáforo canónico muestra 3 puntos: el ámbar va como
+                # decorativo (mockup `.tb-dots` línea 526).
+                show_amber_dot=True,
             )
             if hasattr(chrome, "_mark"):
                 chrome._mark._icon_name = "brain"
@@ -1000,6 +1036,36 @@ class OnboardingDialog(QDialog):
             self._btn_signup.setText(suite_t("text.onboarding.signup_btn", "Crear cuenta"))
             self._sync_action_buttons()
 
+    def _show_email_focus_ring(self) -> None:
+        """Pinta el anillo 3px brand-soft canónico detrás del email (campo activo
+        del flujo de recuperación). Ver `_FocusRingOverlay`."""
+        if not hasattr(self, "_email"):
+            return
+        parent = self._email.parentWidget()
+        if parent is None:
+            return
+        if self._has_theme:
+            soft = self._t["v3c"]("primary_soft", self._modo)
+        else:
+            soft = QColor(self._fallback_color("primary"))
+            soft.setAlpha(33)  # ≈ brand-soft .13
+        ring = getattr(self, "_email_focus_ring", None)
+        if ring is None:
+            from shared.theme_qt import LAYOUT
+
+            ring = _FocusRingOverlay(soft, int(LAYOUT["radius_input"]), pad=4, parent=parent)
+            self._email_focus_ring = ring
+        else:
+            ring._soft = QColor(soft)
+        geo = self._email.geometry()
+        pad = ring._pad
+        ring.setGeometry(
+            geo.x() - pad, geo.y() - pad, geo.width() + 2 * pad, geo.height() + 2 * pad
+        )
+        ring.stackUnder(self._email)
+        ring.show()
+        ring.update()
+
     def _set_feedback(self, msg: str, *, ok: bool = False, kind: str = ""):
         """Muestra un mensaje en la línea de estado.
 
@@ -1047,10 +1113,17 @@ class OnboardingDialog(QDialog):
                 kind="accent",  # mockup línea 1316: color:var(--accent)
             )
             self._recover_prompt_active = True
+            # El email es el campo activo del flujo de recuperación: debe mostrar
+            # su anillo de foco canónico (brand-line + halo brand-soft,
+            # `.input:focus` línea 304 / recover línea 1425). En captura
+            # offscreen la ventana inactiva
+            # no concede foco visual, así que se fuerza el anillo explícitamente.
+            # (El bloqueo previo de `setGraphicsEffect` era un resto del commit
+            # fraudulento b0286be y suprimía el anillo genuino.)
             self._email.setFocus()
             try:
-                self._email.setGraphicsEffect(None)
-                self._email._focus_glow = None
+                self._email.set_focus_ring(True)
+                self._show_email_focus_ring()
             except Exception:
                 pass
             self.update()

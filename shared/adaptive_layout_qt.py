@@ -227,6 +227,7 @@ def apply_child_window_chrome(
     subtitle: str | None = None,
     show_theme_toggle: bool = False,
     show_maximize: bool = True,
+    show_amber_dot: bool | None = None,
 ):
     """Aplica el chrome NeuroMood a una ventana hija top-level (editores/diálogos).
 
@@ -247,6 +248,7 @@ def apply_child_window_chrome(
         modo=modo,
         show_theme_toggle=show_theme_toggle,
         show_maximize=show_maximize,
+        show_amber_dot=show_amber_dot,
         parent=window,
     )
     layout = window.layout()
