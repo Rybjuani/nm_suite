@@ -30,9 +30,9 @@ import logging
 
 _log = logging.getLogger(__name__)
 
-from PyQt6.QtCore import Qt, QTimer, QRectF, pyqtSignal
+from PyQt6.QtCore import Qt, QTimer, QRectF, QPointF, pyqtSignal
 from PyQt6 import sip
-from PyQt6.QtGui import QColor, QBrush, QPainter, QPen
+from PyQt6.QtGui import QColor, QBrush, QPainter, QPen, QRadialGradient
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -635,6 +635,42 @@ class _TipCard(NMCard):
         self._apply_tip_styles()
 
 
+class _RegistroScreen(QWidget):
+    """Full-height Registro screen background matching the canonical `.screen`."""
+
+    def __init__(self, modo: str, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        self.setAutoFillBackground(False)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setStyleSheet("background: transparent;")
+
+    def set_modo(self, modo: str) -> None:
+        self._modo = norm_modo(modo)
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        rect = QRectF(self.rect())
+        surface = v3c("surface", self._modo)
+        surface_2 = v3c("surface_2", self._modo)
+        surface_3 = v3c("surface_3", self._modo)
+
+        p.fillRect(rect, QBrush(surface))
+
+        glow = QRadialGradient(QPointF(rect.width() * 0.5, -rect.height() * 0.2), 500)
+        glow.setColorAt(0.0, surface_2)
+        fade = QColor(surface_2)
+        fade.setAlpha(0)
+        glow.setColorAt(0.7, fade)
+        p.fillRect(rect, QBrush(glow))
+
+        p.setPen(QPen(surface_3, 1))
+        p.drawLine(0, self.height() - 1, self.width(), self.height() - 1)
+        p.end()
+
+
 def _persistir_pensamiento(d: dict, intensidad: int) -> None:
     """Persiste un registro TCC en la tabla ``pensamientos`` (guardado REAL).
 
@@ -695,9 +731,9 @@ class ModuloRegistroTCC(NMModule):
         outer = QVBoxLayout(self._content)
         outer.setContentsMargins(0, 0, 0, 0)
 
-        body = QWidget()
-        body.setStyleSheet("background: transparent;")
-        outer.addWidget(body)
+        body = _RegistroScreen(self._modo)
+        self._screen_bg = body
+        outer.addWidget(body, 1)
 
         lay = QVBoxLayout(body)
         # Top 42px: posiciona el stepper como el canónico (dot ~y91). Antes ese
@@ -848,6 +884,8 @@ class ModuloRegistroTCC(NMModule):
                     chip._apply_theme(self._modo)
         if hasattr(self, "_custom_emotion_input") and hasattr(self._custom_emotion_input, "_apply_theme"):
             self._custom_emotion_input._apply_theme(self._modo)
+        if hasattr(self, "_screen_bg"):
+            self._screen_bg.set_modo(self._modo)
         if hasattr(self, "_eyebrow"):
             self._apply_text_styles()
         if hasattr(self, "_show_step"):
