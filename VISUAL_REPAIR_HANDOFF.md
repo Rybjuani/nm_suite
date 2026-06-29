@@ -5,6 +5,47 @@ Branch base: `main`.
 
 Read first: `VISUAL_QA_AGENT_PROTOCOL.md`.
 
+## MANDATORY PRE-FLIGHT FOR EACH OPEN CHECKBOX
+
+> **STOP.** Do not touch UI/runtime code for an item until this pre-flight is
+> done for that item. A blind pixel fix without the mapping below is a protocol
+> violation. This uses the Design-System Translation Bridge
+> (`docs/DESIGN_SYSTEM_TRANSLATION_BRIDGE.md`).
+
+For the current open `[ ]` checkbox (read top to bottom), the agent must:
+
+1. **Identify the exact key** (e.g. `suite:recuperar-acceso@light`).
+2. **Consult the bridge**: `docs/BRIDGE_USAGE_FOR_AGENTS.md`,
+   `docs/CSS_TO_PYQT_EQUIVALENCE_MATRIX.md`,
+   `docs/VISUAL_COMPONENT_CATALOG.md`, `docs/QT_HTML_KNOWN_MISMATCHES.md`.
+3. **Use Graphify if available** to navigate
+   `canonical selector → bridge entry → PyQt component → shared.theme tokens →
+   runtime file/screen → tests/probes → visual key`. If Graphify is not
+   available, **report it** and continue with the bridge docs — never fabricate
+   graph output.
+4. **Produce the mapping** for the key before editing any code:
+
+   | Field | Source |
+   |---|---|
+   | visual key | this handoff |
+   | canonical selector/pattern | matrix (with HTML line) |
+   | visual family (F1–F15) | matrix / overview |
+   | PyQt component actual/propuesto | catalog |
+   | `shared.theme` tokens | `shared/theme.py` via `shared/theme_qt.py` |
+   | runtime file/screen | `app/` or `hub/` |
+   | known Qt/HTML mismatches | `QT_HTML_KNOWN_MISMATCHES.md` (IRREDUCIBLE / WORKAROUND / DECISIÓN-OWNER) |
+   | tests/probes | matrix / `qa/` |
+
+5. **Only after that mapping** may the agent touch code, reusing the mapped
+   token/helper/component — never invented QSS.
+6. If Graphify is unavailable, proceed with the bridge docs and say so; do not
+   invent graph output.
+7. **No blind pixel fixes** without the mapping above.
+8. **No closure** without a real `PASS` for the exact key (see Required Closure
+   Evidence). The bridge never replaces the comparator, never enables
+   threshold-only closure, and never authorizes overlays/blits/canonical
+   injection or any anti-fraud bypass.
+
 ## Reset Reason
 
 The prior checked items in this file are not trusted. Many were closed as

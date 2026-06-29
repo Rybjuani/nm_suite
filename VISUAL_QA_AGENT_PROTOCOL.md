@@ -15,6 +15,54 @@ Desktop zip files are archival evidence only. Do not use
 `C:\Users\nosom\Desktop\captures_v8_2026-06-28_031100.zip` to close current
 handoff items.
 
+## Bridge Pre-Flight (mandatory)
+
+Before touching any UI/runtime code for a visual key, the agent **must** run the
+Design-System Translation Bridge pre-flight. This is not optional and precedes
+the capture/compare flow below. Skipping it (a "blind pixel fix") is a protocol
+violation.
+
+For the current visual key, in order:
+
+1. Read `docs/BRIDGE_USAGE_FOR_AGENTS.md` (how to resolve a check via the bridge).
+2. Consult the equivalence matrix `docs/CSS_TO_PYQT_EQUIVALENCE_MATRIX.md`
+   (canonical selector/pattern → token/helper/widget → affected keys).
+3. Consult the component catalog `docs/VISUAL_COMPONENT_CATALOG.md` (which `NM*`/
+   `V3*` component and `shared.theme` token to reuse — never invent QSS).
+4. Review `docs/QT_HTML_KNOWN_MISMATCHES.md` to classify the divergence as
+   IRREDUCIBLE (Qt ceiling — not closable by changing that aspect), WORKAROUND
+   (use the correct painter/helper), or DECISIÓN-OWNER (do not "correct").
+5. Use Graphify if available to navigate the chain end to end:
+
+   ```text
+   canonical selector/pattern
+   → bridge entry (matrix)
+   → PyQt component actual/propuesto (catalog)
+   → shared.theme tokens
+   → runtime file/screen (app/ | hub/)
+   → tests/probes (qa/)
+   → visual key (handoff)
+   ```
+
+   ```powershell
+   & "$env:USERPROFILE\.local\bin\graphify.exe" update .
+   & "$env:USERPROFILE\.local\bin\graphify.exe" explain "<screen or component>"
+   ```
+
+   If Graphify is **not** available, report that explicitly and continue with the
+   bridge docs. Never fabricate graph output.
+
+### The bridge does NOT change the closure bar
+
+- The bridge **does not replace** the comparator (`qa/layered_visual_compare.py`).
+- The bridge **does not** allow threshold-only closure (the Comparator Command
+  Lock still applies; no `--min-ssim`, `--no-odiff`, etc. as closure evidence).
+- The bridge **does not** allow skipping any anti-fraud control.
+- The bridge **does not** authorize overlays, blits, or loading any canonical /
+  reference / mockup artifact into product/runtime, nor any comparison hack.
+- Closure still requires the exact key `PASS`, real product/UI evidence, and a
+  clean anti-fraud scan, per the rest of this protocol.
+
 ## Required Flow
 
 0. Run Graphify before manual code exploration in every active visual repair flow:
