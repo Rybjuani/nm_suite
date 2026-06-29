@@ -593,7 +593,9 @@ class _TipCard(NMCard):
         col = QVBoxLayout()
         col.setSpacing(2)
         self._eyebrow = QLabel(t("text.module.registro.tip_eyebrow", "Tip terapéutico"))
-        self._eyebrow.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))  # mockup: sin uppercase
+        # Mockup: "Tip terapéutico" font-size:13px; font-weight:700; SIN color
+        # → hereda --ink (texto primario oscuro), no gold. El icono sí es gold.
+        self._eyebrow.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_bold"]))
         col.addWidget(self._eyebrow)
         self._text_lbl = QLabel(self._tip_text)
         self._text_lbl.setFont(qfont("size_small"))
@@ -604,7 +606,7 @@ class _TipCard(NMCard):
 
     def _apply_tip_styles(self):
         self._eyebrow.setStyleSheet(
-            f"color: {v3c('gold', self._modo).name()}; "
+            f"color: {v3c('text', self._modo).name()}; "
             f"background: transparent;"
         )
         self._text_lbl.setStyleSheet(
@@ -698,13 +700,18 @@ class ModuloRegistroTCC(NMModule):
         outer.addWidget(body)
 
         lay = QVBoxLayout(body)
-        lay.setContentsMargins(V3_SP["lg"], 0, V3_SP["lg"], V3_SP["sm"])
+        # Top 42px: posiciona el stepper como el canónico (dot ~y91). Antes ese
+        # espacio lo daba el eyebrow oculto; al sacarlo + AlignTop el contenido
+        # subía ~42px de más. Margen explícito = posición canónica estable.
+        lay.setContentsMargins(V3_SP["lg"], 42, V3_SP["lg"], V3_SP["sm"])
         lay.setSpacing(V3_SP["xs"])
+        lay.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # 1. Eyebrow + Stepper
+        # 1. Stepper. (El eyebrow "Registro TCC" vive en la titlebar — BL-07 — y NO
+        # se agrega al layout: como QLabel oculto reservaba ~47px muertos arriba
+        # del stepper, corriendo todo el contenido hacia abajo vs el canónico.)
         self._eyebrow = QLabel(t("text.module.registro.eyebrow", "Registro TCC"))
         self._eyebrow.setFont(eyebrow_font())
-        lay.addWidget(self._eyebrow)
         self._eyebrow.hide()  # BL-07: título de módulo ahora en la titlebar
 
         self._stepper = NMStepper(
@@ -718,21 +725,20 @@ class ModuloRegistroTCC(NMModule):
         self._main_grid.setHorizontalSpacing(V3_SP["md"])
         self._main_grid.setVerticalSpacing(V3_SP["md"])
 
-        # LEFT: stack with one active step page. The stepper above carries
-        # progression, so the card stays compact at the 960x600 contract.
-        steps_card = NMCard(modo=self._modo, clickable=False)
-        steps_card.setMinimumWidth(480)  # Slightly more compact
-        # Altura acotada: los campos largos scrollean en su QTextEdit, sin
-        # convertir el paso completo en una caja vacía de media pantalla.
-        steps_card.setMinimumHeight(318)
-        steps_card.setMaximumHeight(352)
+        # LEFT: transparent flush container. Canónico: el contenedor del paso NO
+        # es una card; cada paso pinta su(s) propia(s) ``.card pad`` sobre el
+        # fondo del screen (s0/s1/s3 una card, s2 dos columnas). El stepper queda
+        # arriba y la nav abajo, ambos bare. Antes esto era un NMCard exterior que
+        # envolvía todo en una caja única, divergente del mockup.
+        steps_card = QWidget()
+        steps_card.setStyleSheet("background: transparent;")
+        steps_card.setMinimumWidth(480)
         steps_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         sc_lay = QVBoxLayout(steps_card)
-        sc_lay.setContentsMargins(V3_SP["md"], V3_SP["sm"], V3_SP["md"], V3_SP["sm"])
+        sc_lay.setContentsMargins(0, 0, 0, 0)
         sc_lay.setSpacing(V3_SP["sm"])
 
         self._stack = QStackedWidget()
-        self._stack.setMaximumHeight(244)
         self._stack.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         self._success_page: QWidget | None = None
         sc_lay.addWidget(self._stack, stretch=0)
@@ -850,11 +856,27 @@ class ModuloRegistroTCC(NMModule):
 
     # ── Page builders ────────────────────────────────────────────────────────
 
-    def _make_page(self) -> tuple[QWidget, QVBoxLayout]:
+    def _make_page(self, card: bool = True) -> tuple[QWidget, QVBoxLayout]:
+        """Página de un paso.
+
+        Canónico: cada paso es su propia ``.card pad`` sobre el fondo del screen
+        (el contenedor exterior es transparente). Con ``card=True`` (default) el
+        contenido va dentro de un ``NMCard`` (auto-padding ``.card.pad``); el paso
+        Pensamiento usa ``card=False`` para armar su grilla de 2 columnas (card de
+        contenido + card de tip), como el mockup ``grid-template-columns:1.4fr 1fr``.
+        """
         page = QWidget()
         page.setStyleSheet("background: transparent;")
-        layout = QVBoxLayout(page)
-        layout.setContentsMargins(0, 0, 0, 0)
+        pv = QVBoxLayout(page)
+        pv.setContentsMargins(0, 0, 0, 0)
+        pv.setSpacing(0)
+        pv.setAlignment(Qt.AlignmentFlag.AlignTop)
+        if not card:
+            return page, pv
+        wrap = NMCard(modo=self._modo, clickable=False)
+        wrap.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+        pv.addWidget(wrap)
+        layout = QVBoxLayout(wrap)
         layout.setSpacing(V3_SP["sm"])
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         return page, layout
@@ -1011,8 +1033,23 @@ class ModuloRegistroTCC(NMModule):
         self._pages.append(page)
 
     def _build_page_pensamiento(self):
-        page, layout = self._make_page()
-        layout.setContentsMargins(12, 8, 12, 8)
+        # Canónico s2: grid 2 columnas `grid-template-columns:1.4fr 1fr; gap:18px;
+        # align-items:start` — IZQ card de contenido (heading + textarea + contador
+        # + distorsiones), DER card de Tip terapéutico, ambas top-aligned. Antes el
+        # textarea iba full-width y el tip quedaba abajo (divergente).
+        page, pv = self._make_page(card=False)
+        grid = QHBoxLayout()
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setSpacing(V3_SP["md"])  # gap:18px
+        grid.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # ── IZQUIERDA: card de contenido (1.4fr) ──────────────────────────────
+        left_card = NMCard(modo=self._modo, clickable=False)
+        left_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+        layout = QVBoxLayout(left_card)
+        layout.setSpacing(V3_SP["xs"])
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
         for lbl in self._make_title(
             self._step_name(2, "Pensamiento"),
             self._step_prompt(2, "¿Qué pensaste en ese momento? Escribilo tal como apareció."),
@@ -1028,22 +1065,13 @@ class ModuloRegistroTCC(NMModule):
         self._txt_pensamiento.textChanged.connect(self._on_pensamiento_changed)
         layout.addWidget(self._txt_pensamiento, stretch=0)
 
-        # QHBoxLayout for 2 columns below the textarea
-        two_cols = QHBoxLayout()
-        two_cols.setSpacing(V3_SP["md"])
-
-        # Left column (counter + distortions)
-        left_col = QVBoxLayout()
-        left_col.setSpacing(V3_SP["xs"])
-        left_col.setAlignment(Qt.AlignmentFlag.AlignTop)
-
         self._pensamiento_count_lbl = QLabel("0 / 500")
         self._pensamiento_count_lbl.setFont(qfont("size_caption_xs"))
         self._pensamiento_count_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self._pensamiento_count_lbl.setStyleSheet(
             f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
         )
-        left_col.addWidget(self._pensamiento_count_lbl)
+        layout.addWidget(self._pensamiento_count_lbl)
 
         self._dist_eyebrow = QLabel(
             t("text.module.registro.distortions_eyebrow", "Posibles distorsiones detectadas")
@@ -1054,7 +1082,7 @@ class ModuloRegistroTCC(NMModule):
             f"background: transparent;"
         )
         self._dist_eyebrow.setContentsMargins(0, 4, 0, 0)
-        left_col.addWidget(self._dist_eyebrow)
+        layout.addWidget(self._dist_eyebrow)
 
         self._distortion_frame = QWidget()
         self._distortion_frame.setStyleSheet("background: transparent;")
@@ -1062,27 +1090,20 @@ class ModuloRegistroTCC(NMModule):
         self._distortion_layout.setContentsMargins(0, 0, 0, 0)
         self._distortion_layout.setSpacing(V3_SP["xs"] + 2)
         self._distortion_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        left_col.addWidget(self._distortion_frame)
+        layout.addWidget(self._distortion_frame)
 
-        two_cols.addLayout(left_col, stretch=1)
+        grid.addWidget(left_card, stretch=14)  # 1.4fr
 
-        # Right column (Tip terapéutico)
-        right_col = QVBoxLayout()
-        right_col.setSpacing(0)
-        right_col.setAlignment(Qt.AlignmentFlag.AlignTop)
-
+        # ── DERECHA: card de Tip terapéutico (1fr), top-aligned ───────────────
         tip = _TipCard(
             self._tcc_template.get("tip_text") or DEFAULT_TCC_TEMPLATE["tip_text"], modo=self._modo
         )
-        # Mínimo y no fijo (auditoría v1.0): el tip viene del Hub (texto libre)
-        # y con wordwrap a 2-3 líneas la altura fija lo recortaba contra el
-        # borde inferior de la card.
         tip.setMinimumHeight(68)
-        right_col.addWidget(tip)
+        tip.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         self._tip_card = tip
+        grid.addWidget(tip, stretch=10, alignment=Qt.AlignmentFlag.AlignTop)  # 1fr
 
-        two_cols.addLayout(right_col, stretch=1)
-        layout.addLayout(two_cols)
+        pv.addLayout(grid)
 
         self._detect_distortions(None)
         self._pages.append(page)
