@@ -1216,6 +1216,8 @@ class ModuloRegistroTCC(NMModule):
             self._error_lbl.setText("")
         self._resumen.update_data(self._data)
         self._refresh_nav_state()
+        if self._step == 1:
+            self._show_step()
 
     def _on_custom_emotion_changed(self, text: str):
         cleaned = text.strip()
@@ -1380,8 +1382,17 @@ class ModuloRegistroTCC(NMModule):
         try:
             self._update_progress()
             if hasattr(self, "_stack") and self._stack and self._pages:
-                stack_h = {0: 244, 1: 252, 2: 288, 3: 244}.get(self._step, 260)
-                card_h = {0: 324, 1: 306, 2: 372, 3: 324}.get(self._step, 342)
+                step1_otro = (
+                    self._step == 1
+                    and hasattr(self, "_custom_emotion_wrap")
+                    and not self._custom_emotion_wrap.isHidden()
+                )
+                stack_h = {0: 244, 1: 252 if step1_otro else 226, 2: 288, 3: 244}.get(
+                    self._step, 260
+                )
+                card_h = {0: 324, 1: 306 if step1_otro else 247, 2: 372, 3: 324}.get(
+                    self._step, 342
+                )
                 self._stack.setMaximumHeight(stack_h)
                 if hasattr(self, "_steps_card"):
                     self._steps_card.setMinimumHeight(min(card_h, 352))
