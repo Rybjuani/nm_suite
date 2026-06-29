@@ -43,6 +43,7 @@ from qa.layered_visual_compare import (
     _index_images,
     _layout_metrics,
     _load_rgb,
+    _windowed_ssim,
 )
 
 _PROJ = Path(__file__).resolve().parent.parent
@@ -141,18 +142,27 @@ def calibrate_key(key: str, canonical_index, actual_index) -> dict:
             "canonical_present": can_ref is not None,
             "actual_present": act_ref is not None,
         }
+    gate = LayeredThresholds()
     can = _load_rgb(can_ref.path)
     act = _load_rgb(act_ref.path)
-    metrics, _mask = _image_metrics(can, act, LayeredThresholds().changed_pixel_floor)
+    metrics, _mask = _image_metrics(can, act, gate.changed_pixel_floor)
     layout = _layout_metrics(can, act)
     best = _best_shift_ssim(can, act)
     dens = _density(can, act)
     color_ceiling = _color_ceiling_ssim(can, act)
+    canon_std = dens["canon_gray_std"]
+    is_dense = canon_std < gate.text_dense_canonical_std
     return {
         "key": key,
         "status": "measured",
         "resolution": can_ref.resolution,
         "ssim": metrics["ssim"],
+        "windowed_ssim": metrics["windowed_ssim"],
+        "gate_class": "text_dense" if is_dense else "sparse",
+        "effective_ssim_gate": (
+            f"windowed>={gate.text_dense_min_windowed_ssim}" if is_dense
+            else f"global>={gate.min_ssim}"
+        ),
         "mean_abs_diff": metrics["mean_abs_diff"],
         "changed_pixel_ratio": metrics["changed_pixel_ratio"],
         "bbox": {
@@ -212,21 +222,20 @@ def _markdown(payload: dict) -> str:
         f"Live gate (unchanged): `ssim>={g['min_ssim']}`, `mad<={g['max_mean_abs_diff']}`, "
         f"`changed_ratio<={g['max_changed_pixel_ratio']}`.",
         "",
-        "| key | res | ssim | mad | changed | bbox dy | best-shift ssim | ink frac | canon std | strong-edge dens | ceiling(align) | ceiling(color) |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "| key | res | class | global ssim | windowed ssim | gate | mad | changed | canon std | ceiling(align) | ceiling(color) |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for r in payload["results"]:
         if r["status"] != "measured":
-            lines.append(f"| {r['key']} | MISSING (canonical={r['canonical_present']}, actual={r['actual_present']}) | | | | | | | | | | |")
+            lines.append(f"| {r['key']} | MISSING (canonical={r['canonical_present']}, actual={r['actual_present']}) | | | | | | | | | |")
             continue
-        b = r["bbox"]
         d = r["density"]
         e = r["estimated_ceiling"]
         lines.append(
-            f"| {r['key']} | {r['resolution']} | {r['ssim']} | {r['mean_abs_diff']} | "
-            f"{r['changed_pixel_ratio']} | {b['bbox_dy']} | {r['best_small_shift']['ssim']} "
-            f"(dx{r['best_small_shift']['dx']},dy{r['best_small_shift']['dy']}) | {d['ink_fraction']} | "
-            f"{d['canon_gray_std']} | {d['strong_edge_density']} | {e['by_alignment_ssim']} | {e['by_color_ssim']} |"
+            f"| {r['key']} | {r['resolution']} | {r['gate_class']} | {r['ssim']} | "
+            f"{r['windowed_ssim']} | {r['effective_ssim_gate']} | {r['mean_abs_diff']} | "
+            f"{r['changed_pixel_ratio']} | {d['canon_gray_std']} | "
+            f"{e['by_alignment_ssim']} | {e['by_color_ssim']} |"
         )
     lines += [
         "",
@@ -259,9 +268,9 @@ def main(argv: list[str] | None = None) -> int:
             continue
         e = r["estimated_ceiling"]
         print(
-            f"  {r['key']} [{r['resolution']}]: ssim={r['ssim']} changed={r['changed_pixel_ratio']} "
-            f"canon_std={r['density']['canon_gray_std']} ceiling(align)={e['by_alignment_ssim']} "
-            f"ceiling(color)={e['by_color_ssim']}"
+            f"  {r['key']} [{r['resolution']}] {r['gate_class']}: global_ssim={r['ssim']} "
+            f"windowed_ssim={r['windowed_ssim']} gate={r['effective_ssim_gate']} "
+            f"changed={r['changed_pixel_ratio']} canon_std={r['density']['canon_gray_std']}"
         )
     print("=" * 60)
     return 0

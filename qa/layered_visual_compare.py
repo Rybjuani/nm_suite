@@ -98,6 +98,18 @@ class CaptureRef:
 @dataclass(frozen=True)
 class LayeredThresholds:
     min_ssim: float = 0.92
+    # Density-aware SSIM gate (calibration-derived, see reports/qa/
+    # visual_gate_calibration and the handoff "Gate Hardening" section).
+    # Global single-window SSIM has a hard ~0.55 floor on text-dense, low-contrast
+    # surfaces (520x600 forms) set by Qt-vs-Chromium text rasterisation — it is
+    # unreachable by any honest render. For such surfaces (canonical grayscale std
+    # below ``text_dense_canonical_std``) the SSIM layer uses the standard
+    # *windowed* SSIM with ``text_dense_min_windowed_ssim`` instead. This only
+    # changes the SSIM layer; mean_abs_diff, changed_pixel_ratio, bbox/layout,
+    # region and odiff layers stay at full strength for every surface, and the
+    # anti-fraud controls (static scan + SUSPICIOUS_PERFECT_MATCH) are unchanged.
+    text_dense_canonical_std: float = 35.0
+    text_dense_min_windowed_ssim: float = 0.65
     max_mean_abs_diff: float = 0.035
     max_changed_pixel_ratio: float = 0.08
     changed_pixel_floor: int = 12
@@ -113,6 +125,8 @@ class LayeredThresholds:
     def to_dict(self) -> dict[str, float | int]:
         return {
             "min_ssim": self.min_ssim,
+            "text_dense_canonical_std": self.text_dense_canonical_std,
+            "text_dense_min_windowed_ssim": self.text_dense_min_windowed_ssim,
             "max_mean_abs_diff": self.max_mean_abs_diff,
             "max_changed_pixel_ratio": self.max_changed_pixel_ratio,
             "changed_pixel_floor": self.changed_pixel_floor,
@@ -622,6 +636,8 @@ def _image_metrics(
     return (
         {
             "ssim": round(float(_global_ssim(t, a)), 5),
+            "windowed_ssim": round(float(_windowed_ssim(t, a)), 5),
+            "canonical_gray_std": round(float(_to_gray(t).std()), 3),
             "mean_abs_diff": round(float(diff.mean() / 255.0), 5),
             "max_abs_diff": round(float(diff.max() / 255.0), 5),
             "changed_pixel_floor": changed_pixel_floor,
@@ -633,6 +649,42 @@ def _image_metrics(
         },
         changed_mask,
     )
+
+
+def _to_gray(arr: np.ndarray) -> np.ndarray:
+    x = arr.astype(np.float64)
+    if x.ndim == 3:
+        x = 0.2126 * x[..., 0] + 0.7152 * x[..., 1] + 0.0722 * x[..., 2]
+    return x
+
+
+def _box_mean(img: np.ndarray, win: int) -> np.ndarray:
+    """Mean over every win x win window (stride 1, valid region) via integral image."""
+    ii = np.cumsum(np.cumsum(img, axis=0), axis=1)
+    ii = np.pad(ii, ((1, 0), (1, 0)))
+    s = ii[win:, win:] - ii[:-win, win:] - ii[win:, :-win] + ii[:-win, :-win]
+    return s / float(win * win)
+
+
+def _windowed_ssim(a: np.ndarray, b: np.ndarray, win: int = 7) -> float:
+    """Standard Wang et al. windowed SSIM (mean of the local SSIM map).
+
+    Robust on low-variance / text-dense surfaces where the single-window
+    ``_global_ssim`` is pathologically dominated by global covariance.
+    """
+    x = _to_gray(a) / 255.0
+    y = _to_gray(b) / 255.0
+    if min(x.shape) < win:
+        return _global_ssim(a, b)
+    mux = _box_mean(x, win)
+    muy = _box_mean(y, win)
+    vx = _box_mean(x * x, win) - mux * mux
+    vy = _box_mean(y * y, win) - muy * muy
+    cov = _box_mean(x * y, win) - mux * muy
+    c1 = 0.01 ** 2
+    c2 = 0.03 ** 2
+    smap = ((2 * mux * muy + c1) * (2 * cov + c2)) / ((mux * mux + muy * muy + c1) * (vx + vy + c2))
+    return float(np.clip(smap, -1.0, 1.0).mean())
 
 
 def _global_ssim(a: np.ndarray, b: np.ndarray) -> float:
@@ -813,8 +865,16 @@ def _run_odiff_layer(
 
 
 def _raw_fail(metrics: dict[str, Any], thresholds: LayeredThresholds) -> bool:
+    # Density-aware SSIM layer (see LayeredThresholds). Text-dense / low-contrast
+    # canonicals use windowed SSIM; everything else keeps the strict global SSIM.
+    # All other layers are unchanged for every surface.
+    canon_std = float(metrics.get("canonical_gray_std", thresholds.text_dense_canonical_std + 1.0))
+    if canon_std < thresholds.text_dense_canonical_std:
+        ssim_fail = float(metrics.get("windowed_ssim", 1.0)) < thresholds.text_dense_min_windowed_ssim
+    else:
+        ssim_fail = float(metrics.get("ssim", 1.0)) < thresholds.min_ssim
     return (
-        float(metrics.get("ssim", 1.0)) < thresholds.min_ssim
+        ssim_fail
         or float(metrics.get("mean_abs_diff", 0.0)) > thresholds.max_mean_abs_diff
         or float(metrics.get("changed_pixel_ratio", 0.0)) > thresholds.max_changed_pixel_ratio
     )
