@@ -222,6 +222,48 @@ injection into the product or runtime, that closure is automatically
 re-validated with a real render. This applies retroactively to already-closed
 items.
 
+## Gate Hardening (mandatory)
+
+These mechanisms harden the visual gate. They do NOT change the closure bar —
+the comparator thresholds are unchanged.
+
+### Mandatory static anti-fraud scan
+
+`qa/anti_fraud_scan.py` statically scans `app/`, `hub/`, `shared/` and fails if
+runtime/product code reads, renders, copies, mounts or overlays any
+canonical / reference / mockup / QA-report artifact. It is wired into the
+resource-safe wrappers (`qa/run_visual_item.ps1`, `qa/run_visual_family.ps1`,
+`qa/run_visual_full.ps1`) and runs BEFORE capture/compare. If the scan fails the
+run aborts and **no report it would have produced is valid closure evidence,
+even if the comparator reports `PASS`**. Run standalone with
+`.\.venv\Scripts\python.exe qa\anti_fraud_scan.py`. It does not ban `QPixmap`
+globally — only its use with QA/reference artifacts.
+
+### Suspicious perfect match
+
+The comparator flags any result that is pixel-identical to the canonical
+(`ssim=1.0`, `mad=0.0`, `changed=0`) on a non-trivial surface as
+`status=SUSPICIOUS_PERFECT_MATCH` with `suspicious_perfect_match: true`. This is
+physically implausible for genuine Qt-vs-Chromium rendering and is the signature
+of reference-artifact injection. It counts as a real divergence and **blocks
+closure pending audit** — it can never be closure evidence. The only exception
+is trivial surfaces, by an explicit, tested rule: empty-state views (name ends
+`-empty`) and flat / near-constant canonicals (grayscale std < 2.0).
+
+### Gate calibration is non-closure
+
+`qa/visual_gate_calibration.py` writes technical evidence to
+`reports/qa/visual_gate_calibration/` (SSIM, MAD, changed, bbox, best
+small-shift SSIM, density, and the estimated ceiling by alignment/colour). It is
+**not a gate**: it never closes, reclassifies or skips an item and never
+modifies thresholds. Use it to characterise the gate, not to justify a closure.
+
+### Mandatory push
+
+After every closed checkbox, or any anti-fraud cleanup commit, push to the
+remote immediately. A local-only fraud removal or closure is not done until it
+is pushed.
+
 ## Item Closure Evidence
 
 An item can be changed from `[ ]` to `[x]` only when the note includes:
