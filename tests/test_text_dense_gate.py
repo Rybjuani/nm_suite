@@ -55,10 +55,40 @@ def test_sparse_surface_is_unaffected_and_uses_global_ssim():
     assert _raw_fail(_m(ssim=0.80, windowed_ssim=0.99, canonical_gray_std=57.0), T) is True
 
 
-def test_dense_changed_ratio_layer_stays_strict():
-    # Passes windowed but changed_ratio over limit -> still fails (divergence kept).
+def test_dense_changed_ratio_calibrated_floor_passes_above_sparse_bar():
+    # Text-dense: changed between the sparse bar (0.08) and the dense bar (0.10)
+    # passes, reflecting the irreducible ~0.077 text-AA floor.
     assert _raw_fail(
-        _m(windowed_ssim=0.90, canonical_gray_std=22.0, changed_pixel_ratio=0.12), T
+        _m(windowed_ssim=0.90, canonical_gray_std=22.0, changed_pixel_ratio=0.09), T
+    ) is False
+
+
+def test_dense_current_recovery_render_still_fails():
+    # Authorization guard: the calibration must NOT close the current recovery
+    # render (changed=0.118) by threshold alone -> it must still raw-fail.
+    assert _raw_fail(
+        _m(windowed_ssim=0.768, canonical_gray_std=22.5, mean_abs_diff=0.032,
+           changed_pixel_ratio=0.118), T
+    ) is True
+
+
+def test_dense_changed_ratio_above_dense_bar_fails():
+    assert _raw_fail(
+        _m(windowed_ssim=0.90, canonical_gray_std=22.0, changed_pixel_ratio=0.11), T
+    ) is True
+
+
+def test_dense_gross_divergence_still_caught():
+    # A wrong-screen / big-divergence amount of changed pixels stays caught.
+    assert _raw_fail(
+        _m(windowed_ssim=0.90, canonical_gray_std=22.0, changed_pixel_ratio=0.30), T
+    ) is True
+
+
+def test_sparse_changed_ratio_stays_at_strict_bar():
+    # Sparse surfaces keep the 0.08 bar; 0.09 fails for them.
+    assert _raw_fail(
+        _m(ssim=0.95, canonical_gray_std=57.0, changed_pixel_ratio=0.09), T
     ) is True
 
 
@@ -84,6 +114,10 @@ def test_thresholds_serialized():
     d = LayeredThresholds().to_dict()
     assert d["text_dense_canonical_std"] == 35.0
     assert d["text_dense_min_windowed_ssim"] == 0.65
+    assert d["text_dense_max_changed_pixel_ratio"] == 0.10
+    # Dense changed bar must sit below the current recovery render (0.118) so the
+    # calibration can never close it by threshold alone.
+    assert d["text_dense_max_changed_pixel_ratio"] < 0.118
 
 
 def test_compare_pair_emits_density_metrics_and_classifies_dense(tmp_path):

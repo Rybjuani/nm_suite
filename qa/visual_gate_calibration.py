@@ -163,6 +163,10 @@ def calibrate_key(key: str, canonical_index, actual_index) -> dict:
             f"windowed>={gate.text_dense_min_windowed_ssim}" if is_dense
             else f"global>={gate.min_ssim}"
         ),
+        "effective_changed_gate": (
+            f"changed<={gate.text_dense_max_changed_pixel_ratio}" if is_dense
+            else f"changed<={gate.max_changed_pixel_ratio}"
+        ),
         "mean_abs_diff": metrics["mean_abs_diff"],
         "changed_pixel_ratio": metrics["changed_pixel_ratio"],
         "bbox": {
@@ -269,8 +273,9 @@ def main(argv: list[str] | None = None) -> int:
         e = r["estimated_ceiling"]
         print(
             f"  {r['key']} [{r['resolution']}] {r['gate_class']}: global_ssim={r['ssim']} "
-            f"windowed_ssim={r['windowed_ssim']} gate={r['effective_ssim_gate']} "
-            f"changed={r['changed_pixel_ratio']} canon_std={r['density']['canon_gray_std']}"
+            f"windowed_ssim={r['windowed_ssim']} ssim_gate={r['effective_ssim_gate']} "
+            f"changed={r['changed_pixel_ratio']} changed_gate={r['effective_changed_gate']} "
+            f"canon_std={r['density']['canon_gray_std']}"
         )
     print("=" * 60)
     return 0

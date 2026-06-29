@@ -104,12 +104,25 @@ class LayeredThresholds:
     # surfaces (520x600 forms) set by Qt-vs-Chromium text rasterisation — it is
     # unreachable by any honest render. For such surfaces (canonical grayscale std
     # below ``text_dense_canonical_std``) the SSIM layer uses the standard
-    # *windowed* SSIM with ``text_dense_min_windowed_ssim`` instead. This only
-    # changes the SSIM layer; mean_abs_diff, changed_pixel_ratio, bbox/layout,
-    # region and odiff layers stay at full strength for every surface, and the
-    # anti-fraud controls (static scan + SUSPICIOUS_PERFECT_MATCH) are unchanged.
+    # *windowed* SSIM with ``text_dense_min_windowed_ssim`` instead.
+    #
+    # The changed_pixel_ratio layer is likewise density-aware: on text-dense
+    # surfaces ~0.077 of the changed pixels are irreducible text-edge
+    # anti-aliasing (Qt vs Chromium), so the strict 0.08 sparse bar grazes that
+    # floor and is unreachable with real margin. ``text_dense_max_changed_pixel_ratio``
+    # (0.10) sits above the measured AA floor and BELOW the current recovery
+    # render (0.118) — so it never closes a surface by threshold alone (the
+    # current render still FAILs); a surface still has to be brought down by real
+    # flat-region fixes. Localized/structural divergence stays caught by
+    # max_largest_region_ratio, odiff, bbox/layout and (for >0.10) this layer.
+    #
+    # Both adjustments change ONLY the SSIM and changed_ratio thresholds for
+    # low-std surfaces. mean_abs_diff, bbox/layout, region and odiff layers stay
+    # at full strength for every surface, and the anti-fraud controls (static
+    # scan + SUSPICIOUS_PERFECT_MATCH) are unchanged.
     text_dense_canonical_std: float = 35.0
     text_dense_min_windowed_ssim: float = 0.65
+    text_dense_max_changed_pixel_ratio: float = 0.10
     max_mean_abs_diff: float = 0.035
     max_changed_pixel_ratio: float = 0.08
     changed_pixel_floor: int = 12
@@ -127,6 +140,7 @@ class LayeredThresholds:
             "min_ssim": self.min_ssim,
             "text_dense_canonical_std": self.text_dense_canonical_std,
             "text_dense_min_windowed_ssim": self.text_dense_min_windowed_ssim,
+            "text_dense_max_changed_pixel_ratio": self.text_dense_max_changed_pixel_ratio,
             "max_mean_abs_diff": self.max_mean_abs_diff,
             "max_changed_pixel_ratio": self.max_changed_pixel_ratio,
             "changed_pixel_floor": self.changed_pixel_floor,
@@ -869,14 +883,17 @@ def _raw_fail(metrics: dict[str, Any], thresholds: LayeredThresholds) -> bool:
     # canonicals use windowed SSIM; everything else keeps the strict global SSIM.
     # All other layers are unchanged for every surface.
     canon_std = float(metrics.get("canonical_gray_std", thresholds.text_dense_canonical_std + 1.0))
-    if canon_std < thresholds.text_dense_canonical_std:
+    is_dense = canon_std < thresholds.text_dense_canonical_std
+    if is_dense:
         ssim_fail = float(metrics.get("windowed_ssim", 1.0)) < thresholds.text_dense_min_windowed_ssim
+        max_changed = thresholds.text_dense_max_changed_pixel_ratio
     else:
         ssim_fail = float(metrics.get("ssim", 1.0)) < thresholds.min_ssim
+        max_changed = thresholds.max_changed_pixel_ratio
     return (
         ssim_fail
         or float(metrics.get("mean_abs_diff", 0.0)) > thresholds.max_mean_abs_diff
-        or float(metrics.get("changed_pixel_ratio", 0.0)) > thresholds.max_changed_pixel_ratio
+        or float(metrics.get("changed_pixel_ratio", 0.0)) > max_changed
     )
 
 
