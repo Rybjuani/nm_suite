@@ -814,6 +814,7 @@ class ModuloRegistroTCC(NMModule):
         show_tip = getattr(self, "_step", -1) == 2
         if w >= 1000 and not show_tip:
             self._steps_card.setMinimumWidth(480)
+            self._steps_card.setMaximumWidth(16777215)
             self._resumen.setFixedWidth(280)
             self._tip_card.setMaximumWidth(0)
             self._main_grid.addWidget(self._steps_card, 0, 0)
@@ -823,6 +824,11 @@ class ModuloRegistroTCC(NMModule):
         else:
             # Narrow (< 1000) OR step 2 with tip card visible: two-column layout
             self._steps_card.setMinimumWidth(0)
+            if show_tip:
+                self._steps_card.setMaximumWidth(560)
+                self._tip_card.setMaximumWidth(400)
+            else:
+                self._steps_card.setMaximumWidth(16777215)
             self._resumen.setFixedWidth(0)
             self._main_grid.addWidget(self._steps_card, 0, 0)
             self._main_grid.addWidget(self._tip_card, 0, 1)
