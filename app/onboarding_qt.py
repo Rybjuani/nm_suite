@@ -152,6 +152,29 @@ def _is_windows_11_or_newer() -> bool:
         return False
 
 
+def _auth_card_gradient(modo: str, surface: str) -> str:
+    """Fondo canónico de la AuthCard: rampa vertical → surface.
+
+    El mockup pinta la card del Acceso con un degradé sutil de arriba (un poco
+    más claro que ``--surface``) hacia ``--surface`` en el tramo medio, en ambos
+    temas. La rama light ya existía (commit 62a9f4d); la dark estaba excluida y
+    quedaba plana, dejando el tope del formulario ~5/canal por debajo del target
+    medido en `suite-recuperar-acceso-dark`. Las paradas dark replican ese perfil
+    (#1E2434 en el tope → #191F2E ≈ y260) reusando el mismo patrón light.
+    """
+    if "light" in modo:
+        return (
+            "qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+            "stop:0 #F4F0E5, stop:0.34 #F5F1E7, "
+            "stop:0.72 #FBF8F1, stop:1 #FBF8F1)"
+        )
+    return (
+        "qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "stop:0 #1E2434, stop:0.20 #1C2231, "
+        "stop:0.43 #191F2E, stop:1 #191F2E)"
+    )
+
+
 def run_onboarding() -> bool:
     """Muestra el diálogo de onboarding. Retorna True si el usuario completó el proceso."""
     dlg = OnboardingDialog()
@@ -331,13 +354,7 @@ class OnboardingDialog(QDialog):
             border_css = (
                 f"rgba({border_c.red()},{border_c.green()},{border_c.blue()},{border_c.alpha()})"
             )
-            auth_bg = self._t["surface"]
-            if "light" in self._modo:
-                auth_bg = (
-                    "qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-                    "stop:0 #F4F0E5, stop:0.34 #F5F1E7, "
-                    "stop:0.72 #FBF8F1, stop:1 #FBF8F1)"
-                )
+            auth_bg = _auth_card_gradient(self._modo, self._t["surface"])
             card_radius = 22 if _is_windows_11_or_newer() else 0
             card.setStyleSheet(
                 f"QFrame#AuthCard {{ background: {auth_bg}; "
@@ -915,13 +932,7 @@ class OnboardingDialog(QDialog):
             for frame in self.findChildren(QFrame):
                 name = frame.objectName()
                 if name == "AuthCard":
-                    auth_bg = t["surface"]
-                    if "light" in self._modo:
-                        auth_bg = (
-                            "qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-                            "stop:0 #F4F0E5, stop:0.34 #F5F1E7, "
-                            "stop:0.72 #FBF8F1, stop:1 #FBF8F1)"
-                        )
+                    auth_bg = _auth_card_gradient(self._modo, t["surface"])
                     frame.setStyleSheet(
                         f"QFrame#AuthCard {{ background: {auth_bg}; "
                         f"border: 1px solid {border_css}; border-radius: {card_radius}px; }}"
@@ -1001,8 +1012,12 @@ class OnboardingDialog(QDialog):
         lbl.setObjectName("OnbField")
         if self._has_theme:
             sz = "size_caption_xs" if is_compact else "size_caption"
-            lbl.setFont(self._t["v3_font"](sz, weight=self._t["TY"]["weight_medium"]))
-            lbl.setStyleSheet(f"color: {self._t['text2']}; background: transparent;")
+            lbl.setFont(self._t["v3_font"](sz, weight=self._t["TY"]["weight_semibold"]))
+            # Canonical `.field-lbl{color:var(--ink); font-weight:600}` (mockup) uses the
+            # PRIMARY ink token, not the muted secondary. In dark `--ink`=#E8EAF1 is far
+            # brighter than text2=#A7AEC1, so text2 made every field label render ~55/ch
+            # too dim against the canvas; in light the gap is small but same direction.
+            lbl.setStyleSheet(f"color: {self._t['text']}; background: transparent;")
         else:
             lbl_font = QFont()
             lbl_font.setPixelSize(11 if is_compact else 12)
