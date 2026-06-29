@@ -331,9 +331,16 @@ class OnboardingDialog(QDialog):
             border_css = (
                 f"rgba({border_c.red()},{border_c.green()},{border_c.blue()},{border_c.alpha()})"
             )
+            auth_bg = self._t["surface"]
+            if "light" in self._modo:
+                auth_bg = (
+                    "qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+                    "stop:0 #F4F0E5, stop:0.34 #F5F1E7, "
+                    "stop:0.72 #FBF8F1, stop:1 #FBF8F1)"
+                )
             card_radius = 22 if _is_windows_11_or_newer() else 0
             card.setStyleSheet(
-                f"QFrame#AuthCard {{ background: {self._t['surface']}; "
+                f"QFrame#AuthCard {{ background: {auth_bg}; "
                 f"border: 1px solid {border_css}; border-radius: {card_radius}px; }}"
             )
         else:
@@ -359,7 +366,7 @@ class OnboardingDialog(QDialog):
         # el mayor alto del h-serif 21px del título (metrics distintos al regular
         # anterior): el título debe quedar a ~y=118 en 520×600 como en el target.
         if is_compact:
-            form_lay.setContentsMargins(24, 18, 42, 4)
+            form_lay.setContentsMargins(25, 21, 27, 4)
             form_lay.setSpacing(4)
         else:
             # Mockup .screen padding:26px 28px.
@@ -379,7 +386,8 @@ class OnboardingDialog(QDialog):
         # Brandmark = 34×34 r10 con linear-gradient(140deg, brand, accent) + svg brain 20px blanco.
         # Antes: QPixmap logo file. Ahora: QFrame paintEvent con gradient + SVG brain.
         brand_row = QHBoxLayout()
-        brand_row.setSpacing(5 if is_compact else 11)
+        self._brand_row = brand_row
+        brand_row.setSpacing(8 if is_compact else 11)
         brand_row.setContentsMargins(0, 0, 0, 0)
 
         class _BrandmarkFrame(QFrame):
@@ -520,8 +528,8 @@ class OnboardingDialog(QDialog):
         form_lay.addWidget(self._lbl(suite_t("text.onboarding.name_label", "Nombre *"), is_compact))
         self._name = NMInput(suite_t("text.onboarding.name_placeholder", "Tu nombre"), modo=self._modo)
         if is_compact:
-            self._name.setFixedHeight(36)
-            self._name.setFixedWidth(470)
+            self._name.setFixedHeight(37)
+            self._name.setFixedWidth(468)
             self._apply_compact_input_font(self._name)
         form_lay.addWidget(self._name)
 
@@ -542,12 +550,18 @@ class OnboardingDialog(QDialog):
             modo=self._modo,
         )
         if is_compact:
-            self._email.setFixedHeight(36)
-            self._email.setFixedWidth(470)
+            self._email.setFixedHeight(37)
+            self._email.setFixedWidth(468)
             self._apply_compact_input_font(self._email)
         form_lay.addWidget(self._email)
 
-        form_lay.addSpacing(10 if is_compact else 10)  # mockup: input margin-bottom 14px
+        self._email_to_password_spacer = QSpacerItem(
+            0,
+            10 if is_compact else 10,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Fixed,
+        )
+        form_lay.addItem(self._email_to_password_spacer)  # mockup: input margin-bottom 14px
 
         # ── Contraseña ────────────────────────────────────────────────────────
         form_lay.addWidget(
@@ -562,8 +576,8 @@ class OnboardingDialog(QDialog):
         )
         self._code.setEchoMode(NMInput.EchoMode.Password)
         if is_compact:
-            self._code.setFixedHeight(36)
-            self._code.setFixedWidth(470)
+            self._code.setFixedHeight(37)
+            self._code.setFixedWidth(468)
             self._apply_compact_input_font(self._code)
         form_lay.addWidget(self._code)
 
@@ -571,7 +585,7 @@ class OnboardingDialog(QDialog):
         # información técnica interna, no aporta al usuario.)
         self._password_to_consent_spacer = QSpacerItem(
             0,
-            8 if is_compact else 12,
+            11 if is_compact else 12,
             QSizePolicy.Policy.Minimum,
             QSizePolicy.Policy.Fixed,
         )
@@ -685,10 +699,10 @@ class OnboardingDialog(QDialog):
         cc_body.setFixedHeight(74 if is_compact else 116)
         cc_lay.addWidget(cc_body, stretch=1)
 
-        consent_card.setMinimumHeight(121 if is_compact else 162)
-        consent_card.setMaximumHeight(121 if is_compact else 180)
+        consent_card.setMinimumHeight(123 if is_compact else 162)
+        consent_card.setMaximumHeight(123 if is_compact else 180)
         if is_compact:
-            consent_card.setFixedWidth(470)
+            consent_card.setFixedWidth(468)
             try:
                 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 
@@ -704,8 +718,15 @@ class OnboardingDialog(QDialog):
         )
 
         form_lay.addWidget(consent_card, stretch=0)
+        self._consent_to_check_spacer = None
         if is_compact:
-            form_lay.addSpacing(8)
+            self._consent_to_check_spacer = QSpacerItem(
+                0,
+                8,
+                QSizePolicy.Policy.Minimum,
+                QSizePolicy.Policy.Fixed,
+            )
+            form_lay.addItem(self._consent_to_check_spacer)
 
         # ── Checkbox de aceptación fuera de la card legal (canónico) ───────
         # Mockup: el checkbox vive bajo la card, no dentro de ella.
@@ -744,9 +765,12 @@ class OnboardingDialog(QDialog):
         # pantallas compactas o cuando la card legal es grande. Los botones viven
         # en footer_widget (fuera del scroll) y siempre quedan visibles.
         _form_scroll = QScrollArea()
+        self._form_scroll = _form_scroll
         _form_scroll.setWidgetResizable(True)
         _form_scroll.setFrameShape(QFrame.Shape.NoFrame)
         _form_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        if is_compact:
+            _form_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         from shared.theme_qt import stylesheet_scrollarea
 
         _form_scroll.setStyleSheet(
@@ -891,8 +915,15 @@ class OnboardingDialog(QDialog):
             for frame in self.findChildren(QFrame):
                 name = frame.objectName()
                 if name == "AuthCard":
+                    auth_bg = t["surface"]
+                    if "light" in self._modo:
+                        auth_bg = (
+                            "qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+                            "stop:0 #F4F0E5, stop:0.34 #F5F1E7, "
+                            "stop:0.72 #FBF8F1, stop:1 #FBF8F1)"
+                        )
                     frame.setStyleSheet(
-                        f"QFrame#AuthCard {{ background: {t['surface']}; "
+                        f"QFrame#AuthCard {{ background: {auth_bg}; "
                         f"border: 1px solid {border_css}; border-radius: {card_radius}px; }}"
                     )
                 elif name == "ConsentCard":
@@ -964,21 +995,6 @@ class OnboardingDialog(QDialog):
 
     def paintEvent(self, event) -> None:
         super().paintEvent(event)
-        if not getattr(self, "_recover_prompt_active", False) or not hasattr(self, "_email"):
-            return
-        try:
-            pos = self._email.mapTo(self, self._email.rect().topLeft())
-            rect = QRectF(pos.x() - 3, pos.y() - 3, self._email.width() + 6, self._email.height() + 6)
-            p = QPainter(self)
-            p.setRenderHint(QPainter.RenderHint.Antialiasing)
-            ring = self._t["v3c"]("primary", self._modo) if self._has_theme else QColor("#2E5D43")
-            ring.setAlpha(33)
-            p.setPen(QPen(ring, 3))
-            p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawRoundedRect(rect, 18, 18)
-            p.end()
-        except Exception:
-            pass
 
     def _lbl(self, text: str, is_compact: bool = False) -> QLabel:
         lbl = QLabel(text)
@@ -1094,7 +1110,36 @@ class OnboardingDialog(QDialog):
         _spacer("_brand_to_sub_spacer", 0)
         _spacer("_sub_to_name_spacer", 10)
         _spacer("_name_to_email_spacer", 9)
+        _spacer("_email_to_password_spacer", 10)
         _spacer("_password_to_consent_spacer", 9)
+        _spacer("_consent_to_check_spacer", 8)
+
+        brand_row = getattr(self, "_brand_row", None)
+        if brand_row is not None:
+            brand_row.setSpacing(5)
+
+        form_scroll = getattr(self, "_form_scroll", None)
+        if form_scroll is not None:
+            form_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+
+        form_lay = getattr(self, "_form_lay", None)
+        if form_lay is not None:
+            form_lay.setContentsMargins(24, 18, 42, 4)
+
+        for input_widget in (
+            getattr(self, "_name", None),
+            getattr(self, "_email", None),
+            getattr(self, "_code", None),
+        ):
+            if input_widget is not None:
+                input_widget.setFixedHeight(36)
+                input_widget.setFixedWidth(471)
+
+        consent_card = getattr(self, "_consent_card", None)
+        if consent_card is not None:
+            consent_card.setFixedWidth(470)
+            consent_card.setMinimumHeight(121)
+            consent_card.setMaximumHeight(121)
 
         consent_lay = getattr(self, "_consent_card_lay", None)
         if consent_lay is not None:
@@ -1139,7 +1184,7 @@ class OnboardingDialog(QDialog):
         if ring is None:
             from shared.theme_qt import LAYOUT
 
-            ring = _FocusRingOverlay(soft, int(LAYOUT["radius_input"]), pad=4, parent=parent)
+            ring = _FocusRingOverlay(soft, int(LAYOUT["radius_input"]), pad=0, parent=parent)
             self._email_focus_ring = ring
         else:
             ring._soft = QColor(soft)
@@ -1168,7 +1213,7 @@ class OnboardingDialog(QDialog):
         if ring is None:
             from shared.theme_qt import LAYOUT
 
-            ring = _FocusRingOverlay(soft, int(LAYOUT["radius_input"]), pad=3, parent=parent)
+            ring = _FocusRingOverlay(soft, int(LAYOUT["radius_input"]), pad=2, parent=parent)
             self._name_error_ring = ring
         else:
             ring._soft = QColor(soft)
