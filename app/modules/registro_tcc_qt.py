@@ -159,12 +159,14 @@ _EMOTIONS_GRID = [
     ("Ansiedad", "bolt", "warning"),
     ("Tristeza", "water", "info"),
     ("Enojo", "flame", "danger"),
-    ("Miedo", "thought", "violet"),
     ("Culpa", "heart", "warning"),
+    ("Miedo", "thought", "violet"),
     ("Vergüenza", "user", "violet"),
     ("Frustración", "moon", "info"),  # mockup: Frustración no Soledad
     ("Otro", "dots", "text2"),
 ]
+
+_TCC_VISUAL_DEFAULT_INTENSITY = 7
 
 DEFAULT_TCC_TEMPLATE = {
     "steps": [
@@ -372,9 +374,12 @@ class _EmotionChip(QFrame):
         self._label_text = label
         self._modo = modo
         self._selected = False
+        self.setObjectName("EmotionChip")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setMinimumHeight(32)
+        self.setMaximumHeight(34)
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(12, 5, 12, 5)
+        lay.setContentsMargins(15, 8, 15, 8)
         lay.setSpacing(0)
         self._lbl = QLabel(label)
         self._lbl.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_semibold"]))
@@ -397,15 +402,15 @@ class _EmotionChip(QFrame):
     def _apply_chip_style(self):
         if self._selected:
             bg = v3c("primary", self._modo).name()
-            fg = "#ffffff"
-            border = bg
+            fg = v3c("primary_ink", self._modo).name()
+            border = "transparent"
         else:
-            bg = "transparent"
-            fg = v3c("text", self._modo).name()
-            border = v3c("text2", self._modo).name()
+            bg = v3c("surface_2", self._modo).name()
+            fg = v3c("text2", self._modo).name()
+            border = C("line", self._modo)
         self.setStyleSheet(
-            f"QFrame {{ background: {bg}; border: 1.5px solid {border}; "
-            f"border-radius: 999px; }}"
+            f"QFrame#EmotionChip {{ background: {bg}; border: 1px solid {border}; "
+            f"border-radius: 16px; }}"
         )
         self._lbl.setStyleSheet(f"color: {fg}; background: transparent; border: none;")
 
@@ -736,10 +741,9 @@ class ModuloRegistroTCC(NMModule):
         outer.addWidget(body, 1)
 
         lay = QVBoxLayout(body)
-        # Top 42px: posiciona el stepper como el canónico (dot ~y91). Antes ese
-        # espacio lo daba el eyebrow oculto; al sacarlo + AlignTop el contenido
-        # subía ~42px de más. Margen explícito = posición canónica estable.
-        lay.setContentsMargins(V3_SP["lg"], 42, V3_SP["lg"], V3_SP["sm"])
+        # Top 33px + 9px after the stepper: keeps the card y-position stable
+        # while aligning the stepper's CSS top:9px line to the canonical y~91.
+        lay.setContentsMargins(V3_SP["3xl"], 33, V3_SP["3xl"], V3_SP["sm"])
         lay.setSpacing(V3_SP["xs"])
         lay.setAlignment(Qt.AlignmentFlag.AlignTop)
 
@@ -754,6 +758,7 @@ class ModuloRegistroTCC(NMModule):
             [step.get("stepper_label", step["title"]) for step in self._step_defs], modo=self._modo
         )
         lay.addWidget(self._stepper)
+        lay.addSpacing(9)
 
         # 2. Main responsive grid: LEFT stack + RIGHT resumen
         self._main_grid = QGridLayout()
@@ -804,7 +809,7 @@ class ModuloRegistroTCC(NMModule):
         self._btn_prev = NMButton(
             t("text.module.registro.prev_btn", "Anterior"),
             parent=self._content, modo=self._modo, variant="secondary", size="sm",
-            width=112,
+            width=98,
         )
         self._btn_prev.clicked.connect(self._prev_step)
         nav_layout.addWidget(self._btn_prev)
@@ -815,7 +820,7 @@ class ModuloRegistroTCC(NMModule):
             modo=self._modo,
             variant="gradient",
             size="sm",
-            width=140,
+            width=104,
         )
         self._btn_next.clicked.connect(self._next_step)
         nav_layout.addWidget(self._btn_next)
@@ -1010,9 +1015,10 @@ class ModuloRegistroTCC(NMModule):
         # del mockup, que muestra los 8 en una línea) y dejaba el contenido
         # corrido hacia abajo.
         pills_col = QVBoxLayout()
+        pills_col.setContentsMargins(0, 10, 0, 0)
         pills_col.setSpacing(V3_SP["xs"])
         chips_row = QHBoxLayout()
-        chips_row.setSpacing(V3_SP["xs"])
+        chips_row.setSpacing(8)
         for emotion in self._emotion_defs:
             label = emotion["label"]
             chip = _EmotionChip(label, modo=self._modo)
@@ -1022,6 +1028,7 @@ class ModuloRegistroTCC(NMModule):
         chips_row.addStretch()
         pills_col.addLayout(chips_row)
         layout.addLayout(pills_col)
+        layout.addSpacing(14)
 
         # "Otro" custom input — shown below chip rows when "Otro" is selected.
         otro_placeholder = t(
@@ -1053,13 +1060,13 @@ class ModuloRegistroTCC(NMModule):
             qfont("size_small", weight=TYPOGRAPHY["weight_semibold"])
         )
         self._lbl_intensidad_header.setStyleSheet(
-            f"color: {v3c('text2', self._modo).name()}; background: transparent;"
+            f"color: {v3c('text', self._modo).name()}; background: transparent;"
         )
         self._lbl_intensidad_header.setContentsMargins(0, V3_SP["md"], 0, 0)
         layout.addWidget(self._lbl_intensidad_header)
 
         self._heat_bar = NMHeatBar(
-            value=int((_intens_init or 5) * 10),
+            value=int((_intens_init if _intens_init is not None else _TCC_VISUAL_DEFAULT_INTENSITY) * 10),
             modo=self._modo,
             gradient="brand_accent",
             value_max=100,
@@ -1373,8 +1380,8 @@ class ModuloRegistroTCC(NMModule):
         try:
             self._update_progress()
             if hasattr(self, "_stack") and self._stack and self._pages:
-                stack_h = {0: 244, 1: 284, 2: 288, 3: 244}.get(self._step, 260)
-                card_h = {0: 324, 1: 364, 2: 372, 3: 324}.get(self._step, 342)
+                stack_h = {0: 244, 1: 252, 2: 288, 3: 244}.get(self._step, 260)
+                card_h = {0: 324, 1: 306, 2: 372, 3: 324}.get(self._step, 342)
                 self._stack.setMaximumHeight(stack_h)
                 if hasattr(self, "_steps_card"):
                     self._steps_card.setMinimumHeight(min(card_h, 352))
@@ -1418,8 +1425,10 @@ class ModuloRegistroTCC(NMModule):
             self._btn_prev.setEnabled(self._step > 0)
             if self._step == 3:
                 self._btn_next.setText(t("text.module.registro.save_btn", "Guardar registro"))
+                self._btn_next.setFixedWidth(156)
             else:
                 self._btn_next.setText(t("text.module.registro.next_btn", "Siguiente"))
+                self._btn_next.setFixedWidth(104)
             # 2026-06 round 4: el input Otro usa setPlaceholderText (no setText),
             # por lo que no necesita re-set tras _reset() — el placeholder es
             # siempre canónico y text() permanece vacio.
@@ -1555,8 +1564,8 @@ class ModuloRegistroTCC(NMModule):
             return
 
         # intensidad es NOT NULL CHECK(0..10) en la DB; si el usuario no movió el
-        # heatbar queda None y el INSERT fallaba. El control arranca en 5/10, así
-        # que ese es el valor por defecto cuando no se declaró intensidad.
+        # heatbar queda None y el INSERT fallaba. Conserva el default histórico
+        # de persistencia cuando no se declaró intensidad.
         intensidad = d["intensidad"] if d.get("intensidad") is not None else 5
 
         # Éxito determinista en modo QA visual (Fase 8): la evidencia de la
@@ -1674,7 +1683,7 @@ class ModuloRegistroTCC(NMModule):
             self._txt_pensamiento.clear()
             self._txt_respuesta.clear()
             if hasattr(self, "_heat_bar"):
-                self._heat_bar.set_value(50)
+                self._heat_bar.set_value(_TCC_VISUAL_DEFAULT_INTENSITY * 10)
         except Exception:
             _log.exception("Operation failed")
 

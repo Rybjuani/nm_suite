@@ -1023,7 +1023,7 @@ class NMHeatBar(QWidget):
         if self._gradient == "brand_accent":
             # linear-gradient(90deg, var(--brand), var(--accent))
             return QColor(interpolate_color(
-                C("primary", self._modo), C("accent", self._modo), t
+                v3c("brand", self._modo).name(), v3c("accent", self._modo).name(), t
             ))
         # rainbow 6-stop
         for i in range(len(self._RAINBOW_STOPS) - 1):
@@ -1078,8 +1078,8 @@ class NMHeatBar(QWidget):
         grad = QLinearGradient(margin, 0, margin + gw, 0)
         if self._gradient == "brand_accent":
             # Mockup TCC línea 1236: linear-gradient(90deg, var(--brand), var(--accent))
-            grad.setColorAt(0.0, QColor(C("primary", self._modo)))
-            grad.setColorAt(1.0, QColor(C("accent", self._modo)))
+            grad.setColorAt(0.0, v3c("brand", self._modo))
+            grad.setColorAt(1.0, v3c("accent", self._modo))
         else:
             # Mockup base línea 200: arcoíris 6-stop
             for hex_c, pos in self._RAINBOW_STOPS:
