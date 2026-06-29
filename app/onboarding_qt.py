@@ -175,6 +175,29 @@ def _auth_card_gradient(modo: str, surface: str) -> str:
     )
 
 
+def _auth_card_border_css(border_css: str, card_radius: int) -> str:
+    """Borde de la AuthCard sin duplicar la costura del chrome.
+
+    La card es full-bleed y se apila DEBAJO del chrome (cuyo `border-bottom` ya
+    pinta la línea separadora a y47). Con un borde completo, el borde-top de la
+    card cae a y48, justo bajo esa línea, y produce una costura de 2px que el
+    canónico no tiene (una sola línea en el borde del chrome). En full-bleed
+    (radius 0) se omite el borde-top; en Win11 (card redondeada/inset) se
+    mantiene el contorno completo.
+    """
+    if card_radius > 0:
+        return f"border: 1px solid {border_css}; border-radius: {card_radius}px;"
+    # Borde-top transparente: conserva el modelo de caja (1px) para no desplazar
+    # el contenido, pero no pinta la línea que duplicaba la costura del chrome.
+    return (
+        "border-top: 1px solid transparent; "
+        f"border-left: 1px solid {border_css}; "
+        f"border-right: 1px solid {border_css}; "
+        f"border-bottom: 1px solid {border_css}; "
+        "border-radius: 0px;"
+    )
+
+
 def run_onboarding() -> bool:
     """Muestra el diálogo de onboarding. Retorna True si el usuario completó el proceso."""
     dlg = OnboardingDialog()
@@ -358,7 +381,7 @@ class OnboardingDialog(QDialog):
             card_radius = 22 if _is_windows_11_or_newer() else 0
             card.setStyleSheet(
                 f"QFrame#AuthCard {{ background: {auth_bg}; "
-                f"border: 1px solid {border_css}; border-radius: {card_radius}px; }}"
+                f"{_auth_card_border_css(border_css, card_radius)} }}"
             )
         else:
             card.setStyleSheet("QFrame#AuthCard { background: transparent; border: none; }")
@@ -619,8 +642,12 @@ class OnboardingDialog(QDialog):
             # (antes usaba surface/input → un escalón de color distinto al target).
             bg_col = self._t["surface2"]
             border_c = self._t["v3c"]("border", self._modo)
+            # Canonical consent card = `.card{border:1px solid var(--line)}` (mockup):
+            # dark `--line` is white@0.09 (alpha 23). The previous alpha 45 painted the
+            # card outline ~2x too bright (top edge measured 69 vs canonical ~39).
+            line_c = self._t["v3c"]("line", self._modo)
             border_css = (
-                f"rgba({border_c.red()},{border_c.green()},{border_c.blue()},45)"
+                f"rgba({line_c.red()},{line_c.green()},{line_c.blue()},{line_c.alpha()})"
                 if is_dark
                 else "rgba(28,34,24,0.10)"
             )
@@ -935,12 +962,13 @@ class OnboardingDialog(QDialog):
                     auth_bg = _auth_card_gradient(self._modo, t["surface"])
                     frame.setStyleSheet(
                         f"QFrame#AuthCard {{ background: {auth_bg}; "
-                        f"border: 1px solid {border_css}; border-radius: {card_radius}px; }}"
+                        f"{_auth_card_border_css(border_css, card_radius)} }}"
                     )
                 elif name == "ConsentCard":
                     bg_col = t["surface2"]
+                    line_c = t["v3c"]("line", self._modo)  # canonical .card border = var(--line)
                     cc_border = (
-                        f"rgba({border_c.red()},{border_c.green()},{border_c.blue()},45)"
+                        f"rgba({line_c.red()},{line_c.green()},{line_c.blue()},{line_c.alpha()})"
                         if is_dark else "rgba(28,34,24,0.10)"
                     )
                     frame.setStyleSheet(
