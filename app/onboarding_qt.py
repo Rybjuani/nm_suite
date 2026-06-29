@@ -31,6 +31,7 @@ from PyQt6.QtWidgets import (
     QWidget,
     QScrollArea,
     QFrame,
+    QSpacerItem,
     QSizePolicy,
 )
 
@@ -347,6 +348,7 @@ class OnboardingDialog(QDialog):
         form_widget = QWidget()
         form_widget.setStyleSheet("background: transparent;")
         form_lay = QVBoxLayout(form_widget)
+        self._form_lay = form_lay
         # El target canónico es 520×600 y usa el espaciado COMPLETO del mockup
         # (.screen padding 26×28, sub mb18, inputs mb14). El modo compacto (tighter)
         # se reserva para ventanas genuinamente bajas (<560) cerca del mínimo 520.
@@ -464,7 +466,13 @@ class OnboardingDialog(QDialog):
         brand_row.addWidget(title_lbl, alignment=Qt.AlignmentFlag.AlignVCenter)
         brand_row.addStretch()
         form_lay.addLayout(brand_row)
-        form_lay.addSpacing(6 if not is_compact else 2)
+        self._brand_to_sub_spacer = QSpacerItem(
+            0,
+            2 if is_compact else 6,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Fixed,
+        )
+        form_lay.addItem(self._brand_to_sub_spacer)
 
         sub = QLabel(
             suite_t(
@@ -500,7 +508,13 @@ class OnboardingDialog(QDialog):
             sub.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         form_lay.addWidget(sub)
 
-        form_lay.addSpacing(8 if is_compact else 14)  # mockup: sub margin 0 0 18px
+        self._sub_to_name_spacer = QSpacerItem(
+            0,
+            8 if is_compact else 14,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Fixed,
+        )
+        form_lay.addItem(self._sub_to_name_spacer)  # mockup: sub margin 0 0 18px
 
         # ── Nombre ────────────────────────────────────────────────────────────
         form_lay.addWidget(self._lbl(suite_t("text.onboarding.name_label", "Nombre *"), is_compact))
@@ -511,7 +525,13 @@ class OnboardingDialog(QDialog):
             self._apply_compact_input_font(self._name)
         form_lay.addWidget(self._name)
 
-        form_lay.addSpacing(10 if is_compact else 10)  # mockup: input margin-bottom 14px
+        self._name_to_email_spacer = QSpacerItem(
+            0,
+            10 if is_compact else 10,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Fixed,
+        )
+        form_lay.addItem(self._name_to_email_spacer)  # mockup: input margin-bottom 14px
 
         # ── Email ─────────────────────────────────────────────────────────────
         form_lay.addWidget(
@@ -549,7 +569,13 @@ class OnboardingDialog(QDialog):
 
         # (Hint "Se usa Supabase Auth..." eliminado — feedback owner v1.0:
         # información técnica interna, no aporta al usuario.)
-        form_lay.addSpacing(8 if is_compact else 12)  # mockup: password margin-bottom 16px
+        self._password_to_consent_spacer = QSpacerItem(
+            0,
+            8 if is_compact else 12,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Fixed,
+        )
+        form_lay.addItem(self._password_to_consent_spacer)  # mockup: password margin-bottom 16px
 
         # ── Consentimiento: card secundaria ADN con shield icon ─────────────
         consent_card = QFrame()
@@ -581,6 +607,7 @@ class OnboardingDialog(QDialog):
                 "border-radius: 16px; }}"
             )
         cc_lay = QVBoxLayout(consent_card)
+        self._consent_card_lay = cc_lay
         if is_compact:
             cc_lay.setContentsMargins(12, 8, 12, 8)
             cc_lay.setSpacing(5)
@@ -615,6 +642,7 @@ class OnboardingDialog(QDialog):
                 self._t["v3_font"]("size_caption", weight=self._t["TY"]["weight_semibold"])
             )
             cc_title.setStyleSheet(f"color: {self._t['text']}; background: transparent;")
+        self._consent_title = cc_title
         cc_head.addWidget(cc_title)
         cc_head.addStretch()
         cc_lay.addLayout(cc_head)
@@ -732,6 +760,7 @@ class OnboardingDialog(QDialog):
         footer_widget = QWidget()
         footer_widget.setStyleSheet("background: transparent;")
         footer_lay = QVBoxLayout(footer_widget)
+        self._footer_lay = footer_lay
         # Mismos márgenes laterales que el form (full-bleed alineado).
         if is_compact:
             footer_lay.setContentsMargins(24, 2, 24, 37)
@@ -1036,6 +1065,58 @@ class OnboardingDialog(QDialog):
             self._btn_signup.setText(suite_t("text.onboarding.signup_btn", "Crear cuenta"))
             self._sync_action_buttons()
 
+    def _apply_recovery_visual_tuning(self) -> None:
+        """Ajustes compactos propios del estado recuperar acceso.
+
+        El recovery agrega feedback visible y focus ring al email; con el layout
+        base de onboarding eso dejaba pequeñas bandas estructurales fuera del
+        gate. Estos cambios replican el balance CSS de ese estado sin mover los
+        estados vecinos onboarding/onboarding-error.
+        """
+        if not (self.width() <= 560 or self.height() < 620):
+            return
+
+        def _spacer(attr: str, height: int) -> None:
+            sp = getattr(self, attr, None)
+            if sp is not None:
+                sp.changeSize(
+                    0,
+                    height,
+                    QSizePolicy.Policy.Minimum,
+                    QSizePolicy.Policy.Fixed,
+                )
+
+        _spacer("_brand_to_sub_spacer", 0)
+        _spacer("_sub_to_name_spacer", 10)
+        _spacer("_name_to_email_spacer", 9)
+        _spacer("_password_to_consent_spacer", 9)
+
+        consent_lay = getattr(self, "_consent_card_lay", None)
+        if consent_lay is not None:
+            consent_lay.setContentsMargins(12, 12, 12, 8)
+
+        consent_title = getattr(self, "_consent_title", None)
+        if consent_title is not None:
+            consent_title.setFixedHeight(18)
+            consent_title.setSizePolicy(
+                QSizePolicy.Policy.Preferred,
+                QSizePolicy.Policy.Fixed,
+            )
+
+        footer_lay = getattr(self, "_footer_lay", None)
+        if footer_lay is not None:
+            footer_lay.setContentsMargins(24, 0, 24, 39)
+
+        for lay in (
+            getattr(self, "_form_lay", None),
+            consent_lay,
+            footer_lay,
+            self.layout(),
+        ):
+            if lay is not None:
+                lay.invalidate()
+        self.updateGeometry()
+
     def _show_email_focus_ring(self) -> None:
         """Pinta el anillo 3px brand-soft canónico detrás del email (campo activo
         del flujo de recuperación). Ver `_FocusRingOverlay`."""
@@ -1113,6 +1194,7 @@ class OnboardingDialog(QDialog):
                 kind="accent",  # mockup línea 1316: color:var(--accent)
             )
             self._recover_prompt_active = True
+            self._apply_recovery_visual_tuning()
             # El email es el campo activo del flujo de recuperación: debe mostrar
             # su anillo de foco canónico (brand-line + halo brand-soft,
             # `.input:focus` línea 304 / recover línea 1425). En captura
