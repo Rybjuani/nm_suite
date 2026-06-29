@@ -1,0 +1,95 @@
+"""Tests for qa/anti_fraud_scan.py — the static runtime/product anti-fraud guard."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from qa.anti_fraud_scan import scan_source, scan_paths, main
+
+
+def _kinds(violations):
+    return {v.kind for v in violations}
+
+
+def test_clean_source_has_no_violations():
+    src = (
+        "from PyQt6.QtGui import QPixmap\n"
+        "def build():\n"
+        "    pix = QPixmap('assets/logos/brand.png')\n"
+        "    return pix\n"
+    )
+    assert scan_source(src, "app/clean.py") == []
+
+
+def test_flags_canonical_path_literal():
+    src = "REF = 'qa/_mockup_canonical/suite-recuperar-acceso-light-520x600.png'\n"
+    v = scan_source(src, "app/x.py")
+    assert any(k == "artifact_path_literal" for k in _kinds(v))
+
+
+def test_flags_reports_qa_and_layered_report():
+    src = (
+        "A = 'reports/qa/layered_visual_compare_item'\n"
+        "B = 'LAYERED_VISUAL_REPORT.json'\n"
+    )
+    v = scan_source(src, "app/x.py")
+    patterns = {x.pattern for x in v}
+    assert "reports/qa" in patterns
+    assert "layered_visual_report" in patterns
+
+
+def test_flags_setpixmap_with_reference_artifact():
+    src = (
+        "from PyQt6.QtGui import QPixmap\n"
+        "def show(self):\n"
+        "    self._overlay.setPixmap(QPixmap('qa/_mockup_canonical/x.png'))\n"
+    )
+    v = scan_source(src, "app/x.py")
+    # Caught both as an artifact literal and as a pixmap-reference call.
+    assert "pixmap_reference_artifact" in _kinds(v)
+    assert "artifact_path_literal" in _kinds(v)
+
+
+def test_flags_reference_overlay_identifier_and_class():
+    src = (
+        "class RecoverReferenceOverlay:\n"
+        "    pass\n"
+        "def _show_recover_reference_overlay(self):\n"
+        "    self._reference_overlay = None\n"
+    )
+    v = scan_source(src, "app/x.py")
+    assert "reference_overlay_identifier" in _kinds(v)
+
+
+def test_does_not_ban_qpixmap_globally():
+    src = (
+        "from PyQt6.QtGui import QPixmap, QImage\n"
+        "p = QPixmap('assets/icons/shield.png')\n"
+        "i = QImage('assets/bg/forest.png')\n"
+    )
+    assert scan_source(src, "shared/x.py") == []
+
+
+def test_captures_dir_is_flagged():
+    src = "path = 'qa/_captures_v8/suite-home-light-960x600.png'\n"
+    v = scan_source(src, "app/x.py")
+    assert "_captures_v8" in {x.pattern for x in v}
+
+
+def test_syntax_error_falls_back_to_line_scan():
+    src = "def broken(:\n    x = 'qa/_mockup_canonical/y.png'\n"
+    v = scan_source(src, "app/broken.py")
+    assert any(x.kind == "unparsed_token" for x in v)
+
+
+def test_real_product_tree_is_clean():
+    """Regression guard: app/ hub/ shared/ must stay free of reference artifacts."""
+    violations = scan_paths(["app", "hub", "shared"])
+    assert violations == [], f"anti-fraud violations in product code: {[v.to_dict() for v in violations]}"
+
+
+def test_main_returns_zero_on_clean_subset(capsys):
+    rc = main(["--roots", "shared"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert "CLEAN" in captured.out

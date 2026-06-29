@@ -6,6 +6,15 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Anti-fraud gate: runtime/product must not read/render/overlay canonical or
+# reference artifacts. If this fails, the resulting report is NOT valid closure
+# evidence even if the comparator reports PASS.
+& .\.venv\Scripts\python.exe qa\anti_fraud_scan.py
+if ($LASTEXITCODE -ne 0) {
+  Write-Error "ANTI-FRAUD SCAN FAILED. Report is NOT valid closure evidence. Fix runtime/product references to canonical/reference artifacts before validating."
+  exit 1
+}
+
 $rows = @()
 foreach ($line in Get-Content -LiteralPath $PlanFile) {
   $trimmed = $line.Trim()
