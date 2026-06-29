@@ -227,8 +227,11 @@ The checklist is a sequential queue, not a global audit. Rules:
 ## Current Item Definition
 
 - `current item` = the first unchecked `[ ]` checkbox in this document, read strictly from top to bottom.
-- There is no discretionary selection of the next item.
-- You may not skip to a dark/light pair, family member, or related surface until the `current item` is `PASS`, unless the handoff note for that same item explicitly directs you to do so.
+- If the handoff or owner explicitly pins an active visual family sprint, `current item` means the first unchecked `[ ]` checkbox inside that pinned family order.
+- Family-equivalent work is allowed only when the shared repair does not complicate individual closure.
+- Closure remains sequential by exact key: the active key must be `PASS` before its checkbox changes, and each exact-key `PASS` requires one closure commit followed by an immediate push.
+- After that push, the agent may continue to the next open key only inside the same visual family, or an explicitly equivalent surface covered by the same mapping/evidence flow.
+- Stop and report before switching to another visual family or to a non-equivalent check.
 
 ## Comparator Command Lock
 
@@ -336,6 +339,8 @@ After every closed checkbox, or any anti-fraud cleanup commit, push to the
 remote immediately. A local-only fraud removal or closure is not done until it
 is pushed.
 
+The closure cadence is: one exact-key `PASS` = one commit + immediate push.
+
 ## Item Closure Evidence
 
 An item can be changed from `[ ]` to `[x]` only when the note includes:
@@ -356,5 +361,6 @@ If any evidence is missing, leave the checkbox open and add a note.
 - If a real product/UI fix applied for the current item makes other pending checkboxes pass, that is allowed and expected.
 - You may not jump to work another item before the current item passes.
 - After closing the current item, continue reading the checklist in order.
+- Inside an active family, you may continue after the push to the next open equivalent family member; before leaving that family, stop and report.
 - When you reach a later item that is already `PASS` from the same commit/official report, you may mark it closed with the same evidence, citing the commit and the exact key `PASS`.
 - If a shared fix worsens any previously closed key, that is a regression and must be fixed before proceeding.
