@@ -145,7 +145,7 @@ def calibrate_key(key: str, canonical_index, actual_index) -> dict:
     gate = LayeredThresholds()
     can = _load_rgb(can_ref.path)
     act = _load_rgb(act_ref.path)
-    metrics, _mask = _image_metrics(can, act, gate.changed_pixel_floor)
+    metrics, _mask = _image_metrics(can, act, gate)
     layout = _layout_metrics(can, act)
     best = _best_shift_ssim(can, act)
     dens = _density(can, act)

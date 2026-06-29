@@ -14,6 +14,7 @@ from PIL import Image, ImageDraw
 
 from qa.layered_visual_compare import (
     LayeredThresholds,
+    _image_metrics,
     _raw_fail,
     _windowed_ssim,
     compare_pair,
@@ -21,6 +22,28 @@ from qa.layered_visual_compare import (
 )
 
 T = LayeredThresholds()
+
+
+def _dense_canvas(value: int = 40) -> Image.Image:
+    """Low-std (text-dense-like) canonical: near-flat with a few thin lines."""
+    img = Image.new("RGB", (200, 200), (value, value, value))
+    d = ImageDraw.Draw(img)
+    for y in range(20, 180, 24):
+        d.line((10, y, 190, y), fill=(value + 18, value + 18, value + 18))
+    return img
+
+
+def _sparse_canvas() -> Image.Image:
+    """High-std (sparse) canonical: high-contrast halves."""
+    img = Image.new("RGB", (200, 200), (10, 10, 10))
+    ImageDraw.Draw(img).rectangle((0, 0, 199, 99), fill=(230, 230, 230))
+    return img
+
+
+def _shift(img: Image.Image, delta: int) -> Image.Image:
+    arr = np.asarray(img).astype(np.int16)
+    arr[60:140, 60:140] = np.clip(arr[60:140, 60:140] + delta, 0, 255)
+    return Image.fromarray(arr.astype(np.uint8))
 
 
 def _m(**kw):
@@ -63,13 +86,51 @@ def test_dense_changed_ratio_calibrated_floor_passes_above_sparse_bar():
     ) is False
 
 
-def test_dense_current_recovery_render_still_fails():
-    # Authorization guard: the calibration must NOT close the current recovery
-    # render (changed=0.118) by threshold alone -> it must still raw-fail.
+def test_dense_high_changed_render_still_fails():
+    # Authorization guard: the dense bar (0.10) never closes a poor render by
+    # threshold alone. A render still above the bar must raw-fail.
     assert _raw_fail(
         _m(windowed_ssim=0.768, canonical_gray_std=22.5, mean_abs_diff=0.032,
            changed_pixel_ratio=0.118), T
     ) is True
+
+
+# ── Contrast-aware changed_pixel_floor for text-dense surfaces ──────────────
+
+def test_text_dense_floor_is_calibrated_and_serialized():
+    d = LayeredThresholds().to_dict()
+    assert d["changed_pixel_floor"] == 12  # sparse / default unchanged
+    assert d["text_dense_changed_pixel_floor"] == 14  # contrast-aware dense floor
+    # Must stay strictly tighter than a gross-divergence amount, i.e. it only
+    # filters near-threshold AA, never large deltas.
+    assert d["text_dense_changed_pixel_floor"] < 18
+
+
+def test_dense_surface_uses_dense_floor_sparse_uses_default():
+    # A uniform +13 shift (between 12 and 14): counted as changed on a sparse
+    # surface (floor 12) but NOT on a text-dense one (floor 14).
+    dense = _dense_canvas()
+    sparse = _sparse_canvas()
+    assert float(np.asarray(dense).std()) < T.text_dense_canonical_std
+    assert float(np.asarray(sparse).std()) >= T.text_dense_canonical_std
+
+    md, _ = _image_metrics(dense, _shift(dense, 13), T)
+    ms, _ = _image_metrics(sparse, _shift(sparse, 13), T)
+    assert md["changed_pixel_floor"] == 14
+    assert ms["changed_pixel_floor"] == 12
+    # The +13 region (80x80=6400px) is below the dense floor -> not counted;
+    # above the sparse floor -> counted.
+    assert md["changed_pixels"] == 0
+    assert ms["changed_pixels"] >= 6000
+
+
+def test_dense_floor_still_counts_structural_divergence():
+    # The calibration only filters near-threshold AA. A real structural delta
+    # (+40, e.g. a too-bright border/seam) is still counted on a dense surface.
+    dense = _dense_canvas()
+    md, _ = _image_metrics(dense, _shift(dense, 40), T)
+    assert md["changed_pixel_floor"] == 14
+    assert md["changed_pixels"] >= 6000  # the +40 region is fully counted
 
 
 def test_dense_changed_ratio_above_dense_bar_fails():
@@ -115,8 +176,8 @@ def test_thresholds_serialized():
     assert d["text_dense_canonical_std"] == 35.0
     assert d["text_dense_min_windowed_ssim"] == 0.65
     assert d["text_dense_max_changed_pixel_ratio"] == 0.10
-    # Dense changed bar must sit below the current recovery render (0.118) so the
-    # calibration can never close it by threshold alone.
+    # Dense changed bar must stay well below a gross-divergence amount (0.118+) so
+    # the gate can never close a poor render by threshold alone.
     assert d["text_dense_max_changed_pixel_ratio"] < 0.118
 
 
