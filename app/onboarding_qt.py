@@ -1015,6 +1015,8 @@ class OnboardingDialog(QDialog):
         # Limpiar estados de error visuales de los inputs antes de re-validar.
         self._name.clear_error()
         self._email.clear_error()
+        if hasattr(self, "_name_error_ring"):
+            self._name_error_ring.hide()
         # Resetear color a danger por si venía un mensaje verde de recuperación.
         self._set_feedback("")
 
@@ -1022,6 +1024,7 @@ class OnboardingDialog(QDialog):
             # Mockup onboarding error: input Nombre con borde rose + halo rose-soft
             # + mensaje rose "Completá tu nombre para crear la cuenta."
             self._name.set_error("Nombre requerido")
+            self._apply_compact_feedback_visual_tuning()
             self._error_lbl.setText(
                 suite_t(
                     "text.onboarding.error_name_required",
@@ -1029,6 +1032,8 @@ class OnboardingDialog(QDialog):
                 )
             )
             self._name.setFocus()
+            self._name.setGraphicsEffect(None)
+            self._show_name_error_ring()
             return
         if "@" not in email or "." not in email:
             self._email.set_error("Email inválido")
@@ -1065,13 +1070,13 @@ class OnboardingDialog(QDialog):
             self._btn_signup.setText(suite_t("text.onboarding.signup_btn", "Crear cuenta"))
             self._sync_action_buttons()
 
-    def _apply_recovery_visual_tuning(self) -> None:
-        """Ajustes compactos propios del estado recuperar acceso.
+    def _apply_compact_feedback_visual_tuning(self) -> None:
+        """Ajustes compactos propios de estados con feedback visible.
 
-        El recovery agrega feedback visible y focus ring al email; con el layout
-        base de onboarding eso dejaba pequeñas bandas estructurales fuera del
-        gate. Estos cambios replican el balance CSS de ese estado sin mover los
-        estados vecinos onboarding/onboarding-error.
+        Recovery y onboarding-error agregan una línea de feedback y un halo de
+        input. Con el layout base de onboarding eso deja pequeñas bandas
+        estructurales fuera del gate. Estos cambios replican el balance CSS de
+        esos estados sin mover el onboarding base.
         """
         if not (self.width() <= 560 or self.height() < 620):
             return
@@ -1147,6 +1152,35 @@ class OnboardingDialog(QDialog):
         ring.show()
         ring.update()
 
+    def _show_name_error_ring(self) -> None:
+        """Pinta el halo rose-soft canónico del campo Nombre en error."""
+        if not hasattr(self, "_name"):
+            return
+        parent = self._name.parentWidget()
+        if parent is None:
+            return
+        if self._has_theme:
+            soft = self._t["v3c"]("dangerSoft", self._modo)
+        else:
+            soft = QColor(self._fallback_color("danger_ink"))
+            soft.setAlpha(41)
+        ring = getattr(self, "_name_error_ring", None)
+        if ring is None:
+            from shared.theme_qt import LAYOUT
+
+            ring = _FocusRingOverlay(soft, int(LAYOUT["radius_input"]), pad=3, parent=parent)
+            self._name_error_ring = ring
+        else:
+            ring._soft = QColor(soft)
+        geo = self._name.geometry()
+        pad = ring._pad
+        ring.setGeometry(
+            geo.x() - pad, geo.y() - pad, geo.width() + 2 * pad, geo.height() + 2 * pad
+        )
+        ring.stackUnder(self._name)
+        ring.show()
+        ring.update()
+
     def _set_feedback(self, msg: str, *, ok: bool = False, kind: str = ""):
         """Muestra un mensaje en la línea de estado.
 
@@ -1194,7 +1228,7 @@ class OnboardingDialog(QDialog):
                 kind="accent",  # mockup línea 1316: color:var(--accent)
             )
             self._recover_prompt_active = True
-            self._apply_recovery_visual_tuning()
+            self._apply_compact_feedback_visual_tuning()
             # El email es el campo activo del flujo de recuperación: debe mostrar
             # su anillo de foco canónico (brand-line + halo brand-soft,
             # `.input:focus` línea 304 / recover línea 1425). En captura
