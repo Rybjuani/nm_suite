@@ -1063,7 +1063,8 @@ class _PresetActivacionTab(QWidget):
         outer.addWidget(_tab_scroll_wrap(body, self._modo))
 
         # Form (Left)
-        form_card = NMCard(modo=self._modo, clickable=False)
+        activation_light = "dark" not in norm_modo(self._modo)
+        form_card = NMCard(modo=self._modo, clickable=False, lift=not activation_light)
         form_card.setFixedWidth(276)
         _set_plan_card_height(form_card, 340)
         form_lay = QVBoxLayout(form_card)
@@ -1125,7 +1126,7 @@ class _PresetActivacionTab(QWidget):
         lay.addWidget(form_card, 0, Qt.AlignmentFlag.AlignTop)
 
         # List (Right)
-        list_card = NMCard(modo=self._modo, clickable=False, padding=10)
+        list_card = NMCard(modo=self._modo, clickable=False, padding=10, lift=not activation_light)
         _set_plan_card_height(list_card, 230, min_height=212)
         list_lay = QVBoxLayout(list_card)
         list_lay.setContentsMargins(V3_SP["md"], V3_SP["md"], V3_SP["md"], V3_SP["md"])

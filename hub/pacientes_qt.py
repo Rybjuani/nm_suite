@@ -209,11 +209,13 @@ class DetallePacienteView(QWidget):
         self._plan_header_compact = compact
         if compact:
             self._top_card._padding_margins = (20, 15, 20, 15)
+            self._top_card._lift_enabled = "dark" in self._modo
             self._ia_row.setContentsMargins(0, 0, 0, 0)
             self._btn_exportar_pdf.setFixedSize(144, 36)
             self._btn_resumen_ia.setFixedSize(132, 36)
         else:
             self._top_card._padding_margins = (20, 20, 20, 20)
+            self._top_card._lift_enabled = True
             self._ia_row.setContentsMargins(0, 4, 0, 0)
             for btn in (self._btn_exportar_pdf, self._btn_resumen_ia):
                 btn.setMinimumSize(0, 0)
