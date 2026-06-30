@@ -63,6 +63,10 @@ try {
     --actual qa\_captures_v8 `
     --out-dir $OutDir `
     --keys-file $keysFile
+  if ($LASTEXITCODE -ne 0) {
+    Write-Error "LAYERED VISUAL COMPARE FAILED (exit $LASTEXITCODE). Check report for divergences."
+    exit 1
+  }
 }
 finally {
   Remove-Item -LiteralPath $keysFile -Force -ErrorAction SilentlyContinue

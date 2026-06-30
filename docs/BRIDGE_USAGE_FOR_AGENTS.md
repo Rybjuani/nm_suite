@@ -9,7 +9,7 @@ el protocolo; el bridge no lo reemplaza).
 - **Es** un diccionario trazable canonical CSS ↔ tokens/helpers/widgets Qt, para
   reusar patrones y no reinventar QSS por pantalla.
 - **No es** un gate. No cierra checks, no cambia thresholds, no toca `qa/`.
-  El cierre exige `qa/layered_visual_compare.py` + revisión manual.
+  El cierre exige el gate técnico automatizado (ver § Flujo).
 
 ## Flujo para resolver una key del handoff
 
@@ -50,15 +50,29 @@ el protocolo; el bridge no lo reemplaza).
    .\.venv\Scripts\python.exe qa\vas_introspect.py --introspect   # SHADOW/RADIUS/GRADIENT
    ```
 
-7. **Cerrar SOLO con el gate oficial** (filtrado por la key):
+7. **Cerrar SOLO con el gate técnico automatizado** vía los wrappers
+   `run_visual_item.ps1` / `run_visual_family.ps1`, que orquestan anti-fraud
+   scan, captura con `NM_VAS_INTROSPECT=1`, comparador, y `vas_gate.py`:
 
    ```powershell
-   .\.venv\Scripts\python.exe qa\capture_v8.py --app <app> --view <view> --theme <theme> --out-dir qa\_captures_v8 --no-clean
-   .\.venv\Scripts\python.exe qa\layered_visual_compare.py --canonical qa\_mockup_canonical --actual qa\_captures_v8 --out-dir reports\qa\layered_visual_compare_item --key "<app>:<view>@<theme>"
+   .\qa\run_visual_item.ps1 -App <app> -View <view> -Theme <theme>
    ```
 
-   Cierre válido = `REPORT_EVIDENCE_VALID: YES` + key exacta `PASS` + revisión
-   manual del panel (ver `VISUAL_QA_AGENT_PROTOCOL.md`).
+   Si se necesita invocar manualmente los pasos individuales:
+
+   ```powershell
+   $env:NM_VAS_INTROSPECT = "1"
+   Remove-Item .\qa\_visual_auditor_spec\introspection.json -ErrorAction SilentlyContinue
+   .\.venv\Scripts\python.exe qa\capture_v8.py --app <app> --view <view> --theme <theme> --out-dir qa\_captures_v8 --no-clean
+   .\.venv\Scripts\python.exe qa\layered_visual_compare.py --canonical qa\_mockup_canonical --actual qa\_captures_v8 --out-dir reports\qa\layered_visual_compare_item --key "<app>:<view>@<theme>"
+   .\.venv\Scripts\python.exe qa\vas_gate.py --key "<app>:<view>@<theme>"
+   ```
+
+   Cierre válido = anti-fraud CLEAN + `NM_VAS_INTROSPECT=1` +
+   `REPORT_EVIDENCE_VALID: YES` + exact key `PASS` + `vas_gate.py` exit `0`.
+   No existe cierre subjetivo: revisión manual, inspección visual del panel,
+   "se ve bien", aceptación del owner, o human review **no** son evidencia de
+   cierre (ver `VISUAL_QA_AGENT_PROTOCOL.md`).
 
 ## Reglas anti-fraude (heredadas del protocolo)
 

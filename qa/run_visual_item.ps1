@@ -43,6 +43,10 @@ if (-not $SkipCapture) {
   --actual qa\_captures_v8 `
   --out-dir $OutDir `
   --key $Key
+if ($LASTEXITCODE -ne 0) {
+  Write-Error "LAYERED VISUAL COMPARE FAILED (exit $LASTEXITCODE). Check report for divergences."
+  exit 1
+}
 
 # VAS Gate: validate the sidecar for this exact key. Non-zero exit = QA not approved.
 & .\.venv\Scripts\python.exe qa\vas_gate.py --key $Key
