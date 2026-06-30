@@ -816,16 +816,16 @@ class _PresetRutinaTab(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
         body = QWidget()
         lay = QHBoxLayout(body)
-        lay.setContentsMargins(0, 8, 0, 8)
-        lay.setSpacing(12)
+        lay.setContentsMargins(0, 16, 0, 8)
+        lay.setSpacing(16)
         outer.addWidget(_tab_scroll_wrap(body, self._modo))
 
         # Form (Left)
         form_card = NMCard(modo=self._modo, clickable=False)
-        _set_plan_card_height(form_card, 212)
+        _set_plan_card_height(form_card, 238, min_height=238)
         form_lay = QVBoxLayout(form_card)
         form_lay.setContentsMargins(12, 12, 12, 12)
-        form_lay.setSpacing(8)
+        form_lay.setSpacing(10)
 
 
         self._ent_task = NMInput("Descripción de la tarea (máx 100)", modo=self._modo)
@@ -834,6 +834,9 @@ class _PresetRutinaTab(QWidget):
         self._combo_sec.setStyleSheet(stylesheet_combobox(self._modo))
         for key, val in (("manana", "Mañana"), ("tarde", "Tarde"), ("noche", "Noche")):
             self._combo_sec.addItem(val, key)
+
+        self._ent_task.setFixedHeight(42)
+        self._combo_sec.setFixedHeight(42)
 
         form_lay.addWidget(self._ent_task)
         form_lay.addWidget(self._combo_sec)

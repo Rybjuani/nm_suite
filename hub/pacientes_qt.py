@@ -69,8 +69,6 @@ def _detail_screen_qss(modo: str, *, bottom_edge: bool = False) -> str:
     return (
         f"background-color: {surface};"
         f"border-bottom: 1px solid {border};"
-        "border-bottom-left-radius: 28px;"
-        "border-bottom-right-radius: 28px;"
     )
 
 
