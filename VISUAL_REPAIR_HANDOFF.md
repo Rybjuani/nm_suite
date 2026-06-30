@@ -69,6 +69,8 @@ comparator `PASS`.
 - Canonical HTML: `qa/pack canonico/neuromood-mockup_reparado.html`
 - Runtime captures: fresh full run in `qa/_captures_v8/`
 - Comparator: `qa/layered_visual_compare.py`
+- Canonical HTML/mockup parity auditor:
+  `tools/qa/audit_mockup_parity_baseline.py`
 - Fresh report used to seed this handoff:
   `reports/qa/layered_visual_compare_fresh/LAYERED_VISUAL_REPORT.json`
 
@@ -113,6 +115,35 @@ Regresion final:
 
 - Solo para cierre global o verificacion amplia.
 - Usar `capture_v8.py --all --clean` + comparator full.
+- Si tambien cambia el HTML canonico, la receta de captura, los PNG canonicos,
+  o el baseline/seed que alimenta esta checklist, correr el auditor HTML/mockup
+  canonico y registrar su `AUDIT.md`.
+
+Harness canonico HTML/mockup:
+
+```powershell
+.\.venv\Scripts\python.exe tools\qa\audit_mockup_parity_baseline.py
+```
+
+Este harness renderiza la receta completa como original A/B para medir ruido
+natural y original/modificado para medir delta real. Es PASS solo si el set
+completo de 86 capturas (incluidos modales accionados) queda dentro del baseline
+dinamico o del baseline estadistico automatico, y si `AUDIT.json` reporta
+`summary.fail == 0`. Es FAIL si falta una captura, falla la receta, o cualquier
+fila queda fuera del baseline despues del escalamiento estadistico.
+
+Outputs esperados:
+
+- `reports\qa\mockup_parity_baseline\<timestamp>\AUDIT.json`
+- `reports\qa\mockup_parity_baseline\<timestamp>\AUDIT.csv`
+- `reports\qa\mockup_parity_baseline\<timestamp>\AUDIT.md`
+- `TEXT_DIFF_NORMALIZED.patch`
+- `EOL_DELTA.txt`
+
+El auditor normaliza CRLF/LF antes del diff textual y reporta EOL-only aparte.
+Su PASS/FAIL convive con `capture_v8`, `layered_visual_compare`, anti-fraud y
+VAS; no reemplaza ningun gate runtime ni autoriza cerrar una divergencia visual
+sin exact-key `PASS` del comparador activo.
 
 Disciplina de recursos:
 
@@ -198,6 +229,8 @@ The checklist is a sequential queue, not a global audit. Rules:
 3. You may not jump to the next item while the current one remains `FAIL`.
 4. You may not close, downgrade, or reclassify an item because it is difficult.
 5. The only way to advance the queue is a `PASS` from the active layered comparator (`qa/layered_visual_compare.py`).
+6. If the checklist seed/baseline or canonical mockup changes, the HTML/mockup
+   parity auditor must also PASS before the harness can be treated as current.
 
 ## Current Item Definition
 
@@ -446,6 +479,9 @@ technical gates pass. Inspection manual, "confirmación visual", panel review, o
 5. VAS Gate (`qa/vas_gate.py`) passes: sidecar
    `qa/_visual_auditor_spec/introspection.json` exists, contains the exact key,
    `fail_count=0`, and zero divergences of severity `high` or `medium`.
+6. If the closure or checklist update changes canonical HTML, the capture
+   recipe, canonical PNGs, or the baseline/seed that drives this checklist,
+   `tools/qa/audit_mockup_parity_baseline.py` must PASS.
 
 The closure note must record:
 
@@ -454,6 +490,7 @@ The closure note must record:
 - Comparator report path.
 - `REPORT_EVIDENCE_VALID: YES` + exact key `PASS`.
 - `qa/vas_gate.py` exit code `0`.
+- When applicable, mockup parity `AUDIT.md` path and PASS/FAIL summary.
 
 `HANDOFF_CLOSURE_ALLOWED: NO` is acceptable for individual closure if the reason
 is `partial_scope` or that other keys remain `FAIL`; the deciding factor is the

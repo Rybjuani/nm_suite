@@ -9,6 +9,8 @@ This file is the active protocol for visual parity work. Read it before editing
 - Runtime source of truth: fresh full captures in `qa/_captures_v8/`.
 - Canonical HTML source: `qa/pack canonico/neuromood-mockup_reparado.html`.
 - Operational comparator: `qa/layered_visual_compare.py`.
+- Canonical HTML/mockup parity auditor:
+  `tools/qa/audit_mockup_parity_baseline.py`.
 
 Desktop zip files are archival evidence only. Do not use
 `C:\Users\nosom\Desktop\_mockup_canonical.zip` or
@@ -96,6 +98,49 @@ For the current visual key, in order:
 
 3. Inspect the side-by-side panel for each item before editing or closing it.
 
+## Canonical HTML / Mockup Parity Harness
+
+Use this harness whenever a change touches the canonical HTML, the canonical
+capture recipe, generated canonical PNGs, or the checklist seed/baseline that is
+used to decide which surfaces are `PASS` or `FAIL`. It coexists with the runtime
+visual gates below; it does not replace `capture_v8.py`, `layered_visual_compare.py`,
+anti-fraud, or VAS.
+
+Canonical command:
+
+```powershell
+.\.venv\Scripts\python.exe tools\qa\audit_mockup_parity_baseline.py
+```
+
+Outputs are written under `reports\qa\mockup_parity_baseline\<timestamp>\`:
+
+- `AUDIT.json`
+- `AUDIT.csv`
+- `AUDIT.md`
+- `TEXT_DIFF_NORMALIZED.patch`
+- `EOL_DELTA.txt`
+
+PASS means all of the following are true:
+
+- The full official recipe produced every expected capture, including modal and
+  actioned-modal captures.
+- `AUDIT.json` has `summary.fail == 0`.
+- The report shows explicit `PASS` / `FAIL` / `EXPECTED_DELTA` rows.
+- CRLF/LF-only changes are reported as `EOL-only delta` and are not confused
+  with normalized textual deltas.
+
+FAIL means any row exceeds the dynamic baseline after automatic statistical
+escalation, the recipe does not produce the complete capture set, or the script
+exits non-zero. A FAIL blocks canonical baseline/checklist refresh until fixed
+and rerun. If a visual change is expected, it must appear as `EXPECTED_DELTA`
+inside an audit that still exits PASS.
+
+The auditor measures renderer noise by rendering original A/B, then measures
+the real delta by rendering original/modified. If a capture has high renderer,
+SVG, ring, or modal variance, it automatically escalates to a statistical
+baseline before failing. This is a baseline/mockup integrity gate only: do not
+use it to close a runtime visual item without the required runtime evidence.
+
 ## Resource-Safe Validation
 
 Microfix de una pantalla:
@@ -119,6 +164,9 @@ Regresion final:
 
 - Solo para cierre global o verificacion amplia.
 - Usar `capture_v8.py --all --clean` + comparator full.
+- If the regression also changes the canonical HTML, capture recipe, canonical
+  PNGs, or checklist seed/baseline, run the canonical HTML/mockup parity harness
+  above and record its `AUDIT.md` path.
 
 Disciplina de recursos:
 
@@ -207,6 +255,9 @@ Do not mark an item complete because of:
 - Any zip-based comparison.
 - Any report whose manifest says `technical_capture_only`,
   `REVIEW_INCOMPLETE`, or `REPORT_EVIDENCE_VALID: NO`.
+- `audit_mockup_parity_baseline.py` PASS by itself. That auditor validates
+  canonical HTML/mockup parity only; runtime closure still requires the active
+  comparator, anti-fraud, and VAS gates.
 - `HANDOFF_CLOSURE_ALLOWED: NO` by itself does **not** invalidate a report for closing an individual checkbox. It means the global handoff is not complete because the report is partial or other keys still have divergences. Individual closure requires `REPORT_EVIDENCE_VALID: YES` and the exact key status `PASS`.
 - Owner acceptance, human review, or "looks good enough".
 - Acceptable residue, partial progress, or "mostly fixed".
@@ -356,6 +407,9 @@ technical gates pass. There is no subjective or manual closure path — inspecti
 5. VAS Gate (`qa/vas_gate.py`) passes: sidecar
    `qa/_visual_auditor_spec/introspection.json` exists, contains the exact key,
    `fail_count=0`, and zero divergences of severity `high` or `medium`.
+6. If the item, harness, or checklist update changes canonical HTML, the
+   canonical capture recipe, canonical PNGs, or the baseline/checklist seed,
+   `tools/qa/audit_mockup_parity_baseline.py` must also PASS.
 
 The closure note must record:
 
@@ -364,6 +418,7 @@ The closure note must record:
 - Comparator report path.
 - `REPORT_EVIDENCE_VALID: YES` + exact key `PASS`.
 - `qa/vas_gate.py` exit code `0`.
+- When applicable, mockup parity `AUDIT.md` path and PASS/FAIL summary.
 
 `HANDOFF_CLOSURE_ALLOWED: NO` is acceptable for individual closure if the reason
 is `partial_scope` or that other keys remain `FAIL`; the deciding factor is the
