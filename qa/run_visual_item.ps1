@@ -23,6 +23,12 @@ if ([string]::IsNullOrWhiteSpace($Key)) {
   $Key = "${App}:${View}@${Theme}"
 }
 
+# VAS: force introspection mode for every closure capture.
+$env:NM_VAS_INTROSPECT = "1"
+
+# VAS: remove stale sidecar before capturing so evidence is from THIS run only.
+Remove-Item .\qa\_visual_auditor_spec\introspection.json -ErrorAction SilentlyContinue
+
 if (-not $SkipCapture) {
   & .\.venv\Scripts\python.exe qa\capture_v8.py `
     --app $App `
@@ -37,6 +43,13 @@ if (-not $SkipCapture) {
   --actual qa\_captures_v8 `
   --out-dir $OutDir `
   --key $Key
+
+# VAS Gate: validate the sidecar for this exact key. Non-zero exit = QA not approved.
+& .\.venv\Scripts\python.exe qa\vas_gate.py --key $Key
+if ($LASTEXITCODE -ne 0) {
+  Write-Error "VAS GATE FAILED for key '$Key'. QA NOT approved. Do not close this item."
+  exit 1
+}
 
 if ($RuntimeProbe) {
   & .\.venv\Scripts\python.exe qa\runtime_live_probe.py `

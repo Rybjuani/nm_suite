@@ -433,18 +433,35 @@ Comparator result:
 
 ## Required Closure Evidence
 
-An item may be changed from `[ ]` to `[x]` only when its note includes:
+An item may be changed from `[ ]` to `[x]` only when **all** of the following
+technical gates pass. Inspection manual, "confirmación visual", panel review, or
+"looks good" are **not** evidence of closure and must not be cited.
+
+### PASS requirements (all mandatory)
+
+1. Anti-fraud scan: `CLEAN`.
+2. Fresh capture with `NM_VAS_INTROSPECT=1` for that exact surface or tightly coupled family.
+3. Fresh `qa/layered_visual_compare.py` report with `REPORT_EVIDENCE_VALID: YES`.
+4. Exact key status is `PASS` only.
+5. VAS Gate (`qa/vas_gate.py`) passes: sidecar
+   `qa/_visual_auditor_spec/introspection.json` exists, contains the exact key,
+   `fail_count=0`, and zero divergences of severity `high` or `medium`.
+
+The closure note must record:
 
 - Fix commit hash.
-- Fresh capture command for that exact surface or tightly coupled family.
-- Fresh layered comparator report path.
-- The report must show `REPORT_EVIDENCE_VALID: YES`.
-- Exact key status is `PASS` only.
-- `HANDOFF_CLOSURE_ALLOWED: NO` is acceptable for individual closure if the reason is `partial_scope` or that other keys remain `FAIL`; the deciding factor is the exact key `PASS` in a valid report.
-- The comparator may exit non-zero while other items remain `FAIL`; read the exact key status in the JSON/MD report, not the global exit code.
-- One short manual side-by-side confirmation from the panel.
+- Capture command used (must include `NM_VAS_INTROSPECT=1`).
+- Comparator report path.
+- `REPORT_EVIDENCE_VALID: YES` + exact key `PASS`.
+- `qa/vas_gate.py` exit code `0`.
 
-If any evidence is missing, leave the checkbox open and add a note.
+`HANDOFF_CLOSURE_ALLOWED: NO` is acceptable for individual closure if the reason
+is `partial_scope` or that other keys remain `FAIL`; the deciding factor is the
+exact key `PASS` in a valid report plus a passing VAS Gate. The comparator may
+exit non-zero while other items remain `FAIL`; for individual closure, read the
+exact key status in the JSON/MD report, not the global exit code.
+
+If any gate fails or evidence is missing, leave the checkbox open and add a note.
 
 ## Collateral PASS Handling
 

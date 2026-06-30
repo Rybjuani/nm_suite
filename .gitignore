@@ -121,6 +121,10 @@ qa/_baseline_*/
 qa/_visual_auditor_v2/
 qa/_visual_auditor_v3/
 
+# VAS introspection sidecar — regenerable con cada captura (NM_VAS_INTROSPECT=1).
+# Nunca versionar: es evidencia efímera de un run, no estado canónico.
+qa/_visual_auditor_spec/introspection.json
+
 # Canonical mockup outputs — fuente única qa/_mockup_canonical/ (tracked).
 # Diff outputs son regenerables (gitignored).
 qa/_diff_results/
