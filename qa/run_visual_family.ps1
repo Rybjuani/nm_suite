@@ -15,6 +15,12 @@ if ($LASTEXITCODE -ne 0) {
   exit 1
 }
 
+# VAS: force introspection mode for every closure capture.
+$env:NM_VAS_INTROSPECT = "1"
+
+# VAS: remove stale sidecar before capturing so evidence is from THIS run only.
+Remove-Item .\qa\_visual_auditor_spec\introspection.json -ErrorAction SilentlyContinue
+
 $rows = @()
 foreach ($line in Get-Content -LiteralPath $PlanFile) {
   $trimmed = $line.Trim()
@@ -60,4 +66,11 @@ try {
 }
 finally {
   Remove-Item -LiteralPath $keysFile -Force -ErrorAction SilentlyContinue
+}
+
+# VAS Gate: validate the sidecar for all keys captured in this family run.
+& .\.venv\Scripts\python.exe qa\vas_gate.py
+if ($LASTEXITCODE -ne 0) {
+  Write-Error "VAS GATE FAILED. QA NOT approved. One or more keys have VAS failures or blocking divergences."
+  exit 1
 }
