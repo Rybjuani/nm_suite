@@ -295,16 +295,16 @@ class _PresetTimerTab(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
         body = QWidget()
         lay = QHBoxLayout(body)
-        lay.setContentsMargins(0, 8, 0, 8)
-        lay.setSpacing(12)
+        lay.setContentsMargins(0, 16, 0, 8)
+        lay.setSpacing(16)
         outer.addWidget(_tab_scroll_wrap(body, self._modo))
 
         # Form (Left)
         form_card = NMCard(modo=self._modo, clickable=False)
-        _set_plan_card_height(form_card, 238)
+        _set_plan_card_height(form_card, 290, min_height=290)
         form_lay = QVBoxLayout(form_card)
         form_lay.setContentsMargins(12, 12, 12, 12)
-        form_lay.setSpacing(8)
+        form_lay.setSpacing(10)
 
         # Sin jerga de developer ("preset") cara al profesional.
 
@@ -315,9 +315,13 @@ class _PresetTimerTab(QWidget):
         self._ent_cat = NMInput("Categoría (ej: Estudio)", modo=self._modo)
         self._ent_cat.setMaxLength(20)
 
+        for field in (self._ent_name, self._ent_secs, self._ent_cat):
+            field.setFixedHeight(42)
+
         form_lay.addWidget(self._ent_name)
         form_lay.addWidget(self._ent_secs)
         form_lay.addWidget(self._ent_cat)
+        form_lay.addSpacing(25)
 
         self._save_btn = NMButton("Agregar actividad", modo=self._modo)  # mockup: full-width
         self._save_btn.clicked.connect(self._save_preset)
@@ -337,7 +341,7 @@ class _PresetTimerTab(QWidget):
 
         # List (Right)
         list_card = NMCard(modo=self._modo, clickable=False)
-        _set_plan_card_height(list_card, 286, min_height=220)
+        _set_plan_card_height(list_card, 230, min_height=230)
         list_lay = QVBoxLayout(list_card)
         list_lay.setContentsMargins(10, 10, 10, 10)
 

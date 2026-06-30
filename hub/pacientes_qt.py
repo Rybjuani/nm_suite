@@ -60,6 +60,20 @@ except ImportError:
     from shared.qt_thread import run_on_gui
     from shared.theme import TYPOGRAPHY
 
+
+def _detail_screen_qss(modo: str, *, bottom_edge: bool = False) -> str:
+    surface = v3c("surface", modo).name()
+    if not bottom_edge:
+        return f"background-color: {surface};"
+    border = v3c("borderSoft", modo).name()
+    return (
+        f"background-color: {surface};"
+        f"border-bottom: 1px solid {border};"
+        "border-bottom-left-radius: 28px;"
+        "border-bottom-right-radius: 28px;"
+    )
+
+
 _log = logging.getLogger("NeuroMoodHub.Pacientes")
 
 # ── DetallePacienteView ───────────────────────────────────────────────────────
@@ -82,7 +96,9 @@ class DetallePacienteView(QWidget):
         ThemeManager.instance().theme_changed.connect(self._apply_theme)
 
     def _setup(self):
-        self.setStyleSheet("background: transparent;")
+        self.setStyleSheet(
+            f"#DetallePacienteView {{ background-color: {v3c('surface', self._modo).name()}; }}"
+        )
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -163,25 +179,25 @@ class DetallePacienteView(QWidget):
         chips_col.addLayout(ia_row)
 
         tl.addLayout(chips_col)
-        top_wrap = QWidget()
-        top_wrap.setStyleSheet("background: transparent;")
-        top_lay = QVBoxLayout(top_wrap)
-        top_lay.setContentsMargins(12, 28, 12, 2)
+        self._top_wrap = QWidget()
+        self._top_wrap.setStyleSheet(_detail_screen_qss(self._modo))
+        top_lay = QVBoxLayout(self._top_wrap)
+        top_lay.setContentsMargins(24, 24, 24, 8)
         top_lay.setSpacing(0)
         top_lay.addWidget(top)
-        layout.addWidget(top_wrap)
+        layout.addWidget(self._top_wrap)
 
         from hub.plan_terapeutico import PlanTerapeuticoTab
 
         self._tab_plan = PlanTerapeuticoTab(self._modo, self._sb, self._pid, self._nombre)
 
-        plan_wrap = QWidget()
-        plan_wrap.setStyleSheet("background: transparent;")
-        plan_lay = QVBoxLayout(plan_wrap)
-        plan_lay.setContentsMargins(12, 0, 12, 4)
+        self._plan_wrap = QWidget()
+        self._plan_wrap.setStyleSheet(_detail_screen_qss(self._modo, bottom_edge=True))
+        plan_lay = QVBoxLayout(self._plan_wrap)
+        plan_lay.setContentsMargins(24, 0, 24, 0)
         plan_lay.setSpacing(0)
         plan_lay.addWidget(self._tab_plan)
-        layout.addWidget(plan_wrap, stretch=1)
+        layout.addWidget(self._plan_wrap, stretch=1)
 
     def _on_resumen_ia(self):
         self._btn_resumen_ia.setEnabled(False)
@@ -419,7 +435,13 @@ class DetallePacienteView(QWidget):
 
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
-        self.setStyleSheet("background: transparent;")
+        self.setStyleSheet(
+            f"#DetallePacienteView {{ background-color: {v3c('surface', self._modo).name()}; }}"
+        )
+        if hasattr(self, "_top_wrap"):
+            self._top_wrap.setStyleSheet(_detail_screen_qss(self._modo))
+        if hasattr(self, "_plan_wrap"):
+            self._plan_wrap.setStyleSheet(_detail_screen_qss(self._modo, bottom_edge=True))
         ink1 = v3c("text", self._modo).name()
         ink2 = v3c("ink_secondary", self._modo).name()
         self._lbl_eyebrow.setStyleSheet(f"color: {ink2}; background: transparent;")
