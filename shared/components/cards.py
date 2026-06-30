@@ -127,6 +127,8 @@ class NMCard(QFrame):
         glow: bool = False,
         active: bool = False,
         radius: int | None = None,
+        lift: bool = True,
+        padding: int | tuple[int, int, int, int] | None = None,
     ):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
@@ -139,6 +141,13 @@ class NMCard(QFrame):
         self._clickable = clickable
         self._glow = glow
         self._active = active
+        self._lift_enabled = lift
+        if isinstance(padding, int):
+            self._padding_margins = (padding, padding, padding, padding)
+        elif padding is None:
+            self._padding_margins = _NM_CARD_PADDED_MARGINS
+        else:
+            self._padding_margins = padding
         self._borderless = False
         self._hover = False
         self._disabled = False
@@ -185,8 +194,8 @@ class NMCard(QFrame):
             return
         m = lay.contentsMargins()
         current = (m.left(), m.top(), m.right(), m.bottom())
-        if current != _NM_CARD_PADDED_MARGINS:
-            lay.setContentsMargins(*_NM_CARD_PADDED_MARGINS)
+        if current != self._padding_margins:
+            lay.setContentsMargins(*self._padding_margins)
 
     def event(self, event):
         if event.type() in (QEvent.Type.Show, QEvent.Type.LayoutRequest):
@@ -397,7 +406,7 @@ class NMCard(QFrame):
 
         # Lift: highlight superior interno (mockup aprobado) — solo en cards
         # activas/habilitadas; da material sin sombra dura.
-        if not self._disabled and self.isEnabled():
+        if self._lift_enabled and not self._disabled and self.isEnabled():
             paint_card_lift(p, rect, r, self._modo)
 
         if self._glow and not self._disabled and self.isEnabled():

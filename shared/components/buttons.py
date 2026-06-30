@@ -1186,11 +1186,15 @@ class NMTabs(QWidget):
         labels: list[str] | None = None,
         variant: str = "pill",  # "pill" | "underline"
         modo: str = None,
+        density: str = "normal",
+        selected_border: bool = True,
         parent=None,
     ):
         super().__init__(parent)
         self._modo = norm_modo(modo or _tm().modo)
         self._variant = variant if variant in ("pill", "filter", "underline", "seg") else "pill"
+        self._density = density if density in ("normal", "compact") else "normal"
+        self._selected_border = bool(selected_border)
         self._labels = list(labels or [])
         self._current = 0
         self._btns: list[QPushButton] = []
@@ -1285,7 +1289,7 @@ class NMTabs(QWidget):
             if self._variant == "pill":
                 b.setFixedHeight(_NM_TAB_PILL_BUTTON_HEIGHT)
             elif self._variant == "filter":
-                b.setFixedHeight(_NM_TAB_FILTER_BUTTON_HEIGHT)
+                b.setFixedHeight(28 if self._density == "compact" else _NM_TAB_FILTER_BUTTON_HEIGHT)
             elif self._variant == "seg":
                 b.setFixedHeight(_NM_TAB_SEG_BUTTON_HEIGHT)
             else:
@@ -1310,30 +1314,35 @@ class NMTabs(QWidget):
                 # .fchip canónico (mockup línea 301-304):
                 #   32px de alto, font-size 12.5px, r-pill, surface-2 bg, line border
                 #   activo: brand bg + brand-ink + transparent border.
+                filter_h = 28 if self._density == "compact" else _NM_TAB_FILTER_BUTTON_HEIGHT
+                filter_radius = filter_h // 2
+                filter_font = "11.5px" if self._density == "compact" else "12.5px"
+                filter_pad = "0px 12px" if self._density == "compact" else "0px 15px"
                 if checked:
                     b.setStyleSheet(
                         f"QPushButton {{ background: {primary}; color: {primary_ink}; "
-                        f"border: 1px solid transparent; padding: 0px 15px; "
-                        f"font-size: 12.5px; border-radius: {_NM_TAB_FILTER_BUTTON_RADIUS}px; "
-                        f"min-height: {_NM_TAB_FILTER_BUTTON_HEIGHT}px; "
-                        f"max-height: {_NM_TAB_FILTER_BUTTON_HEIGHT}px; }}"
+                        f"border: 1px solid transparent; padding: {filter_pad}; "
+                        f"font-size: {filter_font}; border-radius: {filter_radius}px; "
+                        f"min-height: {filter_h}px; "
+                        f"max-height: {filter_h}px; }}"
                     )
                 else:
                     b.setStyleSheet(
                         f"QPushButton {{ background: {surface_2}; color: {text_muted}; "
-                        f"border: 1px solid {soft_css}; padding: 0px 15px; "
-                        f"font-size: 12.5px; border-radius: {_NM_TAB_FILTER_BUTTON_RADIUS}px; "
-                        f"min-height: {_NM_TAB_FILTER_BUTTON_HEIGHT}px; "
-                        f"max-height: {_NM_TAB_FILTER_BUTTON_HEIGHT}px; }}"
+                        f"border: 1px solid {soft_css}; padding: {filter_pad}; "
+                        f"font-size: {filter_font}; border-radius: {filter_radius}px; "
+                        f"min-height: {filter_h}px; "
+                        f"max-height: {filter_h}px; }}"
                         f"QPushButton:hover {{ color: {text}; border-color: {strong_css}; }}"
                     )
             elif self._variant == "seg":
                 # `.seg` canónico (mockup l.111-114): segmento seleccionado =
                 # superficie elevada (surface + ink), NO brand; resto transparente.
                 if checked:
+                    selected_border = brand_line if self._selected_border else "transparent"
                     b.setStyleSheet(
                         f"QPushButton {{ background: {surface}; "
-                        f"color: {text}; border: 1px solid {brand_line}; padding: 0px 12px; "
+                        f"color: {text}; border: 1px solid {selected_border}; padding: 0px 12px; "
                         f"font-size: 12.5px; border-radius: {_NM_TAB_SEG_BUTTON_RADIUS}px; "
                         f"min-height: {_NM_TAB_SEG_BUTTON_HEIGHT}px; "
                         f"max-height: {_NM_TAB_SEG_BUTTON_HEIGHT}px; }}"

@@ -9,8 +9,8 @@ import datetime
 import uuid
 import logging
 
-from PyQt6.QtCore import Qt, pyqtSignal, QRectF, QEvent
-from PyQt6.QtGui import QPainter, QBrush, QColor, QPixmap
+from PyQt6.QtCore import Qt, pyqtSignal, QRectF, QEvent, QPointF
+from PyQt6.QtGui import QPainter, QBrush, QColor, QPixmap, QRadialGradient, QPen
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -21,6 +21,7 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QStackedWidget,
     QFrame,
+    QGraphicsDropShadowEffect,
 )
 
 # Textos customizables desde el Hub
@@ -317,7 +318,13 @@ class _NeedCard(NMCard):
     """Tarjeta de necesidad cotidiana en la vista Ahora."""
     
     def __init__(self, title: str, subtitle: str, family: str, icon_name: str, modo: str = None, parent=None):
-        super().__init__(parent=parent, modo=modo, clickable=True, glow=False)
+        super().__init__(
+            parent=parent,
+            modo=modo,
+            clickable=True,
+            glow=False,
+            lift=False,
+        )
         self._family = family
         self._icon_name = icon_name
         self._title = title
@@ -409,7 +416,14 @@ class _SkillCard(NMCard):
     """Tarjeta de presentación de habilidad en la Biblioteca."""
     
     def __init__(self, skill: dict, modo: str = None, parent=None):
-        super().__init__(parent=parent, modo=modo, clickable=True, glow=False)
+        super().__init__(
+            parent=parent,
+            modo=modo,
+            clickable=True,
+            glow=False,
+            lift=False,
+            padding=14,
+        )
         self._skill = skill
         self._family_color_key = _dbt_family_color_key(skill["family"])
         self.setProperty("dbt_family", skill["family"])
@@ -418,7 +432,7 @@ class _SkillCard(NMCard):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(20, 20, 20, 18)
+        lay.setContentsMargins(14, 14, 14, 14)
         lay.setSpacing(5)
 
         self.family_bar = QFrame()
@@ -466,7 +480,7 @@ class _SkillCard(NMCard):
         dur_box.addWidget(self.dur_lbl, 0, Qt.AlignmentFlag.AlignVCenter)
         info_lay.addLayout(dur_box)
 
-        self.guide_lbl = QLabel("✓ Práctica guiada")
+        self.guide_lbl = QLabel("✓ Práctica")
         self.guide_lbl.setFont(qfont("size_caption"))
         info_lay.addWidget(self.guide_lbl)
         
@@ -505,6 +519,42 @@ class _SkillCard(NMCard):
         # Mockup `.dbt-card .meta .pl{color:var(--brand)}` — "Práctica guiada" SIEMPRE
         # en brand, no en el color de la familia (antes salía cobre/rojo por card).
         self.guide_lbl.setStyleSheet(f"color: {v3c('brand', self._modo).name()};")
+
+
+class _DBTScreen(QWidget):
+    """Full-height DBT screen background matching the canonical `.screen`."""
+
+    def __init__(self, modo: str, parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        self.setAutoFillBackground(False)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setStyleSheet("background: transparent;")
+
+    def set_modo(self, modo: str) -> None:
+        self._modo = norm_modo(modo)
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        rect = QRectF(self.rect())
+        surface = v3c("surface", self._modo)
+        surface_2 = v3c("surface_2", self._modo)
+        surface_3 = v3c("surface_3", self._modo)
+
+        p.fillRect(rect, QBrush(surface))
+
+        glow = QRadialGradient(QPointF(rect.width() * 0.5, -rect.height() * 0.2), 500)
+        glow.setColorAt(0.0, surface_2)
+        fade = QColor(surface_2)
+        fade.setAlpha(0)
+        glow.setColorAt(0.7, fade)
+        p.fillRect(rect, QBrush(glow))
+
+        p.setPen(QPen(surface_3, 1))
+        p.drawLine(0, self.height() - 1, self.width(), self.height() - 1)
+        p.end()
 
 
 class _StepProgressIndicator(QWidget):
@@ -779,6 +829,7 @@ class _PracticeModalScrim(QWidget):
         root.addLayout(row)
         root.addStretch()
         self._apply_card_style()
+        self._apply_card_shadow()
 
     def _apply_card_style(self):
         surf = v3c("surface", self._modo).name()
@@ -788,6 +839,18 @@ class _PracticeModalScrim(QWidget):
             f"border: 1px solid rgba({b.red()},{b.green()},{b.blue()},{b.alpha()}); "
             f"border-radius: 28px; }}"  # mockup `.modal` r-xl
         )
+
+    def _apply_card_shadow(self):
+        shadow = QGraphicsDropShadowEffect(self._card)
+        if self._modo.startswith("dark"):
+            shadow.setBlurRadius(54)
+            shadow.setOffset(0, 22)
+            shadow.setColor(QColor(0, 0, 0, 130))
+        else:
+            shadow.setBlurRadius(34)
+            shadow.setOffset(0, 14)
+            shadow.setColor(QColor(49, 45, 39, 42))
+        self._card.setGraphicsEffect(shadow)
 
     def set_content(self, content: QWidget, max_width: int):
         if content is self._content:
@@ -801,7 +864,7 @@ class _PracticeModalScrim(QWidget):
         # Sin minimum, el card colapsa al sizeHint del contenido (~460px)
         # generando wrapping excesivo del body vs el mockup de 560px.
         self._card.setFixedWidth(max_width)
-        self._card.setMinimumHeight(360)
+        self._card.setMinimumHeight(366 if self._modo.startswith("dark") else 360)
         self._card_lay.addWidget(content)
         content.show()
 
@@ -809,6 +872,7 @@ class _PracticeModalScrim(QWidget):
         self._modo = norm_modo(modo)
         self._blur_radius = self._blur_radius_for_mode(self._modo)
         self._apply_card_style()
+        self._apply_card_shadow()
         self.update()
 
     def capture_background(self):
@@ -909,10 +973,17 @@ class ModuloDBT(NMModule):
         self._started_at = None
         self._origin_view = 0
         
-        # Main Layout inside self._content
-        self._main_layout = QVBoxLayout(self._content)
-        self._main_layout.setContentsMargins(24, 16, 24, 16)
-        self._main_layout.setSpacing(16)
+        outer = QVBoxLayout(self._content)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        self._screen_bg = _DBTScreen(self._modo, self._content)
+        outer.addWidget(self._screen_bg, 1)
+
+        # Main Layout inside the canonical full-height screen.
+        self._main_layout = QVBoxLayout(self._screen_bg)
+        self._main_layout.setContentsMargins(24, 24, 24, 16)
+        self._main_layout.setSpacing(13)
         
         # Tabs at the top
         self._tabs = NMTabs(
@@ -922,13 +993,14 @@ class ModuloDBT(NMModule):
             ],
             variant="seg",  # mockup `.seg`: contenedor surface-3, segmento sel = surface elevado
             modo=self._modo,
+            selected_border=False,
             parent=self,
         )
         self._tabs.changed.connect(self._on_tab_changed)
         # Mockup neuromood-mockup.html: el seg "Ahora / Biblioteca" arranca a
         # la izquierda del card, no centrado, y su ancho es compacto (≈200px).
         # Antes: max 640 + AlignHCenter → seg gigante centrado, no matcheaba.
-        self._tabs.setMaximumWidth(220)
+        self._tabs.setFixedWidth(240)
         self._main_layout.addWidget(self._tabs, alignment=Qt.AlignmentFlag.AlignLeft)
         
         # View stacked widget
@@ -1017,7 +1089,7 @@ class ModuloDBT(NMModule):
         widget = QWidget()
         lay = QVBoxLayout(widget)
         lay.setContentsMargins(0, 0, 0, 0)
-        lay.setSpacing(12)
+        lay.setSpacing(7)
         
         # Horizontal family tabs filter
         self._family_tabs = NMTabs(
@@ -1030,6 +1102,7 @@ class ModuloDBT(NMModule):
             ],
             variant="filter",  # mockup: active pill fill sólido
             modo=self._modo,
+            density="compact",
             parent=widget,
         )
         self._family_tabs.changed.connect(self._filter_library)
@@ -1048,7 +1121,7 @@ class ModuloDBT(NMModule):
         self._library_grid = QGridLayout(self._library_container)
         self._library_grid.setContentsMargins(0, 0, 8, 0)
         self._library_grid.setHorizontalSpacing(10)
-        self._library_grid.setVerticalSpacing(10)
+        self._library_grid.setVerticalSpacing(12)
         self._library_grid.setAlignment(Qt.AlignmentFlag.AlignTop)
         for col in range(3):
             self._library_grid.setColumnStretch(col, 1)
@@ -1216,6 +1289,8 @@ class ModuloDBT(NMModule):
         # Style scroll areas dynamically on theme change
         if hasattr(self, "_biblioteca_scroll") and self._biblioteca_scroll:
             self._biblioteca_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
+        if hasattr(self, "_screen_bg"):
+            self._screen_bg.set_modo(self._modo)
         # Trigger theme re-apply for all internal views
         if hasattr(self, "_view_ahora"):
             # Recurse children manually
