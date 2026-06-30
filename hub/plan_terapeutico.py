@@ -584,8 +584,8 @@ class _PresetRecordatoriosTab(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
         body = QWidget()
         lay = QHBoxLayout(body)
-        lay.setContentsMargins(0, 8, 0, 8)
-        lay.setSpacing(12)
+        lay.setContentsMargins(0, 16, 0, 8)
+        lay.setSpacing(16)
         outer.addWidget(_tab_scroll_wrap(body, self._modo))
 
         # Form card (Left)
@@ -594,7 +594,7 @@ class _PresetRecordatoriosTab(QWidget):
         # Completar con IA + spacing/márgenes) mide ~264px; el tope previo de
         # 212px lo desbordaba y el botón "Agregar" se montaba sobre el campo
         # Mensaje (detectado por el contrato GEOMETRY_OVERLAP de vas_introspect).
-        _set_plan_card_height(form_card, 270)
+        _set_plan_card_height(form_card, 286, min_height=286)
         form_lay = QVBoxLayout(form_card)
         form_lay.setContentsMargins(12, 12, 12, 12)
         form_lay.setSpacing(8)
@@ -625,7 +625,7 @@ class _PresetRecordatoriosTab(QWidget):
 
         # List card (Right)
         list_card = NMCard(modo=self._modo, clickable=False)
-        _set_plan_card_height(list_card, 286, min_height=220)
+        _set_plan_card_height(list_card, 230, min_height=230)
         list_lay = QVBoxLayout(list_card)
         list_lay.setContentsMargins(10, 10, 10, 10)
 
