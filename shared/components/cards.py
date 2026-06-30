@@ -135,7 +135,7 @@ class NMCard(QFrame):
         # Radio override por instancia (None = V3_RD["card"]). Permite cards
         # de borde recto donde el redondeo lee desprolijo (p.ej. paneles
         # laterales pegados al borde de la ventana).
-        self._radius_override = radius
+        self._radius_override = radius if radius is not None else _NM_CARD_RADIUS
         self._accent = accent_color
         self._base_accent = accent_color
         self._clickable = clickable

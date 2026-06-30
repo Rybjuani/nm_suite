@@ -110,6 +110,7 @@ class DetallePacienteView(QWidget):
         # contenido se recortaba abajo (H12/H21). Menos padding/avatar libera
         # ~18px de viewport para resumen/registros/ia/plan sin perder jerarquía.
         top = NMCard(modo=self._modo, clickable=False, glow=False)
+        self._top_card = top
         top.setMinimumHeight(64)
         tl = QHBoxLayout(top)
         tl.setContentsMargins(18, 10, 18, 10)
@@ -160,6 +161,7 @@ class DetallePacienteView(QWidget):
         chips_col.setSpacing(6)
 
         ia_row = QHBoxLayout()
+        self._ia_row = ia_row
         ia_row.setContentsMargins(0, 4, 0, 0)
         ia_row.addStretch()
         self._btn_exportar_pdf = NMButton(
@@ -188,6 +190,9 @@ class DetallePacienteView(QWidget):
         from hub.plan_terapeutico import PlanTerapeuticoTab
 
         self._tab_plan = PlanTerapeuticoTab(self._modo, self._sb, self._pid, self._nombre)
+        self._plan_header_compact = False
+        self._tab_plan._tabs.currentChanged.connect(self._sync_plan_header_density)
+        self._sync_plan_header_density(self._tab_plan._tabs.currentIndex())
 
         self._plan_wrap = QWidget()
         self._plan_wrap.setStyleSheet(_detail_screen_qss(self._modo, bottom_edge=True))
@@ -196,6 +201,25 @@ class DetallePacienteView(QWidget):
         plan_lay.setSpacing(0)
         plan_lay.addWidget(self._tab_plan)
         layout.addWidget(self._plan_wrap, stretch=1)
+
+    def _sync_plan_header_density(self, index: int) -> None:
+        compact = index == 3
+        if compact == self._plan_header_compact:
+            return
+        self._plan_header_compact = compact
+        if compact:
+            self._top_card._padding_margins = (20, 15, 20, 15)
+            self._ia_row.setContentsMargins(0, 0, 0, 0)
+            self._btn_exportar_pdf.setFixedSize(144, 36)
+            self._btn_resumen_ia.setFixedSize(132, 36)
+        else:
+            self._top_card._padding_margins = (20, 20, 20, 20)
+            self._ia_row.setContentsMargins(0, 4, 0, 0)
+            for btn in (self._btn_exportar_pdf, self._btn_resumen_ia):
+                btn.setMinimumSize(0, 0)
+                btn.setMaximumSize(16777215, 16777215)
+        self._top_card._queue_padding_sync()
+        self._top_card.updateGeometry()
 
     def _on_resumen_ia(self):
         self._btn_resumen_ia.setEnabled(False)

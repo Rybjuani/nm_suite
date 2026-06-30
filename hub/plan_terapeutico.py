@@ -137,7 +137,30 @@ def _empty_hint_label(text: str, modo: str) -> QWidget:
 
 def _activation_empty_state(modo: str) -> QWidget:
     """Empty calmo para Activacion: solo texto, sin chip de icono."""
-    return _empty_hint_label("Sin actividades personalizadas aún.", modo)
+    modo = norm_modo(modo)
+    wrap = QWidget()
+    line_color = qcolor_to_rgba_css(v3c("line", modo))
+    wrap.setStyleSheet(
+        "background: transparent;"
+        f"border: 1px dashed {line_color};"
+        "border-radius: 16px;"
+    )
+    wrap.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+    wrap.setMinimumHeight(96)
+    wrap.setMaximumHeight(112)
+    wl = QVBoxLayout(wrap)
+    wl.setContentsMargins(16, 30, 16, 30)
+    wl.setSpacing(0)
+    lbl = QLabel("Sin actividades personalizadas aún.")
+    lbl.setWordWrap(True)
+    lbl.setFont(qfont("size_small"))
+    lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    lbl.setStyleSheet(
+        f"color: {v3c('ink_secondary', modo).name()}; background: transparent;"
+        "border: none;"
+    )
+    wl.addWidget(lbl)
+    return wrap
 
 
 def _assigned_row_qss(modo: str) -> str:
@@ -1041,6 +1064,7 @@ class _PresetActivacionTab(QWidget):
 
         # Form (Left)
         form_card = NMCard(modo=self._modo, clickable=False)
+        form_card.setFixedWidth(276)
         _set_plan_card_height(form_card, 340)
         form_lay = QVBoxLayout(form_card)
         form_lay.setContentsMargins(V3_SP["md"], V3_SP["md"], V3_SP["md"], V3_SP["md"])
@@ -1050,9 +1074,12 @@ class _PresetActivacionTab(QWidget):
         self._ent_name.setMaxLength(50)
         self._ent_desc = NMInput("Descripción (ej: 15 min de aire fresco)", modo=self._modo)
         self._ent_desc.setMaxLength(120)
+        for field in (self._ent_name, self._ent_desc):
+            field.setFixedHeight(39)
 
         self._combo_cat = QComboBox()
         self._combo_cat.setStyleSheet(stylesheet_combobox(self._modo))
+        self._combo_cat.setFixedHeight(40)
         for cat in ("Autocuidado", "Física", "Cognitiva", "Placer", "Social", "Maestría"):
             self._combo_cat.addItem(cat, cat)
 
@@ -1065,8 +1092,10 @@ class _PresetActivacionTab(QWidget):
         range_lay.setSpacing(V3_SP["sm"])
         self._combo_min = QComboBox()
         self._combo_min.setStyleSheet(stylesheet_combobox(self._modo))
+        self._combo_min.setFixedHeight(40)
         self._combo_max = QComboBox()
         self._combo_max.setStyleSheet(stylesheet_combobox(self._modo))
+        self._combo_max.setFixedHeight(40)
         for i in range(1, 11):
             self._combo_min.addItem(f"Mín: {i}", i)
             self._combo_max.addItem(f"Máx: {i}", i)
@@ -1083,6 +1112,7 @@ class _PresetActivacionTab(QWidget):
 
         # Mockup l.1479-1480: botones apilados, cada uno width:100%
         self._save_btn = NMButton("Agregar actividad", modo=self._modo)
+        self._save_btn.setFixedHeight(38)
         self._save_btn.clicked.connect(self._save_activity)
         form_lay.addWidget(self._save_btn)
         self._ia_btn = NMButtonOutline("Completar con IA", modo=self._modo, icon_name="sparkle")
@@ -1092,13 +1122,14 @@ class _PresetActivacionTab(QWidget):
 
         form_lay.addStretch()
 
-        lay.addWidget(form_card, 1, Qt.AlignmentFlag.AlignTop)
+        lay.addWidget(form_card, 0, Qt.AlignmentFlag.AlignTop)
 
         # List (Right)
-        list_card = NMCard(modo=self._modo, clickable=False)
-        _set_plan_card_height(list_card, 340, min_height=236)
+        list_card = NMCard(modo=self._modo, clickable=False, padding=10)
+        _set_plan_card_height(list_card, 230, min_height=212)
         list_lay = QVBoxLayout(list_card)
         list_lay.setContentsMargins(V3_SP["md"], V3_SP["md"], V3_SP["md"], V3_SP["md"])
+        list_lay.setSpacing(0)
 
         list_lay.addLayout(_section_header_row(
             "Actividades del paciente",
@@ -1112,7 +1143,12 @@ class _PresetActivacionTab(QWidget):
             ),
         ))
 
+        self._empty_direct = _activation_empty_state(self._modo)
+        self._empty_direct.hide()
+        list_lay.addWidget(self._empty_direct)
+
         scroll = QScrollArea()
+        self._scroll = scroll
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setStyleSheet(
@@ -1130,6 +1166,10 @@ class _PresetActivacionTab(QWidget):
         lay.addWidget(list_card, 2, Qt.AlignmentFlag.AlignTop)
         self._load_activities()
 
+    def _show_empty_state(self, show: bool) -> None:
+        self._empty_direct.setVisible(show)
+        self._scroll.setVisible(not show)
+
     def _load_activities(self):
         while self._list_lay.count():
             item = self._list_lay.takeAt(0)
@@ -1137,7 +1177,7 @@ class _PresetActivacionTab(QWidget):
                 item.widget().deleteLater()
 
         if not self._sb:
-            self._list_lay.addWidget(_activation_empty_state(self._modo))
+            self._show_empty_state(True)
             return
         try:
             res = (
@@ -1148,8 +1188,9 @@ class _PresetActivacionTab(QWidget):
             )
             rows = res.data or []
             if not rows:
-                self._list_lay.addWidget(_activation_empty_state(self._modo))
+                self._show_empty_state(True)
                 return
+            self._show_empty_state(False)
             for r in rows:
                 w = QFrame()
                 w.setStyleSheet(_assigned_row_qss(self._modo))
