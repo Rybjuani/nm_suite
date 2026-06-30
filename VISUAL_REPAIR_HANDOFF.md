@@ -178,6 +178,33 @@ E2E smoke:
 .\scripts\e2e\run-e2e-smoke.ps1
 ```
 
+### VAS resource-safe capture (mandatory for every closure)
+
+Every capture used for closure must set `NM_VAS_INTROSPECT=1`.
+
+Microfix exact screen:
+
+```powershell
+$env:NM_VAS_INTROSPECT=1
+.\.venv\Scripts\python.exe qa\capture_v8.py `
+  --app suite `
+  --view dbt-practice-stop `
+  --theme light `
+  --out-dir qa\_captures_v8 `
+  --no-clean
+```
+
+Small family:
+
+```powershell
+$env:NM_VAS_INTROSPECT=1
+.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view timer-running --theme light --out-dir qa\_captures_v8 --no-clean
+.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view timer-paused  --theme light --out-dir qa\_captures_v8 --no-clean
+```
+
+Prohibited: `capture_v8.py --all` for microfix or single-item closure. `--all`
+is only allowed for final global regression or broad shared-base changes.
+
 Regresion final completa:
 
 ```powershell
@@ -338,6 +365,26 @@ small-shift SSIM, density, and the estimated ceiling by alignment/colour). It is
 **not a gate**: it never closes, reclassifies or skips an item and never
 modifies thresholds. Use it to characterise the gate, not to justify a closure.
 
+### VAS semantic gate (mandatory)
+
+`qa/vas_introspect.py` inspects semantic contracts and geometry via Qt
+introspection. Every exact-key closure requires a VAS pass in addition to the
+layered comparator.
+
+Requirements:
+- Capture with `NM_VAS_INTROSPECT=1`.
+- Sidecar `qa/_visual_auditor_spec/introspection.json` must exist.
+- The exact key must have an entry in `introspection.json`.
+- `fail_count` must be `0`.
+- Zero divergences of severity `high` or `medium`.
+- If VAS reports `GEOMETRY_*`, `RADIUS_MISSING`, `SHADOW_MISSING`, or any
+  semantic contract failure, the key is **not closable** even if the layered
+  comparator reports `PASS`.
+
+The layered comparator remains the primary visual gate. VAS is a mandatory
+additional semantic gate. `size_review` is informational unless this document
+states otherwise; `divergences` blocks.
+
 ### Mandatory push
 
 After every closed checkbox, or any anti-fraud cleanup commit, push to the
@@ -443,6 +490,8 @@ An item may be changed from `[ ]` to `[x]` only when its note includes:
 - `HANDOFF_CLOSURE_ALLOWED: NO` is acceptable for individual closure if the reason is `partial_scope` or that other keys remain `FAIL`; the deciding factor is the exact key `PASS` in a valid report.
 - The comparator may exit non-zero while other items remain `FAIL`; read the exact key status in the JSON/MD report, not the global exit code.
 - One short manual side-by-side confirmation from the panel.
+- VAS sidecar `qa/_visual_auditor_spec/introspection.json` must exist, contain
+  the exact key, `fail_count=0`, and zero high/medium divergences.
 
 If any evidence is missing, leave the checkbox open and add a note.
 
