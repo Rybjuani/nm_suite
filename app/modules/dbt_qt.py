@@ -731,11 +731,33 @@ class _PracticeModalScrim(QWidget):
     """
 
     _SCRIM_RGBA = (20, 18, 14, 127)  # mockup .modal-bg rgba(20,18,14,.5)
-    _SCRIM_BLUR_RADIUS = 40  # Qt blur radius tuned to match CSS backdrop-filter: blur(3px)
+    # CSS backdrop-filter: blur(3px) needs a lighter Qt blur in dark mode:
+    # high-contrast dark cards vanish from the comparator bbox with radius 40.
+    _SCRIM_BLUR_RADIUS_LIGHT = 40
+    _SCRIM_BLUR_RADIUS_DARK = 4
+    _MODAL_WIDTH_LIGHT = 554
+    _MODAL_WIDTH_DARK = 560
+
+    @classmethod
+    def _blur_radius_for_mode(cls, modo: str) -> int:
+        return (
+            cls._SCRIM_BLUR_RADIUS_DARK
+            if norm_modo(modo).startswith("dark")
+            else cls._SCRIM_BLUR_RADIUS_LIGHT
+        )
+
+    @classmethod
+    def modal_width_for_mode(cls, modo: str) -> int:
+        return (
+            cls._MODAL_WIDTH_DARK
+            if norm_modo(modo).startswith("dark")
+            else cls._MODAL_WIDTH_LIGHT
+        )
 
     def __init__(self, parent: QWidget, modo: str):
         super().__init__(parent)
         self._modo = norm_modo(modo)
+        self._blur_radius = self._blur_radius_for_mode(self._modo)
         self._content: QWidget | None = None
         self._bg_pixmap: "QPixmap | None" = None
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
@@ -785,6 +807,7 @@ class _PracticeModalScrim(QWidget):
 
     def apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
+        self._blur_radius = self._blur_radius_for_mode(self._modo)
         self._apply_card_style()
         self.update()
 
@@ -805,11 +828,11 @@ class _PracticeModalScrim(QWidget):
         # El QGraphicsBlurEffect oscurece los bordes del pixmap porque la kernel
         # de blur no tiene soporte completo en los extremos (→ vignette edge).
         # Para reproducir el clamp-to-edge del CSS blur, extendemos el pixmap
-        # por _SCRIM_BLUR_RADIUS*4 px en cada lado antes de blur y luego
+        # por blur_radius*4 px en cada lado antes de blur y luego
         # recortamos de vuelta al tamaño original.
-        if self._SCRIM_BLUR_RADIUS > 0:
+        if self._blur_radius > 0:
             from PyQt6.QtWidgets import QGraphicsBlurEffect, QGraphicsScene, QGraphicsPixmapItem
-            pad = self._SCRIM_BLUR_RADIUS * 4
+            pad = self._blur_radius * 4
             pw, ph = pix.width(), pix.height()
             padded = QPixmap(pw + 2 * pad, ph + 2 * pad)
             pp = QPainter(padded)
@@ -833,7 +856,7 @@ class _PracticeModalScrim(QWidget):
             scene = QGraphicsScene()
             item = QGraphicsPixmapItem(padded)
             blur = QGraphicsBlurEffect()
-            blur.setBlurRadius(self._SCRIM_BLUR_RADIUS)
+            blur.setBlurRadius(self._blur_radius)
             blur.setBlurHints(QGraphicsBlurEffect.BlurHint.QualityHint)
             item.setGraphicsEffect(blur)
             scene.addItem(item)
@@ -1095,7 +1118,10 @@ class ModuloDBT(NMModule):
         # La práctica es un MODAL sobre la biblioteca dimmed, no un reemplazo
         # full-screen. Los controles de fondo se ocultan mientras el scrim está
         # activo para no dejar botones visualmente tapados/no clickeables.
-        self._show_modal(self._practice_view, 554)
+        self._show_modal(
+            self._practice_view,
+            _PracticeModalScrim.modal_width_for_mode(self._modo),
+        )
 
     def _on_practice_cancelled(self):
         # Cerramos el modal y restauramos la tab de origen.
