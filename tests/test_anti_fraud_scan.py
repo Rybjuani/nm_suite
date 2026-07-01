@@ -93,3 +93,48 @@ def test_main_returns_zero_on_clean_subset(capsys):
     captured = capsys.readouterr()
     assert rc == 0
     assert "CLEAN" in captured.out
+
+
+_MODAL_FRAUD_MSG = "fixea primero la pantalla de atras y despues seguis con el modal"
+
+
+def _modal_violation_patterns(violations):
+    return {v.pattern for v in violations}
+
+
+def test_modal_blur_light_40_fails():
+    src = "_NM_MODAL_BLUR_RADIUS_LIGHT = 40\n"
+    v = scan_source(src, "shared/components/dialogs.py")
+    assert any(x.kind == "modal_backdrop_constant" for x in v)
+    assert any(_MODAL_FRAUD_MSG in x.pattern for x in v)
+
+
+def test_modal_blur_dark_4_fails():
+    src = "_NM_MODAL_BLUR_RADIUS_DARK = 4\n"
+    v = scan_source(src, "shared/components/dialogs.py")
+    assert any(x.kind == "modal_backdrop_constant" for x in v)
+    assert any(_MODAL_FRAUD_MSG in x.pattern for x in v)
+
+
+def test_modal_scrim_wrong_fails():
+    src = "_NM_MODAL_SCRIM_RGBA = (0, 0, 0, 128)\n"
+    v = scan_source(src, "shared/components/dialogs.py")
+    assert any(x.kind == "modal_backdrop_constant" for x in v)
+    assert any(_MODAL_FRAUD_MSG in x.pattern for x in v)
+
+
+def test_modal_constants_canonical_pass():
+    src = (
+        "_NM_MODAL_BLUR_RADIUS_LIGHT = 3\n"
+        "_NM_MODAL_BLUR_RADIUS_DARK = 3\n"
+        "_NM_MODAL_SCRIM_RGBA = (20, 18, 14, 128)\n"
+    )
+    v = scan_source(src, "shared/components/dialogs.py")
+    assert v == []
+
+
+def test_real_dialogs_modal_constants_pass():
+    dialogs = Path(__file__).resolve().parents[1] / "shared" / "components" / "dialogs.py"
+    v = scan_source(dialogs.read_text(encoding="utf-8"), "shared/components/dialogs.py")
+    modal_v = [x for x in v if x.kind == "modal_backdrop_constant"]
+    assert modal_v == []

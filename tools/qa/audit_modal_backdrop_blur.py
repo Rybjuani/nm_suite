@@ -128,14 +128,17 @@ def parse_capture_name(
     )
 
 
-def _capture_from_record(record: dict[str, Any]) -> CaptureId | None:
+def _capture_from_record(record: dict[str, Any], *, require_explicit_modal_metadata: bool = False) -> CaptureId | None:
     file_name = str(record.get("file") or "")
     surface = str(record.get("surface") or "")
     is_modal = bool(record.get("is_modal") or surface in MODAL_SURFACES or record.get("is_dialog_or_auxiliary"))
     modal_capture_scope = record.get("modal_capture_scope")
-    if is_modal and not modal_capture_scope:
+    if is_modal and not modal_capture_scope and not require_explicit_modal_metadata:
         modal_capture_scope = "panel_crop" if surface == "modal" or record.get("is_dialog_or_auxiliary") else "window_overlay"
-    backdrop_observable = bool(record.get("backdrop_observable") or modal_capture_scope == "window_overlay")
+    if require_explicit_modal_metadata:
+        backdrop_observable = bool(record.get("backdrop_observable"))
+    else:
+        backdrop_observable = bool(record.get("backdrop_observable") or modal_capture_scope == "window_overlay")
     back_screen_key = record.get("back_screen_key")
     parsed = parse_capture_name(
         file_name,
@@ -166,9 +169,13 @@ def _capture_from_record(record: dict[str, Any]) -> CaptureId | None:
         surface = "modal"
     is_modal = bool(record.get("is_modal") or surface in MODAL_SURFACES or record.get("is_dialog_or_auxiliary"))
     modal_capture_scope = record.get("modal_capture_scope")
-    if is_modal and not modal_capture_scope:
+    if is_modal and not modal_capture_scope and not require_explicit_modal_metadata:
         modal_capture_scope = "panel_crop" if surface == "modal" or record.get("is_dialog_or_auxiliary") else "window_overlay"
     back_screen_key = record.get("back_screen_key")
+    if require_explicit_modal_metadata:
+        backdrop_observable = bool(record.get("backdrop_observable"))
+    else:
+        backdrop_observable = bool(record.get("backdrop_observable") or modal_capture_scope == "window_overlay")
     return CaptureId(
         file_name,
         app,
@@ -179,7 +186,7 @@ def _capture_from_record(record: dict[str, Any]) -> CaptureId | None:
         surface,
         is_modal=is_modal,
         modal_capture_scope=str(modal_capture_scope) if modal_capture_scope else None,
-        backdrop_observable=bool(record.get("backdrop_observable") or modal_capture_scope == "window_overlay"),
+        backdrop_observable=backdrop_observable,
         back_screen_key=str(back_screen_key) if back_screen_key else None,
     )
 
@@ -192,7 +199,7 @@ def load_captures(capture_dir: Path, *, canonical: bool) -> dict[str, CaptureId]
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         records = manifest.get("captures") if canonical else manifest.get("results")
         for record in records or []:
-            parsed = _capture_from_record(record)
+            parsed = _capture_from_record(record, require_explicit_modal_metadata=not canonical)
             if parsed is not None:
                 captures[parsed.key] = parsed
 
@@ -218,36 +225,6 @@ def load_captures(capture_dir: Path, *, canonical: bool) -> dict[str, CaptureId]
                 back_screen_key=existing.back_screen_key,
             )
     return captures
-
-
-def hydrate_actual_modal_metadata(
-    actual_captures: dict[str, CaptureId],
-    canonical_captures: dict[str, CaptureId],
-) -> dict[str, CaptureId]:
-    hydrated = dict(actual_captures)
-    for key, canonical in canonical_captures.items():
-        if not (canonical.is_modal or canonical.surface in MODAL_SURFACES):
-            continue
-        actual = hydrated.get(key)
-        if actual is None:
-            continue
-        if actual.modal_capture_scope and actual.backdrop_observable:
-            continue
-        is_window_overlay = actual.resolution == canonical.resolution
-        hydrated[key] = CaptureId(
-            file=actual.file,
-            app=actual.app,
-            view=actual.view,
-            theme=actual.theme,
-            width=actual.width,
-            height=actual.height,
-            surface=canonical.surface if is_window_overlay else "modal",
-            is_modal=True,
-            modal_capture_scope="window_overlay" if is_window_overlay else "panel_crop",
-            backdrop_observable=is_window_overlay,
-            back_screen_key=canonical.back_screen_key or back_screen_key_for(canonical),
-        )
-    return hydrated
 
 
 def canonical_modal_keys(captures: dict[str, CaptureId]) -> list[str]:
@@ -723,16 +700,15 @@ def run(args: argparse.Namespace) -> tuple[list[ModalAuditRow], dict[str, Any], 
     actual_dir = Path(args.actual).resolve()
     canonical_captures = load_captures(canonical_dir, canonical=True)
     actual_captures = load_captures(actual_dir, canonical=False)
-    actual_captures = hydrate_actual_modal_metadata(actual_captures, canonical_captures)
 
     if args.all:
         modal_keys = canonical_modal_keys(canonical_captures)
-        keys = [key for key in modal_keys if key in actual_captures]
+        keys = modal_keys
     else:
         modal_keys = [args.key]
         keys = [args.key]
     if not keys:
-        raise SystemExit("No available runtime modal captures found.")
+        raise SystemExit("No canonical modal keys found in MANIFEST.")
 
     rows = [
         audit_modal_key(
@@ -749,13 +725,23 @@ def run(args: argparse.Namespace) -> tuple[list[ModalAuditRow], dict[str, Any], 
         )
         for key in keys
     ]
+    pass_count = sum(1 for row in rows if row.verdict == "PASS")
+    fail_count = sum(1 for row in rows if row.verdict != "PASS")
+    total_canonical = len(modal_keys) if args.all else len(rows)
+    skipped_unavailable_runtime: list[str] = []
+    test_blur_pass = (
+        len(rows) == total_canonical
+        and pass_count == total_canonical
+        and fail_count == 0
+        and not skipped_unavailable_runtime
+    )
     summary = {
         "total": len(rows),
-        "pass": sum(1 for row in rows if row.verdict == "PASS"),
-        "fail": sum(1 for row in rows if row.verdict != "PASS"),
-        "test_blur_pass": all(row.verdict == "PASS" for row in rows),
+        "pass": pass_count,
+        "fail": fail_count,
+        "test_blur_pass": test_blur_pass,
         "codes": sorted({code for row in rows for code in row.codes}),
-        "skipped_unavailable_runtime": sorted(set(modal_keys) - set(keys)) if args.all else [],
+        "skipped_unavailable_runtime": skipped_unavailable_runtime,
     }
     payload = {
         "generated_at": dt.datetime.now().isoformat(timespec="seconds"),

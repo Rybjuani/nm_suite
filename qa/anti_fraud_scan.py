@@ -82,6 +82,18 @@ PIXMAP_REFERENCE_TOKENS = (
     "\\qa\\",
 )
 
+# Canonical modal backdrop contract (HTML mockup). Product code must match exactly.
+_CANONICAL_MODAL_BLUR_RADIUS = 3
+_CANONICAL_MODAL_SCRIM_RGBA = (20, 18, 14, 128)
+_MODAL_BLUR_CONSTANTS = {
+    "_NM_MODAL_BLUR_RADIUS_LIGHT": _CANONICAL_MODAL_BLUR_RADIUS,
+    "_NM_MODAL_BLUR_RADIUS_DARK": _CANONICAL_MODAL_BLUR_RADIUS,
+}
+_MODAL_SCRIM_CONSTANT = "_NM_MODAL_SCRIM_RGBA"
+_MODAL_BACKDROP_FRAUD_MESSAGE = (
+    "fixea primero la pantalla de atras y despues seguis con el modal"
+)
+
 
 @dataclass
 class Violation:
@@ -118,6 +130,65 @@ def _call_string_args(node: ast.Call):
     for sub in ast.walk(node):
         if isinstance(sub, ast.Constant) and isinstance(sub.value, str):
             yield sub.value
+
+
+def _eval_static_literal(node: ast.AST) -> object | None:
+    """Evaluate a simple literal (number or tuple of numbers) from an AST node."""
+    if isinstance(node, ast.Constant):
+        return node.value
+    if isinstance(node, ast.Tuple):
+        values = [_eval_static_literal(elt) for elt in node.elts]
+        if any(v is None for v in values):
+            return None
+        return tuple(values)
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+        inner = _eval_static_literal(node.operand)
+        if isinstance(inner, (int, float)):
+            return -inner
+    return None
+
+
+def _scan_modal_backdrop_constants(tree: ast.AST, file_label: str, lines: list[str]) -> list[Violation]:
+    violations: list[Violation] = []
+
+    def snippet(lineno: int) -> str:
+        idx = lineno - 1
+        if 0 <= idx < len(lines):
+            return lines[idx].strip()[:200]
+        return ""
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        value = _eval_static_literal(node.value)
+        for target in node.targets:
+            if not isinstance(target, ast.Name):
+                continue
+            name = target.id
+            if name in _MODAL_BLUR_CONSTANTS:
+                expected = _MODAL_BLUR_CONSTANTS[name]
+                if value != expected:
+                    violations.append(
+                        Violation(
+                            file_label,
+                            getattr(node, "lineno", 0),
+                            "modal_backdrop_constant",
+                            f"{name}={value!r} expected {expected!r}; {_MODAL_BACKDROP_FRAUD_MESSAGE}",
+                            snippet(getattr(node, "lineno", 0)),
+                        )
+                    )
+            elif name == _MODAL_SCRIM_CONSTANT:
+                if value != _CANONICAL_MODAL_SCRIM_RGBA:
+                    violations.append(
+                        Violation(
+                            file_label,
+                            getattr(node, "lineno", 0),
+                            "modal_backdrop_constant",
+                            f"{name}={value!r} expected {_CANONICAL_MODAL_SCRIM_RGBA!r}; {_MODAL_BACKDROP_FRAUD_MESSAGE}",
+                            snippet(getattr(node, "lineno", 0)),
+                        )
+                    )
+    return violations
 
 
 def scan_source(source: str, file_label: str) -> list[Violation]:
@@ -187,6 +258,9 @@ def scan_source(source: str, file_label: str) -> list[Violation]:
                     Violation(file_label, getattr(node, "lineno", 0), "pixmap_reference_artifact", f"{target}(...{value[:60]}...)", snippet(getattr(node, "lineno", 0)))
                 )
                 break
+
+    # 4. Modal backdrop constants must match the canonical HTML mockup contract.
+    violations.extend(_scan_modal_backdrop_constants(tree, file_label, lines))
 
     # De-dup identical (line, kind, pattern) triples.
     seen = set()
