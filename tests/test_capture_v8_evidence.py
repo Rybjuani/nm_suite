@@ -131,6 +131,27 @@ def test_phase0_required_recipes_are_registered():
         assert any(action.get("action") == "capture" for action in suite[view_id]["actions"])
 
 
+def test_dbt_practice_stop_recipe_declares_modal_window_overlay_metadata():
+    """Static guard: the dbt-practice-stop capture action must declare modal
+    metadata (surface=window_modal, modal_capture_scope=window_overlay,
+    back_screen_key=suite:dbt-library) so the runtime manifest records it as a
+    modal that audit_modal_backdrop_blur.py can evaluate. Without this metadata
+    the runtime capture is mislabeled as surface=window and the modal backdrop
+    audit falls back to BACKDROP_CAPTURE_MISSING (not_observable_modal_crop).
+    """
+    suite = capture_v8._RECIPES["suite"]
+    assert "dbt-practice-stop" in suite
+    capture_actions = [
+        a for a in suite["dbt-practice-stop"]["actions"] if a.get("action") == "capture"
+    ]
+    assert capture_actions, "dbt-practice-stop recipe must have a capture action"
+    capture = capture_actions[-1]
+    assert capture["view"] == "dbt-practice-stop"
+    assert capture["surface"] == "window_modal"
+    assert capture["modal_capture_scope"] == "window_overlay"
+    assert capture["back_screen_key"] == "suite:dbt-library"
+
+
 def test_capture_matrix_rows_include_phase0_columns():
     result = {
         "success": True,

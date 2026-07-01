@@ -419,3 +419,71 @@ def test_overblur_cannot_produce_test_blur_pass(tmp_path: Path) -> None:
     assert payload["summary"]["test_blur_pass"] is False
     assert rows[0].verdict == "FAIL"
     assert audit.CODE_PARENT_SCREEN_DEPENDENCY in rows[0].codes
+
+
+def test_runtime_dbt_modal_with_window_overlay_metadata_is_evaluated(tmp_path: Path) -> None:
+    """Regression for the capture_v8 harness metadata bug: when the runtime
+    manifest records dbt-practice-stop with surface=window_modal,
+    modal_capture_scope=window_overlay, backdrop_observable=true and a
+    back_screen_key, the modal audit must evaluate backdrop/blur/centering
+    (not fall back to BACKDROP_CAPTURE_MISSING / not_observable_modal_crop).
+
+    Before the harness fix, capture_v8.py labeled dbt-practice-stop as
+    surface=window with no modal metadata, so the audit could never reach the
+    backdrop comparison even though the PNG and _PracticeModalScrim existed.
+    """
+    canonical = tmp_path / "canon"
+    actual = tmp_path / "actual"
+    parent = _parent()
+    modal = _modal(parent)
+    _save(canonical / "suite-dbt-library-light-960x600.png", parent)
+    _save(canonical / "suite-dbt-practice-stop-light-960x600.png", modal)
+    _save(actual / "suite-dbt-library-light-960x600.png", parent)
+    _save(actual / "suite-dbt-practice-stop-light-960x600.png", modal)
+    runtime_modal_record = {
+        "file": "suite-dbt-practice-stop-light-960x600.png",
+        "surface": "window_modal",
+        "is_modal": True,
+        "modal_capture_scope": "window_overlay",
+        "backdrop_observable": True,
+        "back_screen_key": "suite:dbt-library@light",
+    }
+    _write_manifest(
+        canonical,
+        [
+            {"file": "suite-dbt-library-light-960x600.png", "surface": "window"},
+            runtime_modal_record,
+        ],
+        canonical=True,
+    )
+    _write_manifest(
+        actual,
+        [
+            {"file": "suite-dbt-library-light-960x600.png", "surface": "window"},
+            runtime_modal_record,
+        ],
+        canonical=False,
+    )
+
+    canonical_captures = audit.load_captures(canonical, canonical=True)
+    actual_captures = audit.load_captures(actual, canonical=False)
+    row = audit.audit_modal_key(
+        "suite:dbt-practice-stop@light",
+        canonical_dir=canonical,
+        actual_dir=actual,
+        canonical_captures=canonical_captures,
+        actual_captures=actual_captures,
+        center_tolerance_px=18,
+        bbox_tolerance_px=24,
+        backdrop_mean_tolerance=22.0,
+        blur_ratio_tolerance=0.2,
+        parent_mean_tolerance=35.0,
+    )
+
+    # The audit must reach the backdrop/blur evaluation stage, not short-circuit
+    # on BACKDROP_CAPTURE_MISSING (which would set backdrop_region to
+    # "not_observable_modal_crop").
+    assert audit.CODE_BACKDROP_CAPTURE_MISSING not in row.codes
+    assert row.backdrop_region != "not_observable_modal_crop"
+    assert row.blur_dim_equivalence != "not_observable_modal_crop"
+    assert row.centered != "not_observable_modal_crop"

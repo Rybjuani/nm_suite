@@ -265,7 +265,10 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "call", "func": "_dbt_start_stop_practice"},
                         {"action": "call", "func": "_dbt_go_to_step_2"},
                         {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "dbt-practice-stop"}],
+                        {"action": "capture", "view": "dbt-practice-stop",
+                         "surface": "window_modal",
+                         "modal_capture_scope": "window_overlay",
+                         "back_screen_key": "suite:dbt-library"}],
         },
         # dbt-practice-closure eliminado del harness (C4-05): pantalla de cierre
         # fue removida del producto; la evidencia era stale y generaba falsos positivos.
