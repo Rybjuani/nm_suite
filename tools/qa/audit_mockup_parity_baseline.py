@@ -55,6 +55,19 @@ MAX_ADDEND = 10.0
 MAX_FLOOR = 50.0
 EPSILON = 1e-9
 
+EXPECTED_DELTA_ALLOWLIST: dict[str, dict[str, str]] = {
+    "hub:detalle-resumen-ia-0@light": {
+        "old_resolution": "560x220",
+        "new_resolution": "720x462",
+        "reason": "canonical AI summary modal redesign",
+    },
+    "hub:detalle-resumen-ia-0@dark": {
+        "old_resolution": "560x220",
+        "new_resolution": "720x462",
+        "reason": "canonical AI summary modal redesign",
+    },
+}
+
 
 @dataclass(frozen=True)
 class CaptureName:
@@ -272,6 +285,14 @@ def run_recipe(
     env = os.environ.copy()
     if chromium:
         env["PUPPETEER_EXECUTABLE_PATH"] = chromium
+    node_modules = PACK_DIR / "node_modules"
+    if node_modules.exists():
+        existing_node_path = env.get("NODE_PATH")
+        env["NODE_PATH"] = (
+            str(node_modules)
+            if not existing_node_path
+            else os.pathsep.join([str(node_modules), existing_node_path])
+        )
 
     cmd = ["node", str(generator), str(html_path), str(out_dir)]
     proc = subprocess.run(
@@ -320,19 +341,17 @@ def load_manifest_index(capture_dir: Path) -> dict[str, dict[str, Any]]:
 def classify_delta(
     *,
     status: str,
-    text_info: dict[str, Any],
     baseline: DeltaMetrics,
     modified: DeltaMetrics,
+    expected_delta_allowed: bool,
 ) -> str:
     visual_exceeds_noise = (
         modified.mean > baseline.mean + EPSILON
         or modified.max > baseline.max + EPSILON
     )
-    if text_info["normalized_changed"] and visual_exceeds_noise:
+    if expected_delta_allowed and visual_exceeds_noise:
         return "EXPECTED_DELTA"
     if status == "FAIL":
-        return "UNEXPECTED_DELTA"
-    if visual_exceeds_noise:
         return "UNEXPECTED_DELTA"
     return "NO_DELTA"
 
@@ -344,6 +363,7 @@ def build_row(
     original_a_dir: Path,
     original_b_dir: Path,
     modified_dir: Path,
+    modified_by_key: dict[str, tuple[CaptureName, dict[str, Any]]],
     text_info: dict[str, Any],
     cache: dict[Path, Image.Image],
     baseline_mode: str = "single_1x1",
@@ -351,17 +371,26 @@ def build_row(
 ) -> dict[str, Any]:
     original_a_file = original_a_dir / capture.file
     original_b_file = original_b_dir / capture.file
-    modified_file = modified_dir / capture.file
+    modified_capture, _ = modified_by_key.get(capture.key, (capture, {}))
+    modified_file = modified_dir / modified_capture.file
+    allow = EXPECTED_DELTA_ALLOWLIST.get(capture.key)
+    expected_delta_allowed = allow is not None
 
     row: dict[str, Any] = {
         "file": capture.file,
+        "modified_file_name": modified_capture.file,
         "key": capture.key,
         "view": capture.view,
         "theme": capture.theme,
         "surface": record.get("surface", ""),
         "resolution": capture.resolution,
+        "modified_resolution": modified_capture.resolution,
         "status": "FAIL",
         "delta_class": "UNEXPECTED_DELTA",
+        "expected_delta_allowed": expected_delta_allowed,
+        "expected_delta_reason": allow.get("reason", "") if allow else "",
+        "allowlist_old_resolution": allow.get("old_resolution", "") if allow else "",
+        "allowlist_new_resolution": allow.get("new_resolution", "") if allow else "",
         "baseline_mode": baseline_mode,
         "baseline_pair_count": pair_counts[0],
         "mod_pair_count": pair_counts[1],
@@ -381,6 +410,40 @@ def build_row(
     ]
     if missing:
         row["failure_reason"] = "missing_png:" + ";".join(missing)
+        return row
+
+    if capture.file != modified_capture.file or capture.resolution != modified_capture.resolution:
+        if not expected_delta_allowed:
+            row["failure_reason"] = (
+                "unexpected_size_or_filename_delta:"
+                f"old={capture.file} new={modified_capture.file}"
+            )
+            return row
+        if (
+            capture.resolution != allow["old_resolution"]
+            or modified_capture.resolution != allow["new_resolution"]
+        ):
+            row["failure_reason"] = (
+                "expected_delta_size_contract_mismatch:"
+                f"old={capture.resolution} allow_old={allow['old_resolution']} "
+                f"new={modified_capture.resolution} allow_new={allow['new_resolution']}"
+            )
+            return row
+        row.update(
+            {
+                "status": "PASS",
+                "delta_class": "EXPECTED_DELTA",
+                "failure_reason": "",
+                "baseline_mean": "",
+                "baseline_max": "",
+                "baseline_changed_pixel_ratio": "",
+                "mod_mean": "",
+                "mod_max": "",
+                "mod_changed_pixel_ratio": "",
+                "mean_limit": "",
+                "max_limit": "",
+            }
+        )
         return row
 
     try:
@@ -412,9 +475,9 @@ def build_row(
     )
     row["delta_class"] = classify_delta(
         status=row["status"],
-        text_info=text_info,
         baseline=baseline,
         modified=modified,
+        expected_delta_allowed=expected_delta_allowed,
     )
     return row
 
@@ -473,9 +536,9 @@ def apply_statistical_baseline(
             "status": "PASS" if passed else "FAIL",
             "delta_class": classify_delta(
                 status="PASS" if passed else "FAIL",
-                text_info=text_info,
                 baseline=baseline,
                 modified=modified,
+                expected_delta_allowed=bool(EXPECTED_DELTA_ALLOWLIST.get(row["key"])),
             ),
             "baseline_mode": baseline_mode,
             "baseline_pair_count": len(baseline_pairs),
@@ -522,6 +585,25 @@ def git_original_to_file(rev: str, html_path: Path, out_path: Path) -> tuple[Pat
     return out_path, None
 
 
+def git_file_to_path(rev: str, repo_path: Path, out_path: Path) -> tuple[Path | None, str | None]:
+    try:
+        rel = repo_path.resolve().relative_to(ROOT.resolve()).as_posix()
+    except ValueError:
+        return None, f"{repo_path} is outside repo root"
+
+    proc = subprocess.run(
+        ["git", "show", f"{rev}:{rel}"],
+        cwd=ROOT,
+        capture_output=True,
+        timeout=30,
+    )
+    if proc.returncode != 0:
+        return None, proc.stderr.decode("utf-8", errors="replace").strip()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_bytes(proc.stdout)
+    return out_path, None
+
+
 def prepare_sources(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
     modified = Path(args.modified).resolve()
     if not modified.exists():
@@ -538,6 +620,8 @@ def prepare_sources(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
             raise SystemExit(f"Original HTML does not exist: {original}")
         source_info["original_html"] = str(original)
         source_info["original_source"] = "filesystem"
+        source_info["original_generator"] = str(Path(args.generator).resolve())
+        source_info["original_generator_source"] = "filesystem"
         return source_info
 
     git_copy = out_dir / "sources" / f"original_{args.original_rev}.html"
@@ -549,6 +633,16 @@ def prepare_sources(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
     else:
         source_info["original_source"] = f"git:{args.original_rev}"
     source_info["original_html"] = str(original)
+
+    generator_copy = out_dir / "sources" / f"generator_{args.original_rev}.js"
+    original_generator, generator_error = git_file_to_path(args.original_rev, Path(args.generator), generator_copy)
+    if original_generator is None:
+        original_generator = Path(args.generator).resolve()
+        source_info["original_generator_source"] = "filesystem_fallback"
+        source_info["original_generator_git_error"] = generator_error
+    else:
+        source_info["original_generator_source"] = f"git:{args.original_rev}"
+    source_info["original_generator"] = str(original_generator)
     return source_info
 
 
@@ -566,6 +660,17 @@ def capture_records(original_a_dir: Path) -> tuple[list[CaptureName], dict[str, 
     return captures, records_by_file, manifest
 
 
+def capture_records_by_key(capture_dir: Path) -> dict[str, tuple[CaptureName, dict[str, Any]]]:
+    manifest = json.loads((capture_dir / "MANIFEST.json").read_text(encoding="utf-8"))
+    records_by_key: dict[str, tuple[CaptureName, dict[str, Any]]] = {}
+    for record in manifest.get("captures", []):
+        file_name = str(record.get("file") or "")
+        parsed = parse_capture_name(file_name)
+        if parsed is not None:
+            records_by_key[parsed.key] = (parsed, record)
+    return records_by_key
+
+
 def summary_from_rows(
     rows: list[dict[str, Any]],
     manifest: dict[str, Any],
@@ -578,6 +683,7 @@ def summary_from_rows(
         "expected_delta": sum(1 for row in rows if row.get("delta_class") == "EXPECTED_DELTA"),
         "eol_only_delta": text_info["eol_only_delta"],
         "unexpected_delta": sum(1 for row in rows if row.get("delta_class") == "UNEXPECTED_DELTA"),
+        "expected_delta_allowlist": EXPECTED_DELTA_ALLOWLIST,
         "statistical_escalations": sum(1 for row in rows if row.get("escalated") is True),
         "expected_captures": manifest.get("expected_captures"),
         "all_captures_present": len(rows) == manifest.get("expected_captures"),
@@ -598,8 +704,14 @@ def write_csv(rows: list[dict[str, Any]], path: Path) -> None:
         "theme",
         "surface",
         "resolution",
+        "modified_file_name",
+        "modified_resolution",
         "status",
         "delta_class",
+        "expected_delta_allowed",
+        "expected_delta_reason",
+        "allowlist_old_resolution",
+        "allowlist_new_resolution",
         "baseline_mode",
         "escalated",
         "baseline_pair_count",
@@ -661,6 +773,7 @@ def write_markdown(
         f"- PASS: {summary['pass']}",
         f"- FAIL: {summary['fail']}",
         f"- EXPECTED_DELTA: {summary['expected_delta']}",
+        f"- EXPECTED_DELTA allowlist: `{summary['expected_delta_allowlist']}`",
         f"- EOL-only delta: {'YES' if summary['eol_only_delta'] else 'NO'}",
         f"- Statistical escalations: {summary['statistical_escalations']}",
         f"- Modal/actioned captures: {summary['modal_capture_count']}",
@@ -753,6 +866,7 @@ def main(argv: list[str] | None = None) -> int:
     source_info = prepare_sources(args, out_dir)
     original_html = Path(source_info["original_html"])
     modified_html = Path(source_info["modified_html"])
+    original_generator = Path(source_info["original_generator"])
     chromium = find_chromium(args.chromium)
 
     text_info = text_delta(original_html, modified_html, out_dir)
@@ -765,7 +879,7 @@ def main(argv: list[str] | None = None) -> int:
     original_a = run_recipe(
         html_path=original_html,
         out_dir=renders_dir / "original_A",
-        generator=generator,
+        generator=original_generator,
         chromium=chromium,
         timeout=args.render_timeout,
         label="original_A",
@@ -774,7 +888,7 @@ def main(argv: list[str] | None = None) -> int:
     original_b = run_recipe(
         html_path=original_html,
         out_dir=renders_dir / "original_B",
-        generator=generator,
+        generator=original_generator,
         chromium=chromium,
         timeout=args.render_timeout,
         label="original_B",
@@ -790,6 +904,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     captures, records_by_file, manifest = capture_records(Path(original_a["out_dir"]))
+    modified_by_key = capture_records_by_key(Path(modified["out_dir"]))
     cache: dict[Path, Image.Image] = {}
     rows = [
         build_row(
@@ -798,6 +913,7 @@ def main(argv: list[str] | None = None) -> int:
             original_a_dir=Path(original_a["out_dir"]),
             original_b_dir=Path(original_b["out_dir"]),
             modified_dir=Path(modified["out_dir"]),
+            modified_by_key=modified_by_key,
             text_info=text_info,
             cache=cache,
         )
@@ -895,6 +1011,7 @@ def main(argv: list[str] | None = None) -> int:
         "inputs": {
             **source_info,
             "generator": str(generator),
+            "original_generator": str(original_generator),
             "chromium": chromium,
             "original_html_sha256": sha256_file(original_html),
             "modified_html_sha256": sha256_file(modified_html),

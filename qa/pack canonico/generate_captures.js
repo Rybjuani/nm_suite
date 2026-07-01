@@ -22,7 +22,7 @@ const CHROMIUM_PATH = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromiu
 
 const SIZE_WINDOW  = '960x600';
 const SIZE_NARROW  = '520x600';
-const SIZE_MODAL   = '560x220';
+const SIZE_MODAL   = '720x462';
 const SIZE_MODAL_L = '960x600';
 
 const VIEWS = [
