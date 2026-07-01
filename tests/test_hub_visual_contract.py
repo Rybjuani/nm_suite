@@ -204,7 +204,7 @@ def test_hub_config_textos_has_search_and_filter(qtbot) -> None:
 
 def test_hub_resumen_ia_uses_nm_dialog_overlay(qtbot, monkeypatch) -> None:
     """E4-H-MODALES: Resumen IA usa el modal canonico con scrim/scale, no QDialog nativo."""
-    from PyQt6.QtWidgets import QLabel, QWidget
+    from PyQt6.QtWidgets import QLabel, QTabWidget, QWidget
     import hub.plan_terapeutico as plan_module
     from hub.pacientes_qt import DetallePacienteView
     from shared.components.dialogs import NMDialog, _NM_MODAL_SCALE_FROM
@@ -212,6 +212,8 @@ def test_hub_resumen_ia_uses_nm_dialog_overlay(qtbot, monkeypatch) -> None:
     class _FakePlan(QWidget):
         def __init__(self, *args, **kwargs):
             super().__init__()
+            self._tabs = QTabWidget(self)
+            self._tabs.addTab(QWidget(), "Plan")
 
     monkeypatch.setattr(plan_module, "PlanTerapeuticoTab", _FakePlan)
 
@@ -221,7 +223,7 @@ def test_hub_resumen_ia_uses_nm_dialog_overlay(qtbot, monkeypatch) -> None:
         paciente_id="test-001",
         paciente_nombre="Ana Martínez",
     )
-    view.resize(760, 520)
+    view.resize(960, 600)
     qtbot.addWidget(view)
     view.show()
 
@@ -233,8 +235,8 @@ def test_hub_resumen_ia_uses_nm_dialog_overlay(qtbot, monkeypatch) -> None:
     assert isinstance(dialog, NMDialog)
     assert dialog.parent() is view.window()
     assert dialog.isVisible()
-    assert dialog._dialog_width == 480
-    assert dialog._panel.height() == 325
+    assert dialog._dialog_width == 720
+    assert dialog._panel.height() == 462
     assert dialog._panel_scale == _NM_MODAL_SCALE_FROM
     assert view._btn_resumen_ia.isEnabled()
     assert view._btn_resumen_ia.text() == "Resumen IA"
@@ -244,7 +246,11 @@ def test_hub_resumen_ia_uses_nm_dialog_overlay(qtbot, monkeypatch) -> None:
         for w in dialog.findChildren(QLabel)
         if w.objectName() == "ResumenIALabel"
     ]
-    assert body_labels == ["Texto de prueba IA"]
+    assert len(body_labels) == 4
+    assert body_labels[0] == "Texto de prueba IA"
+    assert "Cumplimiento del 71%" in body_labels[1]
+    assert "catastrofización" in body_labels[2]
+    assert "Verificar los hechos" in body_labels[3]
 
     dialog.close()
     qtbot.wait(20)

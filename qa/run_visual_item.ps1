@@ -10,6 +10,58 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Get-CanonicalCaptureForKey {
+  param([Parameter(Mandatory=$true)][string]$VisualKey)
+
+  $manifestPath = "qa\_mockup_canonical\MANIFEST.json"
+  if (-not (Test-Path -LiteralPath $manifestPath)) {
+    return $null
+  }
+  $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+  foreach ($capture in $manifest.captures) {
+    $file = [string]$capture.file
+    if ($file -match '^(suite|hub)-(.+)-(light|dark)-\d+x\d+(?:-scale\d+)?\.png$') {
+      $key = "$($Matches[1]):$($Matches[2])@$($Matches[3])"
+      if ($key -eq $VisualKey) {
+        return $capture
+      }
+    }
+  }
+  return $null
+}
+
+function Test-ModalVisualKey {
+  param($Capture)
+  if ($null -eq $Capture) {
+    return $false
+  }
+  if ($Capture.PSObject.Properties.Name -contains "is_modal" -and [bool]$Capture.is_modal) {
+    return $true
+  }
+  $surface = [string]$Capture.surface
+  return @("modal", "window_modal") -contains $surface
+}
+
+function Get-BackScreenTarget {
+  param($Capture)
+  if ($null -eq $Capture) {
+    return $null
+  }
+  $backKey = [string]$Capture.back_screen_key
+  if ([string]::IsNullOrWhiteSpace($backKey)) {
+    return $null
+  }
+  if ($backKey -notmatch '^(suite|hub):(.+)@(light|dark)$') {
+    return $null
+  }
+  return [PSCustomObject]@{
+    App = $Matches[1]
+    View = $Matches[2]
+    Theme = $Matches[3]
+    Key = $backKey
+  }
+}
+
 # Anti-fraud gate: runtime/product must not read/render/overlay canonical or
 # reference artifacts. If this fails, the resulting report is NOT valid closure
 # evidence even if the comparator reports PASS.
@@ -23,6 +75,10 @@ if ([string]::IsNullOrWhiteSpace($Key)) {
   $Key = "${App}:${View}@${Theme}"
 }
 
+$canonicalCapture = Get-CanonicalCaptureForKey -VisualKey $Key
+$isModalKey = Test-ModalVisualKey -Capture $canonicalCapture
+$backScreenTarget = Get-BackScreenTarget -Capture $canonicalCapture
+
 # VAS: force introspection mode for every closure capture.
 $env:NM_VAS_INTROSPECT = "1"
 
@@ -30,6 +86,15 @@ $env:NM_VAS_INTROSPECT = "1"
 Remove-Item .\qa\_visual_auditor_spec\introspection.json -ErrorAction SilentlyContinue
 
 if (-not $SkipCapture) {
+  if ($isModalKey -and $null -ne $backScreenTarget) {
+    & .\.venv\Scripts\python.exe qa\capture_v8.py `
+      --app $($backScreenTarget.App) `
+      --view $($backScreenTarget.View) `
+      --theme $($backScreenTarget.Theme) `
+      --out-dir qa\_captures_v8 `
+      --no-clean
+  }
+
   & .\.venv\Scripts\python.exe qa\capture_v8.py `
     --app $App `
     --view $View `
@@ -46,6 +111,15 @@ if (-not $SkipCapture) {
 if ($LASTEXITCODE -ne 0) {
   Write-Error "LAYERED VISUAL COMPARE FAILED (exit $LASTEXITCODE). Check report for divergences."
   exit 1
+}
+
+if ($isModalKey) {
+  $modalAuditOut = Join-Path $OutDir "modal_backdrop_blur"
+  & .\.venv\Scripts\python.exe tools\qa\audit_modal_backdrop_blur.py --key $Key --out-dir $modalAuditOut
+  if ($LASTEXITCODE -ne 0) {
+    Write-Error "MODAL BACKDROP/BLUR AUDIT FAILED for key '$Key'. QA NOT approved. Do not close this modal from panel similarity alone."
+    exit 1
+  }
 }
 
 # VAS Gate: validate the sidecar for this exact key. Non-zero exit = QA not approved.

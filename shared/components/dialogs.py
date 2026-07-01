@@ -5,6 +5,7 @@ from __future__ import annotations
 from PyQt6.QtCore import (
     QEasingCurve,
     QPropertyAnimation,
+    QRectF,
     Qt,
     pyqtProperty,
     pyqtSignal,
@@ -12,6 +13,7 @@ from PyQt6.QtCore import (
 from PyQt6.QtGui import (
     QColor,
     QPainter,
+    QPixmap,
 )
 from PyQt6.QtWidgets import (
     QFrame,
@@ -52,6 +54,8 @@ def _tm() -> ThemeManager:
 _NM_MODAL_MAX_WIDTH = 560
 _NM_MODAL_WIDTH_RATIO = 0.92
 _NM_MODAL_SCRIM_RGBA = (20, 18, 14, 128)
+_NM_MODAL_BLUR_RADIUS_LIGHT = 40
+_NM_MODAL_BLUR_RADIUS_DARK = 4
 _NM_MODAL_SCALE_FROM = 0.96
 _NM_MODAL_ANIM_MS = 240
 
@@ -86,6 +90,7 @@ class NMDialog(QWidget):
         self._modo = norm_modo(modo or _tm().modo)
         self._dialog_width = width
         self._panel_scale = 1.0
+        self._bg_pixmap: QPixmap | None = None
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
         # Overlay full-cover sobre el padre
         if parent is not None:
@@ -159,6 +164,60 @@ class NMDialog(QWidget):
 
     panel_scale = pyqtProperty(float, _get_panel_scale, _set_panel_scale)
 
+    def _blur_radius(self) -> int:
+        return _NM_MODAL_BLUR_RADIUS_DARK if self._modo.startswith("dark") else _NM_MODAL_BLUR_RADIUS_LIGHT
+
+    def _capture_backdrop(self) -> None:
+        parent = self.parent()
+        if parent is None:
+            self._bg_pixmap = None
+            return
+        pix = parent.grab()
+        blur_radius = self._blur_radius()
+        if blur_radius > 0 and pix.width() > 1 and pix.height() > 1:
+            from PyQt6.QtWidgets import QGraphicsBlurEffect, QGraphicsPixmapItem, QGraphicsScene
+
+            pad = blur_radius * 4
+            pw, ph = pix.width(), pix.height()
+            padded = QPixmap(pw + 2 * pad, ph + 2 * pad)
+            pp = QPainter(padded)
+            pp.drawPixmap(pad, pad, pix)
+            pp.drawPixmap(pad, 0, pix.copy(0, 0, pw, 1).scaled(pw, pad))
+            pp.drawPixmap(pad, ph + pad, pix.copy(0, ph - 1, pw, 1).scaled(pw, pad))
+            pp.drawPixmap(0, pad, pix.copy(0, 0, 1, ph).scaled(pad, ph))
+            pp.drawPixmap(pw + pad, pad, pix.copy(pw - 1, 0, 1, ph).scaled(pad, ph))
+            pp.drawPixmap(0, 0, pix.copy(0, 0, 1, 1).scaled(pad, pad))
+            pp.drawPixmap(pw + pad, 0, pix.copy(pw - 1, 0, 1, 1).scaled(pad, pad))
+            pp.drawPixmap(0, ph + pad, pix.copy(0, ph - 1, 1, 1).scaled(pad, pad))
+            pp.drawPixmap(pw + pad, ph + pad, pix.copy(pw - 1, ph - 1, 1, 1).scaled(pad, pad))
+            pp.end()
+
+            scene = QGraphicsScene()
+            item = QGraphicsPixmapItem(padded)
+            blur = QGraphicsBlurEffect()
+            blur.setBlurRadius(blur_radius)
+            blur.setBlurHints(QGraphicsBlurEffect.BlurHint.QualityHint)
+            item.setGraphicsEffect(blur)
+            scene.addItem(item)
+
+            blurred_padded = QPixmap(padded.size())
+            bp = QPainter(blurred_padded)
+            bp.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+            scene.render(
+                bp,
+                QRectF(0, 0, padded.width(), padded.height()),
+                QRectF(0, 0, padded.width(), padded.height()),
+            )
+            bp.end()
+            pix = blurred_padded.copy(pad, pad, pw, ph)
+
+        tinted = QPixmap(pix.size())
+        p = QPainter(tinted)
+        p.drawPixmap(0, 0, pix)
+        p.fillRect(tinted.rect(), QColor(*_NM_MODAL_SCRIM_RGBA))
+        p.end()
+        self._bg_pixmap = tinted
+
     # ── API ──────────────────────────────────────────────────────────────────
 
     def set_title(self, text: str):
@@ -192,6 +251,7 @@ class NMDialog(QWidget):
     def show_centered(self):
         if self.parent() is not None:
             self.setGeometry(self.parent().rect())
+        self._capture_backdrop()
         self._set_panel_scale(_NM_MODAL_SCALE_FROM)
         self.show()
         self.raise_()
@@ -228,7 +288,10 @@ class NMDialog(QWidget):
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        p.fillRect(self.rect(), QColor(*_NM_MODAL_SCRIM_RGBA))
+        if self._bg_pixmap is not None:
+            p.drawPixmap(self.rect(), self._bg_pixmap, self._bg_pixmap.rect())
+        else:
+            p.fillRect(self.rect(), QColor(*_NM_MODAL_SCRIM_RGBA))
         # El panel se pinta como QFrame con su stylesheet
         p.end()
 

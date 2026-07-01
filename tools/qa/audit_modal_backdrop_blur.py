@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Audit modal backdrop, centering, and parent-screen dependency.
+"""Audit modal backdrop, centering, and back-screen dependency.
 
 This audit is a visual anti-fraud companion for modal surfaces. It does not
 replace capture_v8.py, layered_visual_compare.py, qa/anti_fraud_scan.py, or VAS.
 It only checks whether available modal captures preserve the canonical HTML
-modal/backdrop contract instead of hiding a parent-screen divergence behind an
+modal/backdrop contract instead of hiding a back-screen divergence behind an
 invented blur, dim, opacity, or crop.
 """
 
@@ -34,7 +34,7 @@ SCRIM_RGB = np.asarray([20.0, 18.0, 14.0], dtype=np.float32)
 SCRIM_ALPHA = 0.5
 
 MODAL_SURFACES = {"modal", "window_modal"}
-PARENT_VIEWS = {
+BACK_SCREEN_VIEWS = {
     "suite:dbt-practice-stop": "suite:dbt-library",
     "hub:detalle-resumen-ia-0": "hub:detalle",
 }
@@ -57,6 +57,10 @@ class CaptureId:
     width: int
     height: int
     surface: str = ""
+    is_modal: bool = False
+    modal_capture_scope: str | None = None
+    backdrop_observable: bool = False
+    back_screen_key: str | None = None
 
     @property
     def key(self) -> str:
@@ -78,7 +82,7 @@ class ModalAuditRow:
     codes: list[str] = field(default_factory=list)
     canonical_file: str = ""
     actual_file: str = ""
-    parent_key: str = ""
+    back_screen_key: str = ""
     canonical_surface: str = ""
     actual_surface: str = ""
     canonical_resolution: str = ""
@@ -87,7 +91,7 @@ class ModalAuditRow:
     bbox_size: str = "not_evaluated"
     backdrop_region: str = "not_evaluated"
     blur_dim_equivalence: str = "not_evaluated"
-    parent_screen_dependency: str = "not_evaluated"
+    back_screen_dependency: str = "not_evaluated"
     metrics: dict[str, Any] = field(default_factory=dict)
 
     def fail(self, code: str) -> None:
@@ -96,7 +100,15 @@ class ModalAuditRow:
         self.verdict = "FAIL"
 
 
-def parse_capture_name(file_name: str, surface: str = "") -> CaptureId | None:
+def parse_capture_name(
+    file_name: str,
+    surface: str = "",
+    *,
+    is_modal: bool = False,
+    modal_capture_scope: str | None = None,
+    backdrop_observable: bool = False,
+    back_screen_key: str | None = None,
+) -> CaptureId | None:
     match = CAPTURE_RE.match(file_name)
     if not match:
         return None
@@ -109,12 +121,30 @@ def parse_capture_name(file_name: str, surface: str = "") -> CaptureId | None:
         width=int(width),
         height=int(height),
         surface=surface,
+        is_modal=is_modal,
+        modal_capture_scope=modal_capture_scope,
+        backdrop_observable=backdrop_observable,
+        back_screen_key=back_screen_key,
     )
 
 
 def _capture_from_record(record: dict[str, Any]) -> CaptureId | None:
     file_name = str(record.get("file") or "")
-    parsed = parse_capture_name(file_name, str(record.get("surface") or ""))
+    surface = str(record.get("surface") or "")
+    is_modal = bool(record.get("is_modal") or surface in MODAL_SURFACES or record.get("is_dialog_or_auxiliary"))
+    modal_capture_scope = record.get("modal_capture_scope")
+    if is_modal and not modal_capture_scope:
+        modal_capture_scope = "panel_crop" if surface == "modal" or record.get("is_dialog_or_auxiliary") else "window_overlay"
+    backdrop_observable = bool(record.get("backdrop_observable") or modal_capture_scope == "window_overlay")
+    back_screen_key = record.get("back_screen_key")
+    parsed = parse_capture_name(
+        file_name,
+        surface,
+        is_modal=is_modal,
+        modal_capture_scope=str(modal_capture_scope) if modal_capture_scope else None,
+        backdrop_observable=backdrop_observable,
+        back_screen_key=str(back_screen_key) if back_screen_key else None,
+    )
     if parsed is not None:
         return parsed
     app = str(record.get("app") or "")
@@ -132,10 +162,26 @@ def _capture_from_record(record: dict[str, Any]) -> CaptureId | None:
         width, height = (int(part) for part in resolution.split("x", 1))
     except ValueError:
         return None
-    surface = str(record.get("surface") or "")
     if not surface and record.get("is_dialog_or_auxiliary"):
         surface = "modal"
-    return CaptureId(file_name, app, view, theme, width, height, surface)
+    is_modal = bool(record.get("is_modal") or surface in MODAL_SURFACES or record.get("is_dialog_or_auxiliary"))
+    modal_capture_scope = record.get("modal_capture_scope")
+    if is_modal and not modal_capture_scope:
+        modal_capture_scope = "panel_crop" if surface == "modal" or record.get("is_dialog_or_auxiliary") else "window_overlay"
+    back_screen_key = record.get("back_screen_key")
+    return CaptureId(
+        file_name,
+        app,
+        view,
+        theme,
+        width,
+        height,
+        surface,
+        is_modal=is_modal,
+        modal_capture_scope=str(modal_capture_scope) if modal_capture_scope else None,
+        backdrop_observable=bool(record.get("backdrop_observable") or modal_capture_scope == "window_overlay"),
+        back_screen_key=str(back_screen_key) if back_screen_key else None,
+    )
 
 
 def load_captures(capture_dir: Path, *, canonical: bool) -> dict[str, CaptureId]:
@@ -166,15 +212,49 @@ def load_captures(capture_dir: Path, *, canonical: bool) -> dict[str, CaptureId]
                 width=existing.width,
                 height=existing.height,
                 surface=existing.surface,
+                is_modal=existing.is_modal,
+                modal_capture_scope=existing.modal_capture_scope,
+                backdrop_observable=existing.backdrop_observable,
+                back_screen_key=existing.back_screen_key,
             )
     return captures
+
+
+def hydrate_actual_modal_metadata(
+    actual_captures: dict[str, CaptureId],
+    canonical_captures: dict[str, CaptureId],
+) -> dict[str, CaptureId]:
+    hydrated = dict(actual_captures)
+    for key, canonical in canonical_captures.items():
+        if not (canonical.is_modal or canonical.surface in MODAL_SURFACES):
+            continue
+        actual = hydrated.get(key)
+        if actual is None:
+            continue
+        if actual.modal_capture_scope and actual.backdrop_observable:
+            continue
+        is_window_overlay = actual.resolution == canonical.resolution
+        hydrated[key] = CaptureId(
+            file=actual.file,
+            app=actual.app,
+            view=actual.view,
+            theme=actual.theme,
+            width=actual.width,
+            height=actual.height,
+            surface=canonical.surface if is_window_overlay else "modal",
+            is_modal=True,
+            modal_capture_scope="window_overlay" if is_window_overlay else "panel_crop",
+            backdrop_observable=is_window_overlay,
+            back_screen_key=canonical.back_screen_key or back_screen_key_for(canonical),
+        )
+    return hydrated
 
 
 def canonical_modal_keys(captures: dict[str, CaptureId]) -> list[str]:
     return sorted(
         key
         for key, capture in captures.items()
-        if capture.surface in MODAL_SURFACES
+        if capture.is_modal or capture.surface in MODAL_SURFACES
     )
 
 
@@ -258,7 +338,7 @@ def modal_bbox_candidates(parent: np.ndarray, modal_capture: np.ndarray) -> list
     diff = np.abs(modal_capture - backdrop).mean(axis=2)
     h, w = diff.shape
     candidates: list[tuple[int, tuple[int, int, int, int]]] = []
-    for threshold in (10.0, 12.0, 15.0, 18.0, 22.0, 28.0):
+    for threshold in (10.0, 12.0, 15.0, 18.0, 22.0, 28.0, 35.0, 45.0, 60.0):
         mask = diff > threshold
         try:
             from scipy import ndimage
@@ -285,7 +365,7 @@ def modal_bbox_candidates(parent: np.ndarray, modal_capture: np.ndarray) -> list
                 area = int((labels[slices] == idx).sum())
                 bbox = (xs.start, ys.start, xs.stop - xs.start, ys.stop - ys.start)
                 bw, bh = bbox[2], bbox[3]
-                if area < 5000 or not (0.35 * w <= bw <= 0.72 * w) or not (0.25 * h <= bh <= 0.75 * h):
+                if area < 5000 or not (0.35 * w <= bw <= 0.82 * w) or not (0.25 * h <= bh <= 0.82 * h):
                     continue
                 candidates.append((area, bbox))
         except Exception:
@@ -362,9 +442,11 @@ def outside_bboxes_mask(
     return mask
 
 
-def parent_key_for(capture: CaptureId) -> str:
-    parent_view = PARENT_VIEWS.get(capture.view_key, "")
-    return f"{parent_view}@{capture.theme}" if parent_view else ""
+def back_screen_key_for(capture: CaptureId) -> str:
+    if capture.back_screen_key:
+        return capture.back_screen_key
+    back_screen_view = BACK_SCREEN_VIEWS.get(capture.view_key, "")
+    return f"{back_screen_view}@{capture.theme}" if back_screen_view else ""
 
 
 def _status_from_bool(ok: bool) -> str:
@@ -389,7 +471,7 @@ def audit_modal_key(
     row = ModalAuditRow(
         key=key,
         verdict="PASS",
-        parent_key=parent_key_for(canonical) if canonical else "",
+        back_screen_key=back_screen_key_for(canonical) if canonical else "",
     )
 
     if canonical is None:
@@ -427,12 +509,12 @@ def audit_modal_key(
     canonical_image = load_image(canonical_path)
     actual_image = load_image(actual_path)
 
-    parent_key = parent_key_for(canonical)
-    row.parent_key = parent_key
-    canonical_parent = canonical_captures.get(parent_key) if parent_key else None
-    actual_parent = actual_captures.get(parent_key) if parent_key else None
+    back_screen_key = back_screen_key_for(canonical)
+    row.back_screen_key = back_screen_key
+    canonical_parent = canonical_captures.get(back_screen_key) if back_screen_key else None
+    actual_parent = actual_captures.get(back_screen_key) if back_screen_key else None
 
-    if canonical.surface != "window_modal":
+    if canonical.modal_capture_scope != "window_overlay" or not canonical.backdrop_observable:
         row.centered = "not_observable_modal_crop"
         row.backdrop_region = "not_observable_modal_crop"
         row.blur_dim_equivalence = "not_observable_modal_crop"
@@ -442,32 +524,51 @@ def audit_modal_key(
                 canonical_dir / canonical_parent.file,
                 actual_dir / actual_parent.file,
             )
-            row.metrics["parent_mean_abs_delta"] = round(parent_delta, 4)
-            row.parent_screen_dependency = _status_from_bool(parent_delta <= parent_mean_tolerance)
+            row.metrics["back_screen_mean_abs_delta"] = round(parent_delta, 4)
+            row.back_screen_dependency = _status_from_bool(parent_delta <= parent_mean_tolerance)
             if parent_delta > parent_mean_tolerance:
                 row.fail(CODE_PARENT_SCREEN_DEPENDENCY)
         else:
-            row.parent_screen_dependency = "not_observable_parent_missing"
+            row.back_screen_dependency = "not_observable_back_screen_missing"
+            row.fail(CODE_PARENT_SCREEN_DEPENDENCY)
+        return row
+
+    if actual.modal_capture_scope != "window_overlay" or not actual.backdrop_observable:
+        row.centered = "not_observable_modal_crop"
+        row.backdrop_region = "not_observable_modal_crop"
+        row.blur_dim_equivalence = "not_observable_modal_crop"
+        row.fail(CODE_BACKDROP_CAPTURE_MISSING)
+        if canonical_parent is not None and actual_parent is not None:
+            parent_delta = _parent_delta(
+                canonical_dir / canonical_parent.file,
+                actual_dir / actual_parent.file,
+            )
+            row.metrics["back_screen_mean_abs_delta"] = round(parent_delta, 4)
+            row.back_screen_dependency = _status_from_bool(parent_delta <= parent_mean_tolerance)
+            if parent_delta > parent_mean_tolerance:
+                row.fail(CODE_PARENT_SCREEN_DEPENDENCY)
+        else:
+            row.back_screen_dependency = "not_observable_back_screen_missing"
             row.fail(CODE_PARENT_SCREEN_DEPENDENCY)
         return row
 
     if canonical_parent is None or actual_parent is None:
-        row.parent_screen_dependency = "FAIL"
+        row.back_screen_dependency = "FAIL"
         row.fail(CODE_PARENT_SCREEN_DEPENDENCY)
         return row
 
     canonical_parent_path = canonical_dir / canonical_parent.file
     actual_parent_path = actual_dir / actual_parent.file
     if not canonical_parent_path.exists() or not actual_parent_path.exists():
-        row.parent_screen_dependency = "FAIL"
+        row.back_screen_dependency = "FAIL"
         row.fail(CODE_PARENT_SCREEN_DEPENDENCY)
         return row
 
     canonical_parent_image = load_image(canonical_parent_path)
     actual_parent_image = load_image(actual_parent_path)
     parent_delta = mean_abs_delta(canonical_parent_image, actual_parent_image)
-    row.metrics["parent_mean_abs_delta"] = round(parent_delta, 4)
-    row.parent_screen_dependency = _status_from_bool(parent_delta <= parent_mean_tolerance)
+    row.metrics["back_screen_mean_abs_delta"] = round(parent_delta, 4)
+    row.back_screen_dependency = _status_from_bool(parent_delta <= parent_mean_tolerance)
     if parent_delta > parent_mean_tolerance:
         row.fail(CODE_PARENT_SCREEN_DEPENDENCY)
 
@@ -556,7 +657,7 @@ def write_reports(rows: list[ModalAuditRow], out_dir: Path, payload: dict[str, A
         "codes",
         "canonical_file",
         "actual_file",
-        "parent_key",
+        "back_screen_key",
         "canonical_surface",
         "actual_surface",
         "canonical_resolution",
@@ -565,7 +666,7 @@ def write_reports(rows: list[ModalAuditRow], out_dir: Path, payload: dict[str, A
         "bbox_size",
         "backdrop_region",
         "blur_dim_equivalence",
-        "parent_screen_dependency",
+        "back_screen_dependency",
         "metrics",
     ]
     with csv_path.open("w", newline="", encoding="utf-8") as handle:
@@ -589,7 +690,7 @@ def write_reports(rows: list[ModalAuditRow], out_dir: Path, payload: dict[str, A
     for row in rows:
         code_text = ",".join(row.codes) if row.codes else "test-blur-pass"
         lines.append(f"{row.verdict} {row.key} {code_text}")
-        lines.append(f"  centered={row.centered} bbox={row.bbox_size} backdrop={row.backdrop_region} blur_dim={row.blur_dim_equivalence} parent={row.parent_screen_dependency}")
+        lines.append(f"  centered={row.centered} bbox={row.bbox_size} backdrop={row.backdrop_region} blur_dim={row.blur_dim_equivalence} back_screen={row.back_screen_dependency}")
         if row.metrics:
             lines.append(f"  metrics={json.dumps(row.metrics, ensure_ascii=False, sort_keys=True)}")
     txt_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -613,7 +714,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--bbox-tolerance-px", type=int, default=32)
     parser.add_argument("--backdrop-mean-tolerance", type=float, default=22.0)
     parser.add_argument("--blur-ratio-tolerance", type=float, default=0.2)
-    parser.add_argument("--parent-mean-tolerance", type=float, default=35.0)
+    parser.add_argument("--parent-mean-tolerance", "--back-screen-mean-tolerance", dest="parent_mean_tolerance", type=float, default=35.0)
     return parser.parse_args(argv)
 
 
@@ -622,10 +723,16 @@ def run(args: argparse.Namespace) -> tuple[list[ModalAuditRow], dict[str, Any], 
     actual_dir = Path(args.actual).resolve()
     canonical_captures = load_captures(canonical_dir, canonical=True)
     actual_captures = load_captures(actual_dir, canonical=False)
+    actual_captures = hydrate_actual_modal_metadata(actual_captures, canonical_captures)
 
-    keys = canonical_modal_keys(canonical_captures) if args.all else [args.key]
+    if args.all:
+        modal_keys = canonical_modal_keys(canonical_captures)
+        keys = [key for key in modal_keys if key in actual_captures]
+    else:
+        modal_keys = [args.key]
+        keys = [args.key]
     if not keys:
-        raise SystemExit("No canonical modal captures found.")
+        raise SystemExit("No available runtime modal captures found.")
 
     rows = [
         audit_modal_key(
@@ -648,6 +755,7 @@ def run(args: argparse.Namespace) -> tuple[list[ModalAuditRow], dict[str, Any], 
         "fail": sum(1 for row in rows if row.verdict != "PASS"),
         "test_blur_pass": all(row.verdict == "PASS" for row in rows),
         "codes": sorted({code for row in rows for code in row.codes}),
+        "skipped_unavailable_runtime": sorted(set(modal_keys) - set(keys)) if args.all else [],
     }
     payload = {
         "generated_at": dt.datetime.now().isoformat(timespec="seconds"),
@@ -656,13 +764,14 @@ def run(args: argparse.Namespace) -> tuple[list[ModalAuditRow], dict[str, Any], 
             "canonical_dir": str(canonical_dir),
             "actual_dir": str(actual_dir),
             "keys": keys,
+            "canonical_modal_keys": modal_keys,
         },
         "tolerances": {
             "center_tolerance_px": args.center_tolerance_px,
             "bbox_tolerance_px": args.bbox_tolerance_px,
             "backdrop_mean_tolerance": args.backdrop_mean_tolerance,
             "blur_ratio_tolerance": args.blur_ratio_tolerance,
-            "parent_mean_tolerance": args.parent_mean_tolerance,
+            "back_screen_mean_tolerance": args.parent_mean_tolerance,
             "note": "Tolerances cover renderer noise and Qt-vs-Chromium rasterization; they do not permit invented dim/blur/backdrop.",
         },
         "coexists_with": [

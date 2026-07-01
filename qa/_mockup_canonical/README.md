@@ -20,8 +20,8 @@ Mirror exacto de la salida oficial del pack canonico. **NO editar a mano.**
 |---|---:|---:|
 | `window` | 960 x 600 | 76 |
 | `narrow` | 520 x 600 | 6 |
-| `modal` (Resumen IA) | 560 x 220 | 2 |
-| `window_modal` (DBT practice sobre ventana) | 960 x 600 | 2 |
+| `modal` | panel crop parcial, no cierre modal | 0 |
+| `window_modal` (DBT practice + Resumen IA sobre ventana) | 960 x 600 | 4 |
 
 La receta falla si el DOM real del elemento capturado no coincide con el tamano
 declarado. Esto evita recortes falsos donde el PNG mide bien pero no es fiel al

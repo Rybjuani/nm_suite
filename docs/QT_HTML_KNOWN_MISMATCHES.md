@@ -185,11 +185,12 @@ Clasificación de impacto:
 - **CSS:** `.modal-bg{backdrop-filter:blur(3px)}` (`L357`), `.surfaceGlass`.
 - **Qt:** no existe `backdrop-filter`. Difuminar lo que está detrás requiere
   capturar y aplicar `QGraphicsBlurEffect`, costoso y frágil.
-- **Workaround:** snapshot real de la pantalla padre + blur/dim/backdrop
-  equivalente al mockup HTML. Dim sólido/sin blur no es escape general.
+- **Workaround:** `window_overlay` con snapshot real de la pantalla trasera del
+  modal + blur/dim/backdrop equivalente al mockup HTML. Dim sólido, blur
+  excesivo o panel crop no son salidas válidas.
 - **Impacto:** todo modal debe validar centrado, bbox, región de backdrop,
-  blur/dim y dependencia de pantalla padre con el auditor modal/backdrop.
-  Si el modal falla por la pantalla padre, se corrige la pantalla padre/familia
+  blur/dim y dependencia de pantalla trasera con el auditor modal/backdrop.
+  Si el modal falla por la pantalla trasera, se corrige esa pantalla/familia
   dependiente; no se tapa con opacidad o densidad inventada.
 
 ## MISMATCH#18 · `border-radius` + `box-shadow` en top-level window — WORKAROUND

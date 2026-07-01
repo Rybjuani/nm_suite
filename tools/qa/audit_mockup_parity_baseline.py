@@ -57,14 +57,14 @@ EPSILON = 1e-9
 
 EXPECTED_DELTA_ALLOWLIST: dict[str, dict[str, str]] = {
     "hub:detalle-resumen-ia-0@light": {
-        "old_resolution": "560x220",
-        "new_resolution": "720x462",
-        "reason": "canonical AI summary modal redesign",
+        "old_resolution": "720x462",
+        "new_resolution": "960x600",
+        "reason": "canonical AI summary modal window_overlay redesign",
     },
     "hub:detalle-resumen-ia-0@dark": {
-        "old_resolution": "560x220",
-        "new_resolution": "720x462",
-        "reason": "canonical AI summary modal redesign",
+        "old_resolution": "720x462",
+        "new_resolution": "960x600",
+        "reason": "canonical AI summary modal window_overlay redesign",
     },
 }
 

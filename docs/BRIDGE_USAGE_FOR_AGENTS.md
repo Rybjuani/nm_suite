@@ -34,8 +34,9 @@ el protocolo; el bridge no lo reemplaza).
    - Si es **IRREDUCIBLE** (texto text-dense #20, sombra 3-capas #3): no se
      cierra cambiando ese aspecto. Buscar las **flat-regions** reparables que
      cita el handoff.
-   - Si toca modal/backdrop blur #17: debe pasar el auditor modal/backdrop; no
-     se acepta dim solido/sin blur como escape general.
+   - Si toca modal/backdrop blur #17: debe pasar el auditor modal/backdrop con
+     `window_overlay`; no se acepta `panel_crop`, dim solido/sin blur ni blur
+     excesivo como escape general.
    - Si es **WORKAROUND**: usar el helper/painter correcto (conic, radial, ring,
      elided, chevron SVG, etc.).
    - Si es **DECISIÓN-OWNER** (#10, #19): no "corregir" hacia el mockup.

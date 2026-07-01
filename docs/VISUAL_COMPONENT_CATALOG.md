@@ -172,7 +172,8 @@ no-equivalencias (`MISMATCH#n` → `QT_HTML_KNOWN_MISMATCHES.md`) · keys.
 
 - **`NMDialog`** — `components/dialogs.py:59`. Selector `.modal-bg`/`.modal`
   (L357-363). Blur/dim/backdrop + surface r-xl + scale-in. MISMATCH#17, #2.
-  Keys: hub resumen-ia. Verificar con `tools/qa/audit_modal_backdrop_blur.py`.
+  Keys: hub resumen-ia. Cierre modal requiere `window_overlay`, no `panel_crop`,
+  y `tools/qa/audit_modal_backdrop_blur.py`.
 - **`NMDialogScaffold`** — `components/dialogs.py:338`. Selector
   `.modal.dbt-practice` (L364). Modal de práctica DBT (560×auto). Keys:
   dbt-practice-stop.

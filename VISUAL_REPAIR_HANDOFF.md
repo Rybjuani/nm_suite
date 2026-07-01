@@ -479,7 +479,12 @@ technical gates pass. Inspection manual, "confirmación visual", panel review, o
 5. VAS Gate (`qa/vas_gate.py`) passes: sidecar
    `qa/_visual_auditor_spec/introspection.json` exists, contains the exact key,
    `fail_count=0`, and zero divergences of severity `high` or `medium`.
-6. If the closure or checklist update changes canonical HTML, the capture
+6. Modal keys require full modal evidence: `modal_capture_scope=window_overlay`,
+   `backdrop_observable=true`, `back_screen_key` pointing to the pantalla
+   trasera del modal, and `tools/qa/audit_modal_backdrop_blur.py --key
+   "<exact-key>"` PASS. A `panel_crop` is only partial panel evidence and never
+   closes blur/dim/backdrop/centering.
+7. If the closure or checklist update changes canonical HTML, the capture
    recipe, canonical PNGs, or the baseline/seed that drives this checklist,
    `tools/qa/audit_mockup_parity_baseline.py` must PASS.
 
@@ -490,6 +495,7 @@ The closure note must record:
 - Comparator report path.
 - `REPORT_EVIDENCE_VALID: YES` + exact key `PASS`.
 - `qa/vas_gate.py` exit code `0`.
+- For modal keys, modal backdrop audit report path and PASS summary.
 - When applicable, mockup parity `AUDIT.md` path and PASS/FAIL summary.
 
 `HANDOFF_CLOSURE_ALLOWED: NO` is acceptable for individual closure if the reason

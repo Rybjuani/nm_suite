@@ -576,16 +576,19 @@ _RECIPES: dict[str, dict[str, dict]] = {
         },
 
         # 2026-06: Dialogo "Resumen IA" del detalle. En runtime depende de un
-        # proveedor IA; aqui se abre con texto de muestra y se captura el panel
-        # natural del NMDialog overlay sin red. Este crop de panel NO valida
-        # backdrop/blur; ese gate requiere una captura que incluya pantalla padre.
+        # proveedor IA; aqui se abre con texto de muestra y se captura la
+        # ventana completa con overlay. El panel crop puede servir como
+        # evidencia parcial, pero no cierra blur/backdrop/centrado.
         "detalle-resumen-ia": {
             "label": "Detalle > dialogo Resumen IA (muestra)",
             "parent": "detalle",
             "actions": [{"action": "navigate", "view": "detalle"},
                         {"action": "call", "func": "_detalle_open_resumen_ia_dialog"},
                         {"action": "drain", "cycles": 6},
-                        {"action": "capture_child", "prefix": "detalle-resumen-ia"},
+                        {"action": "capture", "view": "detalle-resumen-ia-0",
+                         "surface": "window_modal",
+                         "modal_capture_scope": "window_overlay",
+                         "back_screen_key": "hub:detalle"},
                         {"action": "close_child"}],
         },
 
@@ -1417,10 +1420,8 @@ def _detalle_open_resumen_ia_dialog(win, qapp, action):
     if det is None or not hasattr(det, "_show_resumen_dialog"):
         return
     sample = (
-        "Resumen de evidencia (muestra QA).\n\n"
-        "El paciente muestra adherencia irregular al registro de ánimo y "
-        "respiración. Se observan distorsiones cognitivas recurrentes "
-        "(catastrofización). Sugerencia: reforzar TCC y activación conductual."
+        "Ánimo promedio en rango medio-alto (6.4/10) con oscilación moderada. "
+        "Tres registros TCC refieren ansiedad anticipatoria vinculada a situaciones sociales."
     )
     try:
         det._show_resumen_dialog(sample)
@@ -2184,7 +2185,17 @@ def _execute_actions(win, actions: list[dict], qapp, app_key: str,
                 continue
             captured_views.add(view_id)
             is_auxiliary = _is_dialog_or_auxiliary_widget(target_win, win)
-            r = _grab_save(target_win, app_key, view_id, modo, res, out_dir, scale, is_auxiliary)
+            r = _grab_save(
+                target_win,
+                app_key,
+                view_id,
+                modo,
+                res,
+                out_dir,
+                scale,
+                is_auxiliary,
+                capture_meta=act,
+            )
             if r:
                 results.append(r)
 
@@ -2290,8 +2301,41 @@ def _record_introspection(win, app_key: str, view_id: str, modo: str, out_dir: P
         print(f"[introspect skip {view_id}: {exc}]", end="", flush=True)
 
 
+def _modal_capture_fields(
+    app_key: str,
+    view_id: str,
+    theme: str,
+    is_dialog_or_auxiliary: bool,
+    capture_meta: dict | None,
+) -> dict[str, Any]:
+    meta = capture_meta or {}
+    scope = meta.get("modal_capture_scope")
+    surface = meta.get("surface")
+    is_modal = bool(scope or surface in {"modal", "window_modal"} or is_dialog_or_auxiliary)
+    if is_modal and not scope:
+        scope = "panel_crop" if is_dialog_or_auxiliary else "window_overlay"
+    if not surface:
+        if is_modal:
+            surface = "modal" if scope == "panel_crop" else "window_modal"
+        else:
+            surface = "window"
+
+    back_screen_key = meta.get("back_screen_key")
+    if back_screen_key and "@" not in str(back_screen_key):
+        back_screen_key = f"{back_screen_key}@{theme}"
+
+    return {
+        "surface": surface,
+        "is_modal": is_modal,
+        "modal_capture_scope": scope if is_modal else None,
+        "backdrop_observable": scope == "window_overlay",
+        "back_screen_key": back_screen_key if is_modal else None,
+    }
+
+
 def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Path,
-               scale: float, is_dialog_or_auxiliary: bool) -> dict | None:
+               scale: float, is_dialog_or_auxiliary: bool,
+               capture_meta: dict | None = None) -> dict | None:
     from PyQt6.QtWidgets import QApplication  # noqa: F811
     w, h = _parse_res(res)
     st = _short_theme(modo)
@@ -2319,6 +2363,13 @@ def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Pa
         captured_pixel = f"{real_w}x{real_h}"
         requested_logical = f"{w}x{h}"
         contract = _capture_contract(scale, is_dialog_or_auxiliary)
+        modal_fields = _modal_capture_fields(
+            app_key,
+            view_id,
+            st,
+            is_dialog_or_auxiliary,
+            capture_meta,
+        )
         suffix = _scale_suffix(scale)
         fname = f"{app_key}-{view_id}-{st}-{real_w}x{real_h}{suffix}.png"
         out_path = out_dir / fname
@@ -2337,10 +2388,18 @@ def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Pa
                 "size_bytes": out_path.stat().st_size if ok and out_path.exists() else 0,
                 "is_dialog_or_auxiliary": is_dialog_or_auxiliary,
                 "is_child_dialog": is_dialog_or_auxiliary,
-                "actual_resolution": f"{real_w}x{real_h}"}
+                "actual_resolution": f"{real_w}x{real_h}",
+                **modal_fields}
     except Exception as e:
         suffix = _scale_suffix(scale)
         fname = f"{app_key}-{view_id}-{st}-{w}x{h}{suffix}.png"
+        modal_fields = _modal_capture_fields(
+            app_key,
+            view_id,
+            st,
+            is_dialog_or_auxiliary,
+            capture_meta,
+        )
         return {"file": fname, "app": app_key, "view": view_id, "theme": st,
                 "requested_resolution": f"{w}x{h}",
                 "requested_logical_resolution": f"{w}x{h}",
@@ -2348,7 +2407,7 @@ def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Pa
                 "evidence_contract": _capture_contract(scale, is_dialog_or_auxiliary),
                 "is_dialog_or_auxiliary": is_dialog_or_auxiliary,
                 "is_child_dialog": is_dialog_or_auxiliary,
-                "success": False, "error": str(e)}
+                "success": False, "error": str(e), **modal_fields}
 
 
 def _scan_and_capture_children(win, qapp, app_key: str, prefix: str, modo: str,
@@ -2366,7 +2425,21 @@ def _scan_and_capture_children(win, qapp, app_key: str, prefix: str, modo: str,
             continue
         captured_views.add(child_id)
         target = getattr(overlay, "_panel", overlay)
-        r = _grab_save(target, app_key, child_id, modo, res, out_dir, scale, True)
+        r = _grab_save(
+            target,
+            app_key,
+            child_id,
+            modo,
+            res,
+            out_dir,
+            scale,
+            True,
+            capture_meta={
+                "surface": "modal",
+                "modal_capture_scope": "panel_crop",
+                "back_screen_key": None,
+            },
+        )
         if r:
             results.append(r)
             count += 1
@@ -2392,7 +2465,21 @@ def _scan_and_capture_children(win, qapp, app_key: str, prefix: str, modo: str,
             if child_id in captured_views:
                 continue
             captured_views.add(child_id)
-            r = _grab_save(tl, app_key, child_id, modo, res, out_dir, scale, True)
+            r = _grab_save(
+                tl,
+                app_key,
+                child_id,
+                modo,
+                res,
+                out_dir,
+                scale,
+                True,
+                capture_meta={
+                    "surface": "modal",
+                    "modal_capture_scope": "panel_crop",
+                    "back_screen_key": None,
+                },
+            )
             if r:
                 results.append(r)
                 count += 1

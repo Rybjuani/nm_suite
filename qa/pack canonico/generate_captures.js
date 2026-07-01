@@ -36,7 +36,8 @@ const VIEWS = [
   { name: 'hub-detalle-plan-rutina',        screen: 'detalle', hubTab: 'rutina',        size: SIZE_WINDOW },
   { name: 'hub-detalle-plan-activacion',    screen: 'detalle', hubTab: 'activacion',    size: SIZE_WINDOW },
   { name: 'hub-detalle-resumen-ia-0',       screen: 'detalle', hubTab: 'recordatorios',
-    openModalSel: '[data-ia-summary]', captureSel: '.modal', size: SIZE_MODAL },
+    openModalSel: '[data-ia-summary]', captureSel: '.window', size: SIZE_WINDOW,
+    panelCropSize: SIZE_MODAL, backScreen: 'hub:detalle' },
 
   // ---------- Hub · Configuración ----------
   { name: 'hub-textos-globales',            screen: 'textos', size: SIZE_WINDOW },
@@ -82,7 +83,8 @@ const VIEWS = [
   { name: 'suite-dbt-now',                  screen: 'dbtnow', size: SIZE_WINDOW },
   { name: 'suite-dbt-library',              screen: 'dbtlib', size: SIZE_WINDOW },
   { name: 'suite-dbt-practice-stop',        screen: 'dbtlib',
-    openModalSel: '.dbt-card[data-skill="Tolerancia"]', afterOpenClickSel: '#dbtNext', captureSel: '.window', size: SIZE_WINDOW },
+    openModalSel: '.dbt-card[data-skill="Tolerancia"]', afterOpenClickSel: '#dbtNext',
+    captureSel: '.window', size: SIZE_WINDOW, backScreen: 'suite:dbt-library' },
 
   // ---------- Suite · Acceso ----------
   { name: 'suite-onboarding',               screen: 'onboarding', state: 'normal', size: SIZE_NARROW },
@@ -141,6 +143,15 @@ function surfaceKind(view, captureSel, openedModal) {
   if (captureSel === '.modal') return 'modal';
   if (openedModal) return 'window_modal';
   return view.size === SIZE_NARROW ? 'narrow' : 'window';
+}
+
+function modalCaptureScope(captureSel, openedModal) {
+  if (!openedModal) return null;
+  return captureSel === '.modal' ? 'panel_crop' : 'window_overlay';
+}
+
+function backScreenKey(view, theme) {
+  return view.backScreen ? `${view.backScreen}@${theme}` : null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -207,11 +218,11 @@ async function captureView(page, view, theme, outDir) {
     }
   }
 
-  // DBT practice captura la ventana completa con el modal abierto. La region
-  // del backdrop canonico empieza bajo la titlebar de `.window`; el auditor
-  // modal/backdrop usa este contrato para verificar centro, bbox y blur/dim.
-  if (view.name === 'suite-dbt-practice-stop') {
-    await page.evaluate(() => {
+  // Los window_overlay atan el backdrop al rectangulo capturado de `.window`.
+  // DBT vive bajo la titlebar por contrato del owner; Resumen IA cubre la
+  // ventana completa. Asi centro, bbox y blur/dim son observables en el PNG.
+  if (openedModal && captureSel === '.window') {
+    await page.evaluate((viewName) => {
       const win = document.querySelector('.window');
       const titlebar = win ? win.querySelector('.titlebar') : null;
       const bg = document.querySelector('.modal-bg');
@@ -219,15 +230,16 @@ async function captureView(page, view, theme, outDir) {
       if (!win || !bg || !modal) return;
       const wb = win.getBoundingClientRect();
       const tb = titlebar ? titlebar.getBoundingClientRect() : { height: 47 };
+      const contentOnly = viewName === 'suite-dbt-practice-stop';
       bg.style.position = 'fixed';
       bg.style.left = `${wb.left}px`;
-      bg.style.top = `${wb.top + tb.height}px`;
+      bg.style.top = `${wb.top + (contentOnly ? tb.height : 0)}px`;
       bg.style.width = `${wb.width}px`;
-      bg.style.height = `${wb.height - tb.height}px`;
+      bg.style.height = `${wb.height - (contentOnly ? tb.height : 0)}px`;
       modal.style.position = '';
       modal.style.left = '';
       modal.style.top = '';
-    });
+    }, view.name);
     await sleep(80);
   }
 
@@ -288,6 +300,7 @@ async function captureView(page, view, theme, outDir) {
   const dims = pngDims(filePath);
   const sh = sha256(filePath);
   const sizeMatch = (dims.w === expected.w && dims.h === expected.h);
+  const scope = modalCaptureScope(captureSel, openedModal);
 
   return {
     file: fileName,
@@ -295,6 +308,11 @@ async function captureView(page, view, theme, outDir) {
     screen: view.screen,
     state: view.state || view.hubTab || '',
     surface: surfaceKind(view, captureSel, openedModal),
+    is_modal: openedModal,
+    modal_capture_scope: scope,
+    backdrop_observable: scope === 'window_overlay',
+    back_screen_key: backScreenKey(view, theme),
+    panel_crop_size: openedModal && view.panelCropSize ? view.panelCropSize : null,
     theme,
     real_w: dims.w,
     real_h: dims.h,
@@ -398,11 +416,13 @@ async function captureView(page, view, theme, outDir) {
   // ---- INDICE_CAPTURAS.csv ----
   const csvPath = path.join(outDir, 'INDICE_CAPTURAS.csv');
   const csvLines = [
-    'file,view,screen,state,surface,theme,real_w,real_h,expected_w,expected_h,size_match,dom_w,dom_h,dom_size_match,capture_selector,sha256,bytes',
+    'file,view,screen,state,surface,is_modal,modal_capture_scope,backdrop_observable,back_screen_key,panel_crop_size,theme,real_w,real_h,expected_w,expected_h,size_match,dom_w,dom_h,dom_size_match,capture_selector,sha256,bytes',
   ];
   for (const r of records) {
     csvLines.push([
-      r.file, r.view, r.screen, r.state, r.surface, r.theme,
+      r.file, r.view, r.screen, r.state, r.surface, r.is_modal ? 'true' : 'false',
+      r.modal_capture_scope || '', r.backdrop_observable ? 'true' : 'false',
+      r.back_screen_key || '', r.panel_crop_size || '', r.theme,
       r.real_w, r.real_h, r.expected_w, r.expected_h,
       r.size_match ? 'yes' : 'no',
       r.dom_w, r.dom_h, r.dom_size_match ? 'yes' : 'no', r.capture_selector,

@@ -105,10 +105,10 @@ Detalle completo (screen/state/surface/selector/tamaño) en
 | hub | pacientes (list/empty) | 4 | window | F10,F11,F14 |
 | hub | detalle (recordatorios) | 2 | window | F6,F5,F3 |
 | hub | detalle-plan (timer/rutina/activacion) | 6 | window | F6,F9,F10 |
-| hub | detalle-resumen-ia | 2 | modal 720×462 | F12,F8 |
+| hub | detalle-resumen-ia | 2 | window_modal 960×600 (panel 720×462) | F12,F8 |
 | hub | textos-globales | 2 | window | F10,F5 |
 
-(76 window + 6 narrow + 2 modal + 2 window_modal = 86)
+(76 window + 6 narrow + 0 modal + 4 window_modal = 86)
 
 ## Cómo retomar los checks con el bridge
 

@@ -44,8 +44,8 @@ node ./generate_captures.js ./neuromood-mockup_reparado.html ./capturas_test
 |---|---|---|
 | `.window` (suite/hub normal) | 960 x 600 | 76 |
 | `.window.narrow` (onboarding/recuperar) | 520 x 600 | 6 |
-| `.modal` (Resumen IA) | 560 x 220 | 2 |
-| `.window` con modal abierto (DBT practice) | 960 x 600 | 2 |
+| `.modal` panel crop parcial | no cierra modal | 0 |
+| `.window` con modal abierto (DBT practice + Resumen IA) | 960 x 600 | 4 |
 | **Total** | | **86** |
 
 Todos los PNG miden **exactamente** el tamano indicado en el nombre. No hay

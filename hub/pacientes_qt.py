@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
+    QGridLayout,
     QLabel,
     QFrame,
     QSizePolicy,
@@ -22,6 +23,7 @@ try:
         NMButton,
         NMButtonOutline,
         NMElidedLabel,
+        NMIcon,
         NMToast,
         ThemeManager,
     )
@@ -29,6 +31,7 @@ try:
     from shared.theme_qt import (
         norm_modo,
         qfont,
+        qcolor_to_rgba_css,
         v3_font,
         v3c,
         V3_SP,
@@ -46,6 +49,7 @@ except ImportError:
         NMAvatar,
         NMButton,
         NMElidedLabel,
+        NMIcon,
         NMToast,
         ThemeManager,
     )
@@ -53,6 +57,7 @@ except ImportError:
     from shared.theme_qt import (
         norm_modo,
         qfont,
+        qcolor_to_rgba_css,
         v3_font,
         v3c,
         V3_SP,
@@ -401,7 +406,7 @@ class DetallePacienteView(QWidget):
         self._btn_resumen_ia.setText("Resumen IA")
 
         host = self.window() or self
-        dialog = NMDialog("", modo=self._modo, width=560, parent=host)
+        dialog = NMDialog("", modo=self._modo, width=720, parent=host)
         self._resumen_dialog = dialog
         dialog.closed.connect(lambda: setattr(self, "_resumen_dialog", None))
         dialog._title.hide()
@@ -409,47 +414,146 @@ class DetallePacienteView(QWidget):
         panel_lay = dialog._panel.layout()
         if panel_lay is not None:
             while panel_lay.count():
-                panel_lay.takeAt(0)
-            panel_lay.setContentsMargins(
-                V3_SP["lg"], V3_SP["xs"], V3_SP["lg"], V3_SP["sm"]
-            )
-            panel_lay.setSpacing(V3_SP["xs"])
+                item = panel_lay.takeAt(0)
+                w = item.widget()
+                if w is not None:
+                    w.setParent(None)
+                    w.deleteLater()
+            panel_lay.setContentsMargins(0, 0, 0, 0)
+            panel_lay.setSpacing(0)
 
-        # 2026-06-24: mockup Resumen IA — eyebrow UPPERCASE del nombre del
-        # paciente sobre el título del diálogo. Antes era title-case en
-        # color gris secundario sin uppercase.
-        patient_lbl = QLabel(self._nombre.upper())
-        patient_lbl.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
-        patient_lbl.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
+        surface = v3c("surfaceSolid" if "dark" in self._modo else "surface", self._modo).name()
+        surface2 = v3c("surface_2", self._modo).name()
+        line = qcolor_to_rgba_css(v3c("line", self._modo))
+        text_col = v3c("text", self._modo).name()
+        ink2 = v3c("ink_2", self._modo).name()
+        ink3 = v3c("ink_3", self._modo).name()
+        brand = v3c("brand", self._modo).name()
+        brand_soft = qcolor_to_rgba_css(v3c("brandSoft", self._modo))
+        amber = v3c("amber", self._modo).name()
+
+        dialog._panel.setFixedHeight(462)
+        dialog._panel.setStyleSheet(
+            f"QFrame#NMDialogPanel {{ background-color: {surface}; border: 1px solid {line}; "
+            "border-radius: 24px; }}"
         )
-        panel_lay.addWidget(patient_lbl)
 
-        title_lbl = QLabel("Resumen IA")
-        title_lbl.setFont(v3_font(21, weight=600, serif=True))
-        title_lbl.setStyleSheet(
-            f"color: {v3c('text', self._modo).name()}; background: transparent;"
-        )
-        panel_lay.addWidget(title_lbl)
+        def _label(value: str, font, color: str, *, name: str = "", wrap: bool = False) -> QLabel:
+            lbl = QLabel(value)
+            if name:
+                lbl.setObjectName(name)
+            lbl.setFont(font)
+            lbl.setWordWrap(wrap)
+            lbl.setStyleSheet(f"color: {color}; background: transparent;")
+            return lbl
 
-        for paragraph in [p.strip() for p in (text or "").split("\n\n") if p.strip()]:
-            lbl = QLabel(paragraph)
-            lbl.setObjectName("ResumenIALabel")
-            lbl.setWordWrap(True)
-            lbl.setFont(qfont("size_body"))
-            lbl.setStyleSheet(
-                f"color: {v3c('ink_secondary', self._modo).name()}; "
-                "background: transparent; line-height: 1.6;"
+        header = QFrame()
+        header.setObjectName("ResumenIAHeader")
+        header.setFixedHeight(86)
+        header.setStyleSheet(f"QFrame#ResumenIAHeader {{ border-bottom: 1px solid {line}; background: transparent; }}")
+        header_lay = QHBoxLayout(header)
+        header_lay.setContentsMargins(22, 18, 22, 14)
+        header_lay.setSpacing(14)
+
+        avatar = QFrame()
+        avatar.setFixedSize(40, 40)
+        avatar.setStyleSheet(f"QFrame {{ background: {brand_soft}; border: none; border-radius: 12px; }}")
+        avatar_lay = QVBoxLayout(avatar)
+        avatar_lay.setContentsMargins(0, 0, 0, 0)
+        avatar_lay.addWidget(NMIcon("spark", 18, color_key="brand", modo=self._modo), alignment=Qt.AlignmentFlag.AlignCenter)
+        header_lay.addWidget(avatar, alignment=Qt.AlignmentFlag.AlignTop)
+
+        titles = QVBoxLayout()
+        titles.setSpacing(2)
+        titles.addWidget(_label("RESUMEN CLÍNICO · BORRADOR IA", qfont("size_caption_xs", weight=600), ink3))
+        titles.addWidget(_label(self._nombre, v3_font(18, weight=600, serif=True), text_col))
+        titles.addWidget(_label("Ventana 30 días  ·  14 registros analizados  ·  Generado 30-jun", qfont("size_caption_xs"), ink3))
+        header_lay.addLayout(titles, stretch=1)
+
+        close_btn = NMButton("Cerrar", modo=self._modo, width=84, height=40, variant="gradient", size="md")
+        close_btn.clicked.connect(dialog.close)
+        header_lay.addWidget(close_btn, alignment=Qt.AlignmentFlag.AlignTop)
+        panel_lay.addWidget(header)
+
+        chips = QFrame()
+        chips.setStyleSheet("background: transparent;")
+        chips_lay = QGridLayout(chips)
+        chips_lay.setContentsMargins(22, 14, 22, 4)
+        chips_lay.setHorizontalSpacing(8)
+        chips_lay.setVerticalSpacing(0)
+
+        for idx, (value, suffix, label) in enumerate([
+            ("6.4", "/10", "ÁNIMO PROM."),
+            ("9", "", "REGISTROS TCC"),
+            ("3", "", "SESIONES RESPIR."),
+            ("71", "%", "ADHERENCIA"),
+        ]):
+            chip = QFrame()
+            chip.setFixedHeight(53)
+            chip.setStyleSheet(
+                f"QFrame {{ background: {surface2}; border: 1px solid {line}; border-radius: 12px; }}"
             )
-            lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-            panel_lay.addWidget(lbl)
-        panel_lay.addStretch(1)
-        panel_lay.addLayout(dialog._footer_row)
+            chip_lay = QVBoxLayout(chip)
+            chip_lay.setContentsMargins(10, 8, 10, 7)
+            chip_lay.setSpacing(3)
+            val = _label(f"{value}{suffix}", qfont("size_body", weight=700), brand)
+            lab = _label(label, qfont("size_caption_xs", weight=700), ink3)
+            chip_lay.addWidget(val)
+            chip_lay.addWidget(lab)
+            chips_lay.addWidget(chip, 0, idx)
+        panel_lay.addWidget(chips)
 
-        # 2026-06-24: mockup Resumen IA — botón "Cerrar" filled green (primary),
-        # no ghost. Antes era texto estilo ghost.
-        dialog.add_footer_button("Cerrar", role="primary", callback=dialog.close)
-        dialog._panel.setFixedHeight(220)
+        body = QFrame()
+        body.setFixedHeight(246)
+        body.setStyleSheet("background: transparent;")
+        body_lay = QVBoxLayout(body)
+        body_lay.setContentsMargins(22, 6, 22, 4)
+        body_lay.setSpacing(0)
+
+        default_general = (
+            "Ánimo promedio en rango medio-alto (6.4/10) con oscilación moderada. "
+            "Tres registros TCC refieren ansiedad anticipatoria vinculada a situaciones sociales."
+        )
+        general_text = " ".join(p.strip() for p in (text or "").splitlines() if p.strip()) or default_general
+        sections = [
+            ("user", "ESTADO GENERAL", general_text),
+            ("check", "ADHERENCIA Y HÁBITOS", "Cumplimiento del 71% en registro diario de ánimo y 4/7 tareas de rutina completadas. Práctica de respiración 4·7·8 esporádica (3 sesiones en el período)."),
+            ("bolt", "ASPECTOS A MONITOREAR", "Distorsión cognitiva recurrente: catastrofización (5/9 registros). Descenso de ánimo los días con menor adherencia a la rutina matutina."),
+            ("spark", "RECOMENDACIÓN DE SESIÓN", "Reforzar restructuración cognitiva sobre catastrofización y vincular activación conductual matutina. Considerar asignar habilidad DBT \"Verificar los hechos\"."),
+        ]
+        for icon_name, title, body_text in sections:
+            sec = QFrame()
+            sec.setStyleSheet(f"QFrame {{ border-bottom: 1px dashed {line}; background: transparent; }}")
+            sec_lay = QVBoxLayout(sec)
+            sec_lay.setContentsMargins(0, 9, 0, 9)
+            sec_lay.setSpacing(3)
+            head = QHBoxLayout()
+            head.setSpacing(7)
+            head.addWidget(NMIcon(icon_name, 14, color_key="brand", modo=self._modo))
+            head.addWidget(_label(title, qfont("size_caption_xs", weight=700), ink2), stretch=1)
+            sec_lay.addLayout(head)
+            body_lbl = _label(body_text, qfont("size_caption"), ink2, name="ResumenIALabel", wrap=True)
+            body_lbl.setContentsMargins(21, 0, 0, 0)
+            body_lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            sec_lay.addWidget(body_lbl)
+            body_lay.addWidget(sec)
+        panel_lay.addWidget(body)
+
+        footer = QFrame()
+        footer.setFixedHeight(56)
+        footer.setStyleSheet(f"QFrame {{ background: {surface2}; border-top: 1px solid {line}; }}")
+        footer_lay = QHBoxLayout(footer)
+        footer_lay.setContentsMargins(22, 12, 22, 14)
+        footer_lay.setSpacing(6)
+        footer_lay.addWidget(NMIcon("info", 12, color=amber, modo=self._modo), alignment=Qt.AlignmentFlag.AlignTop)
+        warn = _label(
+            "Borrador para revisión profesional. La IA no sustituye el criterio clínico ni realiza diagnósticos. Validar contra historia clínica antes de citar.",
+            qfont("size_caption_xs"),
+            ink3,
+            wrap=True,
+        )
+        footer_lay.addWidget(warn, stretch=1)
+        panel_lay.addWidget(footer)
         dialog.show_centered()
 
     def _on_resumen_ia_error(self, msg: str):

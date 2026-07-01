@@ -41,7 +41,7 @@ def _write_manifest(root: Path, captures: list[dict], *, canonical: bool) -> Non
     (root / name).write_text(json.dumps(payload), encoding="utf-8")
 
 
-def test_window_modal_passes_when_backdrop_and_parent_match(tmp_path: Path) -> None:
+def test_window_modal_passes_when_backdrop_and_back_screen_match(tmp_path: Path) -> None:
     canonical = tmp_path / "canon"
     actual = tmp_path / "actual"
     parent = _parent()
@@ -58,7 +58,14 @@ def test_window_modal_passes_when_backdrop_and_parent_match(tmp_path: Path) -> N
         canonical,
         [
             {"file": "suite-dbt-library-light-240x160.png", "surface": "window"},
-            {"file": "suite-dbt-practice-stop-light-240x160.png", "surface": "window_modal"},
+            {
+                "file": "suite-dbt-practice-stop-light-240x160.png",
+                "surface": "window_modal",
+                "is_modal": True,
+                "modal_capture_scope": "window_overlay",
+                "backdrop_observable": True,
+                "back_screen_key": "suite:dbt-library@light",
+            },
         ],
         canonical=True,
     )
@@ -66,7 +73,14 @@ def test_window_modal_passes_when_backdrop_and_parent_match(tmp_path: Path) -> N
         actual,
         [
             {"file": "suite-dbt-library-light-240x160.png", "surface": "window"},
-            {"file": "suite-dbt-practice-stop-light-240x160.png", "surface": "window_modal"},
+            {
+                "file": "suite-dbt-practice-stop-light-240x160.png",
+                "surface": "window_modal",
+                "is_modal": True,
+                "modal_capture_scope": "window_overlay",
+                "backdrop_observable": True,
+                "back_screen_key": "suite:dbt-library@light",
+            },
         ],
         canonical=False,
     )
@@ -93,16 +107,39 @@ def test_window_modal_passes_when_backdrop_and_parent_match(tmp_path: Path) -> N
 def test_modal_crop_cannot_pass_backdrop_gate(tmp_path: Path) -> None:
     canonical = tmp_path / "canon"
     actual = tmp_path / "actual"
-    _save(canonical / "hub-detalle-resumen-ia-0-light-72x46.png", Image.new("RGB", (72, 46), "#fffaf2"))
+    parent = _parent()
+    _save(canonical / "hub-detalle-light-240x160.png", parent)
+    _save(actual / "hub-detalle-light-240x160.png", parent)
+    _save(canonical / "hub-detalle-resumen-ia-0-light-240x160.png", _modal(parent))
     _save(actual / "hub-detalle-resumen-ia-0-light-56x22.png", Image.new("RGB", (56, 22), "#fffaf2"))
     _write_manifest(
         canonical,
-        [{"file": "hub-detalle-resumen-ia-0-light-72x46.png", "surface": "modal"}],
+        [
+            {"file": "hub-detalle-light-240x160.png", "surface": "window"},
+            {
+                "file": "hub-detalle-resumen-ia-0-light-240x160.png",
+                "surface": "window_modal",
+                "is_modal": True,
+                "modal_capture_scope": "window_overlay",
+                "backdrop_observable": True,
+                "back_screen_key": "hub:detalle@light",
+            },
+        ],
         canonical=True,
     )
     _write_manifest(
         actual,
-        [{"file": "hub-detalle-resumen-ia-0-light-56x22.png", "is_dialog_or_auxiliary": True}],
+        [
+            {"file": "hub-detalle-light-240x160.png", "surface": "window"},
+            {
+                "file": "hub-detalle-resumen-ia-0-light-56x22.png",
+                "surface": "modal",
+                "is_modal": True,
+                "modal_capture_scope": "panel_crop",
+                "backdrop_observable": False,
+                "back_screen_key": "hub:detalle@light",
+            },
+        ],
         canonical=False,
     )
 

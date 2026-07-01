@@ -6,6 +6,58 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Get-CanonicalCaptureForKey {
+  param([Parameter(Mandatory=$true)][string]$VisualKey)
+
+  $manifestPath = "qa\_mockup_canonical\MANIFEST.json"
+  if (-not (Test-Path -LiteralPath $manifestPath)) {
+    return $null
+  }
+  $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+  foreach ($capture in $manifest.captures) {
+    $file = [string]$capture.file
+    if ($file -match '^(suite|hub)-(.+)-(light|dark)-\d+x\d+(?:-scale\d+)?\.png$') {
+      $key = "$($Matches[1]):$($Matches[2])@$($Matches[3])"
+      if ($key -eq $VisualKey) {
+        return $capture
+      }
+    }
+  }
+  return $null
+}
+
+function Test-ModalVisualKey {
+  param($Capture)
+  if ($null -eq $Capture) {
+    return $false
+  }
+  if ($Capture.PSObject.Properties.Name -contains "is_modal" -and [bool]$Capture.is_modal) {
+    return $true
+  }
+  $surface = [string]$Capture.surface
+  return @("modal", "window_modal") -contains $surface
+}
+
+function Get-BackScreenTarget {
+  param($Capture)
+  if ($null -eq $Capture) {
+    return $null
+  }
+  $backKey = [string]$Capture.back_screen_key
+  if ([string]::IsNullOrWhiteSpace($backKey)) {
+    return $null
+  }
+  if ($backKey -notmatch '^(suite|hub):(.+)@(light|dark)$') {
+    return $null
+  }
+  return [PSCustomObject]@{
+    App = $Matches[1]
+    View = $Matches[2]
+    Theme = $Matches[3]
+    Key = $backKey
+  }
+}
+
 # Anti-fraud gate: runtime/product must not read/render/overlay canonical or
 # reference artifacts. If this fails, the resulting report is NOT valid closure
 # evidence even if the comparator reports PASS.
@@ -43,8 +95,32 @@ if ($rows.Count -eq 0) {
   throw "PlanFile has no valid rows: $PlanFile"
 }
 
+$modalRows = @()
+$capturedKeys = @{}
 foreach ($row in $rows) {
+  $canonicalCapture = Get-CanonicalCaptureForKey -VisualKey $row.Key
+  $isModalKey = Test-ModalVisualKey -Capture $canonicalCapture
+  if ($isModalKey) {
+    $modalRows += [PSCustomObject]@{
+      Key = $row.Key
+      Capture = $canonicalCapture
+    }
+  }
+
   if (-not $SkipCapture) {
+    if ($isModalKey) {
+      $backScreenTarget = Get-BackScreenTarget -Capture $canonicalCapture
+      if ($null -ne $backScreenTarget -and -not $capturedKeys.ContainsKey($backScreenTarget.Key)) {
+        & .\.venv\Scripts\python.exe qa\capture_v8.py `
+          --app $($backScreenTarget.App) `
+          --view $($backScreenTarget.View) `
+          --theme $($backScreenTarget.Theme) `
+          --out-dir qa\_captures_v8 `
+          --no-clean
+        $capturedKeys[$backScreenTarget.Key] = $true
+      }
+    }
+
     & .\.venv\Scripts\python.exe qa\capture_v8.py `
       --app $($row.App) `
       --view $($row.View) `
@@ -70,6 +146,16 @@ try {
 }
 finally {
   Remove-Item -LiteralPath $keysFile -Force -ErrorAction SilentlyContinue
+}
+
+foreach ($modalRow in $modalRows) {
+  $safeKey = ([string]$modalRow.Key) -replace '[:@\\\/]', '_'
+  $modalAuditOut = Join-Path (Join-Path $OutDir "modal_backdrop_blur") $safeKey
+  & .\.venv\Scripts\python.exe tools\qa\audit_modal_backdrop_blur.py --key $($modalRow.Key) --out-dir $modalAuditOut
+  if ($LASTEXITCODE -ne 0) {
+    Write-Error "MODAL BACKDROP/BLUR AUDIT FAILED for key '$($modalRow.Key)'. QA NOT approved. Do not close this modal from panel similarity alone."
+    exit 1
+  }
 }
 
 # VAS Gate: validate the sidecar for all keys captured in this family run.
