@@ -308,6 +308,70 @@ def _component_bbox(mask: np.ndarray) -> tuple[int, int, int, int] | None:
         return (x0, y0, x1 - x0, y1 - y0)
 
 
+def _refine_bbox_to_dense_core(
+    diff: np.ndarray,
+    bbox: tuple[int, int, int, int],
+    *,
+    threshold: float,
+    density_kernel: int = 20,
+    density_threshold: float = 0.45,
+    margin: int = 20,
+) -> tuple[int, int, int, int] | None:
+    """Refine a raw bbox to the dense core of the modal panel.
+
+    The raw ``binary_closing(9x9)`` detector can bridge backdrop residual
+    noise (Qt ``QGraphicsBlurEffect`` vs PIL ``GaussianBlur``) to the modal
+    panel, inflating the detected bbox laterally. This refinement computes a
+    local density map (fraction of pixels exceeding ``threshold`` in a
+    ``density_kernel`` neighbourhood) inside the raw bbox and trims to the
+    bounding box of the dense core (``density > density_threshold``), then
+    re-inflates by a fixed ``margin`` to include the panel shadow.
+
+    The dense core corresponds to the panel body (title, body, buttons), which
+    has a high concentration of diff pixels. Backdrop noise is sparse and does
+    not reach the density threshold, so it is trimmed away. This makes the
+    detector robust to renderer-specific blur residual without relaxing the
+    centering/size tolerances or permitting overblur.
+    """
+    x0, y0, bw, bh = bbox
+    region = diff[y0 : y0 + bh, x0 : x0 + bw]
+    binary = (region > threshold).astype(np.float32)
+    try:
+        from scipy import ndimage
+
+        density = ndimage.uniform_filter(binary, size=density_kernel)
+    except Exception:
+        # Fallback: simple block average via cumulative sum.
+        cum = np.cumsum(np.cumsum(binary, axis=0), axis=1)
+        density = np.zeros_like(binary)
+        k = density_kernel
+        for y in range(bh):
+            for x in range(bw):
+                y0a = max(0, y - k // 2)
+                y1a = min(bh, y + k // 2 + 1)
+                x0a = max(0, x - k // 2)
+                x1a = min(bw, x + k // 2 + 1)
+                area = (y1a - y0a) * (x1a - x0a)
+                s = cum[y1a - 1, x1a - 1]
+                if y0a > 0:
+                    s -= cum[y0a - 1, x1a - 1]
+                if x0a > 0:
+                    s -= cum[y1a - 1, x0a - 1]
+                if y0a > 0 and x0a > 0:
+                    s += cum[y0a - 1, x0a - 1]
+                density[y, x] = s / max(area, 1)
+    dense_mask = density > density_threshold
+    if not dense_mask.any():
+        return None
+    dys, dxs = np.where(dense_mask)
+    h, w = diff.shape
+    rx0 = max(0, x0 + int(dxs.min()) - margin)
+    ry0 = max(0, y0 + int(dys.min()) - margin)
+    rx1 = min(w, x0 + int(dxs.max()) + margin + 1)
+    ry1 = min(h, y0 + int(dys.max()) + margin + 1)
+    return (rx0, ry0, rx1 - rx0, ry1 - ry0)
+
+
 def modal_bbox_candidates(parent: np.ndarray, modal_capture: np.ndarray) -> list[tuple[int, int, int, int]]:
     if parent.shape != modal_capture.shape:
         return []
@@ -344,6 +408,17 @@ def modal_bbox_candidates(parent: np.ndarray, modal_capture: np.ndarray) -> list
                 bw, bh = bbox[2], bbox[3]
                 if area < 5000 or not (0.35 * w <= bw <= 0.82 * w) or not (0.25 * h <= bh <= 0.82 * h):
                     continue
+                # Refine to the dense core to avoid backdrop residual noise
+                # (Qt-vs-PIL blur difference) inflating the bbox laterally.
+                # See _refine_bbox_to_dense_core for the full rationale.
+                refined = _refine_bbox_to_dense_core(diff, bbox, threshold=threshold)
+                if refined is not None:
+                    rbw, rbh = refined[2], refined[3]
+                    if rbw * rbh < 1500 or not (0.30 * w <= rbw <= 0.85 * w) or not (0.20 * h <= rbh <= 0.85 * h):
+                        # If the refined bbox falls outside sensible bounds,
+                        # fall back to the raw bbox rather than discarding.
+                        refined = bbox
+                    bbox = refined
                 candidates.append((area, bbox))
         except Exception:
             bbox = _component_bbox(mask)

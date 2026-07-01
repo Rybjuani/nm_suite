@@ -487,3 +487,214 @@ def test_runtime_dbt_modal_with_window_overlay_metadata_is_evaluated(tmp_path: P
     assert row.backdrop_region != "not_observable_modal_crop"
     assert row.blur_dim_equivalence != "not_observable_modal_crop"
     assert row.centered != "not_observable_modal_crop"
+
+
+# --- Bbox detector robustness against backdrop residual noise ---------------
+# These tests verify that _refine_bbox_to_dense_core / modal_bbox_candidates
+# distinguish real modal-panel geometry from backdrop residual noise (the
+# Qt-QGraphicsBlurEffect vs PIL-GaussianBlur difference that inflates the raw
+# binary_closing(9x9) bbox laterally). A panel that is geometrically correct
+# must not fail MODAL_CENTER_FAIL / MODAL_BBOX_FAIL because of noise bleed.
+
+
+def _parent_with_contrast_cards(size=(960, 600)) -> Image.Image:
+    """A parent screen with high-contrast content (cards) that produces
+    residual diff when blurred by Qt vs PIL, simulating the dbt-library
+    backdrop that triggered the false MODAL_BBOX_FAIL."""
+    image = Image.new("RGB", size, "#191F2E")
+    draw = ImageDraw.Draw(image)
+    # High-contrast cards in the left zone (x=30..190) — this is the content
+    # whose Qt-vs-PIL blur residual inflates the raw bbox.
+    for x in range(30, 190, 40):
+        draw.rectangle([x, 180, x + 30, 400], fill="#F3EFE4")
+    # Cards in the right zone too (symmetric noise)
+    for x in range(770, 930, 40):
+        draw.rectangle([x, 180, x + 30, 400], fill="#F3EFE4")
+    return image
+
+
+def _modal_centered(parent: Image.Image, card_bbox=(280, 165, 400, 270)) -> Image.Image:
+    """A modal capture with a centered card (blur 3 + scrim + surface card)."""
+    blurred = parent.filter(ImageFilter.GaussianBlur(radius=3))
+    tint = Image.new("RGB", parent.size, (20, 18, 14))
+    image = Image.blend(blurred, tint, 0.5)
+    draw = ImageDraw.Draw(image)
+    x, y, w, h = card_bbox
+    draw.rounded_rectangle([x, y, x + w, y + h], radius=14, fill="#fffaf2", outline="#d8cfc0", width=2)
+    # Panel content (title + body) — dense diff region
+    draw.rectangle((x + 20, y + 20, x + w - 20, y + 40), fill="#2e5d43")
+    draw.rectangle((x + 20, y + 50, x + w - 24, y + 58), fill="#846a47")
+    # Buttons row
+    draw.rectangle((x + 20, y + h - 50, x + 120, y + h - 16), fill="#3a4a5e")
+    draw.rectangle((x + w - 120, y + h - 50, x + w - 20, y + h - 16), fill="#2e5d43")
+    return image
+
+
+def _add_backdrop_noise(image: Image.Image, intensity: int = 14) -> Image.Image:
+    """Add sparse noise to the backdrop zone (outside the card) to simulate
+    Qt-vs-PIL blur residual that the raw binary_closing(9x9) bridges to the
+    panel, inflating the detected bbox."""
+    import random
+    draw = ImageDraw.Draw(image)
+    w, h = image.size
+    rng = random.Random(42)
+    # Card is roughly centered; add noise in the left/right backdrop zones
+    for _ in range(6000):
+        x = rng.randint(0, 280)
+        y = rng.randint(140, 440)
+        base = image.getpixel((x, y))
+        delta = rng.randint(-intensity, intensity)
+        px = tuple(max(0, min(255, c + delta)) for c in base)
+        draw.point((x, y), fill=px)
+    for _ in range(6000):
+        x = rng.randint(680, w - 1)
+        y = rng.randint(140, 440)
+        base = image.getpixel((x, y))
+        delta = rng.randint(-intensity, intensity)
+        px = tuple(max(0, min(255, c + delta)) for c in base)
+        draw.point((x, y), fill=px)
+    return image
+
+
+def test_backdrop_residual_noise_does_not_inflate_bbox_when_panel_is_centered(tmp_path: Path) -> None:
+    """Regression: a centered modal panel with backdrop residual noise (Qt-vs-PIL
+    blur difference) must not produce MODAL_CENTER_FAIL / MODAL_BBOX_FAIL.
+    The dense-core refinement trims the noise bleed that the raw
+    binary_closing(9x9) bridges to the panel."""
+    canonical = tmp_path / "canon"
+    actual = tmp_path / "actual"
+    parent = _parent_with_contrast_cards()
+    modal_canonical = _modal_centered(parent)
+    # Actual: same centered card, but with backdrop residual noise added.
+    modal_actual = _modal_centered(parent)
+    modal_actual = _add_backdrop_noise(modal_actual, intensity=14)
+    _save(canonical / "suite-dbt-library-light-960x600.png", parent)
+    _save(canonical / "suite-dbt-practice-stop-light-960x600.png", modal_canonical)
+    _save(actual / "suite-dbt-library-light-960x600.png", parent)
+    _save(actual / "suite-dbt-practice-stop-light-960x600.png", modal_actual)
+    record = {
+        "file": "suite-dbt-practice-stop-light-960x600.png",
+        "surface": "window_modal",
+        "is_modal": True,
+        "modal_capture_scope": "window_overlay",
+        "backdrop_observable": True,
+        "back_screen_key": "suite:dbt-library@light",
+    }
+    _write_manifest(canonical, [{"file": "suite-dbt-library-light-960x600.png", "surface": "window"}, record], canonical=True)
+    _write_manifest(actual, [{"file": "suite-dbt-library-light-960x600.png", "surface": "window"}, record], canonical=False)
+
+    canonical_captures = audit.load_captures(canonical, canonical=True)
+    actual_captures = audit.load_captures(actual, canonical=False)
+    row = audit.audit_modal_key(
+        "suite:dbt-practice-stop@light",
+        canonical_dir=canonical,
+        actual_dir=actual,
+        canonical_captures=canonical_captures,
+        actual_captures=actual_captures,
+        center_tolerance_px=18,
+        bbox_tolerance_px=32,
+        backdrop_mean_tolerance=22.0,
+        blur_ratio_tolerance=0.2,
+        parent_mean_tolerance=35.0,
+    )
+
+    # The noise must not cause CENTER or BBOX fails. The panel is geometrically
+    # centered and correctly sized; only the backdrop has residual noise.
+    assert audit.CODE_MODAL_CENTER_FAIL not in row.codes, (
+        f"backdrop noise inflated center: {row.metrics}"
+    )
+    assert audit.CODE_MODAL_BBOX_FAIL not in row.codes, (
+        f"backdrop noise inflated bbox: {row.metrics}"
+    )
+
+
+def test_actually_offcenter_modal_still_fails_centering(tmp_path: Path) -> None:
+    """A modal that is genuinely off-center must still fail MODAL_CENTER_FAIL.
+    The dense-core refinement must not mask real geometric divergences."""
+    canonical = tmp_path / "canon"
+    actual = tmp_path / "actual"
+    parent = _parent_with_contrast_cards()
+    # Canonical card centered at x=280..680 (center 480)
+    modal_canonical = _modal_centered(parent, card_bbox=(280, 165, 400, 270))
+    # Actual card shifted 60px to the right (center 540) — genuinely off-center
+    modal_actual = _modal_centered(parent, card_bbox=(340, 165, 400, 270))
+    _save(canonical / "suite-dbt-library-light-960x600.png", parent)
+    _save(canonical / "suite-dbt-practice-stop-light-960x600.png", modal_canonical)
+    _save(actual / "suite-dbt-library-light-960x600.png", parent)
+    _save(actual / "suite-dbt-practice-stop-light-960x600.png", modal_actual)
+    record = {
+        "file": "suite-dbt-practice-stop-light-960x600.png",
+        "surface": "window_modal",
+        "is_modal": True,
+        "modal_capture_scope": "window_overlay",
+        "backdrop_observable": True,
+        "back_screen_key": "suite:dbt-library@light",
+    }
+    _write_manifest(canonical, [{"file": "suite-dbt-library-light-960x600.png", "surface": "window"}, record], canonical=True)
+    _write_manifest(actual, [{"file": "suite-dbt-library-light-960x600.png", "surface": "window"}, record], canonical=False)
+
+    canonical_captures = audit.load_captures(canonical, canonical=True)
+    actual_captures = audit.load_captures(actual, canonical=False)
+    row = audit.audit_modal_key(
+        "suite:dbt-practice-stop@light",
+        canonical_dir=canonical,
+        actual_dir=actual,
+        canonical_captures=canonical_captures,
+        actual_captures=actual_captures,
+        center_tolerance_px=18,
+        bbox_tolerance_px=32,
+        backdrop_mean_tolerance=22.0,
+        blur_ratio_tolerance=0.2,
+        parent_mean_tolerance=35.0,
+    )
+
+    assert row.verdict == "FAIL"
+    assert audit.CODE_MODAL_CENTER_FAIL in row.codes, (
+        f"genuinely off-center modal must fail centering: {row.metrics}"
+    )
+
+
+def test_actually_wider_modal_still_fails_bbox_size(tmp_path: Path) -> None:
+    """A modal that is genuinely wider than the canonical must still fail
+    MODAL_BBOX_FAIL. The refinement must not mask real size divergences."""
+    canonical = tmp_path / "canon"
+    actual = tmp_path / "actual"
+    parent = _parent_with_contrast_cards()
+    # Canonical card width 400
+    modal_canonical = _modal_centered(parent, card_bbox=(280, 165, 400, 270))
+    # Actual card width 500 (100px wider) — genuinely wrong size
+    modal_actual = _modal_centered(parent, card_bbox=(230, 165, 500, 270))
+    _save(canonical / "suite-dbt-library-light-960x600.png", parent)
+    _save(canonical / "suite-dbt-practice-stop-light-960x600.png", modal_canonical)
+    _save(actual / "suite-dbt-library-light-960x600.png", parent)
+    _save(actual / "suite-dbt-practice-stop-light-960x600.png", modal_actual)
+    record = {
+        "file": "suite-dbt-practice-stop-light-960x600.png",
+        "surface": "window_modal",
+        "is_modal": True,
+        "modal_capture_scope": "window_overlay",
+        "backdrop_observable": True,
+        "back_screen_key": "suite:dbt-library@light",
+    }
+    _write_manifest(canonical, [{"file": "suite-dbt-library-light-960x600.png", "surface": "window"}, record], canonical=True)
+    _write_manifest(actual, [{"file": "suite-dbt-library-light-960x600.png", "surface": "window"}, record], canonical=False)
+
+    canonical_captures = audit.load_captures(canonical, canonical=True)
+    actual_captures = audit.load_captures(actual, canonical=False)
+    row = audit.audit_modal_key(
+        "suite:dbt-practice-stop@light",
+        canonical_dir=canonical,
+        actual_dir=actual,
+        canonical_captures=canonical_captures,
+        actual_captures=actual_captures,
+        center_tolerance_px=18,
+        bbox_tolerance_px=32,
+        backdrop_mean_tolerance=22.0,
+        blur_ratio_tolerance=0.2,
+        parent_mean_tolerance=35.0,
+    )
+
+    assert row.verdict == "FAIL"
+    assert audit.CODE_MODAL_BBOX_FAIL in row.codes, (
+        f"genuinely wider modal must fail bbox size: {row.metrics}"
+    )
