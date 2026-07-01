@@ -1,5 +1,20 @@
 from __future__ import annotations
 
+from app.modules.dbt_qt import _PracticeModalScrim
+
+
+def test_practice_modal_scrim_constants_match_canonical_contract() -> None:
+    """Static contract: _PracticeModalScrim must obey the canonical modal backdrop
+    contract (blur 3/3, scrim (20,18,14,128)) enforced by qa/anti_fraud_scan.py.
+
+    A larger blur (e.g. 40 in light mode) hides back-screen divergence and is
+    blocked by the anti-fraud scan. This static guard mirrors the scan so the
+    contract cannot drift again without failing two independent checks.
+    """
+    assert _PracticeModalScrim._SCRIM_BLUR_RADIUS_LIGHT == 3
+    assert _PracticeModalScrim._SCRIM_BLUR_RADIUS_DARK == 3
+    assert _PracticeModalScrim._SCRIM_RGBA == (20, 18, 14, 128)
+
 
 def _use_default_texts(monkeypatch) -> None:
     from app.modules import dbt_qt

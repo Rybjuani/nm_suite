@@ -86,10 +86,19 @@ PIXMAP_REFERENCE_TOKENS = (
 _CANONICAL_MODAL_BLUR_RADIUS = 3
 _CANONICAL_MODAL_SCRIM_RGBA = (20, 18, 14, 128)
 _MODAL_BLUR_CONSTANTS = {
+    # NMDialog (shared/components/dialogs.py)
     "_NM_MODAL_BLUR_RADIUS_LIGHT": _CANONICAL_MODAL_BLUR_RADIUS,
     "_NM_MODAL_BLUR_RADIUS_DARK": _CANONICAL_MODAL_BLUR_RADIUS,
+    # _PracticeModalScrim (app/modules/dbt_qt.py) — same canonical contract.
+    "_SCRIM_BLUR_RADIUS_LIGHT": _CANONICAL_MODAL_BLUR_RADIUS,
+    "_SCRIM_BLUR_RADIUS_DARK": _CANONICAL_MODAL_BLUR_RADIUS,
 }
-_MODAL_SCRIM_CONSTANT = "_NM_MODAL_SCRIM_RGBA"
+# Scrim RGBA constants that must match the canonical (20, 18, 14, 128).
+# Both NMDialog and _PracticeModalScrim use the same canonical scrim.
+_MODAL_SCRIM_CONSTANTS = {
+    "_NM_MODAL_SCRIM_RGBA",
+    "_SCRIM_RGBA",
+}
 _MODAL_BACKDROP_FRAUD_MESSAGE = (
     "fixea primero la pantalla de atras y despues seguis con el modal"
 )
@@ -177,7 +186,7 @@ def _scan_modal_backdrop_constants(tree: ast.AST, file_label: str, lines: list[s
                             snippet(getattr(node, "lineno", 0)),
                         )
                     )
-            elif name == _MODAL_SCRIM_CONSTANT:
+            elif name in _MODAL_SCRIM_CONSTANTS:
                 if value != _CANONICAL_MODAL_SCRIM_RGBA:
                     violations.append(
                         Violation(

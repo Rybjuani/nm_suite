@@ -780,11 +780,12 @@ class _PracticeModalScrim(QWidget):
     sigue el geometry del padre vía eventFilter.
     """
 
-    _SCRIM_RGBA = (20, 18, 14, 127)  # mockup .modal-bg rgba(20,18,14,.5)
-    # CSS backdrop-filter: blur(3px) needs a lighter Qt blur in dark mode:
-    # high-contrast dark cards vanish from the comparator bbox with radius 40.
-    _SCRIM_BLUR_RADIUS_LIGHT = 40
-    _SCRIM_BLUR_RADIUS_DARK = 4
+    _SCRIM_RGBA = (20, 18, 14, 128)  # mockup .modal-bg rgba(20,18,14,.5)
+    # CSS backdrop-filter: blur(3px) — el contrato canonical exige blur 3 en
+    # ambos modos. Un blur mayor (p.ej. 40 en light) oculta divergencias de la
+    # pantalla trasera y constituye fraude visual: el anti-fraud_scan lo bloquea.
+    _SCRIM_BLUR_RADIUS_LIGHT = 3
+    _SCRIM_BLUR_RADIUS_DARK = 3
     _MODAL_WIDTH_LIGHT = 554
     _MODAL_WIDTH_DARK = 560
 

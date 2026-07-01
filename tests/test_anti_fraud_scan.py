@@ -138,3 +138,48 @@ def test_real_dialogs_modal_constants_pass():
     v = scan_source(dialogs.read_text(encoding="utf-8"), "shared/components/dialogs.py")
     modal_v = [x for x in v if x.kind == "modal_backdrop_constant"]
     assert modal_v == []
+
+
+# --- DBT _PracticeModalScrim modal backdrop contract ----------------------
+# _PracticeModalScrim (app/modules/dbt_qt.py) is a canonical modal surface
+# (suite:dbt-practice-stop) and must obey the same canonical contract as
+# NMDialog: blur 3/3, scrim (20, 18, 14, 128). A larger blur (e.g. 40 in light
+# mode) hides back-screen divergence and is treated as visual fraud.
+
+
+def test_dbt_scrim_blur_light_40_fails():
+    src = "_SCRIM_BLUR_RADIUS_LIGHT = 40\n"
+    v = scan_source(src, "app/modules/dbt_qt.py")
+    assert any(x.kind == "modal_backdrop_constant" for x in v)
+    assert any(_MODAL_FRAUD_MSG in x.pattern for x in v)
+
+
+def test_dbt_scrim_blur_dark_4_fails():
+    src = "_SCRIM_BLUR_RADIUS_DARK = 4\n"
+    v = scan_source(src, "app/modules/dbt_qt.py")
+    assert any(x.kind == "modal_backdrop_constant" for x in v)
+    assert any(_MODAL_FRAUD_MSG in x.pattern for x in v)
+
+
+def test_dbt_scrim_rgba_alpha_127_fails():
+    src = "_SCRIM_RGBA = (20, 18, 14, 127)\n"
+    v = scan_source(src, "app/modules/dbt_qt.py")
+    assert any(x.kind == "modal_backdrop_constant" for x in v)
+    assert any(_MODAL_FRAUD_MSG in x.pattern for x in v)
+
+
+def test_dbt_scrim_constants_canonical_pass():
+    src = (
+        "_SCRIM_BLUR_RADIUS_LIGHT = 3\n"
+        "_SCRIM_BLUR_RADIUS_DARK = 3\n"
+        "_SCRIM_RGBA = (20, 18, 14, 128)\n"
+    )
+    v = scan_source(src, "app/modules/dbt_qt.py")
+    assert v == []
+
+
+def test_real_dbt_qt_modal_constants_pass():
+    dbt = Path(__file__).resolve().parents[1] / "app" / "modules" / "dbt_qt.py"
+    v = scan_source(dbt.read_text(encoding="utf-8"), "app/modules/dbt_qt.py")
+    modal_v = [x for x in v if x.kind == "modal_backdrop_constant"]
+    assert modal_v == []
