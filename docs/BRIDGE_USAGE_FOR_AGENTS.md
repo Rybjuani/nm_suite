@@ -31,9 +31,11 @@ el protocolo; el bridge no lo reemplaza).
    "Keys → familias dominantes", luego por el selector en la familia).
 
 4. **Clasificar la divergencia** con `QT_HTML_KNOWN_MISMATCHES.md`:
-   - Si es **IRREDUCIBLE** (texto text-dense #20, sombra 3-capas #3, backdrop
-     blur #17): no se cierra cambiando ese aspecto. Buscar las **flat-regions**
-     reparables que cita el handoff.
+   - Si es **IRREDUCIBLE** (texto text-dense #20, sombra 3-capas #3): no se
+     cierra cambiando ese aspecto. Buscar las **flat-regions** reparables que
+     cita el handoff.
+   - Si toca modal/backdrop blur #17: debe pasar el auditor modal/backdrop; no
+     se acepta dim solido/sin blur como escape general.
    - Si es **WORKAROUND**: usar el helper/painter correcto (conic, radial, ring,
      elided, chevron SVG, etc.).
    - Si es **DECISIÓN-OWNER** (#10, #19): no "corregir" hacia el mockup.

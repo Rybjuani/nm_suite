@@ -577,7 +577,8 @@ _RECIPES: dict[str, dict[str, dict]] = {
 
         # 2026-06: Dialogo "Resumen IA" del detalle. En runtime depende de un
         # proveedor IA; aqui se abre con texto de muestra y se captura el panel
-        # natural del NMDialog overlay sin red.
+        # natural del NMDialog overlay sin red. Este crop de panel NO valida
+        # backdrop/blur; ese gate requiere una captura que incluya pantalla padre.
         "detalle-resumen-ia": {
             "label": "Detalle > dialogo Resumen IA (muestra)",
             "parent": "detalle",

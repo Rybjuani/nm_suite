@@ -180,16 +180,17 @@ Clasificación de impacto:
 - **Impacto:** si el runtime oculta/muestra columnas distinto al breakpoint
   canónico → layout_drift real reparable.
 
-## MISMATCH#17 · `backdrop-filter:blur()` — IRREDUCIBLE (parcial)
+## MISMATCH#17 · `backdrop-filter:blur()` — WORKAROUND
 
 - **CSS:** `.modal-bg{backdrop-filter:blur(3px)}` (`L357`), `.surfaceGlass`.
 - **Qt:** no existe `backdrop-filter`. Difuminar lo que está detrás requiere
   capturar y aplicar `QGraphicsBlurEffect`, costoso y frágil.
-- **Workaround:** dim sólido (`rgba(20,18,14,.5)`) sin blur, o blur del fondo solo
-  si la pantalla lo justifica. Documentar la pantalla afectada.
-- **Impacto:** el dim se logra; el blur del fondo puede faltar. En
-  `dbt-practice-stop` el backdrop atenuado de la library es el objetivo, ya
-  cerrado con dim correcto.
+- **Workaround:** snapshot real de la pantalla padre + blur/dim/backdrop
+  equivalente al mockup HTML. Dim sólido/sin blur no es escape general.
+- **Impacto:** todo modal debe validar centrado, bbox, región de backdrop,
+  blur/dim y dependencia de pantalla padre con el auditor modal/backdrop.
+  Si el modal falla por la pantalla padre, se corrige la pantalla padre/familia
+  dependiente; no se tapa con opacidad o densidad inventada.
 
 ## MISMATCH#18 · `border-radius` + `box-shadow` en top-level window — WORKAROUND
 
@@ -232,7 +233,7 @@ Clasificación de impacto:
 
 | Impacto | Mismatches |
 |---|---|
-| IRREDUCIBLE | #3 (parcial), #17 (parcial), #20 |
-| WORKAROUND (paridad lograble) | #1, #2, #4, #5, #6, #8, #9, #11, #12, #13, #14, #15, #16, #18 |
+| IRREDUCIBLE | #3 (parcial), #20 |
+| WORKAROUND (paridad lograble) | #1, #2, #4, #5, #6, #8, #9, #11, #12, #13, #14, #15, #16, #17, #18 |
 | DECISIÓN-OWNER | #10, #19, y opacity disabled de botón (matriz F4) |
 | N/A (no se captura) | #7 |

@@ -145,10 +145,10 @@ Convenciones de columnas:
 
 | Selector / patrón | Fuente | PyQt actual / propuesto | No-equiv | Archivos | Tests/probes | Keys |
 |---|---|---|---|---|---|---|
-| `.modal-bg{rgba dim + backdrop-filter:blur(3px)}` | L357-358 | `NMDialog` backdrop (dim) | `backdrop-filter:blur` no existe en Qt → dim sin blur o `QGraphicsBlurEffect` → MISMATCH#17 | `components/dialogs.py:59` | `--key suite:dbt-practice-stop@*` | dbt practice, ia modal |
+| `.modal-bg{rgba dim + backdrop-filter:blur(3px)}` | L357-358 | `NMDialog` / `_PracticeModalScrim` backdrop | requiere snapshot real + blur/dim/backdrop equivalente; dim sin blur no es escape general → MISMATCH#17 | `components/dialogs.py:59`, `app/modules/dbt_qt.py` | `tools/qa/audit_modal_backdrop_blur.py` + exact key | dbt practice, ia modal |
 | `.modal` (surface, r-xl, shadow-3, scale-in) | L360-363 | `NMDialog`, `NMDialogScaffold` | `transform:scale(.96)` enter → anim | `components/dialogs.py:59,338` | side-by-side | modales |
 | `.modal.dbt-practice{560×auto min356 r28}` | L364 | `NMDialogScaffold` práctica DBT | tamaño fijo modal | `components/dialogs.py:338` | `--key suite:dbt-practice-stop@*` | dbt practice |
-| resumen IA (modal 560×220) | (csv) | `NMDialog` / panel IA | surface `modal` 560×220 | `hub/ia_asistente.py` | `--key hub:detalle-resumen-ia-0@*` | hub resumen ia |
+| resumen IA (modal 720×462) | (csv) | `NMDialog` / panel IA | surface `modal` 720×462; backdrop debe auditarse con captura que incluya pantalla padre | `hub/ia_asistente.py` | `--key hub:detalle-resumen-ia-0@*` + auditor modal/backdrop | hub resumen ia |
 | tooltip | (hover) | `NMTooltip` | `position:fixed` → overlay | `components/overlays.py:238` | n/a | — |
 
 ## F13 · Chrome / Window

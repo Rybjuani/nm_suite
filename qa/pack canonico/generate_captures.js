@@ -207,6 +207,9 @@ async function captureView(page, view, theme, outDir) {
     }
   }
 
+  // DBT practice captura la ventana completa con el modal abierto. La region
+  // del backdrop canonico empieza bajo la titlebar de `.window`; el auditor
+  // modal/backdrop usa este contrato para verificar centro, bbox y blur/dim.
   if (view.name === 'suite-dbt-practice-stop') {
     await page.evaluate(() => {
       const win = document.querySelector('.window');

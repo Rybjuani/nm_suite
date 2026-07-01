@@ -175,7 +175,7 @@ Corolarios:
 | `radial-gradient` (body, `.bigring`, blobs) | `QRadialGradient` en `paintEvent` (QSS no lo hace fino) | el fondo radial del shell ya existe |
 | `conic-gradient` (`.ring` progreso) | `QConicalGradient` o arco con `QPainter.drawArc` + `QPen` grueso | rings ya implementados en `rings.py` |
 | `opacity` | `QGraphicsOpacityEffect` (estático) o `QPropertyAnimation` sobre él (transición) | no `setWindowOpacity` en sub-widgets |
-| `backdrop-filter:blur` (modal) | **no replicar**: scrim sólido `rgba(20,18,14,.5)` | delta documentado; blur real es caro |
+| `backdrop-filter:blur` (modal) | snapshot real + blur/dim/backdrop equivalente | validado por auditor modal/backdrop; scrim sólido sin blur no es escape actual |
 
 ### 5.3 Componentes — usar la primitiva, respetar el contrato
 
@@ -193,7 +193,7 @@ Corolarios:
 | `.ring` conic (320) | `NMModuleRing` | `rings.py` | track + arco brand, label % |
 | `.bigring`+`.core`+`.ctl` (207) | `NMFocusArc`/`_BreathCircle` | `rings.py`, `respiracion_qt.py` | 230/200, num 52, ctl 46 / main 58 |
 | `.toast` (335) | `NMToast` | `overlays.py` | ink bg, pill, fade+slide, autodismiss ~2200ms |
-| `.modal-bg`+`.modal` (343) | `NMDialog` | `dialogs.py` | scrim `rgba(20,18,14,.5)`, scale .96→1, sin blur |
+| `.modal-bg`+`.modal` (343) | `NMDialog` | `dialogs.py` | snapshot padre + blur/dim/backdrop equivalente, scale .96→1 |
 | `.titlebar` (183) | `NMWindowChrome` | `chrome.py` | chrome bg, dots g/y/r, theme toggle (glifo sol/luna), back, crumb |
 | `.prow`+`.avatar` (245) | `NMPatientRow*` | `patient.py` | avatar 40 r12, hover surface-2, sin clip |
 | sparkline 78×30 / área 7-30d | `NMSparkline`/`NMAreaSparkline` | `patient.py` | `QPainter`; pyqtgraph solo si se justifica |
@@ -209,7 +209,7 @@ Corolarios:
 | `fade` (opacity) | `QPropertyAnimation` sobre `QGraphicsOpacityEffect` | usado por `NMFadeWidget` |
 | `slide` | `QPropertyAnimation` sobre `pos`/`geometry` de overlay (no de widget en layout) | toasts/overlays |
 | progress / ring breathing | `QVariantAnimation` → `pyqtProperty(float)` → `update()` en `paintEvent` | ya implementado en rings |
-| modal open/close | scale `.96→1` + fade vía effect | sin blur |
+| modal open/close | scale `.96→1` + fade vía effect | backdrop auditado aparte |
 | theme switch | `ThemeManager.theme_changed` → regenerar QSS + `unpolish/polish` + `update()` | hot-reload ya existe |
 
 Curvas/duración canónicas: `t-fast 140ms cubic(.4,0,.2,1)` · `t 240ms cubic(.32,.72,.24,1)`
@@ -224,8 +224,9 @@ Curvas/duración canónicas: `t-fast 140ms cubic(.4,0,.2,1)` · `t 240ms cubic(.
   `Antialiasing`.
 - **QGraphicsDropShadowEffect:** sombras (1 capa, via `v3_shadow`). Wrapper si hay clip.
 - **QPropertyAnimation/QVariantAnimation:** toda transición; sobre propiedad visual, no rect.
-- **No replicar literal:** `backdrop-filter:blur`, sombras multicapa exactas, sub-pixel
-  font, hover-lift por geometry. Usar la aproximación estable indicada.
+- **No replicar literal:** sombras multicapa exactas, sub-pixel font,
+  hover-lift por geometry. Para `backdrop-filter:blur`, usar snapshot padre y
+  auditor modal/backdrop.
 
 ### 5.6 Reglas anti-gigantismo / anti-clipping  *(OLA 0)*
 
@@ -440,7 +441,7 @@ Cierre asistido: `agent_harness\scripts\close_episode.ps1` + `summarize_diff.ps1
 |---|---|---|
 | `box-shadow` multicapa | capa dominante en `QGraphicsDropShadowEffect` (`v3_shadow`) | mapeado |
 | Sombra + radio en mismo widget | wrapper externo (sombra) + interno (radio) | receta §5.2 |
-| `backdrop-filter:blur` modal | scrim sólido sin blur | delta documentado |
+| `backdrop-filter:blur` modal | snapshot padre + blur/dim/backdrop equivalente | auditor modal/backdrop |
 | `.card.hov` translateY(-3) | solo `brand-line` + sombra (no mutar geometry en layout) | **delta aceptado** (no capturable estático) |
 | `transform`/transitions | `QPropertyAnimation`/`QVariantAnimation` sobre prop visual | regla §5.4 |
 | radial/conic gradient | `QPainter` (`QRadialGradient`/`QConicalGradient`) | rings/shell ya lo hacen |
