@@ -98,6 +98,22 @@ is **not closed**: 36 DBT keys, 18 PASS, 18 FAIL. Therefore DBT PyQt v2 is
 structurally recreated but still visually open; do not close DBT or the global
 checklist from this promotion.
 
+Runtime alignment evidence (2026-07-02): DBT runtime was re-audited from the
+active canon without editing
+`qa/pack canonico/neuromood-mockup_reparado.html` (SHA256
+`08D8D8E3927ECB49166E4413BAEF2E8D8A4A185EE313086C35739FF7E006732E`,
+CRLF=2084, stray LF=0). The repair is runtime-only and confines changes to
+`app/modules/dbt_qt.py` plus DBT/modal visual contract tests. Final fresh full
+capture saved 116/116 runtime PNG. DBT modal audit
+`reports/qa/dbt_modal_audit_after_shadow/AUDIT.json` passed 32/32 DBT practice
+modals; the only `--all` modal failure remains
+`hub:detalle-resumen-ia-0@dark`, outside DBT. Layered DBT compare
+`reports/qa/dbt_full_compare_after_shadow/LAYERED_VISUAL_REPORT.md` is
+**not closed**: 36 DBT keys, 34 PASS, 2 FAIL. All 32 DBT practice modal keys
+PASS; open exact-key debt is `suite:dbt-library@light` and
+`suite:dbt-library@dark` (`VISUAL_STYLE_REVIEW`). Do not close DBT as a family
+until those library keys pass.
+
 No HTML under `reports/` is a canonical source. Auditor snapshots such as
 `reports/.../sources/original_HEAD.html` are `DO_NOT_USE_AS_CANON`; they compare
 `HEAD` against working tree only. Official canonical captures must be generated

@@ -91,10 +91,11 @@ _DBT_FAMILY_COLOR_KEYS = {
     "emotion_regulation": "regul",
     "interpersonal_effectiveness": "efect",
 }
-_DBT_SKILL_BAR_TOP_W = 54
-_DBT_SKILL_BAR_TOP_H = 5
-_DBT_LIBRARY_CARD_MIN_H = 128
-_DBT_LIBRARY_CARD_MAX_H = 128
+_DBT_SKILL_BAR_TOP_W = 30
+_DBT_SKILL_BAR_TOP_H = 3
+_DBT_LIBRARY_COLUMNS = 4
+_DBT_LIBRARY_CARD_MIN_H = 96
+_DBT_LIBRARY_CARD_MAX_H = 96
 _DBT_NEED_BORDER_W = 3  # mockup l.232: .need-card{border-left:3px solid var(--brand); ...}
 _DBT_NEED_BORDER_Y = 14
 _DBT_NEED_BORDER_RADIUS = 2.5
@@ -465,7 +466,7 @@ class _SkillCard(NMCard):
             clickable=True,
             glow=False,
             lift=False,
-            padding=14,
+            padding=(11, 10, 11, 10),
         )
         self._skill = skill
         self._family_color_key = _dbt_family_color_key(skill["family"])
@@ -475,15 +476,15 @@ class _SkillCard(NMCard):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(14, 14, 14, 14)
-        lay.setSpacing(5)
+        lay.setContentsMargins(11, 10, 11, 10)
+        lay.setSpacing(4)
 
         self.family_bar = QFrame()
         self.family_bar.setObjectName("DbtSkillFamilyBar")
         self.family_bar.setFixedSize(_DBT_SKILL_BAR_TOP_W, _DBT_SKILL_BAR_TOP_H)
         self.family_bar.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         lay.addWidget(self.family_bar, alignment=Qt.AlignmentFlag.AlignLeft)
-        lay.addSpacing(3)
+        lay.addSpacing(2)
 
         family_title = _DBT_FAMILY_LONG_TITLES.get(skill["family"], "")
 
@@ -496,19 +497,20 @@ class _SkillCard(NMCard):
         self.family_lbl.hide()
 
         self.title_lbl = QLabel(skill["title"])
-        self.title_lbl.setFont(v3_font("size_h4", weight=TYPOGRAPHY["weight_bold"], serif=True))
+        self.title_lbl.setFont(v3_font(13, weight=TYPOGRAPHY["weight_bold"], serif=True))
         self.title_lbl.setWordWrap(True)
-        self.title_lbl.setMaximumHeight(34)
+        self.title_lbl.setMaximumHeight(31)
         lay.addWidget(self.title_lbl)
 
         self.summary_lbl = QLabel(skill["summary"])
-        self.summary_lbl.setFont(qfont("size_small"))
+        self.summary_lbl.setFont(qfont(11))
         self.summary_lbl.setWordWrap(True)
-        self.summary_lbl.setMaximumHeight(46)
+        self.summary_lbl.setMinimumHeight(24)
+        self.summary_lbl.setMaximumHeight(28)
         lay.addWidget(self.summary_lbl)
 
         info_lay = QHBoxLayout()
-        info_lay.setSpacing(14)
+        info_lay.setSpacing(8)
 
         # Duración: icono calendario SVG + "N min" (mockup `.dbt-card .meta`).
         # Antes era el emoji "⏱" que no está en las fuentes cargadas → tofu (▯).
@@ -518,13 +520,13 @@ class _SkillCard(NMCard):
         self.dur_icon = QLabel()
         self.dur_icon.setStyleSheet("background: transparent;")
         dur_box.addWidget(self.dur_icon, 0, Qt.AlignmentFlag.AlignVCenter)
-        self.dur_lbl = QLabel(f"{skill['duration_min']} min")
-        self.dur_lbl.setFont(qfont("size_caption"))
+        self.dur_lbl = QLabel(f"{skill['duration_min']}m")
+        self.dur_lbl.setFont(qfont(11))
         dur_box.addWidget(self.dur_lbl, 0, Qt.AlignmentFlag.AlignVCenter)
         info_lay.addLayout(dur_box)
 
         self.guide_lbl = QLabel("✓ Práctica")
-        self.guide_lbl.setFont(qfont("size_caption"))
+        self.guide_lbl.setFont(qfont(11))
         info_lay.addWidget(self.guide_lbl)
         
         info_lay.addStretch()
@@ -557,7 +559,7 @@ class _SkillCard(NMCard):
         # Icono calendario recoloreado al tema (ink-3 / faint, como el texto meta).
         from shared.icons_svg import nm_svg_pixmap
         self.dur_icon.setPixmap(
-            nm_svg_pixmap("calendar", color=v3c("faint", self._modo).name(), size=14)
+            nm_svg_pixmap("calendar", color=v3c("faint", self._modo).name(), size=10)
         )
         # Mockup `.dbt-card .meta .pl{color:var(--brand)}` — "Práctica guiada" SIEMPRE
         # en brand, no en el color de la familia (antes salía cobre/rojo por card).
@@ -887,9 +889,9 @@ class _PracticeModalScrim(QWidget):
     def _apply_card_shadow(self):
         shadow = QGraphicsDropShadowEffect(self._card)
         if self._modo.startswith("dark"):
-            shadow.setBlurRadius(54)
-            shadow.setOffset(0, 22)
-            shadow.setColor(QColor(0, 0, 0, 130))
+            shadow.setBlurRadius(64)
+            shadow.setOffset(0, 26)
+            shadow.setColor(QColor(0, 0, 0, 145))
         else:
             shadow.setBlurRadius(34)
             shadow.setOffset(0, 14)
@@ -1252,17 +1254,18 @@ class ModuloDBT(NMModule):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         self._biblioteca_scroll = scroll
         
         self._library_container = QWidget()
         self._library_container.setStyleSheet("background: transparent;")
         self._library_grid = QGridLayout(self._library_container)
-        self._library_grid.setContentsMargins(0, 0, 8, 0)
-        self._library_grid.setHorizontalSpacing(10)
-        self._library_grid.setVerticalSpacing(12)
+        self._library_grid.setContentsMargins(0, 0, 0, 0)
+        self._library_grid.setHorizontalSpacing(6)
+        self._library_grid.setVerticalSpacing(6)
         self._library_grid.setAlignment(Qt.AlignmentFlag.AlignTop)
-        for col in range(3):
+        for col in range(_DBT_LIBRARY_COLUMNS):
             self._library_grid.setColumnStretch(col, 1)
         
         scroll.setWidget(self._library_container)
@@ -1287,7 +1290,7 @@ class ModuloDBT(NMModule):
             if family_filter is None or skill["family"] == family_filter:
                 card = _SkillCard(skill, modo=self._modo, parent=self._library_container)
                 card.clicked.connect(lambda s=skill: self.start_practice(s))
-                row, col = divmod(visible_idx, 3)
+                row, col = divmod(visible_idx, _DBT_LIBRARY_COLUMNS)
                 self._library_grid.addWidget(card, row, col)
                 visible_idx += 1
                 

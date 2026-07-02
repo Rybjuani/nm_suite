@@ -69,6 +69,10 @@ def test_dbt_library_has_16_formal_practices(qtbot, monkeypatch) -> None:
 
     assert list(DBT_SKILLS) == DBT_V2_PRACTICES
     assert module._library_grid.count() == 16
+    assert module._library_grid.horizontalSpacing() == 6
+    assert module._library_grid.verticalSpacing() == 6
+    assert module._library_grid.itemAtPosition(0, 3) is not None
+    assert module._library_grid.itemAtPosition(1, 0) is not None
 
 
 def test_dbt_now_cards_open_canonical_practices(qtbot, monkeypatch) -> None:
@@ -208,8 +212,11 @@ def test_dbt_skill_card_title_uses_serif_font(qtbot, monkeypatch) -> None:
     card = _SkillCard(DBT_SKILLS["stop"], modo="light_hybrid")
     qtbot.addWidget(card)
 
-    assert card.minimumHeight() == 128
-    assert card.maximumHeight() == 128
+    assert card.minimumHeight() == 96
+    assert card.maximumHeight() == 96
+    assert card.family_bar.width() == 30
+    assert card.family_bar.height() == 3
+    assert card.dur_lbl.text() == "2m"
 
     font_serif = _fonts_mod.FONT_SERIF
     font = card.title_lbl.font()

@@ -811,6 +811,7 @@ def test_patient_row_premium_matches_mockup_prow_contract(qtbot) -> None:
 def test_dbt_cards_match_mockup_family_bar_contract(qtbot) -> None:
     from app.modules.dbt_qt import (
         _DBT_FAMILY_COLOR_KEYS,
+        _DBT_LIBRARY_COLUMNS,
         _DBT_LIBRARY_CARD_MAX_H,
         _DBT_LIBRARY_CARD_MIN_H,
         _DBT_NEED_BORDER_W,
@@ -844,16 +845,19 @@ def test_dbt_cards_match_mockup_family_bar_contract(qtbot) -> None:
     )
     qtbot.addWidget(skill)
     # Barra horizontal de familia vive en layout para no pisar el titulo.
-    assert skill.layout().contentsMargins().left() == 20
+    assert skill.layout().contentsMargins().left() == 11
+    assert skill.layout().contentsMargins().top() == 10
     assert skill._family_color_key == "toler"
-    assert _DBT_SKILL_BAR_TOP_W == 54
-    assert _DBT_SKILL_BAR_TOP_H == 5
-    assert _DBT_LIBRARY_CARD_MIN_H == 116
-    assert _DBT_LIBRARY_CARD_MAX_H == 122
-    assert skill.family_bar.width() == 54
-    assert skill.family_bar.height() == 5
-    assert skill.minimumHeight() == 116
-    assert skill.maximumHeight() == 122
+    assert _DBT_LIBRARY_COLUMNS == 4
+    assert _DBT_SKILL_BAR_TOP_W == 30
+    assert _DBT_SKILL_BAR_TOP_H == 3
+    assert _DBT_LIBRARY_CARD_MIN_H == 96
+    assert _DBT_LIBRARY_CARD_MAX_H == 96
+    assert skill.family_bar.width() == 30
+    assert skill.family_bar.height() == 3
+    assert skill.minimumHeight() == 96
+    assert skill.maximumHeight() == 96
+    assert skill.dur_lbl.text() == "2m"
     assert _DBT_FAMILY_COLOR_KEYS == {
         "mindfulness": "mind",
         "distress_tolerance": "toler",
