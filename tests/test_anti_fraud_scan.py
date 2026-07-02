@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from qa.anti_fraud_scan import scan_source, scan_paths, main
+from qa.anti_fraud_scan import scan_source, scan_paths, scan_qa_harness_source, scan_qa_harness_paths, main
 
 
 def _kinds(violations):
@@ -183,3 +183,59 @@ def test_real_dbt_qt_modal_constants_pass():
     v = scan_source(dbt.read_text(encoding="utf-8"), "app/modules/dbt_qt.py")
     modal_v = [x for x in v if x.kind == "modal_backdrop_constant"]
     assert modal_v == []
+
+
+def test_qa_harness_capture_cannot_read_canonical_artifact():
+    src = (
+        "from pathlib import Path\n"
+        "from PIL import Image\n"
+        "def capture():\n"
+        "    return Image.open(Path('qa/_mockup_canonical/suite-home-light-960x600.png'))\n"
+    )
+    v = scan_qa_harness_source(src, "qa/capture_v8.py")
+    assert "qa_capture_reads_reference_artifact" in _kinds(v)
+
+
+def test_qa_harness_detects_dynamic_split_mockup_canonical_path():
+    src = (
+        "from pathlib import Path\n"
+        "p = Path('qa') / ('_mockup' + '_canonical') / 'suite-home-light-960x600.png'\n"
+    )
+    v = scan_qa_harness_source(src, "qa/capture_v8.py")
+    assert "qa_dynamic_artifact_path_construction" in _kinds(v)
+
+
+def test_qa_harness_detects_env_artifact_route():
+    src = "import os\np = os.environ.get('NM_CANONICAL_IMAGE_PATH')\n"
+    v = scan_qa_harness_source(src, "qa/capture_v8.py")
+    assert "qa_env_artifact_route" in _kinds(v)
+
+
+def test_qa_harness_detects_base64_decode():
+    src = "import base64\npayload = base64.b64decode('AAAA')\n"
+    v = scan_qa_harness_source(src, "tools/qa/audit_x.py")
+    assert "qa_suspicious_base64_decode" in _kinds(v)
+
+
+def test_qa_harness_allows_comparator_declared_canonical_source():
+    src = "from pathlib import Path\n_DEFAULT_CANONICAL = Path('qa') / '_mockup_canonical'\n"
+    v = scan_qa_harness_source(src, "qa/layered_visual_compare.py")
+    assert v == []
+
+
+def test_real_qa_harness_scan_is_clean():
+    violations = scan_qa_harness_paths([
+        "qa/capture_v8.py",
+        "qa/layered_visual_compare.py",
+        "qa/vas_gate.py",
+        "tools/qa",
+    ])
+    assert violations == [], f"anti-fraud QA harness violations: {[v.to_dict() for v in violations]}"
+
+
+def test_main_qa_harness_mode_returns_zero(capsys):
+    rc = main(["--mode", "qa-harness"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert "qa-harness" in captured.out
+    assert "CLEAN" in captured.out

@@ -116,6 +116,63 @@ def test_nontrivial_but_different_is_not_suspicious(tmp_path):
     assert result.status == "FAIL"
 
 
+def test_near_perfect_match_on_nontrivial_surface_is_audit_required(tmp_path):
+    canonical = tmp_path / "c" / "suite-home-light-120x80.png"
+    actual = tmp_path / "a" / "suite-home-light-120x80.png"
+    _content_png(canonical)
+    _content_png(actual)
+    img = Image.open(actual).convert("RGB")
+    px = img.load()
+    px[12, 12] = (255, 255, 255)
+    px[13, 12] = (255, 255, 255)
+    img.save(actual)
+
+    result = compare_pair(
+        "suite:home@light",
+        parse_capture_name(canonical),
+        parse_capture_name(actual),
+        thresholds=LayeredThresholds(),
+        use_odiff=False,
+    )
+
+    assert result.suspicious_perfect_match is False
+    assert result.near_perfect_match is True
+    assert result.status == "NEAR_PERFECT_MATCH"
+    assert result.repair_bucket == "AUDIT_REQUIRED"
+    assert result.real_divergence is True
+    assert "near_perfect_match" in result.findings
+
+
+def test_near_perfect_match_blocks_closure_in_report(tmp_path, monkeypatch):
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
+    monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
+    (tmp_path / "c").mkdir()
+    (tmp_path / "a").mkdir()
+    canonical = tmp_path / "c" / "suite-home-light-120x80.png"
+    actual = tmp_path / "a" / "suite-home-light-120x80.png"
+    _content_png(canonical)
+    _content_png(actual)
+    img = Image.open(actual).convert("RGB")
+    ImageDraw.Draw(img).point((12, 12), fill=(255, 255, 255))
+    img.save(actual)
+
+    _results, reports = compare_sources(
+        tmp_path / "c",
+        tmp_path / "a",
+        tmp_path / "out",
+        thresholds=LayeredThresholds(),
+        use_odiff=True,
+        write_panels=True,
+    )
+    payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+
+    assert payload["summary"]["near_perfect_match"] == 1
+    assert payload["summary"]["pass"] == 0
+    assert payload["handoff_closure_allowed"] is False
+    assert payload["results"][0]["near_perfect_match"] is True
+    assert payload["results"][0]["status"] == "NEAR_PERFECT_MATCH"
+
+
 def test_suspicious_match_blocks_closure_in_report(tmp_path, monkeypatch):
     monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_CANONICAL", tmp_path / "c")
     monkeypatch.setattr("qa.layered_visual_compare._DEFAULT_ACTUAL", tmp_path / "a")
