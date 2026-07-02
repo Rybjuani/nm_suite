@@ -118,6 +118,25 @@ QA_CANONICAL_SOURCE_ALLOWED = (
     "qa/visual_auditor_spec.py",
     "tools/qa/",
 )
+QA_OBFUSCATION_PRIMITIVES = {"chr", "eval", "exec"}
+QA_COMMAND_SINKS = {
+    "os.system",
+    "os.popen",
+    "subprocess.run",
+    "subprocess.Popen",
+    "subprocess.call",
+    "subprocess.check_call",
+    "subprocess.check_output",
+}
+QA_ALLOWED_DYNAMIC_IMPORT_PREFIXES = (
+    "app.",
+    "hub.",
+    "shared.",
+    "qa.",
+    "tools.qa.",
+    "PyQt6",
+    "PySide6",
+)
 
 # Canonical modal backdrop contract (HTML mockup). Product code must match exactly.
 _CANONICAL_MODAL_BLUR_RADIUS = 3
@@ -263,6 +282,66 @@ def _qa_allows_canonical_source(file_label: str) -> bool:
         or normalized.startswith(allowed)
         for allowed in QA_CANONICAL_SOURCE_ALLOWED
     )
+
+
+def _is_literal_bytes_decode_call(node: ast.Call) -> bool:
+    func = node.func
+    if not isinstance(func, ast.Attribute) or func.attr != "decode":
+        return False
+    receiver = func.value
+    if isinstance(receiver, ast.Constant) and isinstance(receiver.value, (bytes, bytearray)):
+        return True
+    if isinstance(receiver, ast.Call):
+        return _call_name(receiver) in {"bytes", "bytearray"}
+    return False
+
+
+def _is_suspicious_getattr_os_call(node: ast.Call) -> bool:
+    if _call_name(node) != "getattr" or len(node.args) < 2:
+        return False
+    target = node.args[0]
+    target_name = ""
+    if isinstance(target, ast.Name):
+        target_name = target.id
+    elif isinstance(target, ast.Attribute) and isinstance(target.value, ast.Name):
+        target_name = f"{target.value.id}.{target.attr}"
+    if target_name not in {"os", "subprocess"}:
+        return False
+    attr_name = _eval_static_string(node.args[1]) or ""
+    return attr_name in {"system", "popen", "run", "call", "check_call", "check_output"}
+
+
+def _is_suspicious_import_module_call(node: ast.Call) -> bool:
+    call_name = _call_name(node)
+    if call_name not in {"importlib.import_module", "import_module"} and not call_name.endswith(".import_module"):
+        return False
+    if not node.args:
+        return False
+    module_name = _eval_static_string(node.args[0]) or ""
+    if not module_name:
+        return False
+    normalized = module_name.replace("\\", "/")
+    if _has_forbidden_token(normalized, QA_CAPTURE_SOURCE_FORBIDDEN_TOKENS):
+        return True
+    return not normalized.startswith(QA_ALLOWED_DYNAMIC_IMPORT_PREFIXES)
+
+
+def _call_contains_obfuscation_sink(node: ast.Call) -> bool:
+    call_name = _call_name(node)
+    if call_name not in QA_COMMAND_SINKS:
+        return False
+    for sub in ast.walk(node):
+        if isinstance(sub, ast.Call):
+            sub_name = _call_name(sub)
+            if sub_name.split(".")[-1] in QA_OBFUSCATION_PRIMITIVES:
+                return True
+            if _is_literal_bytes_decode_call(sub):
+                return True
+            if _is_suspicious_getattr_os_call(sub):
+                return True
+            if _is_suspicious_import_module_call(sub):
+                return True
+    return False
 
 
 def _scan_modal_backdrop_constants(tree: ast.AST, file_label: str, lines: list[str]) -> list[Violation]:
@@ -416,6 +495,61 @@ def scan_qa_harness_source(source: str, file_label: str) -> list[Violation]:
         if isinstance(node, ast.Call):
             call_name = _call_name(node)
             short_name = call_name.split(".")[-1]
+            if short_name in QA_OBFUSCATION_PRIMITIVES:
+                violations.append(
+                    Violation(
+                        file_label,
+                        getattr(node, "lineno", 0),
+                        "qa_obfuscation_primitive",
+                        call_name,
+                        snippet(getattr(node, "lineno", 0)),
+                    )
+                )
+
+            if _is_literal_bytes_decode_call(node):
+                violations.append(
+                    Violation(
+                        file_label,
+                        getattr(node, "lineno", 0),
+                        "qa_literal_bytes_decode",
+                        call_name,
+                        snippet(getattr(node, "lineno", 0)),
+                    )
+                )
+
+            if _is_suspicious_getattr_os_call(node):
+                violations.append(
+                    Violation(
+                        file_label,
+                        getattr(node, "lineno", 0),
+                        "qa_getattr_os_command",
+                        call_name,
+                        snippet(getattr(node, "lineno", 0)),
+                    )
+                )
+
+            if _is_suspicious_import_module_call(node):
+                violations.append(
+                    Violation(
+                        file_label,
+                        getattr(node, "lineno", 0),
+                        "qa_suspicious_importlib",
+                        call_name,
+                        snippet(getattr(node, "lineno", 0)),
+                    )
+                )
+
+            if _call_contains_obfuscation_sink(node):
+                violations.append(
+                    Violation(
+                        file_label,
+                        getattr(node, "lineno", 0),
+                        "qa_obfuscated_command_sink",
+                        call_name,
+                        snippet(getattr(node, "lineno", 0)),
+                    )
+                )
+
             if call_name.endswith("b64decode") or short_name == "b64decode":
                 violations.append(
                     Violation(

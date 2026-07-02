@@ -1,0 +1,11 @@
+{
+  "schema": "visual_closure_bundle.v1",
+  "generated_at": null,
+  "audited_range": {
+    "base_ref": "",
+    "base_commit": "",
+    "head_ref": "",
+    "head_commit": ""
+  },
+  "closures": []
+}

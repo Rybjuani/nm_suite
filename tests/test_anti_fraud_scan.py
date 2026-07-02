@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from qa.anti_fraud_scan import scan_source, scan_paths, scan_qa_harness_source, scan_qa_harness_paths, main
 
 
@@ -215,6 +217,36 @@ def test_qa_harness_detects_base64_decode():
     src = "import base64\npayload = base64.b64decode('AAAA')\n"
     v = scan_qa_harness_source(src, "tools/qa/audit_x.py")
     assert "qa_suspicious_base64_decode" in _kinds(v)
+
+
+@pytest.mark.parametrize(
+    "src, expected_kinds",
+    [
+        (
+            "p = ''.join(chr(c) for c in [113,97,47,95,109])\n",
+            {"qa_obfuscation_primitive"},
+        ),
+        (
+            "payload = bytes([113, 97, 47, 95]).decode()\n",
+            {"qa_literal_bytes_decode"},
+        ),
+        (
+            "import subprocess\nsubprocess.run([chr(99)+chr(112), 'src', 'dst'])\n",
+            {"qa_obfuscation_primitive", "qa_obfuscated_command_sink"},
+        ),
+        (
+            "import os\ngetattr(os, 'system')('cp src dst')\n",
+            {"qa_getattr_os_command"},
+        ),
+        (
+            "import importlib\nimportlib.import_module('os')\n",
+            {"qa_suspicious_importlib"},
+        ),
+    ],
+)
+def test_qa_harness_obfuscation_patterns_are_flagged(src, expected_kinds):
+    v = scan_qa_harness_source(src, "tools/qa/audit_x.py")
+    assert expected_kinds <= _kinds(v)
 
 
 def test_qa_harness_allows_comparator_declared_canonical_source():

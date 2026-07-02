@@ -1,0 +1,55 @@
+name: Visual Handoff Audit
+
+on:
+  pull_request:
+    paths:
+      - VISUAL_REPAIR_HANDOFF.md
+      - docs/visual_closure_bundle.json
+      - VISUAL_QA_AGENT_PROTOCOL.md
+      - tools/qa/audit_handoff_false_pass.py
+      - qa/anti_fraud_scan.py
+      - qa/vas_gate.py
+      - qa/layered_visual_compare.py
+      - qa/capture_v8.py
+  push:
+    paths:
+      - VISUAL_REPAIR_HANDOFF.md
+      - docs/visual_closure_bundle.json
+      - VISUAL_QA_AGENT_PROTOCOL.md
+      - tools/qa/audit_handoff_false_pass.py
+      - qa/anti_fraud_scan.py
+      - qa/vas_gate.py
+      - qa/layered_visual_compare.py
+      - qa/capture_v8.py
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run anti-fraud scans
+        shell: bash
+        run: |
+          set -euo pipefail
+          python qa/anti_fraud_scan.py
+          python qa/anti_fraud_scan.py --mode qa-harness
+
+      - name: Audit handoff closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_commit="$(git merge-base origin/main HEAD)"
+          python tools/qa/audit_handoff_false_pass.py \
+            --base "$base_commit" \
+            --handoff VISUAL_REPAIR_HANDOFF.md \
+            --bundle docs/visual_closure_bundle.json \
+            --objective hardening-qa

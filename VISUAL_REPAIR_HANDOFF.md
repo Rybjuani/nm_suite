@@ -570,6 +570,9 @@ technical gates pass. Inspection manual, "confirmación visual", panel review, o
    trasera del modal, and `tools/qa/audit_modal_backdrop_blur.py --key
    "<exact-key>"` PASS. A `panel_crop` is only partial panel evidence and never
    closes blur/dim/backdrop/centering.
+7. A versioned closure bundle/manifest must exist in
+   `docs/visual_closure_bundle.json` with hashes, report summary, sidecar
+   summary, and provenance. Gitignored artifacts alone are never enough.
 7. If the closure or checklist update changes canonical HTML, the capture
    recipe, canonical PNGs, or the baseline/seed that drives this checklist,
    `tools/qa/audit_mockup_parity_baseline.py` must PASS.
@@ -579,6 +582,8 @@ The closure note must record:
 - Fix commit hash.
 - Capture command used (must include `NM_VAS_INTROSPECT=1`).
 - Comparator report path.
+- Versioned closure bundle path plus its report summary, sidecar summary, and
+  provenance hashes.
 - `REPORT_EVIDENCE_VALID: YES` + exact key `PASS`.
 - `qa/vas_gate.py` exit code `0` and the capture provenance/manifest path.
 - For modal keys, modal backdrop audit report path and PASS summary.
@@ -591,9 +596,9 @@ exit non-zero while other items remain `FAIL`; for individual closure, read the
 exact key status in the JSON/MD report, not the global exit code.
 
 Gitignored `reports/`, `qa/_captures_v8/`, and sidecar files are not evidence by
-themselves. They become closure evidence only when the layered report, VAS
-sidecar, capture manifest, PNG SHA, and capture provenance all correlate for the
-same exact key.
+themselves. They become closure evidence only when the versioned closure bundle,
+layered report, VAS sidecar, capture manifest, PNG SHA, and capture provenance
+all correlate for the same exact key.
 
 If any gate fails or evidence is missing, leave the checkbox open and add a note.
 

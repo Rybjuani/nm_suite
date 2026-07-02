@@ -11,6 +11,8 @@ Estos son los **únicos** documentos activos que gobiernan el proceso de Visual 
 
 Todo agente que opere Visual QA debe leer ambos **antes** de tocar código de UI/runtime.
 
+La evidencia versionable de cierre vive en [`visual_closure_bundle.json`](visual_closure_bundle.json); no reemplaza al handoff, pero debe acompaÃ±ar cualquier transiciÃ³n `[ ]` â†’ `[x]`.
+
 ## Documentos de referencia activos (bridge)
 
 | Documento | Rol |
