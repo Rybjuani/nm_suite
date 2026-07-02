@@ -7,12 +7,13 @@ Mirror exacto de la salida oficial del pack canonico. **NO editar a mano.**
 | Mockup canonico unico | `qa/pack canonico/neuromood-mockup_reparado.html` |
 | Receta oficial unica | `qa/pack canonico/generate_captures.js` |
 | Salida del pack | `qa/pack canonico/capturas_test/` |
-| Capturas | 86 (43 vistas x 2 temas) |
+| Capturas | 116 (58 vistas x 2 temas) |
 | Naming | `{app}-{view}-{theme}-{WxH}.png` |
 | Integridad | sha256 + size + DOM size en `MANIFEST.json` |
 
-**Prohibido:** `neuromood-mockup.html` (roto) y cualquier receta distinta de
-`generate_captures.js`.
+**Prohibido:** `neuromood-mockup.html` (roto), cualquier receta distinta de
+`generate_captures.js`, y cualquier HTML bajo `reports/` (incluido
+`reports/.../sources/original_HEAD.html`, snapshot forense `DO_NOT_USE_AS_CANON`).
 
 ## Tamanos Vigentes
 
@@ -21,7 +22,7 @@ Mirror exacto de la salida oficial del pack canonico. **NO editar a mano.**
 | `window` | 960 x 600 | 76 |
 | `narrow` | 520 x 600 | 6 |
 | `modal` | panel crop parcial, no cierre modal | 0 |
-| `window_modal` (DBT practice + Resumen IA sobre ventana) | 960 x 600 | 4 |
+| `window_modal` (16 DBT practice + Resumen IA sobre ventana) | 960 x 600 | 34 |
 
 La receta falla si el DOM real del elemento capturado no coincide con el tamano
 declarado. Esto evita recortes falsos donde el PNG mide bien pero no es fiel al
@@ -42,7 +43,7 @@ cp "qa/pack canonico/capturas_test/INDICE_CAPTURAS.csv" qa/_mockup_canonical/
 cp "qa/pack canonico/capturas_test/MANIFEST.json" qa/_mockup_canonical/
 
 # 3) Verificar integridad:
-#    - total_captures == expected_captures == 86
+#    - total_captures == expected_captures == 116
 #    - all_sizes_match == true
 #    - all_dom_sizes_match == true
 ```

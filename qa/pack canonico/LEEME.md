@@ -1,6 +1,6 @@
 # NeuroMood · Pack canonico de capturas (v2-reparado)
 
-Pack descargable que genera **exactamente 86 PNG canonicas** con nombres y
+Pack descargable que genera **exactamente 116 PNG canonicas** con nombres y
 tamanos fijos, sin romper la coherencia visual entre estados hermanos.
 
 ## Contenido del zip
@@ -8,10 +8,10 @@ tamanos fijos, sin romper la coherencia visual entre estados hermanos.
 ```
 pack_canonico/
   neuromood-mockup_reparado.html      # Mockup reparado (fuentes embebidas + CSS fijo)
-  generate_captures.js                # Generador Playwright/Puppeteer (43 vistas x 2 temas = 86)
+  generate_captures.js                # Generador Playwright/Puppeteer (58 vistas x 2 temas = 116)
   LEEME.md                            # Este archivo
   collage_revision.png                # Collage con 14 capturas de comparacion
-  capturas_test/                      # 86 PNG + INDICE_CAPTURAS.csv + MANIFEST.json
+  capturas_test/                      # 116 PNG + INDICE_CAPTURAS.csv + MANIFEST.json
     hub-detalle-light-960x600.png
     hub-detalle-dark-960x600.png
     ...
@@ -45,8 +45,8 @@ node ./generate_captures.js ./neuromood-mockup_reparado.html ./capturas_test
 | `.window` (suite/hub normal) | 960 x 600 | 76 |
 | `.window.narrow` (onboarding/recuperar) | 520 x 600 | 6 |
 | `.modal` panel crop parcial | no cierra modal | 0 |
-| `.window` con modal abierto (DBT practice + Resumen IA) | 960 x 600 | 4 |
-| **Total** | | **86** |
+| `.window` con modal abierto (16 DBT practice + Resumen IA) | 960 x 600 | 34 |
+| **Total** | | **116** |
 
 Todos los PNG miden **exactamente** el tamano indicado en el nombre. No hay
 980 px, no hay alturas variables, no hay nombres alternativos.
@@ -76,7 +76,7 @@ Todos los PNG miden **exactamente** el tamano indicado en el nombre. No hay
 - Reducido min-height de descripcion: 54px -> 34px
 - Reducido gap del grid: 14px -> 10px
 - Reducido padding del filter
-- **Resultado**: 8 skills en 3 filas caben en 960x600 sin scroll global
+- **Resultado**: 16 practicas DBT formales caben en 960x600 sin scroll global
 
 ### 4. Avisos Search (suite-avisos-search-*)
 - Reemplazado texto parcial `respir` por `respiracion` (texto completo y documentado)
@@ -106,7 +106,7 @@ Todos los PNG miden **exactamente** el tamano indicado en el nombre. No hay
 - **Scroll prohibido** (corregido):
   - Home (8 cards + hero caben sin scroll)
   - Actividades (4 cards + filtros caben sin scroll)
-  - DBT Library (8 skills caben sin scroll)
+  - DBT Library (16 practicas caben sin scroll)
   - Registro (stepper + card caben sin scroll)
   - Onboarding/Recuperar (campos + consentimiento + botones caben sin scroll)
 
@@ -120,12 +120,12 @@ Todos los PNG miden **exactamente** el tamano indicado en el nombre. No hay
 
 ## Validacion del pack
 
-- **86/86 PNG fisicas** generadas y verificadas
+- **116/116 PNG fisicas** generadas y verificadas
 - **0 faltantes, 0 extra**
 - **0 nombres fuera de la lista obligatoria**
 - **0 tamanos fuera del tamano indicado en el nombre**
 - **light/dark mismo tamano** para cada surface
-- **MANIFEST.json coincide con archivos reales** (sha256 + size + DOM size = 86/86)
+- **MANIFEST.json coincide con archivos reales** (sha256 + size + DOM size = 116/116)
 - **Sin recortes falsos:** cada captura valida que el bounding box DOM del selector
   (`.window` o `.modal`) coincide con el tamano declarado antes de disparar el screenshot
 - **Sin :hover** residual (mouse movido fuera del viewport antes de capturar)

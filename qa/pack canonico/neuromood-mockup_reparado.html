@@ -1238,21 +1238,207 @@ defScreen({
 <script>
 /* ===================== DBT ===================== */
 const DBT_FAMILIES={Mindfulness:'mind',Tolerancia:'toler',Regulación:'regul',Efectividad:'efect'};
-const DBT_SKILLS=[
-  {t:'Observar y describir',f:'Mindfulness',d:'Notar sensaciones, pensamientos y entorno sin intentar corregirlos.',min:2},
-  {t:'Mente sabia',f:'Mindfulness',d:'Pausa guiada para integrar emoción, hechos y objetivo del momento.',min:2},
-  {t:'STOP',f:'Tolerancia',d:'Hacé una pausa antes de actuar impulsivamente.',min:2},
-  {t:'Autocalma con los sentidos',f:'Tolerancia',d:'Elegí estímulos seguros de tu vista, oído, tacto, olfato o gusto.',min:3},
-  {t:'Verificar los hechos',f:'Regulación',d:'Separar hechos observables, interpretación y emoción.',min:2},
-  {t:'Acción opuesta',f:'Regulación',d:'Actuar de forma contraria al impulso cuando no coincide con los hechos.',min:3},
-  {t:'DEAR MAN',f:'Efectividad',d:'Estructura para expresar asertivamente una necesidad o pedido.',min:3},
-  {t:'GIVE / FAST',f:'Efectividad',d:'Checklist para cuidar la relación y mantener el autorrespeto.',min:2},
-];
+const DBT_FAMILY_FULL={Mindfulness:'Mindfulness',Tolerancia:'Tolerancia al malestar',Regulación:'Regulación emocional',Efectividad:'Efectividad interpersonal'};
+const DBT_PRACTICES={
+  observe_describe:{
+    id:'observe_describe',title:'Observar y describir',family:'Mindfulness',familyFull:'Mindfulness',familyClass:'mind',duration:2,
+    description:'Notar sensaciones, pensamientos y entorno sin intentar corregirlos.',
+    when:'Usala cuando la mente salta de un lado a otro y necesitás anclarte.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'Elegí un objeto',d:'Fijate en algo del entorno o en una sensación corporal concreta.'},
+      {h:'Observá',d:'Notá ese objeto sin etiquetarlo, sin interpretarlo, sin reaccionar.'},
+      {h:'Describí',d:'Poné en palabras lo que percibís, en voz baja o mentalmente.'},
+      {h:'Volvé cuando la mente se vaya',d:'Cada vez que aparezca un juicio o pensamiento, regresá al objeto elegido.'}
+    ]
+  },
+  wise_mind:{
+    id:'wise_mind',title:'Mente sabia',family:'Mindfulness',familyFull:'Mindfulness',familyClass:'mind',duration:2,
+    description:'Pausa guiada para integrar emoción, hechos y objetivo del momento.',
+    when:'Usala cuando necesites decidir entre lo que sentís y lo que sabés.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'Reconocé la mente emocional',d:'Identificá qué pide la emoción: alivio, escape, ataque, defensa.'},
+      {h:'Reconocé la mente razonable',d:'Identificá qué dicen los hechos fríos, sin emoción.'},
+      {h:'Buscá el centro',d:'Preguntate: ¿qué serviría a mi objetivo de largo plazo aquí?'},
+      {h:'Actuá desde la mente sabia',d:'Elegí la respuesta que integra emoción y razón, no el impulso.'}
+    ]
+  },
+  participate:{
+    id:'participate',title:'Participar',family:'Mindfulness',familyFull:'Mindfulness',familyClass:'mind',duration:3,
+    description:'Entrá por completo en la actividad del momento, sin observarte desde afuera.',
+    when:'Usala cuando la rumiación te saca del presente.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'Elegí una actividad',d:'Algo simple: lavar platos, caminar, escribir, escuchar música.'},
+      {h:'Entrá de lleno',d:'Hacé solo eso, sin dividir la atención ni observarte haciendo.'},
+      {h:'Soltá el performance',d:'No midas cómo lo hacés; participá sin juzgar el resultado.'}
+    ]
+  },
+  non_judgmental:{
+    id:'non_judgmental',title:'Sin juzgar',family:'Mindfulness',familyFull:'Mindfulness',familyClass:'mind',duration:2,
+    description:'Observar sin etiquetar como bueno o malo, solo como es.',
+    when:'Usala cuando la autocrítica o los juicios se disparan.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'Notá el juicio',d:'Cuando aparezca "esto está mal" o "soy un desastre", registrá que es un juicio.'},
+      {h:'Reetiquetá como hecho',d:'Cambiá "soy un desastre" por "tengo este pensamiento sobre mí".'},
+      {h:'Soltá el peso del juicio',d:'No agregues catastrificación ni culpa encima del hecho.'},
+      {h:'Volvé a observar',d:'Regresá a lo que estabas haciendo con la mirada sin filtro.'}
+    ]
+  },
+  stop:{
+    id:'stop',title:'STOP',family:'Tolerancia',familyFull:'Tolerancia al malestar',familyClass:'toler',duration:2,
+    description:'Hacé una pausa antes de actuar impulsivamente.',
+    when:'Usala cuando la emoción sea intensa y puedas empeorar la situación.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'S — Stop (Frená)',d:'Detené lo que estás haciendo. No actúes todavía. Quedate quieto un momento.'},
+      {h:'T — Tomá distancia (Take a step back)',d:'Alejate física o mentalmente de la situación. Respirá profundamente y recordá que es una emoción pasajera.'},
+      {h:'O — Observá',d:'Notá qué está pasando dentro y fuera: pensamientos, sensaciones, el contexto, sin juzgarlos.'},
+      {h:'P — Procedé con conciencia',d:'Elegí una respuesta alineada con tus objetivos y valores, no con el impulso del momento.'}
+    ]
+  },
+  tipp:{
+    id:'tipp',title:'TIPP / TIP',family:'Tolerancia',familyFull:'Tolerancia al malestar',familyClass:'toler',duration:3,
+    description:'Cambiá rápido el estado corporal para bajar la intensidad emocional.',
+    when:'Usala cuando el cuerpo está tan activado que no podés pensar.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'T — Temperatura',d:'Agua fría en la cara o hielo en la nuca: activa el reflejo de inmersión y baja la frecuencia cardíaca.'},
+      {h:'I — Ejercicio intenso',d:'Mové el cuerpo con fuerza por 1-2 minutos para descargar la activación.'},
+      {h:'P — Respiración pausada',d:'Inhala 4, exhala 6-8. Alargá la exhalación para calmar el sistema.'},
+      {h:'P — Pares relajados',d:'Tensá y soltá músculos en pares (manos/brazos, hombros/cuello) para liberar tensión.'}
+    ]
+  },
+  self_soothe:{
+    id:'self_soothe',title:'Autocalma con los sentidos',family:'Tolerancia',familyFull:'Tolerancia al malestar',familyClass:'toler',duration:3,
+    description:'Elegí estímulos seguros de vista, oído, tacto, olfato o gusto.',
+    when:'Usala cuando necesites bajar la intensidad con algo neutral o agradable.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'Vista',d:'Buscá un color, una textura o un detalle del entorno que sea neutro o agradable.'},
+      {h:'Oído',d:'Poné un sonido suave: música, lluvia, tu respiración.'},
+      {h:'Tacto',d:'Tocá algo con temperatura o textura reconfortante: una manta, agua tibia, una piedra.'},
+      {h:'Olfato',d:'Olé algo conocido y calmante: café, lavanda, una ropa con tu olor.'},
+      {h:'Gusto',d:'Probá algo pequeño y de sabor definido: un caramelo, agua, una fruta.'}
+    ]
+  },
+  radical_acceptance:{
+    id:'radical_acceptance',title:'Aceptación radical',family:'Tolerancia',familyFull:'Tolerancia al malestar',familyClass:'toler',duration:4,
+    description:'Aceptar la realidad tal como es, sin aprobarla ni rendirse.',
+    when:'Usala cuando luchar contra lo que pasó intensifica el dolor.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'Reconocé los hechos',d:'Describí lo que pasó sin interpretación: solo datos observables.'},
+      {h:'Notá la resistencia',d:'Identificá dónde decís "no debería ser así" o "no es justo".'},
+      {h:'Soltá la resistencia',d:'Aceptá que la realidad es lo que es, aunque no lo apruebes.'},
+      {h:'Actuá desde la aceptación',d:'Preguntate: ¿qué puedo hacer ahora, desde esta realidad, no desde la que quería?'}
+    ]
+  },
+  check_facts:{
+    id:'check_facts',title:'Verificar los hechos',family:'Regulación',familyFull:'Regulación emocional',familyClass:'regul',duration:2,
+    description:'Separar hechos observables, interpretación y emoción.',
+    when:'Usala cuando la emoción parece desproporcionada al estímulo.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'Nombrá la emoción',d:'Poné nombre a lo que sentís: miedo, enojo, vergüenza, tristeza.'},
+      {h:'Listá los hechos',d:'Escribí lo que pasó en términos observables, sin adjetivos ni interpretaciones.'},
+      {h:'Identificá las interpretaciones',d:'Marcá qué partes son suposiciones, no hechos.'},
+      {h:'Reajustá la respuesta',d:'Con los hechos solos, ¿la intensidad de la emoción se sostiene? Ajustá si no.'}
+    ]
+  },
+  opposite_action:{
+    id:'opposite_action',title:'Acción opuesta',family:'Regulación',familyFull:'Regulación emocional',familyClass:'regul',duration:3,
+    description:'Actuar de forma contraria al impulso cuando no coincide con los hechos.',
+    when:'Usala cuando el impulso empeoraría la situación.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'Identificá la emoción y su impulso',d:'Miedo→evitar. Tristeza→aislarte. Enojo→atacar. Vergüenza→esconderte.'},
+      {h:'Verificá si el impulso sirve',d:'¿Los hechos justifican esa acción? ¿La acción ayuda a tu objetivo?'},
+      {h:'Definí la acción opuesta',d:'Miedo→acercarte. Tristeza→activarte. Enojo→suavizar. Vergüenza→mostrarte.'},
+      {h:'Hacelo todo el camino',d:'No a medias: cuerpo, cara y acción alineados con la respuesta opuesta.'}
+    ]
+  },
+  problem_solving:{
+    id:'problem_solving',title:'Resolución de problemas',family:'Regulación',familyFull:'Regulación emocional',familyClass:'regul',duration:4,
+    description:'Convertir una preocupación en un problema concreto con pasos.',
+    when:'Usala cuando la emoción baja pero el disparador sigue ahí.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'Nombrá el problema',d:'Escribí en una frase concreta qué situación querés cambiar.'},
+      {h:'Generá opciones',d:'Listá al menos 3 respuestas posibles, sin filtrar por ahora.'},
+      {h:'Evaluá consecuencias',d:'Para cada opción: ¿corto plazo? ¿largo plazo? ¿sobre vos y sobre otros?'},
+      {h:'Elegí y actuá',d:'Seleccioná la opción con mejor balance y dale un primer paso hoy.'}
+    ]
+  },
+  please:{
+    id:'please',title:'PLEASE / autocuidado base',family:'Regulación',familyFull:'Regulación emocional',familyClass:'regul',duration:5,
+    description:'Cuidar el cuerpo para reducir la vulnerabilidad emocional.',
+    when:'Usala cuando las emociones se disparan con facilidad.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'PL — Tratar enfermedad física',d:'Si estás enfermo o con dolor, atiendelo, no lo arrastres.'},
+      {h:'E — Equilibrio en comidas',d:'Comé a horario, ni saltado ni en exceso. El hambre desregula.'},
+      {h:'A — Evitá drogas y alcohol',d:'Las sustancias alteran el estado emocional de base.'},
+      {h:'S — Sueño reparador',d:'Respetá tus horas. El déficit de sueño dispara la reactividad.'},
+      {h:'E — Ejercicio regular',d:'Movimiento moderado diario mejora el estado de ánimo de base.'}
+    ]
+  },
+  dear_man:{
+    id:'dear_man',title:'DEAR MAN',family:'Efectividad',familyFull:'Efectividad interpersonal',familyClass:'efect',duration:3,
+    description:'Estructura para expresar asertivamente una necesidad o pedido.',
+    when:'Usala cuando necesitás pedir algo o poner un límite sin explotar.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'D — Describí la situación',d:'Hechos observables, sin juicio: "Ayer llegué 20 min tarde a la reunión con vos".'},
+      {h:'E — Expresá tu emoción',d:'"Me dio vergüenza y preocupación". Usá "yo", no "vos".'},
+      {h:'A — Assertivamente pedí',d:'Pedido concreto y específico: "Necesito que me avises 15 min antes si vas a llegar tarde".'},
+      {h:'MAN — Mantente y refuerza',d:'Repetí el pedido sin agresión. Anticipá la ganancia para la otra persona.'}
+    ]
+  },
+  give:{
+    id:'give',title:'GIVE',family:'Efectividad',familyFull:'Efectividad interpersonal',familyClass:'efect',duration:2,
+    description:'Checklist para cuidar la relación mientras pedís.',
+    when:'Usala cuando el pedido importa pero la relación también.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'G — Amable (Gentle)',d:'Tono y gestos suaves, sin sarcasmo ni desprecio.'},
+      {h:'I — Interesado (Interested)',d:'Escuchá mirando, sin interrumpir ni planear respuesta.'},
+      {h:'V — Validá (Validate)',d:'Reconocé lo que el otro siente o piensa antes de responder.'},
+      {h:'E — Fácil (Easy manner)',d:'Sonreí, usá humor ligero, no cargues tensión a la conversación.'}
+    ]
+  },
+  fast:{
+    id:'fast',title:'FAST',family:'Efectividad',familyFull:'Efectividad interpersonal',familyClass:'efect',duration:2,
+    description:'Checklist para mantener el autorrespeto en la interacción.',
+    when:'Usala junto con GIVE cuando el pedido te cuesta sostenerlo.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'F — Justo (Fair)',d:'No ataques, no exageres, no uses lo que sabés que duele.'},
+      {h:'A — Sin disculparte de más (Apologies)',d:'No pidas perdón por existir o por pedir. Discúlpate solo si realmente hiciste algo.'},
+      {h:'S — Adherí a tus valores (Stick to values)',d:'No cedas lo que importa para evitar conflicto. La relación no vale tu integridad.'},
+      {h:'T — Honesto (Truthful)',d:'No exageres para ganar ni minimices para no incomodar. Decí lo cierto.'}
+    ]
+  },
+  validation_limits:{
+    id:'validation_limits',title:'Validación / límites',family:'Efectividad',familyFull:'Efectividad interpersonal',familyClass:'efect',duration:3,
+    description:'Validar al otro sin abandonar tus propios límites.',
+    when:'Usala cuando validar se siente como ceder demasiado.',
+    disclaimer:'Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.',
+    steps:[
+      {h:'Escuchá antes de responder',d:'Dejá hablar sin preparar respuesta. Parafraseá lo que escuchaste.'},
+      {h:'Validá lo que se pueda',d:'"Entiendo que te enoje" no es "tenés razón". Reconocé la emoción, no apruebes todo.'},
+      {h:'Marcá el límite',d:'"Y al mismo tiempo, no puedo hacer X. Lo que sí puedo es Y".'},
+      {h:'Sostené sin atacar',d:'Si insisten, repetí el límite con calma. No justifiques ni te disculpes de más.'}
+    ]
+  }
+};
 const DBT_NEEDS=[
-  {f:'Mindfulness',cl:'mind',t:'Volver al presente',d:'Mindfulness: pausar, enfocar y notar el aquí y ahora.',ico:'brain'},
-  {f:'Tolerancia',cl:'toler',t:'Atravesar un momento intenso',d:'Tolerancia: superar la crisis sin empeorar la situación.',ico:'shield'},
-  {f:'Regulación',cl:'regul',t:'Regular una emoción',d:'Regulación: entender y suavizar sentimientos desbordantes.',ico:'smile'},
-  {f:'Efectividad',cl:'efect',t:'Comunicarme con claridad',d:'Efectividad: pedir límites o dialogar con autorrespeto.',ico:'flower'},
+  {skillId:'wise_mind',  f:'Mindfulness',cl:'mind',  t:'Volver al presente',           d:'Mindfulness: pausar, enfocar y notar el aquí y ahora.',     ico:'brain'},
+  {skillId:'stop',       f:'Tolerancia', cl:'toler', t:'Atravesar un momento intenso',d:'Tolerancia: superar la crisis sin empeorar la situación.',   ico:'shield'},
+  {skillId:'check_facts',f:'Regulación', cl:'regul', t:'Regular una emoción',         d:'Regulación: entender y suavizar sentimientos desbordantes.', ico:'smile'},
+  {skillId:'dear_man',   f:'Efectividad',cl:'efect', t:'Comunicarme con claridad',    d:'Efectividad: pedir límites o dialogar con autorrespeto.',    ico:'flower'}
 ];
 function dbtFrame(tab){
   return titlebar({icon:'spark',title:'Habilidades DBT',back:'home'}) + `<div class="screen">
@@ -1265,7 +1451,7 @@ function dbtFrame(tab){
 }
 function dbtNowBody(){
   return `<div class="h-serif" style="font-size:16px; margin-bottom:10px;">¿Qué necesitás en este momento?</div>
-    <div class="grid cols-2" style="gap:10px;">${DBT_NEEDS.map(n=>`<div class="card hov pad need-card" data-skill="${n.f}" style="border-left-color:var(--${n.cl}); padding:14px;">
+    <div class="grid cols-2" style="gap:10px;">${DBT_NEEDS.map(n=>`<div class="card hov pad need-card" data-skill-id="${n.skillId}" data-skill="${n.f}" style="border-left-color:var(--${n.cl}); padding:14px;">
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
         <span style="color:var(--${n.cl}); width:28px;height:28px;display:grid;place-items:center;background:var(--surface-3);border-radius:9px;">${svg(I[n.ico],16)}</span>
         <span class="badge" style="background:var(--surface-3); color:var(--${n.cl}); font-size:11px; padding:3px 9px;">${n.f}</span>
@@ -1276,26 +1462,47 @@ function dbtNowBody(){
 }
 function dbtLibBody(filter){
   const fams=['Todas',...Object.keys(DBT_FAMILIES)];
-  const skills = filter==='Todas'?DBT_SKILLS:DBT_SKILLS.filter(s=>s.f===filter);
-  return `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;" id="dbtFilter">
-      ${fams.map(f=>`<button class="fchip" data-f="${f}" ${f===filter?'aria-pressed="true"':''} style="padding:6px 12px; font-size:11.5px;">${f==='Todas'?'Todas':f}</button>`).join('')}
+  const practices = filter==='Todas'?Object.values(DBT_PRACTICES):Object.values(DBT_PRACTICES).filter(p=>p.family===filter);
+  return `<div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:7px;" id="dbtFilter">
+      ${fams.map(f=>`<button class="fchip" data-f="${f}" ${f===filter?'aria-pressed="true"':''} style="padding:5px 10px; font-size:11px;">${f==='Todas'?'Todas':f}</button>`).join('')}
     </div>
-    <div class="grid cols-3" style="gap:10px;">${skills.map(s=>`<div class="card hov pad dbt-card" data-skill="${s.f}" style="padding:14px;">
-      <div class="bar" style="background:var(--${DBT_FAMILIES[s.f]}); height:5px; width:48px; margin-bottom:10px;"></div>
-      <div class="h-serif" style="font-size:14px;">${esc(s.t)}</div>
-      <p style="font-size:12px; color:var(--ink-2); line-height:1.45; margin:6px 0 0; min-height:34px;">${esc(s.d)}</p>
-      <div class="meta" style="margin-top:10px; gap:10px; font-size:11.5px;"><span>${svg('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 11h16"/>',12)} ${s.min} min</span>
-      <span class="pl dbt-practice">${svg('<path d="M5 12l4 4L19 6"/>',11)} Práctica</span></div>
+    <div class="grid cols-4" style="gap:6px;">${practices.map(s=>`<div class="card hov pad dbt-card" data-skill-id="${s.id}" data-skill="${s.family}" style="padding:10px 11px;">
+      <div class="bar" style="background:var(--${s.familyClass}); height:3px; width:30px; margin-bottom:6px;"></div>
+      <div class="h-serif" style="font-size:13px; line-height:1.18;">${esc(s.title)}</div>
+      <p style="font-size:10.5px; color:var(--ink-2); line-height:1.32; margin:4px 0 0; min-height:24px;">${esc(s.description)}</p>
+      <div class="meta" style="margin-top:6px; gap:8px; font-size:10.5px;"><span>${svg('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 11h16"/>',10)} ${s.duration}m</span>
+      <span class="pl dbt-practice">${svg('<path d="M5 12l4 4L19 6"/>',10)} Práctica</span></div>
     </div>`).join('')}</div>`;
+}
+/* Local refit: invokes the EXISTING global fitScreen() on the current .window
+   so the DBT screen re-measures after internal tab/filter changes. Does NOT
+   touch fitScreen, fitHome, fitModal or FIT_MIN — just calls them. */
+function dbtRefit(){
+  const win=document.querySelector('.window');
+  if(win && typeof fitScreen==='function'){
+    try{ fitScreen(win); }catch(_){}
+  }
+  if(typeof fitModal==='function' && document.querySelector('.modal-bg.show')){
+    try{ fitModal(); }catch(_){}
+  }
 }
 function dbtWire(root){
   $$('#dbtTab button',root).forEach(b=>b.addEventListener('click',()=>{
     $$('#dbtTab button',root).forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true');
-    $('#dbtBody',root).innerHTML = b.dataset.t==='now'?dbtNowBody():dbtLibBody('Todas'); dbtWire(root);
+    const isNow=b.dataset.t==='now';
+    $('#dbtBody',root).innerHTML = isNow?dbtNowBody():dbtLibBody('Todas'); dbtWire(root);
+    // Sync stage title/desc with the active tab so the stage__top height
+    // is consistent between direct navigation and internal tab clicks.
+    // This prevents .window Y from shifting, which would cause sub-pixel
+    // SVG anti-aliasing differences between the two paths.
+    const tEl=$('#sTitle'), dEl=$('#sDesc');
+    if(tEl) tEl.textContent = isNow?'Habilidades DBT · Ahora':'Habilidades DBT · Biblioteca';
+    if(dEl) dEl.textContent = isNow?'Entrada por necesidad: elegí qué te pasa ahora y recibí una práctica guiada breve.':'Catálogo de las cuatro familias DBT, filtrable por categoría.';
+    dbtRefit();
   }));
   const fil=$('#dbtFilter',root);
-  if(fil) $$('button',fil).forEach(b=>b.addEventListener('click',()=>{ $('#dbtBody',root).innerHTML=dbtLibBody(b.dataset.f); dbtWire(root); }));
-  root.querySelectorAll('[data-skill]').forEach(c=>c.addEventListener('click',e=>{ if(e.target.closest('.dbt-practice')||e.target.closest('.need-card')||e.target.closest('.dbt-card')) openDBTPractice(c.dataset.skill); }));
+  if(fil) $$('button',fil).forEach(b=>b.addEventListener('click',()=>{ $('#dbtBody',root).innerHTML=dbtLibBody(b.dataset.f); dbtWire(root); dbtRefit(); }));
+  root.querySelectorAll('[data-skill-id]').forEach(c=>c.addEventListener('click',e=>{ if(e.target.closest('.dbt-practice')||e.target.closest('.need-card')||e.target.closest('.dbt-card')) openDBTPractice(c.dataset.skillId); }));
 }
 defScreen({ id:'dbtnow', product:'suite', group:'Habilidades DBT', title:'Habilidades DBT · Ahora', icon:'spark',
   desc:'Entrada por necesidad: elegí qué te pasa ahora y recibí una práctica guiada breve.',
@@ -1306,39 +1513,36 @@ defScreen({ id:'dbtlib', product:'suite', group:'Habilidades DBT', title:'Habili
   navItems:[{id:'dbtlib',label:'DBT · Biblioteca'}],
   render(){return dbtFrame('lib');}, mount(root){dbtWire(root);} });
 
-const STOP_STEPS=[
-  {h:'S — Stop (Frená)',d:'Detené lo que estás haciendo. No actúes todavía. Quedate quieto un momento.'},
-  {h:'T — Tomá distancia (Take a step back)',d:'Alejate física o mentalmente de la situación. Respirá profundamente y recordá que es una emoción pasajera.'},
-  {h:'O — Observá',d:'Notá qué está pasando dentro y fuera: pensamientos, sensaciones, el contexto, sin juzgarlos.'},
-  {h:'P — Procedé con conciencia',d:'Elegí una respuesta alineada con tus objetivos y valores, no con el impulso del momento.'},
-];
-function openDBTPractice(fam){
+function openDBTPractice(skillId){
+  const practice = DBT_PRACTICES[skillId];
+  if(!practice){ toast('Práctica DBT no encontrada'); return; }
   let step=0;
+  const total=practice.steps.length;
   const modal=$('#modal');
   modal.classList.add('dbt-practice');
   const render=()=>{
-    const s=STOP_STEPS[step];
+    const s=practice.steps[step];
     modal.innerHTML=`
     <div class="screen" style="padding:18px 24px 16px;">
-      <div class="eyebrow" style="text-align:center; color:var(--ink); letter-spacing:.12em; text-transform:none;">STOP · ${esc(fam)}</div>
-      <div class="h-serif" style="text-align:center; font-size:12px; color:var(--ink-2); margin:12px 0 14px;">Paso ${step+1} de 4</div>
+      <div class="eyebrow" style="text-align:center; color:var(--ink); letter-spacing:.12em; text-transform:none;">${esc(practice.title)} · ${esc(practice.familyFull)}</div>
+      <div class="h-serif" style="text-align:center; font-size:12px; color:var(--ink-2); margin:12px 0 14px;">Paso ${step+1} de ${total}</div>
       <div style="display:flex; gap:11px; justify-content:center; margin-bottom:20px;">
-        ${STOP_STEPS.map((_,i)=>`<span style="width:9px;height:9px;border-radius:50%;background:${i===step?'var(--toler)':'var(--line)'}"></span>`).join('')}
+        ${practice.steps.map((_,i)=>`<span style="width:9px;height:9px;border-radius:50%;background:${i===step?'var(--'+practice.familyClass+')':'var(--line)'}"></span>`).join('')}
       </div>
       <div class="card pad" style="min-height:148px; display:flex; flex-direction:column; justify-content:center; text-align:center;">
         <div class="h-serif" style="font-size:19px; margin-bottom:14px;">${esc(s.h)}</div>
         <p style="font-size:14px; color:var(--ink-2); line-height:1.45; max-width:42ch; margin:0 auto;">${esc(s.d)}</p>
       </div>
-      <p style="font-size:11.5px; color:var(--rose); text-align:center; margin:14px auto 14px; max-width:48ch;">Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.</p>
+      <p style="font-size:11.5px; color:var(--rose); text-align:center; margin:14px auto 14px; max-width:48ch;">${esc(practice.disclaimer)}</p>
       <div style="display:flex; align-items:center; gap:10px;">
         <button class="btn btn--ghost" id="dbtExit" style="flex:1;">Salir</button>
         <button class="btn btn--ghost" id="dbtPrev" ${step===0?'disabled':''}>Anterior</button>
-        <button class="btn btn--primary" id="dbtNext">${step===3?'Finalizar':'Siguiente'}</button>
+        <button class="btn btn--primary" id="dbtNext">${step===total-1?'Finalizar':'Siguiente'}</button>
       </div>
     </div>`;
     $('#dbtExit').onclick=closeModal;
     $('#dbtPrev').onclick=()=>{ if(step>0){step--; render(); requestAnimationFrame(fitModal);} };
-    $('#dbtNext').onclick=()=>{ if(step<3){step++; render(); requestAnimationFrame(fitModal);} else {closeModal(); toast('Práctica completada · '+fam);} };
+    $('#dbtNext').onclick=()=>{ if(step<total-1){step++; render(); requestAnimationFrame(fitModal);} else {closeModal(); toast('Práctica completada · '+practice.title);} };
   };
   render(); $('#modalBg').classList.add('show'); requestAnimationFrame(fitModal);
 }

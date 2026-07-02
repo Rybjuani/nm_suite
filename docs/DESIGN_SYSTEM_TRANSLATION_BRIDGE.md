@@ -14,7 +14,7 @@ mockup canónico y el runtime Qt.
 |---|---|
 | Creado | 2026-06-29 |
 | Fuente CSS canónica | `qa/pack canonico/neuromood-mockup_reparado.html` (líneas 11–415) |
-| Capturas canónicas | `qa/_mockup_canonical/` (86 PNG = 43 vistas × 2 temas) |
+| Capturas canónicas | `qa/_mockup_canonical/` (116 PNG = 58 vistas × 2 temas, DBT v2 con 16 prácticas formales) |
 | Índice de keys | `qa/_mockup_canonical/INDICE_CAPTURAS.csv` |
 | Tokens runtime | `shared/theme.py` (fuente única de datos visuales) |
 | Adaptador Qt | `shared/theme_qt.py` (helpers QSS/painter) |

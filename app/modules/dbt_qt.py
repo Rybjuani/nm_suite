@@ -110,207 +110,250 @@ def _dbt_family_soft_css(family: str, modo: str, alpha: float = 0.14) -> str:
     return qcolor_to_rgba_css(c)
 
 
-# Catálogo MVP: 8 habilidades divididas en 4 familias
-DBT_SKILLS = {
-    "mind_observe": {
-        "id": "mind_observe",
+_DBT_SAFETY_NOTE = (
+    "Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro "
+    "inminente, recurrí a asistencia profesional."
+)
+
+
+def _skill(
+    practice_id: str,
+    family: str,
+    title: str,
+    summary: str,
+    duration_min: int,
+    steps: list[tuple[str, str]],
+) -> dict:
+    return {
+        "id": practice_id,
         "version": 1,
-        "family": "mindfulness",
-        "title": "Observar y describir",
-        "summary": "Notar sensaciones, pensamientos y entorno sin intentar corregirlos.",
-        "duration_min": 2,
-        "steps": [
-            {
-                "title": "Paso 1: Enfocá tu atención",
-                "body": "Elegí un único objeto de atención (tu respiración, un sonido de tu entorno o una sensación física en tu cuerpo)."
-            },
-            {
-                "title": "Paso 2: Observá sin juzgar",
-                "body": "Limitá tu mente a registrar lo que percibe. Si surge un pensamiento como 'este ruido es molesto', reformulalo mentalmente a 'percibo un ruido fuerte'."
-            },
-            {
-                "title": "Paso 3: Describí internamente",
-                "body": "Ponele palabras sencillas a tu experiencia. Por ejemplo: 'Siento el aire frío al entrar por la nariz' o 'Noto tensión en los hombros'."
-            }
-        ],
-        "safety_note": ""
-    },
-    "mind_wise": {
-        "id": "mind_wise",
-        "version": 1,
-        "family": "mindfulness",
-        "title": "Mente sabia",
-        "summary": "Pausa guiada para integrar emoción, hechos y objetivo del momento.",
-        "duration_min": 2,
-        "steps": [
-            {
-                "title": "Paso 1: Mente emocional",
-                "body": "¿Qué estás sintiendo ahora? Reconocé tus emociones sin juzgarlas. Date permiso para sentir lo que sentís."
-            },
-            {
-                "title": "Paso 2: Mente racional",
-                "body": "¿Cuáles son los hechos fríos? ¿Qué es objetivamente real en esta situación, dejando de lado las interpretaciones?"
-            },
-            {
-                "title": "Paso 3: Integración",
-                "body": "Respirá hondo. Buscá el punto de equilibrio en tu interior donde la razón y la emoción se encuentran. ¿Qué es lo más sabio que podés hacer ahora?"
-            }
-        ],
-        "safety_note": ""
-    },
-    "distress_stop": {
-        "id": "distress_stop",
-        "version": 1,
-        "family": "distress_tolerance",
-        "title": "STOP",
-        "summary": "Hacé una pausa antes de actuar impulsivamente.",
-        "duration_min": 2,
-        "steps": [
-            {
-                "title": "S — Stop (Frená)",  # mockup: em-dash
-                # 2026-06-24: mockup l.1171 — copy alineado al mockup.
-                # Antes era genérico; ahora es específico al paso S de STOP.
-                "body": "Detené lo que estás haciendo. No actúes todavía. Quedate quieto por un momento."
-            },
-            {
-                "title": "T — Tomá distancia (Take a step back)",  # mockup: em-dash
-                # 2026-06-24: mockup l.1162 — "física" en lugar de "físicamente"
-                "body": "Alejate física o mentalmente de la situación. Respirá profundamente y recordá que es una emoción pasajera."
-            },
-            {
-                "title": "O — Observá (Observe)",  # mockup: em-dash
-                # 2026-06-24: mockup l.1163 — copy alineado al mockup
-                "body": "Notá qué está pasando dentro y fuera: pensamientos, sensaciones, el contexto, sin juzgarlos."
-            },
-            {
-                # 2026-06-24: mockup l.1164 — title sin "(Proceed mindfully)" en
-                # paréntesis (no está en el mockup).
-                "title": "P — Procedé con conciencia",  # mockup: em-dash
-                # 2026-06-24: mockup l.1164 — body alineado al mockup
-                "body": "Elegí una respuesta alineada con tus objetivos y valores, no con el impulso del momento."
-            }
-        ],
-        "safety_note": "Esta habilidad es un apoyo inmediato. Si sentís malestar extremo o peligro inminente, recurrí a asistencia profesional.",
-    },
-    "distress_senses": {
-        "id": "distress_senses",
-        "version": 1,
-        "family": "distress_tolerance",
-        "title": "Autocalma con los sentidos",
-        "summary": "Elegí estímulos seguros de tu vista, oído, tacto, olfato o gusto.",
-        "duration_min": 3,
-        "steps": [
-            {
-                "title": "Vista",
-                "body": "Buscá a tu alrededor algo agradable a la vista: una planta, el cielo, una foto querida o simplemente prestá atención a los colores de la habitación."
-            },
-            {
-                "title": "Oído",
-                "body": "Escuchá con atención. Puede ser música suave, el sonido del viento, el canto de un pájaro o el murmullo de fondo."
-            },
-            {
-                "title": "Tacto",
-                "body": "Tocá una textura reconfortante: la suavidad de una prenda, una taza de té tibia o acariciá a tu mascota."
-            },
-            {
-                "title": "Olfato y Gusto",
-                "body": "Percibí un aroma agradable (café, perfume, una flor) o saboreá algo despacio, sintiendo la textura y el sabor real."
-            }
-        ],
-        "safety_note": ""
-    },
-    "emotion_facts": {
-        "id": "emotion_facts",
-        "version": 1,
-        "family": "emotion_regulation",
-        "title": "Verificar los hechos",
-        "summary": "Separar hechos observables, interpretación y emoción.",
-        "duration_min": 2,
-        "steps": [
-            {
-                "title": "Paso 1: ¿Cuál es el evento detonante?",
-                "body": "Describí la situación externa sin adjetivos subjetivos. ¿Quién hizo qué? ¿Qué pasó exactamente?"
-            },
-            {
-                "title": "Paso 2: ¿Qué interpretaciones estás sumando?",
-                "body": "¿Qué pensamientos o suposiciones estás haciendo sobre lo que pasó? Separalos de los hechos observables."
-            },
-            {
-                "title": "Paso 3: ¿La emoción coincide con los hechos?",
-                "body": "Preguntate: ¿La intensidad de mi emoción es proporcional a lo que realmente ocurrió, o está basada en mis interpretaciones y temores?"
-            }
-        ],
-        "safety_note": ""
-    },
-    "emotion_opposite": {
-        "id": "emotion_opposite",
-        "version": 1,
-        "family": "emotion_regulation",
-        "title": "Acción opuesta",
-        "summary": "Actuar de forma contraria al impulso cuando no coincide con los hechos.",
-        "duration_min": 3,
-        "steps": [
-            {
-                "title": "Paso 1: Identificá la emoción y el impulso",
-                "body": "Por ejemplo: Si sentís miedo, el impulso es huir; si sentís enojo, el impulso es atacar; si sentís tristeza, el impulso es aislarte."
-            },
-            {
-                "title": "Paso 2: Evaluá si el impulso ayuda",
-                "body": "¿El impulso de acción es efectivo para resolver la situación o sólo sirve para intensificar la emoción?"
-            },
-            {
-                "title": "Paso 3: Actúa de forma contraria",
-                "body": "Hacé lo opuesto de manera total y comprometida. Si es miedo injustificado, enfrentalo; si es tristeza, actívate; si es enojo inútil, alejate amablemente."
-            }
-        ],
-        "safety_note": ""
-    },
-    "interpersonal_dearman": {
-        "id": "interpersonal_dearman",
-        "version": 1,
-        "family": "interpersonal_effectiveness",
-        "title": "DEAR MAN",
-        "summary": "Estructura para expresar asertivamente una necesidad o pedido.",
-        "duration_min": 3,
-        "steps": [
-            {
-                "title": "D - Describir & E - Expresar",
-                "body": "Describí la situación objetivamente ('Llegaste tarde las últimas tres veces'). Expresá tus sentimientos claramente ('Me siento frustrado cuando espero')."
-            },
-            {
-                "title": "A - Aseverar & R - Reforzar",
-                "body": "Aseverá tu pedido o límite de forma clara y directa ('Te pido que me avises si vas a demorarte'). Reforzá explicando el beneficio mutuo ('Así nos organizamos mejor y evitamos discusiones')."
-            },
-            {
-                "title": "M - Mantenerse consciente & A - Aparentar seguridad",
-                "body": "Mantenete enfocado en tu objetivo sin desviarte. Hablá con calma, manteniendo contacto visual y un tono de voz firme."
-            },
-            {
-                "title": "N - Negociar",
-                "body": "Buscá soluciones alternativas si la otra persona no acepta tu propuesta original. Mantenete abierto a un acuerdo razonable."
-            }
-        ],
-        "safety_note": ""
-    },
-    "interpersonal_givefast": {
-        "id": "interpersonal_givefast",
-        "version": 1,
-        "family": "interpersonal_effectiveness",
-        "title": "GIVE / FAST",
-        "summary": "Checklist para cuidar la relación y mantener el autorrespeto.",
-        "duration_min": 2,
-        "steps": [
-            {
-                "title": "GIVE - Cuidar la relación",
-                "body": "G - Gentil (sin juzgar), I - Interés (escuchar activamente), V - Validar (respetar los sentimientos del otro), E - Estilo fácil (con humor o calidez)."
-            },
-            {
-                "title": "FAST - Mantener el autorrespeto",
-                "body": "F - Firmeza ética (ser justo), A - Apologías mínimas (no disculparse por existir o tener necesidades), S - Sinceridad (no mentir ni exagerar), T - Tener valores (mantener tus principios)."
-            }
-        ],
-        "safety_note": ""
+        "family": family,
+        "title": title,
+        "summary": summary,
+        "duration_min": duration_min,
+        "steps": [{"title": h, "body": d} for h, d in steps],
+        "safety_note": _DBT_SAFETY_NOTE,
     }
+
+
+# DBT v2 canon: 16 prácticas formales, alineadas con el HTML canónico.
+DBT_SKILLS = {
+    "observe_describe": _skill(
+        "observe_describe",
+        "mindfulness",
+        "Observar y describir",
+        "Notar sensaciones, pensamientos y entorno sin intentar corregirlos.",
+        2,
+        [
+            ("Elegí un objeto", "Fijate en algo del entorno o en una sensación corporal concreta."),
+            ("Observá", "Notá ese objeto sin etiquetarlo, sin interpretarlo, sin reaccionar."),
+            ("Describí", "Poné en palabras lo que percibís, en voz baja o mentalmente."),
+            ("Volvé cuando la mente se vaya", "Cada vez que aparezca un juicio o pensamiento, regresá al objeto elegido."),
+        ],
+    ),
+    "wise_mind": _skill(
+        "wise_mind",
+        "mindfulness",
+        "Mente sabia",
+        "Pausa guiada para integrar emoción, hechos y objetivo del momento.",
+        2,
+        [
+            ("Reconocé la mente emocional", "Identificá qué pide la emoción: alivio, escape, ataque, defensa."),
+            ("Reconocé la mente razonable", "Identificá qué dicen los hechos fríos, sin emoción."),
+            ("Buscá el centro", "Preguntate: ¿qué serviría a mi objetivo de largo plazo aquí?"),
+            ("Actuá desde la mente sabia", "Elegí la respuesta que integra emoción y razón, no el impulso."),
+        ],
+    ),
+    "participate": _skill(
+        "participate",
+        "mindfulness",
+        "Participar",
+        "Entrá por completo en la actividad del momento, sin observarte desde afuera.",
+        3,
+        [
+            ("Elegí una actividad", "Algo simple: lavar platos, caminar, escribir, escuchar música."),
+            ("Entrá de lleno", "Hacé solo eso, sin dividir la atención ni observarte haciendo."),
+            ("Soltá el performance", "No midas cómo lo hacés; participá sin juzgar el resultado."),
+        ],
+    ),
+    "non_judgmental": _skill(
+        "non_judgmental",
+        "mindfulness",
+        "Sin juzgar",
+        "Observar sin etiquetar como bueno o malo, solo como es.",
+        2,
+        [
+            ("Notá el juicio", "Cuando aparezca \"esto está mal\" o \"soy un desastre\", registrá que es un juicio."),
+            ("Reetiquetá como hecho", "Cambiá \"soy un desastre\" por \"tengo este pensamiento sobre mí\"."),
+            ("Soltá el peso del juicio", "No agregues catastrificación ni culpa encima del hecho."),
+            ("Volvé a observar", "Regresá a lo que estabas haciendo con la mirada sin filtro."),
+        ],
+    ),
+    "stop": _skill(
+        "stop",
+        "distress_tolerance",
+        "STOP",
+        "Hacé una pausa antes de actuar impulsivamente.",
+        2,
+        [
+            ("S — Stop (Frená)", "Detené lo que estás haciendo. No actúes todavía. Quedate quieto un momento."),
+            ("T — Tomá distancia (Take a step back)", "Alejate física o mentalmente de la situación. Respirá profundamente y recordá que es una emoción pasajera."),
+            ("O — Observá", "Notá qué está pasando dentro y fuera: pensamientos, sensaciones, el contexto, sin juzgarlos."),
+            ("P — Procedé con conciencia", "Elegí una respuesta alineada con tus objetivos y valores, no con el impulso del momento."),
+        ],
+    ),
+    "tipp": _skill(
+        "tipp",
+        "distress_tolerance",
+        "TIPP / TIP",
+        "Cambiá rápido el estado corporal para bajar la intensidad emocional.",
+        3,
+        [
+            ("T — Temperatura", "Agua fría en la cara o hielo en la nuca: activa el reflejo de inmersión y baja la frecuencia cardíaca."),
+            ("I — Ejercicio intenso", "Mové el cuerpo con fuerza por 1-2 minutos para descargar la activación."),
+            ("P — Respiración pausada", "Inhala 4, exhala 6-8. Alargá la exhalación para calmar el sistema."),
+            ("P — Pares relajados", "Tensá y soltá músculos en pares (manos/brazos, hombros/cuello) para liberar tensión."),
+        ],
+    ),
+    "self_soothe": _skill(
+        "self_soothe",
+        "distress_tolerance",
+        "Autocalma con los sentidos",
+        "Elegí estímulos seguros de vista, oído, tacto, olfato o gusto.",
+        3,
+        [
+            ("Vista", "Buscá un color, una textura o un detalle del entorno que sea neutro o agradable."),
+            ("Oído", "Poné un sonido suave: música, lluvia, tu respiración."),
+            ("Tacto", "Tocá algo con temperatura o textura reconfortante: una manta, agua tibia, una piedra."),
+            ("Olfato", "Olé algo conocido y calmante: café, lavanda, una ropa con tu olor."),
+            ("Gusto", "Probá algo pequeño y de sabor definido: un caramelo, agua, una fruta."),
+        ],
+    ),
+    "radical_acceptance": _skill(
+        "radical_acceptance",
+        "distress_tolerance",
+        "Aceptación radical",
+        "Aceptar la realidad tal como es, sin aprobarla ni rendirse.",
+        4,
+        [
+            ("Reconocé los hechos", "Describí lo que pasó sin interpretación: solo datos observables."),
+            ("Notá la resistencia", "Identificá dónde decís \"no debería ser así\" o \"no es justo\"."),
+            ("Soltá la resistencia", "Aceptá que la realidad es lo que es, aunque no lo apruebes."),
+            ("Actuá desde la aceptación", "Preguntate: ¿qué puedo hacer ahora, desde esta realidad, no desde la que quería?"),
+        ],
+    ),
+    "check_facts": _skill(
+        "check_facts",
+        "emotion_regulation",
+        "Verificar los hechos",
+        "Separar hechos observables, interpretación y emoción.",
+        2,
+        [
+            ("Nombrá la emoción", "Poné nombre a lo que sentís: miedo, enojo, vergüenza, tristeza."),
+            ("Listá los hechos", "Escribí lo que pasó en términos observables, sin adjetivos ni interpretaciones."),
+            ("Identificá las interpretaciones", "Marcá qué partes son suposiciones, no hechos."),
+            ("Reajustá la respuesta", "Con los hechos solos, ¿la intensidad de la emoción se sostiene? Ajustá si no."),
+        ],
+    ),
+    "opposite_action": _skill(
+        "opposite_action",
+        "emotion_regulation",
+        "Acción opuesta",
+        "Actuar de forma contraria al impulso cuando no coincide con los hechos.",
+        3,
+        [
+            ("Identificá la emoción y su impulso", "Miedo→evitar. Tristeza→aislarte. Enojo→atacar. Vergüenza→esconderte."),
+            ("Verificá si el impulso sirve", "¿Los hechos justifican esa acción? ¿La acción ayuda a tu objetivo?"),
+            ("Definí la acción opuesta", "Miedo→acercarte. Tristeza→activarte. Enojo→suavizar. Vergüenza→mostrarte."),
+            ("Hacelo todo el camino", "No a medias: cuerpo, cara y acción alineados con la respuesta opuesta."),
+        ],
+    ),
+    "problem_solving": _skill(
+        "problem_solving",
+        "emotion_regulation",
+        "Resolución de problemas",
+        "Convertir una preocupación en un problema concreto con pasos.",
+        4,
+        [
+            ("Nombrá el problema", "Escribí en una frase concreta qué situación querés cambiar."),
+            ("Generá opciones", "Listá al menos 3 respuestas posibles, sin filtrar por ahora."),
+            ("Evaluá consecuencias", "Para cada opción: ¿corto plazo? ¿largo plazo? ¿sobre vos y sobre otros?"),
+            ("Elegí y actuá", "Seleccioná la opción con mejor balance y dale un primer paso hoy."),
+        ],
+    ),
+    "please": _skill(
+        "please",
+        "emotion_regulation",
+        "PLEASE / autocuidado base",
+        "Cuidar el cuerpo para reducir la vulnerabilidad emocional.",
+        5,
+        [
+            ("PL — Tratar enfermedad física", "Si estás enfermo o con dolor, atendelo, no lo arrastres."),
+            ("E — Equilibrio en comidas", "Comé a horario, ni saltado ni en exceso. El hambre desregula."),
+            ("A — Evitá drogas y alcohol", "Las sustancias alteran el estado emocional de base."),
+            ("S — Sueño reparador", "Respetá tus horas. El déficit de sueño dispara la reactividad."),
+            ("E — Ejercicio regular", "Movimiento moderado diario mejora el estado de ánimo de base."),
+        ],
+    ),
+    "dear_man": _skill(
+        "dear_man",
+        "interpersonal_effectiveness",
+        "DEAR MAN",
+        "Estructura para expresar asertivamente una necesidad o pedido.",
+        3,
+        [
+            ("D — Describí la situación", "Hechos observables, sin juicio: \"Ayer llegué 20 min tarde a la reunión con vos\"."),
+            ("E — Expresá tu emoción", "\"Me dio vergüenza y preocupación\". Usá \"yo\", no \"vos\"."),
+            ("A — Assertivamente pedí", "Pedido concreto y específico: \"Necesito que me avises 15 min antes si vas a llegar tarde\"."),
+            ("MAN — Mantente y refuerza", "Repetí el pedido sin agresión. Anticipá la ganancia para la otra persona."),
+        ],
+    ),
+    "give": _skill(
+        "give",
+        "interpersonal_effectiveness",
+        "GIVE",
+        "Checklist para cuidar la relación mientras pedís.",
+        2,
+        [
+            ("G — Amable (Gentle)", "Tono y gestos suaves, sin sarcasmo ni desprecio."),
+            ("I — Interesado (Interested)", "Escuchá mirando, sin interrumpir ni planear respuesta."),
+            ("V — Validá (Validate)", "Reconocé lo que el otro siente o piensa antes de responder."),
+            ("E — Fácil (Easy manner)", "Sonreí, usá humor ligero, no cargues tensión a la conversación."),
+        ],
+    ),
+    "fast": _skill(
+        "fast",
+        "interpersonal_effectiveness",
+        "FAST",
+        "Checklist para mantener el autorrespeto en la interacción.",
+        2,
+        [
+            ("F — Justo (Fair)", "No ataques, no exageres, no uses lo que sabés que duele."),
+            ("A — Sin disculparte de más (Apologies)", "No pidas perdón por existir o por pedir. Discúlpate solo si realmente hiciste algo."),
+            ("S — Adherí a tus valores (Stick to values)", "No cedas lo que importa para evitar conflicto. La relación no vale tu integridad."),
+            ("T — Honesto (Truthful)", "No exageres para ganar ni minimices para no incomodar. Decí lo cierto."),
+        ],
+    ),
+    "validation_limits": _skill(
+        "validation_limits",
+        "interpersonal_effectiveness",
+        "Validación / límites",
+        "Validar al otro sin abandonar tus propios límites.",
+        3,
+        [
+            ("Escuchá antes de responder", "Dejá hablar sin preparar respuesta. Parafraseá lo que escuchaste."),
+            ("Validá lo que se pueda", "\"Entiendo que te enoje\" no es \"tenés razón\". Reconocé la emoción, no apruebes todo."),
+            ("Marcá el límite", "\"Y al mismo tiempo, no puedo hacer X. Lo que sí puedo es Y\"."),
+            ("Sostené sin atacar", "Si insisten, repetí el límite con calma. No justifiques ni te disculpes de más."),
+        ],
+    ),
+}
+
+DBT_NEED_PRACTICE_IDS = {
+    "mindfulness": "wise_mind",
+    "distress_tolerance": "stop",
+    "emotion_regulation": "check_facts",
+    "interpersonal_effectiveness": "dear_man",
 }
 
 
@@ -1177,15 +1220,9 @@ class ModuloDBT(NMModule):
         return widget
         
     def _on_need_clicked(self, family: str):
-        # Open library with that family filtered
-        self._tabs.set_current(1)
-        family_map = {
-            "mindfulness": 1,
-            "distress_tolerance": 2,
-            "emotion_regulation": 3,
-            "interpersonal_effectiveness": 4
-        }
-        self._family_tabs.set_current(family_map.get(family, 0))
+        practice_id = DBT_NEED_PRACTICE_IDS.get(family)
+        if practice_id:
+            self.start_practice_by_id(practice_id)
         
     def _build_view_biblioteca(self) -> QWidget:
         widget = QWidget()
@@ -1276,7 +1313,18 @@ class ModuloDBT(NMModule):
             if widget is not None:
                 widget.setVisible(visible)
 
+    def start_practice_by_id(self, practice_id: str) -> bool:
+        skill = DBT_SKILLS.get(practice_id)
+        if skill is None:
+            _log.warning("DBT practice id bloqueado: %s", practice_id)
+            return False
+        self.start_practice(skill)
+        return True
+
     def start_practice(self, skill: dict):
+        if not skill or skill.get("id") not in DBT_SKILLS:
+            _log.warning("DBT practice bloqueada: %r", skill.get("id") if isinstance(skill, dict) else skill)
+            return False
         self._cleanup_practice_flow()
 
         # Cache origin tab to return correctly
@@ -1297,6 +1345,7 @@ class ModuloDBT(NMModule):
             self._practice_view,
             _PracticeModalScrim.modal_width_for_mode(self._modo),
         )
+        return True
 
     def _on_practice_cancelled(self):
         # Cerramos el modal y restauramos la tab de origen.

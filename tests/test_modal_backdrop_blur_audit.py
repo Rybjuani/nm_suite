@@ -262,6 +262,61 @@ def test_all_fails_when_canonical_modal_missing_runtime(tmp_path: Path) -> None:
     assert any(row.key == "suite:dbt-practice-stop@dark" and row.verdict == "FAIL" for row in rows)
 
 
+def test_all_audits_multiple_dbt_v2_practice_modals(tmp_path: Path) -> None:
+    canonical = tmp_path / "canon"
+    actual = tmp_path / "actual"
+    parent = _parent()
+    modal = _modal(parent)
+    files = {
+        canonical / "suite-dbt-library-light-240x160.png": parent,
+        canonical / "suite-dbt-practice-stop-light-240x160.png": modal,
+        canonical / "suite-dbt-practice-wise-mind-light-240x160.png": modal,
+        actual / "suite-dbt-library-light-240x160.png": parent,
+        actual / "suite-dbt-practice-stop-light-240x160.png": modal,
+        actual / "suite-dbt-practice-wise-mind-light-240x160.png": modal,
+    }
+    for path, image in files.items():
+        _save(path, image)
+
+    def modal_record(view_name: str) -> dict:
+        return {
+            "file": f"suite-{view_name}-light-240x160.png",
+            "surface": "window_modal",
+            "is_modal": True,
+            "modal_capture_scope": "window_overlay",
+            "backdrop_observable": True,
+            "back_screen_key": "suite:dbt-library@light",
+        }
+
+    captures = [
+        {"file": "suite-dbt-library-light-240x160.png", "surface": "window"},
+        modal_record("dbt-practice-stop"),
+        modal_record("dbt-practice-wise-mind"),
+    ]
+    _write_manifest(canonical, captures, canonical=True)
+    _write_manifest(actual, captures, canonical=False)
+
+    args = Namespace(
+        key=None,
+        all=True,
+        canonical=str(canonical),
+        actual=str(actual),
+        out_dir=str(tmp_path / "report"),
+        center_tolerance_px=18,
+        bbox_tolerance_px=24,
+        backdrop_mean_tolerance=22.0,
+        blur_ratio_tolerance=0.2,
+        parent_mean_tolerance=35.0,
+    )
+    rows, payload, _ = audit.run(args)
+
+    keys = {row.key for row in rows}
+    assert "suite:dbt-practice-stop@light" in keys
+    assert "suite:dbt-practice-wise-mind@light" in keys
+    assert payload["summary"]["total"] == 2
+    assert payload["summary"]["test_blur_pass"] is True
+
+
 def test_all_cannot_pass_with_skipped_unavailable_runtime() -> None:
     total_canonical = 2
     pass_count = 2

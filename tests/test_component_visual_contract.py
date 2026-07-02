@@ -884,7 +884,7 @@ def test_dbt_modal_hides_background_controls_until_closed(qtbot) -> None:
     assert module._tabs.isVisibleTo(module)
     assert module._family_tabs.isVisibleTo(module)
 
-    module.start_practice(DBT_SKILLS["distress_stop"])
+    module.start_practice(DBT_SKILLS["stop"])
     qtbot.wait(50)
 
     assert module._modal_scrim is not None

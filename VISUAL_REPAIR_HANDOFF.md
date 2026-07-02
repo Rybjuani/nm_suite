@@ -76,6 +76,33 @@ comparator `PASS`.
 
 Do not use desktop zips as operational evidence. They are archival only.
 
+DBT canonical v2 is now the active baseline. The official canon has 116
+captures (58 views x 2 themes), and the DBT family contains 16 formal practice
+modal surfaces. The older DBT closure against `suite:dbt-practice-stop` only is
+obsolete by baseline promotion, not by regression: it remains historical
+evidence but cannot close DBT completo. The runtime PyQt DBT module must be
+recreated and validated against this 16-practice canon before DBT can be closed
+as a family.
+
+Promotion evidence (2026-07-01): canonical generation produced 116/116 PNG with
+surfaces `window=76`, `narrow=6`, `modal=0`, `window_modal=34`; both
+`qa/pack canonico/capturas_test/MANIFEST.json` and
+`qa/_mockup_canonical/MANIFEST.json` point to
+`qa/pack canonico/neuromood-mockup_reparado.html`, not `reports/`.
+`capture_v8.py --all --clean` captured 116/116 runtime PNG and all 16 DBT
+practice recipes. Modal audit `reports/qa/modal_backdrop_blur/20260701_221602/`
+passed 32/32 DBT practice modals; the only `--all` modal failure was
+`hub:detalle-resumen-ia-0@dark` (`MODAL_CENTER_FAIL`), outside DBT. Layered DBT
+compare `reports/qa/layered_visual_compare_dbt_v2/LAYERED_VISUAL_REPORT.json`
+is **not closed**: 36 DBT keys, 18 PASS, 18 FAIL. Therefore DBT PyQt v2 is
+structurally recreated but still visually open; do not close DBT or the global
+checklist from this promotion.
+
+No HTML under `reports/` is a canonical source. Auditor snapshots such as
+`reports/.../sources/original_HEAD.html` are `DO_NOT_USE_AS_CANON`; they compare
+`HEAD` against working tree only. Official canonical captures must be generated
+from `qa/pack canonico/neuromood-mockup_reparado.html`.
+
 ## Graphify Preflight
 
 Before manual code exploration in this active visual repair flow, run:
@@ -127,7 +154,7 @@ Harness canonico HTML/mockup:
 
 Este harness renderiza la receta completa como original A/B para medir ruido
 natural y original/modificado para medir delta real. Es PASS solo si el set
-completo de 86 capturas (incluidos modales accionados) queda dentro del baseline
+completo de 116 capturas (incluidos modales accionados) queda dentro del baseline
 dinamico o del baseline estadistico automatico, y si `AUDIT.json` reporta
 `summary.fail == 0`. Es FAIL si falta una captura, falla la receta, o cualquier
 fila queda fuera del baseline despues del escalamiento estadistico.
@@ -162,7 +189,7 @@ Microfix pantalla exacta:
 ```powershell
 .\.venv\Scripts\python.exe qa\capture_v8.py `
   --app suite `
-  --view dbt-practice-stop `
+  --view dbt-practice-wise-mind `
   --theme light `
   --out-dir qa\_captures_v8 `
   --no-clean
@@ -171,7 +198,7 @@ Microfix pantalla exacta:
   --canonical qa\_mockup_canonical `
   --actual qa\_captures_v8 `
   --out-dir reports\qa\layered_visual_compare_item `
-  --key "suite:dbt-practice-stop@light"
+  --key "suite:dbt-practice-wise-mind@light"
 ```
 
 Familia chica:

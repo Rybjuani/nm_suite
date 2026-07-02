@@ -12,6 +12,18 @@ This file is the active protocol for visual parity work. Read it before editing
 - Canonical HTML/mockup parity auditor:
   `tools/qa/audit_mockup_parity_baseline.py`.
 
+DBT canonical v2 is the active baseline: the official mockup set has 116
+captures (58 views x 2 themes), and DBT has 16 formal practice modal surfaces.
+The earlier STOP-only DBT closure is historical evidence only. No previous
+`suite:dbt-practice-stop` PASS can close DBT as a full family after this baseline
+promotion.
+
+Never use any HTML under `reports/` as canonical input. Files such as
+`reports/.../sources/original_HEAD.html` are forensic snapshots produced by
+auditors to compare `HEAD` against the working tree. They are
+`DO_NOT_USE_AS_CANON`; the only allowed HTML source for official canonical PNGs
+is `qa/pack canonico/neuromood-mockup_reparado.html`.
+
 Desktop zip files are archival evidence only. Do not use
 `C:\Users\nosom\Desktop\_mockup_canonical.zip` or
 `C:\Users\nosom\Desktop\captures_v8_2026-06-28_031100.zip` to close current
@@ -185,7 +197,7 @@ Microfix pantalla exacta:
 ```powershell
 .\.venv\Scripts\python.exe qa\capture_v8.py `
   --app suite `
-  --view dbt-practice-stop `
+  --view dbt-practice-wise-mind `
   --theme light `
   --out-dir qa\_captures_v8 `
   --no-clean
@@ -194,7 +206,7 @@ Microfix pantalla exacta:
   --canonical qa\_mockup_canonical `
   --actual qa\_captures_v8 `
   --out-dir reports\qa\layered_visual_compare_item `
-  --key "suite:dbt-practice-stop@light"
+  --key "suite:dbt-practice-wise-mind@light"
 ```
 
 Familia chica:

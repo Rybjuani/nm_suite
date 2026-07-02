@@ -35,7 +35,6 @@ SCRIM_ALPHA = 0.5
 
 MODAL_SURFACES = {"modal", "window_modal"}
 BACK_SCREEN_VIEWS = {
-    "suite:dbt-practice-stop": "suite:dbt-library",
     "hub:detalle-resumen-ia-0": "hub:detalle",
 }
 
@@ -497,6 +496,8 @@ def outside_bboxes_mask(
 def back_screen_key_for(capture: CaptureId) -> str:
     if capture.back_screen_key:
         return capture.back_screen_key
+    if capture.view_key.startswith("suite:dbt-practice-"):
+        return f"suite:dbt-library@{capture.theme}"
     back_screen_view = BACK_SCREEN_VIEWS.get(capture.view_key, "")
     return f"{back_screen_view}@{capture.theme}" if back_screen_view else ""
 

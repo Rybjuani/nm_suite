@@ -36,7 +36,7 @@ def test_dbt_table_idempotence_preserves_data():
             conn.execute(
                 "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (rec_id, "2026-06-14", "10:00:00", "mind_wise", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
+                (rec_id, "2026-06-14", "10:00:00", "wise_mind", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
             )
         
         # Call inicializar_tablas() again
@@ -61,7 +61,7 @@ def test_dbt_constraints():
             conn.execute(
                 "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (str(uuid.uuid4()), "2026-06-14", "10:00:00", "mind_wise", 1, "invalid_family", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
+                (str(uuid.uuid4()), "2026-06-14", "10:00:00", "wise_mind", 1, "invalid_family", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
             )
             
     # Test invalid malestar_antes constraint (>10)
@@ -70,7 +70,7 @@ def test_dbt_constraints():
             conn.execute(
                 "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (str(uuid.uuid4()), "2026-06-14", "10:00:00", "mind_wise", 1, "mindfulness", "Volver al presente", 12, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
+                (str(uuid.uuid4()), "2026-06-14", "10:00:00", "wise_mind", 1, "mindfulness", "Volver al presente", 12, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
             )
             
     # Test invalid malestar_despues constraint (<0)
@@ -79,7 +79,7 @@ def test_dbt_constraints():
             conn.execute(
                 "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (str(uuid.uuid4()), "2026-06-14", "10:00:00", "mind_wise", 1, "mindfulness", "Volver al presente", 5, -1, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
+                (str(uuid.uuid4()), "2026-06-14", "10:00:00", "wise_mind", 1, "mindfulness", "Volver al presente", 5, -1, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
             )
 
     # Test invalid result constraint
@@ -88,7 +88,7 @@ def test_dbt_constraints():
             conn.execute(
                 "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (str(uuid.uuid4()), "2026-06-14", "10:00:00", "mind_wise", 1, "mindfulness", "Volver al presente", 5, 3, "invalid_result", 60, "test", "2026-06-14T10:00:00Z")
+                (str(uuid.uuid4()), "2026-06-14", "10:00:00", "wise_mind", 1, "mindfulness", "Volver al presente", 5, 3, "invalid_result", 60, "test", "2026-06-14T10:00:00Z")
             )
 
     # Test invalid duration constraint (negative duration)
@@ -97,7 +97,7 @@ def test_dbt_constraints():
             conn.execute(
                 "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (str(uuid.uuid4()), "2026-06-14", "10:00:00", "mind_wise", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", -30, "test", "2026-06-14T10:00:00Z")
+                (str(uuid.uuid4()), "2026-06-14", "10:00:00", "wise_mind", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", -30, "test", "2026-06-14T10:00:00Z")
             )
 
 
@@ -109,7 +109,7 @@ def test_dbt_valid_constraints():
                 conn.execute(
                     "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (str(uuid.uuid4()), "2026-06-14", "10:00:00", "mind_wise", 1, family, "Volver al presente", 0, 10, "ayudo", 0, "test", "2026-06-14T10:00:00Z")
+                    (str(uuid.uuid4()), "2026-06-14", "10:00:00", "wise_mind", 1, family, "Volver al presente", 0, 10, "ayudo", 0, "test", "2026-06-14T10:00:00Z")
                 )
         assert True
     except Exception as e:
@@ -126,7 +126,7 @@ def test_dbt_null_scales():
             conn.execute(
                 "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (rec_id, "2026-06-14", "10:00:00", "mind_wise", 1, "mindfulness", "Volver al presente", None, None, "sin_evaluar", 60, "", "2026-06-14T10:00:00Z")
+                (rec_id, "2026-06-14", "10:00:00", "wise_mind", 1, "mindfulness", "Volver al presente", None, None, "sin_evaluar", 60, "", "2026-06-14T10:00:00Z")
             )
         
         with conexion() as conn:
@@ -141,7 +141,7 @@ def test_dbt_null_scales():
 def test_dbt_save_null_flow():
     get_qapp()
     module = ModuloDBT(show_header=False)
-    module._current_skill_id = "mind_observe"
+    module._current_skill_id = "observe_describe"
     module._current_family = "mindfulness"
     module._started_at = datetime.datetime.now() - datetime.timedelta(seconds=120)
     
@@ -168,7 +168,7 @@ def test_dbt_save_null_flow():
 def test_dbt_cancel_does_not_insert():
     get_qapp()
     module = ModuloDBT(show_header=False)
-    module.start_practice(DBT_SKILLS["mind_observe"])
+    module.start_practice(DBT_SKILLS["observe_describe"])
     
     # Clear records first
     with conexion() as conn:
@@ -202,7 +202,7 @@ def test_dbt_get_card_status():
         conn.execute(
             "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (rec_id1, today_str, "10:00:00", "mind_wise", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
+            (rec_id1, today_str, "10:00:00", "wise_mind", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
         )
         
     assert module.get_card_status() == "1 práctica hoy"
@@ -213,7 +213,7 @@ def test_dbt_get_card_status():
         conn.execute(
             "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (rec_id2, today_str, "11:00:00", "mind_observe", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T11:00:00Z")
+            (rec_id2, today_str, "11:00:00", "observe_describe", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T11:00:00Z")
         )
         
     assert module.get_card_status() == "2 prácticas hoy"
@@ -239,7 +239,7 @@ def test_dbt_get_card_status_weekly():
         conn.execute(
             "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (str(uuid.uuid4()), three_days_ago, "10:00:00", "mind_wise", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
+            (str(uuid.uuid4()), three_days_ago, "10:00:00", "wise_mind", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
         )
         
     assert module.get_card_status() == "1 práctica esta semana"
@@ -250,7 +250,7 @@ def test_dbt_get_card_status_weekly():
         conn.execute(
             "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (str(uuid.uuid4()), five_days_ago, "10:00:00", "mind_wise", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
+            (str(uuid.uuid4()), five_days_ago, "10:00:00", "wise_mind", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
         )
         
     assert module.get_card_status() == "2 prácticas esta semana"
@@ -266,7 +266,7 @@ def test_dbt_reopen_module_retains_records():
         conn.execute(
             "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ("rec_reopen_test", today_str, "10:00:00", "mind_wise", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
+            ("rec_reopen_test", today_str, "10:00:00", "wise_mind", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test", "2026-06-14T10:00:00Z")
         )
         
     # Instantiate two modules and verify both see the persisted DB state.
@@ -317,7 +317,7 @@ def test_exportar_dbt_practicas():
             conn.execute(
                 "INSERT INTO dbt_practicas (record_id, fecha, hora, skill_id, skill_version, familia, necesidad, malestar_antes, malestar_despues, resultado, duracion_seg, nota, created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (rec_id, "2026-06-14", "10:00:00", "mind_wise", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test sync note", "2026-06-14T10:00:00Z")
+                (rec_id, "2026-06-14", "10:00:00", "wise_mind", 1, "mindfulness", "Volver al presente", 5, 3, "ayudo", 60, "test sync note", "2026-06-14T10:00:00Z")
             )
         
         # Test synchronization
@@ -332,7 +332,7 @@ def test_exportar_dbt_practicas():
         record = payload[0]
         assert record["record_id"] == rec_id
         assert record["patient_id"] == "test_patient"
-        assert record["skill_id"] == "mind_wise"
+        assert record["skill_id"] == "wise_mind"
         assert record["nota"] == "test sync note"
         assert record["malestar_antes"] == 5
         assert record["malestar_despues"] == 3
@@ -363,7 +363,7 @@ def test_hub_exportar_pdf_integration():
                 "record_id": "test_id",
                 "fecha": "2026-06-14",
                 "hora": "10:00:00",
-                "skill_id": "mind_wise",
+                "skill_id": "wise_mind",
                 "familia": "mindfulness",
                 "resultado": "ayudo",
                 "malestar_antes": 6,

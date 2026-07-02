@@ -184,6 +184,45 @@ def _ast_extract_add_section_ids(filepath: Path) -> list[str]:
 #   {"action": "capture_child", "prefix": "popup_name"}  (captura ventana hija)
 #   {"action": "close_child"}  (cierra ventana hija activa)
 
+_DBT_CANONICAL_PRACTICES: list[tuple[str, str]] = [
+    ("observe_describe", "Observar y describir"),
+    ("wise_mind", "Mente sabia"),
+    ("participate", "Participar"),
+    ("non_judgmental", "Sin juzgar"),
+    ("stop", "STOP"),
+    ("tipp", "TIPP / TIP"),
+    ("self_soothe", "Autocalma con los sentidos"),
+    ("radical_acceptance", "Aceptacion radical"),
+    ("check_facts", "Verificar los hechos"),
+    ("opposite_action", "Accion opuesta"),
+    ("problem_solving", "Resolucion de problemas"),
+    ("please", "PLEASE / autocuidado base"),
+    ("dear_man", "DEAR MAN"),
+    ("give", "GIVE"),
+    ("fast", "FAST"),
+    ("validation_limits", "Validacion / limites"),
+]
+
+
+def _dbt_practice_view_id(practice_id: str) -> str:
+    return f"dbt-practice-{practice_id.replace('_', '-')}"
+
+
+def _dbt_practice_recipe(practice_id: str, label: str) -> dict:
+    view_id = _dbt_practice_view_id(practice_id)
+    return {
+        "label": f"DBT Practica - {label}",
+        "parent": "dbt-library",
+        "actions": [{"action": "navigate", "view": "dbt"},
+                    {"action": "call", "func": "_dbt_select_tab_library"},
+                    {"action": "call", "func": "_dbt_start_practice", "practice_id": practice_id},
+                    {"action": "drain", "cycles": 6},
+                    {"action": "capture", "view": view_id,
+                     "surface": "window_modal",
+                     "modal_capture_scope": "window_overlay",
+                     "back_screen_key": "suite:dbt-library"}],
+    }
+
 _RECIPES: dict[str, dict[str, dict]] = {
     "suite": {
         # ── Home ──────────────────────────────────────────────────────────
@@ -250,25 +289,16 @@ _RECIPES: dict[str, dict[str, dict]] = {
                         {"action": "capture", "view": "dbt-now"}],
         },
         "dbt-library": {
-            "label": "DBT Biblioteca - catálogo de cuatro familias",
+            "label": "DBT Biblioteca - catalogo de 16 practicas",
             "parent": "dbt-now",
             "actions": [{"action": "navigate", "view": "dbt"},
                         {"action": "call", "func": "_dbt_select_tab_library"},
                         {"action": "drain", "cycles": 6},
                         {"action": "capture", "view": "dbt-library"}],
         },
-        "dbt-practice-stop": {
-            "label": "DBT Práctica - paso intermedio de STOP",
-            "parent": "dbt-now",
-            "actions": [{"action": "navigate", "view": "dbt"},
-                        {"action": "call", "func": "_dbt_select_tab_library"},
-                        {"action": "call", "func": "_dbt_start_stop_practice"},
-                        {"action": "call", "func": "_dbt_go_to_step_2"},
-                        {"action": "drain", "cycles": 6},
-                        {"action": "capture", "view": "dbt-practice-stop",
-                         "surface": "window_modal",
-                         "modal_capture_scope": "window_overlay",
-                         "back_screen_key": "suite:dbt-library"}],
+        **{
+            _dbt_practice_view_id(practice_id): _dbt_practice_recipe(practice_id, label)
+            for practice_id, label in _DBT_CANONICAL_PRACTICES
         },
         # dbt-practice-closure eliminado del harness (C4-05): pantalla de cierre
         # fue removida del producto; la evidencia era stale y generaba falsos positivos.
@@ -282,7 +312,7 @@ _RECIPES: dict[str, dict[str, dict]] = {
         },
         # respiracion-preset-3min / respiracion-preset-10min: microestados de
         # interacción (click en preset chip). Movidos a extended_runtime_qa;
-        # no participan del gate de paridad mockup (canonical_mockup_parity=86).
+        # no participan del gate de paridad mockup (canonical_mockup_parity=116).
         "respiracion-running": {
             "label": "Respiracion running (inhala)",
             "parent": "respiracion",
@@ -450,7 +480,7 @@ _RECIPES: dict[str, dict[str, dict]] = {
         },
         # timer-preset-5min / timer-preset-45min: microestados de interacción
         # (click en chip de duración). Movidos a extended_runtime_qa;
-        # no participan del gate de paridad mockup (canonical_mockup_parity=86).
+        # no participan del gate de paridad mockup (canonical_mockup_parity=116).
         # 2026-06: Timer empty state — sin asignación `patient:<id>` ni fixture
         # QA. Verifica que el módulo muestra el mensaje de empty state y los
         # controles quedan deshabilitados (regla clínica: no hay presets
@@ -1042,11 +1072,14 @@ def _dbt_select_tab_library(win, qapp, action):
 
 
 @_register_helper
-def _dbt_start_stop_practice(win, qapp, action):
+def _dbt_start_practice(win, qapp, action):
     target = _module_target(win)
     if target is not None:
         from app.modules.dbt_qt import DBT_SKILLS
-        skill = DBT_SKILLS["distress_stop"]
+        practice_id = str(action.get("practice_id", ""))
+        if practice_id not in DBT_SKILLS:
+            raise KeyError(f"DBT practice not available in runtime: {practice_id}")
+        skill = DBT_SKILLS[practice_id]
         target.start_practice(skill)
     _drain(qapp, cycles=4)
 

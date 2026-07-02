@@ -96,7 +96,7 @@ def test_skill_version_2_se_persiste_real(dbt_module_with_temp_db):
 
     # Tomar una skill real del catálogo y forzar version=2 (simula
     # una revisión clínica futura de la skill)
-    skill = dict(DBT_SKILLS["mind_observe"])  # copia para no mutar el catálogo
+    skill = dict(DBT_SKILLS["observe_describe"])  # copia para no mutar el catálogo
     skill["version"] = 2  # inyección hipotética
 
     mod.start_practice(skill)
@@ -114,7 +114,7 @@ def test_skill_version_2_se_persiste_real(dbt_module_with_temp_db):
     conn.close()
 
     assert row is not None, "No se persistió la práctica"
-    assert row["skill_id"] == "mind_observe"
+    assert row["skill_id"] == "observe_describe"
     assert row["skill_version"] == 2, (
         f"SQLite persistió skill_version={row['skill_version']!r}, esperado 2. "
         "Si el INSERT sigue hardcodeando 1, el fix RA-5 no aplicó."
@@ -130,7 +130,7 @@ def test_skill_version_1_se_persiste_para_skills_reales(dbt_module_with_temp_db)
 
     mod = dbt_module_with_temp_db
 
-    skill = DBT_SKILLS["distress_stop"]  # version=1
+    skill = DBT_SKILLS["stop"]  # version=1
     mod.start_practice(skill)
     mod._on_practice_saved(7, 4, "ayudo", "")
 
@@ -153,12 +153,12 @@ def test_skill_version_se_actualiza_al_cambiar_skill(dbt_module_with_temp_db):
     mod = dbt_module_with_temp_db
 
     # Skill A: real, version=1
-    skill_a = DBT_SKILLS["mind_observe"]
+    skill_a = DBT_SKILLS["observe_describe"]
     mod.start_practice(skill_a)
     mod._on_practice_saved(7, 4, "ayudo", "")
 
     # Skill B: misma skill forzada a version=2
-    skill_b = dict(DBT_SKILLS["mind_observe"])
+    skill_b = dict(DBT_SKILLS["observe_describe"])
     skill_b["version"] = 2
     mod.start_practice(skill_b)
     mod._on_practice_saved(6, 5, "parcial", "")

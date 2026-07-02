@@ -95,7 +95,7 @@ def test_generar_pdf_renderiza_secciones_reales(tmp_path, monkeypatch):
             {
                 "fecha": "2026-06-19",
                 "hora": "13:00",
-                "skill_id": "distress_stop",
+                "skill_id": "stop",
                 "familia": "distress_tolerance",
                 "resultado": "ayudo",
                 "malestar_antes": 8,

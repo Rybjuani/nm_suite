@@ -2,7 +2,7 @@
  * generate_captures.js — NeuroMood · generador de capturas canónicas v3
  * ====================================================================
  *
- * Genera EXACTAMENTE 86 PNG canónicas (43 vistas × 2 temas) con nombres y
+ * Genera EXACTAMENTE 116 PNG canónicas (58 vistas × 2 temas) con nombres y
  * tamaños fijos.
  *
  * Uso:
@@ -17,13 +17,36 @@ const crypto = require('crypto');
 const CHROMIUM_PATH = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium';
 
 /* ---------------------------------------------------------------------------
- * 1) Catálogo de las 43 vistas
+ * 1) Catálogo de las 58 vistas
  * ------------------------------------------------------------------------ */
 
 const SIZE_WINDOW  = '960x600';
 const SIZE_NARROW  = '520x600';
 const SIZE_MODAL   = '720x462';
 const SIZE_MODAL_L = '960x600';
+
+const DBT_PRACTICES = [
+  'observe_describe',
+  'wise_mind',
+  'participate',
+  'non_judgmental',
+  'stop',
+  'tipp',
+  'self_soothe',
+  'radical_acceptance',
+  'check_facts',
+  'opposite_action',
+  'problem_solving',
+  'please',
+  'dear_man',
+  'give',
+  'fast',
+  'validation_limits',
+];
+
+function dbtPracticeViewName(practiceId) {
+  return `suite-dbt-practice-${practiceId.replace(/_/g, '-')}`;
+}
 
 const VIEWS = [
   // ---------- Hub · Pacientes ----------
@@ -82,9 +105,14 @@ const VIEWS = [
   // ---------- Suite · Habilidades DBT ----------
   { name: 'suite-dbt-now',                  screen: 'dbtnow', size: SIZE_WINDOW },
   { name: 'suite-dbt-library',              screen: 'dbtlib', size: SIZE_WINDOW },
-  { name: 'suite-dbt-practice-stop',        screen: 'dbtlib',
-    openModalSel: '.dbt-card[data-skill="Tolerancia"]', afterOpenClickSel: '#dbtNext',
-    captureSel: '.window', size: SIZE_WINDOW, backScreen: 'suite:dbt-library' },
+  ...DBT_PRACTICES.map((practiceId) => ({
+    name: dbtPracticeViewName(practiceId),
+    screen: 'dbtlib',
+    openModalSel: `.dbt-card[data-skill-id="${practiceId}"]`,
+    captureSel: '.window',
+    size: SIZE_WINDOW,
+    backScreen: 'suite:dbt-library',
+  })),
 
   // ---------- Suite · Acceso ----------
   { name: 'suite-onboarding',               screen: 'onboarding', state: 'normal', size: SIZE_NARROW },
@@ -94,8 +122,8 @@ const VIEWS = [
 
 const THEMES = ['light', 'dark'];
 
-if (VIEWS.length !== 43) {
-  console.error(`ERROR: VIEWS.length=${VIEWS.length}, se esperaba 43`);
+if (VIEWS.length !== 58) {
+  console.error(`ERROR: VIEWS.length=${VIEWS.length}, se esperaba 58`);
   process.exit(2);
 }
 
@@ -203,8 +231,6 @@ async function captureView(page, view, theme, outDir) {
   }
 
   // 3.5b — Acciones dentro del modal antes de capturar.
-  // DBT "practice-stop" es un estado intermedio: la app PyQt y el contrato de
-  // test capturan Paso 2, por eso el mockup canónico debe avanzar una vez.
   if (view.afterOpenClickSel) {
     const clicks = view.afterOpenClickCount || 1;
     for (let i = 0; i < clicks; i++) {
@@ -230,7 +256,7 @@ async function captureView(page, view, theme, outDir) {
       if (!win || !bg || !modal) return;
       const wb = win.getBoundingClientRect();
       const tb = titlebar ? titlebar.getBoundingClientRect() : { height: 47 };
-      const contentOnly = viewName === 'suite-dbt-practice-stop';
+      const contentOnly = viewName.startsWith('suite-dbt-practice-');
       bg.style.position = 'fixed';
       bg.style.left = `${wb.left}px`;
       bg.style.top = `${wb.top + (contentOnly ? tb.height : 0)}px`;
@@ -340,8 +366,20 @@ async function captureView(page, view, theme, outDir) {
   }
   const htmlPath = path.resolve(args[0]);
   const outDir = path.resolve(args[1]);
+  const repoRoot = path.resolve(__dirname, '..', '..');
+  const canonicalHtmlPath = path.resolve(repoRoot, 'qa', 'pack canonico', 'neuromood-mockup_reparado.html');
+  const relHtmlPath = path.relative(repoRoot, htmlPath).replace(/\\/g, '/');
   if (!fs.existsSync(htmlPath)) {
     console.error(`No existe el mockup: ${htmlPath}`);
+    process.exit(2);
+  }
+  if (relHtmlPath.startsWith('reports/') || path.basename(htmlPath).toLowerCase() === 'original_head.html') {
+    console.error(`ERROR: DO_NOT_USE_AS_CANON: ${htmlPath}`);
+    process.exit(2);
+  }
+  if (path.normalize(htmlPath).toLowerCase() !== path.normalize(canonicalHtmlPath).toLowerCase()) {
+    console.error(`ERROR: el unico HTML canonico permitido es ${canonicalHtmlPath}`);
+    console.error(`Recibido: ${htmlPath}`);
     process.exit(2);
   }
   if (fs.existsSync(outDir)) {

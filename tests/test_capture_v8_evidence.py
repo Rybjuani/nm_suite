@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import sys
+import json
+from pathlib import Path
 
 from qa import capture_v8
 
@@ -131,25 +133,55 @@ def test_phase0_required_recipes_are_registered():
         assert any(action.get("action") == "capture" for action in suite[view_id]["actions"])
 
 
-def test_dbt_practice_stop_recipe_declares_modal_window_overlay_metadata():
-    """Static guard: the dbt-practice-stop capture action must declare modal
-    metadata (surface=window_modal, modal_capture_scope=window_overlay,
-    back_screen_key=suite:dbt-library) so the runtime manifest records it as a
-    modal that audit_modal_backdrop_blur.py can evaluate. Without this metadata
-    the runtime capture is mislabeled as surface=window and the modal backdrop
-    audit falls back to BACKDROP_CAPTURE_MISSING (not_observable_modal_crop).
-    """
+def test_canonical_manifest_mockup_path_is_not_a_reports_snapshot():
+    for manifest_path in (
+        Path("qa/_mockup_canonical/MANIFEST.json"),
+        Path("qa/pack canonico/capturas_test/MANIFEST.json"),
+    ):
+        if not manifest_path.exists():
+            continue
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        mockup_path = str(manifest.get("mockup_path", "")).replace("\\", "/").lower()
+        assert "/reports/" not in mockup_path
+        assert not mockup_path.endswith("/original_head.html")
+        assert mockup_path.endswith("qa/pack canonico/neuromood-mockup_reparado.html")
+
+
+def test_dbt_v2_practice_recipes_declare_modal_window_overlay_metadata():
+    """DBT v2 promotes all 16 practice modals as formal capture surfaces."""
     suite = capture_v8._RECIPES["suite"]
-    assert "dbt-practice-stop" in suite
-    capture_actions = [
-        a for a in suite["dbt-practice-stop"]["actions"] if a.get("action") == "capture"
+    expected = [
+        f"dbt-practice-{practice_id.replace('_', '-')}"
+        for practice_id, _label in capture_v8._DBT_CANONICAL_PRACTICES
     ]
-    assert capture_actions, "dbt-practice-stop recipe must have a capture action"
-    capture = capture_actions[-1]
-    assert capture["view"] == "dbt-practice-stop"
-    assert capture["surface"] == "window_modal"
-    assert capture["modal_capture_scope"] == "window_overlay"
-    assert capture["back_screen_key"] == "suite:dbt-library"
+
+    assert len(expected) == 16
+    assert all(view_id in suite for view_id in expected)
+    all_calls = [
+        action
+        for view_id in expected
+        for action in suite[view_id]["actions"]
+        if action.get("action") == "call"
+    ]
+    assert not any(action.get("func") == "_dbt_start_stop_practice" for action in all_calls)
+
+    for practice_id, _label in capture_v8._DBT_CANONICAL_PRACTICES:
+        view_id = f"dbt-practice-{practice_id.replace('_', '-')}"
+        actions = suite[view_id]["actions"]
+        start_actions = [
+            a for a in actions
+            if a.get("action") == "call" and a.get("func") == "_dbt_start_practice"
+        ]
+        assert start_actions
+        assert start_actions[-1]["practice_id"] == practice_id
+
+        capture_actions = [a for a in actions if a.get("action") == "capture"]
+        assert capture_actions, f"{view_id} recipe must have a capture action"
+        capture = capture_actions[-1]
+        assert capture["view"] == view_id
+        assert capture["surface"] == "window_modal"
+        assert capture["modal_capture_scope"] == "window_overlay"
+        assert capture["back_screen_key"] == "suite:dbt-library"
 
 
 def test_capture_matrix_rows_include_phase0_columns():
