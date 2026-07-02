@@ -63,6 +63,10 @@ blocked / too hard / won’t fix, degrading or reclassifying to skip, or any
 claim that a divergence is "minor", "cosmetic", or "acceptable" without a
 comparator `PASS`.
 
+Legacy closure notes may mention panel/manual review as inspection context only.
+Those phrases never close a checkbox without the mandatory technical gates in
+Required Closure Evidence.
+
 ## Active Sources
 
 - Canonical images: `qa/_mockup_canonical/`
@@ -203,6 +207,14 @@ Runtime scope/noise hardening auxiliar:
   inputs necesarios. Es no-regresion/advisory y no reemplaza
   `run_visual_item.ps1`, `run_visual_family.ps1`, `run_visual_full.ps1` ni el
   exact-key `PASS` del comparator activo.
+- Ningun agente puede saltar DBT v2 porque no estaba sembrado en la checklist
+  vieja: DBT v2 tiene 36 exact keys y esta seccion gobierna la cola actual.
+- `REVIEW_NOISE`, `NOISE_WARNING`, `delta_best`, `panel_crop`,
+  `capture_v8` success, `audit_mockup_parity_baseline.py` PASS aislado,
+  owner acceptance, manual review, "looks good", "minor", "cosmetic" o
+  "acceptable residue" no cierran checklist.
+- Si `qa/anti_fraud_scan.py` falla, ningun PASS posterior del comparator es
+  valido hasta corregir la causa y rerun anti-fraud.
 
 Disciplina de recursos:
 
@@ -487,22 +499,27 @@ flat-region divergence.
 
 ## Fresh Baseline
 
-Capture command:
+Active baseline:
+
+- DBT v2 canon is active: 116 captures, 58 views x 2 themes, 16 formal DBT
+  practices, 34 `window_modal` surfaces.
+- The old 86-capture reset baseline from 2026-06-28 is historical only and
+  cannot govern DBT v2.
+- Latest DBT v2 family evidence:
+  `reports/qa/dbt_full_compare_after_shadow/LAYERED_VISUAL_REPORT.json`
+  (`REPORT_EVIDENCE_VALID: YES`, 36 DBT keys, 34 PASS, 2 FAIL).
+- Latest DBT modal evidence:
+  `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`
+  (`32/32` DBT practice modals PASS; the only modal FAIL is
+  `hub:detalle-resumen-ia-0@dark`, outside DBT).
+
+Canonical/runtime capture command for broad decisions:
 
 ```powershell
 .\.venv\Scripts\python.exe qa\capture_v8.py --all --clean --out-dir qa\_captures_v8
 ```
 
-Capture result:
-
-- Generated: `2026-06-28T11:30:56.170088`
-- Git short head at capture time: `80561110`
-- Saved captures: 86
-- Failed captures: 0
-- Manifest status: `TECHNICAL_CAPTURE_ONLY`, `REVIEW_INCOMPLETE`,
-  `HANDOFF_CLOSURE_ALLOWED: NO`
-
-Comparator command:
+Comparator command for global/family reseed:
 
 ```powershell
 .\.venv\Scripts\python.exe qa\layered_visual_compare.py `
@@ -511,17 +528,10 @@ Comparator command:
   --out-dir reports\qa\layered_visual_compare_fresh
 ```
 
-Comparator result:
-
-- Total: 86
-- Pass: 0
-- Real divergences/review items: 86
-- High severity: 36
-- Medium severity: 50
-- State or recipe suspects: 40
-- QA missed raw/layout: 85
-- Buckets: `STATE_RECIPE_OR_PRODUCT_FIX` 40, `LAYOUT_FIX` 38,
-  `VISUAL_STYLE_REVIEW` 8
+If the canonical HTML, capture recipe, canonical PNGs, baseline, or checklist
+seed changes, `tools/qa/audit_mockup_parity_baseline.py` must PASS before this
+handoff can be treated as current. `audit_mockup_parity_baseline.py` PASS alone
+does not close runtime items.
 
 ## Required Closure Evidence
 
@@ -680,21 +690,106 @@ regression anchors.
 - [x] `suite:registro-success@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.06139; odiff=1.0; bbox=13; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-success_light.png`.
   - Closure evidence (2026-06-29, collateral PASS of the same fix commit `d72c55a`): the bare-container + per-step-card shell also aligns the success state. Capture `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view registro-success --theme light --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_registro\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key `PASS` (`changed_pixel_ratio=0.0405`, `mean_abs_diff=0.0151`, `windowed_ssim=0.918`, `max_bbox_delta_px=15`). Anti-fraud CLEAN; registro tests green. Manual panel review confirms a real Qt render (success card with check + "Registro guardado"), no overlay; DIFF is text-edge AA.
 
-### DBT Cards / Modal (F9, F3, F12) (6)
+### DBT v2 / Habilidades DBT (36)
 
-- [x] `suite:dbt-practice-stop@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,odiff_delta; changed=0.70399; odiff=8.83; bbox=64; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-practice-stop_light.png`.
+Governance seed: DBT v2 has 36 exact keys. No agent may skip this family
+because the old checklist only listed DBT now/library/STOP. STOP-only evidence
+is historical only and cannot close DBT v2 as a family.
+
+Current DBT v2 report: `reports/qa/dbt_full_compare_after_shadow/LAYERED_VISUAL_REPORT.json`
+(`REPORT_EVIDENCE_VALID: YES`, 36 keys, 34 PASS, 2 FAIL). Modal report:
+`reports/qa/dbt_modal_audit_after_shadow/AUDIT.json` (`32/32` DBT practice
+modals PASS). Anti-fraud scan: CLEAN in the governance run. VAS remains required
+for any future new closure; Prompt 2 hardening/noise gates do not close any key.
+
+- [x] `suite:dbt-now@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07797; odiff=1.87; bbox=14; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-now_light.png`.
+  - DBT v2 evidence (2026-07-02, canon 116): `reports/qa/dbt_full_compare_after_shadow/LAYERED_VISUAL_REPORT.json` has `REPORT_EVIDENCE_VALID: YES` and exact key `PASS`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-now@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.08224; odiff=2.05; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-now_dark.png`.
+  - DBT v2 evidence (2026-07-02, canon 116): `reports/qa/dbt_full_compare_after_shadow/LAYERED_VISUAL_REPORT.json` has `REPORT_EVIDENCE_VALID: YES` and exact key `PASS`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [ ] `suite:dbt-library@light` - status=FAIL; severity=medium; bucket=VISUAL_STYLE_REVIEW; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.13243; odiff=3.84; bbox=14; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-library_light.png`.
+  - OPEN DBT v2 debt: latest canon-116 report is exact-key `FAIL`; keep open until fresh repair evidence has `REPORT_EVIDENCE_VALID: YES`, exact key `PASS`, anti-fraud CLEAN, and VAS PASS. Prompt 2 hardening/noise gates do not close it.
+- [ ] `suite:dbt-library@dark` - status=FAIL; severity=medium; bucket=VISUAL_STYLE_REVIEW; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.14219; odiff=4.03; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-library_dark.png`.
+  - OPEN DBT v2 debt: latest canon-116 report is exact-key `FAIL`; keep open until fresh repair evidence has `REPORT_EVIDENCE_VALID: YES`, exact key `PASS`, anti-fraud CLEAN, and VAS PASS. Prompt 2 hardening/noise gates do not close it.
+- [x] `suite:dbt-practice-observe-describe@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06620; odiff=1.48; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-observe-describe_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-observe-describe@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06924; odiff=0.97; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-observe-describe_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-wise-mind@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06221; odiff=0.88; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-wise-mind_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-wise-mind@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07056; odiff=0.97; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-wise-mind_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-participate@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06534; odiff=1.42; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-participate_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-participate@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06836; odiff=0.87; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-participate_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-non-judgmental@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06614; odiff=1.44; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-non-judgmental_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-non-judgmental@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06903; odiff=0.95; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-non-judgmental_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-stop@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06718; odiff=1.49; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-stop_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; old STOP-only closure is historical and not used.
+- [x] `suite:dbt-practice-stop@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06984; odiff=0.92; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-stop_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; old STOP-only closure is historical and not used.
+- [x] `suite:dbt-practice-tipp@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06850; odiff=1.56; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-tipp_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-tipp@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07125; odiff=0.99; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-tipp_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-self-soothe@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06665; odiff=1.45; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-self-soothe_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-self-soothe@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06974; odiff=0.98; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-self-soothe_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-radical-acceptance@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06717; odiff=1.50; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-radical-acceptance_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-radical-acceptance@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07055; odiff=1.05; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-radical-acceptance_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-check-facts@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06169; odiff=0.86; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-check-facts_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-check-facts@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07040; odiff=1.05; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-check-facts_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-opposite-action@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06945; odiff=1.61; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-opposite-action_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-opposite-action@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07279; odiff=1.08; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-opposite-action_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-problem-solving@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06387; odiff=0.96; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-problem-solving_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-problem-solving@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07255; odiff=1.16; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-problem-solving_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-please@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06850; odiff=1.59; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-please_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-please@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07227; odiff=1.17; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-please_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-dear-man@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06862; odiff=1.55; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-dear-man_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-dear-man@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07198; odiff=1.11; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-dear-man_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-give@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06508; odiff=1.40; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-give_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-give@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06780; odiff=0.84; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-give_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-fast@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06650; odiff=1.46; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-fast_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-fast@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06941; odiff=0.97; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-fast_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-validation-limits@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06886; odiff=1.59; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-validation-limits_light.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+- [x] `suite:dbt-practice-validation-limits@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07236; odiff=1.15; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-validation-limits_dark.png`.
+  - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
+
+### Historical DBT v1 / STOP-only Notes (superseded; not checklist)
+
+- Historical only, not a DBT v2 checklist item: `suite:dbt-practice-stop@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,odiff_delta; changed=0.70399; odiff=8.83; bbox=64; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-practice-stop_light.png`.
   - Closure evidence (2026-06-28): fix commit `47f6b91`; capture command `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view dbt-practice-stop --theme light --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_item\LAYERED_VISUAL_REPORT.json`; `REPORT_EVIDENCE_VALID: YES`; exact key `suite:dbt-practice-stop@light` status `PASS`; `HANDOFF_CLOSURE_ALLOWED: NO` only because `REPORT_SCOPE: PARTIAL`; manual panel review confirms modal geometry, centered step copy, CTA row, and dimmed DBT library backdrop match the canonical side-by-side.
   - **Revalidation post-hardening (2026-07-01, technical closure commit `47124dacf08a48fcad2d6440e2d03bfa725dec1b`)**: Previous closure evidence (`47f6b91`, pre-hardening) was suspected after commit `42c52df` (anti-overblur hardening) and `c438b1d` (bbox detector fix) and `47124da` (backdrop blur backend alignment). Fresh layered compare report: `reports/qa/layered_visual_compare_dbt_blur_backend_fix/LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, exact key `suite:dbt-practice-stop@light` status `PASS`, `changed_pixel_ratio=0.05521`, `mean_abs_diff=0.01683`, `ssim=0.95471`, `max_bbox_delta_px=1`, `suspicious_perfect_match=false`). Modal audit report: `reports/qa/modal_backdrop_blur_dbt_blur_backend_fix/AUDIT.json` (verdict `PASS`, `centered=PASS`, `bbox_size=PASS`, `backdrop_region=PASS`, `blur_dim_equivalence=PASS`, `back_screen_dependency=PASS`). VAS gate PASS (`fail_count=0`, `_PracticeModalScrim` present). Anti-fraud scan CLEAN. Tests: `pytest tests/test_anti_fraud_scan.py tests/test_dbt_visual_contract.py tests/test_modal_backdrop_blur_audit.py tests/test_capture_v8_evidence.py -q` = 46 passed. `HANDOFF_CLOSURE_ALLOWED: NO` only because `partial_scope` (other keys remain FAIL), not because of exact-key DBT failure. Resumen IA (`hub:detalle-resumen-ia-0@light`) remains open/out-of-scope (`RUNTIME_MODAL_MISSING`). No `_SCRIM_RGBA`, `_SCRIM_BLUR_RADIUS_LIGHT`, `_SCRIM_BLUR_RADIUS_DARK` changes. No comparator/VAS/thresholds/canonical captures touched.
-- [x] `suite:dbt-practice-stop@dark` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.1998; odiff=2.56; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-practice-stop_dark.png`.
+- Historical only, not a DBT v2 checklist item: `suite:dbt-practice-stop@dark` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.1998; odiff=2.56; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-practice-stop_dark.png`.
   - Closure evidence (2026-06-29, fix commit `3009322`): bridge anchors F12 `.modal-bg` L357-358 and `.modal.dbt-practice` L364 -> `_PracticeModalScrim` / `app/modules/dbt_qt.py`; exact capture+compare via `.\qa\run_visual_item.ps1 -App suite -View dbt-practice-stop -Theme dark -OutDir reports\qa\layered_visual_compare_dbt_practice_stop_dark_final`; report `reports\qa\layered_visual_compare_dbt_practice_stop_dark_final\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`, `HANDOFF_CLOSURE_ALLOWED: NO` only because `partial_scope`); exact key `suite:dbt-practice-stop@dark` status `PASS` (`changed_pixel_ratio=0.099`, `mean_abs_diff=0.0241`, `windowed_ssim=0.83393`, `max_bbox_delta_px=18`, `odiff=1.25`, `suspicious_perfect_match=false`). Anti-fraud CLEAN in the wrapper. Regression check for already-closed `suite:dbt-practice-stop@light` also PASS in `reports\qa\layered_visual_compare_dbt_practice_stop_light_final\LAYERED_VISUAL_REPORT.json` (`changed_pixel_ratio=0.07785`, `ssim=0.95221`, `bbox=1`). Tests: `ruff check app\modules\dbt_qt.py` PASS; `pytest tests\test_dbt_visual_contract.py tests\test_dbt_module.py tests\test_design_bridge_contract.py tests\test_anti_fraud_scan.py -q` = 36 passed. Manual panel review confirms a real Qt render: centered STOP modal, stepper/body/CTA row aligned over dimmed DBT library backdrop; no canonical/reference overlay or blit.
   - **Revalidation post-hardening (2026-07-01, technical closure commit `47124dacf08a48fcad2d6440e2d03bfa725dec1b`)**: Previous closure evidence (`3009322`, pre-hardening) was suspected after commit `42c52df` (anti-overblur hardening) and `c438b1d` (bbox detector fix) and `47124da` (backdrop blur backend alignment). Fresh layered compare report: `reports/qa/layered_visual_compare_dbt_blur_backend_fix/LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, exact key `suite:dbt-practice-stop@dark` status `PASS`, `changed_pixel_ratio=0.05939`, `mean_abs_diff=0.01919`, `ssim=0.6288`, `max_bbox_delta_px=17`, `suspicious_perfect_match=false`). Modal audit report: `reports/qa/modal_backdrop_blur_dbt_blur_backend_fix/AUDIT.json` (verdict `PASS`, `centered=PASS`, `bbox_size=PASS`, `backdrop_region=PASS`, `blur_dim_equivalence=PASS`, `back_screen_dependency=PASS`). VAS gate PASS (`fail_count=0`, `_PracticeModalScrim` present). Anti-fraud scan CLEAN. Tests: `pytest tests/test_anti_fraud_scan.py tests/test_dbt_visual_contract.py tests/test_modal_backdrop_blur_audit.py tests/test_capture_v8_evidence.py -q` = 46 passed. `HANDOFF_CLOSURE_ALLOWED: NO` only because `partial_scope` (other keys remain FAIL), not because of exact-key DBT failure. Resumen IA (`hub:detalle-resumen-ia-0@dark`) remains open/out-of-scope (`RUNTIME_MODAL_MISSING`). No `_SCRIM_RGBA`, `_SCRIM_BLUR_RADIUS_LIGHT`, `_SCRIM_BLUR_RADIUS_DARK` changes. No comparator/VAS/thresholds/canonical captures touched.
-- [x] `suite:dbt-library@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.15236; odiff=3.34; bbox=60; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-library_dark.png`.
+- Historical only, superseded by DBT v2 open item above: `suite:dbt-library@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.15236; odiff=3.34; bbox=60; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-library_dark.png`.
   - Closure evidence (2026-06-30, fix commit `d4b84b4`): DBT library now uses the canonical full-height `.screen` surface/radial/bottom stroke, DBT-only compact `.fchip` density, canonical 240px local `.seg` without selected brand border, DBT skill cards without lift and with 14px canonical content padding, and modal shadow/height/backdrop anchors preserved. Exact capture+compare via `.\qa\run_visual_item.ps1 -App suite -View dbt-library -Theme dark -OutDir reports\qa\layered_visual_compare_dbt_library_dark_final`; report `reports\qa\layered_visual_compare_dbt_library_dark_final\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`, `HANDOFF_CLOSURE_ALLOWED: NO` only because `partial_scope`); exact key `suite:dbt-library@dark` status `PASS` (`changed_pixel_ratio=0.08844`, `mean_abs_diff=0.02573`, `windowed_ssim=0.79041`, `max_bbox_delta_px=16`, `odiff=2.22`, `suspicious_perfect_match=false`). Anti-fraud CLEAN in wrapper. Anchors remain `PASS`: `suite:dbt-practice-stop@dark` in `reports\qa\layered_visual_compare_dbt_practice_stop_dark_anchor_final\LAYERED_VISUAL_REPORT.json` (`changed_pixel_ratio=0.05524`, `mean_abs_diff=0.01928`, `windowed_ssim=0.87264`, `max_bbox_delta_px=17`) and `suite:dbt-practice-stop@light` in `reports\qa\layered_visual_compare_dbt_practice_stop_light_anchor_after_library\LAYERED_VISUAL_REPORT.json` (`changed_pixel_ratio=0.06969`, `mean_abs_diff=0.01882`, `windowed_ssim=0.89332`, `max_bbox_delta_px=1`). Tests: `ruff check app\modules\dbt_qt.py shared\components\buttons.py shared\components\cards.py` PASS; `pytest tests\test_dbt_visual_contract.py tests\test_dbt_module.py tests\test_design_bridge_contract.py tests\test_anti_fraud_scan.py -q` = 36 passed. Manual panel review confirms a real Qt render, no canonical/reference overlay or blit; DIFF is residual text-edge AA/window chrome edge rows.
-- [x] `suite:dbt-library@light` - severity=medium; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.13701; odiff=3.19; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-library_light.png`.
+- Historical only, superseded by DBT v2 open item above: `suite:dbt-library@light` - severity=medium; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.13701; odiff=3.19; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-library_light.png`.
   - Closure evidence (2026-06-30, fix commit `182eaea3`): DBT library light uses the canonical full-height `.screen` surface/radial/bottom stroke, DBT-only compact `.fchip` density, canonical 240px local `.seg` without selected brand border, DBT skill cards without lift and with 14px canonical content padding, and modal shadow/height/backdrop anchors preserved. Exact capture+compare via `.\.venv\Scripts\python.exe qa\layered_visual_compare.py --canonical qa/_mockup_canonical --actual qa/_captures_v8 --out-dir reports\qa\layered_visual_compare_dbt_library_light_final --keys-file qa/_captures_v8/dbt_keys.txt`; report `reports\qa\layered_visual_compare_dbt_library_light_final\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`, `HANDOFF_CLOSURE_ALLOWED: NO` only because `partial_scope`); exact key `suite:dbt-library@light` status `PASS` (`changed_pixel_ratio=0.08379`, `mean_abs_diff=0.02646`, `windowed_ssim=0.79327`, `max_bbox_delta_px=14`, `odiff=2.16`, `suspicious_perfect_match=false`). Anti-fraud CLEAN in wrapper. Anchors remain `PASS`: `suite:dbt-practice-stop@dark` in `reports\qa\layered_visual_compare_dbt_library_light_final\LAYERED_VISUAL_REPORT.json` (`changed_pixel_ratio=0.05524`, `mean_abs_diff=0.01928`, `windowed_ssim=0.87264`, `max_bbox_delta_px=17`) and `suite:dbt-practice-stop@light` in `reports\qa\layered_visual_compare_dbt_library_light_final\LAYERED_VISUAL_REPORT.json` (`changed_pixel_ratio=0.06969`, `mean_abs_diff=0.01882`, `windowed_ssim=0.89332`, `max_bbox_delta_px=1`). Tests: `ruff check app\modules\dbt_qt.py shared\components\buttons.py shared\components\cards.py` PASS; `pytest tests\test_dbt_visual_contract.py tests\test_dbt_module.py tests\test_design_bridge_contract.py tests\test_anti_fraud_scan.py -q` = 36 passed. Manual panel review confirms a real Qt render, no canonical/reference overlay or blit; DIFF is residual text-edge AA/window chrome edge rows.
-- [x] `suite:dbt-now@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.11628; odiff=2.18; bbox=162; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-now_dark.png`.
+- Historical only, not the governing DBT v2 checklist item: `suite:dbt-now@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.11628; odiff=2.18; bbox=162; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-now_dark.png`.
   - Closure evidence (2026-06-30, fix commit `fec2c7cf`): DBT now view uses the canonical full-height `.screen` surface with need cards grid layout, DBT-only compact `.fchip` density, canonical 240px local `.seg` without selected brand border, and modal shadow/height/backdrop anchors preserved. Exact capture+compare via `.\.venv\Scripts\python.exe qa\layered_visual_compare.py --canonical qa/_mockup_canonical --actual qa/_captures_v8 --out-dir reports\qa\layered_visual_compare_dbt_now_dark --keys-file qa/_temp_keys.txt`; report `reports\qa\layered_visual_compare_dbt_now_dark\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`, `HANDOFF_CLOSURE_ALLOWED: NO` only because `partial_scope`); exact key `suite:dbt-now@dark` status `PASS` (`changed_pixel_ratio=0.08224`, `mean_abs_diff=0.02462`, `windowed_ssim=0.80835`, `max_bbox_delta_px=16`, `odiff=2.05`, `suspicious_perfect_match=false`). Anti-fraud CLEAN in wrapper. Anchors remain `PASS`: `suite:dbt-practice-stop@dark` (`changed_pixel_ratio=0.05524`, `mean_abs_diff=0.01928`, `windowed_ssim=0.87264`, `max_bbox_delta_px=17`), `suite:dbt-practice-stop@light` (`changed_pixel_ratio=0.06969`, `mean_abs_diff=0.01882`, `windowed_ssim=0.89332`, `max_bbox_delta_px=1`), `suite:dbt-library@dark` (`changed_pixel_ratio=0.08844`, `mean_abs_diff=0.02573`, `windowed_ssim=0.79041`, `max_bbox_delta_px=16`), `suite:dbt-library@light` (`changed_pixel_ratio=0.08379`, `mean_abs_diff=0.02646`, `windowed_ssim=0.79327`, `max_bbox_delta_px=14`). Tests: `ruff check app\modules\dbt_qt.py shared\components\buttons.py shared\components\cards.py` PASS; `pytest tests\test_dbt_visual_contract.py tests\test_dbt_module.py tests\test_design_bridge_contract.py tests\test_anti_fraud_scan.py -q` = 36 passed. Manual panel review confirms a real Qt render, no canonical/reference overlay or blit; DIFF is residual text-edge AA/window chrome edge rows.
-- [x] `suite:dbt-now@light` - severity=medium; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.10742; odiff=1.9; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-now_light.png`.
+- Historical only, not the governing DBT v2 checklist item: `suite:dbt-now@light` - severity=medium; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.10742; odiff=1.9; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_dbt-now_light.png`.
   - Closure evidence (2026-06-30, collateral PASS of fix commit `61ae181`): DBT now view light uses the canonical full-height `.screen` surface with need cards grid layout, DBT-only compact `.fchip` density, canonical 240px local `.seg` without selected brand border, and modal shadow/height/backdrop anchors preserved. Exact capture+compare via `.\.venv\Scripts\python.exe qa\layered_visual_compare.py --canonical qa/_mockup_canonical --actual qa/_captures_v8 --out-dir reports\qa\layered_visual_compare_dbt_now_light --keys-file qa/_temp_keys2.txt`; report `reports\qa\layered_visual_compare_dbt_now_light\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`, `HANDOFF_CLOSURE_ALLOWED: NO` only because `partial_scope`); exact key `suite:dbt-now@light` status `PASS` (`changed_pixel_ratio=0.07798`, `mean_abs_diff=0.02398`, `windowed_ssim=0.80963`, `max_bbox_delta_px=14`, `odiff=1.87`, `suspicious_perfect_match=false`). Anti-fraud CLEAN in wrapper. Anchors remain `PASS`: `suite:dbt-practice-stop@dark` (`changed_pixel_ratio=0.05524`, `mean_abs_diff=0.01928`, `windowed_ssim=0.87264`, `max_bbox_delta_px=17`), `suite:dbt-practice-stop@light` (`changed_pixel_ratio=0.06969`, `mean_abs_diff=0.01882`, `windowed_ssim=0.89332`, `max_bbox_delta_px=1`), `suite:dbt-library@dark` (`changed_pixel_ratio=0.08844`, `mean_abs_diff=0.02573`, `windowed_ssim=0.79041`, `max_bbox_delta_px=16`), `suite:dbt-library@light` (`changed_pixel_ratio=0.08379`, `mean_abs_diff=0.02646`, `windowed_ssim=0.79327`, `max_bbox_delta_px=14`), `suite:dbt-now@dark` (`changed_pixel_ratio=0.08224`, `mean_abs_diff=0.02462`, `windowed_ssim=0.80835`, `max_bbox_delta_px=16`). Tests: `ruff check app\modules\dbt_qt.py shared\components\buttons.py shared\components\cards.py` PASS; `pytest tests\test_dbt_visual_contract.py tests\test_dbt_module.py tests\test_design_bridge_contract.py tests\test_anti_fraud_scan.py -q` = 36 passed. Manual panel review confirms a real Qt render, no canonical/reference overlay or blit; DIFF is residual text-edge AA/window chrome edge rows.
 
 ### Hub Detail / Plan / IA (F6, F5, F3, F9, F10, F12, F8) (10)

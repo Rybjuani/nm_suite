@@ -327,12 +327,20 @@ Do not mark an item complete because of:
 - `audit_mockup_parity_baseline.py` PASS by itself. That auditor validates
   canonical HTML/mockup parity only; runtime closure still requires the active
   comparator, anti-fraud, and VAS gates.
+- Prompt 2 auxiliary hardening by itself:
+  `runtime_noise_envelope`, `runtime_internal_nav_parity`,
+  `audit_diff_confinement`, or `run_visual_scope_regression.ps1`.
+- `REVIEW_NOISE`, `NOISE_WARNING`, `delta_best`, `panel_crop`, or any
+  capture/manifest success state.
 - `HANDOFF_CLOSURE_ALLOWED: NO` by itself does **not** invalidate a report for closing an individual checkbox. It means the global handoff is not complete because the report is partial or other keys still have divergences. Individual closure requires `REPORT_EVIDENCE_VALID: YES` and the exact key status `PASS`.
 - Owner acceptance, human review, or "looks good enough".
 - Acceptable residue, partial progress, or "mostly fixed".
 - Blocked / too hard / won’t fix as a closure reason.
 - Degrading or reclassifying the item to a lower severity to skip it.
 - Any claim that the divergence is "minor", "cosmetic", or "acceptable" without a `PASS` from the comparator.
+
+Historical notes may record panel/manual review as inspection context. That
+context is never closure evidence unless every technical gate below also passes.
 
 ## Operational Discipline
 
@@ -343,6 +351,9 @@ The checklist is a sequential queue, not a global audit. Rules:
 3. You may not jump to the next item while the current one remains `FAIL`.
 4. You may not close, downgrade, or reclassify an item because it is difficult.
 5. The only way to advance the queue is a `PASS` from the active layered comparator (`qa/layered_visual_compare.py`).
+6. DBT v2 cannot be skipped because the old checklist was STOP-only or missing
+   keys. DBT v2 has 36 exact keys (DBT now, DBT library, and 16 practice modals
+   in light/dark), and those keys govern the active DBT queue.
 
 ## Current Item Definition
 
@@ -392,6 +403,9 @@ injection into the product or runtime, that closure is automatically
 **invalid** and the affected checklist item(s) must be **reopened** and
 re-validated with a real render. This applies retroactively to already-closed
 items.
+
+If `qa/anti_fraud_scan.py` fails, no later comparator `PASS` is valid closure
+evidence until the anti-fraud cause is corrected and the scan is rerun CLEAN.
 
 ## Gate Hardening (mandatory)
 
