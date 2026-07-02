@@ -1,0 +1,93 @@
+name: Visual Closure Replay
+
+on:
+  pull_request:
+    paths:
+      - VISUAL_REPAIR_HANDOFF.md
+      - docs/closure_evidence/**
+      - qa/close_visual_key.py
+      - qa/replay_visual_closure.py
+      - qa/migrate_legacy_closures.py
+      - qa/capture_v8.py
+      - qa/layered_visual_compare.py
+      - qa/vas_gate.py
+      - qa/anti_fraud_scan.py
+      - .github/workflows/visual-closure-replay.yml
+  push:
+    paths:
+      - VISUAL_REPAIR_HANDOFF.md
+      - docs/closure_evidence/**
+      - qa/close_visual_key.py
+      - qa/replay_visual_closure.py
+      - qa/migrate_legacy_closures.py
+      - qa/capture_v8.py
+      - qa/layered_visual_compare.py
+      - qa/vas_gate.py
+      - qa/anti_fraud_scan.py
+      - .github/workflows/visual-closure-replay.yml
+
+permissions:
+  contents: read
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # No pip install on purpose: anti_fraud_scan.py and the structural replay
+      # are stdlib-only, and requirements.txt is Windows-bound (pywin32/winotify)
+      # so it cannot install on ubuntu. Full pixel regeneration is platform-bound
+      # to the closing machine and runs locally via
+      # `qa/replay_visual_closure.py --base <base>` (without --no-regen).
+
+      - name: Run anti-fraud scans
+        shell: bash
+        run: |
+          set -euo pipefail
+          python qa/anti_fraud_scan.py --mode all
+
+      - name: Resolve audited base
+        id: base
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base_commit="$(git merge-base "origin/${{ github.base_ref }}" HEAD)"
+          else
+            before="${{ github.event.before }}"
+            zeros="0000000000000000000000000000000000000000"
+            if [ -z "$before" ] || [ "$before" = "$zeros" ]; then
+              # First push of a new branch: fall back to merge-base with main.
+              base_commit="$(git merge-base origin/main HEAD)"
+            elif git cat-file -e "${before}^{commit}" 2>/dev/null; then
+              base_commit="$before"
+            else
+              echo "push base ${before} is unreachable (force push?); refusing to audit an unknown range" >&2
+              exit 1
+            fi
+          fi
+          if [ -z "$base_commit" ]; then
+            echo "could not resolve an audited base commit" >&2
+            exit 1
+          fi
+          echo "resolved audited base: $base_commit"
+          echo "base=$base_commit" >> "$GITHUB_OUTPUT"
+
+      - name: Replay visual closures (structural)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python qa/replay_visual_closure.py \
+            --base "${{ steps.base.outputs.base }}" \
+            --handoff VISUAL_REPAIR_HANDOFF.md \
+            --skip-legacy \
+            --no-regen

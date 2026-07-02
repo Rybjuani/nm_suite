@@ -52,11 +52,19 @@ def test_select_objective_does_not_mark_visual_closure_as_hardening(monkeypatch)
     assert audit.select_objective_for_diff(base="origin/main", handoff=Path("VISUAL_REPAIR_HANDOFF.md")) == ""
 
 
-def test_workflow_selects_objective_without_hardcoded_hardening():
-    workflow = (audit.ROOT / ".github" / "workflows" / "visual-handoff-audit.yml").read_text(encoding="utf-8")
+def test_workflow_runs_replay_without_legacy_auditor():
+    workflow = (audit.ROOT / ".github" / "workflows" / "visual-closure-replay.yml").read_text(encoding="utf-8")
 
-    assert "git merge-base origin/main HEAD" in workflow
-    assert "select_handoff_audit_objective.py" in workflow
+    assert "qa/replay_visual_closure.py" in workflow
+    assert "fetch-depth: 0" in workflow
+    # Base must be event-aware: `git merge-base origin/main HEAD` alone audits an
+    # empty diff on a direct push to main. Push uses github.event.before (with an
+    # explicit zero-SHA fallback); pull_request uses merge-base with the base ref.
+    assert "github.event.before" in workflow
+    assert "origin/${{ github.base_ref }}" in workflow
+    assert "0000000000000000000000000000000000000000" in workflow
+    assert "--skip-legacy" in workflow
+    assert "audit_handoff_false_pass.py" not in workflow
     assert "--objective hardening-qa" not in workflow
     assert "61eec259" not in workflow
 
