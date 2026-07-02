@@ -7,6 +7,7 @@ on:
       - docs/visual_closure_bundle.json
       - VISUAL_QA_AGENT_PROTOCOL.md
       - tools/qa/audit_handoff_false_pass.py
+      - tools/qa/select_handoff_audit_objective.py
       - qa/anti_fraud_scan.py
       - qa/vas_gate.py
       - qa/layered_visual_compare.py
@@ -17,6 +18,7 @@ on:
       - docs/visual_closure_bundle.json
       - VISUAL_QA_AGENT_PROTOCOL.md
       - tools/qa/audit_handoff_false_pass.py
+      - tools/qa/select_handoff_audit_objective.py
       - qa/anti_fraud_scan.py
       - qa/vas_gate.py
       - qa/layered_visual_compare.py
@@ -48,8 +50,11 @@ jobs:
         run: |
           set -euo pipefail
           base_commit="$(git merge-base origin/main HEAD)"
+          objective_args="$(python tools/qa/select_handoff_audit_objective.py \
+            --base "$base_commit" \
+            --handoff VISUAL_REPAIR_HANDOFF.md)"
           python tools/qa/audit_handoff_false_pass.py \
             --base "$base_commit" \
             --handoff VISUAL_REPAIR_HANDOFF.md \
             --bundle docs/visual_closure_bundle.json \
-            --objective hardening-qa
+            ${objective_args}

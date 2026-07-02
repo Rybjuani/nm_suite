@@ -86,6 +86,10 @@ def _workspace_path(path: Path) -> Path:
     return path if path.is_absolute() else ROOT / path
 
 
+def _git_path(path: Path) -> str:
+    return _normalize_path(str(_workspace_path(path).relative_to(ROOT)))
+
+
 def _git_rev_parse(revision: str) -> str | None:
     proc = _run_git(["rev-parse", "--verify", "--quiet", f"{revision}^{{commit}}"])
     if proc.returncode != 0:
@@ -94,8 +98,7 @@ def _git_rev_parse(revision: str) -> str | None:
 
 
 def _git_show_text(revision: str, path: Path) -> str:
-    resolved = _workspace_path(path)
-    rel_path = _normalize_path(str(resolved.relative_to(ROOT)))
+    rel_path = _git_path(path)
     proc = _run_git(["show", f"{revision}:{rel_path}"])
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip() or f"git show {revision}:{rel_path} failed")
@@ -230,7 +233,7 @@ def changed_files(base: str) -> list[str]:
 
 
 def handoff_diff(base: str, handoff: Path) -> str:
-    proc = _run_git(["diff", "--unified=0", base, "--", str(handoff)])
+    proc = _run_git(["diff", "--unified=0", base, "--", _git_path(handoff)])
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip() or "git diff handoff failed")
     return proc.stdout
@@ -243,6 +246,15 @@ def restricted_touched(files: list[str]) -> list[str]:
         if any(path == marker.rstrip("/") or path.startswith(marker) for marker in RESTRICTED_CLOSURE_PATHS):
             restricted.append(raw)
     return restricted
+
+
+def select_objective_for_diff(*, base: str, handoff: Path) -> str:
+    closed_keys = parse_closed_checkbox_keys(handoff_diff(base, handoff))
+    if closed_keys:
+        return ""
+    if restricted_touched(changed_files(base)):
+        return "hardening-qa"
+    return ""
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -359,6 +371,22 @@ def _entry_report_summary(report: dict[str, Any], key: str) -> dict[str, Any] | 
     return None
 
 
+def _report_summary_valid(summary: Any, key: str) -> bool:
+    if not isinstance(summary, dict):
+        return False
+    result = summary.get("result")
+    if not isinstance(result, dict):
+        return False
+    return (
+        summary.get("authority") == "LAYERED_VISUAL_COMPARE"
+        and summary.get("report_evidence_valid") is True
+        and result.get("key") == key
+        and result.get("status") == "PASS"
+        and not bool(result.get("suspicious_perfect_match"))
+        and not bool(result.get("near_perfect_match"))
+    )
+
+
 def _entry_sidecar_summary(entry: dict[str, Any], key: str) -> dict[str, Any] | None:
     if not isinstance(entry.get("provenance"), dict):
         return None
@@ -382,6 +410,27 @@ def _entry_sidecar_summary(entry: dict[str, Any], key: str) -> dict[str, Any] | 
         "provenance_capture_script_sha256": entry.get("provenance", {}).get("capture_script_sha256"),
         "provenance_introspection_entry_id": entry.get("provenance", {}).get("introspection_entry_id"),
     }
+
+
+def _sidecar_summary_valid(summary: Any, key: str) -> bool:
+    if not isinstance(summary, dict):
+        return False
+    return (
+        summary.get("surface_key") == key
+        and summary.get("fail_count") == 0
+        and summary.get("blocking_divergence_count") == 0
+        and summary.get("provenance_key") == key
+        and isinstance(summary.get("provenance_png_sha256"), str)
+        and len(summary.get("provenance_png_sha256", "")) == 64
+        and isinstance(summary.get("provenance_capture_script_sha256"), str)
+        and len(summary.get("provenance_capture_script_sha256", "")) == 64
+        and isinstance(summary.get("provenance_introspection_entry_id"), str)
+        and bool(summary.get("provenance_introspection_entry_id"))
+    )
+
+
+def _sha256_manifest_value(value: Any) -> bool:
+    return isinstance(value, str) and re.fullmatch(r"[0-9a-fA-F]{64}", value) is not None
 
 
 def _check_commit_citations(
@@ -461,20 +510,24 @@ def _validate_bundle_entry(
     if not isinstance(report_path, str) or not report_path:
         reasons.append(f"{key}: report path missing from bundle")
         return reasons, validated_commits
+    if not _sha256_manifest_value(report.get("sha256")):
+        reasons.append(f"{key}: report sha256 missing or invalid in bundle")
+        return reasons, validated_commits
+    if not _report_summary_valid(report.get("summary"), key):
+        reasons.append(f"{key}: report summary in bundle is not valid closure evidence")
+        return reasons, validated_commits
     report_file = Path(report_path)
-    if not report_file.exists():
-        reasons.append(f"{key}: report path does not exist: {report_path}")
-        return reasons, validated_commits
-    report_sha = _sha256_file(report_file)
-    if report_sha != report.get("sha256"):
-        reasons.append(f"{key}: report hash does not match bundle sha256")
-        return reasons, validated_commits
-    report_payload = _load_json(report_file)
-    expected_report_summary = _entry_report_summary(report_payload, key)
-    if expected_report_summary is None:
-        reasons.append(f"{key}: report does not contain a valid PASS for the closure")
-    elif report.get("summary") != expected_report_summary:
-        reasons.append(f"{key}: report summary in bundle does not match the report payload")
+    if report_file.exists():
+        report_sha = _sha256_file(report_file)
+        if report_sha != report.get("sha256"):
+            reasons.append(f"{key}: report hash does not match bundle sha256")
+            return reasons, validated_commits
+        report_payload = _load_json(report_file)
+        expected_report_summary = _entry_report_summary(report_payload, key)
+        if expected_report_summary is None:
+            reasons.append(f"{key}: report does not contain a valid PASS for the closure")
+        elif report.get("summary") != expected_report_summary:
+            reasons.append(f"{key}: report summary in bundle does not match the report payload")
 
     sidecar = entry.get("sidecar")
     if not isinstance(sidecar, dict):
@@ -485,50 +538,59 @@ def _validate_bundle_entry(
     if not isinstance(sidecar_path, str) or not sidecar_path:
         reasons.append(f"{key}: sidecar path missing from bundle")
         return reasons, validated_commits
-    sidecar_file = Path(sidecar_path)
-    if not sidecar_file.exists():
-        reasons.append(f"{key}: sidecar path does not exist: {sidecar_path}")
+    if not _sha256_manifest_value(sidecar.get("sha256")):
+        reasons.append(f"{key}: sidecar sha256 missing or invalid in bundle")
         return reasons, validated_commits
-    sidecar_sha = _sha256_file(sidecar_file)
-    if sidecar_sha != sidecar.get("sha256"):
-        reasons.append(f"{key}: sidecar hash does not match bundle sha256")
+    if not _sidecar_summary_valid(sidecar.get("summary"), key):
+        reasons.append(f"{key}: sidecar summary in bundle is not valid closure evidence")
         return reasons, validated_commits
-
-    sidecar_payload = _load_json(sidecar_file)
-    if not isinstance(sidecar_payload, list):
-        reasons.append(f"{key}: sidecar root is not a JSON array")
-        return reasons, validated_commits
-    matching = [
-        item for item in sidecar_payload
-        if isinstance(item, dict) and item.get("surface_key") == key
-    ]
-    if not matching:
-        reasons.append(f"{key}: sidecar does not contain the surface key")
-        return reasons, validated_commits
-    sidecar_entry = matching[0]
-    expected_sidecar_summary = _entry_sidecar_summary(sidecar_entry, key)
-    if expected_sidecar_summary is None:
-        reasons.append(f"{key}: sidecar entry is not a valid PASS provenance record")
-    elif sidecar.get("summary") != expected_sidecar_summary:
-        reasons.append(f"{key}: sidecar summary in bundle does not match the sidecar payload")
 
     provenance = entry.get("provenance")
-    if provenance != sidecar_entry.get("provenance"):
-        reasons.append(f"{key}: bundle provenance does not match the sidecar provenance")
+    if not isinstance(provenance, dict):
+        reasons.append(f"{key}: bundle provenance is not an object")
+        return reasons, validated_commits
+    capture_manifest = provenance.get("capture_manifest")
+    if not isinstance(capture_manifest, str) or not capture_manifest:
+        reasons.append(f"{key}: bundle provenance missing capture_manifest")
+    capture_manifest_sha = provenance.get("capture_manifest_sha256")
+    if capture_manifest_sha is not None and not _sha256_manifest_value(capture_manifest_sha):
+        reasons.append(f"{key}: capture manifest sha256 is invalid")
 
-    if provenance and report.get("summary") and sidecar.get("summary"):
-        if not isinstance(provenance, dict):
-            reasons.append(f"{key}: bundle provenance is not an object")
-        else:
-            capture_manifest = provenance.get("capture_manifest")
-            if not isinstance(capture_manifest, str) or not capture_manifest:
-                reasons.append(f"{key}: bundle provenance missing capture_manifest")
-            elif not Path(capture_manifest).exists():
-                reasons.append(f"{key}: capture manifest does not exist: {capture_manifest}")
-            else:
-                manifest_sha = _sha256_file(Path(capture_manifest))
-                if manifest_sha is None:
-                    reasons.append(f"{key}: capture manifest is unreadable")
+    sidecar_file = Path(sidecar_path)
+    if sidecar_file.exists():
+        sidecar_sha = _sha256_file(sidecar_file)
+        if sidecar_sha != sidecar.get("sha256"):
+            reasons.append(f"{key}: sidecar hash does not match bundle sha256")
+            return reasons, validated_commits
+
+        sidecar_payload = _load_json(sidecar_file)
+        if not isinstance(sidecar_payload, list):
+            reasons.append(f"{key}: sidecar root is not a JSON array")
+            return reasons, validated_commits
+        matching = [
+            item for item in sidecar_payload
+            if isinstance(item, dict) and item.get("surface_key") == key
+        ]
+        if not matching:
+            reasons.append(f"{key}: sidecar does not contain the surface key")
+            return reasons, validated_commits
+        sidecar_entry = matching[0]
+        expected_sidecar_summary = _entry_sidecar_summary(sidecar_entry, key)
+        if expected_sidecar_summary is None:
+            reasons.append(f"{key}: sidecar entry is not a valid PASS provenance record")
+        elif sidecar.get("summary") != expected_sidecar_summary:
+            reasons.append(f"{key}: sidecar summary in bundle does not match the sidecar payload")
+        if provenance != sidecar_entry.get("provenance"):
+            reasons.append(f"{key}: bundle provenance does not match the sidecar provenance")
+
+    if isinstance(capture_manifest, str) and capture_manifest:
+        manifest_file = Path(capture_manifest)
+        if manifest_file.exists():
+            manifest_sha = _sha256_file(manifest_file)
+            if manifest_sha is None:
+                reasons.append(f"{key}: capture manifest is unreadable")
+            elif capture_manifest_sha is not None and manifest_sha != capture_manifest_sha:
+                reasons.append(f"{key}: capture manifest hash does not match bundle provenance")
 
     return reasons, validated_commits
 

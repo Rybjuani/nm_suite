@@ -34,6 +34,33 @@ def test_workspace_paths_normalize_relative_inputs():
     assert audit._workspace_path(Path("VISUAL_REPAIR_HANDOFF.md")) == audit.ROOT / "VISUAL_REPAIR_HANDOFF.md"
 
 
+def test_select_objective_uses_hardening_only_without_visual_closure(monkeypatch):
+    monkeypatch.setattr(audit, "handoff_diff", lambda base, handoff: "")
+    monkeypatch.setattr(audit, "changed_files", lambda base: ["qa/anti_fraud_scan.py"])
+
+    assert audit.select_objective_for_diff(base="origin/main", handoff=Path("VISUAL_REPAIR_HANDOFF.md")) == "hardening-qa"
+
+
+def test_select_objective_does_not_mark_visual_closure_as_hardening(monkeypatch):
+    monkeypatch.setattr(audit, "handoff_diff", lambda base, handoff: """
+@@ -1 +1 @@
+- - [ ] `suite:home@light` pendiente
++ - [x] `suite:home@light` cierre
+""")
+    monkeypatch.setattr(audit, "changed_files", lambda base: ["qa/anti_fraud_scan.py"])
+
+    assert audit.select_objective_for_diff(base="origin/main", handoff=Path("VISUAL_REPAIR_HANDOFF.md")) == ""
+
+
+def test_workflow_selects_objective_without_hardcoded_hardening():
+    workflow = (audit.ROOT / ".github" / "workflows" / "visual-handoff-audit.yml").read_text(encoding="utf-8")
+
+    assert "git merge-base origin/main HEAD" in workflow
+    assert "select_handoff_audit_objective.py" in workflow
+    assert "--objective hardening-qa" not in workflow
+    assert "61eec259" not in workflow
+
+
 def test_layered_report_rejects_near_perfect_match(tmp_path):
     report = tmp_path / "LAYERED_VISUAL_REPORT.json"
     report.write_text(
@@ -448,6 +475,59 @@ def test_base_manipulado_fails(monkeypatch, tmp_path):
 
     assert result.ok is False
     assert any("open checkbox transition" in reason for reason in result.reasons)
+
+
+def test_fresh_clone_bundle_evidence_does_not_require_gitignored_artifacts(monkeypatch, tmp_path):
+    key = "suite:dbt-library@light"
+    report = _make_report(tmp_path, key)
+    sidecar = _make_sidecar(tmp_path, key)
+    bundle = _make_bundle(
+        tmp_path,
+        key=key,
+        commit_hashes=["abc1234"],
+        report=report,
+        sidecar=sidecar,
+        base_commit="b" * 40,
+        head_commit="c" * 40,
+    )
+    (tmp_path / "CAPTURE_MANIFEST.json").unlink()
+    report.unlink()
+    sidecar.unlink()
+    current_text = """
+- [x] `suite:dbt-library@light` cierre
+  - fix commit `abc1234`
+"""
+    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
+    handoff.write_text(current_text, encoding="utf-8")
+    _patch_audit_context(
+        monkeypatch,
+        base_text="""
+- [ ] `suite:dbt-library@light` pendiente
+""",
+        diff_text="""
+@@ -1 +1 @@
+- - [ ] `suite:dbt-library@light` pendiente
++ - [x] `suite:dbt-library@light` cierre
+""",
+        commit_map={"abc1234": "a" * 40, "main": "b" * 40, "HEAD": "c" * 40},
+        audited_commits={"a" * 40},
+        bundle_payload=json.loads(bundle.read_text(encoding="utf-8")),
+        changed_files=["VISUAL_REPAIR_HANDOFF.md", "docs/visual_closure_bundle.json"],
+    )
+
+    result = audit.audit(
+        base="main",
+        handoff=handoff,
+        bundle=bundle,
+        layered_reports=[],
+        sidecar=tmp_path / "missing_introspection.json",
+        objective="",
+        skip_anti_fraud=True,
+    )
+
+    assert result.ok is True
+    assert result.bundle_keys == [key]
+    assert result.validated_commits == ["a" * 40]
 
 
 def test_hardening_objective_allows_restricted_paths_without_closure(monkeypatch, tmp_path):
