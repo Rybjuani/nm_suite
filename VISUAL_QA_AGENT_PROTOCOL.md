@@ -153,6 +153,63 @@ SVG, ring, or modal variance, it automatically escalates to a statistical
 baseline before failing. This is a baseline/mockup integrity gate only: do not
 use it to close a runtime visual item without the required runtime evidence.
 
+## Runtime Scope / Noise Envelope Hardening
+
+These gates are complementary no-regression hardening only. They do not replace
+`qa/layered_visual_compare.py`, `qa/capture_v8.py`,
+`tools/qa/audit_modal_backdrop_blur.py`, `qa/vas_gate.py`,
+`qa/anti_fraud_scan.py`, or exact-key closure evidence. They never close the
+handoff checklist by themselves.
+
+Use them to keep scope disciplined, detect renderer-noise instability, catch
+unexpected runtime deltas outside an allowlist, and compare direct-entry states
+against internally navigated states.
+
+Available auxiliary commands:
+
+```powershell
+.\.venv\Scripts\python.exe tools\qa\audit_diff_confinement.py `
+  --base HEAD~1 `
+  --allow-path qa `
+  --allow-path tools\qa `
+  --allow-path tests `
+  --allow-path VISUAL_QA_AGENT_PROTOCOL.md `
+  --allow-path VISUAL_REPAIR_HANDOFF.md
+
+.\.venv\Scripts\python.exe qa\runtime_noise_envelope.py `
+  --baseline-dir reports\qa\runtime_baseline_a `
+  --baseline-dir reports\qa\runtime_baseline_b `
+  --modified-dir reports\qa\runtime_current `
+  --expected-delta-key "suite:dbt-practice-wise-mind@light"
+
+.\.venv\Scripts\python.exe qa\runtime_internal_nav_parity.py `
+  --case-file reports\qa\nav_parity_cases.json
+
+.\qa\run_visual_scope_regression.ps1 -PlanFile .\reports\qa\visual_family_keys.csv
+```
+
+Runtime noise rule:
+
+- `delta_best` is diagnostic only and never closes runtime.
+- Strong pass requires `delta_median <= noise_worst + margen minimo`.
+- If only `delta_best` fits the envelope, the result is `REVIEW_NOISE`, not PASS.
+- `REVIEW_NOISE` and `NOISE_WARNING` are not strong PASS states.
+- Shape mismatch is a hard fail unless the exact key is explicitly allowlisted
+  as `EXPECTED_DELTA`.
+- Keys outside the expected-delta allowlist that exceed the envelope are FAIL.
+
+Internal navigation parity currently compares captured images and metadata
+without touching product code. If real PyQt route probes need deeper hooks, add
+them in QA harness code only; do not fake PASS and do not modify `app/`, `hub/`,
+or `shared/` to satisfy this auxiliary gate.
+
+Any modal, VAS, anti-fraud, layout, capture-validity, or active comparator FAIL
+still blocks closure. If the canonical HTML, capture recipe, canonical PNGs, or
+checklist seed/baseline changes, `tools/qa/audit_mockup_parity_baseline.py`
+remains mandatory. DBT v2 canon means 116 captures with 16 formal DBT practice
+modal surfaces; hardening must respect that baseline. Snapshots under
+`reports/qa/mockup_parity_baseline/.../sources/` are not canonical sources.
+
 ## Resource-Safe Validation
 
 Microfix de una pantalla:

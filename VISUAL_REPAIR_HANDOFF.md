@@ -172,6 +172,22 @@ Su PASS/FAIL convive con `capture_v8`, `layered_visual_compare`, anti-fraud y
 VAS; no reemplaza ningun gate runtime ni autoriza cerrar una divergencia visual
 sin exact-key `PASS` del comparador activo.
 
+Runtime scope/noise hardening auxiliar:
+
+- `tools/qa/audit_diff_confinement.py` valida que el diff quede dentro de una
+  allowlist de paths y, si corresponde, dentro de bloques marcados.
+- `qa/runtime_noise_envelope.py` compara corridas runtime repetidas para separar
+  ruido de renderer de delta real; `delta_best` es diagnostico, `REVIEW_NOISE`
+  no es PASS y `NOISE_WARNING` no es cierre fuerte.
+- `qa/runtime_internal_nav_parity.py` compara imagen/metadata de entrada directa
+  vs navegacion interna; los probes PyQt reales quedan como extension QA futura
+  si se pueden agregar sin tocar producto.
+- `qa/run_visual_scope_regression.ps1` encadena estas ayudas con anti-fraud,
+  captura filtrada, comparator filtrado, modal audit y VAS cuando se pasan los
+  inputs necesarios. Es no-regresion/advisory y no reemplaza
+  `run_visual_item.ps1`, `run_visual_family.ps1`, `run_visual_full.ps1` ni el
+  exact-key `PASS` del comparator activo.
+
 Disciplina de recursos:
 
 - No correr varios harnesses pesados en simultaneo.
