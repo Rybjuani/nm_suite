@@ -11,7 +11,7 @@ Estos son los **únicos** documentos activos que gobiernan el proceso de Visual 
 
 Todo agente que opere Visual QA debe leer ambos **antes** de tocar código de UI/runtime.
 
-La evidencia versionable de cierre vive en [`visual_closure_bundle.json`](visual_closure_bundle.json); no reemplaza al handoff, pero debe acompaÃ±ar cualquier transiciÃ³n `[ ]` â†’ `[x]`.
+La evidencia versionable de cierre vive en [`closure_evidence/`](closure_evidence/) (un record determinístico por exact-key, escrito por `qa/close_visual_key.py` y auditado por `qa/replay_visual_closure.py`); toda transición `[ ]` → `[x]` debe llevar sus notas `evidence:`/`evidence-record:`/`commit:`. [`visual_closure_bundle.json`](visual_closure_bundle.json) es histórico y ya no es autoridad de cierre.
 
 ## Documentos de referencia activos (bridge)
 

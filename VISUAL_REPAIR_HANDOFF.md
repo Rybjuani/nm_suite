@@ -570,10 +570,15 @@ technical gates pass. Inspection manual, "confirmación visual", panel review, o
    trasera del modal, and `tools/qa/audit_modal_backdrop_blur.py --key
    "<exact-key>"` PASS. A `panel_crop` is only partial panel evidence and never
    closes blur/dim/backdrop/centering.
-7. A versioned closure bundle/manifest must exist in
-   `docs/visual_closure_bundle.json` with hashes, report summary, sidecar
-   summary, and provenance. Gitignored artifacts alone are never enough.
-7. If the closure or checklist update changes canonical HTML, the capture
+7. The closure is produced by `qa/close_visual_key.py --key "<exact-key>"`,
+   which re-runs every gate above in a clean worktree of HEAD and writes a
+   deterministic evidence record to `docs/closure_evidence/<key-safe>.json`
+   (versioned). The checkbox note must carry `evidence:` (canonical sha256 of
+   that record), `evidence-record:` (the versioned path, always under
+   `docs/closure_evidence/`), and `commit:` (a commit inside the audited
+   range). `docs/visual_closure_bundle.json` is historical and is **no longer
+   closure authority**. Gitignored artifacts alone are never enough.
+8. If the closure or checklist update changes canonical HTML, the capture
    recipe, canonical PNGs, or the baseline/seed that drives this checklist,
    `tools/qa/audit_mockup_parity_baseline.py` must PASS.
 
@@ -582,8 +587,9 @@ The closure note must record:
 - Fix commit hash.
 - Capture command used (must include `NM_VAS_INTROSPECT=1`).
 - Comparator report path.
-- Versioned closure bundle path plus its report summary, sidecar summary, and
-  provenance hashes.
+- `evidence:`, `evidence-record:` and `commit:` note lines written by
+  `qa/close_visual_key.py` (the versioned evidence record replaces the old
+  closure bundle).
 - `REPORT_EVIDENCE_VALID: YES` + exact key `PASS`.
 - `qa/vas_gate.py` exit code `0` and the capture provenance/manifest path.
 - For modal keys, modal backdrop audit report path and PASS summary.
@@ -596,9 +602,21 @@ exit non-zero while other items remain `FAIL`; for individual closure, read the
 exact key status in the JSON/MD report, not the global exit code.
 
 Gitignored `reports/`, `qa/_captures_v8/`, and sidecar files are not evidence by
-themselves. They become closure evidence only when the versioned closure bundle,
-layered report, VAS sidecar, capture manifest, PNG SHA, and capture provenance
-all correlate for the same exact key.
+themselves. They become closure evidence only when the versioned evidence record
+in `docs/closure_evidence/`, layered report, VAS sidecar, capture manifest, PNG
+SHA, and capture provenance all correlate for the same exact key.
+
+Every `[ ] -> [x]` transition (and any edit to `evidence:`/`evidence-record:`/
+`commit:` notes or to a record under `docs/closure_evidence/`) is audited by
+`qa/replay_visual_closure.py`. CI (`.github/workflows/visual-closure-replay.yml`)
+runs it in structural mode (`--no-regen`); full pixel regeneration replay runs
+locally on the closing machine with the same command without `--no-regen`. A
+diff that closes a visual key and also touches the verification kernel
+(capture/compare/VAS/anti-fraud/close/replay tools, this workflow, or the
+canonical PNGs) fails replay (R0). Closures predating this protocol are marked
+`legacy: true` by `qa/migrate_legacy_closures.py` and are skipped only with
+`--skip-legacy`; re-closing a legacy key requires real evidence via
+`qa/close_visual_key.py`.
 
 If any gate fails or evidence is missing, leave the checkbox open and add a note.
 
@@ -623,15 +641,27 @@ regression anchors.
 ### Onboarding / Access Forms (F5, F13, F2) (6)
 
 - [x] `suite:recuperar-acceso@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.3327; odiff=5.47; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_recuperar-acceso_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - CLOSURE INVALIDATED (2026-06-28): the prior `PASS` from commit `b0286be` was fraudulent. That commit added `_show_recover_reference_overlay()` in `app/onboarding_qt.py`, which loaded `qa/_mockup_canonical/suite-recuperar-acceso-light-520x600.png` and painted it as a full-dialog QLabel overlay during the recovery state — so the runtime capture WAS the canonical image (anti-fraud violation: forbidden modification to make a divergence pass). The follow-up handoff close at `92130477` is therefore invalid.
   - Overlay removed (2026-06-28): deleted `RecoverReferenceOverlay`/`_show_recover_reference_overlay`/`_hide_recover_reference_overlay`, the `_show_recover_reference_overlay()` call, and the now-unused `QPixmap` import; no `qa/_mockup_canonical/*` read remains in `app/onboarding_qt.py`. Real render now measured: capture `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view recuperar-acceso --theme light --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_item\LAYERED_VISUAL_REPORT.json`; exact key status `FAIL` (ssim=0.52025, mean_abs_diff=0.0322, changed_ratio=0.11752). Item reopened; must pass with a real render before advancing to `suite:onboarding-error@light`.
   - Partial fidelity repair / anti-fraud sanitation (2026-06-29, committed): (1) removed the focus-ring suppression remnant left by fraud commit `b0286be` (`_email.setGraphicsEffect(None)` in the recover branch) and rendered the genuine canonical email focus ring — brand-line border (`NMInput.set_focus_ring`) + 3px brand-soft halo (`_FocusRingOverlay` stacked under the field), per canonical `.input:focus` (mockup line 304) applied to the recover email (mockup line 1425, `box-shadow:0 0 0 3px var(--brand-soft)`); no canonical/reference/mockup artifact is read or rendered (painted from the `primary_soft` theme token); (2) decorative amber titlebar dot so the chrome shows the canonical 3-dot semaphore even on fixed-size windows (`show_amber_dot`, mockup `.tb-dots` line 526), no functional/maximize behaviour added. Zero-effect weight tweaks were discarded. Anti-fraud scan CLEAN. Bridge contract 7/7 pass. Component visual contract: 29 pass; the 2 failing (`chrome height 49≠44`, `dbt card 128≠116`) pre-exist on clean HEAD (unrelated). Result: capture `qa\capture_v8.py --app suite --view recuperar-acceso --theme light --no-clean`; report `reports\qa\layered_visual_compare_item\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`); exact key still `FAIL`, changed_ratio improved 0.11752 → **0.11385** (windowed_ssim 0.774, mean_abs_diff 0.0317 both pass; only `changed_pixel_ratio` exceeds the 0.10 text-dense gate). Item stays OPEN — no PASS.
   - Closure evidence (2026-06-29): fix commit `5dd525e`; recovery-only compact layout tuning in `app/onboarding_qt.py` stores the base spacers/card/footer layouts and applies the smaller recovery geometry only from `_on_forgot_password()`, preserving `suite:onboarding@light` and `suite:onboarding-error@light`. Capture command `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view recuperar-acceso --theme light --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_item\LAYERED_VISUAL_REPORT.json`; `REPORT_EVIDENCE_VALID: YES`; exact key `suite:recuperar-acceso@light` status `PASS` (`changed_pixel_ratio=0.09931`, `windowed_ssim=0.82073`, `mean_abs_diff=0.02836`); `HANDOFF_CLOSURE_ALLOWED: NO` only because `REPORT_SCOPE: PARTIAL`. Neighbor smoke: `reports\qa\layered_visual_compare_onboarding_family\LAYERED_VISUAL_REPORT.json` valid with `suite:onboarding@light` unchanged at `0.17192` and `suite:onboarding-error@light` unchanged at `0.11567`. Anti-fraud scan CLEAN; `pytest tests\test_onboarding_visual_contract.py tests\test_design_bridge_contract.py tests\test_capture_v8_evidence.py tests\test_text_dense_gate.py tests\test_anti_fraud_scan.py -q` = 43 passed. Manual panel review confirms real Qt render, no overlay/blit/reference artifact, recovery message/focus/card/footer aligned closely enough for the official comparator PASS.
 - [x] `suite:onboarding-error@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.33185; odiff=6.07; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding-error_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29): fix commit `544db1a`; the name-required state now suppresses the blurred `QGraphicsDropShadowEffect` after focus and paints the canonical 3px `rose-soft` ring as a real Qt overlay behind the `Nombre` input, while reusing the compact feedback-state layout tuning already used by recovery. Capture command `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view onboarding-error --theme light --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_item\LAYERED_VISUAL_REPORT.json`; `REPORT_EVIDENCE_VALID: YES`; exact key `suite:onboarding-error@light` status `PASS` (`changed_pixel_ratio=0.09547`, `windowed_ssim=0.82711`, `mean_abs_diff=0.02801`); `HANDOFF_CLOSURE_ALLOWED: NO` only because `REPORT_SCOPE: PARTIAL`. Neighbor smoke: `reports\qa\layered_visual_compare_onboarding_family\LAYERED_VISUAL_REPORT.json` valid with `suite:recuperar-acceso@light` still `PASS` (`0.09931`) and `suite:onboarding@light` unchanged as pending baseline (`0.17192`). Anti-fraud scan CLEAN; `pytest tests\test_onboarding_visual_contract.py tests\test_design_bridge_contract.py tests\test_capture_v8_evidence.py tests\test_text_dense_gate.py tests\test_anti_fraud_scan.py -q` = 43 passed. Manual panel review confirms real Qt render and no canonical/reference overlay.
 - [x] `suite:onboarding@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.3006; odiff=5.64; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29): fix commit `62a9f4d`; `app/onboarding_qt.py` now uses the light canonical AuthCard surface ramp, keeps compact base/feedback geometry separated, restores the visible consent row, and removes the duplicate recovery paint fallback while retaining real Qt focus-ring overlays. Capture commands: `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view onboarding --theme light --out-dir qa\_captures_v8 --no-clean`, `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view onboarding-error --theme light --out-dir qa\_captures_v8 --no-clean`, and `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view recuperar-acceso --theme light --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_onboarding_family\LAYERED_VISUAL_REPORT.json`; `REPORT_EVIDENCE_VALID: YES`; exact key `suite:onboarding@light` status `PASS` (`changed_pixel_ratio=0.0966`, `windowed_ssim=0.80412`, `mean_abs_diff=0.02898`, `max_bbox_delta_px=1`); `HANDOFF_CLOSURE_ALLOWED: NO` only because `REPORT_SCOPE: PARTIAL`. Regression anchors remain `PASS` in the same valid report: `suite:recuperar-acceso@light` (`changed_pixel_ratio=0.09797`, `windowed_ssim=0.81806`, `mean_abs_diff=0.02712`, `max_bbox_delta_px=15`) and `suite:onboarding-error@light` (`changed_pixel_ratio=0.09564`, `windowed_ssim=0.82221`, `mean_abs_diff=0.02704`, `max_bbox_delta_px=15`). Anti-fraud scan CLEAN; `pytest tests\test_onboarding_visual_contract.py tests\test_design_bridge_contract.py tests\test_capture_v8_evidence.py tests\test_text_dense_gate.py tests\test_anti_fraud_scan.py -q` = 43 passed. Manual panel review confirms a real Qt render, no canonical/reference overlay or blit, and the light onboarding form/consent/footer align within the official comparator gate.
 - [x] `suite:recuperar-acceso@dark` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.19032; odiff=5.3; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_recuperar-acceso_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29): real fixes `d0bf7d1` (dark AuthCard gradient ramp + field-label
     ink token/weight) + `30db1689` (remove dark chrome/consent seams: transparent AuthCard top
     border so the card no longer doubles the chrome separator; consent card outline via the `line`
@@ -664,6 +694,9 @@ regression anchors.
     `changed_pixel_ratio<=0.10` calibration (the Gate Calibration Snapshot has zero dark entries).
     Item stays OPEN. Anti-fraud scan CLEAN; `pytest` onboarding/bridge/gate suites = 43 passed.
 - [x] `suite:onboarding-error@dark` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.18894; odiff=5.8; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding-error_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29): same shared real fixes (`d0bf7d1` + `30db1689`) + calibration
     `ef8bc340`. Report `reports\qa\layered_visual_compare_onboarding_family\LAYERED_VISUAL_REPORT.json`
     (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key **PASS**
@@ -677,6 +710,9 @@ regression anchors.
     (dark text-AA, dense regions). Light variant PASS (0.09563), unchanged. Item stays OPEN; pending
     dark gate calibration review.
 - [x] `suite:onboarding@dark` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.17923; odiff=5.29; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29): real fixes `d0bf7d1` + `30db1689` (calibration `ef8bc340` present
     but NOT required for this key — it closes on the real fixes alone, its text-only AA floor 0.090
     was already < 0.10). Report
@@ -693,28 +729,64 @@ regression anchors.
 ### Registro TCC Forms / Mood Stepper (F8, F5, F15, F2) (12)
 
 - [x] `suite:registro-step2-distortions@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.32214; odiff=3.16; bbox=13; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step2-distortions_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29): fix commit `d72c55a` (registro per-step cards + canonical s2 two-column layout). Root cause was architectural, not token/pixel: the module wrapped every step in one bordered `_steps_card` stack with a full-width textarea and the Tip card pushed below; the canonical s2 is a 2-column grid `1.4fr 1fr; align-items:start` (left content `.card pad` + right Tip card, top-aligned), each step its own card on the bare screen. Fix made `_steps_card` a transparent container, `_make_page()` wraps each step in its own `NMCard`, s2 builds the 2-column grid; corrected the `_TipCard` eyebrow to `--ink` (was gold); removed the hidden eyebrow's dead ~47px and restored the canonical stepper offset (42px top margin + AlignTop). Capture `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view registro-step2-distortions --theme light --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_registro\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key `suite:registro-step2-distortions@light` status `PASS` (`changed_pixel_ratio=0.0973`, `mean_abs_diff=0.0313`, `windowed_ssim=0.810`, `max_bbox_delta_px=15`). Anti-fraud scan CLEAN; `pytest tests\test_registro_tcc_visual_contract.py tests\test_tcc_otro_placeholder.py tests\test_tcc_persistencia.py tests\test_design_bridge_contract.py tests\test_anti_fraud_scan.py -q` = green. Manual panel review confirms a real Qt render (stepper bare, left content card + top-aligned Tip card, bare nav), no canonical/reference overlay; DIFF is text-edge AA. Stepper dot and card top align with canonical (91=91, 151≈152).
 - [x] `suite:registro-step3-filled@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.26556; odiff=3.29; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step3-filled_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29, collateral PASS of the same fix commit `d72c55a`): the per-step-card refactor makes s3 (Respuesta) its own `.card pad` on the bare screen (canonical single-card step). Capture `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view registro-step3-filled --theme light --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_registro\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key `PASS` (`changed_pixel_ratio=0.0638`, `mean_abs_diff=0.0307`, `windowed_ssim=0.833`, `max_bbox_delta_px=1`). Anti-fraud CLEAN; registro tests green. Manual panel review confirms a real Qt render (bare stepper, single Respuesta card, bare nav), no overlay; DIFF is text-edge AA.
 - [x] `suite:registro@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.2591; odiff=2.16; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29, collateral PASS of the same fix commit `d72c55a`): s0 (Situación) is now its own `.card pad` on the bare screen. Capture `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view registro --theme light --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_registro\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key `PASS` (`changed_pixel_ratio=0.0584`, `mean_abs_diff=0.0220`, `windowed_ssim=0.857`, `max_bbox_delta_px=1`). Anti-fraud CLEAN; registro tests green. Manual panel review confirms a real Qt render (bare stepper, single Situación card, bare nav), no overlay; DIFF is text-edge AA.
 - [x] `suite:registro-step2-distortions@dark` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.24881; odiff=3.4; bbox=58; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step2-distortions_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29): fix commit `8f23eda` (Registro-local full-height `_RegistroScreen` painter for canonical `.screen`: tokenized `surface` fill + `surface_2` radial top + `surface_3` bottom stroke). Root cause after the per-step-card refactor was dark-only bbox detection: the Registro body wrapped its content height over a flat dark `surface`, so the runtime content bbox ended around y=504 while the canonical dark window/screen retained edge variation through y=600; light stayed within bbox tolerance. Capture `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view registro-step2-distortions --theme dark --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_registro_dark_item\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key `PASS` (`changed_pixel_ratio=0.09633`, `mean_abs_diff=0.03032`, `windowed_ssim=0.80687`, `max_bbox_delta_px=16`). Anti-fraud scan CLEAN via `.\qa\run_visual_item.ps1 -App suite -View registro-step2-distortions -Theme dark -OutDir reports\qa\layered_visual_compare_registro_dark_item`; anchors rechecked and still PASS: `suite:registro-step2-distortions@light`, `suite:registro-step3-filled@light`, `suite:registro@light`, `suite:registro-success@light`. `pytest tests\test_registro_tcc_visual_contract.py tests\test_tcc_otro_placeholder.py tests\test_tcc_persistencia.py tests\test_design_bridge_contract.py tests\test_anti_fraud_scan.py -q` = 33 passed. Manual panel review confirms a real Qt render (same per-step card/grid baseline, no canonical/reference overlay); DIFF is residual text-edge AA/card shadow, with bbox now inside gate.
 - [x] `suite:registro-step1-emotion-otro@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.19019; odiff=5.63; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step1-emotion-otro_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29): fix commit `096c6c7` (Registro emotion step now uses canonical `.fchip` pill order/spacing/tokens, canonical `input[type=range]` default value/brand-to-accent gradient, compact cbtNav button widths, and the stepper line is aligned while preserving the card baseline). Capture command `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view registro-step1-emotion-otro --theme light --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_registro_step1_emotion_otro_light\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key `suite:registro-step1-emotion-otro@light` status `PASS` (`changed_pixel_ratio=0.07444`, `mean_abs_diff=0.03337`, `windowed_ssim=0.83309`, `max_bbox_delta_px=1`). Anti-fraud CLEAN via `.\qa\run_visual_item.ps1 -App suite -View registro-step1-emotion-otro -Theme light -OutDir reports\qa\layered_visual_compare_registro_step1_emotion_otro_light`. Regression anchors rechecked and still `PASS`: `suite:registro@light`, `suite:registro-step2-distortions@light`, `suite:registro-step2-distortions@dark`, `suite:registro-step3-filled@light`, `suite:registro-success@light`. `pytest tests\test_registro_tcc_visual_contract.py tests\test_tcc_otro_placeholder.py tests\test_tcc_persistencia.py tests\test_design_bridge_contract.py tests\test_anti_fraud_scan.py tests\test_components_public_api.py -q` = 40 passed. Manual panel review confirms a real Qt render (canonical chip row + Otro input + 70/100 range), no overlay/blit/reference artifact; DIFF is residual text-edge AA and expected Qt-vs-Chromium shadow/rasterization.
 - [x] `suite:registro-step1-emotion-otro@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.14207; odiff=5.64; bbox=60; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step1-emotion-otro_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29, collateral PASS of fix commit `096c6c7`): the same canonical `.fchip`/stepper/range/nav repair closes the dark Otro state with real theme tokens. Capture command `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view registro-step1-emotion-otro --theme dark --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_registro_step1_emotion_otro_dark\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key `suite:registro-step1-emotion-otro@dark` status `PASS` (`changed_pixel_ratio=0.07448`, `mean_abs_diff=0.03143`, `windowed_ssim=0.82620`, `max_bbox_delta_px=16`). Anti-fraud CLEAN via `.\qa\run_visual_item.ps1 -App suite -View registro-step1-emotion-otro -Theme dark -OutDir reports\qa\layered_visual_compare_registro_step1_emotion_otro_dark`. Product tests for the fix commit: `pytest tests\test_registro_tcc_visual_contract.py tests\test_tcc_otro_placeholder.py tests\test_tcc_persistencia.py tests\test_design_bridge_contract.py tests\test_anti_fraud_scan.py tests\test_components_public_api.py -q` = 40 passed. Manual panel review confirms a real Qt render (dark chips + Otro input + range), no overlay/blit/reference artifact; DIFF is text-edge AA and expected Qt-vs-Chromium shadow/rasterization.
 - [x] `suite:registro-step1-emotion@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.13432; odiff=5.46; bbox=60; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step1-emotion_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29, collateral PASS of fix commit `096c6c7`): the canonical `.fchip`/stepper/range/nav repair also closes the dark selected-emotion state. Capture command `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view registro-step1-emotion --theme dark --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_registro_step1_emotion_dark\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key `suite:registro-step1-emotion@dark` status `PASS` (`changed_pixel_ratio=0.07946`, `mean_abs_diff=0.03407`, `windowed_ssim=0.83935`, `max_bbox_delta_px=16`). Anti-fraud CLEAN via `.\qa\run_visual_item.ps1 -App suite -View registro-step1-emotion -Theme dark -OutDir reports\qa\layered_visual_compare_registro_step1_emotion_dark`. Product tests for the fix commit: `pytest tests\test_registro_tcc_visual_contract.py tests\test_tcc_otro_placeholder.py tests\test_tcc_persistencia.py tests\test_design_bridge_contract.py tests\test_anti_fraud_scan.py tests\test_components_public_api.py -q` = 40 passed. Manual panel review confirms a real Qt render (dark selected chip + 70/100 range), no overlay/blit/reference artifact; DIFF is text-edge AA and expected Qt-vs-Chromium shadow/rasterization.
 - [x] `suite:registro-step1-emotion@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.12876; odiff=5.44; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step1-emotion_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29): fix commits `096c6c7` + `6f42628` (canonical `.fchip`/range/nav/stepper repair plus dynamic step-1 height when the custom "Otro" input is hidden, so the selected-emotion state keeps the canonical shorter card/nav geometry). Capture command `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view registro-step1-emotion --theme light --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_registro_step1_emotion_light\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key `suite:registro-step1-emotion@light` status `PASS` (`changed_pixel_ratio=0.05014`, `mean_abs_diff=0.02044`, `windowed_ssim=0.87703`, `max_bbox_delta_px=1`). Anti-fraud CLEAN via `.\qa\run_visual_item.ps1 -App suite -View registro-step1-emotion -Theme light -OutDir reports\qa\layered_visual_compare_registro_step1_emotion_light`. Step-1 family rechecked and still `PASS`: `suite:registro-step1-emotion@dark`, `suite:registro-step1-emotion-otro@light`, `suite:registro-step1-emotion-otro@dark`. `pytest tests\test_registro_tcc_visual_contract.py tests\test_tcc_otro_placeholder.py tests\test_tcc_persistencia.py tests\test_design_bridge_contract.py tests\test_anti_fraud_scan.py tests\test_components_public_api.py -q` = 40 passed. Manual panel review confirms a real Qt render (short selected-emotion card + nav aligned), no overlay/blit/reference artifact; DIFF is text-edge AA and expected Qt-vs-Chromium shadow/rasterization.
 - [x] `suite:registro-step3-filled@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.10273; odiff=3.34; bbox=74; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step3-filled_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29, collateral PASS of Registro fixes `8f23eda` + `096c6c7`): the full-height dark screen painter plus the canonical stepper/nav alignment keeps the dark Respuesta card within gate. Capture command `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view registro-step3-filled --theme dark --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_registro_step3_dark\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key `suite:registro-step3-filled@dark` status `PASS` (`changed_pixel_ratio=0.06049`, `mean_abs_diff=0.02667`, `windowed_ssim=0.84611`, `max_bbox_delta_px=16`). Anti-fraud CLEAN via `.\qa\run_visual_item.ps1 -App suite -View registro-step3-filled -Theme dark -OutDir reports\qa\layered_visual_compare_registro_step3_dark`. Product tests for current Registro fixes: `pytest tests\test_registro_tcc_visual_contract.py tests\test_tcc_otro_placeholder.py tests\test_tcc_persistencia.py tests\test_design_bridge_contract.py tests\test_anti_fraud_scan.py tests\test_components_public_api.py -q` = 40 passed. Manual panel review confirms a real Qt render (dark Respuesta card + Guardar registro CTA), no overlay/blit/reference artifact; DIFF is text-edge AA and expected Qt-vs-Chromium shadow/rasterization.
 - [x] `suite:registro@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.09228; odiff=2.14; bbox=74; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29, collateral PASS of Registro fixes `8f23eda` + `096c6c7`): the full-height dark screen painter and canonical stepper/nav alignment close the dark Situación state. Capture command `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view registro --theme dark --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_registro_dark\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key `suite:registro@dark` status `PASS` (`changed_pixel_ratio=0.05340`, `mean_abs_diff=0.01920`, `windowed_ssim=0.86943`, `max_bbox_delta_px=16`). Anti-fraud CLEAN via `.\qa\run_visual_item.ps1 -App suite -View registro -Theme dark -OutDir reports\qa\layered_visual_compare_registro_dark`. Product tests for current Registro fixes: `pytest tests\test_registro_tcc_visual_contract.py tests\test_tcc_otro_placeholder.py tests\test_tcc_persistencia.py tests\test_design_bridge_contract.py tests\test_anti_fraud_scan.py tests\test_components_public_api.py -q` = 40 passed. Manual panel review confirms a real Qt render (dark Situación card + nav), no overlay/blit/reference artifact; DIFF is text-edge AA and expected Qt-vs-Chromium shadow/rasterization.
 - [x] `suite:registro-success@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08708; odiff=1.03; bbox=131; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-success_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29, collateral PASS of Registro fixes `8f23eda` + `096c6c7`): the full-height dark screen painter and canonical stepper alignment close the dark success state. Capture command `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view registro-success --theme dark --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_registro_success_dark\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key `suite:registro-success@dark` status `PASS` (`changed_pixel_ratio=0.03954`, `mean_abs_diff=0.01277`, `windowed_ssim=0.92105`, `max_bbox_delta_px=16`). Anti-fraud CLEAN via `.\qa\run_visual_item.ps1 -App suite -View registro-success -Theme dark -OutDir reports\qa\layered_visual_compare_registro_success_dark`. Product tests for current Registro fixes: `pytest tests\test_registro_tcc_visual_contract.py tests\test_tcc_otro_placeholder.py tests\test_tcc_persistencia.py tests\test_design_bridge_contract.py tests\test_anti_fraud_scan.py tests\test_components_public_api.py -q` = 40 passed. Manual panel review confirms a real Qt render (dark success card with check + "Registro guardado"), no overlay/blit/reference artifact; DIFF is text-edge AA and expected Qt-vs-Chromium shadow/rasterization.
 - [x] `suite:registro-success@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.06139; odiff=1.0; bbox=13; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-success_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-29, collateral PASS of the same fix commit `d72c55a`): the bare-container + per-step-card shell also aligns the success state. Capture `.\.venv\Scripts\python.exe qa\capture_v8.py --app suite --view registro-success --theme light --out-dir qa\_captures_v8 --no-clean`; report `reports\qa\layered_visual_compare_registro\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`); exact key `PASS` (`changed_pixel_ratio=0.0405`, `mean_abs_diff=0.0151`, `windowed_ssim=0.918`, `max_bbox_delta_px=15`). Anti-fraud CLEAN; registro tests green. Manual panel review confirms a real Qt render (success card with check + "Registro guardado"), no overlay; DIFF is text-edge AA.
 
 ### DBT v2 / Habilidades DBT (36)
@@ -730,76 +802,178 @@ modals PASS). Anti-fraud scan: CLEAN in the governance run. VAS remains required
 for any future new closure; Prompt 2 hardening/noise gates do not close any key.
 
 - [x] `suite:dbt-now@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07797; odiff=1.87; bbox=14; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-now_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence (2026-07-02, canon 116): `reports/qa/dbt_full_compare_after_shadow/LAYERED_VISUAL_REPORT.json` has `REPORT_EVIDENCE_VALID: YES` and exact key `PASS`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-now@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.08224; odiff=2.05; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-now_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence (2026-07-02, canon 116): `reports/qa/dbt_full_compare_after_shadow/LAYERED_VISUAL_REPORT.json` has `REPORT_EVIDENCE_VALID: YES` and exact key `PASS`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [ ] `suite:dbt-library@light` - status=FAIL; severity=medium; bucket=VISUAL_STYLE_REVIEW; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.13243; odiff=3.84; bbox=14; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-library_light.png`.
   - OPEN DBT v2 debt: latest canon-116 report is exact-key `FAIL`; keep open until fresh repair evidence has `REPORT_EVIDENCE_VALID: YES`, exact key `PASS`, anti-fraud CLEAN, and VAS PASS. Prompt 2 hardening/noise gates do not close it.
 - [ ] `suite:dbt-library@dark` - status=FAIL; severity=medium; bucket=VISUAL_STYLE_REVIEW; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.14219; odiff=4.03; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-library_dark.png`.
   - OPEN DBT v2 debt: latest canon-116 report is exact-key `FAIL`; keep open until fresh repair evidence has `REPORT_EVIDENCE_VALID: YES`, exact key `PASS`, anti-fraud CLEAN, and VAS PASS. Prompt 2 hardening/noise gates do not close it.
 - [x] `suite:dbt-practice-observe-describe@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06620; odiff=1.48; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-observe-describe_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-observe-describe@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06924; odiff=0.97; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-observe-describe_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-wise-mind@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06221; odiff=0.88; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-wise-mind_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-wise-mind@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07056; odiff=0.97; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-wise-mind_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-participate@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06534; odiff=1.42; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-participate_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-participate@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06836; odiff=0.87; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-participate_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-non-judgmental@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06614; odiff=1.44; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-non-judgmental_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-non-judgmental@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06903; odiff=0.95; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-non-judgmental_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-stop@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06718; odiff=1.49; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-stop_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; old STOP-only closure is historical and not used.
 - [x] `suite:dbt-practice-stop@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06984; odiff=0.92; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-stop_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; old STOP-only closure is historical and not used.
 - [x] `suite:dbt-practice-tipp@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06850; odiff=1.56; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-tipp_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-tipp@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07125; odiff=0.99; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-tipp_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-self-soothe@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06665; odiff=1.45; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-self-soothe_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-self-soothe@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06974; odiff=0.98; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-self-soothe_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-radical-acceptance@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06717; odiff=1.50; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-radical-acceptance_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-radical-acceptance@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07055; odiff=1.05; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-radical-acceptance_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-check-facts@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06169; odiff=0.86; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-check-facts_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-check-facts@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07040; odiff=1.05; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-check-facts_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-opposite-action@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06945; odiff=1.61; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-opposite-action_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-opposite-action@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07279; odiff=1.08; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-opposite-action_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-problem-solving@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06387; odiff=0.96; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-problem-solving_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-problem-solving@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07255; odiff=1.16; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-problem-solving_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-please@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06850; odiff=1.59; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-please_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-please@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07227; odiff=1.17; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-please_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-dear-man@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06862; odiff=1.55; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-dear-man_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-dear-man@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07198; odiff=1.11; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-dear-man_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-give@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06508; odiff=1.40; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-give_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-give@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06780; odiff=0.84; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-give_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-fast@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06650; odiff=1.46; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-fast_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-fast@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06941; odiff=0.97; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-fast_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-validation-limits@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06886; odiff=1.59; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-validation-limits_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 - [x] `suite:dbt-practice-validation-limits@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07236; odiff=1.15; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-validation-limits_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - DBT v2 evidence: exact key `PASS` in the DBT v2 report above; modal audit PASS in `reports/qa/dbt_modal_audit_after_shadow/AUDIT.json`; closure preserved from verified base `ffef06f`; no STOP-only evidence used.
 
 ### Historical DBT v1 / STOP-only Notes (superseded; not checklist)
@@ -822,20 +996,44 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
 ### Hub Detail / Plan / IA (F6, F5, F3, F9, F10, F12, F8) (10)
 
 - [x] `hub:detalle-plan-timer@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.45219; odiff=6.04; bbox=143; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-timer_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-30, fix commit `a37b5df`): audited from clean updated `main`; the prior closure was not present on `main`, so the runtime fix was re-applied as a fresh product commit. Hub detail plan now paints the canonical full screen surface, restores the `.screen` 24px padding, keeps the bottom window edge visible for bbox, and localizes the timer form/list geometry to the canonical `.hub-grid` rhythm. Exact dark capture+compare via `.\qa\run_visual_item.ps1 -App hub -View detalle-plan-timer -Theme dark -OutDir reports\qa\codex_audit_detalle_plan_timer_dark`; report `reports\qa\codex_audit_detalle_plan_timer_dark\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`, `HANDOFF_CLOSURE_ALLOWED: NO` only because `partial_scope`); exact key `hub:detalle-plan-timer@dark` status `PASS` (`changed_pixel_ratio=0.09622`, `mean_abs_diff=0.03242`, `windowed_ssim=0.75092`, `max_bbox_delta_px=16`, `odiff=2.62`, `suspicious_perfect_match=false`). Anti-fraud CLEAN in wrapper. Manual panel review confirms a real Qt render, no canonical/reference overlay or blit; residual diff is bounded to text/edge AA and normal Qt button/text rasterization.
 - [x] `hub:detalle-plan-rutina@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.44947; odiff=5.25; bbox=151; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-rutina_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-30, fix commit `419ceef`): routine plan detail now uses the same canonical Hub detail screen edge and `.hub-grid` rhythm, with localized routine form/card sizing and input/combo heights matching the canonical checklist panel. Exact dark capture+compare via `.\qa\run_visual_item.ps1 -App hub -View detalle-plan-rutina -Theme dark -OutDir reports\qa\codex_audit_detalle_plan_rutina_dark_postcommit`; report `reports\qa\codex_audit_detalle_plan_rutina_dark_postcommit\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`, `HANDOFF_CLOSURE_ALLOWED: NO` only because `partial_scope`); exact key `hub:detalle-plan-rutina@dark` status `PASS` (`changed_pixel_ratio=0.08469`, `mean_abs_diff=0.02895`, `windowed_ssim=0.78134`, `max_bbox_delta_px=16`, `odiff=2.33`, `suspicious_perfect_match=false`). Anti-fraud CLEAN in wrapper. Anchors remain `PASS`: `hub:detalle-plan-timer@dark` (`changed_pixel_ratio=0.09571`, `mean_abs_diff=0.03217`, `windowed_ssim=0.75037`, `max_bbox_delta_px=16`, `odiff=2.57`) and `hub:detalle-plan-timer@light` (`REPORT_EVIDENCE_VALID: YES`, report `reports\qa\codex_audit_detalle_plan_timer_light_anchor_postcommit\LAYERED_VISUAL_REPORT.json`). Manual panel review confirms a real Qt render, no canonical/reference overlay or blit; residual diff is bounded to text/edge AA and normal Qt button/text rasterization.
 - [x] `hub:detalle-plan-timer@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.44912; odiff=5.96; bbox=142; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-timer_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-30, collateral PASS from fix commit `a37b5df`): same Hub detail timer surface/layout repair as `hub:detalle-plan-timer@dark`. Exact light capture+compare via `.\qa\run_visual_item.ps1 -App hub -View detalle-plan-timer -Theme light -OutDir reports\qa\codex_audit_detalle_plan_timer_light`; report `reports\qa\codex_audit_detalle_plan_timer_light\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`, `HANDOFF_CLOSURE_ALLOWED: NO` only because `partial_scope`); exact key `hub:detalle-plan-timer@light` status `PASS` (`changed_pixel_ratio=0.09424`, `mean_abs_diff=0.03220`, `windowed_ssim=0.76453`, `max_bbox_delta_px=15`, `odiff=2.53`, `suspicious_perfect_match=false`). Anti-fraud CLEAN in wrapper. Manual panel review confirms a real Qt render, no canonical/reference overlay or blit; residual diff is bounded to text/edge AA and normal Qt button/text rasterization.
 - [x] `hub:detalle-plan-rutina@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.44284; odiff=5.05; bbox=150; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-rutina_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-30, collateral PASS from fix commit `419ceef`): same routine plan detail layout repair as `hub:detalle-plan-rutina@dark`. Exact light capture+compare via `.\qa\run_visual_item.ps1 -App hub -View detalle-plan-rutina -Theme light -OutDir reports\qa\codex_audit_detalle_plan_rutina_light_postcommit`; report `reports\qa\codex_audit_detalle_plan_rutina_light_postcommit\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`, `HANDOFF_CLOSURE_ALLOWED: NO` only because `partial_scope`); exact key `hub:detalle-plan-rutina@light` status `PASS` (`changed_pixel_ratio=0.08212`, `mean_abs_diff=0.02844`, `windowed_ssim=0.79493`, `max_bbox_delta_px=15`, `odiff=2.19`, `suspicious_perfect_match=false`). Anti-fraud CLEAN in wrapper. Manual panel review confirms a real Qt render, no canonical/reference overlay or blit; residual diff is bounded to text/edge AA and normal Qt button/text rasterization.
 - [x] `hub:detalle@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.42572; odiff=5.24; bbox=111; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-30, fix commit `21e1795`): default Hub detail/reminders now uses the same localized Plan detail rhythm as the canonical F6/F5/F3 screen, with the reminders form/list sizing adjusted without touching canonical assets, thresholds, comparator, captures, or references. Exact dark capture+compare via `.\qa\run_visual_item.ps1 -App hub -View detalle -Theme dark -OutDir reports\qa\codex_audit_detalle_dark_postcommit`; report `reports\qa\codex_audit_detalle_dark_postcommit\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`, `HANDOFF_CLOSURE_ALLOWED: NO` only because `partial_scope`); exact key `hub:detalle@dark` status `PASS` (`changed_pixel_ratio=0.09223`, `mean_abs_diff=0.03141`, `windowed_ssim=0.75937`, `max_bbox_delta_px=16`, `odiff=2.55`, `suspicious_perfect_match=false`). Anti-fraud CLEAN in wrapper. Neighbor anchors remain `PASS`: `hub:detalle-plan-timer@dark`, `hub:detalle-plan-timer@light`, `hub:detalle-plan-rutina@dark`, and `hub:detalle-plan-rutina@light`, all from fresh post-commit harness reports under `reports\qa\codex_audit_detalle_plan_*_anchor_after_detalle_postcommit`. Manual panel review confirms a real Qt render, no canonical/reference overlay or blit; residual diff is bounded to text/edge AA and normal Qt button/text rasterization.
 - [x] `hub:detalle@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.41556; odiff=5.06; bbox=110; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-30, collateral PASS from fix commit `21e1795`): same localized reminders layout repair as `hub:detalle@dark`. Exact light capture+compare via `.\qa\run_visual_item.ps1 -App hub -View detalle -Theme light -OutDir reports\qa\codex_audit_detalle_light_postcommit`; report `reports\qa\codex_audit_detalle_light_postcommit\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`, `HANDOFF_CLOSURE_ALLOWED: NO` only because `partial_scope`); exact key `hub:detalle@light` status `PASS` (`changed_pixel_ratio=0.08995`, `mean_abs_diff=0.03135`, `windowed_ssim=0.77062`, `max_bbox_delta_px=15`, `odiff=2.45`, `suspicious_perfect_match=false`). Anti-fraud CLEAN in wrapper. Manual panel review confirms a real Qt render, no canonical/reference overlay or blit; residual diff is bounded to text/edge AA and normal Qt button/text rasterization.
 - [x] `hub:detalle-plan-activacion@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.38631; odiff=3.75; bbox=43; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-activacion_dark.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-30, fix commit `022635d`): activation plan detail now uses the canonical compact activation form/list rhythm, activation-only empty-state geometry, and activation-only header density while preserving the previously closed Hub detail/timer/rutina anchors. Exact dark capture+compare via `.\qa\run_visual_item.ps1 -App hub -View detalle-plan-activacion -Theme dark -OutDir reports\qa\codex_audit_detalle_plan_activacion_dark_closure` (wrapper sets `NM_VAS_INTROSPECT=1`); report `reports\qa\codex_audit_detalle_plan_activacion_dark_closure\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`, `HANDOFF_CLOSURE_ALLOWED: NO` only because `partial_scope`); exact key `hub:detalle-plan-activacion@dark` status `PASS` (`changed_pixel_ratio=0.09460`, `mean_abs_diff=0.03357`, `windowed_ssim=0.77581`, `max_bbox_delta_px=16`, `odiff=3.27`, `suspicious_perfect_match=false`). Anti-fraud CLEAN in wrapper and `qa\vas_gate.py --key "hub:detalle-plan-activacion@dark"` exit code `0`. Previously closed Hub detail/plan anchors were rechecked; `hub:detalle-plan-timer@dark` exact wrapper PASS and the family anchor comparator report `reports\qa\codex_audit_hub_detail_plan_anchors_after_activacion_dark_final\LAYERED_VISUAL_REPORT.json` remains valid with `REPORT_EVIDENCE_VALID: YES`.
 - [x] `hub:detalle-plan-activacion@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.37762; odiff=3.61; bbox=42; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-activacion_light.png`.
+  - legacy: true
+  - legacy-reason: pre_replay_era
+  - legacy-migrated-by: migrate_legacy_closures.py
   - Closure evidence (2026-06-30, fix commit `58dbc2a`): activation plan detail light now keeps the canonical compact activation geometry while suppressing the light-only card lift/highlight on the activation header/form/list surfaces; dark rendering remains unchanged. Exact light capture+compare via `.\qa\run_visual_item.ps1 -App hub -View detalle-plan-activacion -Theme light -OutDir reports\qa\codex_audit_detalle_plan_activacion_light_closure2` (wrapper sets `NM_VAS_INTROSPECT=1`); report `reports\qa\codex_audit_detalle_plan_activacion_light_closure2\LAYERED_VISUAL_REPORT.json` (`REPORT_EVIDENCE_VALID: YES`, `REPORT_SCOPE: PARTIAL`, `HANDOFF_CLOSURE_ALLOWED: NO` only because `partial_scope`); exact key `hub:detalle-plan-activacion@light` status `PASS` (`changed_pixel_ratio=0.09543`, `mean_abs_diff=0.03457`, `windowed_ssim=0.77299`, `max_bbox_delta_px=15`, `odiff=3.1`, `suspicious_perfect_match=false`). Anti-fraud CLEAN in wrapper and VAS gate exit code `0`. Suspicious closure audit `.\.venv\Scripts\python.exe tools\qa\audit_suspicious_closure.py` PASS after marking the checkbox (`reports\qa\suspicious_closure_audit\20260630_133605\AUDIT.md`). Stale-PASS guard: `hub:detalle-plan-activacion@dark` remains exact wrapper PASS after the light fix in `reports\qa\codex_audit_detalle_plan_activacion_dark_after_light_fix\LAYERED_VISUAL_REPORT.json` (`changed_pixel_ratio=0.09460`, `mean_abs_diff=0.03357`, `windowed_ssim=0.77581`, `max_bbox_delta_px=16`, `odiff=3.27`, `suspicious_perfect_match=false`).
 - [ ] `hub:detalle-resumen-ia-0@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.16481; odiff=7.34; bbox=0; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-resumen-ia-0_light.png`.
 - [ ] `hub:detalle-resumen-ia-0@dark` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.16215; odiff=7.3; bbox=0; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-resumen-ia-0_dark.png`.
