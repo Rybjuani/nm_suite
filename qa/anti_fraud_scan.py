@@ -43,6 +43,12 @@ from pathlib import Path
 
 _PROJ = Path(__file__).resolve().parent.parent
 DEFAULT_ROOTS = ("app", "hub", "shared")
+QA_HARNESS_ROOTS = (
+    "qa/capture_v8.py",
+    "qa/layered_visual_compare.py",
+    "qa/vas_gate.py",
+    "tools/qa",
+)
 
 # Substrings (matched case-insensitively) that must never appear in a product
 # string literal. These point at canonical/reference/mockup/QA-report artifacts.
@@ -80,6 +86,37 @@ PIXMAP_REFERENCE_TOKENS = (
     "_captures",
     "/qa/",
     "\\qa\\",
+)
+
+QA_CAPTURE_SOURCE_FORBIDDEN_TOKENS = (
+    "_mockup_canonical",
+    "mockup_reference",
+    "mockup_reference_static",
+    "mockup_reparado",
+    "neuromood-mockup_reparado",
+    "pack canonico",
+    "reports/qa",
+    "reports\\qa",
+)
+QA_CAPTURE_READ_FUNCS = {
+    "open",
+    "read_text",
+    "read_bytes",
+    "Image.open",
+    "QImage",
+    "QPixmap",
+    "copy",
+    "copy2",
+    "copyfile",
+    "move",
+}
+QA_ENV_ROUTE_TOKENS = ("CANON", "CANONICAL", "MOCKUP", "REFERENCE", "REPORT", "IMAGE", "PNG")
+QA_CANONICAL_SOURCE_ALLOWED = (
+    "qa/layered_visual_compare.py",
+    "qa/visual_gate_calibration.py",
+    "qa/spec_generator.py",
+    "qa/visual_auditor_spec.py",
+    "tools/qa/",
 )
 
 # Canonical modal backdrop contract (HTML mockup). Product code must match exactly.
@@ -155,6 +192,77 @@ def _eval_static_literal(node: ast.AST) -> object | None:
         if isinstance(inner, (int, float)):
             return -inner
     return None
+
+
+def _eval_static_string(node: ast.AST) -> str | None:
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.JoinedStr):
+        parts: list[str] = []
+        for value in node.values:
+            if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                parts.append(value.value)
+            else:
+                return None
+        return "".join(parts)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left = _eval_static_string(node.left)
+        right = _eval_static_string(node.right)
+        if left is not None and right is not None:
+            return left + right
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+        left = _eval_static_string(node.left)
+        right = _eval_static_string(node.right)
+        if left is not None and right is not None:
+            return f"{left}/{right}"
+    if isinstance(node, ast.Call):
+        func = node.func
+        if isinstance(func, ast.Name) and func.id == "Path" and node.args:
+            return _eval_static_string(node.args[0])
+        if isinstance(func, ast.Attribute) and func.attr == "Path" and node.args:
+            return _eval_static_string(node.args[0])
+    return None
+
+
+def _static_strings_in_call(node: ast.Call) -> list[str]:
+    values: list[str] = []
+    for arg in [*node.args, *[kw.value for kw in node.keywords]]:
+        value = _eval_static_string(arg)
+        if value is not None:
+            values.append(value)
+    return values
+
+
+def _call_name(node: ast.Call) -> str:
+    func = node.func
+    if isinstance(func, ast.Name):
+        return func.id
+    if isinstance(func, ast.Attribute):
+        parent = ""
+        if isinstance(func.value, ast.Name):
+            parent = func.value.id
+        elif isinstance(func.value, ast.Attribute):
+            parent = func.value.attr
+        return f"{parent}.{func.attr}" if parent else func.attr
+    return ""
+
+
+def _has_forbidden_token(value: str, tokens: tuple[str, ...]) -> str | None:
+    low = value.lower().replace("\\", "/")
+    for token in tokens:
+        normalized = token.lower().replace("\\", "/")
+        if normalized in low:
+            return token
+    return None
+
+
+def _qa_allows_canonical_source(file_label: str) -> bool:
+    normalized = file_label.replace("\\", "/")
+    return any(
+        normalized == allowed.rstrip("/")
+        or normalized.startswith(allowed)
+        for allowed in QA_CANONICAL_SOURCE_ALLOWED
+    )
 
 
 def _scan_modal_backdrop_constants(tree: ast.AST, file_label: str, lines: list[str]) -> list[Violation]:
@@ -282,6 +390,120 @@ def scan_source(source: str, file_label: str) -> list[Violation]:
     return unique
 
 
+def scan_qa_harness_source(source: str, file_label: str) -> list[Violation]:
+    violations: list[Violation] = []
+    lines = source.splitlines()
+    normalized_label = file_label.replace("\\", "/")
+    is_capture_runtime = normalized_label.endswith("qa/capture_v8.py")
+    allows_canonical = _qa_allows_canonical_source(normalized_label)
+
+    def snippet(lineno: int) -> str:
+        idx = lineno - 1
+        if 0 <= idx < len(lines):
+            return lines[idx].strip()[:200]
+        return ""
+
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        for i, line in enumerate(lines, start=1):
+            token = _has_forbidden_token(line, QA_CAPTURE_SOURCE_FORBIDDEN_TOKENS)
+            if token:
+                violations.append(Violation(file_label, i, "qa_unparsed_artifact_token", token, line.strip()[:200]))
+        return violations
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            call_name = _call_name(node)
+            short_name = call_name.split(".")[-1]
+            if call_name.endswith("b64decode") or short_name == "b64decode":
+                violations.append(
+                    Violation(
+                        file_label,
+                        getattr(node, "lineno", 0),
+                        "qa_suspicious_base64_decode",
+                        call_name,
+                        snippet(getattr(node, "lineno", 0)),
+                    )
+                )
+
+            if is_capture_runtime and short_name in QA_CAPTURE_READ_FUNCS:
+                for value in _static_strings_in_call(node):
+                    token = _has_forbidden_token(value, QA_CAPTURE_SOURCE_FORBIDDEN_TOKENS)
+                    if token:
+                        violations.append(
+                            Violation(
+                                file_label,
+                                getattr(node, "lineno", 0),
+                                "qa_capture_reads_reference_artifact",
+                                token,
+                                snippet(getattr(node, "lineno", 0)),
+                            )
+                        )
+
+            if call_name in {"os.environ.get", "environ.get"} and node.args:
+                env_name = _eval_static_string(node.args[0]) or ""
+                if any(token in env_name.upper() for token in QA_ENV_ROUTE_TOKENS):
+                    violations.append(
+                        Violation(
+                            file_label,
+                            getattr(node, "lineno", 0),
+                            "qa_env_artifact_route",
+                            env_name,
+                            snippet(getattr(node, "lineno", 0)),
+                        )
+                    )
+
+        if isinstance(node, ast.Subscript):
+            target = node.value
+            target_name = ""
+            if isinstance(target, ast.Attribute):
+                target_name = f"{getattr(target.value, 'id', '')}.{target.attr}"
+            elif isinstance(target, ast.Name):
+                target_name = target.id
+            if target_name in {"os.environ", "environ"}:
+                env_name = _eval_static_string(node.slice) or ""
+                if any(token in env_name.upper() for token in QA_ENV_ROUTE_TOKENS):
+                    violations.append(
+                        Violation(
+                            file_label,
+                            getattr(node, "lineno", 0),
+                            "qa_env_artifact_route",
+                            env_name,
+                            snippet(getattr(node, "lineno", 0)),
+                        )
+                    )
+
+        if isinstance(node, (ast.BinOp, ast.JoinedStr, ast.Call)):
+            value = _eval_static_string(node)
+            if value is None:
+                continue
+            token = _has_forbidden_token(value, QA_CAPTURE_SOURCE_FORBIDDEN_TOKENS)
+            if not token:
+                continue
+            if allows_canonical:
+                continue
+            if is_capture_runtime or isinstance(node, (ast.BinOp, ast.JoinedStr)):
+                violations.append(
+                    Violation(
+                        file_label,
+                        getattr(node, "lineno", 0),
+                        "qa_dynamic_artifact_path_construction",
+                        token,
+                        snippet(getattr(node, "lineno", 0)),
+                    )
+                )
+
+    seen = set()
+    unique: list[Violation] = []
+    for v in violations:
+        sig = (v.file, v.line, v.kind, v.pattern)
+        if sig not in seen:
+            seen.add(sig)
+            unique.append(v)
+    return unique
+
+
 def scan_file(path: Path, *, base: Path | None = None) -> list[Violation]:
     label = str(path.relative_to(base)) if base else str(path)
     try:
@@ -289,6 +511,15 @@ def scan_file(path: Path, *, base: Path | None = None) -> list[Violation]:
     except OSError:
         return []
     return scan_source(source, label)
+
+
+def scan_qa_harness_file(path: Path, *, base: Path | None = None) -> list[Violation]:
+    label = str(path.relative_to(base)) if base else str(path)
+    try:
+        source = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    return scan_qa_harness_source(source, label)
 
 
 def scan_paths(roots, *, base: Path | None = None) -> list[Violation]:
@@ -300,13 +531,34 @@ def scan_paths(roots, *, base: Path | None = None) -> list[Violation]:
     return violations
 
 
+def scan_qa_harness_paths(roots, *, base: Path | None = None) -> list[Violation]:
+    base = base or _PROJ
+    root_paths = [(base / r) if not Path(r).is_absolute() else Path(r) for r in roots]
+    violations: list[Violation] = []
+    for path in _iter_py_files(root_paths):
+        violations.extend(scan_qa_harness_file(path, base=base))
+    return violations
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Static anti-fraud scan for runtime/product code.")
-    parser.add_argument("--roots", nargs="*", default=list(DEFAULT_ROOTS), help="Roots to scan (default: app hub shared).")
+    parser = argparse.ArgumentParser(description="Static anti-fraud scan for runtime/product and QA harness code.")
+    parser.add_argument(
+        "--mode",
+        choices=("runtime", "qa-harness", "all"),
+        default="runtime",
+        help="Scan mode: runtime product code, QA harness code, or both.",
+    )
+    parser.add_argument("--roots", nargs="*", default=None, help="Roots to scan (mode-specific defaults if omitted).")
     parser.add_argument("--json", default=None, help="Optional path to write a JSON report.")
     args = parser.parse_args(argv)
 
-    violations = scan_paths(args.roots)
+    runtime_roots = args.roots if args.roots is not None else list(DEFAULT_ROOTS)
+    qa_roots = args.roots if args.roots is not None else list(QA_HARNESS_ROOTS)
+    violations: list[Violation] = []
+    if args.mode in {"runtime", "all"}:
+        violations.extend(scan_paths(runtime_roots))
+    if args.mode in {"qa-harness", "all"}:
+        violations.extend(scan_qa_harness_paths(qa_roots))
 
     if args.json:
         out = Path(args.json)
@@ -321,14 +573,20 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     print("=" * 60)
-    print("ANTI-FRAUD STATIC SCAN (runtime/product)")
-    print(f"Roots: {', '.join(args.roots)}")
+    print(f"ANTI-FRAUD STATIC SCAN ({args.mode})")
+    if args.mode == "runtime":
+        roots_display = runtime_roots
+    elif args.mode == "qa-harness":
+        roots_display = qa_roots
+    else:
+        roots_display = [*runtime_roots, *qa_roots]
+    print(f"Roots: {', '.join(roots_display)}")
     if not violations:
         print("Result: CLEAN - no canonical/reference/mockup artifact usage found.")
         print("=" * 60)
         return 0
     print(f"Result: FAIL - {len(violations)} violation(s).")
-    print("Runtime/product must never read/render/overlay canonical/reference artifacts.")
+    print("Runtime/product and capture harnesses must never inject canonical/reference artifacts.")
     print("A report produced while this scan fails is NOT valid closure evidence.")
     print("-" * 60)
     for v in violations:

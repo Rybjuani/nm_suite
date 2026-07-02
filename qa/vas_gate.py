@@ -18,13 +18,64 @@ Closure bar (all must hold):
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
 
 DEFAULT_SIDECAR = Path("qa/_visual_auditor_spec/introspection.json")
+_PROJ = Path(__file__).resolve().parent.parent
 
 BLOCKING_SEVERITIES = {"high", "medium"}
+
+
+def _sha256_file(path: Path) -> str | None:
+    try:
+        h = hashlib.sha256()
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except OSError:
+        return None
+
+
+def _resolve_path(value: object, *, sidecar_path: Path) -> Path | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    path = Path(value)
+    if path.is_absolute():
+        return path
+    candidates = [
+        (_PROJ / path),
+        (sidecar_path.parent / path),
+        (sidecar_path.parent.parent / "_captures_v8" / path.name),
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+def _key_from_manifest_result(result: dict) -> str:
+    if isinstance(result.get("key"), str):
+        return result["key"]
+    app = result.get("app")
+    view = result.get("view")
+    theme = result.get("theme")
+    if all(isinstance(part, str) and part for part in (app, view, theme)):
+        return f"{app}:{view}@{theme}"
+    return ""
+
+
+def _load_capture_manifest(path: Path | None) -> dict | None:
+    if path is None or not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, ValueError, OSError):
+        return None
+    return payload if isinstance(payload, dict) else None
 
 
 def _load_sidecar(path: Path) -> list[dict]:
@@ -49,7 +100,95 @@ def _load_sidecar(path: Path) -> list[dict]:
     return data
 
 
-def _check_entry(entry: dict, key: str | None) -> list[str]:
+def _check_provenance(entry: dict, sidecar_path: Path) -> list[str]:
+    reasons: list[str] = []
+    surface = entry.get("surface_key", "<missing surface_key>")
+    provenance = entry.get("provenance")
+    if not isinstance(provenance, dict):
+        return [f"[{surface}] missing capture provenance"]
+
+    required = [
+        "key",
+        "capture_path",
+        "png_sha256",
+        "captured_at",
+        "command_args",
+        "git_head",
+        "capture_script_sha256",
+        "capture_manifest",
+        "introspection_sidecar",
+        "introspection_entry_id",
+    ]
+    for field in required:
+        if field not in provenance or provenance.get(field) in ("", None, []):
+            reasons.append(f"[{surface}] provenance missing '{field}'")
+
+    if provenance.get("key") != surface:
+        reasons.append(f"[{surface}] provenance key mismatch: {provenance.get('key')!r}")
+
+    command_args = provenance.get("command_args")
+    if not isinstance(command_args, list) or not any("capture_v8.py" in str(arg) for arg in command_args):
+        reasons.append(f"[{surface}] provenance command_args do not reference capture_v8.py")
+
+    png_path = _resolve_path(provenance.get("capture_path"), sidecar_path=sidecar_path)
+    if png_path is None or not png_path.exists():
+        reasons.append(f"[{surface}] provenance capture_path does not exist")
+    else:
+        actual_sha = _sha256_file(png_path)
+        if actual_sha != provenance.get("png_sha256"):
+            reasons.append(f"[{surface}] PNG sha256 mismatch for provenance capture_path")
+
+    sidecar_link = _resolve_path(provenance.get("introspection_sidecar"), sidecar_path=sidecar_path)
+    try:
+        if sidecar_link is None or sidecar_link.resolve() != sidecar_path.resolve():
+            reasons.append(f"[{surface}] provenance introspection_sidecar does not match validated sidecar")
+    except OSError:
+        reasons.append(f"[{surface}] provenance introspection_sidecar cannot be resolved")
+
+    script_sha = _sha256_file(_PROJ / "qa" / "capture_v8.py")
+    if script_sha and provenance.get("capture_script_sha256") != script_sha:
+        reasons.append(f"[{surface}] capture_v8.py sha256 mismatch")
+
+    manifest_path = _resolve_path(provenance.get("capture_manifest"), sidecar_path=sidecar_path)
+    manifest = _load_capture_manifest(manifest_path)
+    if manifest is None:
+        reasons.append(f"[{surface}] capture manifest missing or invalid")
+        return reasons
+
+    matches = [
+        result
+        for result in manifest.get("results", [])
+        if isinstance(result, dict) and _key_from_manifest_result(result) == surface
+    ]
+    if not matches:
+        reasons.append(f"[{surface}] capture manifest has no matching key")
+        return reasons
+
+    expected_file = Path(str(provenance.get("capture_path", ""))).name
+    matching_result = None
+    for result in matches:
+        if result.get("file") == expected_file:
+            matching_result = result
+            break
+    if matching_result is None:
+        reasons.append(f"[{surface}] capture manifest has no matching capture file")
+        return reasons
+
+    result_provenance = matching_result.get("provenance")
+    if not isinstance(result_provenance, dict):
+        reasons.append(f"[{surface}] capture manifest result lacks provenance")
+        return reasons
+    for field in ("png_sha256", "introspection_entry_id", "capture_script_sha256"):
+        if result_provenance.get(field) != provenance.get(field):
+            reasons.append(f"[{surface}] capture manifest provenance mismatch for '{field}'")
+
+    if matching_result.get("sha256") and matching_result.get("sha256") != provenance.get("png_sha256"):
+        reasons.append(f"[{surface}] capture manifest sha256 does not match provenance")
+
+    return reasons
+
+
+def _check_entry(entry: dict, key: str | None, sidecar_path: Path) -> list[str]:
     """Return a list of failure reasons for a single entry. Empty = pass."""
     reasons: list[str] = []
     surface = entry.get("surface_key", "<missing surface_key>")
@@ -82,6 +221,7 @@ def _check_entry(entry: dict, key: str | None) -> list[str]:
             f"[{surface}] {len(blocking)} blocking divergence(s): {kinds}"
         )
 
+    reasons.extend(_check_provenance(entry, sidecar_path))
     return reasons
 
 
@@ -108,7 +248,7 @@ def validate(path: Path, key: str | None) -> bool:
         if not isinstance(entry, dict):
             all_reasons.append(f"Non-dict entry in sidecar: {entry!r}")
             continue
-        all_reasons.extend(_check_entry(entry, None))  # check all filtered entries
+        all_reasons.extend(_check_entry(entry, None, path))  # check all filtered entries
 
     if all_reasons:
         print("VAS GATE FAIL:", file=sys.stderr)

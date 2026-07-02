@@ -341,6 +341,10 @@ Do not mark an item complete because of:
 
 Historical notes may record panel/manual review as inspection context. That
 context is never closure evidence unless every technical gate below also passes.
+If an exact key appears both in an active checklist and in a historical or
+superseded section, only the active checklist row governs closure. Historical
+duplicates must stay isolated under explicit historical headings and must not be
+cited as current PASS evidence.
 
 ## Operational Discipline
 
@@ -424,6 +428,12 @@ even if the comparator reports `PASS`**. Run standalone with
 `.\.venv\Scripts\python.exe qa\anti_fraud_scan.py`. It does not ban `QPixmap`
 globally — only its use with QA/reference artifacts.
 
+For closure evidence also run
+`.\.venv\Scripts\python.exe qa\anti_fraud_scan.py --mode qa-harness`: the QA
+harness scan forbids `qa/capture_v8.py` from reading/copying canonical mockup,
+reports, canonical HTML, or prior captures as visual input; comparators and
+auditors may read `qa/_mockup_canonical` only as declared canonical source.
+
 ### Suspicious perfect match
 
 The comparator flags any result that is pixel-identical to the canonical
@@ -434,6 +444,12 @@ of reference-artifact injection. It counts as a real divergence and **blocks
 closure pending audit** — it can never be closure evidence. The only exception
 is trivial surfaces, by an explicit, tested rule: empty-state views (name ends
 `-empty`) and flat / near-constant canonicals (grayscale std < 2.0).
+
+The comparator also flags non-trivial near-perfect matches as
+`status=NEAR_PERFECT_MATCH` / `near_perfect_match: true` when
+`changed_pixel_ratio < 0.005` and `ssim > 0.995`. This catches copied canonical
+PNGs with tiny injected noise and blocks closure exactly like
+`SUSPICIOUS_PERFECT_MATCH` (`repair_bucket=AUDIT_REQUIRED`).
 
 ### Density-aware gate (text-dense surfaces)
 
@@ -483,13 +499,15 @@ technical gates pass. There is no subjective or manual closure path — inspecti
 
 ### PASS requirements (all mandatory)
 
-1. Anti-fraud scan: `CLEAN`.
+1. Anti-fraud scan: `CLEAN` in both runtime and QA-harness modes.
 2. Fresh capture with `NM_VAS_INTROSPECT=1` for that exact surface or family.
 3. Fresh `qa/layered_visual_compare.py` report with `REPORT_EVIDENCE_VALID: YES`.
 4. Exact key status is `PASS` only.
 5. VAS Gate (`qa/vas_gate.py`) passes: sidecar
    `qa/_visual_auditor_spec/introspection.json` exists, contains the exact key,
-   `fail_count=0`, and zero divergences of severity `high` or `medium`.
+   `fail_count=0`, zero divergences of severity `high` or `medium`, and valid
+   `capture_v8.provenance.v1` linked to the captured PNG SHA, the capture
+   manifest, the capture script SHA, and the introspection entry id.
 6. Modal keys must have `modal_capture_scope=window_overlay`,
    `backdrop_observable=true`, a `back_screen_key`, and
    `tools/qa/audit_modal_backdrop_blur.py --key "<exact-key>"` PASS. A
@@ -505,7 +523,7 @@ The closure note must record:
 - Capture command used (must include `NM_VAS_INTROSPECT=1`).
 - Comparator report path.
 - `REPORT_EVIDENCE_VALID: YES` + exact key `PASS`.
-- `qa/vas_gate.py` exit code `0`.
+- `qa/vas_gate.py` exit code `0` and the capture provenance/manifest path.
 - For modal keys, modal backdrop audit report path and PASS summary.
 - When applicable, mockup parity `AUDIT.md` path and PASS/FAIL summary.
 
@@ -514,6 +532,11 @@ is `partial_scope` or that other keys remain `FAIL`; the deciding factor is the
 exact key `PASS` in a valid report plus a passing VAS Gate. The comparator may
 exit non-zero while other items remain `FAIL`; for individual closure, read the
 exact key status in the JSON/MD report, not the global exit code.
+
+Gitignored `reports/`, `qa/_captures_v8/`, and sidecar files are not evidence by
+themselves. They become closure evidence only when the layered report, VAS
+sidecar, capture manifest, PNG SHA, and capture provenance all correlate for the
+same exact key.
 
 If any gate fails or evidence is missing, leave the checkbox open and add a note.
 

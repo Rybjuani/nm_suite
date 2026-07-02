@@ -73,6 +73,29 @@ def test_content_rich_png_stays_valid(tmp_path):
     assert capture_v8._STATUS_BLANK_OR_FLAT not in result["evidence_flags"]
 
 
+def test_capture_provenance_links_key_png_manifest_and_introspection(tmp_path):
+    png = tmp_path / "suite-home-light-960x600.png"
+    png.write_bytes(b"runtime capture bytes")
+
+    provenance = capture_v8._capture_provenance(
+        app_key="suite",
+        view_id="home",
+        theme="light",
+        png_path=png,
+        out_dir=tmp_path,
+    )
+
+    assert provenance["schema"] == "capture_v8.provenance.v1"
+    assert provenance["key"] == "suite:home@light"
+    assert provenance["capture_file"] == png.name
+    assert provenance["png_sha256"] == capture_v8._sha256_file(png)
+    assert provenance["command_args"]
+    assert provenance["capture_script_sha256"] == capture_v8._sha256_file(Path(capture_v8.__file__).resolve())
+    assert provenance["capture_manifest"].endswith("CAPTURE_MANIFEST.json")
+    assert provenance["introspection_sidecar"].endswith("introspection.json")
+    assert len(provenance["introspection_entry_id"]) == 64
+
+
 def test_capture_v8_clean_only_without_targets(monkeypatch, tmp_path):
     calls: list[tuple[str, str]] = []
 

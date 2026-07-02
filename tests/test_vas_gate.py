@@ -1,6 +1,7 @@
 """Contract tests for qa/vas_gate.py — validates the VAS gate logic."""
 
 import json
+import hashlib
 import subprocess
 import sys
 from pathlib import Path
@@ -23,7 +24,72 @@ def _run_gate(sidecar_path: Path, key: str | None = None) -> subprocess.Complete
     )
 
 
+def _sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _safe_file_key(key: str) -> str:
+    return (
+        key.replace(":", "-")
+        .replace("@", "-")
+        .replace("/", "-")
+        .replace("\\", "-")
+    )
+
+
 def _write_sidecar(tmp_path: Path, entries: list) -> Path:
+    sidecar = tmp_path / "introspection.json"
+    capture_dir = tmp_path / "_captures_v8"
+    capture_dir.mkdir(parents=True, exist_ok=True)
+    manifest = {
+        "harness": "capture_v8.py",
+        "results": [],
+    }
+    script_sha = _sha256_file(REPO_ROOT / "qa" / "capture_v8.py")
+    enriched_entries = []
+    for idx, raw_entry in enumerate(entries):
+        entry = dict(raw_entry)
+        key = str(entry.get("surface_key", f"suite:missing-{idx}@light"))
+        png_path = capture_dir / f"{_safe_file_key(key)}-960x600.png"
+        png_path.write_bytes(f"fake png payload for {key}".encode("utf-8"))
+        png_sha = _sha256_file(png_path)
+        entry_id = hashlib.sha256(f"{key}|{png_sha}|{idx}".encode("utf-8")).hexdigest()
+        provenance = {
+            "schema": "capture_v8.provenance.v1",
+            "key": key,
+            "capture_file": png_path.name,
+            "capture_path": str(png_path),
+            "png_sha256": png_sha,
+            "captured_at": "2026-07-02T00:00:00+00:00",
+            "command_args": ["qa/capture_v8.py", "--app", "suite", "--view", "test"],
+            "cwd": str(REPO_ROOT),
+            "git_head": "test-head",
+            "git_branch": "test",
+            "git_tracked_dirty": False,
+            "capture_script": str(REPO_ROOT / "qa" / "capture_v8.py"),
+            "capture_script_sha256": script_sha,
+            "capture_manifest": str(capture_dir / "CAPTURE_MANIFEST.json"),
+            "introspection_sidecar": str(sidecar),
+            "introspection_entry_id": entry_id,
+        }
+        entry.setdefault("provenance", provenance)
+        manifest["results"].append({
+            "key": key,
+            "file": png_path.name,
+            "sha256": png_sha,
+            "provenance": provenance,
+        })
+        enriched_entries.append(entry)
+    (capture_dir / "CAPTURE_MANIFEST.json").write_text(json.dumps(manifest), encoding="utf-8")
+    sidecar.write_text(json.dumps(enriched_entries), encoding="utf-8")
+    return sidecar
+
+
+def _write_raw_sidecar(tmp_path: Path, entries: list) -> Path:
     sidecar = tmp_path / "introspection.json"
     sidecar.write_text(json.dumps(entries), encoding="utf-8")
     return sidecar
@@ -155,6 +221,33 @@ def test_fail_missing_fail_count_key(tmp_path):
     result = _run_gate(sidecar, key="suite:test@light")
     assert result.returncode == 1
     assert "missing key" in result.stderr.lower() and "fail_count" in result.stderr
+
+
+def test_fail_forged_sidecar_without_capture_provenance(tmp_path):
+    """A hand-written clean VAS sidecar is not closure evidence by itself."""
+    sidecar = _write_raw_sidecar(tmp_path, [
+        {"surface_key": "suite:test@light", "fail_count": 0, "divergences": []},
+    ])
+
+    result = _run_gate(sidecar, key="suite:test@light")
+
+    assert result.returncode == 1
+    assert "missing capture provenance" in result.stderr
+
+
+def test_fail_sidecar_with_mismatched_png_sha(tmp_path):
+    """The VAS sidecar must be linked to the exact captured PNG bytes."""
+    sidecar = _write_sidecar(tmp_path, [
+        {"surface_key": "suite:test@light", "fail_count": 0, "divergences": []},
+    ])
+    payload = json.loads(sidecar.read_text(encoding="utf-8"))
+    payload[0]["provenance"]["png_sha256"] = "0" * 64
+    sidecar.write_text(json.dumps(payload), encoding="utf-8")
+
+    result = _run_gate(sidecar, key="suite:test@light")
+
+    assert result.returncode == 1
+    assert "sha256 mismatch" in result.stderr
 
 
 def test_fail_empty_sidecar(tmp_path):

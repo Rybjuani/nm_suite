@@ -1684,6 +1684,50 @@ def _git_metadata() -> dict[str, Any]:
     }
 
 
+def _capture_manifest_path(out_dir: Path) -> Path:
+    return out_dir / "CAPTURE_MANIFEST.json"
+
+
+def _capture_key(app_key: str, view_id: str, theme: str) -> str:
+    return f"{app_key}:{view_id}@{theme}"
+
+
+def _capture_provenance(
+    *,
+    app_key: str,
+    view_id: str,
+    theme: str,
+    png_path: Path,
+    out_dir: Path,
+) -> dict[str, Any]:
+    png_sha = _sha256_file(png_path) or ""
+    git = _git_metadata()
+    captured_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    key = _capture_key(app_key, view_id, theme)
+    script_path = Path(__file__).resolve()
+    script_sha = _sha256_file(script_path) or ""
+    entry_material = "|".join([key, png_sha, script_sha, captured_at])
+    entry_id = hashlib.sha256(entry_material.encode("utf-8")).hexdigest()
+    return {
+        "schema": "capture_v8.provenance.v1",
+        "key": key,
+        "capture_file": png_path.name,
+        "capture_path": str(png_path.resolve()),
+        "png_sha256": png_sha,
+        "captured_at": captured_at,
+        "command_args": list(sys.argv),
+        "cwd": str(_PROJ),
+        "git_head": git.get("head", ""),
+        "git_branch": git.get("branch", ""),
+        "git_tracked_dirty": git.get("tracked_dirty", False),
+        "capture_script": str(script_path),
+        "capture_script_sha256": script_sha,
+        "capture_manifest": str(_capture_manifest_path(out_dir).resolve()),
+        "introspection_sidecar": str(_introspect_sidecar_path(out_dir).resolve()),
+        "introspection_entry_id": entry_id,
+    }
+
+
 def _classify_initial_result(result: dict) -> None:
     result.setdefault("evidence_flags", [])
     result.setdefault("evidence_notes", [])
@@ -2304,7 +2348,14 @@ def _introspect_sidecar_path(out_dir: Path) -> Path:
     return out_dir.parent / "_visual_auditor_spec" / "introspection.json"
 
 
-def _record_introspection(win, app_key: str, view_id: str, modo: str, out_dir: Path) -> None:
+def _record_introspection(
+    win,
+    app_key: str,
+    view_id: str,
+    modo: str,
+    out_dir: Path,
+    provenance: dict[str, Any],
+) -> None:
     """Opt-in (NM_VAS_INTROSPECT=1) renderer-independent design audit.
 
     Walks the live, *settled* widget tree and checks design contracts (e.g. cards
@@ -2322,6 +2373,7 @@ def _record_introspection(win, app_key: str, view_id: str, modo: str, out_dir: P
         _drain(QApplication.instance(), cycles=20)  # let animations settle past ~1s
         surface_key = f"{app_key}:{view_id}@{_short_theme(modo)}"
         report = vas_introspect.audit_tree(win, surface_key)
+        report["provenance"] = provenance
 
         path = _introspect_sidecar_path(out_dir)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -2410,8 +2462,20 @@ def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Pa
         fname = f"{app_key}-{view_id}-{st}-{real_w}x{real_h}{suffix}.png"
         out_path = out_dir / fname
         ok = pm.save(str(out_path))
-        _record_introspection(win, app_key, view_id, modo, out_dir)
+        provenance = (
+            _capture_provenance(
+                app_key=app_key,
+                view_id=view_id,
+                theme=st,
+                png_path=out_path,
+                out_dir=out_dir,
+            )
+            if ok and out_path.exists()
+            else {}
+        )
+        _record_introspection(win, app_key, view_id, modo, out_dir, provenance)
         return {"file": fname, "app": app_key, "view": view_id, "theme": st,
+                "key": _capture_key(app_key, view_id, st),
                 "resolution": f"{real_w}x{real_h}",
                 "requested_resolution": f"{w}x{h}",
                 "requested_logical_resolution": requested_logical,
@@ -2422,6 +2486,8 @@ def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Pa
                 "evidence_contract": contract,
                 "success": ok,
                 "size_bytes": out_path.stat().st_size if ok and out_path.exists() else 0,
+                "sha256": provenance.get("png_sha256", ""),
+                "provenance": provenance,
                 "is_dialog_or_auxiliary": is_dialog_or_auxiliary,
                 "is_child_dialog": is_dialog_or_auxiliary,
                 "actual_resolution": f"{real_w}x{real_h}",
@@ -2437,6 +2503,7 @@ def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Pa
             capture_meta,
         )
         return {"file": fname, "app": app_key, "view": view_id, "theme": st,
+                "key": _capture_key(app_key, view_id, st),
                 "requested_resolution": f"{w}x{h}",
                 "requested_logical_resolution": f"{w}x{h}",
                 "requested_scale_factor": scale,
@@ -2956,6 +3023,7 @@ def main() -> int:
         "generated_at": datetime.datetime.now().isoformat(),
         "git": _git_metadata(),
         "command": sys.argv,
+        "capture_script_sha256": _sha256_file(Path(__file__).resolve()),
         "cwd": str(_PROJ),
         "isolation_scope": "fresh_window_per_recipe" if args._child_single else "subprocess_per_recipe",
         "auto_residual_popup_capture": False,
