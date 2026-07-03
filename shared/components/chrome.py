@@ -9,6 +9,7 @@ from PyQt6.QtCore import (
 )
 from PyQt6.QtGui import (
     QColor,
+    QFont,
     QMouseEvent,
     QPaintEvent,
     QPainter,
@@ -398,6 +399,22 @@ class NMWindowChrome(QWidget):
         border_c = v3c("chromeLine", self._modo)
         p.setPen(QPen(border_c, 1))
         p.drawLine(0, self.height() - 1, self.width(), self.height() - 1)
+        # Borde de `.window` del mockup (1px --line): fila superior y columnas
+        # laterales del tramo del chrome. El resto del anillo lo pinta el
+        # fondo de cada screen. En CSS el borde compone sobre el background de
+        # `.window` (--surface), no sobre el chrome — se pinta la base primero.
+        win_line = QColor(v3c("line", self._modo))
+        if win_line.alpha() == 255:
+            # Alpha canónico: light rgba(49,45,39,.10) / dark rgba(255,255,255,.09)
+            win_line.setAlpha(23 if self._modo == "dark" else 26)
+        surface_base = v3c("surface", self._modo)
+        for bx, by, bw, bh in (
+            (0, 0, self.width(), 1),
+            (0, 0, 1, self.height()),
+            (self.width() - 1, 0, 1, self.height()),
+        ):
+            p.fillRect(bx, by, bw, bh, surface_base)
+            p.fillRect(bx, by, bw, bh, win_line)
         p.end()
 
     # ── Theme ─────────────────────────────────────────────────────────────────
@@ -408,7 +425,10 @@ class NMWindowChrome(QWidget):
         c_ink3 = v3c("text3", self._modo)
         c_faint = v3c("faint", self._modo)
 
-        title_f = qfont(14, weight=600)
+        # Mockup .tb-title: font-weight 600. El clamp ADN de qfont degrada
+        # ≥600 a 500 en tamaños <16px; el peso va explícito sobre el QFont.
+        title_f = qfont(14)
+        title_f.setWeight(QFont.Weight.DemiBold)
         self._lbl_title.setFont(title_f)
         self._lbl_title.setStyleSheet(f"color: {_css_color(c_ink)}; background: transparent;")
 
@@ -477,7 +497,15 @@ class NMWindowChrome(QWidget):
             return
         c_ink = v3c("ink", self._modo)
         c_ink2 = v3c("ink_2", self._modo)
-        self._ctx_title.setFont(qfont(14, weight=600))
+        # Mockup .tb-title: 13.5px weight 600. El clamp ADN degrada ≥600 a 500
+        # en <16px (peso explícito), y setPixelSize no acepta 13.5 → 13px +
+        # stretch 104% reproduce el ancho de avance canónico.
+        ctx_f = qfont(13)
+        ctx_f.setWeight(QFont.Weight.DemiBold)
+        ctx_f.setStretch(104)
+        # Chromium no grid-fittea el texto; full hinting engrosaba los stems.
+        ctx_f.setHintingPreference(QFont.HintingPreference.PreferVerticalHinting)
+        self._ctx_title.setFont(ctx_f)
         self._ctx_title.setStyleSheet(f"color: {_css_color(c_ink)}; background: transparent;")
         self._ctx_back.setStyleSheet(
             "QPushButton { background: transparent; "

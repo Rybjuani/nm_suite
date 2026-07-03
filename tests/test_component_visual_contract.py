@@ -845,18 +845,24 @@ def test_dbt_cards_match_mockup_family_bar_contract(qtbot) -> None:
     )
     qtbot.addWidget(skill)
     # Barra horizontal de familia vive en layout para no pisar el titulo.
-    assert skill.layout().contentsMargins().left() == 11
-    assert skill.layout().contentsMargins().top() == 10
+    # Márgenes (12,11,10,9): el mockup usa padding 10px 11px sobre columnas
+    # CSS fraccionales; con widgets enteros la card se corre -1px en x/y para
+    # calzar los bordes canónicos y el margen interno compensa +1 (medido
+    # contra qa/_mockup_canonical, cierre suite:dbt-library@*).
+    assert skill.layout().contentsMargins().left() == 12
+    assert skill.layout().contentsMargins().top() == 11
     assert skill._family_color_key == "toler"
     assert _DBT_LIBRARY_COLUMNS == 4
     assert _DBT_SKILL_BAR_TOP_W == 30
     assert _DBT_SKILL_BAR_TOP_H == 3
-    assert _DBT_LIBRARY_CARD_MIN_H == 96
-    assert _DBT_LIBRARY_CARD_MAX_H == 96
+    # 97 = pitch de fila canónico 103px − gap 6 (medido; con 96 el grid
+    # acumulaba -1px por fila).
+    assert _DBT_LIBRARY_CARD_MIN_H == 97
+    assert _DBT_LIBRARY_CARD_MAX_H == 97
     assert skill.family_bar.width() == 30
     assert skill.family_bar.height() == 3
-    assert skill.minimumHeight() == 96
-    assert skill.maximumHeight() == 96
+    assert skill.minimumHeight() == 97
+    assert skill.maximumHeight() == 97
     assert skill.dur_lbl.text() == "2m"
     assert _DBT_FAMILY_COLOR_KEYS == {
         "mindfulness": "mind",

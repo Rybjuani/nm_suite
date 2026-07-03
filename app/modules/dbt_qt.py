@@ -10,7 +10,18 @@ import uuid
 import logging
 
 from PyQt6.QtCore import Qt, pyqtSignal, QRectF, QEvent, QPointF, QSize
-from PyQt6.QtGui import QImage, QPainter, QBrush, QColor, QPixmap, QRadialGradient, QPen, QFontMetrics
+from PyQt6.QtGui import (
+    QImage,
+    QPainter,
+    QBrush,
+    QColor,
+    QPixmap,
+    QRadialGradient,
+    QPen,
+    QFont,
+    QFontMetrics,
+    QPainterPath,
+)
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -94,11 +105,30 @@ _DBT_FAMILY_COLOR_KEYS = {
 _DBT_SKILL_BAR_TOP_W = 30
 _DBT_SKILL_BAR_TOP_H = 3
 _DBT_LIBRARY_COLUMNS = 4
-_DBT_LIBRARY_CARD_MIN_H = 96
-_DBT_LIBRARY_CARD_MAX_H = 96
+# Mockup: pitch de fila medido 103px (canónico) = 97px card + 6px gap. Con 96
+# el grid acumulaba -1px por fila (filas 2/3/4 quedaban 1/2/3px altas).
+_DBT_LIBRARY_CARD_MIN_H = 97
+_DBT_LIBRARY_CARD_MAX_H = 97
 _DBT_NEED_BORDER_W = 3  # mockup l.232: .need-card{border-left:3px solid var(--brand); ...}
 _DBT_NEED_BORDER_Y = 14
 _DBT_NEED_BORDER_RADIUS = 2.5
+
+
+def _dbt_meta_font() -> QFont:
+    """Fuente 10.5px del mockup para desc/meta de `.dbt-card` (l.1472-1473).
+
+    `setPixelSize` sólo acepta enteros y el engine redondea los tamaños
+    fraccionales por pt a 11px. 10px + stretch 105% reproduce los anchos de
+    avance de 10.5px (medido: 175px canónico vs 166px a 10px secos); el
+    word-spacing +1.0 global de `qfont` se anula porque el mockup no lo tiene.
+    """
+    f = qfont(10)
+    f.setStretch(105)
+    f.setWordSpacing(0.0)
+    # Chromium (canónico) rasteriza sin grid-fitting agresivo; el
+    # PreferFullHinting global de qfont engrosa los stems a 10px.
+    f.setHintingPreference(QFont.HintingPreference.PreferVerticalHinting)
+    return f
 
 
 def _dbt_family_color_key(family: str) -> str:
@@ -483,12 +513,46 @@ def _elide_two_lines(text: str, fm: QFontMetrics, max_width: int) -> str:
 
 
 class _TwoLineElideLabel(QLabel):
-    """`QLabel` con tope duro de 2 líneas + elipsis (ver `_elide_two_lines`)."""
+    """Label de máx. 2 líneas + elipsis con pitch de línea EXACTO del mockup.
 
-    def __init__(self, text: str = "", parent=None):
+    QLabel interlinea con `fm.lineSpacing()` (12px para Inter 10px, ~17px para
+    serif 13px) y centra verticalmente, pero el canónico usa line-height 1.32
+    (13.86px) en descripciones y 1.18 (15.34px) en títulos `.h-serif` — con el
+    QLabel nativo la 2da línea quedaba ~2px corrida. El paint propio fija
+    baseline superior y pitch fraccional (ver `_elide_two_lines` para el corte).
+    """
+
+    def __init__(self, text: str = "", parent=None, line_pitch: float = 13.86,
+                 top_offset: float = 1.0):
         super().__init__(parent)
         self._full_text = text
+        self._line_pitch = float(line_pitch)
+        self._top_offset = float(top_offset)
+        self._ink: QColor | None = None
         super().setText(text)
+
+    def set_ink(self, color) -> None:
+        """Color de tinta para el paint propio (QSS `color` no siempre llega
+        al palette del widget)."""
+        self._ink = QColor(color)
+        self.update()
+
+    def paintEvent(self, ev):  # noqa: N802 — reemplaza el paint de QLabel
+        fm = QFontMetrics(self.font())
+        # -3: la caja de texto canónica mide 198.5px y la del widget ~200-201;
+        # sin el recorte Qt metía una palabra extra en la línea 1 de las descs
+        # "fast" y "validation_limits" (advance Qt 199-200 vs límite Chromium).
+        text = _elide_two_lines(self._full_text, fm, max(0, self.width() - 3))
+        p = QPainter(self)
+        p.setFont(self.font())
+        ink = self._ink if self._ink is not None else self.palette().color(self.foregroundRole())
+        p.setPen(QColor(ink))
+        baseline = self._top_offset + fm.ascent()
+        for i, line in enumerate(text.split("\n")):
+            # Baseline entera: en Y fraccional el engine difumina cada glifo
+            # sobre 2 filas (el canónico rasteriza baselines enteras).
+            p.drawText(QPointF(0.0, round(baseline + i * self._line_pitch)), line)
+        p.end()
 
     # Igual que NMElidedLabel (components/data.py): NO sizePolicy Ignored
     # (haría que el layout le dé un slot de ancho 0 y el widget se pinte
@@ -530,7 +594,7 @@ class _SkillCard(NMCard):
             clickable=True,
             glow=False,
             lift=False,
-            padding=(11, 10, 11, 10),
+            padding=(12, 11, 10, 9),
         )
         self._skill = skill
         self._family_color_key = _dbt_family_color_key(skill["family"])
@@ -540,7 +604,10 @@ class _SkillCard(NMCard):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(11, 10, 11, 10)
+        # (12,11,10,9): la card se corrió -1px en x/y para calzar sus bordes
+        # con los canónicos; el margen interno compensa +1 para que la tinta
+        # del texto quede en las mismas filas/columnas absolutas de antes.
+        lay.setContentsMargins(12, 11, 10, 9)
         lay.setSpacing(4)
 
         self.family_bar = QFrame()
@@ -560,14 +627,22 @@ class _SkillCard(NMCard):
         lay.addWidget(self.family_lbl)
         self.family_lbl.hide()
 
-        self.title_lbl = QLabel(skill["title"])
-        self.title_lbl.setFont(v3_font(13, weight=TYPOGRAPHY["weight_bold"], serif=True))
-        self.title_lbl.setWordWrap(True)
+        # Título con pitch canónico .h-serif: 13px × line-height 1.18 = 15.34.
+        self.title_lbl = _TwoLineElideLabel(skill["title"], line_pitch=15.34, top_offset=-1.0)
+        # Mockup .h-serif: weight 600 + letter-spacing -.015em. El clamp ADN de
+        # v3_font degrada ≥600 a 500 en tamaños <16px, así que el peso va
+        # explícito sobre el QFont.
+        title_f = v3_font(13, weight=TYPOGRAPHY["weight_semibold"], serif=True)
+        title_f.setWeight(QFont.Weight.DemiBold)
+        title_f.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 98.5)
+        # Igual que _dbt_meta_font: sin grid-fitting (el canónico Chromium no hintea).
+        title_f.setHintingPreference(QFont.HintingPreference.PreferVerticalHinting)
+        self.title_lbl.setFont(title_f)
         self.title_lbl.setMaximumHeight(31)
         lay.addWidget(self.title_lbl)
 
-        self.summary_lbl = _TwoLineElideLabel()
-        self.summary_lbl.setFont(qfont(10))
+        self.summary_lbl = _TwoLineElideLabel(top_offset=-1.0)
+        self.summary_lbl.setFont(_dbt_meta_font())
         self.summary_lbl.setMinimumHeight(24)
         self.summary_lbl.setMaximumHeight(28)
         self.summary_lbl.setText(skill["summary"])
@@ -585,13 +660,25 @@ class _SkillCard(NMCard):
         self.dur_icon.setStyleSheet("background: transparent;")
         dur_box.addWidget(self.dur_icon, 0, Qt.AlignmentFlag.AlignVCenter)
         self.dur_lbl = QLabel(f"{skill['duration_min']}m")
-        self.dur_lbl.setFont(qfont(10))
+        self.dur_lbl.setFont(_dbt_meta_font())
         dur_box.addWidget(self.dur_lbl, 0, Qt.AlignmentFlag.AlignVCenter)
         info_lay.addLayout(dur_box)
 
-        self.guide_lbl = QLabel("✓ Práctica")
-        self.guide_lbl.setFont(qfont(10))
-        info_lay.addWidget(self.guide_lbl)
+        # "Práctica": check SVG 10px + gap 5 (mockup `.pl{gap:5px}` + svg check),
+        # no el glifo de texto "✓" que arrancaba ~3px antes y con otra forma.
+        guide_box = QHBoxLayout()
+        guide_box.setSpacing(5)
+        guide_box.setContentsMargins(0, 0, 0, 0)
+        self.guide_icon = QLabel()
+        self.guide_icon.setStyleSheet("background: transparent;")
+        guide_box.addWidget(self.guide_icon, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.guide_lbl = QLabel("Práctica")
+        # Mockup .meta .pl: font-weight 600 (mismo bypass del clamp ADN).
+        guide_f = _dbt_meta_font()
+        guide_f.setWeight(QFont.Weight.DemiBold)
+        self.guide_lbl.setFont(guide_f)
+        guide_box.addWidget(self.guide_lbl, 0, Qt.AlignmentFlag.AlignVCenter)
+        info_lay.addLayout(guide_box)
         
         info_lay.addStretch()
         lay.addLayout(info_lay)
@@ -618,8 +705,12 @@ class _SkillCard(NMCard):
             f"border-radius: {_DBT_SKILL_BAR_TOP_H // 2}px; }}"
         )
         self.title_lbl.setStyleSheet(f"color: {v3c('text', self._modo).name()};")
+        self.title_lbl.set_ink(v3c("text", self._modo))
         self.summary_lbl.setStyleSheet(f"color: {v3c('text2', self._modo).name()};")
-        self.dur_lbl.setStyleSheet(f"color: {v3c('ink_secondary', self._modo).name()};")
+        self.summary_lbl.set_ink(v3c("text2", self._modo))
+        # Mockup `.dbt-card .meta{color:var(--ink-3)}` — el "2m" va en ink-3
+        # (text3), no en ink-2 que lo oscurecía un nivel.
+        self.dur_lbl.setStyleSheet(f"color: {v3c('text3', self._modo).name()};")
         # Icono calendario recoloreado al tema (ink-3 / faint, como el texto meta).
         from shared.icons_svg import nm_svg_pixmap
         self.dur_icon.setPixmap(
@@ -627,6 +718,9 @@ class _SkillCard(NMCard):
         )
         # Mockup `.dbt-card .meta .pl{color:var(--brand)}` — "Práctica guiada" SIEMPRE
         # en brand, no en el color de la familia (antes salía cobre/rojo por card).
+        self.guide_icon.setPixmap(
+            nm_svg_pixmap("check", color=v3c("brand", self._modo).name(), size=10)
+        )
         self.guide_lbl.setStyleSheet(f"color: {v3c('brand', self._modo).name()};")
 
 
@@ -650,7 +744,6 @@ class _DBTScreen(QWidget):
         rect = QRectF(self.rect())
         surface = v3c("surface", self._modo)
         surface_2 = v3c("surface_2", self._modo)
-        surface_3 = v3c("surface_3", self._modo)
 
         p.fillRect(rect, QBrush(surface))
 
@@ -661,8 +754,31 @@ class _DBTScreen(QWidget):
         glow.setColorAt(0.7, fade)
         p.fillRect(rect, QBrush(glow))
 
-        p.setPen(QPen(surface_3, 1))
-        p.drawLine(0, self.height() - 1, self.width(), self.height() - 1)
+        # Borde de `.window` del mockup (l.175-181): 1px --line en laterales y
+        # base, esquinas inferiores r-xl=28. El borde superior lo pinta el
+        # chrome; este widget cubre el resto de la ventana.
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        line_c = QColor(v3c("line", self._modo))
+        if line_c.alpha() == 255:
+            # Alpha canónico: light rgba(49,45,39,.10) / dark rgba(255,255,255,.09)
+            line_c.setAlpha(23 if self._modo == "dark" else 26)
+        radius = 28.0
+        # Path con sólo las esquinas inferiores redondeadas: el rect se extiende
+        # por arriba del widget para que las esquinas superiores queden fuera.
+        win_path = QPainterPath()
+        win_path.addRoundedRect(
+            QRectF(0.5, -radius, rect.width() - 1.0, rect.height() + radius - 0.5),
+            radius,
+            radius,
+        )
+        # Exterior de las esquinas = fondo del stage detrás de la ventana.
+        exterior = QPainterPath()
+        exterior.addRect(rect)
+        exterior = exterior.subtracted(win_path)
+        p.fillPath(exterior, QBrush(v3c("bg", self._modo)))
+        p.setPen(QPen(line_c, 1))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawPath(win_path)
         p.end()
 
 
@@ -1193,7 +1309,11 @@ class ModuloDBT(NMModule):
 
         # Main Layout inside the canonical full-height screen.
         self._main_layout = QVBoxLayout(self._screen_bg)
-        self._main_layout.setContentsMargins(24, 24, 24, 16)
+        # Laterales: los bordes de card canónicos caen en x=25/247/254...
+        # (columnas CSS fraccionales); left 25 + padding interno de card 12
+        # deja el borde en x=25 y el texto en x=38 como el canónico. right 27
+        # conserva el ancho de contenido 908 (columnas idénticas).
+        self._main_layout.setContentsMargins(25, 24, 27, 16)
         self._main_layout.setSpacing(13)
         
         # Tabs at the top
@@ -1294,8 +1414,9 @@ class ModuloDBT(NMModule):
         widget = QWidget()
         lay = QVBoxLayout(widget)
         lay.setContentsMargins(0, 0, 0, 0)
-        lay.setSpacing(7)
-        
+        # 6: con 7 la fila 1 del grid quedaba 1px abajo del canónico (126 vs 125).
+        lay.setSpacing(6)
+
         # Horizontal family tabs filter
         self._family_tabs = NMTabs(
             [
