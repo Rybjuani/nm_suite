@@ -53,7 +53,7 @@ mockup canónico y el runtime Qt.
    `docs/PLAN_MODULARIZACION_COMPONENTES.md` (fases 6–8, fuera de ejecución).
 5. **El bridge no es un gate.** No cierra items, no cambia thresholds, no toca
    `qa/`. El cierre sigue exigiendo `qa/layered_visual_compare.py` + revisión
-   manual, según `VISUAL_QA_AGENT_PROTOCOL.md`.
+   manual, según `WORKER_VISUAL_QA_FLOW.md`.
 
 ## Familias visuales (cobertura del sistema completo)
 

@@ -26,8 +26,11 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # Documents that are ACTIVE sources of truth (live in repo root, not docs/).
+# VISUAL_QA_AGENT_PROTOCOL.md (v1, full protocol) was archived to
+# docs/_archive/protocol_v1.md; WORKER_VISUAL_QA_FLOW.md is now the canonical
+# worker entry-point (see docs/README.md).
 ACTIVE_PROTOCOL_DOCS = [
-    REPO_ROOT / "VISUAL_QA_AGENT_PROTOCOL.md",
+    REPO_ROOT / "WORKER_VISUAL_QA_FLOW.md",
     REPO_ROOT / "VISUAL_REPAIR_HANDOFF.md",
 ]
 
@@ -292,7 +295,11 @@ class TestSubjectiveClosureAbsent:
     def test_closure_requires_technical_gates(self, doc_path):
         """Closure sections must list mandatory technical PASS requirements."""
         content = _read(doc_path)
-        assert "PASS requirements" in content or "Closure Evidence" in content, (
+        assert (
+            "PASS requirements" in content
+            or "Closure Evidence" in content
+            or "Criterio de PASS" in content
+        ), (
             f"{doc_path.name} must define explicit PASS requirements"
         )
         assert "REPORT_EVIDENCE_VALID" in content, (
@@ -311,7 +318,7 @@ class TestCanonicalIndex:
         readme = ACTIVE_DOCS_DIR / "README.md"
         assert readme.exists(), "docs/README.md must exist as canonical index"
         content = _read(readme)
-        assert "VISUAL_QA_AGENT_PROTOCOL.md" in content
+        assert "WORKER_VISUAL_QA_FLOW.md" in content
         assert "VISUAL_REPAIR_HANDOFF.md" in content
 
     def test_readme_mentions_archive(self):

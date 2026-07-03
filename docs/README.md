@@ -6,12 +6,15 @@ Estos son los **únicos** documentos activos que gobiernan el proceso de Visual 
 
 | Documento | Rol |
 |---|---|
-| [`../VISUAL_QA_AGENT_PROTOCOL.md`](../VISUAL_QA_AGENT_PROTOCOL.md) | Protocolo operativo: flujo obligatorio, anti-fraude, gate VAS, criterios de cierre técnicos. |
+| [`../WORKER_VISUAL_QA_FLOW.md`](../WORKER_VISUAL_QA_FLOW.md) | Entry-point operativo para workers: flujo por exact-key, anti-fraude, gate VAS, criterios de cierre técnicos. |
 | [`../VISUAL_REPAIR_HANDOFF.md`](../VISUAL_REPAIR_HANDOFF.md) | Checklist de reparación visual con evidencia de cierre por exact-key. |
 
 Todo agente que opere Visual QA debe leer ambos **antes** de tocar código de UI/runtime.
+`../VISUAL_QA_AGENT_PROTOCOL.md` (protocolo v1, completo) queda archivado en
+[`_archive/protocol_v1.md`](_archive/protocol_v1.md); ya no es lectura obligatoria
+para cerrar una key individual.
 
-La evidencia versionable de cierre vive en [`closure_evidence/`](closure_evidence/) (un record determinístico por exact-key, escrito por `qa/close_visual_key.py` y auditado por `qa/replay_visual_closure.py`); toda transición `[ ]` → `[x]` debe llevar sus notas `evidence:`/`evidence-record:`/`commit:`. [`visual_closure_bundle.json`](visual_closure_bundle.json) es histórico y ya no es autoridad de cierre.
+La evidencia versionable de cierre vive en [`closure_evidence/`](closure_evidence/) (un record determinístico por exact-key, escrito por `qa/close_visual_key.py` y auditado por `qa/replay_visual_closure.py`); toda transición `[ ]` → `[x]` debe llevar sus notas `evidence:`/`evidence-record:`/`commit:`. `visual_closure_bundle.json` fue purgado (histórico, ya no autoridad de cierre).
 
 ## Documentos de referencia activos (bridge)
 

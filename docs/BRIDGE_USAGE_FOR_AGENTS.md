@@ -1,7 +1,7 @@
 # Bridge Usage for Agents
 
 Cómo resolver un check visual usando el **Design-System Translation Bridge** en
-lugar de fixes artesanales. Leer junto con `VISUAL_QA_AGENT_PROTOCOL.md` (manda
+lugar de fixes artesanales. Leer junto con `WORKER_VISUAL_QA_FLOW.md` (manda
 el protocolo; el bridge no lo reemplaza).
 
 ## Qué es y qué no es el bridge
@@ -75,7 +75,7 @@ el protocolo; el bridge no lo reemplaza).
    `REPORT_EVIDENCE_VALID: YES` + exact key `PASS` + `vas_gate.py` exit `0`.
    No existe cierre subjetivo: revisión manual, inspección visual del panel,
    "se ve bien", aceptación del owner, o human review **no** son evidencia de
-   cierre (ver `VISUAL_QA_AGENT_PROTOCOL.md`).
+   cierre (ver `WORKER_VISUAL_QA_FLOW.md`).
 
 ## Reglas anti-fraude (heredadas del protocolo)
 

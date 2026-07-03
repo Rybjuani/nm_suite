@@ -1,8 +1,10 @@
 # WORKER VISUAL QA FLOW — nm_suite
 
-> **Doc operacional para cerrar una exact key.**
-> Si seguís esto no necesitás leer `VISUAL_QA_AGENT_PROTOCOL.md`
-> ni `VISUAL_REPAIR_HANDOFF.md` completos para **intentar** una key.
+> **Doc operacional para cerrar una exact key. Entry-point canónico** (ver
+> `docs/README.md`).
+> Si seguís esto no necesitás leer el protocolo completo archivado
+> (`docs/_archive/protocol_v1.md`) ni `VISUAL_REPAIR_HANDOFF.md` completo
+> para **intentar** una key.
 > El gate fuerte (`close_visual_key.py`, replay, anti-fraud, R0) queda reservado
 > para el **cierre oficial**, no para cada intento de reparación.
 >
@@ -110,7 +112,16 @@ locales del mismo tipo.
 En ese punto:
 
 1. preservá el mejor diff si corrige un bug real;
-2. identificá la causa dominante restante;
+2. identificá la causa dominante restante. Mirá, en este orden, en
+   `LAYERED_VISUAL_REPORT.json`:
+   - `metrics.largest_region_ratio`: si > 0.04, hay una región concentrada
+     (estructural).
+   - `layout.bbox_dy` / `layout.bbox_dh`: si `|bbox_dy| > 8` o `|bbox_dh| > 8`,
+     hay desplazamiento vertical (estructural).
+   - los primeros 4 `regions[]`: su `hint` indica qué bloque diverge
+     (`component_region`/`layout_shift_or_spacing` = reparable;
+     `text_icon_or_antialiasing` = candidato a IRREDUCIBLE si se repite
+     sin cambiar tras un fix real).
 3. cambiá de estrategia sólo si la causa está localizada;
 4. si la causa toca componente compartido, evaluá opción scoped primero;
 5. si no hay ruta técnica clara, reportá bloqueo con métricas y diffs.
@@ -263,25 +274,22 @@ separado, mergealo, y después cerrá keys.
 qa/capture_v8.py
 qa/layered_visual_compare.py
 qa/vas_gate.py
+qa/vas_engine.py
+qa/vas_introspect.py
 qa/anti_fraud_scan.py
 qa/close_visual_key.py
 qa/replay_visual_closure.py
+qa/spec_generator.py
+qa/specs/specs.json
 .github/workflows/visual-closure-replay.yml
 qa/_mockup_canonical/                  (dir, recursivo)
 qa/pack canonico/                       (dir, recursivo)
 ```
 
-**Propuesto agregar (gap detectado en auditoría, en `nm_suite_optimization.patch`):**
-```
-qa/vas_engine.py
-qa/vas_introspect.py
-qa/specs/specs.json
-qa/spec_generator.py
-```
-Sin estos en R0, un agente puede debilitar los contratos VAS y cerrar una key
-en el mismo PR sin disparar el gate. Si el patch NO está aplicado, asumí que
-este gap sigue abierto y evitá tocar esos 4 archivos en el mismo rango que un
-cierre (auto-restricción defensiva).
+Lista sincronizada con `R0_KERNEL_PATHS` en `qa/replay_visual_closure.py` (fuente
+de verdad en código). `vas_engine.py`, `vas_introspect.py`, `spec_generator.py`
+y `specs/specs.json` ya están en vigor ahí — sin ellos un agente podría debilitar
+los contratos VAS y cerrar una key en el mismo PR sin disparar el gate.
 
 ---
 
