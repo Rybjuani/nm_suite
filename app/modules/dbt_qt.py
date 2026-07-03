@@ -9,8 +9,8 @@ import datetime
 import uuid
 import logging
 
-from PyQt6.QtCore import Qt, pyqtSignal, QRectF, QEvent, QPointF
-from PyQt6.QtGui import QImage, QPainter, QBrush, QColor, QPixmap, QRadialGradient, QPen
+from PyQt6.QtCore import Qt, pyqtSignal, QRectF, QEvent, QPointF, QSize
+from PyQt6.QtGui import QImage, QPainter, QBrush, QColor, QPixmap, QRadialGradient, QPen, QFontMetrics
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -456,6 +456,70 @@ class _NeedCard(NMCard):
         self.subtitle_label.setStyleSheet(f"color: {v3c('textMuted', self._modo).name()}; background: transparent;")
 
 
+def _elide_two_lines(text: str, fm: QFontMetrics, max_width: int) -> str:
+    """Envuelve `text` a máximo 2 líneas dentro de `max_width`, elidiendo la
+    2da con "…" si sobra contenido. Qt no tiene `-webkit-line-clamp`, y el
+    mockup confía en `.dbt-card{overflow:hidden}` para que una descripción
+    larga no desborde sobre `.meta` — sin este tope, `wordWrap` + `maximumHeight`
+    dejan pintar una 3ra línea encima de la fila de duración/práctica."""
+    words = text.split()
+    if not words or max_width <= 0:
+        return text
+    lines: list[str] = []
+    i = 0
+    for _ in range(2):
+        if i >= len(words):
+            break
+        line = words[i]
+        i += 1
+        while i < len(words) and fm.horizontalAdvance(line + " " + words[i]) <= max_width:
+            line += " " + words[i]
+            i += 1
+        lines.append(line)
+    if i < len(words):
+        remainder = lines[-1] + " " + " ".join(words[i:])
+        lines[-1] = fm.elidedText(remainder, Qt.TextElideMode.ElideRight, max_width)
+    return "\n".join(lines)
+
+
+class _TwoLineElideLabel(QLabel):
+    """`QLabel` con tope duro de 2 líneas + elipsis (ver `_elide_two_lines`)."""
+
+    def __init__(self, text: str = "", parent=None):
+        super().__init__(parent)
+        self._full_text = text
+        super().setText(text)
+
+    # Igual que NMElidedLabel (components/data.py): NO sizePolicy Ignored
+    # (haría que el layout le dé un slot de ancho 0 y el widget se pinte
+    # encima del vecino). minimumSizeHint chico evita que el ancho sin
+    # wrap del texto completo, antes del primer resizeEvent, infle las
+    # columnas del grid y corte la 4ta columna fuera del canvas.
+    def minimumSizeHint(self):  # noqa: N802
+        base = super().minimumSizeHint()
+        return QSize(24, base.height())
+
+    def setText(self, text: str):  # noqa: N802 — override de QLabel
+        self._full_text = text
+        self.updateGeometry()
+        self._reflow()
+
+    def full_text(self) -> str:
+        return self._full_text
+
+    def resizeEvent(self, ev):  # noqa: N802
+        super().resizeEvent(ev)
+        self._reflow()
+
+    def _reflow(self):
+        width = max(0, self.width())
+        if width <= 0:
+            super().setText(self._full_text)
+            return
+        fm = QFontMetrics(self.font())
+        super().setText(_elide_two_lines(self._full_text, fm, width))
+
+
 class _SkillCard(NMCard):
     """Tarjeta de presentación de habilidad en la Biblioteca."""
     
@@ -502,11 +566,11 @@ class _SkillCard(NMCard):
         self.title_lbl.setMaximumHeight(31)
         lay.addWidget(self.title_lbl)
 
-        self.summary_lbl = QLabel(skill["summary"])
-        self.summary_lbl.setFont(qfont(11))
-        self.summary_lbl.setWordWrap(True)
+        self.summary_lbl = _TwoLineElideLabel()
+        self.summary_lbl.setFont(qfont(10))
         self.summary_lbl.setMinimumHeight(24)
         self.summary_lbl.setMaximumHeight(28)
+        self.summary_lbl.setText(skill["summary"])
         lay.addWidget(self.summary_lbl)
 
         info_lay = QHBoxLayout()
@@ -521,12 +585,12 @@ class _SkillCard(NMCard):
         self.dur_icon.setStyleSheet("background: transparent;")
         dur_box.addWidget(self.dur_icon, 0, Qt.AlignmentFlag.AlignVCenter)
         self.dur_lbl = QLabel(f"{skill['duration_min']}m")
-        self.dur_lbl.setFont(qfont(11))
+        self.dur_lbl.setFont(qfont(10))
         dur_box.addWidget(self.dur_lbl, 0, Qt.AlignmentFlag.AlignVCenter)
         info_lay.addLayout(dur_box)
 
         self.guide_lbl = QLabel("✓ Práctica")
-        self.guide_lbl.setFont(qfont(11))
+        self.guide_lbl.setFont(qfont(10))
         info_lay.addWidget(self.guide_lbl)
         
         info_lay.addStretch()
@@ -1293,7 +1357,7 @@ class ModuloDBT(NMModule):
                 row, col = divmod(visible_idx, _DBT_LIBRARY_COLUMNS)
                 self._library_grid.addWidget(card, row, col)
                 visible_idx += 1
-                
+
     def _show_modal(self, content, max_width: int):
         """Muestra `content` en el overlay modal (scrim + card centrada),
         dejando el fondo dimmed con controles visibles pero no interactivos."""

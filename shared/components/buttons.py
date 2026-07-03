@@ -75,6 +75,13 @@ _NM_TAB_CONTAINER_PAD = 5
 _NM_TAB_CONTAINER_GAP = 4
 _NM_TAB_PILL_BUTTON_HEIGHT = 30
 _NM_TAB_FILTER_BUTTON_HEIGHT = 32
+# variant="filter" + density="compact": único consumidor es el filtro de
+# familia de suite:dbt-library (mockup `#dbtFilter .fchip`, padding 5px 10px
+# + font-size 11px inline, no el `.fchip` base). Medido en el canónico
+# (qa/_mockup_canonical/suite-dbt-library-*): pill border-box = 26px alto.
+# QSS de Qt es content-box (min/max-height excluye el 1px border), por eso
+# el valor acá es 26 - 2*1px border = 24, no 28.
+_NM_TAB_FILTER_COMPACT_BUTTON_HEIGHT = 24
 _NM_TAB_SEG_BUTTON_HEIGHT = 30
 _NM_TAB_PILL_BUTTON_RADIUS = _NM_TAB_PILL_BUTTON_HEIGHT // 2
 _NM_TAB_FILTER_BUTTON_RADIUS = _NM_TAB_FILTER_BUTTON_HEIGHT // 2
@@ -1289,7 +1296,11 @@ class NMTabs(QWidget):
             if self._variant == "pill":
                 b.setFixedHeight(_NM_TAB_PILL_BUTTON_HEIGHT)
             elif self._variant == "filter":
-                b.setFixedHeight(28 if self._density == "compact" else _NM_TAB_FILTER_BUTTON_HEIGHT)
+                b.setFixedHeight(
+                    _NM_TAB_FILTER_COMPACT_BUTTON_HEIGHT
+                    if self._density == "compact"
+                    else _NM_TAB_FILTER_BUTTON_HEIGHT
+                )
             elif self._variant == "seg":
                 b.setFixedHeight(_NM_TAB_SEG_BUTTON_HEIGHT)
             else:
@@ -1314,10 +1325,17 @@ class NMTabs(QWidget):
                 # .fchip canónico (mockup línea 301-304):
                 #   32px de alto, font-size 12.5px, r-pill, surface-2 bg, line border
                 #   activo: brand bg + brand-ink + transparent border.
-                filter_h = 28 if self._density == "compact" else _NM_TAB_FILTER_BUTTON_HEIGHT
+                filter_h = (
+                    _NM_TAB_FILTER_COMPACT_BUTTON_HEIGHT
+                    if self._density == "compact"
+                    else _NM_TAB_FILTER_BUTTON_HEIGHT
+                )
                 filter_radius = filter_h // 2
-                filter_font = "11.5px" if self._density == "compact" else "12.5px"
-                filter_pad = "0px 12px" if self._density == "compact" else "0px 15px"
+                # compact: mockup `#dbtFilter .fchip` inline override
+                # (`style="padding:5px 10px; font-size:11px;"`), no el `.fchip`
+                # base de 12.5px/15px usado por el resto de consumidores.
+                filter_font = "11px" if self._density == "compact" else "12.5px"
+                filter_pad = "0px 10px" if self._density == "compact" else "0px 15px"
                 if checked:
                     b.setStyleSheet(
                         f"QPushButton {{ background: {primary}; color: {primary_ink}; "
