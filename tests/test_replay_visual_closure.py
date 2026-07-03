@@ -477,3 +477,48 @@ def test_replay_new_canonical_record_unaffected_by_legacy_hardening(monkeypatch,
     assert result.ok is True
     assert result.replayed_keys == 0
     assert result.failed_keys == []
+
+
+# ─── owner-directed batch closure: evidence stays per-key ──────────────────
+
+
+def test_replay_batch_closure_requires_evidence_per_key(monkeypatch, tmp_path):
+    """A batch/all-open-keys commit may close several keys together, but
+    each key still needs its own real docs/closure_evidence/*.json record.
+    One well-evidenced key and one key whose checkbox flipped without a real
+    record (e.g. hand-edited notes, no close_visual_key.py run) in the SAME
+    commit/diff: replay must fail specifically for the unevidenced key while
+    still validating the properly-evidenced one on its own merits."""
+    key_ok = KEY
+    key_bad = "suite:animo@light"
+
+    record = _record(key=key_ok)
+    record_rel_ok, evidence_ok = _write_record(tmp_path, record)
+
+    fake_evidence = "0" * 64
+    fake_record_rel = Path(f"docs/closure_evidence/{close.key_safe(key_bad)}.json")
+    # Deliberately never written to disk: simulates a checkbox flip with
+    # fabricated evidence notes but no real close_visual_key.py record.
+
+    base_text = f"- [ ] `{key_ok}` pending\n- [ ] `{key_bad}` pending\n"
+    head_text = _handoff_closed(key_ok, evidence_ok, record_rel_ok) + _handoff_closed(
+        key_bad, fake_evidence, fake_record_rel
+    )
+    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
+    handoff.write_text(head_text, encoding="utf-8")
+
+    diff_text = _closure_diff(key_ok) + _closure_diff(key_bad)
+    _patch_git(monkeypatch, base_text=base_text, diff_text=diff_text)
+    monkeypatch.setattr(
+        replay,
+        "regenerate_record_at_commit",
+        lambda _root, _key, _commit: close.EvidenceBuild(record, evidence_ok, record_rel_ok),
+    )
+
+    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
+
+    assert result.ok is False
+    failures_by_key = {f.key: f.reason for f in result.failed_keys}
+    assert failures_by_key.get(key_bad) == "missing_evidence_record"
+    assert key_ok not in failures_by_key
+    assert result.replayed_keys == 1

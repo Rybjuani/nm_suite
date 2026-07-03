@@ -20,15 +20,110 @@ Read first: `WORKER_VISUAL_QA_FLOW.md` (protocolo completo archivado en
 
 ## NEXT_KEY
 
-La key activa es el primer `- [ ]` abierto de la sección Checklist.
-A la fecha del último reset (2026-06-28) es:
+`NEXT_KEY` = el primer `- [ ]` abierto de la sección Checklist. Es la
+resolución del target mode `next-key` (ver `WORKER_VISUAL_QA_FLOW.md` §0
+"OWNER_TARGET_MODE"). El scope real de trabajo lo declara el owner en su
+prompt — puede ser `next-key` (esta key sola), `first-N`, `batch`, `family`,
+`all-open-keys`, o `explicit-list`. Resolvé mecánicamente con
+`qa\target_scope.py --mode <modo>` en vez de re-derivar a mano.
+
+A la fecha del último reset (2026-06-28), `NEXT_KEY` es:
 
 ```
 suite:dbt-library@light
 ```
 
 > El "Repair Order" histórico quedó obsoleto y fue removido (ver git log).
-> La selección de key es puramente posicional (top-down en Checklist).
+> La selección de `NEXT_KEY` es puramente posicional (top-down en Checklist).
+
+## OPEN KEYS — family/complexity order
+
+Vista de conveniencia: las 56 keys abiertas, agrupadas por familia (mismo
+orden que aparecen en `## Checklist`) y ordenadas por complejidad
+descendente dentro de cada familia. Tier derivado de datos ya presentes en
+cada línea del checklist: `HIGH` = `severity=high`; `LOW` = `severity=medium`
+con `changed_pixel_ratio <= 0.10` (el umbral dense-aware del comparador,
+`LayeredThresholds.text_dense_max_changed_pixel_ratio` en
+`qa/layered_visual_compare.py`); `MED` = el resto. Esta tabla es una
+snapshot legible para elegir scope — la fuente de verdad mecánica sigue
+siendo el `- [ ]` real en `## Checklist` (`qa\target_scope.py` lee ese, no
+esta tabla). No cierres ni edites keys desde acá.
+
+### DBT v2 / Habilidades DBT — 2 open
+- [MED] `suite:dbt-library@light`
+- [MED] `suite:dbt-library@dark`
+
+### Hub Detail / Plan / IA — 2 open
+- [MED] `hub:detalle-resumen-ia-0@light`
+- [MED] `hub:detalle-resumen-ia-0@dark`
+
+### Hub Patients / Global Texts — 6 open
+- [HIGH] `hub:textos-globales@light`
+- [HIGH] `hub:pacientes@light`
+- [HIGH] `hub:textos-globales@dark`
+- [HIGH] `hub:pacientes@dark`
+- [HIGH] `hub:pacientes-empty@light`
+- [MED] `hub:pacientes-empty@dark`
+
+### Home Cards / Rings — 4 open
+- [HIGH] `suite:home@light`
+- [HIGH] `suite:home-no-score@light`
+- [HIGH] `suite:home@dark`
+- [HIGH] `suite:home-no-score@dark`
+
+### Timer Rings / Controls / Empty — 8 open
+- [HIGH] `suite:timer-running@light`
+- [HIGH] `suite:timer-paused@light`
+- [HIGH] `suite:timer@light`
+- [LOW] `suite:timer-running@dark`
+- [LOW] `suite:timer-paused@dark`
+- [LOW] `suite:timer@dark`
+- [LOW] `suite:timer-empty@light`
+- [LOW] `suite:timer-empty@dark`
+
+### Avisos Filters / Rows / Empty — 10 open
+- [HIGH] `suite:avisos@light`
+- [MED] `suite:avisos-filter-activos@light`
+- [MED] `suite:avisos@dark`
+- [MED] `suite:avisos-today@light`
+- [MED] `suite:avisos-filter-activos@dark`
+- [MED] `suite:avisos-today@dark`
+- [LOW] `suite:avisos-search@light`
+- [LOW] `suite:avisos-search@dark`
+- [LOW] `suite:avisos-empty@light`
+- [LOW] `suite:avisos-empty@dark`
+
+### Actividades Filters / Rows / Empty — 8 open
+- [HIGH] `suite:actividades@light`
+- [HIGH] `suite:actividades-marked-hice@light`
+- [MED] `suite:actividades-filtered@light`
+- [MED] `suite:actividades@dark`
+- [MED] `suite:actividades-marked-hice@dark`
+- [LOW] `suite:actividades-filtered@dark`
+- [LOW] `suite:actividades-empty@light`
+- [LOW] `suite:actividades-empty@dark`
+
+### Rutina Rows / Empty — 8 open
+- [MED] `suite:rutina-add-task@light`
+- [MED] `suite:rutina-all-completed@light`
+- [MED] `suite:rutina@light`
+- [LOW] `suite:rutina-add-task@dark`
+- [LOW] `suite:rutina-all-completed@dark`
+- [LOW] `suite:rutina@dark`
+- [LOW] `suite:rutina-empty@light`
+- [LOW] `suite:rutina-empty@dark`
+
+### Respiracion Rings / Controls — 6 open
+- [MED] `suite:respiracion@dark`
+- [LOW] `suite:respiracion@light`
+- [LOW] `suite:respiracion-paused@dark`
+- [LOW] `suite:respiracion-running@dark`
+- [LOW] `suite:respiracion-paused@light`
+- [LOW] `suite:respiracion-running@light`
+
+### Animo Mood System — 2 open
+- [HIGH] `suite:animo@light`
+- [MED] `suite:animo@dark`
 
 ## MANDATORY PRE-FLIGHT FOR EACH OPEN CHECKBOX
 
@@ -37,7 +132,9 @@ suite:dbt-library@light
 > violation. This uses the Design-System Translation Bridge
 > (`docs/DESIGN_SYSTEM_TRANSLATION_BRIDGE.md`).
 
-For the current open `[ ]` checkbox (read top to bottom), the agent must:
+For each open `[ ]` checkbox in the owner-declared target set (see
+`WORKER_VISUAL_QA_FLOW.md` § "OWNER_TARGET_MODE" — the set may be 1 key or
+many), the agent must:
 
 1. **Identify the exact key** (e.g. `suite:recuperar-acceso@light`).
 2. **Consult the bridge**: `docs/BRIDGE_USAGE_FOR_AGENTS.md`,
@@ -321,24 +418,54 @@ Regresion final completa:
 
 ## Operational Discipline
 
-The checklist is a sequential queue, not a global audit. Rules:
+The checklist scope is **owner-directed**, not a fixed sequential queue. See
+`WORKER_VISUAL_QA_FLOW.md` § "OWNER_TARGET_MODE" for how the owner's prompt
+declares scope (`next-key`, `first-N`, `batch`, `family`, `all-open-keys`,
+`explicit-list`). Rules:
 
-1. If the current item is still `FAIL`, the next action is to repair that same item.
-2. You may not ask the owner for a decision to skip or accept the item.
-3. You may not jump to the next item while the current one remains `FAIL`.
-4. You may not close, downgrade, or reclassify an item because it is difficult.
-5. The only way to advance the queue is a `PASS` from the active layered comparator (`qa/layered_visual_compare.py`).
+1. Work exactly the target set the owner declared — no smaller (don't drop
+   keys from the declared scope by cost/fatigue/perceived risk) and no
+   larger (don't add keys the owner didn't declare), except when a key in
+   the declared set does not exist, is a duplicate, or is no longer open —
+   report that deviation explicitly, don't apply it silently.
+2. Within the target set, repair each key on its own merits; a key that
+   remains `FAIL` does not block progress on the other keys in the same
+   declared scope.
+3. You may not ask the owner for a decision to skip or accept a key inside
+   the declared scope.
+4. You may not close, downgrade, or reclassify a key because it is
+   difficult, costly, or "risky" — if a key in scope can't be closed, report
+   the blockage per `WORKER_VISUAL_QA_FLOW.md` §2.4; don't mask it as done.
+5. The only way to advance any key's checkbox is a `PASS` from the active
+   layered comparator (`qa/layered_visual_compare.py`) plus a real evidence
+   record (see Required Closure Evidence) — regardless of target mode.
 6. If the checklist seed/baseline or canonical mockup changes, the HTML/mockup
    parity auditor must also PASS before the harness can be treated as current.
 
-## Current Item Definition
+## Current Item Definition (target-set aware)
 
-- `current item` = the first unchecked `[ ]` checkbox in this document, read strictly from top to bottom.
-- If the handoff or owner explicitly pins an active visual family sprint, `current item` means the first unchecked `[ ]` checkbox inside that pinned family order.
-- Family-equivalent work is allowed only when the shared repair does not complicate individual closure.
-- Closure remains sequential by exact key: the active key must be `PASS` before its checkbox changes, and each exact-key `PASS` requires one closure commit followed by an immediate push.
-- After that push, the agent may continue to the next open key only inside the same visual family, or an explicitly equivalent surface covered by the same mapping/evidence flow.
-- Stop and report before switching to another visual family or to a non-equivalent check.
+- `NEXT_KEY` = the first unchecked `[ ]` checkbox in this document, read
+  strictly top to bottom. It is always defined and resolvable, whether the
+  owner's declared scope is 1 key or all open keys.
+- The **declared target set** is resolved from the owner's trigger phrase per
+  `WORKER_VISUAL_QA_FLOW.md` § "OWNER_TARGET_MODE" (mechanically via
+  `qa/target_scope.py`) — it may be exactly `NEXT_KEY`, an ordered prefix of
+  open keys, a family cluster, an explicit list, or the full open set. The
+  agent does not infer or negotiate this; the owner's prompt is authoritative.
+- "Family" = the open keys sharing the same `###` section heading in
+  `## Checklist` as the seed key (default seed: `NEXT_KEY`) — deterministic,
+  mirrors `## OPEN KEYS — family/complexity order` above.
+- Closure remains per-key: each exact key must independently reach `PASS`
+  before its own checkbox flips, and each closed key requires its own
+  evidence record under `docs/closure_evidence/`.
+- Commit granularity follows the target mode: `next-key`/`first-N`/
+  `explicit-list` default to one commit per closed key; `batch`/
+  `all-open-keys`/`family` may bundle multiple closures (each still with its
+  own evidence record) into fewer commits. The replay gate validates the
+  full audited range regardless of how commits are split.
+- The agent does not switch to keys outside the declared target set on its
+  own initiative. If the declared set is exhausted (all keys closed or
+  blocked with a report), stop and report — don't silently expand scope.
 
 ## Comparator Command Lock
 
@@ -482,13 +609,19 @@ small-shift SSIM, density, and the estimated ceiling by alignment/colour). It is
 **not a gate**: it never closes, reclassifies or skips an item and never
 modifies thresholds. Use it to characterise the gate, not to justify a closure.
 
-### Mandatory push
+### Push cadence (owner decides timing)
 
-After every closed checkbox, or any anti-fraud cleanup commit, push to the
-remote immediately. A local-only fraud removal or closure is not done until it
-is pushed.
+Every closed checkbox and every anti-fraud cleanup change must eventually be
+pushed — a local-only closure or fraud removal is not done until it's
+pushed. But **the owner decides when and how to publish**
+(`WORKER_VISUAL_QA_FLOW.md` §4c) — the agent does not push unilaterally.
 
-The closure cadence is: one exact-key `PASS` = one commit + immediate push.
+Commit cadence follows the declared target mode (see "Current Item
+Definition" above): `next-key`/`first-N`/`explicit-list` default to one
+commit per closed key; `batch`/`all-open-keys`/`family` may bundle multiple
+closures into fewer commits. Either way, each closed key still carries its
+own evidence record, and the replay gate validates the whole audited range
+before any push is authorized.
 
 ## Gate Calibration Snapshot (tracked)
 
@@ -647,11 +780,19 @@ If any gate fails or evidence is missing, leave the checkbox open and add a note
 
 ## Collateral PASS Handling
 
-- If a real product/UI fix applied for the current item makes other pending checkboxes pass, that is allowed and expected.
-- You may not jump to work another item before the current item passes.
-- After closing the current item, continue reading the checklist in order.
-- When you reach a later item that is already `PASS` from the same commit/official report, you may mark it closed with the same evidence, citing the commit and the exact key `PASS`.
-- If a shared fix worsens any previously closed key, that is a regression and must be fixed before proceeding.
+- If a real product/UI fix applied for a key in the declared target set
+  makes other pending checkboxes pass, that is allowed and expected — verify
+  each with its own fresh evidence before closing it, even if the fix was
+  shared.
+- Work proceeds within the declared target set (see "Current Item
+  Definition"); a key outside that set that happens to pass as a side effect
+  may be documented but is not closed unless the owner's declared scope
+  covers it.
+- When you reach a later item in the target set that is already `PASS` from
+  the same commit/official report, you may mark it closed with the same
+  evidence, citing the commit and the exact key `PASS`.
+- If a shared fix worsens any previously closed key, that is a regression and
+  must be fixed before proceeding.
 
 ## Checklist
 
