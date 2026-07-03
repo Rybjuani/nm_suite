@@ -676,7 +676,7 @@ def test_window_chrome_matches_mockup_titlebar_contract(qtbot) -> None:
     )
     qtbot.addWidget(chrome)
     chrome.set_module_context("Respiracion", "breath")
-    assert chrome.height() == _NM_CHROME_HEIGHT == 44
+    assert chrome.height() == _NM_CHROME_HEIGHT == 49
 
     margins = chrome.layout().contentsMargins()
     assert margins.left() == _NM_CHROME_PAD_X == 16

@@ -50,7 +50,7 @@ mockup canónico y el runtime Qt.
 4. **Reuso antes que override.** Si existe un componente `NM*` que cubre el
    patrón, se usa ese componente; no se duplica QSS local con `setStyleSheet`.
    La consolidación de overrides locales sigue el plan por fases de
-   `docs/PLAN_MODULARIZACION_COMPONENTES.md` (fases 6–8, fuera de ejecución).
+   `docs/_archive/PLAN_MODULARIZACION_COMPONENTES.md` (fases 6–8, fuera de ejecución).
 5. **El bridge no es un gate.** No cierra items, no cambia thresholds, no toca
    `qa/`. El cierre sigue exigiendo `qa/layered_visual_compare.py` + revisión
    manual, según `WORKER_VISUAL_QA_FLOW.md`.
@@ -80,11 +80,11 @@ en `CSS_TO_PYQT_EQUIVALENCE_MATRIX.md`; el detalle por componente en
 | F14 | **Avatar / Brand / Icons** | `.avatar`, `.brandmark`, `.nav__item .ic`, set `I` | `NMAvatar`, `NMIcon`, `_LogoLabel`, `nm_icon()`, `icon_stroke_width()` | `shared/components/icons.py`, `navigation.py`, `shared/icons_svg.py` |
 | F15 | **Mood system** | `input[type=range]` (mood gradient), MOOD_PALETTE | `NMMoodSlider`, `V3MoodSlider`, `NMMoodEmoji`, `NMEmojiPicker`, `NMMoodContextHeader`, `mood_gradient()` | `shared/components/mood.py`, `session.py` |
 
-> Cobertura: las 15 familias cubren las 86 keys. Ninguna familia concentra el
+> Cobertura: las 15 familias cubren las 116 keys. Ninguna familia concentra el
 > bridge: el reparto por keys está en `CSS_TO_PYQT_EQUIVALENCE_MATRIX.md` §
 > "Keys → familias dominantes".
 
-## Las 86 visual keys (resumen por superficie)
+## Las 116 visual keys (resumen por superficie)
 
 Detalle completo (screen/state/surface/selector/tamaño) en
 `qa/_mockup_canonical/INDICE_CAPTURAS.csv`. Resumen:
@@ -99,7 +99,7 @@ Detalle completo (screen/state/surface/selector/tamaño) en
 | suite | avisos (all/active/today/search/empty) | 10 | window | F7,F10,F5,F11 |
 | suite | actividades (default/filtered/marked/empty) | 8 | window | F10,F7,F11 |
 | suite | registro TCC (s0/s1/s1otro/s2/s3/ok) | 12 | window | F8,F5,F15,F2 |
-| suite | dbt (now/library/practice-stop) | 6 | window + window_modal | F9,F3,F12 |
+| suite | dbt (now/library + 16 practice modals × light/dark) | 36 | window + window_modal | F9,F3,F12 |
 | suite | onboarding (normal/error) | 4 | narrow 520×600 | F5,F13,F2 |
 | suite | recuperar-acceso | 2 | narrow 520×600 | F5,F2,F13 |
 | hub | pacientes (list/empty) | 4 | window | F10,F11,F14 |
@@ -108,7 +108,7 @@ Detalle completo (screen/state/surface/selector/tamaño) en
 | hub | detalle-resumen-ia | 2 | window_modal 960×600 (panel 720×462) | F12,F8 |
 | hub | textos-globales | 2 | window | F10,F5 |
 
-(76 window + 6 narrow + 0 modal + 4 window_modal = 86)
+(76 window + 6 narrow + 0 modal + 34 window_modal = 116)
 
 ## Cómo retomar los checks con el bridge
 
@@ -126,7 +126,7 @@ Ver `BRIDGE_USAGE_FOR_AGENTS.md`. Flujo corto:
 ## Estrategia de componentes (Fase 3 — plan, no ejecución)
 
 Esta sección documenta qué consolidar; **no** crea módulos ni toca runtime. Se
-subordina a `docs/PLAN_MODULARIZACION_COMPONENTES.md`: las fases mecánicas 0–5
+subordina a `docs/_archive/PLAN_MODULARIZACION_COMPONENTES.md`: las fases mecánicas 0–5
 (estructura `shared/components/` por familias) ya están materializadas
 (`components_qt.py` es facade y los `NM*` viven por familia). La consolidación
 **visual** es fases 6–8 de ese plan y está **fuera de ejecución** hasta aprobarse

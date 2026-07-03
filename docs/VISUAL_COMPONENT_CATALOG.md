@@ -10,7 +10,7 @@ no-equivalencias (`MISMATCH#n` → `QT_HTML_KNOWN_MISMATCHES.md`) · keys.
 
 > Reglas: 1) usar el componente existente antes de QSS local; 2) todo color/
 > radio/sombra/fuente viene de `shared.theme` vía `shared.theme_qt`; 3) la
-> consolidación de duplicados sigue `docs/PLAN_MODULARIZACION_COMPONENTES.md`.
+> consolidación de duplicados sigue `docs/_archive/PLAN_MODULARIZACION_COMPONENTES.md`.
 
 ---
 

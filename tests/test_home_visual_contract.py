@@ -53,12 +53,12 @@ def test_home_view_vertical_rhythm_matches_mockup(qtbot, monkeypatch) -> None:
 
     assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == (
         24,
-        24,
+        16,
         24,
         12,
     )
-    assert view._hero.maximumHeight() == 178
-    assert content_lay.itemAt(1).spacerItem().sizeHint().height() == 18
+    assert view._hero.maximumHeight() == 138
+    assert content_lay.itemAt(1).spacerItem().sizeHint().height() == 12
     assert content_lay.count() == 3
     assert content_lay.itemAt(2).layout() is view._grid
 

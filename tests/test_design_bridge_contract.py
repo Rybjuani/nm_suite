@@ -142,7 +142,10 @@ def test_cited_file_paths_exist() -> None:
     assert not missing, f"bridge cites unresolvable paths: {sorted(missing)}"
 
 
-def test_canonical_sources_exist_and_have_86_keys() -> None:
+def test_canonical_sources_exist_and_have_116_keys() -> None:
+    """116 since `b91d515b2` (promote(mockup): DBT v2 canonical surfaces,
+    2026-07-01): 86 base keys + 30 new window_modal captures (16 DBT skill
+    practice modals × light/dark)."""
     canonical_html = ROOT / "qa" / "pack canonico" / "neuromood-mockup_reparado.html"
     index_csv = ROOT / "qa" / "_mockup_canonical" / "INDICE_CAPTURAS.csv"
     assert canonical_html.exists(), "canonical HTML source missing"
@@ -150,10 +153,10 @@ def test_canonical_sources_exist_and_have_86_keys() -> None:
 
     rows = [r for r in _read(index_csv).splitlines() if r.strip()]
     data_rows = rows[1:]  # drop header
-    assert len(data_rows) == 86, f"expected 86 canonical keys, got {len(data_rows)}"
+    assert len(data_rows) == 116, f"expected 116 canonical keys, got {len(data_rows)}"
 
-    # The overview doc claims 86 keys; keep the claim in sync with the index.
-    assert "= 86" in _read(BRIDGE_DOCS["overview"])
+    # The overview doc claims 116 keys; keep the claim in sync with the index.
+    assert "= 116" in _read(BRIDGE_DOCS["overview"])
 
 
 def test_matrix_covers_all_fifteen_families() -> None:

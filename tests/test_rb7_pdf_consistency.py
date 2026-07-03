@@ -124,13 +124,17 @@ def test_generar_pdf_renderiza_secciones_reales(tmp_path, monkeypatch):
 
 
 def test_detalle_paciente_view_tiene_boton_exportar_pdf(qapp, qtbot, monkeypatch):
-    from PyQt6.QtWidgets import QWidget
+    from PyQt6.QtWidgets import QTabWidget, QWidget
     import hub.plan_terapeutico as plan_module
     from hub.pacientes_qt import DetallePacienteView
 
     class _FakePlan(QWidget):
         def __init__(self, *args, **kwargs):
             super().__init__()
+            # DetallePacienteView conecta _tab_plan._tabs.currentChanged (ver
+            # hub/pacientes_qt.py) — el stub necesita el mismo contrato mínimo
+            # que la PlanTerapeuticoTab real (self._tabs = QTabWidget()).
+            self._tabs = QTabWidget()
 
     monkeypatch.setattr(plan_module, "PlanTerapeuticoTab", _FakePlan)
 
@@ -147,7 +151,7 @@ def test_detalle_paciente_view_tiene_boton_exportar_pdf(qapp, qtbot, monkeypatch
 
 
 def test_on_exportar_pdf_llama_exportador_con_datos_del_paciente(qapp, qtbot, monkeypatch):
-    from PyQt6.QtWidgets import QWidget
+    from PyQt6.QtWidgets import QTabWidget, QWidget
     import hub.plan_terapeutico as plan_module
     import hub.pacientes_qt as pacientes_qt
     import hub.exportar as exportar_module
@@ -156,6 +160,8 @@ def test_on_exportar_pdf_llama_exportador_con_datos_del_paciente(qapp, qtbot, mo
     class _FakePlan(QWidget):
         def __init__(self, *args, **kwargs):
             super().__init__()
+            # Ver nota en test_detalle_paciente_view_tiene_boton_exportar_pdf.
+            self._tabs = QTabWidget()
 
     monkeypatch.setattr(plan_module, "PlanTerapeuticoTab", _FakePlan)
     monkeypatch.setattr(pacientes_qt.NMToast, "display", lambda *args, **kwargs: None)

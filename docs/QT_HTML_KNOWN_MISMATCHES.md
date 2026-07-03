@@ -97,7 +97,7 @@ Clasificación de impacto:
 - **Workaround:** el sidebar runtime (`NMSidebar`/`NMHubSidebar`) es UI propia del
   runtime y no debe compararse contra el `.nav` del mockup. No portar estilos del
   `.nav` del mockup al runtime como si fueran canónicos.
-- **Impacto:** ninguno sobre las 86 keys; evita falsos objetivos.
+- **Impacto:** ninguno sobre las 116 keys; evita falsos objetivos.
 
 ## MISMATCH#8 · Texto bicolor / gradiente (`.brand__name b`) — WORKAROUND
 
