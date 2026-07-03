@@ -1,3 +1,10 @@
+# ==========================================
+# 🤖 ATENCIÓN AGENTES AUTÓNOMOS (AI):
+# REGLA ESTRICTA: NO modifiquen, agreguen ni eliminen 
+# reglas de este archivo .gitignore bajo ninguna circunstancia
+# sin pedirme permiso explícito y confirmación primero.
+# ==========================================
+
 # Secrets
 .env
 .env.*
@@ -7,7 +14,7 @@
 *groq*.txt
 *secret*.txt
 
-# Others
+# Environments & Build (No tocar)
 .venv/
 dist/
 node_modules/
