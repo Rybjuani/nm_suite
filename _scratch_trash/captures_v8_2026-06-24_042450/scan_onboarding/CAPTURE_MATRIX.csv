@@ -1,2 +1,0 @@
-producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
-suite,onboarding,Onboarding - form crear cuenta,light,960x600,call:_build_onboarding > drain:6 > capture:onboarding,suite-onboarding-light-520x600.png,pendiente,pendiente,"notes=Natural dialog capture accepted as technical evidence; inspect for complete content, clipping, overlap, and accessible controls."

@@ -1,2 +1,0 @@
-producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
-hub,pacientes,Pacientes default,light,960x600,navigate:pacientes > drain:8 > capture:pacientes,,pendiente,bloqueado,flags=CAPTURE_FAILED ; error=child process returned 1

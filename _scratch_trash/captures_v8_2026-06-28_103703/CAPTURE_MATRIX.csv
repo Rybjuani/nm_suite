@@ -1,2 +1,0 @@
-producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
-suite,registro,TCC paso 0 - Situacion vacia,light,960x600,navigate:registro > drain:8 > capture:registro,suite-registro-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

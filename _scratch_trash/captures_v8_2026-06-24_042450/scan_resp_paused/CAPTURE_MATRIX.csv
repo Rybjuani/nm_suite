@@ -1,2 +1,0 @@
-producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
-suite,respiracion-paused,Respiracion paused,light,960x600,navigate:respiracion > call:_respiracion_start > drain:8 > call:_respiracion_pause > drain:6 > capture:respiracion-paused,suite-respiracion-paused-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

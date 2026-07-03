@@ -1,2 +1,0 @@
-producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
-suite,actividades,Actividades default,light,960x600,navigate:actividades > drain:8 > capture:actividades,suite-actividades-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

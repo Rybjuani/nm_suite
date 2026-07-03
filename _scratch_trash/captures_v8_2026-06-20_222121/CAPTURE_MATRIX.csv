@@ -1,3 +1,0 @@
-producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
-suite,home,Home (con puntaje),dark,960x600,navigate:home > drain:8 > capture:home,suite-home-dark-960x600.png,pendiente,pendiente,requiere inspeccion manual
-suite,home,Home (con puntaje),light,960x600,navigate:home > drain:8 > capture:home,suite-home-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

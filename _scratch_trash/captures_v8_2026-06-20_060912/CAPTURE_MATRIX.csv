@@ -1,3 +1,0 @@
-producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
-suite,rutina-empty,Rutina sin tareas asignadas — NMEmptyState (evidencia S09),dark,960x600,navigate:rutina > call:_rutina_force_empty > drain:6 > capture:rutina-empty,suite-rutina-empty-dark-960x600.png,pendiente,pendiente,requiere inspeccion manual
-suite,rutina-empty,Rutina sin tareas asignadas — NMEmptyState (evidencia S09),light,960x600,navigate:rutina > call:_rutina_force_empty > drain:6 > capture:rutina-empty,suite-rutina-empty-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

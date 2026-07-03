@@ -1,2 +1,0 @@
-producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
-suite,respiracion-preset-3min,Respiracion preset 3 min,light,960x600,navigate:respiracion > click > drain:6 > capture:respiracion-preset-3min,suite-respiracion-preset-3min-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

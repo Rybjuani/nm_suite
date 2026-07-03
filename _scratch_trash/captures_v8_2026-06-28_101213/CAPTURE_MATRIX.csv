@@ -1,2 +1,0 @@
-producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
-suite,actividades-filtered,Actividades + filtro con resultados,light,960x600,navigate:actividades > call:_actividades_filter_category > drain:6 > capture:actividades-filtered,suite-actividades-filtered-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

@@ -1,9 +1,0 @@
-{
-  "key": "suite:dbt-practice-stop@dark",
-  "line": "585",
-  "exit_code": "1",
-  "cause": "ANTI_FRAUD_FAIL",
-  "stdout": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\handoff_false_pass_audit\\20260630_113720\\suite_dbt-practice-stop_dark\\stdout.log",
-  "stderr": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\handoff_false_pass_audit\\20260630_113720\\suite_dbt-practice-stop_dark\\stderr.log",
-  "report_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\handoff_false_pass_audit\\20260630_113720\\suite_dbt-practice-stop_dark\\layered"
-}

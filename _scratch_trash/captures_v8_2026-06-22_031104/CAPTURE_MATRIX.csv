@@ -1,3 +1,0 @@
-producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
-hub,pacientes,Pacientes default,dark,960x600,navigate:pacientes > drain:8 > capture:pacientes,hub-pacientes-dark-960x600.png,pendiente,parcial,flags=REQUIRES_DATA_STATE ; notes=Patient rows are QA/demo data; real patients state is not covered.
-hub,pacientes,Pacientes default,light,960x600,navigate:pacientes > drain:8 > capture:pacientes,hub-pacientes-light-960x600.png,pendiente,parcial,flags=REQUIRES_DATA_STATE ; notes=Patient rows are QA/demo data; real patients state is not covered.

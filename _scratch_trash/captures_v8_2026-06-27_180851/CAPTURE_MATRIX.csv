@@ -1,2 +1,0 @@
-producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
-suite,registro-success,TCC - pagina exito,dark,960x600,navigate:registro > call:_tcc_fill_and_guardar > drain:10 > capture:registro-success,suite-registro-success-dark-960x600.png,pendiente,pendiente,requiere inspeccion manual

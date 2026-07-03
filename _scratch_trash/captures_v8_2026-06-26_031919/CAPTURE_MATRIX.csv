@@ -1,2 +1,0 @@
-producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
-suite,avisos,Avisos default,light,960x600,navigate:avisos > drain:8 > capture:avisos,suite-avisos-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

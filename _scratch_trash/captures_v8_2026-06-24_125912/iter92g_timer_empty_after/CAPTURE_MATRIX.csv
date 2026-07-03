@@ -1,2 +1,0 @@
-producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
-suite,timer-empty,Timer sin actividades asignadas (empty state),light,960x600,navigate:timer > call:_timer_force_empty > drain:6 > capture:timer-empty,suite-timer-empty-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

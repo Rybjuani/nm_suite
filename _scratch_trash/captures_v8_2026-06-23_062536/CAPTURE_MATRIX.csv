@@ -1,2 +1,0 @@
-producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
-suite,respiracion-running,Respiracion running (inhala),dark,960x600,navigate:respiracion > call:_respiracion_start_capture_phase > drain:4 > capture:respiracion-running,suite-respiracion-running-dark-960x600.png,pendiente,pendiente,requiere inspeccion manual

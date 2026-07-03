@@ -1,8 +1,0 @@
-C:\Users\nosom\Desktop\nm_suite\qa\run_visual_item.ps1 : LAYERED VISUAL COMPARE FAILED (exit 1). Check report for 
-divergences.
-En C:\Users\nosom\Desktop\nm_suite\qa\run_visual_item.ps1: 47 Car cter: 3
-+   Write-Error "LAYERED VISUAL COMPARE FAILED (exit $LASTEXITCODE). Ch ...
-+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
-    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,run_visual_item.ps1
- 

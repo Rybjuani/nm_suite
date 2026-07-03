@@ -1,3 +1,0 @@
-producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
-suite,animo,Animo default,dark,960x600,navigate:animo > drain:8 > capture:animo,suite-animo-dark-960x600.png,pendiente,pendiente,requiere inspeccion manual
-suite,animo,Animo default,light,960x600,navigate:animo > drain:8 > capture:animo,suite-animo-light-960x600.png,pendiente,pendiente,requiere inspeccion manual
