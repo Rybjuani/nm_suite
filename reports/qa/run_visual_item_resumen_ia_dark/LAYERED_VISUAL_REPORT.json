@@ -1,0 +1,57 @@
+{
+  "generated_at": "2026-06-30T23:54:21",
+  "authority": "LAYERED_VISUAL_COMPARE",
+  "source_policy": "Use qa/_mockup_canonical plus a fresh complete qa/_captures_v8 run for operational handoff decisions. Zip inputs are archive/forensics only and must not close VISUAL_REPAIR_HANDOFF.md items.",
+  "report_scope": "PARTIAL",
+  "report_filters": {
+    "app": null,
+    "view": null,
+    "theme": null,
+    "key": "hub:detalle-resumen-ia@dark",
+    "keys_file": null,
+    "keys_file_keys": []
+  },
+  "report_evidence_valid": false,
+  "report_evidence_reason": "empty_results",
+  "handoff_closure_allowed": false,
+  "handoff_closure_reason": "empty_results",
+  "sources": {
+    "canonical_source": "qa\\_mockup_canonical",
+    "actual_source": "qa\\_captures_v8",
+    "canonical_root": "qa\\_mockup_canonical",
+    "actual_root": "qa\\_captures_v8",
+    "canonical_source_kind": "directory",
+    "actual_source_kind": "directory",
+    "active_repo_pair": true
+  },
+  "thresholds": {
+    "min_ssim": 0.92,
+    "text_dense_canonical_std": 35.0,
+    "text_dense_min_windowed_ssim": 0.65,
+    "text_dense_max_changed_pixel_ratio": 0.1,
+    "max_mean_abs_diff": 0.035,
+    "max_changed_pixel_ratio": 0.08,
+    "changed_pixel_floor": 12,
+    "text_dense_changed_pixel_floor": 14,
+    "max_odiff_diff_pct": 8.0,
+    "odiff_threshold": 0.3,
+    "max_bbox_shift_px": 18,
+    "max_bbox_size_delta_px": 36,
+    "max_largest_region_ratio": 0.08,
+    "strong_changed_pixel_ratio": 0.18,
+    "strong_mean_abs_diff": 0.08,
+    "strong_largest_region_ratio": 0.18
+  },
+  "summary": {
+    "total": 0,
+    "pass": 0,
+    "real_divergence": 0,
+    "by_status": {},
+    "by_severity": {},
+    "by_repair_bucket": {},
+    "qa_missed_raw_or_layout": 0,
+    "state_or_recipe_suspect": 0,
+    "suspicious_perfect_match": 0
+  },
+  "results": []
+}

@@ -1,0 +1,100 @@
+Mockup : C:\Users\nosom\Desktop\nm_suite\reports\qa\mockup_parity_baseline_resumen_overlay\sources\original_HEAD.html
+Salida : C:\Users\nosom\Desktop\nm_suite\reports\qa\mockup_parity_baseline_resumen_overlay\renders\original_A
+Vistas : 43 × 2 temas = 86 PNG
+Chromium: C:\Program Files\Google\Chrome\Application\chrome.exe
+[ 1/86] OK   hub-pacientes-light-960x600.png  960x600
+[ 2/86] OK   hub-pacientes-dark-960x600.png  960x600
+[ 3/86] OK   hub-pacientes-empty-light-960x600.png  960x600
+[ 4/86] OK   hub-pacientes-empty-dark-960x600.png  960x600
+[ 5/86] OK   hub-detalle-light-960x600.png  960x600
+[ 6/86] OK   hub-detalle-dark-960x600.png  960x600
+[ 7/86] OK   hub-detalle-plan-timer-light-960x600.png  960x600
+[ 8/86] OK   hub-detalle-plan-timer-dark-960x600.png  960x600
+[ 9/86] OK   hub-detalle-plan-rutina-light-960x600.png  960x600
+[10/86] OK   hub-detalle-plan-rutina-dark-960x600.png  960x600
+[11/86] OK   hub-detalle-plan-activacion-light-960x600.png  960x600
+[12/86] OK   hub-detalle-plan-activacion-dark-960x600.png  960x600
+[13/86] OK   hub-detalle-resumen-ia-0-light-720x462.png  720x462
+[14/86] OK   hub-detalle-resumen-ia-0-dark-720x462.png  720x462
+[15/86] OK   hub-textos-globales-light-960x600.png  960x600
+[16/86] OK   hub-textos-globales-dark-960x600.png  960x600
+[17/86] OK   suite-home-light-960x600.png  960x600
+[18/86] OK   suite-home-dark-960x600.png  960x600
+[19/86] OK   suite-home-no-score-light-960x600.png  960x600
+[20/86] OK   suite-home-no-score-dark-960x600.png  960x600
+[21/86] OK   suite-animo-light-960x600.png  960x600
+[22/86] OK   suite-animo-dark-960x600.png  960x600
+[23/86] OK   suite-respiracion-light-960x600.png  960x600
+[24/86] OK   suite-respiracion-dark-960x600.png  960x600
+[25/86] OK   suite-respiracion-running-light-960x600.png  960x600
+[26/86] OK   suite-respiracion-running-dark-960x600.png  960x600
+[27/86] OK   suite-respiracion-paused-light-960x600.png  960x600
+[28/86] OK   suite-respiracion-paused-dark-960x600.png  960x600
+[29/86] OK   suite-timer-light-960x600.png  960x600
+[30/86] OK   suite-timer-dark-960x600.png  960x600
+[31/86] OK   suite-timer-running-light-960x600.png  960x600
+[32/86] OK   suite-timer-running-dark-960x600.png  960x600
+[33/86] OK   suite-timer-paused-light-960x600.png  960x600
+[34/86] OK   suite-timer-paused-dark-960x600.png  960x600
+[35/86] OK   suite-timer-empty-light-960x600.png  960x600
+[36/86] OK   suite-timer-empty-dark-960x600.png  960x600
+[37/86] OK   suite-rutina-light-960x600.png  960x600
+[38/86] OK   suite-rutina-dark-960x600.png  960x600
+[39/86] OK   suite-rutina-add-task-light-960x600.png  960x600
+[40/86] OK   suite-rutina-add-task-dark-960x600.png  960x600
+[41/86] OK   suite-rutina-all-completed-light-960x600.png  960x600
+[42/86] OK   suite-rutina-all-completed-dark-960x600.png  960x600
+[43/86] OK   suite-rutina-empty-light-960x600.png  960x600
+[44/86] OK   suite-rutina-empty-dark-960x600.png  960x600
+[45/86] OK   suite-avisos-light-960x600.png  960x600
+[46/86] OK   suite-avisos-dark-960x600.png  960x600
+[47/86] OK   suite-avisos-filter-activos-light-960x600.png  960x600
+[48/86] OK   suite-avisos-filter-activos-dark-960x600.png  960x600
+[49/86] OK   suite-avisos-today-light-960x600.png  960x600
+[50/86] OK   suite-avisos-today-dark-960x600.png  960x600
+[51/86] OK   suite-avisos-search-light-960x600.png  960x600
+[52/86] OK   suite-avisos-search-dark-960x600.png  960x600
+[53/86] OK   suite-avisos-empty-light-960x600.png  960x600
+[54/86] OK   suite-avisos-empty-dark-960x600.png  960x600
+[55/86] OK   suite-actividades-light-960x600.png  960x600
+[56/86] OK   suite-actividades-dark-960x600.png  960x600
+[57/86] OK   suite-actividades-filtered-light-960x600.png  960x600
+[58/86] OK   suite-actividades-filtered-dark-960x600.png  960x600
+[59/86] OK   suite-actividades-marked-hice-light-960x600.png  960x600
+[60/86] OK   suite-actividades-marked-hice-dark-960x600.png  960x600
+[61/86] OK   suite-actividades-empty-light-960x600.png  960x600
+[62/86] OK   suite-actividades-empty-dark-960x600.png  960x600
+[63/86] OK   suite-registro-light-960x600.png  960x600
+[64/86] OK   suite-registro-dark-960x600.png  960x600
+[65/86] OK   suite-registro-step1-emotion-light-960x600.png  960x600
+[66/86] OK   suite-registro-step1-emotion-dark-960x600.png  960x600
+[67/86] OK   suite-registro-step1-emotion-otro-light-960x600.png  960x600
+[68/86] OK   suite-registro-step1-emotion-otro-dark-960x600.png  960x600
+[69/86] OK   suite-registro-step2-distortions-light-960x600.png  960x600
+[70/86] OK   suite-registro-step2-distortions-dark-960x600.png  960x600
+[71/86] OK   suite-registro-step3-filled-light-960x600.png  960x600
+[72/86] OK   suite-registro-step3-filled-dark-960x600.png  960x600
+[73/86] OK   suite-registro-success-light-960x600.png  960x600
+[74/86] OK   suite-registro-success-dark-960x600.png  960x600
+[75/86] OK   suite-dbt-now-light-960x600.png  960x600
+[76/86] OK   suite-dbt-now-dark-960x600.png  960x600
+[77/86] OK   suite-dbt-library-light-960x600.png  960x600
+[78/86] OK   suite-dbt-library-dark-960x600.png  960x600
+[79/86] OK   suite-dbt-practice-stop-light-960x600.png  960x600
+[80/86] OK   suite-dbt-practice-stop-dark-960x600.png  960x600
+[81/86] OK   suite-onboarding-light-520x600.png  520x600
+[82/86] OK   suite-onboarding-dark-520x600.png  520x600
+[83/86] OK   suite-onboarding-error-light-520x600.png  520x600
+[84/86] OK   suite-onboarding-error-dark-520x600.png  520x600
+[85/86] OK   suite-recuperar-acceso-light-520x600.png  520x600
+[86/86] OK   suite-recuperar-acceso-dark-520x600.png  520x600
+
+INDICE_CAPTURAS.csv -> C:\Users\nosom\Desktop\nm_suite\reports\qa\mockup_parity_baseline_resumen_overlay\renders\original_A\INDICE_CAPTURAS.csv
+MANIFEST.json -> C:\Users\nosom\Desktop\nm_suite\reports\qa\mockup_parity_baseline_resumen_overlay\renders\original_A\MANIFEST.json
+
+=========== RESUMEN ===========
+Capturas OK : 86/86
+Fallos      : 0
+Tamano OK   : 86/86
+DOM OK      : 86/86
+===============================

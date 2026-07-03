@@ -1,0 +1,83 @@
+NeuroMood build log
+[1/2] Suite Paciente
+C:\Users\nosom\Desktop\nm_suite\.venv\Scripts\python.exe -m PyInstaller --noconfirm --onedir --windowed --optimize 2 --icon C:\Users\nosom\Desktop\nm_suite\assets\NM_icon.ico --distpath C:\Users\nosom\Desktop\nm_suite\dist --workpath C:\Users\nosom\Desktop\nm_suite\build --paths C:\Users\nosom\Desktop\nm_suite --log-level WARN --name NeuroMood Suite --add-data C:\Users\nosom\Desktop\nm_suite\assets;assets --add-data C:\Users\nosom\Desktop\nm_suite\assets\LOGO.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logos-dark.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logos-light.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logos-icon-dark.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logos-icon-light.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logo-dark.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logo-light.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logo-icon-dark.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logo-icon-light.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logo_light.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logo_dark.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\app_icon.ico;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\NM_icon.ico;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\app_icon.ico;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\installer_icon.ico;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\no_symbol.ico;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\fonts;assets/fonts --add-data C:\Users\nosom\Desktop\nm_suite\shared;shared --add-data C:\Users\nosom\Desktop\nm_suite\app;app --hidden-import PIL --hidden-import PyQt6.QtNetwork --hidden-import PyQt6.QtSvg --hidden-import app.avisos_daemon --hidden-import app.home_qt --hidden-import app.modules.actividades_qt --hidden-import app.modules.animo_qt --hidden-import app.modules.avisos_qt --hidden-import app.modules.dbt_qt --hidden-import app.modules.registro_tcc_qt --hidden-import app.modules.respiracion_qt --hidden-import app.modules.rutina_qt --hidden-import app.modules.timer_qt --hidden-import matplotlib --hidden-import pystray --hidden-import pystray._win32 --hidden-import qtawesome --hidden-import shared.components_qt --hidden-import shared.config --hidden-import shared.db --hidden-import shared.icons_svg --hidden-import shared.identidad --hidden-import shared.theme --hidden-import shared.theme_qt --hidden-import shared.utils --hidden-import shared.visual_qa --hidden-import sqlite3 --hidden-import supabase --hidden-import winotify C:\Users\nosom\Desktop\nm_suite\app\main_qt.py
+
+2146 INFO: PyInstaller: 6.19.0, contrib hooks: 2026.5
+2147 INFO: Python: 3.12.10
+2166 INFO: Platform: Windows-10-10.0.19045-SP0
+2166 INFO: Python environment: C:\Users\nosom\Desktop\nm_suite\.venv
+2167 INFO: wrote C:\Users\nosom\Desktop\nm_suite\NeuroMood Suite.spec
+129040 WARNING: Hidden import "pycparser.lextab" not found!
+129040 WARNING: Hidden import "pycparser.yacctab" not found!
+141577 WARNING: Hidden import "tzdata" not found!
+[2/2] NeuroMood Hub
+C:\Users\nosom\Desktop\nm_suite\.venv\Scripts\python.exe -m PyInstaller --noconfirm --onedir --windowed --optimize 2 --icon C:\Users\nosom\Desktop\nm_suite\assets\NM_icon.ico --distpath C:\Users\nosom\Desktop\nm_suite\dist --workpath C:\Users\nosom\Desktop\nm_suite\build --paths C:\Users\nosom\Desktop\nm_suite --log-level WARN --name NeuroMood Hub --add-data C:\Users\nosom\Desktop\nm_suite\assets;assets --add-data C:\Users\nosom\Desktop\nm_suite\assets\LOGO.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logos-dark.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logos-light.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logos-icon-dark.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logos-icon-light.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logo-dark.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logo-light.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logo-icon-dark.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logo-icon-light.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logo_light.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\logo_dark.png;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\app_icon.ico;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\NM_icon.ico;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\app_icon.ico;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\installer_icon.ico;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\no_symbol.ico;. --add-data C:\Users\nosom\Desktop\nm_suite\assets\fonts;assets/fonts --add-data C:\Users\nosom\Desktop\nm_suite\shared;shared --add-data C:\Users\nosom\Desktop\nm_suite\hub;hub --hidden-import PIL --hidden-import PyQt6.QtNetwork --hidden-import PyQt6.QtSvg --hidden-import google.generativeai --hidden-import groq --hidden-import httpx --hidden-import hub.exportar --hidden-import hub.ia_asistente --hidden-import hub.pacientes_qt --hidden-import hub.plan_terapeutico --hidden-import matplotlib --hidden-import numpy --hidden-import openai --hidden-import pyqtgraph --hidden-import pystray --hidden-import pystray._win32 --hidden-import qtawesome --hidden-import reportlab --hidden-import reportlab.lib --hidden-import reportlab.lib.pagesizes --hidden-import reportlab.lib.styles --hidden-import reportlab.lib.units --hidden-import reportlab.platypus --hidden-import shared.components_qt --hidden-import shared.config --hidden-import shared.db --hidden-import shared.icons_svg --hidden-import shared.identidad --hidden-import shared.sync --hidden-import shared.theme --hidden-import shared.theme_qt --hidden-import shared.utils --hidden-import shared.visual_qa --hidden-import sqlite3 --hidden-import supabase --hidden-import winotify C:\Users\nosom\Desktop\nm_suite\hub\main_qt.py
+
+138 INFO: PyInstaller: 6.19.0, contrib hooks: 2026.5
+138 INFO: Python: 3.12.10
+157 INFO: Platform: Windows-10-10.0.19045-SP0
+157 INFO: Python environment: C:\Users\nosom\Desktop\nm_suite\.venv
+157 INFO: wrote C:\Users\nosom\Desktop\nm_suite\NeuroMood Hub.spec
+2095 WARNING: Failed to collect submodules for 'pyqtgraph.opengl' because importing 'pyqtgraph.opengl' raised: ModuleNotFoundError: No module named 'OpenGL'
+119862 WARNING: Hidden import "pycparser.lextab" not found!
+119863 WARNING: Hidden import "pycparser.yacctab" not found!
+124847 WARNING: Hidden import "tzdata" not found!
+128081 WARNING: Hidden import "scipy.special._cdflib" not found!
+C:\Users\nosom\Desktop\nm_suite\.venv\Lib\site-packages\PyInstaller\building\build_main.py:227: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  __import__(package)
+[nsis-assets] BMPs regenerados desde tokens (shared/theme.py)
+[NSIS] NeuroMood Suite  ->  NM_Suite_Setup.exe
+
+[NSIS] makensis C:\Users\nosom\Desktop\nm_suite\installers\nsis\neuromood_suite.nsi
+
+Processing config: C:\Program Files (x86)\NSIS\nsisconf.nsh
+Processing script file: "neuromood_suite.nsi" (UTF8)
+
+Processed 1 file, writing output (x86-unicode):
+
+Output: "C:\Users\nosom\Desktop\nm_suite\dist\NM_Suite_Setup.exe"
+Install: 5 pages (320 bytes), 2 sections (1 required) (4144 bytes), 1389 instructions (38892 bytes), 1095 strings (48680 bytes), 1 language table (314 bytes).
+Uninstall: 4 pages (320 bytes), 1 section (2072 bytes), 520 instructions (14560 bytes), 205 strings (7722 bytes), 1 language table (274 bytes).
+Datablock optimizer saved 3647 KiB (~3.7%).
+
+Using zlib compression.
+
+EXE header size:              132096 / 39936 bytes
+Install code:                  16676 / 92814 bytes
+Install data:               94651356 / 221868559 bytes
+Uninstall code+data:          122637 / 122761 bytes
+CRC (0x15A50038):                  4 / 4 bytes
+
+Total size:                 94922769 / 222124074 bytes (42.7%)
+    OK  ->  dist\NM_Suite_Setup.exe
+[NSIS] NeuroMood Hub  ->  NM_Hub_Setup.exe
+
+[NSIS] makensis C:\Users\nosom\Desktop\nm_suite\installers\nsis\neuromood_hub.nsi
+
+Processing config: C:\Program Files (x86)\NSIS\nsisconf.nsh
+Processing script file: "neuromood_hub.nsi" (UTF8)
+
+Processed 1 file, writing output (x86-unicode):
+
+Output: "C:\Users\nosom\Desktop\nm_suite\dist\NM_Hub_Setup.exe"
+Install: 5 pages (320 bytes), 2 sections (1 required) (4144 bytes), 2209 instructions (61852 bytes), 1895 strings (87146 bytes), 1 language table (314 bytes).
+Uninstall: 4 pages (320 bytes), 1 section (2072 bytes), 519 instructions (14532 bytes), 204 strings (7730 bytes), 1 language table (274 bytes).
+Datablock optimizer saved 3903 KiB (~2.6%).
+
+Using zlib compression.
+
+EXE header size:              132096 / 39936 bytes
+Install code:                  27998 / 154240 bytes
+Install data:              143909753 / 402736482 bytes
+Uninstall code+data:          122985 / 123109 bytes
+CRC (0x3542AE46):                  4 / 4 bytes
+
+Total size:                144192836 / 403053771 bytes (35.7%)
+    OK  ->  dist\NM_Hub_Setup.exe

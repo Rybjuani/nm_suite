@@ -1,0 +1,1672 @@
+{
+  "generated_at": "2026-07-02T01:04:19",
+  "authority": "MODAL_BACKDROP_BLUR_ANTI_FRAUD",
+  "inputs": {
+    "canonical_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_canonical",
+    "actual_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8",
+    "keys": [
+      "hub:detalle-resumen-ia-0@dark",
+      "hub:detalle-resumen-ia-0@light",
+      "suite:dbt-practice-check-facts@dark",
+      "suite:dbt-practice-check-facts@light",
+      "suite:dbt-practice-dear-man@dark",
+      "suite:dbt-practice-dear-man@light",
+      "suite:dbt-practice-fast@dark",
+      "suite:dbt-practice-fast@light",
+      "suite:dbt-practice-give@dark",
+      "suite:dbt-practice-give@light",
+      "suite:dbt-practice-non-judgmental@dark",
+      "suite:dbt-practice-non-judgmental@light",
+      "suite:dbt-practice-observe-describe@dark",
+      "suite:dbt-practice-observe-describe@light",
+      "suite:dbt-practice-opposite-action@dark",
+      "suite:dbt-practice-opposite-action@light",
+      "suite:dbt-practice-participate@dark",
+      "suite:dbt-practice-participate@light",
+      "suite:dbt-practice-please@dark",
+      "suite:dbt-practice-please@light",
+      "suite:dbt-practice-problem-solving@dark",
+      "suite:dbt-practice-problem-solving@light",
+      "suite:dbt-practice-radical-acceptance@dark",
+      "suite:dbt-practice-radical-acceptance@light",
+      "suite:dbt-practice-self-soothe@dark",
+      "suite:dbt-practice-self-soothe@light",
+      "suite:dbt-practice-stop@dark",
+      "suite:dbt-practice-stop@light",
+      "suite:dbt-practice-tipp@dark",
+      "suite:dbt-practice-tipp@light",
+      "suite:dbt-practice-validation-limits@dark",
+      "suite:dbt-practice-validation-limits@light",
+      "suite:dbt-practice-wise-mind@dark",
+      "suite:dbt-practice-wise-mind@light"
+    ],
+    "canonical_modal_keys": [
+      "hub:detalle-resumen-ia-0@dark",
+      "hub:detalle-resumen-ia-0@light",
+      "suite:dbt-practice-check-facts@dark",
+      "suite:dbt-practice-check-facts@light",
+      "suite:dbt-practice-dear-man@dark",
+      "suite:dbt-practice-dear-man@light",
+      "suite:dbt-practice-fast@dark",
+      "suite:dbt-practice-fast@light",
+      "suite:dbt-practice-give@dark",
+      "suite:dbt-practice-give@light",
+      "suite:dbt-practice-non-judgmental@dark",
+      "suite:dbt-practice-non-judgmental@light",
+      "suite:dbt-practice-observe-describe@dark",
+      "suite:dbt-practice-observe-describe@light",
+      "suite:dbt-practice-opposite-action@dark",
+      "suite:dbt-practice-opposite-action@light",
+      "suite:dbt-practice-participate@dark",
+      "suite:dbt-practice-participate@light",
+      "suite:dbt-practice-please@dark",
+      "suite:dbt-practice-please@light",
+      "suite:dbt-practice-problem-solving@dark",
+      "suite:dbt-practice-problem-solving@light",
+      "suite:dbt-practice-radical-acceptance@dark",
+      "suite:dbt-practice-radical-acceptance@light",
+      "suite:dbt-practice-self-soothe@dark",
+      "suite:dbt-practice-self-soothe@light",
+      "suite:dbt-practice-stop@dark",
+      "suite:dbt-practice-stop@light",
+      "suite:dbt-practice-tipp@dark",
+      "suite:dbt-practice-tipp@light",
+      "suite:dbt-practice-validation-limits@dark",
+      "suite:dbt-practice-validation-limits@light",
+      "suite:dbt-practice-wise-mind@dark",
+      "suite:dbt-practice-wise-mind@light"
+    ]
+  },
+  "tolerances": {
+    "center_tolerance_px": 18,
+    "bbox_tolerance_px": 32,
+    "backdrop_mean_tolerance": 22.0,
+    "blur_ratio_tolerance": 0.2,
+    "back_screen_mean_tolerance": 35.0,
+    "note": "Tolerances cover renderer noise and Qt-vs-Chromium rasterization; they do not permit invented dim/blur/backdrop."
+  },
+  "coexists_with": [
+    "qa/capture_v8.py",
+    "qa/layered_visual_compare.py",
+    "qa/anti_fraud_scan.py",
+    "qa/vas_gate.py"
+  ],
+  "summary": {
+    "total": 34,
+    "pass": 33,
+    "fail": 1,
+    "test_blur_pass": false,
+    "codes": [
+      "MODAL_CENTER_FAIL"
+    ],
+    "skipped_unavailable_runtime": []
+  },
+  "results": [
+    {
+      "key": "hub:detalle-resumen-ia-0@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "MODAL_CENTER_FAIL"
+      ],
+      "canonical_file": "hub-detalle-resumen-ia-0-dark-960x600.png",
+      "actual_file": "hub-detalle-resumen-ia-0-dark-960x600.png",
+      "back_screen_key": "hub:detalle@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "FAIL",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 8.0094,
+        "canonical_modal_bbox": [
+          101,
+          252,
+          730,
+          228
+        ],
+        "actual_modal_bbox": [
+          96,
+          68,
+          742,
+          242
+        ],
+        "center_delta_px": [
+          1.0,
+          177.0
+        ],
+        "bbox_size_delta_px": [
+          12,
+          14
+        ],
+        "backdrop_mean_abs_delta": 4.8983,
+        "canonical_blur_ratio": 0.540301,
+        "actual_blur_ratio": 0.566976,
+        "blur_ratio_delta": 0.026675
+      }
+    },
+    {
+      "key": "hub:detalle-resumen-ia-0@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "hub-detalle-resumen-ia-0-light-960x600.png",
+      "actual_file": "hub-detalle-resumen-ia-0-light-960x600.png",
+      "back_screen_key": "hub:detalle@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 7.9933,
+        "canonical_modal_bbox": [
+          100,
+          49,
+          760,
+          502
+        ],
+        "actual_modal_bbox": [
+          99,
+          49,
+          761,
+          502
+        ],
+        "center_delta_px": [
+          0.5,
+          0.0
+        ],
+        "bbox_size_delta_px": [
+          1,
+          0
+        ],
+        "backdrop_mean_abs_delta": 2.7711,
+        "canonical_blur_ratio": 0.174326,
+        "actual_blur_ratio": 0.263017,
+        "blur_ratio_delta": 0.088691
+      }
+    },
+    {
+      "key": "suite:dbt-practice-check-facts@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-check-facts-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-check-facts-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          181,
+          154,
+          614,
+          399
+        ],
+        "actual_modal_bbox": [
+          194,
+          139,
+          588,
+          417
+        ],
+        "center_delta_px": [
+          0.0,
+          6.0
+        ],
+        "bbox_size_delta_px": [
+          26,
+          18
+        ],
+        "backdrop_mean_abs_delta": 3.0349,
+        "canonical_blur_ratio": 0.155261,
+        "actual_blur_ratio": 0.200589,
+        "blur_ratio_delta": 0.045329
+      }
+    },
+    {
+      "key": "suite:dbt-practice-check-facts@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-check-facts-light-960x600.png",
+      "actual_file": "suite-dbt-practice-check-facts-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          183,
+          125,
+          594,
+          400
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          400
+        ],
+        "center_delta_px": [
+          0.0,
+          0.0
+        ],
+        "bbox_size_delta_px": [
+          0,
+          0
+        ],
+        "backdrop_mean_abs_delta": 2.6675,
+        "canonical_blur_ratio": 0.163726,
+        "actual_blur_ratio": 0.146874,
+        "blur_ratio_delta": 0.016852
+      }
+    },
+    {
+      "key": "suite:dbt-practice-dear-man@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-dear-man-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-dear-man-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          181,
+          154,
+          614,
+          399
+        ],
+        "actual_modal_bbox": [
+          194,
+          139,
+          588,
+          417
+        ],
+        "center_delta_px": [
+          0.0,
+          6.0
+        ],
+        "bbox_size_delta_px": [
+          26,
+          18
+        ],
+        "backdrop_mean_abs_delta": 3.0349,
+        "canonical_blur_ratio": 0.155263,
+        "actual_blur_ratio": 0.200589,
+        "blur_ratio_delta": 0.045326
+      }
+    },
+    {
+      "key": "suite:dbt-practice-dear-man@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-dear-man-light-960x600.png",
+      "actual_file": "suite-dbt-practice-dear-man-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          180,
+          123,
+          600,
+          411
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          411
+        ],
+        "center_delta_px": [
+          0.0,
+          2.0
+        ],
+        "bbox_size_delta_px": [
+          6,
+          0
+        ],
+        "backdrop_mean_abs_delta": 2.647,
+        "canonical_blur_ratio": 0.167014,
+        "actual_blur_ratio": 0.148535,
+        "blur_ratio_delta": 0.018478
+      }
+    },
+    {
+      "key": "suite:dbt-practice-fast@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-fast-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-fast-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          181,
+          154,
+          614,
+          399
+        ],
+        "actual_modal_bbox": [
+          194,
+          139,
+          588,
+          417
+        ],
+        "center_delta_px": [
+          0.0,
+          6.0
+        ],
+        "bbox_size_delta_px": [
+          26,
+          18
+        ],
+        "backdrop_mean_abs_delta": 3.0348,
+        "canonical_blur_ratio": 0.155258,
+        "actual_blur_ratio": 0.200589,
+        "blur_ratio_delta": 0.045332
+      }
+    },
+    {
+      "key": "suite:dbt-practice-fast@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-fast-light-960x600.png",
+      "actual_file": "suite-dbt-practice-fast-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          180,
+          123,
+          600,
+          412
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          411
+        ],
+        "center_delta_px": [
+          0.0,
+          1.5
+        ],
+        "bbox_size_delta_px": [
+          6,
+          1
+        ],
+        "backdrop_mean_abs_delta": 2.6341,
+        "canonical_blur_ratio": 0.166616,
+        "actual_blur_ratio": 0.148531,
+        "blur_ratio_delta": 0.018085
+      }
+    },
+    {
+      "key": "suite:dbt-practice-give@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-give-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-give-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          191,
+          147,
+          600,
+          405
+        ],
+        "actual_modal_bbox": [
+          194,
+          139,
+          588,
+          417
+        ],
+        "center_delta_px": [
+          3.0,
+          2.0
+        ],
+        "bbox_size_delta_px": [
+          12,
+          12
+        ],
+        "backdrop_mean_abs_delta": 3.0863,
+        "canonical_blur_ratio": 0.152691,
+        "actual_blur_ratio": 0.197389,
+        "blur_ratio_delta": 0.044699
+      }
+    },
+    {
+      "key": "suite:dbt-practice-give@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-give-light-960x600.png",
+      "actual_file": "suite-dbt-practice-give-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          180,
+          123,
+          600,
+          412
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          411
+        ],
+        "center_delta_px": [
+          0.0,
+          1.5
+        ],
+        "bbox_size_delta_px": [
+          6,
+          1
+        ],
+        "backdrop_mean_abs_delta": 2.6342,
+        "canonical_blur_ratio": 0.166616,
+        "actual_blur_ratio": 0.148531,
+        "blur_ratio_delta": 0.018084
+      }
+    },
+    {
+      "key": "suite:dbt-practice-non-judgmental@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-non-judgmental-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-non-judgmental-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          181,
+          154,
+          614,
+          399
+        ],
+        "actual_modal_bbox": [
+          194,
+          139,
+          588,
+          417
+        ],
+        "center_delta_px": [
+          0.0,
+          6.0
+        ],
+        "bbox_size_delta_px": [
+          26,
+          18
+        ],
+        "backdrop_mean_abs_delta": 3.0348,
+        "canonical_blur_ratio": 0.155258,
+        "actual_blur_ratio": 0.200589,
+        "blur_ratio_delta": 0.045332
+      }
+    },
+    {
+      "key": "suite:dbt-practice-non-judgmental@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-non-judgmental-light-960x600.png",
+      "actual_file": "suite-dbt-practice-non-judgmental-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          180,
+          123,
+          600,
+          412
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          411
+        ],
+        "center_delta_px": [
+          0.0,
+          1.5
+        ],
+        "bbox_size_delta_px": [
+          6,
+          1
+        ],
+        "backdrop_mean_abs_delta": 2.6341,
+        "canonical_blur_ratio": 0.166624,
+        "actual_blur_ratio": 0.148531,
+        "blur_ratio_delta": 0.018092
+      }
+    },
+    {
+      "key": "suite:dbt-practice-observe-describe@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-observe-describe-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-observe-describe-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          181,
+          154,
+          614,
+          399
+        ],
+        "actual_modal_bbox": [
+          194,
+          139,
+          588,
+          417
+        ],
+        "center_delta_px": [
+          0.0,
+          6.0
+        ],
+        "bbox_size_delta_px": [
+          26,
+          18
+        ],
+        "backdrop_mean_abs_delta": 3.0349,
+        "canonical_blur_ratio": 0.15526,
+        "actual_blur_ratio": 0.200589,
+        "blur_ratio_delta": 0.04533
+      }
+    },
+    {
+      "key": "suite:dbt-practice-observe-describe@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-observe-describe-light-960x600.png",
+      "actual_file": "suite-dbt-practice-observe-describe-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          180,
+          123,
+          600,
+          412
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          411
+        ],
+        "center_delta_px": [
+          0.0,
+          1.5
+        ],
+        "bbox_size_delta_px": [
+          6,
+          1
+        ],
+        "backdrop_mean_abs_delta": 2.6341,
+        "canonical_blur_ratio": 0.166623,
+        "actual_blur_ratio": 0.148531,
+        "blur_ratio_delta": 0.018091
+      }
+    },
+    {
+      "key": "suite:dbt-practice-opposite-action@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-opposite-action-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-opposite-action-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          191,
+          147,
+          600,
+          405
+        ],
+        "actual_modal_bbox": [
+          194,
+          146,
+          588,
+          410
+        ],
+        "center_delta_px": [
+          3.0,
+          1.5
+        ],
+        "bbox_size_delta_px": [
+          12,
+          5
+        ],
+        "backdrop_mean_abs_delta": 3.0874,
+        "canonical_blur_ratio": 0.153033,
+        "actual_blur_ratio": 0.197518,
+        "blur_ratio_delta": 0.044485
+      }
+    },
+    {
+      "key": "suite:dbt-practice-opposite-action@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-opposite-action-light-960x600.png",
+      "actual_file": "suite-dbt-practice-opposite-action-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          180,
+          123,
+          600,
+          411
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          411
+        ],
+        "center_delta_px": [
+          0.0,
+          2.0
+        ],
+        "bbox_size_delta_px": [
+          6,
+          0
+        ],
+        "backdrop_mean_abs_delta": 2.6469,
+        "canonical_blur_ratio": 0.167011,
+        "actual_blur_ratio": 0.148535,
+        "blur_ratio_delta": 0.018475
+      }
+    },
+    {
+      "key": "suite:dbt-practice-participate@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-participate-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-participate-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          191,
+          147,
+          600,
+          405
+        ],
+        "actual_modal_bbox": [
+          194,
+          139,
+          588,
+          417
+        ],
+        "center_delta_px": [
+          3.0,
+          2.0
+        ],
+        "bbox_size_delta_px": [
+          12,
+          12
+        ],
+        "backdrop_mean_abs_delta": 3.0863,
+        "canonical_blur_ratio": 0.152695,
+        "actual_blur_ratio": 0.197389,
+        "blur_ratio_delta": 0.044694
+      }
+    },
+    {
+      "key": "suite:dbt-practice-participate@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-participate-light-960x600.png",
+      "actual_file": "suite-dbt-practice-participate-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          180,
+          123,
+          600,
+          411
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          411
+        ],
+        "center_delta_px": [
+          0.0,
+          2.0
+        ],
+        "bbox_size_delta_px": [
+          6,
+          0
+        ],
+        "backdrop_mean_abs_delta": 2.647,
+        "canonical_blur_ratio": 0.167012,
+        "actual_blur_ratio": 0.148535,
+        "blur_ratio_delta": 0.018477
+      }
+    },
+    {
+      "key": "suite:dbt-practice-please@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-please-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-please-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          181,
+          153,
+          614,
+          400
+        ],
+        "actual_modal_bbox": [
+          194,
+          139,
+          588,
+          417
+        ],
+        "center_delta_px": [
+          0.0,
+          5.5
+        ],
+        "bbox_size_delta_px": [
+          26,
+          17
+        ],
+        "backdrop_mean_abs_delta": 3.0345,
+        "canonical_blur_ratio": 0.155264,
+        "actual_blur_ratio": 0.200625,
+        "blur_ratio_delta": 0.045361
+      }
+    },
+    {
+      "key": "suite:dbt-practice-please@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-please-light-960x600.png",
+      "actual_file": "suite-dbt-practice-please-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          180,
+          123,
+          600,
+          411
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          411
+        ],
+        "center_delta_px": [
+          0.0,
+          2.0
+        ],
+        "bbox_size_delta_px": [
+          6,
+          0
+        ],
+        "backdrop_mean_abs_delta": 2.647,
+        "canonical_blur_ratio": 0.167008,
+        "actual_blur_ratio": 0.148535,
+        "blur_ratio_delta": 0.018472
+      }
+    },
+    {
+      "key": "suite:dbt-practice-problem-solving@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-problem-solving-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-problem-solving-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          181,
+          153,
+          614,
+          400
+        ],
+        "actual_modal_bbox": [
+          194,
+          139,
+          588,
+          417
+        ],
+        "center_delta_px": [
+          0.0,
+          5.5
+        ],
+        "bbox_size_delta_px": [
+          26,
+          17
+        ],
+        "backdrop_mean_abs_delta": 3.0345,
+        "canonical_blur_ratio": 0.155265,
+        "actual_blur_ratio": 0.200625,
+        "blur_ratio_delta": 0.04536
+      }
+    },
+    {
+      "key": "suite:dbt-practice-problem-solving@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-problem-solving-light-960x600.png",
+      "actual_file": "suite-dbt-practice-problem-solving-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          183,
+          125,
+          594,
+          400
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          400
+        ],
+        "center_delta_px": [
+          0.0,
+          0.0
+        ],
+        "bbox_size_delta_px": [
+          0,
+          0
+        ],
+        "backdrop_mean_abs_delta": 2.6676,
+        "canonical_blur_ratio": 0.163724,
+        "actual_blur_ratio": 0.146874,
+        "blur_ratio_delta": 0.01685
+      }
+    },
+    {
+      "key": "suite:dbt-practice-radical-acceptance@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-radical-acceptance-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-radical-acceptance-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          181,
+          155,
+          614,
+          398
+        ],
+        "actual_modal_bbox": [
+          194,
+          139,
+          588,
+          417
+        ],
+        "center_delta_px": [
+          0.0,
+          6.5
+        ],
+        "bbox_size_delta_px": [
+          26,
+          19
+        ],
+        "backdrop_mean_abs_delta": 3.0353,
+        "canonical_blur_ratio": 0.155255,
+        "actual_blur_ratio": 0.200554,
+        "blur_ratio_delta": 0.045299
+      }
+    },
+    {
+      "key": "suite:dbt-practice-radical-acceptance@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-radical-acceptance-light-960x600.png",
+      "actual_file": "suite-dbt-practice-radical-acceptance-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          180,
+          123,
+          600,
+          411
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          411
+        ],
+        "center_delta_px": [
+          0.0,
+          2.0
+        ],
+        "bbox_size_delta_px": [
+          6,
+          0
+        ],
+        "backdrop_mean_abs_delta": 2.647,
+        "canonical_blur_ratio": 0.16701,
+        "actual_blur_ratio": 0.148535,
+        "blur_ratio_delta": 0.018475
+      }
+    },
+    {
+      "key": "suite:dbt-practice-self-soothe@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-self-soothe-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-self-soothe-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          181,
+          153,
+          614,
+          400
+        ],
+        "actual_modal_bbox": [
+          194,
+          139,
+          588,
+          417
+        ],
+        "center_delta_px": [
+          0.0,
+          5.5
+        ],
+        "bbox_size_delta_px": [
+          26,
+          17
+        ],
+        "backdrop_mean_abs_delta": 3.0345,
+        "canonical_blur_ratio": 0.155263,
+        "actual_blur_ratio": 0.200625,
+        "blur_ratio_delta": 0.045362
+      }
+    },
+    {
+      "key": "suite:dbt-practice-self-soothe@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-self-soothe-light-960x600.png",
+      "actual_file": "suite-dbt-practice-self-soothe-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          180,
+          123,
+          600,
+          412
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          411
+        ],
+        "center_delta_px": [
+          0.0,
+          1.5
+        ],
+        "bbox_size_delta_px": [
+          6,
+          1
+        ],
+        "backdrop_mean_abs_delta": 2.6342,
+        "canonical_blur_ratio": 0.166619,
+        "actual_blur_ratio": 0.148531,
+        "blur_ratio_delta": 0.018088
+      }
+    },
+    {
+      "key": "suite:dbt-practice-stop@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-stop-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-stop-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          191,
+          147,
+          600,
+          405
+        ],
+        "actual_modal_bbox": [
+          194,
+          139,
+          588,
+          417
+        ],
+        "center_delta_px": [
+          3.0,
+          2.0
+        ],
+        "bbox_size_delta_px": [
+          12,
+          12
+        ],
+        "backdrop_mean_abs_delta": 3.0863,
+        "canonical_blur_ratio": 0.152693,
+        "actual_blur_ratio": 0.197389,
+        "blur_ratio_delta": 0.044696
+      }
+    },
+    {
+      "key": "suite:dbt-practice-stop@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-stop-light-960x600.png",
+      "actual_file": "suite-dbt-practice-stop-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          180,
+          123,
+          600,
+          411
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          411
+        ],
+        "center_delta_px": [
+          0.0,
+          2.0
+        ],
+        "bbox_size_delta_px": [
+          6,
+          0
+        ],
+        "backdrop_mean_abs_delta": 2.6342,
+        "canonical_blur_ratio": 0.166597,
+        "actual_blur_ratio": 0.148535,
+        "blur_ratio_delta": 0.018062
+      }
+    },
+    {
+      "key": "suite:dbt-practice-tipp@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-tipp-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-tipp-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          191,
+          147,
+          600,
+          405
+        ],
+        "actual_modal_bbox": [
+          194,
+          139,
+          588,
+          417
+        ],
+        "center_delta_px": [
+          3.0,
+          2.0
+        ],
+        "bbox_size_delta_px": [
+          12,
+          12
+        ],
+        "backdrop_mean_abs_delta": 3.0863,
+        "canonical_blur_ratio": 0.152695,
+        "actual_blur_ratio": 0.197389,
+        "blur_ratio_delta": 0.044695
+      }
+    },
+    {
+      "key": "suite:dbt-practice-tipp@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-tipp-light-960x600.png",
+      "actual_file": "suite-dbt-practice-tipp-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          180,
+          123,
+          600,
+          412
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          411
+        ],
+        "center_delta_px": [
+          0.0,
+          1.5
+        ],
+        "bbox_size_delta_px": [
+          6,
+          1
+        ],
+        "backdrop_mean_abs_delta": 2.6341,
+        "canonical_blur_ratio": 0.166624,
+        "actual_blur_ratio": 0.148531,
+        "blur_ratio_delta": 0.018093
+      }
+    },
+    {
+      "key": "suite:dbt-practice-validation-limits@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-validation-limits-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-validation-limits-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          181,
+          154,
+          614,
+          399
+        ],
+        "actual_modal_bbox": [
+          194,
+          139,
+          588,
+          417
+        ],
+        "center_delta_px": [
+          0.0,
+          6.0
+        ],
+        "bbox_size_delta_px": [
+          26,
+          18
+        ],
+        "backdrop_mean_abs_delta": 3.0349,
+        "canonical_blur_ratio": 0.155261,
+        "actual_blur_ratio": 0.200589,
+        "blur_ratio_delta": 0.045328
+      }
+    },
+    {
+      "key": "suite:dbt-practice-validation-limits@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-validation-limits-light-960x600.png",
+      "actual_file": "suite-dbt-practice-validation-limits-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          180,
+          123,
+          600,
+          411
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          411
+        ],
+        "center_delta_px": [
+          0.0,
+          2.0
+        ],
+        "bbox_size_delta_px": [
+          6,
+          0
+        ],
+        "backdrop_mean_abs_delta": 2.6469,
+        "canonical_blur_ratio": 0.16701,
+        "actual_blur_ratio": 0.148535,
+        "blur_ratio_delta": 0.018475
+      }
+    },
+    {
+      "key": "suite:dbt-practice-wise-mind@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-wise-mind-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-wise-mind-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.9296,
+        "canonical_modal_bbox": [
+          191,
+          147,
+          600,
+          405
+        ],
+        "actual_modal_bbox": [
+          194,
+          139,
+          588,
+          417
+        ],
+        "center_delta_px": [
+          3.0,
+          2.0
+        ],
+        "bbox_size_delta_px": [
+          12,
+          12
+        ],
+        "backdrop_mean_abs_delta": 3.0863,
+        "canonical_blur_ratio": 0.152692,
+        "actual_blur_ratio": 0.197389,
+        "blur_ratio_delta": 0.044697
+      }
+    },
+    {
+      "key": "suite:dbt-practice-wise-mind@light",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-wise-mind-light-960x600.png",
+      "actual_file": "suite-dbt-practice-wise-mind-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 10.7383,
+        "canonical_modal_bbox": [
+          183,
+          125,
+          594,
+          400
+        ],
+        "actual_modal_bbox": [
+          183,
+          125,
+          594,
+          400
+        ],
+        "center_delta_px": [
+          0.0,
+          0.0
+        ],
+        "bbox_size_delta_px": [
+          0,
+          0
+        ],
+        "backdrop_mean_abs_delta": 2.6676,
+        "canonical_blur_ratio": 0.163715,
+        "actual_blur_ratio": 0.146874,
+        "blur_ratio_delta": 0.016841
+      }
+    }
+  ]
+}

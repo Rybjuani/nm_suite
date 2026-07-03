@@ -1,0 +1,2 @@
+producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
+hub,detalle,Detalle paciente (overview),light,960x600,navigate:detalle > drain:8 > capture:detalle,hub-detalle-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

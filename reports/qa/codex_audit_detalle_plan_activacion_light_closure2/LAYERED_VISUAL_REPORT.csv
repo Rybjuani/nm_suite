@@ -1,0 +1,2 @@
+key,status,severity,repair_bucket,real_divergence,suspicious_perfect_match,findings,raw_changed_ratio,mean_abs_diff,ssim,odiff_pct,max_bbox_delta_px,largest_region_ratio,canonical_file,actual_file,panel_path
+hub:detalle-plan-activacion@light,PASS,none,NONE,False,False,,0.09543,0.03457,0.6149,3.1,15,0.010847,qa\_mockup_canonical\hub-detalle-plan-activacion-light-960x600.png,qa\_captures_v8\hub-detalle-plan-activacion-light-960x600.png,reports\qa\codex_audit_detalle_plan_activacion_light_closure2\panels\hub_detalle-plan-activacion_light.png

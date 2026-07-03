@@ -1,0 +1,104 @@
+{
+  "harness": "capture_v8.py",
+  "generated_at": "2026-06-24T04:27:27.915969",
+  "git": {
+    "head": "8e6961b218bf7632bde2fded0bedca9392d63e3f",
+    "short_head": "8e6961b",
+    "branch": "main",
+    "tracked_dirty": false,
+    "tracked_status": []
+  },
+  "command": [
+    "qa/capture_v8.py",
+    "--app",
+    "hub",
+    "--view",
+    "pacientes",
+    "--theme",
+    "light"
+  ],
+  "cwd": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "isolation_scope": "subprocess_per_recipe",
+  "auto_residual_popup_capture": false,
+  "success": 1,
+  "failed": 0,
+  "total": 1,
+  "expected_recipe_captures": 1,
+  "elapsed_seconds": 2.6,
+  "themes": [
+    "light"
+  ],
+  "resolutions": [
+    "960x600"
+  ],
+  "requested_scale_factor": 1.0,
+  "output_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8",
+  "matrix_paths": {
+    "csv": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.csv",
+    "markdown": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.md"
+  },
+  "evidence_summary": {
+    "semantic_visual_review": "NOT_RUN",
+    "visual_review_outcome": "REVIEW_INCOMPLETE",
+    "technical_capture_only": true,
+    "state_valid_capture_count": 0,
+    "technical_valid_capture_count": 1,
+    "technical_960_capture_count": 1,
+    "main_base_capture_count": 1,
+    "main_scale125_capture_count": 0,
+    "natural_dialog_capture_count": 0,
+    "main_scaled_other_capture_count": 0,
+    "unsupported_contract_count": 0,
+    "invalid_or_unsupported_contract_count": 0,
+    "contract_mismatch_count": 0,
+    "unique_hash_count": 1,
+    "duplicate_group_count": 0,
+    "duplicate_groups": [],
+    "status_counts": {
+      "REQUIRES_DATA_STATE": 1
+    },
+    "requires_runtime": [],
+    "requires_data_state": [
+      "hub-pacientes-light-960x600.png"
+    ],
+    "wrong_view_or_fallback": [],
+    "main_capture_contract_mismatch": [],
+    "blank_or_flat": []
+  },
+  "results": [
+    {
+      "file": "hub-pacientes-light-960x600.png",
+      "app": "hub",
+      "view": "pacientes",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 63346,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [
+        "REQUIRES_DATA_STATE"
+      ],
+      "evidence_notes": [
+        "Patient rows are QA/demo data; real patients state is not covered."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": false,
+      "content_metrics": {
+        "gray_mean": 0.9332,
+        "gray_stddev": 0.103
+      },
+      "sha256": "93e74de26eeb6873bcc0893fae6148d78bb2c397095c18d98fe847abd3bee13d",
+      "capture_status": "REQUIRES_DATA_STATE"
+    }
+  ]
+}

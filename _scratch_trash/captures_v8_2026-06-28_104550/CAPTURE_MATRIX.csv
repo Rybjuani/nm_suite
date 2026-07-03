@@ -1,0 +1,2 @@
+producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
+suite,home-no-score,Home sin puntaje de animo,light,960x600,navigate:home > call:_force_no_score > drain:6 > capture:home-no-score,suite-home-no-score-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

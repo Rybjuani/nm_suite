@@ -1,0 +1,144 @@
+{
+  "harness": "capture_v8.py",
+  "generated_at": "2026-06-21T03:05:31.035621",
+  "git": {
+    "head": "6aceefc6c19f92c46a2d37ed7b91ec152d6622b3",
+    "short_head": "6aceefc",
+    "branch": "main",
+    "tracked_dirty": true,
+    "tracked_status": [
+      "M qa/_fidelity_fresh/FIDELITY_REPORT.csv",
+      " M qa/_fidelity_fresh/FIDELITY_REPORT.json",
+      " M qa/_fidelity_fresh/FIDELITY_REPORT.md",
+      " M qa/_fidelity_fresh/suite-home-dark-960x600-diff.png",
+      " M qa/_fidelity_fresh/suite-home-light-960x600-diff.png",
+      " M qa/_fidelity_fresh/suite-onboarding-dark-520x600-diff.png",
+      " M qa/_fidelity_fresh/suite-onboarding-error-dark-520x600-diff.png",
+      " M qa/_fidelity_fresh/suite-onboarding-error-light-520x600-diff.png",
+      " M qa/_fidelity_fresh/suite-onboarding-light-520x600-diff.png",
+      " M qa/_fidelity_fresh/suite-recuperar-acceso-dark-520x600-diff.png",
+      " M qa/_fidelity_fresh/suite-recuperar-acceso-light-520x600-diff.png"
+    ]
+  },
+  "command": [
+    "qa\\capture_v8.py",
+    "--app",
+    "suite",
+    "--view",
+    "home",
+    "--theme",
+    "both",
+    "--out-dir",
+    "qa\\_captures_v8_fresh",
+    "--no-clean"
+  ],
+  "cwd": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "isolation_scope": "subprocess_per_recipe",
+  "auto_residual_popup_capture": false,
+  "success": 2,
+  "failed": 0,
+  "total": 2,
+  "expected_recipe_captures": 2,
+  "elapsed_seconds": 5.8,
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "resolutions": [
+    "960x600"
+  ],
+  "requested_scale_factor": 1.0,
+  "output_dir": "qa\\_captures_v8_fresh",
+  "matrix_paths": {
+    "csv": "qa\\_captures_v8_fresh\\CAPTURE_MATRIX.csv",
+    "markdown": "qa\\_captures_v8_fresh\\CAPTURE_MATRIX.md"
+  },
+  "evidence_summary": {
+    "semantic_visual_review": "NOT_RUN",
+    "visual_review_outcome": "REVIEW_INCOMPLETE",
+    "technical_capture_only": true,
+    "state_valid_capture_count": 2,
+    "technical_valid_capture_count": 2,
+    "technical_960_capture_count": 2,
+    "main_base_capture_count": 2,
+    "main_scale125_capture_count": 0,
+    "natural_dialog_capture_count": 0,
+    "main_scaled_other_capture_count": 0,
+    "unsupported_contract_count": 0,
+    "invalid_or_unsupported_contract_count": 0,
+    "contract_mismatch_count": 0,
+    "unique_hash_count": 2,
+    "duplicate_group_count": 0,
+    "duplicate_groups": [],
+    "status_counts": {
+      "CAPTURED_VALID": 2
+    },
+    "requires_runtime": [],
+    "requires_data_state": [],
+    "wrong_view_or_fallback": [],
+    "main_capture_contract_mismatch": [],
+    "blank_or_flat": []
+  },
+  "results": [
+    {
+      "file": "suite-home-light-960x600.png",
+      "app": "suite",
+      "view": "home",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 68486,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.9123,
+        "gray_stddev": 0.1177
+      },
+      "sha256": "476b3392b83b390ca520c5fbac37caa26be8391d3bf436fdb215ab1a08c2ca2e",
+      "capture_status": "CAPTURED_VALID"
+    },
+    {
+      "file": "suite-home-dark-960x600.png",
+      "app": "suite",
+      "view": "home",
+      "theme": "dark",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 67858,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.1565,
+        "gray_stddev": 0.1179
+      },
+      "sha256": "550ff0825b79479bc31a75c853f8efdd84188a9169c0762dc9e3026b6abed8f2",
+      "capture_status": "CAPTURED_VALID"
+    }
+  ]
+}

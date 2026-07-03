@@ -1,0 +1,890 @@
+{
+  "generated_at_utc": "2026-07-02T07:04:07.379494+00:00",
+  "repo": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "base": "main",
+  "allow_paths": [
+    "VISUAL_QA_AGENT_PROTOCOL.md",
+    "VISUAL_REPAIR_HANDOFF.md",
+    "qa/anti_fraud_scan.py",
+    "qa/capture_v8.py",
+    "qa/layered_visual_compare.py",
+    "qa/vas_gate.py",
+    "tools/qa/audit_handoff_false_pass.py",
+    "tests/test_anti_fraud_scan.py",
+    "tests/test_capture_v8_evidence.py",
+    "tests/test_suspicious_perfect_match.py",
+    "tests/test_vas_gate.py",
+    "tests/test_handoff_false_pass_audit.py"
+  ],
+  "allow_blocks": [],
+  "summary": {
+    "verdict": "PASS",
+    "diff_confined": true,
+    "touched_count": 12,
+    "permitted_count": 12,
+    "prohibited_count": 0,
+    "hunks_outside_block_count": 0
+  },
+  "touched_files": [
+    "VISUAL_QA_AGENT_PROTOCOL.md",
+    "VISUAL_REPAIR_HANDOFF.md",
+    "qa/anti_fraud_scan.py",
+    "qa/capture_v8.py",
+    "qa/layered_visual_compare.py",
+    "qa/vas_gate.py",
+    "tests/test_anti_fraud_scan.py",
+    "tests/test_capture_v8_evidence.py",
+    "tests/test_handoff_false_pass_audit.py",
+    "tests/test_suspicious_perfect_match.py",
+    "tests/test_vas_gate.py",
+    "tools/qa/audit_handoff_false_pass.py"
+  ],
+  "prohibited_files": [],
+  "hunks_outside_block": [],
+  "files": [
+    {
+      "path": "VISUAL_QA_AGENT_PROTOCOL.md",
+      "allowed_by_path": true,
+      "has_block_markers": false,
+      "status": "PERMITTED",
+      "hunks": [
+        {
+          "file": "VISUAL_QA_AGENT_PROTOCOL.md",
+          "header": "@@ -343,0 +344,4 @@ context is never closure evidence unless every technical gate below also passes.",
+          "old_start": 343,
+          "old_count": 0,
+          "new_start": 344,
+          "new_count": 4,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_QA_AGENT_PROTOCOL.md",
+          "header": "@@ -426,0 +431,6 @@ globally — only its use with QA/reference artifacts.",
+          "old_start": 426,
+          "old_count": 0,
+          "new_start": 431,
+          "new_count": 6,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_QA_AGENT_PROTOCOL.md",
+          "header": "@@ -437,0 +448,6 @@ is trivial surfaces, by an explicit, tested rule: empty-state views (name ends",
+          "old_start": 437,
+          "old_count": 0,
+          "new_start": 448,
+          "new_count": 6,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_QA_AGENT_PROTOCOL.md",
+          "header": "@@ -486 +502 @@ technical gates pass. There is no subjective or manual closure path — inspecti",
+          "old_start": 486,
+          "old_count": 1,
+          "new_start": 502,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_QA_AGENT_PROTOCOL.md",
+          "header": "@@ -492 +508,3 @@ technical gates pass. There is no subjective or manual closure path — inspecti",
+          "old_start": 492,
+          "old_count": 1,
+          "new_start": 508,
+          "new_count": 3,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_QA_AGENT_PROTOCOL.md",
+          "header": "@@ -508 +526 @@ The closure note must record:",
+          "old_start": 508,
+          "old_count": 1,
+          "new_start": 526,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_QA_AGENT_PROTOCOL.md",
+          "header": "@@ -517,0 +536,5 @@ exact key status in the JSON/MD report, not the global exit code.",
+          "old_start": 517,
+          "old_count": 0,
+          "new_start": 536,
+          "new_count": 5,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        }
+      ]
+    },
+    {
+      "path": "VISUAL_REPAIR_HANDOFF.md",
+      "allowed_by_path": true,
+      "has_block_markers": false,
+      "status": "PERMITTED",
+      "hunks": [
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -68,0 +69,4 @@ Required Closure Evidence.",
+          "old_start": 68,
+          "old_count": 0,
+          "new_start": 69,
+          "new_count": 4,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -370,0 +375,6 @@ globally — only its use with QA/reference artifacts.",
+          "old_start": 370,
+          "old_count": 0,
+          "new_start": 375,
+          "new_count": 6,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -381,0 +392,6 @@ is trivial surfaces, by an explicit, tested rule: empty-state views (name ends",
+          "old_start": 381,
+          "old_count": 0,
+          "new_start": 392,
+          "new_count": 6,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -543 +559 @@ technical gates pass. Inspection manual, \"confirmación visual\", panel review, o",
+          "old_start": 543,
+          "old_count": 1,
+          "new_start": 559,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -549 +565,3 @@ technical gates pass. Inspection manual, \"confirmación visual\", panel review, o",
+          "old_start": 549,
+          "old_count": 1,
+          "new_start": 565,
+          "new_count": 3,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -565 +583 @@ The closure note must record:",
+          "old_start": 565,
+          "old_count": 1,
+          "new_start": 583,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -574,0 +593,5 @@ exact key status in the JSON/MD report, not the global exit code.",
+          "old_start": 574,
+          "old_count": 0,
+          "new_start": 593,
+          "new_count": 5,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        }
+      ]
+    },
+    {
+      "path": "qa/anti_fraud_scan.py",
+      "allowed_by_path": true,
+      "has_block_markers": false,
+      "status": "PERMITTED",
+      "hunks": [
+        {
+          "file": "qa/anti_fraud_scan.py",
+          "header": "@@ -45,0 +46,6 @@ DEFAULT_ROOTS = (\"app\", \"hub\", \"shared\")",
+          "old_start": 45,
+          "old_count": 0,
+          "new_start": 46,
+          "new_count": 6,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/anti_fraud_scan.py",
+          "header": "@@ -84,0 +91,31 @@ PIXMAP_REFERENCE_TOKENS = (",
+          "old_start": 84,
+          "old_count": 0,
+          "new_start": 91,
+          "new_count": 31,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/anti_fraud_scan.py",
+          "header": "@@ -159,0 +197,71 @@ def _eval_static_literal(node: ast.AST) -> object | None:",
+          "old_start": 159,
+          "old_count": 0,
+          "new_start": 197,
+          "new_count": 71,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/anti_fraud_scan.py",
+          "header": "@@ -284,0 +393,114 @@ def scan_source(source: str, file_label: str) -> list[Violation]:",
+          "old_start": 284,
+          "old_count": 0,
+          "new_start": 393,
+          "new_count": 114,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/anti_fraud_scan.py",
+          "header": "@@ -293,0 +516,9 @@ def scan_file(path: Path, *, base: Path | None = None) -> list[Violation]:",
+          "old_start": 293,
+          "old_count": 0,
+          "new_start": 516,
+          "new_count": 9,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/anti_fraud_scan.py",
+          "header": "@@ -302,0 +534,9 @@ def scan_paths(roots, *, base: Path | None = None) -> list[Violation]:",
+          "old_start": 302,
+          "old_count": 0,
+          "new_start": 534,
+          "new_count": 9,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/anti_fraud_scan.py",
+          "header": "@@ -304,2 +544,8 @@ def main(argv: list[str] | None = None) -> int:",
+          "old_start": 304,
+          "old_count": 2,
+          "new_start": 544,
+          "new_count": 8,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/anti_fraud_scan.py",
+          "header": "@@ -309 +555,7 @@ def main(argv: list[str] | None = None) -> int:",
+          "old_start": 309,
+          "old_count": 1,
+          "new_start": 555,
+          "new_count": 7,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/anti_fraud_scan.py",
+          "header": "@@ -324,2 +576,8 @@ def main(argv: list[str] | None = None) -> int:",
+          "old_start": 324,
+          "old_count": 2,
+          "new_start": 576,
+          "new_count": 8,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/anti_fraud_scan.py",
+          "header": "@@ -331 +589 @@ def main(argv: list[str] | None = None) -> int:",
+          "old_start": 331,
+          "old_count": 1,
+          "new_start": 589,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        }
+      ]
+    },
+    {
+      "path": "qa/capture_v8.py",
+      "allowed_by_path": true,
+      "has_block_markers": false,
+      "status": "PERMITTED",
+      "hunks": [
+        {
+          "file": "qa/capture_v8.py",
+          "header": "@@ -1686,0 +1687,44 @@ def _git_metadata() -> dict[str, Any]:",
+          "old_start": 1686,
+          "old_count": 0,
+          "new_start": 1687,
+          "new_count": 44,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/capture_v8.py",
+          "header": "@@ -2307 +2351,8 @@ def _introspect_sidecar_path(out_dir: Path) -> Path:",
+          "old_start": 2307,
+          "old_count": 1,
+          "new_start": 2351,
+          "new_count": 8,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/capture_v8.py",
+          "header": "@@ -2324,0 +2376 @@ def _record_introspection(win, app_key: str, view_id: str, modo: str, out_dir: P",
+          "old_start": 2324,
+          "old_count": 0,
+          "new_start": 2376,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/capture_v8.py",
+          "header": "@@ -2413 +2465,12 @@ def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Pa",
+          "old_start": 2413,
+          "old_count": 1,
+          "new_start": 2465,
+          "new_count": 12,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/capture_v8.py",
+          "header": "@@ -2414,0 +2478 @@ def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Pa",
+          "old_start": 2414,
+          "old_count": 0,
+          "new_start": 2478,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/capture_v8.py",
+          "header": "@@ -2424,0 +2489,2 @@ def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Pa",
+          "old_start": 2424,
+          "old_count": 0,
+          "new_start": 2489,
+          "new_count": 2,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/capture_v8.py",
+          "header": "@@ -2439,0 +2506 @@ def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Pa",
+          "old_start": 2439,
+          "old_count": 0,
+          "new_start": 2506,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/capture_v8.py",
+          "header": "@@ -2958,0 +3026 @@ def main() -> int:",
+          "old_start": 2958,
+          "old_count": 0,
+          "new_start": 3026,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        }
+      ]
+    },
+    {
+      "path": "qa/layered_visual_compare.py",
+      "allowed_by_path": true,
+      "has_block_markers": false,
+      "status": "PERMITTED",
+      "hunks": [
+        {
+          "file": "qa/layered_visual_compare.py",
+          "header": "@@ -69,0 +70,2 @@ _TRIVIAL_EMPTY_VIEW_SUFFIX = \"-empty\"",
+          "old_start": 69,
+          "old_count": 0,
+          "new_start": 70,
+          "new_count": 2,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/layered_visual_compare.py",
+          "header": "@@ -209,0 +212 @@ class LayeredResult:",
+          "old_start": 209,
+          "old_count": 0,
+          "new_start": 212,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/layered_visual_compare.py",
+          "header": "@@ -230,0 +234 @@ class LayeredResult:",
+          "old_start": 230,
+          "old_count": 0,
+          "new_start": 234,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/layered_visual_compare.py",
+          "header": "@@ -250,0 +255 @@ class LayeredResult:",
+          "old_start": 250,
+          "old_count": 0,
+          "new_start": 255,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/layered_visual_compare.py",
+          "header": "@@ -460,0 +466,5 @@ def compare_pair(",
+          "old_start": 460,
+          "old_count": 0,
+          "new_start": 466,
+          "new_count": 5,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/layered_visual_compare.py",
+          "header": "@@ -467,0 +478,7 @@ def compare_pair(",
+          "old_start": 467,
+          "old_count": 0,
+          "new_start": 478,
+          "new_count": 7,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/layered_visual_compare.py",
+          "header": "@@ -482,0 +500 @@ def compare_pair(",
+          "old_start": 482,
+          "old_count": 0,
+          "new_start": 500,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/layered_visual_compare.py",
+          "header": "@@ -965,0 +984,8 @@ def _is_suspicious_perfect_match(metrics: dict[str, Any], canonical_img: Image.I",
+          "old_start": 965,
+          "old_count": 0,
+          "new_start": 984,
+          "new_count": 8,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/layered_visual_compare.py",
+          "header": "@@ -1109,0 +1136 @@ def _summary(results: list[LayeredResult]) -> dict[str, Any]:",
+          "old_start": 1109,
+          "old_count": 0,
+          "new_start": 1136,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/layered_visual_compare.py",
+          "header": "@@ -1115,0 +1143,2 @@ def _summary(results: list[LayeredResult]) -> dict[str, Any]:",
+          "old_start": 1115,
+          "old_count": 0,
+          "new_start": 1143,
+          "new_count": 2,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        }
+      ]
+    },
+    {
+      "path": "qa/vas_gate.py",
+      "allowed_by_path": true,
+      "has_block_markers": false,
+      "status": "PERMITTED",
+      "hunks": [
+        {
+          "file": "qa/vas_gate.py",
+          "header": "@@ -20,0 +21 @@ import argparse",
+          "old_start": 20,
+          "old_count": 0,
+          "new_start": 21,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/vas_gate.py",
+          "header": "@@ -25,0 +27 @@ DEFAULT_SIDECAR = Path(\"qa/_visual_auditor_spec/introspection.json\")",
+          "old_start": 25,
+          "old_count": 0,
+          "new_start": 27,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/vas_gate.py",
+          "header": "@@ -29,0 +32,49 @@ BLOCKING_SEVERITIES = {\"high\", \"medium\"}",
+          "old_start": 29,
+          "old_count": 0,
+          "new_start": 32,
+          "new_count": 49,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/vas_gate.py",
+          "header": "@@ -52 +103,89 @@ def _load_sidecar(path: Path) -> list[dict]:",
+          "old_start": 52,
+          "old_count": 1,
+          "new_start": 103,
+          "new_count": 89,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/vas_gate.py",
+          "header": "@@ -84,0 +224 @@ def _check_entry(entry: dict, key: str | None) -> list[str]:",
+          "old_start": 84,
+          "old_count": 0,
+          "new_start": 224,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "qa/vas_gate.py",
+          "header": "@@ -111 +251 @@ def validate(path: Path, key: str | None) -> bool:",
+          "old_start": 111,
+          "old_count": 1,
+          "new_start": 251,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        }
+      ]
+    },
+    {
+      "path": "tests/test_anti_fraud_scan.py",
+      "allowed_by_path": true,
+      "has_block_markers": false,
+      "status": "PERMITTED",
+      "hunks": [
+        {
+          "file": "tests/test_anti_fraud_scan.py",
+          "header": "@@ -7 +7 @@ from pathlib import Path",
+          "old_start": 7,
+          "old_count": 1,
+          "new_start": 7,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "tests/test_anti_fraud_scan.py",
+          "header": "@@ -185,0 +186,56 @@ def test_real_dbt_qt_modal_constants_pass():",
+          "old_start": 185,
+          "old_count": 0,
+          "new_start": 186,
+          "new_count": 56,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        }
+      ]
+    },
+    {
+      "path": "tests/test_capture_v8_evidence.py",
+      "allowed_by_path": true,
+      "has_block_markers": false,
+      "status": "PERMITTED",
+      "hunks": [
+        {
+          "file": "tests/test_capture_v8_evidence.py",
+          "header": "@@ -75,0 +76,23 @@ def test_content_rich_png_stays_valid(tmp_path):",
+          "old_start": 75,
+          "old_count": 0,
+          "new_start": 76,
+          "new_count": 23,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        }
+      ]
+    },
+    {
+      "path": "tests/test_handoff_false_pass_audit.py",
+      "allowed_by_path": true,
+      "has_block_markers": false,
+      "status": "PERMITTED",
+      "hunks": [
+        {
+          "file": "tests/test_handoff_false_pass_audit.py",
+          "header": "@@ -0,0 +1,111 @@",
+          "old_start": 0,
+          "old_count": 0,
+          "new_start": 1,
+          "new_count": 111,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        }
+      ]
+    },
+    {
+      "path": "tests/test_suspicious_perfect_match.py",
+      "allowed_by_path": true,
+      "has_block_markers": false,
+      "status": "PERMITTED",
+      "hunks": [
+        {
+          "file": "tests/test_suspicious_perfect_match.py",
+          "header": "@@ -118,0 +119,57 @@ def test_nontrivial_but_different_is_not_suspicious(tmp_path):",
+          "old_start": 118,
+          "old_count": 0,
+          "new_start": 119,
+          "new_count": 57,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        }
+      ]
+    },
+    {
+      "path": "tests/test_vas_gate.py",
+      "allowed_by_path": true,
+      "has_block_markers": false,
+      "status": "PERMITTED",
+      "hunks": [
+        {
+          "file": "tests/test_vas_gate.py",
+          "header": "@@ -3,0 +4 @@ import json",
+          "old_start": 3,
+          "old_count": 0,
+          "new_start": 4,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "tests/test_vas_gate.py",
+          "header": "@@ -25,0 +27,17 @@ def _run_gate(sidecar_path: Path, key: str | None = None) -> subprocess.Complete",
+          "old_start": 25,
+          "old_count": 0,
+          "new_start": 27,
+          "new_count": 17,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "tests/test_vas_gate.py",
+          "header": "@@ -26,0 +45,48 @@ def _write_sidecar(tmp_path: Path, entries: list) -> Path:",
+          "old_start": 26,
+          "old_count": 0,
+          "new_start": 45,
+          "new_count": 48,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "tests/test_vas_gate.py",
+          "header": "@@ -159,0 +226,27 @@ def test_fail_missing_fail_count_key(tmp_path):",
+          "old_start": 159,
+          "old_count": 0,
+          "new_start": 226,
+          "new_count": 27,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        }
+      ]
+    },
+    {
+      "path": "tools/qa/audit_handoff_false_pass.py",
+      "allowed_by_path": true,
+      "has_block_markers": false,
+      "status": "PERMITTED",
+      "hunks": [
+        {
+          "file": "tools/qa/audit_handoff_false_pass.py",
+          "header": "@@ -0,0 +1,11 @@",
+          "old_start": 0,
+          "old_count": 0,
+          "new_start": 1,
+          "new_count": 11,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "tools/qa/audit_handoff_false_pass.py",
+          "header": "@@ -2 +12,0 @@ import argparse",
+          "old_start": 2,
+          "old_count": 1,
+          "new_start": 12,
+          "new_count": 0,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "tools/qa/audit_handoff_false_pass.py",
+          "header": "@@ -7 +17 @@ import sys",
+          "old_start": 7,
+          "old_count": 1,
+          "new_start": 17,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "tools/qa/audit_handoff_false_pass.py",
+          "header": "@@ -8,0 +19 @@ from pathlib import Path",
+          "old_start": 8,
+          "old_count": 0,
+          "new_start": 19,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "tools/qa/audit_handoff_false_pass.py",
+          "header": "@@ -9,0 +21,2 @@ from pathlib import Path",
+          "old_start": 9,
+          "old_count": 0,
+          "new_start": 21,
+          "new_count": 2,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "tools/qa/audit_handoff_false_pass.py",
+          "header": "@@ -14,9 +27,115 @@ OPEN_RE = re.compile(r\"^\\s*-\\s*\\[\\s\\]\")",
+          "old_start": 14,
+          "old_count": 9,
+          "new_start": 27,
+          "new_count": 115,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "tools/qa/audit_handoff_false_pass.py",
+          "header": "@@ -24,3 +142,0 @@ def parse_handoff(path: Path, include_open: bool):",
+          "old_start": 24,
+          "old_count": 3,
+          "new_start": 142,
+          "new_count": 0,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "tools/qa/audit_handoff_false_pass.py",
+          "header": "@@ -28 +144,8 @@ def parse_handoff(path: Path, include_open: bool):",
+          "old_start": 28,
+          "old_count": 1,
+          "new_start": 144,
+          "new_count": 8,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "tools/qa/audit_handoff_false_pass.py",
+          "header": "@@ -29,0 +153,111 @@ def parse_handoff(path: Path, include_open: bool):",
+          "old_start": 29,
+          "old_count": 0,
+          "new_start": 153,
+          "new_count": 111,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "tools/qa/audit_handoff_false_pass.py",
+          "header": "@@ -31,142 +264,0 @@ def parse_handoff(path: Path, include_open: bool):",
+          "old_start": 31,
+          "old_count": 142,
+          "new_start": 264,
+          "new_count": 0,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "tools/qa/audit_handoff_false_pass.py",
+          "header": "@@ -175 +267 @@ if __name__ == \"__main__\":",
+          "old_start": 175,
+          "old_count": 1,
+          "new_start": 267,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        }
+      ]
+    }
+  ]
+}

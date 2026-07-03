@@ -1,0 +1,198 @@
+{
+  "generated_at": "2026-06-30T11:46:55",
+  "authority": "LAYERED_VISUAL_COMPARE",
+  "source_policy": "Use qa/_mockup_canonical plus a fresh complete qa/_captures_v8 run for operational handoff decisions. Zip inputs are archive/forensics only and must not close VISUAL_REPAIR_HANDOFF.md items.",
+  "report_scope": "PARTIAL",
+  "report_filters": {
+    "app": null,
+    "view": null,
+    "theme": null,
+    "key": "suite:rutina-empty@light",
+    "keys_file": null,
+    "keys_file_keys": []
+  },
+  "report_evidence_valid": true,
+  "report_evidence_reason": null,
+  "handoff_closure_allowed": false,
+  "handoff_closure_reason": "partial_scope; real_divergence_present",
+  "sources": {
+    "canonical_source": "qa\\_mockup_canonical",
+    "actual_source": "qa\\_captures_v8",
+    "canonical_root": "qa\\_mockup_canonical",
+    "actual_root": "qa\\_captures_v8",
+    "canonical_source_kind": "directory",
+    "actual_source_kind": "directory",
+    "active_repo_pair": true
+  },
+  "thresholds": {
+    "min_ssim": 0.92,
+    "text_dense_canonical_std": 35.0,
+    "text_dense_min_windowed_ssim": 0.65,
+    "text_dense_max_changed_pixel_ratio": 0.1,
+    "max_mean_abs_diff": 0.035,
+    "max_changed_pixel_ratio": 0.08,
+    "changed_pixel_floor": 12,
+    "text_dense_changed_pixel_floor": 14,
+    "max_odiff_diff_pct": 8.0,
+    "odiff_threshold": 0.3,
+    "max_bbox_shift_px": 18,
+    "max_bbox_size_delta_px": 36,
+    "max_largest_region_ratio": 0.08,
+    "strong_changed_pixel_ratio": 0.18,
+    "strong_mean_abs_diff": 0.08,
+    "strong_largest_region_ratio": 0.18
+  },
+  "summary": {
+    "total": 1,
+    "pass": 0,
+    "real_divergence": 1,
+    "by_status": {
+      "FAIL": 1
+    },
+    "by_severity": {
+      "medium": 1
+    },
+    "by_repair_bucket": {
+      "LAYOUT_FIX": 1
+    },
+    "qa_missed_raw_or_layout": 1,
+    "state_or_recipe_suspect": 0,
+    "suspicious_perfect_match": 0
+  },
+  "results": [
+    {
+      "key": "suite:rutina-empty@light",
+      "app": "suite",
+      "view": "rutina-empty",
+      "theme": "light",
+      "status": "FAIL",
+      "severity": "medium",
+      "repair_bucket": "LAYOUT_FIX",
+      "real_divergence": true,
+      "suspicious_perfect_match": false,
+      "findings": [
+        "layout_drift",
+        "qa_missed_raw_or_layout"
+      ],
+      "canonical_file": "qa\\_mockup_canonical\\suite-rutina-empty-light-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-rutina-empty-light-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.44055,
+        "windowed_ssim": 0.93753,
+        "canonical_gray_std": 13.816,
+        "mean_abs_diff": 0.01572,
+        "max_abs_diff": 0.79608,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 17768,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.03085,
+        "largest_region_ratio": 0.00745
+      },
+      "layout": {
+        "target_content_bbox": [
+          1,
+          2,
+          959,
+          598
+        ],
+        "actual_content_bbox": [
+          0,
+          17,
+          960,
+          269
+        ],
+        "bbox_dx": -1,
+        "bbox_dy": 15,
+        "bbox_dw": 1,
+        "bbox_dh": -329,
+        "max_bbox_delta_px": 329,
+        "bbox_area_delta_ratio": 0.5497
+      },
+      "odiff": {
+        "diff_pixels": 5824,
+        "diff_percentage": 1.01,
+        "diff_png_path": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\handoff_false_pass_audit\\20260630_113720\\suite_rutina-empty_light\\layered\\odiff\\suite-rutina-empty-light-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 0,
+          "y": 48,
+          "w": 960,
+          "h": 552,
+          "area": 4291,
+          "area_ratio": 0.00745,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 448,
+          "y": 128,
+          "w": 64,
+          "h": 60,
+          "area": 1519,
+          "area_ratio": 0.002637,
+          "hint": "component_region"
+        },
+        {
+          "x": 81,
+          "y": 18,
+          "w": 159,
+          "h": 13,
+          "area": 1221,
+          "area_ratio": 0.00212,
+          "hint": "component_region"
+        },
+        {
+          "x": 448,
+          "y": 105,
+          "w": 64,
+          "h": 33,
+          "area": 1208,
+          "area_ratio": 0.002097,
+          "hint": "component_region"
+        },
+        {
+          "x": 506,
+          "y": 244,
+          "w": 91,
+          "h": 19,
+          "area": 751,
+          "area_ratio": 0.001304,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 412,
+          "y": 244,
+          "w": 63,
+          "h": 15,
+          "area": 529,
+          "area_ratio": 0.000918,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 435,
+          "y": 266,
+          "w": 57,
+          "h": 15,
+          "area": 525,
+          "area_ratio": 0.000911,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 418,
+          "y": 212,
+          "w": 61,
+          "h": 25,
+          "area": 494,
+          "area_ratio": 0.000858,
+          "hint": "text_icon_or_antialiasing"
+        }
+      ],
+      "panel_path": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\handoff_false_pass_audit\\20260630_113720\\suite_rutina-empty_light\\layered\\panels\\suite_rutina-empty_light.png"
+    }
+  ]
+}

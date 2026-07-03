@@ -1,0 +1,200 @@
+{
+  "generated_at": "2026-06-30T11:44:20",
+  "authority": "LAYERED_VISUAL_COMPARE",
+  "source_policy": "Use qa/_mockup_canonical plus a fresh complete qa/_captures_v8 run for operational handoff decisions. Zip inputs are archive/forensics only and must not close VISUAL_REPAIR_HANDOFF.md items.",
+  "report_scope": "PARTIAL",
+  "report_filters": {
+    "app": null,
+    "view": null,
+    "theme": null,
+    "key": "suite:avisos-filter-activos@dark",
+    "keys_file": null,
+    "keys_file_keys": []
+  },
+  "report_evidence_valid": true,
+  "report_evidence_reason": null,
+  "handoff_closure_allowed": false,
+  "handoff_closure_reason": "partial_scope; real_divergence_present",
+  "sources": {
+    "canonical_source": "qa\\_mockup_canonical",
+    "actual_source": "qa\\_captures_v8",
+    "canonical_root": "qa\\_mockup_canonical",
+    "actual_root": "qa\\_captures_v8",
+    "canonical_source_kind": "directory",
+    "actual_source_kind": "directory",
+    "active_repo_pair": true
+  },
+  "thresholds": {
+    "min_ssim": 0.92,
+    "text_dense_canonical_std": 35.0,
+    "text_dense_min_windowed_ssim": 0.65,
+    "text_dense_max_changed_pixel_ratio": 0.1,
+    "max_mean_abs_diff": 0.035,
+    "max_changed_pixel_ratio": 0.08,
+    "changed_pixel_floor": 12,
+    "text_dense_changed_pixel_floor": 14,
+    "max_odiff_diff_pct": 8.0,
+    "odiff_threshold": 0.3,
+    "max_bbox_shift_px": 18,
+    "max_bbox_size_delta_px": 36,
+    "max_largest_region_ratio": 0.08,
+    "strong_changed_pixel_ratio": 0.18,
+    "strong_mean_abs_diff": 0.08,
+    "strong_largest_region_ratio": 0.18
+  },
+  "summary": {
+    "total": 1,
+    "pass": 0,
+    "real_divergence": 1,
+    "by_status": {
+      "FAIL": 1
+    },
+    "by_severity": {
+      "medium": 1
+    },
+    "by_repair_bucket": {
+      "STATE_RECIPE_OR_PRODUCT_FIX": 1
+    },
+    "qa_missed_raw_or_layout": 1,
+    "state_or_recipe_suspect": 1,
+    "suspicious_perfect_match": 0
+  },
+  "results": [
+    {
+      "key": "suite:avisos-filter-activos@dark",
+      "app": "suite",
+      "view": "avisos-filter-activos",
+      "theme": "dark",
+      "status": "FAIL",
+      "severity": "medium",
+      "repair_bucket": "STATE_RECIPE_OR_PRODUCT_FIX",
+      "real_divergence": true,
+      "suspicious_perfect_match": false,
+      "findings": [
+        "raw_pixel_delta",
+        "layout_drift",
+        "state_or_recipe_suspect",
+        "qa_missed_raw_or_layout"
+      ],
+      "canonical_file": "qa\\_mockup_canonical\\suite-avisos-filter-activos-dark-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-avisos-filter-activos-dark-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.17987,
+        "windowed_ssim": 0.80893,
+        "canonical_gray_std": 19.508,
+        "mean_abs_diff": 0.02593,
+        "max_abs_diff": 0.85098,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 77104,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.13386,
+        "largest_region_ratio": 0.019783
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          0,
+          960,
+          600
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          383
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": 16,
+        "bbox_dw": 0,
+        "bbox_dh": -217,
+        "max_bbox_delta_px": 217,
+        "bbox_area_delta_ratio": 0.36167
+      },
+      "odiff": {
+        "diff_pixels": 10903,
+        "diff_percentage": 1.89,
+        "diff_png_path": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\handoff_false_pass_audit\\20260630_113720\\suite_avisos-filter-activos_dark\\layered\\odiff\\suite-avisos-filter-activos-dark-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 264,
+          "y": 68,
+          "w": 320,
+          "h": 46,
+          "area": 11395,
+          "area_ratio": 0.019783,
+          "hint": "component_region"
+        },
+        {
+          "x": 25,
+          "y": 240,
+          "w": 910,
+          "h": 62,
+          "area": 9132,
+          "area_ratio": 0.015854,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 25,
+          "y": 153,
+          "w": 910,
+          "h": 37,
+          "area": 8014,
+          "area_ratio": 0.013913,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 19,
+          "y": 316,
+          "w": 922,
+          "h": 46,
+          "area": 5509,
+          "area_ratio": 0.009564,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 19,
+          "y": 392,
+          "w": 922,
+          "h": 8,
+          "area": 4576,
+          "area_ratio": 0.007944,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 34,
+          "y": 59,
+          "w": 209,
+          "h": 53,
+          "area": 4381,
+          "area_ratio": 0.007606,
+          "hint": "component_region"
+        },
+        {
+          "x": 132,
+          "y": 198,
+          "w": 783,
+          "h": 29,
+          "area": 3187,
+          "area_ratio": 0.005533,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 720,
+          "y": 122,
+          "w": 103,
+          "h": 22,
+          "area": 2103,
+          "area_ratio": 0.003651,
+          "hint": "component_region"
+        }
+      ],
+      "panel_path": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\handoff_false_pass_audit\\20260630_113720\\suite_avisos-filter-activos_dark\\layered\\panels\\suite_avisos-filter-activos_dark.png"
+    }
+  ]
+}

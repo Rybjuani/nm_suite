@@ -1,0 +1,2 @@
+key,status,severity,repair_bucket,real_divergence,suspicious_perfect_match,findings,raw_changed_ratio,mean_abs_diff,ssim,odiff_pct,max_bbox_delta_px,largest_region_ratio,canonical_file,actual_file,panel_path
+suite:timer@dark,FAIL,medium,LAYOUT_FIX,True,False,"layout_drift,qa_missed_raw_or_layout",0.06144,0.02362,0.35757,2.04,23,0.013281,qa\_mockup_canonical\suite-timer-dark-960x600.png,qa\_captures_v8\suite-timer-dark-960x600.png,C:\Users\nosom\Desktop\nm_suite\reports\qa\handoff_false_pass_audit\20260630_113720\suite_timer_dark\layered\panels\suite_timer_dark.png

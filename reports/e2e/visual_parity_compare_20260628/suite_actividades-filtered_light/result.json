@@ -1,0 +1,276 @@
+{
+  "surface_key": "suite:actividades-filtered@light",
+  "status": "FAIL",
+  "repair_decision": "FIX_PRODUCT_STRONG",
+  "passed": false,
+  "failures": [
+    "ssim<0.92",
+    "changed>0.08"
+  ],
+  "metrics": {
+    "target_size": {
+      "w": 960,
+      "h": 600
+    },
+    "actual_size": {
+      "w": 960,
+      "h": 600
+    },
+    "size_mismatch": false,
+    "ssim": 0.24033,
+    "mean_abs_diff": 0.0256,
+    "max_abs_diff": 0.81176,
+    "changed_pixel_floor": 12,
+    "changed_pixels": 87739,
+    "total_pixels": 576000,
+    "changed_pixel_ratio": 0.15232
+  },
+  "regions": [
+    {
+      "x": 0,
+      "y": 43,
+      "w": 960,
+      "h": 557,
+      "area": 28533,
+      "area_ratio": 0.049536,
+      "hint": "layout_shift_or_spacing"
+    },
+    {
+      "x": 34,
+      "y": 112,
+      "w": 269,
+      "h": 34,
+      "area": 7895,
+      "area_ratio": 0.013707,
+      "hint": "component_region"
+    },
+    {
+      "x": 34,
+      "y": 148,
+      "w": 449,
+      "h": 33,
+      "area": 6417,
+      "area_ratio": 0.011141,
+      "hint": "component_region"
+    },
+    {
+      "x": 34,
+      "y": 192,
+      "w": 446,
+      "h": 161,
+      "area": 3450,
+      "area_ratio": 0.00599,
+      "hint": "component_region"
+    },
+    {
+      "x": 307,
+      "y": 112,
+      "w": 95,
+      "h": 34,
+      "area": 3006,
+      "area_ratio": 0.005219,
+      "hint": "component_region"
+    },
+    {
+      "x": 562,
+      "y": 112,
+      "w": 89,
+      "h": 34,
+      "area": 2802,
+      "area_ratio": 0.004865,
+      "hint": "component_region"
+    },
+    {
+      "x": 382,
+      "y": 306,
+      "w": 78,
+      "h": 34,
+      "area": 2365,
+      "area_ratio": 0.004106,
+      "hint": "component_region"
+    },
+    {
+      "x": 406,
+      "y": 112,
+      "w": 75,
+      "h": 34,
+      "area": 2271,
+      "area_ratio": 0.003943,
+      "hint": "component_region"
+    }
+  ],
+  "canonical": {
+    "surface_key": "suite:actividades-filtered@light",
+    "app": "suite",
+    "view": "actividades-filtered",
+    "theme": "light",
+    "resolution": "960x600",
+    "file": "suite-actividades-filtered-light-960x600.png",
+    "path": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_canonical\\suite-actividades-filtered-light-960x600.png",
+    "screen": "actividades",
+    "state": "filtered",
+    "surface": "window",
+    "capture_selector": ".window",
+    "dom_w": 960,
+    "dom_h": 600,
+    "dom_size_match": true,
+    "mockup_sha256": "0fa4b834e50a8936e829a493b6b31c9e181edb84621f9f7861f98ea609a07c87"
+  },
+  "actual_path": "qa\\_captures_compare_20260628\\suite-actividades-filtered-light-960x600.png",
+  "diff_path": "reports\\e2e\\visual_parity_compare_20260628\\suite_actividades-filtered_light\\suite-actividades-filtered-light-960x600-diff.png",
+  "report_path": "reports\\e2e\\visual_parity_compare_20260628\\suite_actividades-filtered_light\\result.json",
+  "agent_package": {
+    "surface_key": "suite:actividades-filtered@light",
+    "status": "FAIL",
+    "repair_decision": "FIX_PRODUCT_STRONG",
+    "passed": false,
+    "failures": [
+      "ssim<0.92",
+      "changed>0.08"
+    ],
+    "metrics": {
+      "target_size": {
+        "w": 960,
+        "h": 600
+      },
+      "actual_size": {
+        "w": 960,
+        "h": 600
+      },
+      "size_mismatch": false,
+      "ssim": 0.24033,
+      "mean_abs_diff": 0.0256,
+      "max_abs_diff": 0.81176,
+      "changed_pixel_floor": 12,
+      "changed_pixels": 87739,
+      "total_pixels": 576000,
+      "changed_pixel_ratio": 0.15232
+    },
+    "thresholds": {
+      "min_ssim": 0.92,
+      "max_mean_abs_diff": 0.035,
+      "max_changed_pixel_ratio": 0.08,
+      "changed_pixel_floor": 12,
+      "render_noise_max_mean_abs_diff": 0.004,
+      "render_noise_max_changed_pixel_ratio": 0.003,
+      "render_noise_max_region_area_ratio": 0.001,
+      "strong_fail_changed_pixel_ratio": 0.18,
+      "strong_fail_region_area_ratio": 0.08,
+      "strong_fail_mean_abs_diff": 0.08,
+      "max_regions": 8
+    },
+    "canonical_index": {
+      "root": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_canonical",
+      "total_surfaces": 86,
+      "mockup_sha256": "0fa4b834e50a8936e829a493b6b31c9e181edb84621f9f7861f98ea609a07c87",
+      "all_captured": true,
+      "all_sizes_match": true,
+      "all_dom_sizes_match": true
+    },
+    "canonical": {
+      "surface_key": "suite:actividades-filtered@light",
+      "app": "suite",
+      "view": "actividades-filtered",
+      "theme": "light",
+      "resolution": "960x600",
+      "file": "suite-actividades-filtered-light-960x600.png",
+      "path": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_canonical\\suite-actividades-filtered-light-960x600.png",
+      "screen": "actividades",
+      "state": "filtered",
+      "surface": "window",
+      "capture_selector": ".window",
+      "dom_w": 960,
+      "dom_h": 600,
+      "dom_size_match": true,
+      "mockup_sha256": "0fa4b834e50a8936e829a493b6b31c9e181edb84621f9f7861f98ea609a07c87"
+    },
+    "actual_path": "qa\\_captures_compare_20260628\\suite-actividades-filtered-light-960x600.png",
+    "diff_path": "reports\\e2e\\visual_parity_compare_20260628\\suite_actividades-filtered_light\\suite-actividades-filtered-light-960x600-diff.png",
+    "largest_regions": [
+      {
+        "x": 0,
+        "y": 43,
+        "w": 960,
+        "h": 557,
+        "area": 28533,
+        "area_ratio": 0.049536,
+        "hint": "layout_shift_or_spacing"
+      },
+      {
+        "x": 34,
+        "y": 112,
+        "w": 269,
+        "h": 34,
+        "area": 7895,
+        "area_ratio": 0.013707,
+        "hint": "component_region"
+      },
+      {
+        "x": 34,
+        "y": 148,
+        "w": 449,
+        "h": 33,
+        "area": 6417,
+        "area_ratio": 0.011141,
+        "hint": "component_region"
+      },
+      {
+        "x": 34,
+        "y": 192,
+        "w": 446,
+        "h": 161,
+        "area": 3450,
+        "area_ratio": 0.00599,
+        "hint": "component_region"
+      },
+      {
+        "x": 307,
+        "y": 112,
+        "w": 95,
+        "h": 34,
+        "area": 3006,
+        "area_ratio": 0.005219,
+        "hint": "component_region"
+      },
+      {
+        "x": 562,
+        "y": 112,
+        "w": 89,
+        "h": 34,
+        "area": 2802,
+        "area_ratio": 0.004865,
+        "hint": "component_region"
+      },
+      {
+        "x": 382,
+        "y": 306,
+        "w": 78,
+        "h": 34,
+        "area": 2365,
+        "area_ratio": 0.004106,
+        "hint": "component_region"
+      },
+      {
+        "x": 406,
+        "y": 112,
+        "w": 75,
+        "h": 34,
+        "area": 2271,
+        "area_ratio": 0.003943,
+        "hint": "component_region"
+      }
+    ],
+    "what_to_check_first": [
+      "Inspect the largest diff regions first; this usually means layout, modal position, missing widget, or wrong state.",
+      "Compare Qt widget geometry against the canonical manifest resolution and selector."
+    ],
+    "do_not_touch_if": [
+      "The canonical manifest has all_dom_sizes_match=false or the capture selector is stale.",
+      "The actual screenshot contains an unrelated dialog, hover state, focus ring, cursor, toast, or loading state."
+    ],
+    "repair_hints": [
+      "Open the largest bbox first: {'x': 0, 'y': 43, 'w': 960, 'h': 557, 'area': 28533, 'area_ratio': 0.049536, 'hint': 'layout_shift_or_spacing'}.",
+      "After a product patch, rerun only this surface before expanding to the full visual suite."
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+suite:recuperar-acceso@dark
+suite:recuperar-acceso@light
+suite:onboarding@light
+suite:onboarding@dark
+suite:onboarding-error@light
+suite:onboarding-error@dark

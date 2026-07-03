@@ -1,0 +1,133 @@
+{
+  "harness": "capture_v8.py",
+  "generated_at": "2026-06-20T18:50:41.974752",
+  "git": {
+    "head": "3df2c579206f3e46546ebe93c3cc60fedbd9f0a6",
+    "short_head": "3df2c57",
+    "branch": "main",
+    "tracked_dirty": false,
+    "tracked_status": []
+  },
+  "command": [
+    "qa/capture_v8.py",
+    "--app",
+    "suite",
+    "--view",
+    "onboarding",
+    "--theme",
+    "both"
+  ],
+  "cwd": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "isolation_scope": "subprocess_per_recipe",
+  "auto_residual_popup_capture": false,
+  "success": 2,
+  "failed": 0,
+  "total": 2,
+  "expected_recipe_captures": 2,
+  "elapsed_seconds": 7.7,
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "resolutions": [
+    "960x600"
+  ],
+  "requested_scale_factor": 1.0,
+  "output_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8",
+  "matrix_paths": {
+    "csv": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.csv",
+    "markdown": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.md"
+  },
+  "evidence_summary": {
+    "semantic_visual_review": "NOT_RUN",
+    "visual_review_outcome": "REVIEW_INCOMPLETE",
+    "technical_capture_only": true,
+    "state_valid_capture_count": 2,
+    "technical_valid_capture_count": 2,
+    "technical_960_capture_count": 0,
+    "main_base_capture_count": 0,
+    "main_scale125_capture_count": 0,
+    "natural_dialog_capture_count": 2,
+    "main_scaled_other_capture_count": 0,
+    "unsupported_contract_count": 0,
+    "invalid_or_unsupported_contract_count": 0,
+    "contract_mismatch_count": 0,
+    "unique_hash_count": 2,
+    "duplicate_group_count": 0,
+    "duplicate_groups": [],
+    "status_counts": {
+      "CAPTURED_VALID": 2
+    },
+    "requires_runtime": [],
+    "requires_data_state": [],
+    "wrong_view_or_fallback": [],
+    "main_capture_contract_mismatch": [],
+    "blank_or_flat": []
+  },
+  "results": [
+    {
+      "file": "suite-onboarding-light-520x600.png",
+      "app": "suite",
+      "view": "onboarding",
+      "theme": "light",
+      "resolution": "520x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "520x600",
+      "captured_pixel_resolution": "520x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "natural_dialog",
+      "success": true,
+      "size_bytes": 51869,
+      "is_dialog_or_auxiliary": true,
+      "is_child_dialog": true,
+      "actual_resolution": "520x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [
+        "Natural dialog capture accepted as technical evidence; inspect for complete content, clipping, overlap, and accessible controls."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.9119,
+        "gray_stddev": 0.1138
+      },
+      "sha256": "0e14ab8f28bb039824c3a6e54eb881477c8d310b9640a5ccf3f034244b0ddd48",
+      "capture_status": "CAPTURED_VALID"
+    },
+    {
+      "file": "suite-onboarding-dark-520x600.png",
+      "app": "suite",
+      "view": "onboarding",
+      "theme": "dark",
+      "resolution": "520x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "520x600",
+      "captured_pixel_resolution": "520x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "natural_dialog",
+      "success": true,
+      "size_bytes": 52086,
+      "is_dialog_or_auxiliary": true,
+      "is_child_dialog": true,
+      "actual_resolution": "520x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [
+        "Natural dialog capture accepted as technical evidence; inspect for complete content, clipping, overlap, and accessible controls."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.1637,
+        "gray_stddev": 0.1119
+      },
+      "sha256": "9b4859c16b24576cd277a1225b87d57df3dc86d0e2457a32974be2946c98edce",
+      "capture_status": "CAPTURED_VALID"
+    }
+  ]
+}

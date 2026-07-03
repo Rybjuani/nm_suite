@@ -1,0 +1,109 @@
+{
+  "nodes": [
+    {
+      "id": "qa/_inspect/gen_comparison.py",
+      "loc": 75,
+      "classes": 0,
+      "functions": 0
+    },
+    {
+      "id": "qa/capture_mockup.py",
+      "loc": 548,
+      "classes": 1,
+      "functions": 18
+    },
+    {
+      "id": "qa/capture_v8.py",
+      "loc": 2813,
+      "classes": 0,
+      "functions": 92
+    },
+    {
+      "id": "qa/diff_fidelity.py",
+      "loc": 526,
+      "classes": 2,
+      "functions": 19
+    },
+    {
+      "id": "qa/graphify_extract.py",
+      "loc": 156,
+      "classes": 0,
+      "functions": 3
+    },
+    {
+      "id": "qa/normalize_mockup_reference.py",
+      "loc": 544,
+      "classes": 1,
+      "functions": 12
+    },
+    {
+      "id": "qa/odiff_runner.py",
+      "loc": 143,
+      "classes": 0,
+      "functions": 2
+    },
+    {
+      "id": "qa/runtime_live_probe.py",
+      "loc": 449,
+      "classes": 0,
+      "functions": 11
+    },
+    {
+      "id": "qa/spec_generator.py",
+      "loc": 260,
+      "classes": 0,
+      "functions": 7
+    },
+    {
+      "id": "qa/vas_engine.py",
+      "loc": 437,
+      "classes": 0,
+      "functions": 15
+    },
+    {
+      "id": "qa/vas_introspect.py",
+      "loc": 329,
+      "classes": 1,
+      "functions": 12
+    },
+    {
+      "id": "qa/visual_auditor_spec.py",
+      "loc": 495,
+      "classes": 5,
+      "functions": 13
+    }
+  ],
+  "edges": [
+    {
+      "from": "qa/capture_v8.py",
+      "to": "qa/vas_introspect.py",
+      "type": "import",
+      "module": "vas_introspect"
+    },
+    {
+      "from": "qa/diff_fidelity.py",
+      "to": "qa/odiff_runner.py",
+      "type": "import",
+      "module": "odiff_runner"
+    },
+    {
+      "from": "qa/spec_generator.py",
+      "to": "qa/vas_engine.py",
+      "type": "import",
+      "module": "vas_engine"
+    },
+    {
+      "from": "qa/visual_auditor_spec.py",
+      "to": "qa/vas_engine.py",
+      "type": "import",
+      "module": "vas_engine"
+    }
+  ],
+  "stats": {
+    "nodes": 12,
+    "edges": 4,
+    "estimated_full_tokens": 54200,
+    "estimated_graph_tokens": 334,
+    "estimated_tokens_saved_pct": 99.4
+  }
+}

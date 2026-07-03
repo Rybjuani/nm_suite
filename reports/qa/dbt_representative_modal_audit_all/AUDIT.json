@@ -1,0 +1,944 @@
+{
+  "generated_at": "2026-07-02T00:25:33",
+  "authority": "MODAL_BACKDROP_BLUR_ANTI_FRAUD",
+  "inputs": {
+    "canonical_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_canonical",
+    "actual_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8",
+    "keys": [
+      "hub:detalle-resumen-ia-0@dark",
+      "hub:detalle-resumen-ia-0@light",
+      "suite:dbt-practice-check-facts@dark",
+      "suite:dbt-practice-check-facts@light",
+      "suite:dbt-practice-dear-man@dark",
+      "suite:dbt-practice-dear-man@light",
+      "suite:dbt-practice-fast@dark",
+      "suite:dbt-practice-fast@light",
+      "suite:dbt-practice-give@dark",
+      "suite:dbt-practice-give@light",
+      "suite:dbt-practice-non-judgmental@dark",
+      "suite:dbt-practice-non-judgmental@light",
+      "suite:dbt-practice-observe-describe@dark",
+      "suite:dbt-practice-observe-describe@light",
+      "suite:dbt-practice-opposite-action@dark",
+      "suite:dbt-practice-opposite-action@light",
+      "suite:dbt-practice-participate@dark",
+      "suite:dbt-practice-participate@light",
+      "suite:dbt-practice-please@dark",
+      "suite:dbt-practice-please@light",
+      "suite:dbt-practice-problem-solving@dark",
+      "suite:dbt-practice-problem-solving@light",
+      "suite:dbt-practice-radical-acceptance@dark",
+      "suite:dbt-practice-radical-acceptance@light",
+      "suite:dbt-practice-self-soothe@dark",
+      "suite:dbt-practice-self-soothe@light",
+      "suite:dbt-practice-stop@dark",
+      "suite:dbt-practice-stop@light",
+      "suite:dbt-practice-tipp@dark",
+      "suite:dbt-practice-tipp@light",
+      "suite:dbt-practice-validation-limits@dark",
+      "suite:dbt-practice-validation-limits@light",
+      "suite:dbt-practice-wise-mind@dark",
+      "suite:dbt-practice-wise-mind@light"
+    ],
+    "canonical_modal_keys": [
+      "hub:detalle-resumen-ia-0@dark",
+      "hub:detalle-resumen-ia-0@light",
+      "suite:dbt-practice-check-facts@dark",
+      "suite:dbt-practice-check-facts@light",
+      "suite:dbt-practice-dear-man@dark",
+      "suite:dbt-practice-dear-man@light",
+      "suite:dbt-practice-fast@dark",
+      "suite:dbt-practice-fast@light",
+      "suite:dbt-practice-give@dark",
+      "suite:dbt-practice-give@light",
+      "suite:dbt-practice-non-judgmental@dark",
+      "suite:dbt-practice-non-judgmental@light",
+      "suite:dbt-practice-observe-describe@dark",
+      "suite:dbt-practice-observe-describe@light",
+      "suite:dbt-practice-opposite-action@dark",
+      "suite:dbt-practice-opposite-action@light",
+      "suite:dbt-practice-participate@dark",
+      "suite:dbt-practice-participate@light",
+      "suite:dbt-practice-please@dark",
+      "suite:dbt-practice-please@light",
+      "suite:dbt-practice-problem-solving@dark",
+      "suite:dbt-practice-problem-solving@light",
+      "suite:dbt-practice-radical-acceptance@dark",
+      "suite:dbt-practice-radical-acceptance@light",
+      "suite:dbt-practice-self-soothe@dark",
+      "suite:dbt-practice-self-soothe@light",
+      "suite:dbt-practice-stop@dark",
+      "suite:dbt-practice-stop@light",
+      "suite:dbt-practice-tipp@dark",
+      "suite:dbt-practice-tipp@light",
+      "suite:dbt-practice-validation-limits@dark",
+      "suite:dbt-practice-validation-limits@light",
+      "suite:dbt-practice-wise-mind@dark",
+      "suite:dbt-practice-wise-mind@light"
+    ]
+  },
+  "tolerances": {
+    "center_tolerance_px": 18,
+    "bbox_tolerance_px": 32,
+    "backdrop_mean_tolerance": 22.0,
+    "blur_ratio_tolerance": 0.2,
+    "back_screen_mean_tolerance": 35.0,
+    "note": "Tolerances cover renderer noise and Qt-vs-Chromium rasterization; they do not permit invented dim/blur/backdrop."
+  },
+  "coexists_with": [
+    "qa/capture_v8.py",
+    "qa/layered_visual_compare.py",
+    "qa/anti_fraud_scan.py",
+    "qa/vas_gate.py"
+  ],
+  "summary": {
+    "total": 34,
+    "pass": 1,
+    "fail": 33,
+    "test_blur_pass": false,
+    "codes": [
+      "BACKDROP_CAPTURE_MISSING"
+    ],
+    "skipped_unavailable_runtime": []
+  },
+  "results": [
+    {
+      "key": "hub:detalle-resumen-ia-0@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "hub-detalle-resumen-ia-0-dark-960x600.png",
+      "actual_file": "hub-detalle-resumen-ia-0-dark-960x600.png",
+      "back_screen_key": "hub:detalle@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 8.0094
+      }
+    },
+    {
+      "key": "hub:detalle-resumen-ia-0@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "hub-detalle-resumen-ia-0-light-960x600.png",
+      "actual_file": "hub-detalle-resumen-ia-0-light-960x600.png",
+      "back_screen_key": "hub:detalle@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 7.9933
+      }
+    },
+    {
+      "key": "suite:dbt-practice-check-facts@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-check-facts-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-check-facts-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557
+      }
+    },
+    {
+      "key": "suite:dbt-practice-check-facts@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-check-facts-light-960x600.png",
+      "actual_file": "suite-dbt-practice-check-facts-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    },
+    {
+      "key": "suite:dbt-practice-dear-man@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-dear-man-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-dear-man-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557
+      }
+    },
+    {
+      "key": "suite:dbt-practice-dear-man@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-dear-man-light-960x600.png",
+      "actual_file": "suite-dbt-practice-dear-man-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    },
+    {
+      "key": "suite:dbt-practice-fast@dark",
+      "verdict": "PASS",
+      "codes": [],
+      "canonical_file": "suite-dbt-practice-fast-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-fast-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "window_modal",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "PASS",
+      "bbox_size": "PASS",
+      "backdrop_region": "PASS",
+      "blur_dim_equivalence": "PASS",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557,
+        "canonical_modal_bbox": [
+          181,
+          154,
+          614,
+          399
+        ],
+        "actual_modal_bbox": [
+          187,
+          139,
+          588,
+          412
+        ],
+        "center_delta_px": [
+          7.0,
+          8.5
+        ],
+        "bbox_size_delta_px": [
+          26,
+          13
+        ],
+        "backdrop_mean_abs_delta": 3.8472,
+        "canonical_blur_ratio": 0.153575,
+        "actual_blur_ratio": 0.222456,
+        "blur_ratio_delta": 0.06888
+      }
+    },
+    {
+      "key": "suite:dbt-practice-fast@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-fast-light-960x600.png",
+      "actual_file": "suite-dbt-practice-fast-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    },
+    {
+      "key": "suite:dbt-practice-give@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-give-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-give-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557
+      }
+    },
+    {
+      "key": "suite:dbt-practice-give@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-give-light-960x600.png",
+      "actual_file": "suite-dbt-practice-give-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    },
+    {
+      "key": "suite:dbt-practice-non-judgmental@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-non-judgmental-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-non-judgmental-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557
+      }
+    },
+    {
+      "key": "suite:dbt-practice-non-judgmental@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-non-judgmental-light-960x600.png",
+      "actual_file": "suite-dbt-practice-non-judgmental-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    },
+    {
+      "key": "suite:dbt-practice-observe-describe@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-observe-describe-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-observe-describe-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557
+      }
+    },
+    {
+      "key": "suite:dbt-practice-observe-describe@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-observe-describe-light-960x600.png",
+      "actual_file": "suite-dbt-practice-observe-describe-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    },
+    {
+      "key": "suite:dbt-practice-opposite-action@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-opposite-action-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-opposite-action-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557
+      }
+    },
+    {
+      "key": "suite:dbt-practice-opposite-action@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-opposite-action-light-960x600.png",
+      "actual_file": "suite-dbt-practice-opposite-action-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    },
+    {
+      "key": "suite:dbt-practice-participate@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-participate-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-participate-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557
+      }
+    },
+    {
+      "key": "suite:dbt-practice-participate@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-participate-light-960x600.png",
+      "actual_file": "suite-dbt-practice-participate-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    },
+    {
+      "key": "suite:dbt-practice-please@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-please-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-please-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557
+      }
+    },
+    {
+      "key": "suite:dbt-practice-please@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-please-light-960x600.png",
+      "actual_file": "suite-dbt-practice-please-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    },
+    {
+      "key": "suite:dbt-practice-problem-solving@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-problem-solving-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-problem-solving-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557
+      }
+    },
+    {
+      "key": "suite:dbt-practice-problem-solving@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-problem-solving-light-960x600.png",
+      "actual_file": "suite-dbt-practice-problem-solving-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    },
+    {
+      "key": "suite:dbt-practice-radical-acceptance@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-radical-acceptance-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-radical-acceptance-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557
+      }
+    },
+    {
+      "key": "suite:dbt-practice-radical-acceptance@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-radical-acceptance-light-960x600.png",
+      "actual_file": "suite-dbt-practice-radical-acceptance-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    },
+    {
+      "key": "suite:dbt-practice-self-soothe@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-self-soothe-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-self-soothe-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557
+      }
+    },
+    {
+      "key": "suite:dbt-practice-self-soothe@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-self-soothe-light-960x600.png",
+      "actual_file": "suite-dbt-practice-self-soothe-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    },
+    {
+      "key": "suite:dbt-practice-stop@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-stop-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-stop-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557
+      }
+    },
+    {
+      "key": "suite:dbt-practice-stop@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-stop-light-960x600.png",
+      "actual_file": "suite-dbt-practice-stop-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    },
+    {
+      "key": "suite:dbt-practice-tipp@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-tipp-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-tipp-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557
+      }
+    },
+    {
+      "key": "suite:dbt-practice-tipp@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-tipp-light-960x600.png",
+      "actual_file": "suite-dbt-practice-tipp-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    },
+    {
+      "key": "suite:dbt-practice-validation-limits@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-validation-limits-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-validation-limits-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557
+      }
+    },
+    {
+      "key": "suite:dbt-practice-validation-limits@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-validation-limits-light-960x600.png",
+      "actual_file": "suite-dbt-practice-validation-limits-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    },
+    {
+      "key": "suite:dbt-practice-wise-mind@dark",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-wise-mind-dark-960x600.png",
+      "actual_file": "suite-dbt-practice-wise-mind-dark-960x600.png",
+      "back_screen_key": "suite:dbt-library@dark",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.9557
+      }
+    },
+    {
+      "key": "suite:dbt-practice-wise-mind@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-wise-mind-light-960x600.png",
+      "actual_file": "suite-dbt-practice-wise-mind-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    }
+  ]
+}

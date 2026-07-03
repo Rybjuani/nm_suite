@@ -1,0 +1,2 @@
+key,status,severity,repair_bucket,real_divergence,suspicious_perfect_match,findings,raw_changed_ratio,mean_abs_diff,ssim,odiff_pct,max_bbox_delta_px,largest_region_ratio,canonical_file,actual_file,panel_path
+suite:dbt-now@dark,PASS,none,NONE,False,False,,0.08224,0.02462,0.22588,2.05,16,0.004814,qa\_mockup_canonical\suite-dbt-now-dark-960x600.png,qa\_captures_v8\suite-dbt-now-dark-960x600.png,C:\Users\nosom\Desktop\nm_suite\reports\qa\handoff_false_pass_audit\20260630_113720\suite_dbt-now_dark\layered\panels\suite_dbt-now_dark.png

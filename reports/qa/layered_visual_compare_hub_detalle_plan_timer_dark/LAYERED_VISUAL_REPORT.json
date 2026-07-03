@@ -1,0 +1,933 @@
+{
+  "generated_at": "2026-06-30T04:12:14",
+  "authority": "LAYERED_VISUAL_COMPARE",
+  "source_policy": "Use qa/_mockup_canonical plus a fresh complete qa/_captures_v8 run for operational handoff decisions. Zip inputs are archive/forensics only and must not close VISUAL_REPAIR_HANDOFF.md items.",
+  "report_scope": "PARTIAL",
+  "report_filters": {
+    "app": null,
+    "view": null,
+    "theme": null,
+    "key": null,
+    "keys_file": "qa/_temp_keys3.txt",
+    "keys_file_keys": [
+      "hub:detalle-plan-timer@dark",
+      "suite:dbt-practice-stop@dark",
+      "suite:dbt-practice-stop@light",
+      "suite:dbt-library@dark",
+      "suite:dbt-library@light",
+      "suite:dbt-now@dark",
+      "suite:dbt-now@light"
+    ]
+  },
+  "report_evidence_valid": true,
+  "report_evidence_reason": null,
+  "handoff_closure_allowed": false,
+  "handoff_closure_reason": "partial_scope; real_divergence_present",
+  "sources": {
+    "canonical_source": "qa\\_mockup_canonical",
+    "actual_source": "qa\\_captures_v8",
+    "canonical_root": "qa\\_mockup_canonical",
+    "actual_root": "qa\\_captures_v8",
+    "canonical_source_kind": "directory",
+    "actual_source_kind": "directory",
+    "active_repo_pair": true
+  },
+  "thresholds": {
+    "min_ssim": 0.92,
+    "text_dense_canonical_std": 35.0,
+    "text_dense_min_windowed_ssim": 0.65,
+    "text_dense_max_changed_pixel_ratio": 0.1,
+    "max_mean_abs_diff": 0.035,
+    "max_changed_pixel_ratio": 0.08,
+    "changed_pixel_floor": 12,
+    "text_dense_changed_pixel_floor": 14,
+    "max_odiff_diff_pct": 8.0,
+    "odiff_threshold": 0.3,
+    "max_bbox_shift_px": 18,
+    "max_bbox_size_delta_px": 36,
+    "max_largest_region_ratio": 0.08,
+    "strong_changed_pixel_ratio": 0.18,
+    "strong_mean_abs_diff": 0.08,
+    "strong_largest_region_ratio": 0.18
+  },
+  "summary": {
+    "total": 7,
+    "pass": 6,
+    "real_divergence": 1,
+    "by_status": {
+      "FAIL": 1,
+      "PASS": 6
+    },
+    "by_severity": {
+      "high": 1,
+      "none": 6
+    },
+    "by_repair_bucket": {
+      "LAYOUT_FIX": 1,
+      "NONE": 6
+    },
+    "qa_missed_raw_or_layout": 1,
+    "state_or_recipe_suspect": 0,
+    "suspicious_perfect_match": 0
+  },
+  "results": [
+    {
+      "key": "hub:detalle-plan-timer@dark",
+      "app": "hub",
+      "view": "detalle-plan-timer",
+      "theme": "dark",
+      "status": "FAIL",
+      "severity": "high",
+      "repair_bucket": "LAYOUT_FIX",
+      "real_divergence": true,
+      "suspicious_perfect_match": false,
+      "findings": [
+        "raw_pixel_delta",
+        "layout_drift",
+        "qa_missed_raw_or_layout"
+      ],
+      "canonical_file": "qa\\_mockup_canonical\\hub-detalle-plan-timer-dark-960x600.png",
+      "actual_file": "qa\\_captures_v8\\hub-detalle-plan-timer-dark-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.36981,
+        "windowed_ssim": 0.67467,
+        "canonical_gray_std": 34.053,
+        "mean_abs_diff": 0.06397,
+        "max_abs_diff": 0.90196,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 246201,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.42743,
+        "largest_region_ratio": 0.427432
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          0,
+          960,
+          600
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          460
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": 16,
+        "bbox_dw": 0,
+        "bbox_dh": -140,
+        "max_bbox_delta_px": 140,
+        "bbox_area_delta_ratio": 0.23333
+      },
+      "odiff": {
+        "diff_pixels": 33808,
+        "diff_percentage": 5.87,
+        "diff_png_path": "reports\\qa\\layered_visual_compare_hub_detalle_plan_timer_dark\\odiff\\hub-detalle-plan-timer-dark-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 960,
+          "h": 600,
+          "area": 246201,
+          "area_ratio": 0.427432,
+          "hint": "global_state_or_layout"
+        }
+      ],
+      "panel_path": "reports\\qa\\layered_visual_compare_hub_detalle_plan_timer_dark\\panels\\hub_detalle-plan-timer_dark.png"
+    },
+    {
+      "key": "suite:dbt-library@dark",
+      "app": "suite",
+      "view": "dbt-library",
+      "theme": "dark",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-library-dark-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-library-dark-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.49731,
+        "windowed_ssim": 0.79041,
+        "canonical_gray_std": 25.715,
+        "mean_abs_diff": 0.02573,
+        "max_abs_diff": 0.90196,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 50943,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.08844,
+        "largest_region_ratio": 0.001663
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          0,
+          960,
+          600
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          584
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": 16,
+        "bbox_dw": 0,
+        "bbox_dh": -16,
+        "max_bbox_delta_px": 16,
+        "bbox_area_delta_ratio": 0.02667
+      },
+      "odiff": {
+        "diff_pixels": 12792,
+        "diff_percentage": 2.22,
+        "diff_png_path": "reports\\qa\\layered_visual_compare_hub_detalle_plan_timer_dark\\odiff\\suite-dbt-library-dark-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 1,
+          "y": 48,
+          "w": 958,
+          "h": 1,
+          "area": 958,
+          "area_ratio": 0.001663,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 25,
+          "y": 0,
+          "w": 910,
+          "h": 1,
+          "area": 910,
+          "area_ratio": 0.00158,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 483,
+          "y": 498,
+          "w": 126,
+          "h": 16,
+          "area": 855,
+          "area_ratio": 0.001484,
+          "hint": "component_region"
+        },
+        {
+          "x": 37,
+          "y": 568,
+          "w": 267,
+          "h": 4,
+          "area": 783,
+          "area_ratio": 0.001359,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 349,
+          "y": 568,
+          "w": 259,
+          "h": 4,
+          "area": 770,
+          "area_ratio": 0.001337,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 81,
+          "y": 18,
+          "w": 88,
+          "h": 13,
+          "area": 745,
+          "area_ratio": 0.001293,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 38,
+          "y": 335,
+          "w": 101,
+          "h": 12,
+          "area": 731,
+          "area_ratio": 0.001269,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 71,
+          "y": 359,
+          "w": 103,
+          "h": 15,
+          "area": 720,
+          "area_ratio": 0.00125,
+          "hint": "text_icon_or_antialiasing"
+        }
+      ],
+      "panel_path": "reports\\qa\\layered_visual_compare_hub_detalle_plan_timer_dark\\panels\\suite_dbt-library_dark.png"
+    },
+    {
+      "key": "suite:dbt-library@light",
+      "app": "suite",
+      "view": "dbt-library",
+      "theme": "light",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-library-light-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-library-light-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.49956,
+        "windowed_ssim": 0.79327,
+        "canonical_gray_std": 23.801,
+        "mean_abs_diff": 0.02646,
+        "max_abs_diff": 0.80392,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 48264,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.08379,
+        "largest_region_ratio": 0.005872
+      },
+      "layout": {
+        "target_content_bbox": [
+          1,
+          2,
+          959,
+          598
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          584
+        ],
+        "bbox_dx": -1,
+        "bbox_dy": 14,
+        "bbox_dw": 1,
+        "bbox_dh": -14,
+        "max_bbox_delta_px": 14,
+        "bbox_area_delta_ratio": 0.02239
+      },
+      "odiff": {
+        "diff_pixels": 12451,
+        "diff_percentage": 2.16,
+        "diff_png_path": "reports\\qa\\layered_visual_compare_hub_detalle_plan_timer_dark\\odiff\\suite-dbt-library-light-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 0,
+          "y": 48,
+          "w": 960,
+          "h": 552,
+          "area": 3382,
+          "area_ratio": 0.005872,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 38,
+          "y": 335,
+          "w": 101,
+          "h": 12,
+          "area": 691,
+          "area_ratio": 0.0012,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 457,
+          "y": 220,
+          "w": 100,
+          "h": 14,
+          "area": 627,
+          "area_ratio": 0.001089,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 343,
+          "y": 335,
+          "w": 84,
+          "h": 12,
+          "area": 590,
+          "area_ratio": 0.001024,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 104,
+          "y": 134,
+          "w": 73,
+          "h": 12,
+          "area": 575,
+          "area_ratio": 0.000998,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 179,
+          "y": 499,
+          "w": 85,
+          "h": 12,
+          "area": 565,
+          "area_ratio": 0.000981,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 44,
+          "y": 302,
+          "w": 259,
+          "h": 2,
+          "area": 513,
+          "area_ratio": 0.000891,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 351,
+          "y": 302,
+          "w": 258,
+          "h": 2,
+          "area": 510,
+          "area_ratio": 0.000885,
+          "hint": "text_icon_or_antialiasing"
+        }
+      ],
+      "panel_path": "reports\\qa\\layered_visual_compare_hub_detalle_plan_timer_dark\\panels\\suite_dbt-library_light.png"
+    },
+    {
+      "key": "suite:dbt-now@dark",
+      "app": "suite",
+      "view": "dbt-now",
+      "theme": "dark",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-now-dark-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-now-dark-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.22588,
+        "windowed_ssim": 0.80835,
+        "canonical_gray_std": 21.15,
+        "mean_abs_diff": 0.02462,
+        "max_abs_diff": 0.91765,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 47373,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.08224,
+        "largest_region_ratio": 0.004814
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          0,
+          960,
+          600
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          584
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": 16,
+        "bbox_dw": 0,
+        "bbox_dh": -16,
+        "max_bbox_delta_px": 16,
+        "bbox_area_delta_ratio": 0.02667
+      },
+      "odiff": {
+        "diff_pixels": 11835,
+        "diff_percentage": 2.05,
+        "diff_png_path": "reports\\qa\\layered_visual_compare_hub_detalle_plan_timer_dark\\odiff\\suite-dbt-now-dark-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 500,
+          "y": 286,
+          "w": 421,
+          "h": 28,
+          "area": 2773,
+          "area_ratio": 0.004814,
+          "hint": "component_region"
+        },
+        {
+          "x": 39,
+          "y": 286,
+          "w": 421,
+          "h": 28,
+          "area": 2749,
+          "area_ratio": 0.004773,
+          "hint": "component_region"
+        },
+        {
+          "x": 367,
+          "y": 174,
+          "w": 93,
+          "h": 28,
+          "area": 1766,
+          "area_ratio": 0.003066,
+          "hint": "component_region"
+        },
+        {
+          "x": 839,
+          "y": 174,
+          "w": 81,
+          "h": 28,
+          "area": 1543,
+          "area_ratio": 0.002679,
+          "hint": "component_region"
+        },
+        {
+          "x": 1,
+          "y": 48,
+          "w": 958,
+          "h": 1,
+          "area": 958,
+          "area_ratio": 0.001663,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 40,
+          "y": 325,
+          "w": 62,
+          "h": 36,
+          "area": 928,
+          "area_ratio": 0.001611,
+          "hint": "component_region"
+        },
+        {
+          "x": 25,
+          "y": 0,
+          "w": 910,
+          "h": 1,
+          "area": 910,
+          "area_ratio": 0.00158,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 485,
+          "y": 161,
+          "w": 8,
+          "h": 286,
+          "area": 907,
+          "area_ratio": 0.001575,
+          "hint": "component_region"
+        }
+      ],
+      "panel_path": "reports\\qa\\layered_visual_compare_hub_detalle_plan_timer_dark\\panels\\suite_dbt-now_dark.png"
+    },
+    {
+      "key": "suite:dbt-now@light",
+      "app": "suite",
+      "view": "dbt-now",
+      "theme": "light",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-now-light-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-now-light-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.29233,
+        "windowed_ssim": 0.80963,
+        "canonical_gray_std": 19.163,
+        "mean_abs_diff": 0.02398,
+        "max_abs_diff": 0.80784,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 44914,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.07798,
+        "largest_region_ratio": 0.005872
+      },
+      "layout": {
+        "target_content_bbox": [
+          1,
+          2,
+          959,
+          598
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          584
+        ],
+        "bbox_dx": -1,
+        "bbox_dy": 14,
+        "bbox_dw": 1,
+        "bbox_dh": -14,
+        "max_bbox_delta_px": 14,
+        "bbox_area_delta_ratio": 0.02239
+      },
+      "odiff": {
+        "diff_pixels": 10787,
+        "diff_percentage": 1.87,
+        "diff_png_path": "reports\\qa\\layered_visual_compare_hub_detalle_plan_timer_dark\\odiff\\suite-dbt-now-light-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 0,
+          "y": 48,
+          "w": 960,
+          "h": 552,
+          "area": 3382,
+          "area_ratio": 0.005872,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 367,
+          "y": 174,
+          "w": 93,
+          "h": 28,
+          "area": 1773,
+          "area_ratio": 0.003078,
+          "hint": "component_region"
+        },
+        {
+          "x": 528,
+          "y": 290,
+          "w": 392,
+          "h": 20,
+          "area": 1765,
+          "area_ratio": 0.003064,
+          "hint": "component_region"
+        },
+        {
+          "x": 68,
+          "y": 290,
+          "w": 392,
+          "h": 20,
+          "area": 1747,
+          "area_ratio": 0.003033,
+          "hint": "component_region"
+        },
+        {
+          "x": 839,
+          "y": 174,
+          "w": 81,
+          "h": 28,
+          "area": 1496,
+          "area_ratio": 0.002597,
+          "hint": "component_region"
+        },
+        {
+          "x": 485,
+          "y": 161,
+          "w": 228,
+          "h": 286,
+          "area": 1356,
+          "area_ratio": 0.002354,
+          "hint": "component_region"
+        },
+        {
+          "x": 40,
+          "y": 170,
+          "w": 28,
+          "h": 33,
+          "area": 751,
+          "area_ratio": 0.001304,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 500,
+          "y": 170,
+          "w": 28,
+          "h": 34,
+          "area": 748,
+          "area_ratio": 0.001299,
+          "hint": "text_icon_or_antialiasing"
+        }
+      ],
+      "panel_path": "reports\\qa\\layered_visual_compare_hub_detalle_plan_timer_dark\\panels\\suite_dbt-now_light.png"
+    },
+    {
+      "key": "suite:dbt-practice-stop@dark",
+      "app": "suite",
+      "view": "dbt-practice-stop",
+      "theme": "dark",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-practice-stop-dark-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-practice-stop-dark-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.6092,
+        "windowed_ssim": 0.87264,
+        "canonical_gray_std": 22.169,
+        "mean_abs_diff": 0.01928,
+        "max_abs_diff": 0.90196,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 31816,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.05524,
+        "largest_region_ratio": 0.002708
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          0,
+          960,
+          553
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          536
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": 16,
+        "bbox_dw": 0,
+        "bbox_dh": -17,
+        "max_bbox_delta_px": 17,
+        "bbox_area_delta_ratio": 0.03074
+      },
+      "odiff": {
+        "diff_pixels": 7193,
+        "diff_percentage": 1.25,
+        "diff_png_path": "reports\\qa\\layered_visual_compare_hub_detalle_plan_timer_dark\\odiff\\suite-dbt-practice-stop-dark-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 422,
+          "y": 410,
+          "w": 213,
+          "h": 15,
+          "area": 1560,
+          "area_ratio": 0.002708,
+          "hint": "component_region"
+        },
+        {
+          "x": 222,
+          "y": 137,
+          "w": 514,
+          "h": 7,
+          "area": 1163,
+          "area_ratio": 0.002019,
+          "hint": "component_region"
+        },
+        {
+          "x": 213,
+          "y": 502,
+          "w": 532,
+          "h": 10,
+          "area": 1093,
+          "area_ratio": 0.001898,
+          "hint": "component_region"
+        },
+        {
+          "x": 402,
+          "y": 285,
+          "w": 84,
+          "h": 19,
+          "area": 973,
+          "area_ratio": 0.001689,
+          "hint": "component_region"
+        },
+        {
+          "x": 1,
+          "y": 48,
+          "w": 958,
+          "h": 1,
+          "area": 958,
+          "area_ratio": 0.001663,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 245,
+          "y": 400,
+          "w": 470,
+          "h": 2,
+          "area": 940,
+          "area_ratio": 0.001632,
+          "hint": "component_region"
+        },
+        {
+          "x": 25,
+          "y": 0,
+          "w": 910,
+          "h": 1,
+          "area": 910,
+          "area_ratio": 0.00158,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 295,
+          "y": 343,
+          "w": 101,
+          "h": 14,
+          "area": 752,
+          "area_ratio": 0.001306,
+          "hint": "text_icon_or_antialiasing"
+        }
+      ],
+      "panel_path": "reports\\qa\\layered_visual_compare_hub_detalle_plan_timer_dark\\panels\\suite_dbt-practice-stop_dark.png"
+    },
+    {
+      "key": "suite:dbt-practice-stop@light",
+      "app": "suite",
+      "view": "dbt-practice-stop",
+      "theme": "light",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-practice-stop-light-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-practice-stop-light-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.95289,
+        "windowed_ssim": 0.89332,
+        "canonical_gray_std": 56.852,
+        "mean_abs_diff": 0.01882,
+        "max_abs_diff": 0.80392,
+        "changed_pixel_floor": 12,
+        "changed_pixels": 40139,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.06969,
+        "largest_region_ratio": 0.005858
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          17,
+          960,
+          490
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          490
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": -1,
+        "bbox_dw": 0,
+        "bbox_dh": 0,
+        "max_bbox_delta_px": 1,
+        "bbox_area_delta_ratio": 0.0
+      },
+      "odiff": {
+        "diff_pixels": 6018,
+        "diff_percentage": 1.04,
+        "diff_png_path": "reports\\qa\\layered_visual_compare_hub_detalle_plan_timer_dark\\odiff\\suite-dbt-practice-stop-light-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 202,
+          "y": 144,
+          "w": 587,
+          "h": 363,
+          "area": 3374,
+          "area_ratio": 0.005858,
+          "hint": "component_region"
+        },
+        {
+          "x": 11,
+          "y": 110,
+          "w": 90,
+          "h": 71,
+          "area": 2992,
+          "area_ratio": 0.005194,
+          "hint": "component_region"
+        },
+        {
+          "x": 331,
+          "y": 286,
+          "w": 155,
+          "h": 18,
+          "area": 1655,
+          "area_ratio": 0.002873,
+          "hint": "component_region"
+        },
+        {
+          "x": 24,
+          "y": 124,
+          "w": 61,
+          "h": 29,
+          "area": 1489,
+          "area_ratio": 0.002585,
+          "hint": "component_region"
+        },
+        {
+          "x": 422,
+          "y": 409,
+          "w": 209,
+          "h": 13,
+          "area": 1408,
+          "area_ratio": 0.002444,
+          "hint": "component_region"
+        },
+        {
+          "x": 42,
+          "y": 336,
+          "w": 160,
+          "h": 12,
+          "area": 1274,
+          "area_ratio": 0.002212,
+          "hint": "component_region"
+        },
+        {
+          "x": 230,
+          "y": 246,
+          "w": 500,
+          "h": 15,
+          "area": 1010,
+          "area_ratio": 0.001753,
+          "hint": "component_region"
+        },
+        {
+          "x": 240,
+          "y": 382,
+          "w": 490,
+          "h": 12,
+          "area": 969,
+          "area_ratio": 0.001682,
+          "hint": "component_region"
+        }
+      ],
+      "panel_path": "reports\\qa\\layered_visual_compare_hub_detalle_plan_timer_dark\\panels\\suite_dbt-practice-stop_light.png"
+    }
+  ]
+}

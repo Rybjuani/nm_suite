@@ -1,0 +1,2 @@
+app,view,file_view,screen,state,theme,resolution,capture,file
+suite,dbt-practice-stop,dbt-practice-stop,dbtlib,,light,960x600,viewport,qa\_mockup_targets\suite-dbt-practice-stop-light-960x600.png

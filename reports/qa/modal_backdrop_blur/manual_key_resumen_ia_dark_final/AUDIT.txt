@@ -1,0 +1,10 @@
+Modal backdrop/blur anti-fraud audit
+Generated: 2026-06-30T21:40:33
+Canonical: C:\Users\nosom\Desktop\nm_suite\qa\_mockup_canonical
+Actual: C:\Users\nosom\Desktop\nm_suite\qa\_captures_v8
+Summary: {'total': 1, 'pass': 0, 'fail': 1, 'test_blur_pass': False, 'codes': ['BACKDROP_CAPTURE_MISSING', 'MODAL_BBOX_FAIL']}
+Safety: does not replace layered_visual_compare, qa/anti_fraud_scan.py, or VAS.
+
+FAIL hub:detalle-resumen-ia-0@dark MODAL_BBOX_FAIL,BACKDROP_CAPTURE_MISSING
+  centered=not_observable_modal_crop bbox=FAIL backdrop=not_observable_modal_crop blur_dim=not_observable_modal_crop parent=PASS
+  metrics={"actual_image_size": "560x220", "canonical_image_size": "720x462", "parent_mean_abs_delta": 8.4995}

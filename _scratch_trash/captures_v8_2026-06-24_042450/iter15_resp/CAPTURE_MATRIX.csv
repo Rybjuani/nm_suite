@@ -1,0 +1,2 @@
+producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
+suite,respiracion,Respiracion idle,light,960x600,navigate:respiracion > drain:8 > capture:respiracion,suite-respiracion-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

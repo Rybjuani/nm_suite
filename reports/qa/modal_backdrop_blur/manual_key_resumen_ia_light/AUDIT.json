@@ -1,0 +1,62 @@
+{
+  "generated_at": "2026-06-30T21:33:34",
+  "authority": "MODAL_BACKDROP_BLUR_ANTI_FRAUD",
+  "inputs": {
+    "canonical_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_canonical",
+    "actual_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8",
+    "keys": [
+      "hub:detalle-resumen-ia-0@light"
+    ]
+  },
+  "tolerances": {
+    "center_tolerance_px": 18,
+    "bbox_tolerance_px": 24,
+    "backdrop_mean_tolerance": 22.0,
+    "blur_ratio_tolerance": 0.2,
+    "parent_mean_tolerance": 35.0,
+    "note": "Tolerances cover renderer noise and Qt-vs-Chromium rasterization; they do not permit invented dim/blur/backdrop."
+  },
+  "coexists_with": [
+    "qa/capture_v8.py",
+    "qa/layered_visual_compare.py",
+    "qa/anti_fraud_scan.py",
+    "qa/vas_gate.py"
+  ],
+  "summary": {
+    "total": 1,
+    "pass": 0,
+    "fail": 1,
+    "test_blur_pass": false,
+    "codes": [
+      "BACKDROP_CAPTURE_MISSING",
+      "MODAL_BBOX_FAIL"
+    ]
+  },
+  "results": [
+    {
+      "key": "hub:detalle-resumen-ia-0@light",
+      "verdict": "FAIL",
+      "codes": [
+        "MODAL_BBOX_FAIL",
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "hub-detalle-resumen-ia-0-light-720x462.png",
+      "actual_file": "hub-detalle-resumen-ia-0-light-560x220.png",
+      "parent_key": "hub:detalle@light",
+      "canonical_surface": "modal",
+      "actual_surface": "",
+      "canonical_resolution": "720x462",
+      "actual_resolution": "560x220",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "FAIL",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "parent_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "720x462",
+        "actual_image_size": "560x220",
+        "parent_mean_abs_delta": 8.7178
+      }
+    }
+  ]
+}

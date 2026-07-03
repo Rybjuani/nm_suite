@@ -1,0 +1,1658 @@
+{
+  "generated_at": "2026-07-02T00:43:02",
+  "authority": "LAYERED_VISUAL_COMPARE",
+  "source_policy": "Use qa/_mockup_canonical plus a fresh complete qa/_captures_v8 run for operational handoff decisions. Zip inputs are archive/forensics only and must not close VISUAL_REPAIR_HANDOFF.md items.",
+  "report_scope": "PARTIAL",
+  "report_filters": {
+    "app": null,
+    "view": null,
+    "theme": null,
+    "key": null,
+    "keys_file": "C:\\Users\\nosom\\AppData\\Local\\Temp\\tmp95D8.tmp",
+    "keys_file_keys": [
+      "suite:dbt-library@light",
+      "suite:dbt-library@dark",
+      "suite:dbt-practice-wise-mind@light",
+      "suite:dbt-practice-wise-mind@dark",
+      "suite:dbt-practice-stop@light",
+      "suite:dbt-practice-stop@dark",
+      "suite:dbt-practice-check-facts@light",
+      "suite:dbt-practice-check-facts@dark",
+      "suite:dbt-practice-dear-man@light",
+      "suite:dbt-practice-dear-man@dark",
+      "suite:dbt-practice-fast@light",
+      "suite:dbt-practice-fast@dark"
+    ]
+  },
+  "report_evidence_valid": true,
+  "report_evidence_reason": null,
+  "handoff_closure_allowed": false,
+  "handoff_closure_reason": "partial_scope; real_divergence_present",
+  "sources": {
+    "canonical_source": "qa\\_mockup_canonical",
+    "actual_source": "qa\\_captures_v8",
+    "canonical_root": "qa\\_mockup_canonical",
+    "actual_root": "qa\\_captures_v8",
+    "canonical_source_kind": "directory",
+    "actual_source_kind": "directory",
+    "active_repo_pair": true
+  },
+  "thresholds": {
+    "min_ssim": 0.92,
+    "text_dense_canonical_std": 35.0,
+    "text_dense_min_windowed_ssim": 0.65,
+    "text_dense_max_changed_pixel_ratio": 0.1,
+    "max_mean_abs_diff": 0.035,
+    "max_changed_pixel_ratio": 0.08,
+    "changed_pixel_floor": 12,
+    "text_dense_changed_pixel_floor": 14,
+    "max_odiff_diff_pct": 8.0,
+    "odiff_threshold": 0.3,
+    "max_bbox_shift_px": 18,
+    "max_bbox_size_delta_px": 36,
+    "max_largest_region_ratio": 0.08,
+    "strong_changed_pixel_ratio": 0.18,
+    "strong_mean_abs_diff": 0.08,
+    "strong_largest_region_ratio": 0.18
+  },
+  "summary": {
+    "total": 12,
+    "pass": 10,
+    "real_divergence": 2,
+    "by_status": {
+      "FAIL": 2,
+      "PASS": 10
+    },
+    "by_severity": {
+      "medium": 2,
+      "none": 10
+    },
+    "by_repair_bucket": {
+      "VISUAL_STYLE_REVIEW": 2,
+      "NONE": 10
+    },
+    "qa_missed_raw_or_layout": 2,
+    "state_or_recipe_suspect": 0,
+    "suspicious_perfect_match": 0
+  },
+  "results": [
+    {
+      "key": "suite:dbt-library@dark",
+      "app": "suite",
+      "view": "dbt-library",
+      "theme": "dark",
+      "status": "FAIL",
+      "severity": "medium",
+      "repair_bucket": "VISUAL_STYLE_REVIEW",
+      "real_divergence": true,
+      "suspicious_perfect_match": false,
+      "findings": [
+        "raw_pixel_delta",
+        "qa_missed_raw_or_layout"
+      ],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-library-dark-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-library-dark-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.2943,
+        "windowed_ssim": 0.64834,
+        "canonical_gray_std": 29.526,
+        "mean_abs_diff": 0.04286,
+        "max_abs_diff": 0.90196,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 81900,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.14219,
+        "largest_region_ratio": 0.001722
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          0,
+          960,
+          600
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          584
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": 16,
+        "bbox_dw": 0,
+        "bbox_dh": -16,
+        "max_bbox_delta_px": 16,
+        "bbox_area_delta_ratio": 0.02667
+      },
+      "odiff": {
+        "diff_pixels": 23234,
+        "diff_percentage": 4.03,
+        "diff_png_path": "reports\\qa\\dbt_representative_compare_after_font\\odiff\\suite-dbt-library-dark-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 136,
+          "y": 199,
+          "w": 78,
+          "h": 29,
+          "area": 992,
+          "area_ratio": 0.001722,
+          "hint": "component_region"
+        },
+        {
+          "x": 1,
+          "y": 48,
+          "w": 958,
+          "h": 1,
+          "area": 958,
+          "area_ratio": 0.001663,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 25,
+          "y": 0,
+          "w": 910,
+          "h": 1,
+          "area": 910,
+          "area_ratio": 0.00158,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 24,
+          "y": 125,
+          "w": 138,
+          "h": 31,
+          "area": 799,
+          "area_ratio": 0.001387,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 68,
+          "y": 199,
+          "w": 62,
+          "h": 27,
+          "area": 759,
+          "area_ratio": 0.001318,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 81,
+          "y": 18,
+          "w": 88,
+          "h": 13,
+          "area": 745,
+          "area_ratio": 0.001293,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 781,
+          "y": 386,
+          "w": 82,
+          "h": 15,
+          "area": 649,
+          "area_ratio": 0.001127,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 755,
+          "y": 419,
+          "w": 97,
+          "h": 11,
+          "area": 617,
+          "area_ratio": 0.001071,
+          "hint": "text_icon_or_antialiasing"
+        }
+      ],
+      "panel_path": "reports\\qa\\dbt_representative_compare_after_font\\panels\\suite_dbt-library_dark.png"
+    },
+    {
+      "key": "suite:dbt-library@light",
+      "app": "suite",
+      "view": "dbt-library",
+      "theme": "light",
+      "status": "FAIL",
+      "severity": "medium",
+      "repair_bucket": "VISUAL_STYLE_REVIEW",
+      "real_divergence": true,
+      "suspicious_perfect_match": false,
+      "findings": [
+        "raw_pixel_delta",
+        "qa_missed_raw_or_layout"
+      ],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-library-light-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-library-light-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.30976,
+        "windowed_ssim": 0.65542,
+        "canonical_gray_std": 26.477,
+        "mean_abs_diff": 0.04211,
+        "max_abs_diff": 0.80392,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 76279,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.13243,
+        "largest_region_ratio": 0.005872
+      },
+      "layout": {
+        "target_content_bbox": [
+          1,
+          2,
+          959,
+          598
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          584
+        ],
+        "bbox_dx": -1,
+        "bbox_dy": 14,
+        "bbox_dw": 1,
+        "bbox_dh": -14,
+        "max_bbox_delta_px": 14,
+        "bbox_area_delta_ratio": 0.02239
+      },
+      "odiff": {
+        "diff_pixels": 22091,
+        "diff_percentage": 3.84,
+        "diff_png_path": "reports\\qa\\dbt_representative_compare_after_font\\odiff\\suite-dbt-library-light-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 0,
+          "y": 48,
+          "w": 960,
+          "h": 552,
+          "area": 3382,
+          "area_ratio": 0.005872,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 24,
+          "y": 125,
+          "w": 139,
+          "h": 31,
+          "area": 803,
+          "area_ratio": 0.001394,
+          "hint": "component_region"
+        },
+        {
+          "x": 68,
+          "y": 199,
+          "w": 62,
+          "h": 27,
+          "area": 729,
+          "area_ratio": 0.001266,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 781,
+          "y": 386,
+          "w": 82,
+          "h": 15,
+          "area": 601,
+          "area_ratio": 0.001043,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 155,
+          "y": 199,
+          "w": 59,
+          "h": 27,
+          "area": 552,
+          "area_ratio": 0.000958,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 724,
+          "y": 284,
+          "w": 69,
+          "h": 16,
+          "area": 550,
+          "area_ratio": 0.000955,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 495,
+          "y": 181,
+          "w": 63,
+          "h": 17,
+          "area": 534,
+          "area_ratio": 0.000927,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 352,
+          "y": 133,
+          "w": 84,
+          "h": 14,
+          "area": 529,
+          "area_ratio": 0.000918,
+          "hint": "text_icon_or_antialiasing"
+        }
+      ],
+      "panel_path": "reports\\qa\\dbt_representative_compare_after_font\\panels\\suite_dbt-library_light.png"
+    },
+    {
+      "key": "suite:dbt-practice-check-facts@dark",
+      "app": "suite",
+      "view": "dbt-practice-check-facts",
+      "theme": "dark",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-practice-check-facts-dark-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-practice-check-facts-dark-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.62348,
+        "windowed_ssim": 0.84589,
+        "canonical_gray_std": 20.893,
+        "mean_abs_diff": 0.01927,
+        "max_abs_diff": 0.84314,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 40915,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.07103,
+        "largest_region_ratio": 0.002818
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          0,
+          960,
+          552
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          538
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": 16,
+        "bbox_dw": 0,
+        "bbox_dh": -14,
+        "max_bbox_delta_px": 16,
+        "bbox_area_delta_ratio": 0.02536
+      },
+      "odiff": {
+        "diff_pixels": 6075,
+        "diff_percentage": 1.05,
+        "diff_png_path": "reports\\qa\\dbt_representative_compare_after_font\\odiff\\suite-dbt-practice-check-facts-dark-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 215,
+          "y": 134,
+          "w": 521,
+          "h": 12,
+          "area": 1623,
+          "area_ratio": 0.002818,
+          "hint": "component_region"
+        },
+        {
+          "x": 422,
+          "y": 410,
+          "w": 213,
+          "h": 15,
+          "area": 1560,
+          "area_ratio": 0.002708,
+          "hint": "component_region"
+        },
+        {
+          "x": 35,
+          "y": 178,
+          "w": 127,
+          "h": 15,
+          "area": 1066,
+          "area_ratio": 0.001851,
+          "hint": "component_region"
+        },
+        {
+          "x": 217,
+          "y": 505,
+          "w": 526,
+          "h": 3,
+          "area": 1035,
+          "area_ratio": 0.001797,
+          "hint": "component_region"
+        },
+        {
+          "x": 37,
+          "y": 383,
+          "w": 120,
+          "h": 15,
+          "area": 959,
+          "area_ratio": 0.001665,
+          "hint": "component_region"
+        },
+        {
+          "x": 1,
+          "y": 48,
+          "w": 958,
+          "h": 1,
+          "area": 958,
+          "area_ratio": 0.001663,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 245,
+          "y": 400,
+          "w": 470,
+          "h": 2,
+          "area": 940,
+          "area_ratio": 0.001632,
+          "hint": "component_region"
+        },
+        {
+          "x": 25,
+          "y": 0,
+          "w": 910,
+          "h": 1,
+          "area": 910,
+          "area_ratio": 0.00158,
+          "hint": "layout_shift_or_spacing"
+        }
+      ],
+      "panel_path": "reports\\qa\\dbt_representative_compare_after_font\\panels\\suite_dbt-practice-check-facts_dark.png"
+    },
+    {
+      "key": "suite:dbt-practice-check-facts@light",
+      "app": "suite",
+      "view": "dbt-practice-check-facts",
+      "theme": "light",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-practice-check-facts-light-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-practice-check-facts-light-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.96297,
+        "windowed_ssim": 0.89586,
+        "canonical_gray_std": 57.356,
+        "mean_abs_diff": 0.01682,
+        "max_abs_diff": 0.80392,
+        "changed_pixel_floor": 12,
+        "changed_pixels": 35535,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.06169,
+        "largest_region_ratio": 0.006549
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          17,
+          960,
+          490
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          490
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": -1,
+        "bbox_dw": 0,
+        "bbox_dh": 0,
+        "max_bbox_delta_px": 1,
+        "bbox_area_delta_ratio": 0.0
+      },
+      "odiff": {
+        "diff_pixels": 4945,
+        "diff_percentage": 0.86,
+        "diff_png_path": "reports\\qa\\dbt_representative_compare_after_font\\odiff\\suite-dbt-practice-check-facts-light-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 194,
+          "y": 137,
+          "w": 596,
+          "h": 369,
+          "area": 3772,
+          "area_ratio": 0.006549,
+          "hint": "component_region"
+        },
+        {
+          "x": 422,
+          "y": 409,
+          "w": 209,
+          "h": 13,
+          "area": 1427,
+          "area_ratio": 0.002477,
+          "hint": "component_region"
+        },
+        {
+          "x": 23,
+          "y": 125,
+          "w": 67,
+          "h": 34,
+          "area": 1013,
+          "area_ratio": 0.001759,
+          "hint": "component_region"
+        },
+        {
+          "x": 230,
+          "y": 246,
+          "w": 500,
+          "h": 15,
+          "area": 1010,
+          "area_ratio": 0.001753,
+          "hint": "component_region"
+        },
+        {
+          "x": 0,
+          "y": 48,
+          "w": 960,
+          "h": 1,
+          "area": 960,
+          "area_ratio": 0.001667,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 242,
+          "y": 391,
+          "w": 478,
+          "h": 3,
+          "area": 949,
+          "area_ratio": 0.001648,
+          "hint": "component_region"
+        },
+        {
+          "x": 392,
+          "y": 286,
+          "w": 75,
+          "h": 18,
+          "area": 900,
+          "area_ratio": 0.001563,
+          "hint": "component_region"
+        },
+        {
+          "x": 490,
+          "y": 286,
+          "w": 77,
+          "h": 18,
+          "area": 832,
+          "area_ratio": 0.001444,
+          "hint": "component_region"
+        }
+      ],
+      "panel_path": "reports\\qa\\dbt_representative_compare_after_font\\panels\\suite_dbt-practice-check-facts_light.png"
+    },
+    {
+      "key": "suite:dbt-practice-dear-man@dark",
+      "app": "suite",
+      "view": "dbt-practice-dear-man",
+      "theme": "dark",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-practice-dear-man-dark-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-practice-dear-man-dark-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.61613,
+        "windowed_ssim": 0.8422,
+        "canonical_gray_std": 21.246,
+        "mean_abs_diff": 0.01982,
+        "max_abs_diff": 0.84314,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 41826,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.07261,
+        "largest_region_ratio": 0.002818
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          0,
+          960,
+          552
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          538
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": 16,
+        "bbox_dw": 0,
+        "bbox_dh": -14,
+        "max_bbox_delta_px": 16,
+        "bbox_area_delta_ratio": 0.02536
+      },
+      "odiff": {
+        "diff_pixels": 6376,
+        "diff_percentage": 1.11,
+        "diff_png_path": "reports\\qa\\dbt_representative_compare_after_font\\odiff\\suite-dbt-practice-dear-man-dark-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 215,
+          "y": 134,
+          "w": 521,
+          "h": 12,
+          "area": 1623,
+          "area_ratio": 0.002818,
+          "hint": "component_region"
+        },
+        {
+          "x": 422,
+          "y": 410,
+          "w": 213,
+          "h": 15,
+          "area": 1560,
+          "area_ratio": 0.002708,
+          "hint": "component_region"
+        },
+        {
+          "x": 35,
+          "y": 178,
+          "w": 127,
+          "h": 15,
+          "area": 1066,
+          "area_ratio": 0.001851,
+          "hint": "component_region"
+        },
+        {
+          "x": 308,
+          "y": 323,
+          "w": 142,
+          "h": 15,
+          "area": 1045,
+          "area_ratio": 0.001814,
+          "hint": "component_region"
+        },
+        {
+          "x": 217,
+          "y": 505,
+          "w": 526,
+          "h": 3,
+          "area": 1035,
+          "area_ratio": 0.001797,
+          "hint": "component_region"
+        },
+        {
+          "x": 37,
+          "y": 383,
+          "w": 120,
+          "h": 15,
+          "area": 959,
+          "area_ratio": 0.001665,
+          "hint": "component_region"
+        },
+        {
+          "x": 1,
+          "y": 48,
+          "w": 958,
+          "h": 1,
+          "area": 958,
+          "area_ratio": 0.001663,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 245,
+          "y": 400,
+          "w": 470,
+          "h": 2,
+          "area": 940,
+          "area_ratio": 0.001632,
+          "hint": "component_region"
+        }
+      ],
+      "panel_path": "reports\\qa\\dbt_representative_compare_after_font\\panels\\suite_dbt-practice-dear-man_dark.png"
+    },
+    {
+      "key": "suite:dbt-practice-dear-man@light",
+      "app": "suite",
+      "view": "dbt-practice-dear-man",
+      "theme": "light",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-practice-dear-man-light-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-practice-dear-man-light-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.93545,
+        "windowed_ssim": 0.86435,
+        "canonical_gray_std": 57.871,
+        "mean_abs_diff": 0.02191,
+        "max_abs_diff": 0.80392,
+        "changed_pixel_floor": 12,
+        "changed_pixels": 39526,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.06862,
+        "largest_region_ratio": 0.015502
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          17,
+          960,
+          491
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          490
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": -1,
+        "bbox_dw": 0,
+        "bbox_dh": -1,
+        "max_bbox_delta_px": 1,
+        "bbox_area_delta_ratio": 0.00204
+      },
+      "odiff": {
+        "diff_pixels": 8955,
+        "diff_percentage": 1.55,
+        "diff_png_path": "reports\\qa\\dbt_representative_compare_after_font\\odiff\\suite-dbt-practice-dear-man-light-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 138,
+          "y": 132,
+          "w": 701,
+          "h": 375,
+          "area": 8929,
+          "area_ratio": 0.015502,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 23,
+          "y": 125,
+          "w": 67,
+          "h": 34,
+          "area": 1013,
+          "area_ratio": 0.001759,
+          "hint": "component_region"
+        },
+        {
+          "x": 0,
+          "y": 48,
+          "w": 960,
+          "h": 1,
+          "area": 960,
+          "area_ratio": 0.001667,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 237,
+          "y": 391,
+          "w": 486,
+          "h": 4,
+          "area": 958,
+          "area_ratio": 0.001663,
+          "hint": "component_region"
+        },
+        {
+          "x": 38,
+          "y": 179,
+          "w": 123,
+          "h": 10,
+          "area": 813,
+          "area_ratio": 0.001411,
+          "hint": "component_region"
+        },
+        {
+          "x": 508,
+          "y": 286,
+          "w": 82,
+          "h": 18,
+          "area": 802,
+          "area_ratio": 0.001392,
+          "hint": "component_region"
+        },
+        {
+          "x": 408,
+          "y": 286,
+          "w": 76,
+          "h": 18,
+          "area": 791,
+          "area_ratio": 0.001373,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 494,
+          "y": 410,
+          "w": 141,
+          "h": 10,
+          "area": 783,
+          "area_ratio": 0.001359,
+          "hint": "text_icon_or_antialiasing"
+        }
+      ],
+      "panel_path": "reports\\qa\\dbt_representative_compare_after_font\\panels\\suite_dbt-practice-dear-man_light.png"
+    },
+    {
+      "key": "suite:dbt-practice-fast@dark",
+      "app": "suite",
+      "view": "dbt-practice-fast",
+      "theme": "dark",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-practice-fast-dark-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-practice-fast-dark-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.6298,
+        "windowed_ssim": 0.84484,
+        "canonical_gray_std": 20.062,
+        "mean_abs_diff": 0.01872,
+        "max_abs_diff": 0.84314,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 40352,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.07006,
+        "largest_region_ratio": 0.002818
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          0,
+          960,
+          552
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          538
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": 16,
+        "bbox_dw": 0,
+        "bbox_dh": -14,
+        "max_bbox_delta_px": 16,
+        "bbox_area_delta_ratio": 0.02536
+      },
+      "odiff": {
+        "diff_pixels": 5582,
+        "diff_percentage": 0.97,
+        "diff_png_path": "reports\\qa\\dbt_representative_compare_after_font\\odiff\\suite-dbt-practice-fast-dark-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 215,
+          "y": 134,
+          "w": 521,
+          "h": 12,
+          "area": 1623,
+          "area_ratio": 0.002818,
+          "hint": "component_region"
+        },
+        {
+          "x": 422,
+          "y": 410,
+          "w": 213,
+          "h": 15,
+          "area": 1560,
+          "area_ratio": 0.002708,
+          "hint": "component_region"
+        },
+        {
+          "x": 35,
+          "y": 178,
+          "w": 127,
+          "h": 15,
+          "area": 1066,
+          "area_ratio": 0.001851,
+          "hint": "component_region"
+        },
+        {
+          "x": 217,
+          "y": 505,
+          "w": 519,
+          "h": 3,
+          "area": 1027,
+          "area_ratio": 0.001783,
+          "hint": "component_region"
+        },
+        {
+          "x": 37,
+          "y": 383,
+          "w": 120,
+          "h": 15,
+          "area": 959,
+          "area_ratio": 0.001665,
+          "hint": "component_region"
+        },
+        {
+          "x": 1,
+          "y": 48,
+          "w": 958,
+          "h": 1,
+          "area": 958,
+          "area_ratio": 0.001663,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 245,
+          "y": 400,
+          "w": 470,
+          "h": 2,
+          "area": 940,
+          "area_ratio": 0.001632,
+          "hint": "component_region"
+        },
+        {
+          "x": 25,
+          "y": 0,
+          "w": 910,
+          "h": 1,
+          "area": 910,
+          "area_ratio": 0.00158,
+          "hint": "layout_shift_or_spacing"
+        }
+      ],
+      "panel_path": "reports\\qa\\dbt_representative_compare_after_font\\panels\\suite_dbt-practice-fast_dark.png"
+    },
+    {
+      "key": "suite:dbt-practice-fast@light",
+      "app": "suite",
+      "view": "dbt-practice-fast",
+      "theme": "light",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-practice-fast-light-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-practice-fast-light-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.94272,
+        "windowed_ssim": 0.86757,
+        "canonical_gray_std": 57.813,
+        "mean_abs_diff": 0.02071,
+        "max_abs_diff": 0.80392,
+        "changed_pixel_floor": 12,
+        "changed_pixels": 38302,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.0665,
+        "largest_region_ratio": 0.015486
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          17,
+          960,
+          491
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          490
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": -1,
+        "bbox_dw": 0,
+        "bbox_dh": -1,
+        "max_bbox_delta_px": 1,
+        "bbox_area_delta_ratio": 0.00204
+      },
+      "odiff": {
+        "diff_pixels": 8402,
+        "diff_percentage": 1.46,
+        "diff_png_path": "reports\\qa\\dbt_representative_compare_after_font\\odiff\\suite-dbt-practice-fast-light-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 138,
+          "y": 132,
+          "w": 701,
+          "h": 375,
+          "area": 8920,
+          "area_ratio": 0.015486,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 23,
+          "y": 125,
+          "w": 67,
+          "h": 34,
+          "area": 1013,
+          "area_ratio": 0.001759,
+          "hint": "component_region"
+        },
+        {
+          "x": 0,
+          "y": 48,
+          "w": 960,
+          "h": 1,
+          "area": 960,
+          "area_ratio": 0.001667,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 237,
+          "y": 391,
+          "w": 486,
+          "h": 4,
+          "area": 956,
+          "area_ratio": 0.00166,
+          "hint": "component_region"
+        },
+        {
+          "x": 38,
+          "y": 179,
+          "w": 123,
+          "h": 10,
+          "area": 813,
+          "area_ratio": 0.001411,
+          "hint": "component_region"
+        },
+        {
+          "x": 494,
+          "y": 410,
+          "w": 141,
+          "h": 10,
+          "area": 783,
+          "area_ratio": 0.001359,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 40,
+          "y": 385,
+          "w": 115,
+          "h": 9,
+          "area": 599,
+          "area_ratio": 0.00104,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 786,
+          "y": 386,
+          "w": 106,
+          "h": 10,
+          "area": 588,
+          "area_ratio": 0.001021,
+          "hint": "text_icon_or_antialiasing"
+        }
+      ],
+      "panel_path": "reports\\qa\\dbt_representative_compare_after_font\\panels\\suite_dbt-practice-fast_light.png"
+    },
+    {
+      "key": "suite:dbt-practice-stop@dark",
+      "app": "suite",
+      "view": "dbt-practice-stop",
+      "theme": "dark",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-practice-stop-dark-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-practice-stop-dark-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.63644,
+        "windowed_ssim": 0.84526,
+        "canonical_gray_std": 20.511,
+        "mean_abs_diff": 0.01904,
+        "max_abs_diff": 0.90196,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 40736,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.07072,
+        "largest_region_ratio": 0.002858
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          0,
+          960,
+          552
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          538
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": 16,
+        "bbox_dw": 0,
+        "bbox_dh": -14,
+        "max_bbox_delta_px": 16,
+        "bbox_area_delta_ratio": 0.02536
+      },
+      "odiff": {
+        "diff_pixels": 5295,
+        "diff_percentage": 0.92,
+        "diff_png_path": "reports\\qa\\dbt_representative_compare_after_font\\odiff\\suite-dbt-practice-stop-dark-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 215,
+          "y": 135,
+          "w": 522,
+          "h": 11,
+          "area": 1646,
+          "area_ratio": 0.002858,
+          "hint": "component_region"
+        },
+        {
+          "x": 473,
+          "y": 410,
+          "w": 162,
+          "h": 13,
+          "area": 1186,
+          "area_ratio": 0.002059,
+          "hint": "component_region"
+        },
+        {
+          "x": 35,
+          "y": 178,
+          "w": 127,
+          "h": 15,
+          "area": 1064,
+          "area_ratio": 0.001847,
+          "hint": "component_region"
+        },
+        {
+          "x": 217,
+          "y": 504,
+          "w": 526,
+          "h": 4,
+          "area": 1040,
+          "area_ratio": 0.001806,
+          "hint": "component_region"
+        },
+        {
+          "x": 1,
+          "y": 48,
+          "w": 958,
+          "h": 1,
+          "area": 958,
+          "area_ratio": 0.001663,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 37,
+          "y": 383,
+          "w": 120,
+          "h": 15,
+          "area": 958,
+          "area_ratio": 0.001663,
+          "hint": "component_region"
+        },
+        {
+          "x": 245,
+          "y": 400,
+          "w": 470,
+          "h": 2,
+          "area": 940,
+          "area_ratio": 0.001632,
+          "hint": "component_region"
+        },
+        {
+          "x": 25,
+          "y": 0,
+          "w": 910,
+          "h": 1,
+          "area": 910,
+          "area_ratio": 0.00158,
+          "hint": "layout_shift_or_spacing"
+        }
+      ],
+      "panel_path": "reports\\qa\\dbt_representative_compare_after_font\\panels\\suite_dbt-practice-stop_dark.png"
+    },
+    {
+      "key": "suite:dbt-practice-stop@light",
+      "app": "suite",
+      "view": "dbt-practice-stop",
+      "theme": "light",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-practice-stop-light-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-practice-stop-light-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.94261,
+        "windowed_ssim": 0.86899,
+        "canonical_gray_std": 57.767,
+        "mean_abs_diff": 0.02081,
+        "max_abs_diff": 0.80392,
+        "changed_pixel_floor": 12,
+        "changed_pixels": 38694,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.06718,
+        "largest_region_ratio": 0.015486
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          17,
+          960,
+          491
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          490
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": -1,
+        "bbox_dw": 0,
+        "bbox_dh": -1,
+        "max_bbox_delta_px": 1,
+        "bbox_area_delta_ratio": 0.00204
+      },
+      "odiff": {
+        "diff_pixels": 8559,
+        "diff_percentage": 1.49,
+        "diff_png_path": "reports\\qa\\dbt_representative_compare_after_font\\odiff\\suite-dbt-practice-stop-light-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 138,
+          "y": 132,
+          "w": 701,
+          "h": 375,
+          "area": 8920,
+          "area_ratio": 0.015486,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 23,
+          "y": 125,
+          "w": 67,
+          "h": 34,
+          "area": 1013,
+          "area_ratio": 0.001759,
+          "hint": "component_region"
+        },
+        {
+          "x": 0,
+          "y": 48,
+          "w": 960,
+          "h": 1,
+          "area": 960,
+          "area_ratio": 0.001667,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 237,
+          "y": 391,
+          "w": 486,
+          "h": 4,
+          "area": 956,
+          "area_ratio": 0.00166,
+          "hint": "component_region"
+        },
+        {
+          "x": 38,
+          "y": 179,
+          "w": 123,
+          "h": 10,
+          "area": 813,
+          "area_ratio": 0.001411,
+          "hint": "component_region"
+        },
+        {
+          "x": 494,
+          "y": 410,
+          "w": 141,
+          "h": 10,
+          "area": 783,
+          "area_ratio": 0.001359,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 40,
+          "y": 385,
+          "w": 115,
+          "h": 9,
+          "area": 599,
+          "area_ratio": 0.00104,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 786,
+          "y": 386,
+          "w": 106,
+          "h": 10,
+          "area": 588,
+          "area_ratio": 0.001021,
+          "hint": "text_icon_or_antialiasing"
+        }
+      ],
+      "panel_path": "reports\\qa\\dbt_representative_compare_after_font\\panels\\suite_dbt-practice-stop_light.png"
+    },
+    {
+      "key": "suite:dbt-practice-wise-mind@dark",
+      "app": "suite",
+      "view": "dbt-practice-wise-mind",
+      "theme": "dark",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-practice-wise-mind-dark-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-practice-wise-mind-dark-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.62437,
+        "windowed_ssim": 0.84544,
+        "canonical_gray_std": 21.33,
+        "mean_abs_diff": 0.01964,
+        "max_abs_diff": 0.84314,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 41146,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.07143,
+        "largest_region_ratio": 0.002858
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          0,
+          960,
+          552
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          538
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": 16,
+        "bbox_dw": 0,
+        "bbox_dh": -14,
+        "max_bbox_delta_px": 16,
+        "bbox_area_delta_ratio": 0.02536
+      },
+      "odiff": {
+        "diff_pixels": 5593,
+        "diff_percentage": 0.97,
+        "diff_png_path": "reports\\qa\\dbt_representative_compare_after_font\\odiff\\suite-dbt-practice-wise-mind-dark-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 215,
+          "y": 135,
+          "w": 522,
+          "h": 11,
+          "area": 1646,
+          "area_ratio": 0.002858,
+          "hint": "component_region"
+        },
+        {
+          "x": 473,
+          "y": 410,
+          "w": 162,
+          "h": 13,
+          "area": 1186,
+          "area_ratio": 0.002059,
+          "hint": "component_region"
+        },
+        {
+          "x": 35,
+          "y": 178,
+          "w": 127,
+          "h": 15,
+          "area": 1064,
+          "area_ratio": 0.001847,
+          "hint": "component_region"
+        },
+        {
+          "x": 217,
+          "y": 504,
+          "w": 526,
+          "h": 4,
+          "area": 1040,
+          "area_ratio": 0.001806,
+          "hint": "component_region"
+        },
+        {
+          "x": 346,
+          "y": 286,
+          "w": 89,
+          "h": 18,
+          "area": 986,
+          "area_ratio": 0.001712,
+          "hint": "component_region"
+        },
+        {
+          "x": 519,
+          "y": 285,
+          "w": 94,
+          "h": 19,
+          "area": 972,
+          "area_ratio": 0.001687,
+          "hint": "component_region"
+        },
+        {
+          "x": 1,
+          "y": 48,
+          "w": 958,
+          "h": 1,
+          "area": 958,
+          "area_ratio": 0.001663,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 37,
+          "y": 383,
+          "w": 120,
+          "h": 15,
+          "area": 958,
+          "area_ratio": 0.001663,
+          "hint": "component_region"
+        }
+      ],
+      "panel_path": "reports\\qa\\dbt_representative_compare_after_font\\panels\\suite_dbt-practice-wise-mind_dark.png"
+    },
+    {
+      "key": "suite:dbt-practice-wise-mind@light",
+      "app": "suite",
+      "view": "dbt-practice-wise-mind",
+      "theme": "light",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-dbt-practice-wise-mind-light-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-dbt-practice-wise-mind-light-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.96052,
+        "windowed_ssim": 0.89596,
+        "canonical_gray_std": 57.381,
+        "mean_abs_diff": 0.01715,
+        "max_abs_diff": 0.80392,
+        "changed_pixel_floor": 12,
+        "changed_pixels": 35831,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.06221,
+        "largest_region_ratio": 0.006569
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          17,
+          960,
+          490
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          490
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": -1,
+        "bbox_dw": 0,
+        "bbox_dh": 0,
+        "max_bbox_delta_px": 1,
+        "bbox_area_delta_ratio": 0.0
+      },
+      "odiff": {
+        "diff_pixels": 5040,
+        "diff_percentage": 0.88,
+        "diff_png_path": "reports\\qa\\dbt_representative_compare_after_font\\odiff\\suite-dbt-practice-wise-mind-light-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 194,
+          "y": 137,
+          "w": 596,
+          "h": 369,
+          "area": 3784,
+          "area_ratio": 0.006569,
+          "hint": "component_region"
+        },
+        {
+          "x": 422,
+          "y": 409,
+          "w": 209,
+          "h": 13,
+          "area": 1427,
+          "area_ratio": 0.002477,
+          "hint": "component_region"
+        },
+        {
+          "x": 518,
+          "y": 286,
+          "w": 95,
+          "h": 18,
+          "area": 1070,
+          "area_ratio": 0.001858,
+          "hint": "component_region"
+        },
+        {
+          "x": 23,
+          "y": 125,
+          "w": 67,
+          "h": 34,
+          "area": 1013,
+          "area_ratio": 0.001759,
+          "hint": "component_region"
+        },
+        {
+          "x": 230,
+          "y": 246,
+          "w": 500,
+          "h": 15,
+          "area": 1010,
+          "area_ratio": 0.001753,
+          "hint": "component_region"
+        },
+        {
+          "x": 346,
+          "y": 286,
+          "w": 90,
+          "h": 18,
+          "area": 1007,
+          "area_ratio": 0.001748,
+          "hint": "component_region"
+        },
+        {
+          "x": 0,
+          "y": 48,
+          "w": 960,
+          "h": 1,
+          "area": 960,
+          "area_ratio": 0.001667,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 240,
+          "y": 391,
+          "w": 480,
+          "h": 3,
+          "area": 951,
+          "area_ratio": 0.001651,
+          "hint": "component_region"
+        }
+      ],
+      "panel_path": "reports\\qa\\dbt_representative_compare_after_font\\panels\\suite_dbt-practice-wise-mind_light.png"
+    }
+  ]
+}

@@ -1,0 +1,134 @@
+{
+  "harness": "capture_v8.py",
+  "generated_at": "2026-06-22T03:10:40.073808",
+  "git": {
+    "head": "6a3cf3fdcd5d061451acdbaceb6e4cae9c922505",
+    "short_head": "6a3cf3f",
+    "branch": "main",
+    "tracked_dirty": true,
+    "tracked_status": [
+      "M app/modules/avisos_qt.py",
+      " M app/modules/rutina_qt.py",
+      " M app/modules/timer_qt.py",
+      " M hub/main_qt.py",
+      " M hub/plan_terapeutico.py",
+      " M tests/test_timer_visual_contract.py"
+    ]
+  },
+  "command": [
+    "qa/capture_v8.py",
+    "--view",
+    "rutina-add-task",
+    "--theme",
+    "both"
+  ],
+  "cwd": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "isolation_scope": "subprocess_per_recipe",
+  "auto_residual_popup_capture": false,
+  "success": 2,
+  "failed": 0,
+  "total": 2,
+  "expected_recipe_captures": 2,
+  "elapsed_seconds": 6.6,
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "resolutions": [
+    "960x600"
+  ],
+  "requested_scale_factor": 1.0,
+  "output_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8",
+  "matrix_paths": {
+    "csv": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.csv",
+    "markdown": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.md"
+  },
+  "evidence_summary": {
+    "semantic_visual_review": "NOT_RUN",
+    "visual_review_outcome": "REVIEW_INCOMPLETE",
+    "technical_capture_only": true,
+    "state_valid_capture_count": 2,
+    "technical_valid_capture_count": 2,
+    "technical_960_capture_count": 2,
+    "main_base_capture_count": 2,
+    "main_scale125_capture_count": 0,
+    "natural_dialog_capture_count": 0,
+    "main_scaled_other_capture_count": 0,
+    "unsupported_contract_count": 0,
+    "invalid_or_unsupported_contract_count": 0,
+    "contract_mismatch_count": 0,
+    "unique_hash_count": 2,
+    "duplicate_group_count": 0,
+    "duplicate_groups": [],
+    "status_counts": {
+      "CAPTURED_VALID": 2
+    },
+    "requires_runtime": [],
+    "requires_data_state": [],
+    "wrong_view_or_fallback": [],
+    "main_capture_contract_mismatch": [],
+    "blank_or_flat": []
+  },
+  "results": [
+    {
+      "file": "suite-rutina-add-task-light-960x600.png",
+      "app": "suite",
+      "view": "rutina-add-task",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 48850,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.9535,
+        "gray_stddev": 0.0812
+      },
+      "sha256": "9d1024f2079b059e80dbf4589ad084606f906b447097102db45e67d2c844dc61",
+      "capture_status": "CAPTURED_VALID"
+    },
+    {
+      "file": "suite-rutina-add-task-dark-960x600.png",
+      "app": "suite",
+      "view": "rutina-add-task",
+      "theme": "dark",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 50179,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.1372,
+        "gray_stddev": 0.0725
+      },
+      "sha256": "7a7fb4011531565c842c641b198c434b9dbe3effa5bce9ad563e191c24aa2166",
+      "capture_status": "CAPTURED_VALID"
+    }
+  ]
+}

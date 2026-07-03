@@ -1,0 +1,2 @@
+producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
+suite,registro-step2-distortions,TCC paso 2 - distorsiones,light,960x600,navigate:registro > call:_tcc_prepare_step > drain:6 > capture:registro-step2-distortions,suite-registro-step2-distortions-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

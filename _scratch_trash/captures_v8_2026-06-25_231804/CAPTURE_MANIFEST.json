@@ -1,0 +1,106 @@
+{
+  "harness": "capture_v8.py",
+  "generated_at": "2026-06-25T23:17:10.937142",
+  "git": {
+    "head": "b06278f33a256420f1b794673d1e43174c8f2c20",
+    "short_head": "b06278f",
+    "branch": "main",
+    "tracked_dirty": true,
+    "tracked_status": [
+      "M qa/_visual_auditor_spec/report.json",
+      " M qa/capture_v8.py",
+      " M qa/spec_generator.py",
+      " M qa/specs/specs.json",
+      " M qa/vas_engine.py",
+      " M qa/visual_auditor_spec.py"
+    ]
+  },
+  "command": [
+    "qa/capture_v8.py",
+    "--app",
+    "suite",
+    "--view",
+    "home",
+    "--theme",
+    "light",
+    "--no-clean"
+  ],
+  "cwd": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "isolation_scope": "subprocess_per_recipe",
+  "auto_residual_popup_capture": false,
+  "success": 1,
+  "failed": 0,
+  "total": 1,
+  "expected_recipe_captures": 1,
+  "elapsed_seconds": 3.9,
+  "themes": [
+    "light"
+  ],
+  "resolutions": [
+    "960x600"
+  ],
+  "requested_scale_factor": 1.0,
+  "output_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8",
+  "matrix_paths": {
+    "csv": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.csv",
+    "markdown": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.md"
+  },
+  "evidence_summary": {
+    "semantic_visual_review": "NOT_RUN",
+    "visual_review_outcome": "REVIEW_INCOMPLETE",
+    "technical_capture_only": true,
+    "state_valid_capture_count": 1,
+    "technical_valid_capture_count": 1,
+    "technical_960_capture_count": 1,
+    "main_base_capture_count": 1,
+    "main_scale125_capture_count": 0,
+    "natural_dialog_capture_count": 0,
+    "main_scaled_other_capture_count": 0,
+    "unsupported_contract_count": 0,
+    "invalid_or_unsupported_contract_count": 0,
+    "contract_mismatch_count": 0,
+    "unique_hash_count": 1,
+    "duplicate_group_count": 0,
+    "duplicate_groups": [],
+    "status_counts": {
+      "CAPTURED_VALID": 1
+    },
+    "requires_runtime": [],
+    "requires_data_state": [],
+    "wrong_view_or_fallback": [],
+    "main_capture_contract_mismatch": [],
+    "blank_or_flat": []
+  },
+  "results": [
+    {
+      "file": "suite-home-light-960x600.png",
+      "app": "suite",
+      "view": "home",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 72861,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.9131,
+        "gray_stddev": 0.1138
+      },
+      "sha256": "6454e7f36c8855edb1bf7e81c087fa5815574b5d08c717590ba7e476028e5c8c",
+      "capture_status": "CAPTURED_VALID"
+    }
+  ]
+}

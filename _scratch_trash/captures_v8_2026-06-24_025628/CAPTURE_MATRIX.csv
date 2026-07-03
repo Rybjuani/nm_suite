@@ -1,0 +1,2 @@
+producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
+suite,timer-running,Timer running,light,960x600,navigate:timer > call:_timer_start > drain:12 > capture:timer-running,,pendiente,bloqueado,flags=CAPTURE_FAILED ; error=child process returned 1

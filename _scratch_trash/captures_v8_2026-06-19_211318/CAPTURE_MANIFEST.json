@@ -1,0 +1,714 @@
+{
+  "harness": "capture_v8.py",
+  "generated_at": "2026-06-19T21:05:03.488664",
+  "git": {
+    "head": "c2e695aee71018c14f2b6255e38ef2ae819fa24b",
+    "short_head": "c2e695a",
+    "branch": "visual/propagacion-mockup",
+    "tracked_dirty": true,
+    "tracked_status": [
+      "D \"HANDOFF \\342\\200\\224 Plan de remediaci\\303\\263n nm_suite para agente GLM-5.2.md\"",
+      " M hub/config_global_texts.py",
+      " M hub/main_qt.py",
+      " M hub/pacientes_qt.py",
+      " M hub/plan_terapeutico.py",
+      " M qa/capture_v8.py"
+    ]
+  },
+  "command": [
+    "qa\\capture_v8.py",
+    "--all",
+    "--app",
+    "hub",
+    "--theme",
+    "both",
+    "--no-clean"
+  ],
+  "cwd": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "isolation_scope": "subprocess_per_recipe",
+  "auto_residual_popup_capture": false,
+  "success": 18,
+  "failed": 0,
+  "total": 18,
+  "expected_recipe_captures": 18,
+  "elapsed_seconds": 83.5,
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "resolutions": [
+    "960x600"
+  ],
+  "requested_scale_factor": 1.0,
+  "output_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8",
+  "matrix_paths": {
+    "csv": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.csv",
+    "markdown": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.md"
+  },
+  "evidence_summary": {
+    "semantic_visual_review": "NOT_RUN",
+    "visual_review_outcome": "REVIEW_INCOMPLETE",
+    "technical_capture_only": true,
+    "state_valid_capture_count": 10,
+    "technical_valid_capture_count": 18,
+    "technical_960_capture_count": 16,
+    "main_base_capture_count": 16,
+    "main_scale125_capture_count": 0,
+    "natural_dialog_capture_count": 2,
+    "main_scaled_other_capture_count": 0,
+    "unsupported_contract_count": 0,
+    "invalid_or_unsupported_contract_count": 0,
+    "contract_mismatch_count": 0,
+    "unique_hash_count": 16,
+    "duplicate_group_count": 2,
+    "duplicate_groups": [
+      {
+        "id": 1,
+        "sha256": "395cabc0911b0c11819e881b3ee6380480fe2f435e177749efcc6dae8fc112f1",
+        "count": 2,
+        "members": [
+          "hub/detalle/light",
+          "hub/detalle-plan/light"
+        ],
+        "files": [
+          "hub-detalle-light-960x600.png",
+          "hub-detalle-plan-light-960x600.png"
+        ]
+      },
+      {
+        "id": 2,
+        "sha256": "0b11f1b95a51cd816ad99fd139a7870ce43ea02c469bad19400a95b01402d7e6",
+        "count": 2,
+        "members": [
+          "hub/detalle/dark",
+          "hub/detalle-plan/dark"
+        ],
+        "files": [
+          "hub-detalle-dark-960x600.png",
+          "hub-detalle-plan-dark-960x600.png"
+        ]
+      }
+    ],
+    "status_counts": {
+      "REQUIRES_DATA_STATE": 4,
+      "DUPLICATE_SUSPECT": 2,
+      "FALLBACK": 2,
+      "CAPTURED_VALID": 10
+    },
+    "requires_runtime": [],
+    "requires_data_state": [
+      "hub-pacientes-light-960x600.png",
+      "hub-pacientes-empty-light-960x600.png",
+      "hub-pacientes-dark-960x600.png",
+      "hub-pacientes-empty-dark-960x600.png"
+    ],
+    "wrong_view_or_fallback": [
+      "hub-detalle-plan-light-960x600.png",
+      "hub-detalle-plan-dark-960x600.png"
+    ],
+    "main_capture_contract_mismatch": [],
+    "blank_or_flat": []
+  },
+  "results": [
+    {
+      "file": "hub-pacientes-light-960x600.png",
+      "app": "hub",
+      "view": "pacientes",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 63165,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [
+        "REQUIRES_DATA_STATE"
+      ],
+      "evidence_notes": [
+        "Patient rows are QA/demo data; real patients state is not covered."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": false,
+      "content_metrics": {
+        "gray_mean": 0.9459,
+        "gray_stddev": 0.0829
+      },
+      "sha256": "d4fe51cbb2a7d49bf435e766e65c092e3f6001080eb14d143c5f4d1ca4161a38",
+      "capture_status": "REQUIRES_DATA_STATE"
+    },
+    {
+      "file": "hub-pacientes-empty-light-960x600.png",
+      "app": "hub",
+      "view": "pacientes-empty",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 25567,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [
+        "REQUIRES_DATA_STATE"
+      ],
+      "evidence_notes": [
+        "Empty patients view depends on real data absence, not only QA in-memory clearing."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": false,
+      "content_metrics": {
+        "gray_mean": 0.9623,
+        "gray_stddev": 0.0586
+      },
+      "sha256": "c45899915129f66b87d6f666be2457ca5f981ff02c051c0e19ed7e9c3cb9e234",
+      "capture_status": "REQUIRES_DATA_STATE"
+    },
+    {
+      "file": "hub-detalle-light-960x600.png",
+      "app": "hub",
+      "view": "detalle",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 45213,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [
+        "DUPLICATE_SUSPECT"
+      ],
+      "evidence_notes": [
+        "Exact PNG hash is shared with another screen/theme/state."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": false,
+      "content_metrics": {
+        "gray_mean": 0.9283,
+        "gray_stddev": 0.1129
+      },
+      "sha256": "395cabc0911b0c11819e881b3ee6380480fe2f435e177749efcc6dae8fc112f1",
+      "capture_status": "DUPLICATE_SUSPECT",
+      "duplicate_group_id": 1,
+      "duplicate_group_members": [
+        "hub/detalle/light",
+        "hub/detalle-plan/light"
+      ]
+    },
+    {
+      "file": "hub-detalle-plan-light-960x600.png",
+      "app": "hub",
+      "view": "detalle-plan",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 45213,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [
+        "DUPLICATE_SUSPECT",
+        "FALLBACK"
+      ],
+      "evidence_notes": [
+        "Exact PNG hash is shared with another screen/theme/state.",
+        "Exact duplicate of its declared parent recipe; state was not visually reached."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": false,
+      "content_metrics": {
+        "gray_mean": 0.9283,
+        "gray_stddev": 0.1129
+      },
+      "sha256": "395cabc0911b0c11819e881b3ee6380480fe2f435e177749efcc6dae8fc112f1",
+      "capture_status": "FALLBACK",
+      "duplicate_group_id": 1,
+      "duplicate_group_members": [
+        "hub/detalle/light",
+        "hub/detalle-plan/light"
+      ]
+    },
+    {
+      "file": "hub-detalle-plan-timer-light-960x600.png",
+      "app": "hub",
+      "view": "detalle-plan-timer",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 47588,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.9293,
+        "gray_stddev": 0.1085
+      },
+      "sha256": "57d902597370795b8912a7c636cef267528ec1fc26689769fb3fdc15da15a280",
+      "capture_status": "CAPTURED_VALID"
+    },
+    {
+      "file": "hub-detalle-plan-rutina-light-960x600.png",
+      "app": "hub",
+      "view": "detalle-plan-rutina",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 43296,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.9314,
+        "gray_stddev": 0.1046
+      },
+      "sha256": "187e455f90383d6f7d47a6adbe74f00924686bf05bfc446105d7a3f0ca7d7729",
+      "capture_status": "CAPTURED_VALID"
+    },
+    {
+      "file": "hub-detalle-plan-activacion-light-960x600.png",
+      "app": "hub",
+      "view": "detalle-plan-activacion",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 52286,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.928,
+        "gray_stddev": 0.1149
+      },
+      "sha256": "16f7978eb5ee429f89d58208ab0f2bc2cd415b2356d9945076faf299a942d714",
+      "capture_status": "CAPTURED_VALID"
+    },
+    {
+      "file": "hub-textos-globales-light-960x600.png",
+      "app": "hub",
+      "view": "textos-globales",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 64853,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.9361,
+        "gray_stddev": 0.0865
+      },
+      "sha256": "e967a25d8c93c7fea8f7deaa3ad10a926da22d48e82cd20255fd6d0fcaf18a19",
+      "capture_status": "CAPTURED_VALID"
+    },
+    {
+      "file": "hub-detalle-resumen-ia-0-light-480x325.png",
+      "app": "hub",
+      "view": "detalle-resumen-ia-0",
+      "theme": "light",
+      "resolution": "480x325",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "480x325",
+      "captured_pixel_resolution": "480x325",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "natural_dialog",
+      "success": true,
+      "size_bytes": 15051,
+      "is_dialog_or_auxiliary": true,
+      "is_child_dialog": true,
+      "actual_resolution": "480x325",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [
+        "Natural dialog capture accepted as technical evidence; inspect for complete content, clipping, overlap, and accessible controls."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.9359,
+        "gray_stddev": 0.1468
+      },
+      "sha256": "ea66f6405a72dce793be0bcc78bce15604260a08c9d5ec957fb01adf636a44c9",
+      "capture_status": "CAPTURED_VALID"
+    },
+    {
+      "file": "hub-pacientes-dark-960x600.png",
+      "app": "hub",
+      "view": "pacientes",
+      "theme": "dark",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 62727,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [
+        "REQUIRES_DATA_STATE"
+      ],
+      "evidence_notes": [
+        "Patient rows are QA/demo data; real patients state is not covered."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": false,
+      "content_metrics": {
+        "gray_mean": 0.1176,
+        "gray_stddev": 0.0846
+      },
+      "sha256": "28fc0330f10044f76df95cd460a7f2fa799dfcad2db8eee495b842ff2b932c43",
+      "capture_status": "REQUIRES_DATA_STATE"
+    },
+    {
+      "file": "hub-pacientes-empty-dark-960x600.png",
+      "app": "hub",
+      "view": "pacientes-empty",
+      "theme": "dark",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 25828,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [
+        "REQUIRES_DATA_STATE"
+      ],
+      "evidence_notes": [
+        "Empty patients view depends on real data absence, not only QA in-memory clearing."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": false,
+      "content_metrics": {
+        "gray_mean": 0.1201,
+        "gray_stddev": 0.0556
+      },
+      "sha256": "2908a2cc227f229101876d115bad25d861b874efc83d3ff1aa5bc3352c4f3447",
+      "capture_status": "REQUIRES_DATA_STATE"
+    },
+    {
+      "file": "hub-detalle-dark-960x600.png",
+      "app": "hub",
+      "view": "detalle",
+      "theme": "dark",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 44142,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [
+        "DUPLICATE_SUSPECT"
+      ],
+      "evidence_notes": [
+        "Exact PNG hash is shared with another screen/theme/state."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": false,
+      "content_metrics": {
+        "gray_mean": 0.1174,
+        "gray_stddev": 0.1067
+      },
+      "sha256": "0b11f1b95a51cd816ad99fd139a7870ce43ea02c469bad19400a95b01402d7e6",
+      "capture_status": "DUPLICATE_SUSPECT",
+      "duplicate_group_id": 2,
+      "duplicate_group_members": [
+        "hub/detalle/dark",
+        "hub/detalle-plan/dark"
+      ]
+    },
+    {
+      "file": "hub-detalle-plan-dark-960x600.png",
+      "app": "hub",
+      "view": "detalle-plan",
+      "theme": "dark",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 44142,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [
+        "DUPLICATE_SUSPECT",
+        "FALLBACK"
+      ],
+      "evidence_notes": [
+        "Exact PNG hash is shared with another screen/theme/state.",
+        "Exact duplicate of its declared parent recipe; state was not visually reached."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": false,
+      "content_metrics": {
+        "gray_mean": 0.1174,
+        "gray_stddev": 0.1067
+      },
+      "sha256": "0b11f1b95a51cd816ad99fd139a7870ce43ea02c469bad19400a95b01402d7e6",
+      "capture_status": "FALLBACK",
+      "duplicate_group_id": 2,
+      "duplicate_group_members": [
+        "hub/detalle/dark",
+        "hub/detalle-plan/dark"
+      ]
+    },
+    {
+      "file": "hub-detalle-plan-timer-dark-960x600.png",
+      "app": "hub",
+      "view": "detalle-plan-timer",
+      "theme": "dark",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 46364,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.1164,
+        "gray_stddev": 0.1032
+      },
+      "sha256": "f960c8c7c1eacbcacf9f0b5fe7a24987c8ce5d28f8c5709398feadc8b4430b45",
+      "capture_status": "CAPTURED_VALID"
+    },
+    {
+      "file": "hub-detalle-plan-rutina-dark-960x600.png",
+      "app": "hub",
+      "view": "detalle-plan-rutina",
+      "theme": "dark",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 41968,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.1147,
+        "gray_stddev": 0.1
+      },
+      "sha256": "bc5d4760b0d9c5c457026039fc152701e4228f26d0d4d52f6edfefa1595d3421",
+      "capture_status": "CAPTURED_VALID"
+    },
+    {
+      "file": "hub-detalle-plan-activacion-dark-960x600.png",
+      "app": "hub",
+      "view": "detalle-plan-activacion",
+      "theme": "dark",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 50955,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.1203,
+        "gray_stddev": 0.1079
+      },
+      "sha256": "88c3f4642d75be8f23a5a1dc869cdffbf396031762a1f4d72a6729d7b7aa9f32",
+      "capture_status": "CAPTURED_VALID"
+    },
+    {
+      "file": "hub-textos-globales-dark-960x600.png",
+      "app": "hub",
+      "view": "textos-globales",
+      "theme": "dark",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 63331,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.1188,
+        "gray_stddev": 0.0798
+      },
+      "sha256": "6f0a7ac9763066d4f60ff6609e55154e3fd18428187fd9904929251a6a140129",
+      "capture_status": "CAPTURED_VALID"
+    },
+    {
+      "file": "hub-detalle-resumen-ia-0-dark-480x325.png",
+      "app": "hub",
+      "view": "detalle-resumen-ia-0",
+      "theme": "dark",
+      "resolution": "480x325",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "480x325",
+      "captured_pixel_resolution": "480x325",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "natural_dialog",
+      "success": true,
+      "size_bytes": 14617,
+      "is_dialog_or_auxiliary": true,
+      "is_child_dialog": true,
+      "actual_resolution": "480x325",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [
+        "Natural dialog capture accepted as technical evidence; inspect for complete content, clipping, overlap, and accessible controls."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.1432,
+        "gray_stddev": 0.1337
+      },
+      "sha256": "10c9a693b51262bb1b439e4e8f47a8249fa0b3985e33db3e17d49ef394717eaf",
+      "capture_status": "CAPTURED_VALID"
+    }
+  ]
+}

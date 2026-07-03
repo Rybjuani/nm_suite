@@ -1,0 +1,123 @@
+[QA] Using isolated database: C:\Users\nosom\AppData\Local\Temp\nm_qa_db_oladm9p6\test_nm_data.db
+[OUTPUT_ROTATED] 89 archivos viejos movidos a C:\Users\nosom\Desktop\nm_suite\_scratch_trash\captures_v8_2026-06-27_143603
+
+============================================================
+CAPTURE V8 — Exhaustive Harness
+Suite recipes: 35 | Hub recipes: 8
+Themes: 2 | Scale: 1 | Output: C:\Users\nosom\Desktop\nm_suite\qa\_captures_v8
+============================================================
+
+
+--- LIGHT ---
+  SUITE (35 recipes)
+    [home] CAPTURED
+    [home-no-score] CAPTURED
+    [onboarding] CAPTURED
+    [onboarding-error] CAPTURED
+    [recuperar-acceso] CAPTURED
+    [animo] CAPTURED
+    [dbt-now] CAPTURED
+    [dbt-library] CAPTURED
+    [dbt-practice-stop] CAPTURED
+    [respiracion] CAPTURED
+    [respiracion-running] CAPTURED
+    [respiracion-paused] CAPTURED
+    [registro] CAPTURED
+    [registro-step1-emotion] CAPTURED
+    [registro-step1-emotion-otro] CAPTURED
+    [registro-step2-distortions] CAPTURED
+    [registro-step3-filled] CAPTURED
+    [registro-success] CAPTURED
+    [rutina] CAPTURED
+    [rutina-all-completed] CAPTURED
+    [rutina-add-task] CAPTURED
+    [rutina-empty] CAPTURED
+    [actividades] CAPTURED
+    [actividades-marked-hice] CAPTURED
+    [actividades-filtered] CAPTURED
+    [actividades-empty] CAPTURED
+    [timer] CAPTURED
+    [timer-running] CAPTURED
+    [timer-paused] CAPTURED
+    [timer-empty] CAPTURED
+    [avisos] CAPTURED
+    [avisos-filter-activos] CAPTURED
+    [avisos-search] CAPTURED
+    [avisos-today] CAPTURED
+    [avisos-empty] CAPTURED
+  HUB (8 recipes)
+    [pacientes] CAPTURED
+    [pacientes-empty] CAPTURED
+    [detalle] CAPTURED
+    [detalle-plan-timer] CAPTURED
+    [detalle-plan-rutina] CAPTURED
+    [detalle-plan-activacion] CAPTURED
+    [textos-globales] CAPTURED
+    [detalle-resumen-ia] CAPTURED
+
+--- DARK ---
+  SUITE (35 recipes)
+    [home] CAPTURED
+    [home-no-score] CAPTURED
+    [onboarding] CAPTURED
+    [onboarding-error] CAPTURED
+    [recuperar-acceso] CAPTURED
+    [animo] CAPTURED
+    [dbt-now] CAPTURED
+    [dbt-library] CAPTURED
+    [dbt-practice-stop] CAPTURED
+    [respiracion] CAPTURED
+    [respiracion-running] CAPTURED
+    [respiracion-paused] CAPTURED
+    [registro] CAPTURED
+    [registro-step1-emotion] CAPTURED
+    [registro-step1-emotion-otro] CAPTURED
+    [registro-step2-distortions] CAPTURED
+    [registro-step3-filled] CAPTURED
+    [registro-success] CAPTURED
+    [rutina] CAPTURED
+    [rutina-all-completed] CAPTURED
+    [rutina-add-task] CAPTURED
+    [rutina-empty] CAPTURED
+    [actividades] CAPTURED
+    [actividades-marked-hice] CAPTURED
+    [actividades-filtered] CAPTURED
+    [actividades-empty] CAPTURED
+    [timer] CAPTURED
+    [timer-running] CAPTURED
+    [timer-paused] CAPTURED
+    [timer-empty] CAPTURED
+    [avisos] CAPTURED
+    [avisos-filter-activos] CAPTURED
+    [avisos-search] CAPTURED
+    [avisos-today] CAPTURED
+    [avisos-empty] CAPTURED
+  HUB (8 recipes)
+    [pacientes] CAPTURED
+    [pacientes-empty] CAPTURED
+    [detalle] CAPTURED
+    [detalle-plan-timer] CAPTURED
+    [detalle-plan-rutina] CAPTURED
+    [detalle-plan-activacion] CAPTURED
+    [textos-globales] CAPTURED
+    [detalle-resumen-ia] CAPTURED
+
+============================================================
+RESULTS
+  Saved captures:       86
+  Failed captures:      0
+  Total results:        86
+  Technical evidence:   86
+  Technical 960x600:    78
+  State-valid evidence: 80
+  Time:                 270.7s
+============================================================
+
+Manifest: C:\Users\nosom\Desktop\nm_suite\qa\_captures_v8\CAPTURE_MANIFEST.json
+Matrix:   C:\Users\nosom\Desktop\nm_suite\qa\_captures_v8\CAPTURE_MATRIX.md
+
+============================================================
+TECHNICAL_CAPTURE_ONLY
+Semantic visual review: NOT_RUN
+Visual review outcome: REVIEW_INCOMPLETE
+============================================================

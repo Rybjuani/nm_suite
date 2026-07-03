@@ -1,0 +1,132 @@
+{
+  "harness": "capture_v8.py",
+  "generated_at": "2026-06-20T06:07:53.240641",
+  "git": {
+    "head": "667352df23c04a1c0bbaa11478aded854c7c0804",
+    "short_head": "667352d",
+    "branch": "main",
+    "tracked_dirty": true,
+    "tracked_status": [
+      "M app/modules/rutina_qt.py"
+    ]
+  },
+  "command": [
+    "qa\\capture_v8.py",
+    "--app",
+    "suite",
+    "--view",
+    "rutina-empty",
+    "--theme",
+    "both",
+    "--no-clean"
+  ],
+  "cwd": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "isolation_scope": "subprocess_per_recipe",
+  "auto_residual_popup_capture": false,
+  "success": 2,
+  "failed": 0,
+  "total": 2,
+  "expected_recipe_captures": 2,
+  "elapsed_seconds": 6.1,
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "resolutions": [
+    "960x600"
+  ],
+  "requested_scale_factor": 1.0,
+  "output_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8",
+  "matrix_paths": {
+    "csv": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.csv",
+    "markdown": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.md"
+  },
+  "evidence_summary": {
+    "semantic_visual_review": "NOT_RUN",
+    "visual_review_outcome": "REVIEW_INCOMPLETE",
+    "technical_capture_only": true,
+    "state_valid_capture_count": 2,
+    "technical_valid_capture_count": 2,
+    "technical_960_capture_count": 2,
+    "main_base_capture_count": 2,
+    "main_scale125_capture_count": 0,
+    "natural_dialog_capture_count": 0,
+    "main_scaled_other_capture_count": 0,
+    "unsupported_contract_count": 0,
+    "invalid_or_unsupported_contract_count": 0,
+    "contract_mismatch_count": 0,
+    "unique_hash_count": 2,
+    "duplicate_group_count": 0,
+    "duplicate_groups": [],
+    "status_counts": {
+      "CAPTURED_VALID": 2
+    },
+    "requires_runtime": [],
+    "requires_data_state": [],
+    "wrong_view_or_fallback": [],
+    "main_capture_contract_mismatch": [],
+    "blank_or_flat": []
+  },
+  "results": [
+    {
+      "file": "suite-rutina-empty-light-960x600.png",
+      "app": "suite",
+      "view": "rutina-empty",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 16174,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.8853,
+        "gray_stddev": 0.0415
+      },
+      "sha256": "af0c46975c3726d6a8a684de3b143b300bf9ff40520d46d569fe48607fa6ba2f",
+      "capture_status": "CAPTURED_VALID"
+    },
+    {
+      "file": "suite-rutina-empty-dark-960x600.png",
+      "app": "suite",
+      "view": "rutina-empty",
+      "theme": "dark",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 16572,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.0962,
+        "gray_stddev": 0.0509
+      },
+      "sha256": "eb7f35f1e31b3c4369767db14f4acdd6baa9262d6a11ff488c5f1df2f1bde10b",
+      "capture_status": "CAPTURED_VALID"
+    }
+  ]
+}

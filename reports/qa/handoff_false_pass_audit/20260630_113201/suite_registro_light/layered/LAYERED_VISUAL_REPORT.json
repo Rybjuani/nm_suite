@@ -1,0 +1,195 @@
+{
+  "generated_at": "2026-06-30T11:33:07",
+  "authority": "LAYERED_VISUAL_COMPARE",
+  "source_policy": "Use qa/_mockup_canonical plus a fresh complete qa/_captures_v8 run for operational handoff decisions. Zip inputs are archive/forensics only and must not close VISUAL_REPAIR_HANDOFF.md items.",
+  "report_scope": "PARTIAL",
+  "report_filters": {
+    "app": null,
+    "view": null,
+    "theme": null,
+    "key": "suite:registro@light",
+    "keys_file": null,
+    "keys_file_keys": []
+  },
+  "report_evidence_valid": true,
+  "report_evidence_reason": null,
+  "handoff_closure_allowed": false,
+  "handoff_closure_reason": "partial_scope",
+  "sources": {
+    "canonical_source": "qa\\_mockup_canonical",
+    "actual_source": "qa\\_captures_v8",
+    "canonical_root": "qa\\_mockup_canonical",
+    "actual_root": "qa\\_captures_v8",
+    "canonical_source_kind": "directory",
+    "actual_source_kind": "directory",
+    "active_repo_pair": true
+  },
+  "thresholds": {
+    "min_ssim": 0.92,
+    "text_dense_canonical_std": 35.0,
+    "text_dense_min_windowed_ssim": 0.65,
+    "text_dense_max_changed_pixel_ratio": 0.1,
+    "max_mean_abs_diff": 0.035,
+    "max_changed_pixel_ratio": 0.08,
+    "changed_pixel_floor": 12,
+    "text_dense_changed_pixel_floor": 14,
+    "max_odiff_diff_pct": 8.0,
+    "odiff_threshold": 0.3,
+    "max_bbox_shift_px": 18,
+    "max_bbox_size_delta_px": 36,
+    "max_largest_region_ratio": 0.08,
+    "strong_changed_pixel_ratio": 0.18,
+    "strong_mean_abs_diff": 0.08,
+    "strong_largest_region_ratio": 0.18
+  },
+  "summary": {
+    "total": 1,
+    "pass": 1,
+    "real_divergence": 0,
+    "by_status": {
+      "PASS": 1
+    },
+    "by_severity": {
+      "none": 1
+    },
+    "by_repair_bucket": {
+      "NONE": 1
+    },
+    "qa_missed_raw_or_layout": 0,
+    "state_or_recipe_suspect": 0,
+    "suspicious_perfect_match": 0
+  },
+  "results": [
+    {
+      "key": "suite:registro@light",
+      "app": "suite",
+      "view": "registro",
+      "theme": "light",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-registro-light-960x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-registro-light-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.50033,
+        "windowed_ssim": 0.86984,
+        "canonical_gray_std": 18.476,
+        "mean_abs_diff": 0.01913,
+        "max_abs_diff": 0.81176,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 29840,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.05181,
+        "largest_region_ratio": 0.008318
+      },
+      "layout": {
+        "target_content_bbox": [
+          1,
+          18,
+          959,
+          582
+        ],
+        "actual_content_bbox": [
+          0,
+          17,
+          960,
+          583
+        ],
+        "bbox_dx": -1,
+        "bbox_dy": -1,
+        "bbox_dw": 1,
+        "bbox_dh": 1,
+        "max_bbox_delta_px": 1,
+        "bbox_area_delta_ratio": 0.00276
+      },
+      "odiff": {
+        "diff_pixels": 7084,
+        "diff_percentage": 1.23,
+        "diff_png_path": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\handoff_false_pass_audit\\20260630_113201\\suite_registro_light\\layered\\odiff\\suite-registro-light-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 831,
+          "y": 426,
+          "w": 105,
+          "h": 49,
+          "area": 4791,
+          "area_ratio": 0.008318,
+          "hint": "component_region"
+        },
+        {
+          "x": 0,
+          "y": 48,
+          "w": 960,
+          "h": 552,
+          "area": 3382,
+          "area_ratio": 0.005872,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 81,
+          "y": 18,
+          "w": 168,
+          "h": 15,
+          "area": 1299,
+          "area_ratio": 0.002255,
+          "hint": "component_region"
+        },
+        {
+          "x": 45,
+          "y": 328,
+          "w": 869,
+          "h": 30,
+          "area": 962,
+          "area_ratio": 0.00167,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 35,
+          "y": 402,
+          "w": 890,
+          "h": 4,
+          "area": 896,
+          "area_ratio": 0.001556,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 209,
+          "y": 82,
+          "w": 193,
+          "h": 19,
+          "area": 892,
+          "area_ratio": 0.001549,
+          "hint": "component_region"
+        },
+        {
+          "x": 50,
+          "y": 216,
+          "w": 862,
+          "h": 6,
+          "area": 876,
+          "area_ratio": 0.001521,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 57,
+          "y": 335,
+          "w": 846,
+          "h": 1,
+          "area": 846,
+          "area_ratio": 0.001469,
+          "hint": "layout_shift_or_spacing"
+        }
+      ],
+      "panel_path": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\handoff_false_pass_audit\\20260630_113201\\suite_registro_light\\layered\\panels\\suite_registro_light.png"
+    }
+  ]
+}

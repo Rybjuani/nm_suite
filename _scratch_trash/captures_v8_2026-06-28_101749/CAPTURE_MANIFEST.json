@@ -1,0 +1,93 @@
+{
+  "harness": "capture_v8.py",
+  "generated_at": "2026-06-28T10:17:31.462717",
+  "git": {
+    "head": "023b96803a78c2f5cd4a6d2e4a74c14e65797c3a",
+    "short_head": "023b9680",
+    "branch": "main",
+    "tracked_dirty": true,
+    "tracked_status": [
+      "M VISUAL_REPAIR_HANDOFF.md",
+      " M app/modules/dbt_qt.py"
+    ]
+  },
+  "command": [
+    "qa\\capture_v8.py",
+    "--app",
+    "suite",
+    "--view",
+    "dbt-practice-stop",
+    "--theme",
+    "light"
+  ],
+  "cwd": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "isolation_scope": "subprocess_per_recipe",
+  "auto_residual_popup_capture": false,
+  "success": 0,
+  "failed": 1,
+  "total": 1,
+  "expected_recipe_captures": 1,
+  "elapsed_seconds": 2.8,
+  "themes": [
+    "light"
+  ],
+  "resolutions": [
+    "960x600"
+  ],
+  "requested_scale_factor": 1.0,
+  "output_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8",
+  "matrix_paths": {
+    "csv": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.csv",
+    "markdown": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.md"
+  },
+  "evidence_summary": {
+    "semantic_visual_review": "NOT_RUN",
+    "visual_review_outcome": "REVIEW_INCOMPLETE",
+    "technical_capture_only": true,
+    "state_valid_capture_count": 0,
+    "technical_valid_capture_count": 0,
+    "technical_960_capture_count": 0,
+    "main_base_capture_count": 1,
+    "main_scale125_capture_count": 0,
+    "natural_dialog_capture_count": 0,
+    "main_scaled_other_capture_count": 0,
+    "unsupported_contract_count": 0,
+    "invalid_or_unsupported_contract_count": 0,
+    "contract_mismatch_count": 0,
+    "unique_hash_count": 0,
+    "duplicate_group_count": 0,
+    "duplicate_groups": [],
+    "status_counts": {
+      "CAPTURE_FAILED": 1
+    },
+    "requires_runtime": [],
+    "requires_data_state": [],
+    "wrong_view_or_fallback": [],
+    "main_capture_contract_mismatch": [],
+    "blank_or_flat": []
+  },
+  "results": [
+    {
+      "file": null,
+      "app": "suite",
+      "view": "dbt-practice-stop",
+      "theme": "light",
+      "success": false,
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "is_dialog_or_auxiliary": false,
+      "isolation_scope": "subprocess_per_recipe",
+      "error": "child process returned 1",
+      "traceback": "============================================================\nCAPTURE V8 — Exhaustive Harness\nSuite recipes: 1 | Hub recipes: 0\nThemes: 1 | Scale: 1 | Output: C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\n============================================================\n\n\n--- LIGHT ---\n  SUITE (1 recipes)\n    [dbt-practice-stop] FAIL (name 'QPixmap' is not defined)\n\n============================================================\nRESULTS\n  Saved captures:       0\n  Failed captures:      1\n  Total results:        1\n  Technical evidence:   0\n  Technical 960x600:    0\n  State-valid evidence: 0\n  Time:                 2.4s\n============================================================\n\nManifest: C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MANIFEST.json\nMatrix:   C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.md\n\n============================================================\nTECHNICAL_CAPTURE_ONLY\nSemantic visual review: NOT_RUN\nVisual review outcome: REVIEW_INCOMPLETE\n============================================================",
+      "evidence_flags": [
+        "CAPTURE_FAILED"
+      ],
+      "evidence_notes": [],
+      "technical_capture_valid": false,
+      "state_evidence_valid": false,
+      "capture_status": "CAPTURE_FAILED"
+    }
+  ]
+}

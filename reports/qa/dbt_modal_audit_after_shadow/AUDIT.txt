@@ -1,0 +1,109 @@
+Modal backdrop/blur anti-fraud audit
+Generated: 2026-07-02T01:04:19
+Canonical: C:\Users\nosom\Desktop\nm_suite\qa\_mockup_canonical
+Actual: C:\Users\nosom\Desktop\nm_suite\qa\_captures_v8
+Summary: {'total': 34, 'pass': 33, 'fail': 1, 'test_blur_pass': False, 'codes': ['MODAL_CENTER_FAIL'], 'skipped_unavailable_runtime': []}
+Safety: does not replace layered_visual_compare, qa/anti_fraud_scan.py, or VAS.
+
+FAIL hub:detalle-resumen-ia-0@dark MODAL_CENTER_FAIL
+  centered=FAIL bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.566976, "actual_image_size": "960x600", "actual_modal_bbox": [96, 68, 742, 242], "back_screen_mean_abs_delta": 8.0094, "backdrop_mean_abs_delta": 4.8983, "bbox_size_delta_px": [12, 14], "blur_ratio_delta": 0.026675, "canonical_blur_ratio": 0.540301, "canonical_image_size": "960x600", "canonical_modal_bbox": [101, 252, 730, 228], "center_delta_px": [1.0, 177.0]}
+PASS hub:detalle-resumen-ia-0@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.263017, "actual_image_size": "960x600", "actual_modal_bbox": [99, 49, 761, 502], "back_screen_mean_abs_delta": 7.9933, "backdrop_mean_abs_delta": 2.7711, "bbox_size_delta_px": [1, 0], "blur_ratio_delta": 0.088691, "canonical_blur_ratio": 0.174326, "canonical_image_size": "960x600", "canonical_modal_bbox": [100, 49, 760, 502], "center_delta_px": [0.5, 0.0]}
+PASS suite:dbt-practice-check-facts@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.200589, "actual_image_size": "960x600", "actual_modal_bbox": [194, 139, 588, 417], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0349, "bbox_size_delta_px": [26, 18], "blur_ratio_delta": 0.045329, "canonical_blur_ratio": 0.155261, "canonical_image_size": "960x600", "canonical_modal_bbox": [181, 154, 614, 399], "center_delta_px": [0.0, 6.0]}
+PASS suite:dbt-practice-check-facts@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.146874, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 400], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.6675, "bbox_size_delta_px": [0, 0], "blur_ratio_delta": 0.016852, "canonical_blur_ratio": 0.163726, "canonical_image_size": "960x600", "canonical_modal_bbox": [183, 125, 594, 400], "center_delta_px": [0.0, 0.0]}
+PASS suite:dbt-practice-dear-man@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.200589, "actual_image_size": "960x600", "actual_modal_bbox": [194, 139, 588, 417], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0349, "bbox_size_delta_px": [26, 18], "blur_ratio_delta": 0.045326, "canonical_blur_ratio": 0.155263, "canonical_image_size": "960x600", "canonical_modal_bbox": [181, 154, 614, 399], "center_delta_px": [0.0, 6.0]}
+PASS suite:dbt-practice-dear-man@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.148535, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 411], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.647, "bbox_size_delta_px": [6, 0], "blur_ratio_delta": 0.018478, "canonical_blur_ratio": 0.167014, "canonical_image_size": "960x600", "canonical_modal_bbox": [180, 123, 600, 411], "center_delta_px": [0.0, 2.0]}
+PASS suite:dbt-practice-fast@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.200589, "actual_image_size": "960x600", "actual_modal_bbox": [194, 139, 588, 417], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0348, "bbox_size_delta_px": [26, 18], "blur_ratio_delta": 0.045332, "canonical_blur_ratio": 0.155258, "canonical_image_size": "960x600", "canonical_modal_bbox": [181, 154, 614, 399], "center_delta_px": [0.0, 6.0]}
+PASS suite:dbt-practice-fast@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.148531, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 411], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.6341, "bbox_size_delta_px": [6, 1], "blur_ratio_delta": 0.018085, "canonical_blur_ratio": 0.166616, "canonical_image_size": "960x600", "canonical_modal_bbox": [180, 123, 600, 412], "center_delta_px": [0.0, 1.5]}
+PASS suite:dbt-practice-give@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.197389, "actual_image_size": "960x600", "actual_modal_bbox": [194, 139, 588, 417], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0863, "bbox_size_delta_px": [12, 12], "blur_ratio_delta": 0.044699, "canonical_blur_ratio": 0.152691, "canonical_image_size": "960x600", "canonical_modal_bbox": [191, 147, 600, 405], "center_delta_px": [3.0, 2.0]}
+PASS suite:dbt-practice-give@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.148531, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 411], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.6342, "bbox_size_delta_px": [6, 1], "blur_ratio_delta": 0.018084, "canonical_blur_ratio": 0.166616, "canonical_image_size": "960x600", "canonical_modal_bbox": [180, 123, 600, 412], "center_delta_px": [0.0, 1.5]}
+PASS suite:dbt-practice-non-judgmental@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.200589, "actual_image_size": "960x600", "actual_modal_bbox": [194, 139, 588, 417], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0348, "bbox_size_delta_px": [26, 18], "blur_ratio_delta": 0.045332, "canonical_blur_ratio": 0.155258, "canonical_image_size": "960x600", "canonical_modal_bbox": [181, 154, 614, 399], "center_delta_px": [0.0, 6.0]}
+PASS suite:dbt-practice-non-judgmental@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.148531, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 411], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.6341, "bbox_size_delta_px": [6, 1], "blur_ratio_delta": 0.018092, "canonical_blur_ratio": 0.166624, "canonical_image_size": "960x600", "canonical_modal_bbox": [180, 123, 600, 412], "center_delta_px": [0.0, 1.5]}
+PASS suite:dbt-practice-observe-describe@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.200589, "actual_image_size": "960x600", "actual_modal_bbox": [194, 139, 588, 417], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0349, "bbox_size_delta_px": [26, 18], "blur_ratio_delta": 0.04533, "canonical_blur_ratio": 0.15526, "canonical_image_size": "960x600", "canonical_modal_bbox": [181, 154, 614, 399], "center_delta_px": [0.0, 6.0]}
+PASS suite:dbt-practice-observe-describe@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.148531, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 411], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.6341, "bbox_size_delta_px": [6, 1], "blur_ratio_delta": 0.018091, "canonical_blur_ratio": 0.166623, "canonical_image_size": "960x600", "canonical_modal_bbox": [180, 123, 600, 412], "center_delta_px": [0.0, 1.5]}
+PASS suite:dbt-practice-opposite-action@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.197518, "actual_image_size": "960x600", "actual_modal_bbox": [194, 146, 588, 410], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0874, "bbox_size_delta_px": [12, 5], "blur_ratio_delta": 0.044485, "canonical_blur_ratio": 0.153033, "canonical_image_size": "960x600", "canonical_modal_bbox": [191, 147, 600, 405], "center_delta_px": [3.0, 1.5]}
+PASS suite:dbt-practice-opposite-action@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.148535, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 411], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.6469, "bbox_size_delta_px": [6, 0], "blur_ratio_delta": 0.018475, "canonical_blur_ratio": 0.167011, "canonical_image_size": "960x600", "canonical_modal_bbox": [180, 123, 600, 411], "center_delta_px": [0.0, 2.0]}
+PASS suite:dbt-practice-participate@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.197389, "actual_image_size": "960x600", "actual_modal_bbox": [194, 139, 588, 417], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0863, "bbox_size_delta_px": [12, 12], "blur_ratio_delta": 0.044694, "canonical_blur_ratio": 0.152695, "canonical_image_size": "960x600", "canonical_modal_bbox": [191, 147, 600, 405], "center_delta_px": [3.0, 2.0]}
+PASS suite:dbt-practice-participate@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.148535, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 411], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.647, "bbox_size_delta_px": [6, 0], "blur_ratio_delta": 0.018477, "canonical_blur_ratio": 0.167012, "canonical_image_size": "960x600", "canonical_modal_bbox": [180, 123, 600, 411], "center_delta_px": [0.0, 2.0]}
+PASS suite:dbt-practice-please@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.200625, "actual_image_size": "960x600", "actual_modal_bbox": [194, 139, 588, 417], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0345, "bbox_size_delta_px": [26, 17], "blur_ratio_delta": 0.045361, "canonical_blur_ratio": 0.155264, "canonical_image_size": "960x600", "canonical_modal_bbox": [181, 153, 614, 400], "center_delta_px": [0.0, 5.5]}
+PASS suite:dbt-practice-please@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.148535, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 411], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.647, "bbox_size_delta_px": [6, 0], "blur_ratio_delta": 0.018472, "canonical_blur_ratio": 0.167008, "canonical_image_size": "960x600", "canonical_modal_bbox": [180, 123, 600, 411], "center_delta_px": [0.0, 2.0]}
+PASS suite:dbt-practice-problem-solving@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.200625, "actual_image_size": "960x600", "actual_modal_bbox": [194, 139, 588, 417], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0345, "bbox_size_delta_px": [26, 17], "blur_ratio_delta": 0.04536, "canonical_blur_ratio": 0.155265, "canonical_image_size": "960x600", "canonical_modal_bbox": [181, 153, 614, 400], "center_delta_px": [0.0, 5.5]}
+PASS suite:dbt-practice-problem-solving@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.146874, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 400], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.6676, "bbox_size_delta_px": [0, 0], "blur_ratio_delta": 0.01685, "canonical_blur_ratio": 0.163724, "canonical_image_size": "960x600", "canonical_modal_bbox": [183, 125, 594, 400], "center_delta_px": [0.0, 0.0]}
+PASS suite:dbt-practice-radical-acceptance@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.200554, "actual_image_size": "960x600", "actual_modal_bbox": [194, 139, 588, 417], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0353, "bbox_size_delta_px": [26, 19], "blur_ratio_delta": 0.045299, "canonical_blur_ratio": 0.155255, "canonical_image_size": "960x600", "canonical_modal_bbox": [181, 155, 614, 398], "center_delta_px": [0.0, 6.5]}
+PASS suite:dbt-practice-radical-acceptance@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.148535, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 411], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.647, "bbox_size_delta_px": [6, 0], "blur_ratio_delta": 0.018475, "canonical_blur_ratio": 0.16701, "canonical_image_size": "960x600", "canonical_modal_bbox": [180, 123, 600, 411], "center_delta_px": [0.0, 2.0]}
+PASS suite:dbt-practice-self-soothe@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.200625, "actual_image_size": "960x600", "actual_modal_bbox": [194, 139, 588, 417], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0345, "bbox_size_delta_px": [26, 17], "blur_ratio_delta": 0.045362, "canonical_blur_ratio": 0.155263, "canonical_image_size": "960x600", "canonical_modal_bbox": [181, 153, 614, 400], "center_delta_px": [0.0, 5.5]}
+PASS suite:dbt-practice-self-soothe@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.148531, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 411], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.6342, "bbox_size_delta_px": [6, 1], "blur_ratio_delta": 0.018088, "canonical_blur_ratio": 0.166619, "canonical_image_size": "960x600", "canonical_modal_bbox": [180, 123, 600, 412], "center_delta_px": [0.0, 1.5]}
+PASS suite:dbt-practice-stop@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.197389, "actual_image_size": "960x600", "actual_modal_bbox": [194, 139, 588, 417], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0863, "bbox_size_delta_px": [12, 12], "blur_ratio_delta": 0.044696, "canonical_blur_ratio": 0.152693, "canonical_image_size": "960x600", "canonical_modal_bbox": [191, 147, 600, 405], "center_delta_px": [3.0, 2.0]}
+PASS suite:dbt-practice-stop@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.148535, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 411], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.6342, "bbox_size_delta_px": [6, 0], "blur_ratio_delta": 0.018062, "canonical_blur_ratio": 0.166597, "canonical_image_size": "960x600", "canonical_modal_bbox": [180, 123, 600, 411], "center_delta_px": [0.0, 2.0]}
+PASS suite:dbt-practice-tipp@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.197389, "actual_image_size": "960x600", "actual_modal_bbox": [194, 139, 588, 417], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0863, "bbox_size_delta_px": [12, 12], "blur_ratio_delta": 0.044695, "canonical_blur_ratio": 0.152695, "canonical_image_size": "960x600", "canonical_modal_bbox": [191, 147, 600, 405], "center_delta_px": [3.0, 2.0]}
+PASS suite:dbt-practice-tipp@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.148531, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 411], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.6341, "bbox_size_delta_px": [6, 1], "blur_ratio_delta": 0.018093, "canonical_blur_ratio": 0.166624, "canonical_image_size": "960x600", "canonical_modal_bbox": [180, 123, 600, 412], "center_delta_px": [0.0, 1.5]}
+PASS suite:dbt-practice-validation-limits@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.200589, "actual_image_size": "960x600", "actual_modal_bbox": [194, 139, 588, 417], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0349, "bbox_size_delta_px": [26, 18], "blur_ratio_delta": 0.045328, "canonical_blur_ratio": 0.155261, "canonical_image_size": "960x600", "canonical_modal_bbox": [181, 154, 614, 399], "center_delta_px": [0.0, 6.0]}
+PASS suite:dbt-practice-validation-limits@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.148535, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 411], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.6469, "bbox_size_delta_px": [6, 0], "blur_ratio_delta": 0.018475, "canonical_blur_ratio": 0.16701, "canonical_image_size": "960x600", "canonical_modal_bbox": [180, 123, 600, 411], "center_delta_px": [0.0, 2.0]}
+PASS suite:dbt-practice-wise-mind@dark test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.197389, "actual_image_size": "960x600", "actual_modal_bbox": [194, 139, 588, 417], "back_screen_mean_abs_delta": 10.9296, "backdrop_mean_abs_delta": 3.0863, "bbox_size_delta_px": [12, 12], "blur_ratio_delta": 0.044697, "canonical_blur_ratio": 0.152692, "canonical_image_size": "960x600", "canonical_modal_bbox": [191, 147, 600, 405], "center_delta_px": [3.0, 2.0]}
+PASS suite:dbt-practice-wise-mind@light test-blur-pass
+  centered=PASS bbox=PASS backdrop=PASS blur_dim=PASS back_screen=PASS
+  metrics={"actual_blur_ratio": 0.146874, "actual_image_size": "960x600", "actual_modal_bbox": [183, 125, 594, 400], "back_screen_mean_abs_delta": 10.7383, "backdrop_mean_abs_delta": 2.6676, "bbox_size_delta_px": [0, 0], "blur_ratio_delta": 0.016841, "canonical_blur_ratio": 0.163715, "canonical_image_size": "960x600", "canonical_modal_bbox": [183, 125, 594, 400], "center_delta_px": [0.0, 0.0]}

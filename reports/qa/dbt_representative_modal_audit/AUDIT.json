@@ -1,0 +1,64 @@
+{
+  "generated_at": "2026-07-02T00:25:29",
+  "authority": "MODAL_BACKDROP_BLUR_ANTI_FRAUD",
+  "inputs": {
+    "canonical_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_canonical",
+    "actual_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8",
+    "keys": [
+      "suite:dbt-practice-wise-mind@light"
+    ],
+    "canonical_modal_keys": [
+      "suite:dbt-practice-wise-mind@light"
+    ]
+  },
+  "tolerances": {
+    "center_tolerance_px": 18,
+    "bbox_tolerance_px": 32,
+    "backdrop_mean_tolerance": 22.0,
+    "blur_ratio_tolerance": 0.2,
+    "back_screen_mean_tolerance": 35.0,
+    "note": "Tolerances cover renderer noise and Qt-vs-Chromium rasterization; they do not permit invented dim/blur/backdrop."
+  },
+  "coexists_with": [
+    "qa/capture_v8.py",
+    "qa/layered_visual_compare.py",
+    "qa/anti_fraud_scan.py",
+    "qa/vas_gate.py"
+  ],
+  "summary": {
+    "total": 1,
+    "pass": 0,
+    "fail": 1,
+    "test_blur_pass": false,
+    "codes": [
+      "BACKDROP_CAPTURE_MISSING"
+    ],
+    "skipped_unavailable_runtime": []
+  },
+  "results": [
+    {
+      "key": "suite:dbt-practice-wise-mind@light",
+      "verdict": "FAIL",
+      "codes": [
+        "BACKDROP_CAPTURE_MISSING"
+      ],
+      "canonical_file": "suite-dbt-practice-wise-mind-light-960x600.png",
+      "actual_file": "suite-dbt-practice-wise-mind-light-960x600.png",
+      "back_screen_key": "suite:dbt-library@light",
+      "canonical_surface": "window_modal",
+      "actual_surface": "",
+      "canonical_resolution": "960x600",
+      "actual_resolution": "960x600",
+      "centered": "not_observable_modal_crop",
+      "bbox_size": "PASS",
+      "backdrop_region": "not_observable_modal_crop",
+      "blur_dim_equivalence": "not_observable_modal_crop",
+      "back_screen_dependency": "PASS",
+      "metrics": {
+        "canonical_image_size": "960x600",
+        "actual_image_size": "960x600",
+        "back_screen_mean_abs_delta": 11.6437
+      }
+    }
+  ]
+}

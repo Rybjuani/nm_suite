@@ -1,0 +1,136 @@
+{
+  "generated_at": "2026-06-30T11:41:55",
+  "authority": "LAYERED_VISUAL_COMPARE",
+  "source_policy": "Use qa/_mockup_canonical plus a fresh complete qa/_captures_v8 run for operational handoff decisions. Zip inputs are archive/forensics only and must not close VISUAL_REPAIR_HANDOFF.md items.",
+  "report_scope": "PARTIAL",
+  "report_filters": {
+    "app": null,
+    "view": null,
+    "theme": null,
+    "key": "hub:pacientes@dark",
+    "keys_file": null,
+    "keys_file_keys": []
+  },
+  "report_evidence_valid": true,
+  "report_evidence_reason": null,
+  "handoff_closure_allowed": false,
+  "handoff_closure_reason": "partial_scope; real_divergence_present",
+  "sources": {
+    "canonical_source": "qa\\_mockup_canonical",
+    "actual_source": "qa\\_captures_v8",
+    "canonical_root": "qa\\_mockup_canonical",
+    "actual_root": "qa\\_captures_v8",
+    "canonical_source_kind": "directory",
+    "actual_source_kind": "directory",
+    "active_repo_pair": true
+  },
+  "thresholds": {
+    "min_ssim": 0.92,
+    "text_dense_canonical_std": 35.0,
+    "text_dense_min_windowed_ssim": 0.65,
+    "text_dense_max_changed_pixel_ratio": 0.1,
+    "max_mean_abs_diff": 0.035,
+    "max_changed_pixel_ratio": 0.08,
+    "changed_pixel_floor": 12,
+    "text_dense_changed_pixel_floor": 14,
+    "max_odiff_diff_pct": 8.0,
+    "odiff_threshold": 0.3,
+    "max_bbox_shift_px": 18,
+    "max_bbox_size_delta_px": 36,
+    "max_largest_region_ratio": 0.08,
+    "strong_changed_pixel_ratio": 0.18,
+    "strong_mean_abs_diff": 0.08,
+    "strong_largest_region_ratio": 0.18
+  },
+  "summary": {
+    "total": 1,
+    "pass": 0,
+    "real_divergence": 1,
+    "by_status": {
+      "FAIL": 1
+    },
+    "by_severity": {
+      "high": 1
+    },
+    "by_repair_bucket": {
+      "LAYOUT_FIX": 1
+    },
+    "qa_missed_raw_or_layout": 1,
+    "state_or_recipe_suspect": 0,
+    "suspicious_perfect_match": 0
+  },
+  "results": [
+    {
+      "key": "hub:pacientes@dark",
+      "app": "hub",
+      "view": "pacientes",
+      "theme": "dark",
+      "status": "FAIL",
+      "severity": "high",
+      "repair_bucket": "LAYOUT_FIX",
+      "real_divergence": true,
+      "suspicious_perfect_match": false,
+      "findings": [
+        "raw_pixel_delta",
+        "layout_drift",
+        "qa_missed_raw_or_layout"
+      ],
+      "canonical_file": "qa\\_mockup_canonical\\hub-pacientes-dark-960x600.png",
+      "actual_file": "qa\\_captures_v8\\hub-pacientes-dark-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.13568,
+        "windowed_ssim": 0.71532,
+        "canonical_gray_std": 28.257,
+        "mean_abs_diff": 0.05257,
+        "max_abs_diff": 0.96078,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 160827,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.27921,
+        "largest_region_ratio": 0.279214
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          0,
+          960,
+          600
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          960,
+          498
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": 16,
+        "bbox_dw": 0,
+        "bbox_dh": -102,
+        "max_bbox_delta_px": 102,
+        "bbox_area_delta_ratio": 0.17
+      },
+      "odiff": {
+        "diff_pixels": 27903,
+        "diff_percentage": 4.84,
+        "diff_png_path": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\handoff_false_pass_audit\\20260630_113720\\hub_pacientes_dark\\layered\\odiff\\hub-pacientes-dark-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 960,
+          "h": 600,
+          "area": 160827,
+          "area_ratio": 0.279214,
+          "hint": "global_state_or_layout"
+        }
+      ],
+      "panel_path": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\handoff_false_pass_audit\\20260630_113720\\hub_pacientes_dark\\layered\\panels\\hub_pacientes_dark.png"
+    }
+  ]
+}

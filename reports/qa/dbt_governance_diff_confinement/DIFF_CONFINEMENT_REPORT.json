@@ -1,0 +1,207 @@
+{
+  "generated_at_utc": "2026-07-02T04:45:31.122672+00:00",
+  "repo": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "base": "HEAD",
+  "allow_paths": [
+    "VISUAL_REPAIR_HANDOFF.md",
+    "VISUAL_QA_AGENT_PROTOCOL.md"
+  ],
+  "allow_blocks": [],
+  "summary": {
+    "verdict": "PASS",
+    "diff_confined": true,
+    "touched_count": 2,
+    "permitted_count": 2,
+    "prohibited_count": 0,
+    "hunks_outside_block_count": 0
+  },
+  "touched_files": [
+    "VISUAL_QA_AGENT_PROTOCOL.md",
+    "VISUAL_REPAIR_HANDOFF.md"
+  ],
+  "prohibited_files": [],
+  "hunks_outside_block": [],
+  "files": [
+    {
+      "path": "VISUAL_QA_AGENT_PROTOCOL.md",
+      "allowed_by_path": true,
+      "has_block_markers": false,
+      "status": "PERMITTED",
+      "hunks": [
+        {
+          "file": "VISUAL_QA_AGENT_PROTOCOL.md",
+          "header": "@@ -329,0 +330,5 @@ Do not mark an item complete because of:",
+          "old_start": 329,
+          "old_count": 0,
+          "new_start": 330,
+          "new_count": 5,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_QA_AGENT_PROTOCOL.md",
+          "header": "@@ -336,0 +342,3 @@ Do not mark an item complete because of:",
+          "old_start": 336,
+          "old_count": 0,
+          "new_start": 342,
+          "new_count": 3,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_QA_AGENT_PROTOCOL.md",
+          "header": "@@ -345,0 +354,3 @@ The checklist is a sequential queue, not a global audit. Rules:",
+          "old_start": 345,
+          "old_count": 0,
+          "new_start": 354,
+          "new_count": 3,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_QA_AGENT_PROTOCOL.md",
+          "header": "@@ -395,0 +407,3 @@ items.",
+          "old_start": 395,
+          "old_count": 0,
+          "new_start": 407,
+          "new_count": 3,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        }
+      ]
+    },
+    {
+      "path": "VISUAL_REPAIR_HANDOFF.md",
+      "allowed_by_path": true,
+      "has_block_markers": false,
+      "status": "PERMITTED",
+      "hunks": [
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -65,0 +66,4 @@ comparator `PASS`.",
+          "old_start": 65,
+          "old_count": 0,
+          "new_start": 66,
+          "new_count": 4,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -205,0 +210,8 @@ Runtime scope/noise hardening auxiliar:",
+          "old_start": 205,
+          "old_count": 0,
+          "new_start": 210,
+          "new_count": 8,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -490 +502,15 @@ flat-region divergence.",
+          "old_start": 490,
+          "old_count": 1,
+          "new_start": 502,
+          "new_count": 15,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -496,10 +522 @@ Capture command:",
+          "old_start": 496,
+          "old_count": 10,
+          "new_start": 522,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -514,11 +531,4 @@ Comparator command:",
+          "old_start": 514,
+          "old_count": 11,
+          "new_start": 531,
+          "new_count": 4,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -683,3 +693,88 @@ regression anchors.",
+          "old_start": 683,
+          "old_count": 3,
+          "new_start": 693,
+          "new_count": 88,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -688 +783 @@ regression anchors.",
+          "old_start": 688,
+          "old_count": 1,
+          "new_start": 783,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -691 +786 @@ regression anchors.",
+          "old_start": 691,
+          "old_count": 1,
+          "new_start": 786,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -693 +788 @@ regression anchors.",
+          "old_start": 693,
+          "old_count": 1,
+          "new_start": 788,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -695 +790 @@ regression anchors.",
+          "old_start": 695,
+          "old_count": 1,
+          "new_start": 790,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        },
+        {
+          "file": "VISUAL_REPAIR_HANDOFF.md",
+          "header": "@@ -697 +792 @@ regression anchors.",
+          "old_start": 697,
+          "old_count": 1,
+          "new_start": 792,
+          "new_count": 1,
+          "allowed_by_block": true,
+          "block_required": false,
+          "reason": "no_block_marker_required"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+raw_changed=True
+eol_only_delta=True
+normalized_changed=False
+original_eol={'crlf': 0, 'lf': 1880, 'cr': 0}
+modified_eol={'crlf': 1880, 'lf': 0, 'cr': 0}

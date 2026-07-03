@@ -1,0 +1,2 @@
+producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
+suite,rutina,Rutina default (parcial),light,960x600,navigate:rutina > drain:8 > capture:rutina,suite-rutina-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

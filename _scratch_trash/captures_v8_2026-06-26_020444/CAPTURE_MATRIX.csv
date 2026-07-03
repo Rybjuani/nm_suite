@@ -1,0 +1,3 @@
+producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
+suite,avisos-filter-activos,Avisos filtro Activos,dark,960x600,navigate:avisos > call:_avisos_filter_activos > drain:6 > capture:avisos-filter-activos,suite-avisos-filter-activos-dark-960x600.png,pendiente,pendiente,requiere inspeccion manual
+suite,avisos-filter-activos,Avisos filtro Activos,light,960x600,navigate:avisos > call:_avisos_filter_activos > drain:6 > capture:avisos-filter-activos,suite-avisos-filter-activos-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

@@ -1,0 +1,195 @@
+{
+  "generated_at": "2026-06-30T11:32:35",
+  "authority": "LAYERED_VISUAL_COMPARE",
+  "source_policy": "Use qa/_mockup_canonical plus a fresh complete qa/_captures_v8 run for operational handoff decisions. Zip inputs are archive/forensics only and must not close VISUAL_REPAIR_HANDOFF.md items.",
+  "report_scope": "PARTIAL",
+  "report_filters": {
+    "app": null,
+    "view": null,
+    "theme": null,
+    "key": "suite:onboarding-error@dark",
+    "keys_file": null,
+    "keys_file_keys": []
+  },
+  "report_evidence_valid": true,
+  "report_evidence_reason": null,
+  "handoff_closure_allowed": false,
+  "handoff_closure_reason": "partial_scope",
+  "sources": {
+    "canonical_source": "qa\\_mockup_canonical",
+    "actual_source": "qa\\_captures_v8",
+    "canonical_root": "qa\\_mockup_canonical",
+    "actual_root": "qa\\_captures_v8",
+    "canonical_source_kind": "directory",
+    "actual_source_kind": "directory",
+    "active_repo_pair": true
+  },
+  "thresholds": {
+    "min_ssim": 0.92,
+    "text_dense_canonical_std": 35.0,
+    "text_dense_min_windowed_ssim": 0.65,
+    "text_dense_max_changed_pixel_ratio": 0.1,
+    "max_mean_abs_diff": 0.035,
+    "max_changed_pixel_ratio": 0.08,
+    "changed_pixel_floor": 12,
+    "text_dense_changed_pixel_floor": 14,
+    "max_odiff_diff_pct": 8.0,
+    "odiff_threshold": 0.3,
+    "max_bbox_shift_px": 18,
+    "max_bbox_size_delta_px": 36,
+    "max_largest_region_ratio": 0.08,
+    "strong_changed_pixel_ratio": 0.18,
+    "strong_mean_abs_diff": 0.08,
+    "strong_largest_region_ratio": 0.18
+  },
+  "summary": {
+    "total": 1,
+    "pass": 1,
+    "real_divergence": 0,
+    "by_status": {
+      "PASS": 1
+    },
+    "by_severity": {
+      "none": 1
+    },
+    "by_repair_bucket": {
+      "NONE": 1
+    },
+    "qa_missed_raw_or_layout": 0,
+    "state_or_recipe_suspect": 0,
+    "suspicious_perfect_match": 0
+  },
+  "results": [
+    {
+      "key": "suite:onboarding-error@dark",
+      "app": "suite",
+      "view": "onboarding-error",
+      "theme": "dark",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\suite-onboarding-error-dark-520x600.png",
+      "actual_file": "qa\\_captures_v8\\suite-onboarding-error-dark-520x600.png",
+      "canonical_size": "520x600",
+      "actual_size": "520x600",
+      "metrics": {
+        "ssim": 0.59701,
+        "windowed_ssim": 0.8211,
+        "canonical_gray_std": 24.523,
+        "mean_abs_diff": 0.0248,
+        "max_abs_diff": 0.84314,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 30067,
+        "total_pixels": 312000,
+        "changed_pixel_ratio": 0.09637,
+        "largest_region_ratio": 0.007994
+      },
+      "layout": {
+        "target_content_bbox": [
+          0,
+          0,
+          520,
+          600
+        ],
+        "actual_content_bbox": [
+          0,
+          16,
+          520,
+          584
+        ],
+        "bbox_dx": 0,
+        "bbox_dy": 16,
+        "bbox_dw": 0,
+        "bbox_dh": -16,
+        "max_bbox_delta_px": 16,
+        "bbox_area_delta_ratio": 0.02667
+      },
+      "odiff": {
+        "diff_pixels": 7373,
+        "diff_percentage": 2.36,
+        "diff_png_path": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\handoff_false_pass_audit\\20260630_113201\\suite_onboarding-error_dark\\layered\\odiff\\suite-onboarding-error-dark-520x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 23,
+          "y": 150,
+          "w": 473,
+          "h": 40,
+          "area": 2494,
+          "area_ratio": 0.007994,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 64,
+          "y": 77,
+          "w": 152,
+          "h": 16,
+          "area": 1453,
+          "area_ratio": 0.004657,
+          "hint": "component_region"
+        },
+        {
+          "x": 37,
+          "y": 167,
+          "w": 462,
+          "h": 27,
+          "area": 941,
+          "area_ratio": 0.003016,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 33,
+          "y": 538,
+          "w": 129,
+          "h": 10,
+          "area": 790,
+          "area_ratio": 0.002532,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 169,
+          "y": 416,
+          "w": 119,
+          "h": 14,
+          "area": 778,
+          "area_ratio": 0.002494,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 177,
+          "y": 392,
+          "w": 126,
+          "h": 13,
+          "area": 770,
+          "area_ratio": 0.002468,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 52,
+          "y": 476,
+          "w": 111,
+          "h": 12,
+          "area": 686,
+          "area_ratio": 0.002199,
+          "hint": "text_icon_or_antialiasing"
+        },
+        {
+          "x": 43,
+          "y": 19,
+          "w": 78,
+          "h": 11,
+          "area": 662,
+          "area_ratio": 0.002122,
+          "hint": "text_icon_or_antialiasing"
+        }
+      ],
+      "panel_path": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\handoff_false_pass_audit\\20260630_113201\\suite_onboarding-error_dark\\layered\\panels\\suite_onboarding-error_dark.png"
+    }
+  ]
+}

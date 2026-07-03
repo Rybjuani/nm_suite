@@ -1,0 +1,862 @@
+[
+  {
+    "key": "hub:detalle-plan-activacion@dark",
+    "app": "hub",
+    "view": "detalle-plan-activacion",
+    "theme": "dark",
+    "family": "hub-detalle",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_detalle-plan-activacion_dark.png"
+  },
+  {
+    "key": "hub:detalle-plan-activacion@light",
+    "app": "hub",
+    "view": "detalle-plan-activacion",
+    "theme": "light",
+    "family": "hub-detalle",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_detalle-plan-activacion_light.png"
+  },
+  {
+    "key": "hub:detalle-plan-rutina@dark",
+    "app": "hub",
+    "view": "detalle-plan-rutina",
+    "theme": "dark",
+    "family": "hub-detalle",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_detalle-plan-rutina_dark.png"
+  },
+  {
+    "key": "hub:detalle-plan-rutina@light",
+    "app": "hub",
+    "view": "detalle-plan-rutina",
+    "theme": "light",
+    "family": "hub-detalle",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_detalle-plan-rutina_light.png"
+  },
+  {
+    "key": "hub:detalle-plan-timer@dark",
+    "app": "hub",
+    "view": "detalle-plan-timer",
+    "theme": "dark",
+    "family": "hub-detalle",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_detalle-plan-timer_dark.png"
+  },
+  {
+    "key": "hub:detalle-plan-timer@light",
+    "app": "hub",
+    "view": "detalle-plan-timer",
+    "theme": "light",
+    "family": "hub-detalle",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_detalle-plan-timer_light.png"
+  },
+  {
+    "key": "hub:detalle-resumen-ia-0@dark",
+    "app": "hub",
+    "view": "detalle-resumen-ia-0",
+    "theme": "dark",
+    "family": "hub-detalle",
+    "status": "SIZE_MISMATCH",
+    "sizes": "560x220 vs 480x325",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_detalle-resumen-ia-0_dark.png"
+  },
+  {
+    "key": "hub:detalle-resumen-ia-0@light",
+    "app": "hub",
+    "view": "detalle-resumen-ia-0",
+    "theme": "light",
+    "family": "hub-detalle",
+    "status": "SIZE_MISMATCH",
+    "sizes": "560x220 vs 480x325",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_detalle-resumen-ia-0_light.png"
+  },
+  {
+    "key": "hub:detalle@dark",
+    "app": "hub",
+    "view": "detalle",
+    "theme": "dark",
+    "family": "hub-detalle",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_detalle_dark.png"
+  },
+  {
+    "key": "hub:detalle@light",
+    "app": "hub",
+    "view": "detalle",
+    "theme": "light",
+    "family": "hub-detalle",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_detalle_light.png"
+  },
+  {
+    "key": "hub:pacientes-empty@dark",
+    "app": "hub",
+    "view": "pacientes-empty",
+    "theme": "dark",
+    "family": "hub-pacientes",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_pacientes-empty_dark.png"
+  },
+  {
+    "key": "hub:pacientes-empty@light",
+    "app": "hub",
+    "view": "pacientes-empty",
+    "theme": "light",
+    "family": "hub-pacientes",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_pacientes-empty_light.png"
+  },
+  {
+    "key": "hub:pacientes@dark",
+    "app": "hub",
+    "view": "pacientes",
+    "theme": "dark",
+    "family": "hub-pacientes",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_pacientes_dark.png"
+  },
+  {
+    "key": "hub:pacientes@light",
+    "app": "hub",
+    "view": "pacientes",
+    "theme": "light",
+    "family": "hub-pacientes",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_pacientes_light.png"
+  },
+  {
+    "key": "hub:textos-globales@dark",
+    "app": "hub",
+    "view": "textos-globales",
+    "theme": "dark",
+    "family": "hub-otros",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_textos-globales_dark.png"
+  },
+  {
+    "key": "hub:textos-globales@light",
+    "app": "hub",
+    "view": "textos-globales",
+    "theme": "light",
+    "family": "hub-otros",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\hub_textos-globales_light.png"
+  },
+  {
+    "key": "suite:actividades-empty@dark",
+    "app": "suite",
+    "view": "actividades-empty",
+    "theme": "dark",
+    "family": "suite-actividades",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_actividades-empty_dark.png"
+  },
+  {
+    "key": "suite:actividades-empty@light",
+    "app": "suite",
+    "view": "actividades-empty",
+    "theme": "light",
+    "family": "suite-actividades",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_actividades-empty_light.png"
+  },
+  {
+    "key": "suite:actividades-filtered@dark",
+    "app": "suite",
+    "view": "actividades-filtered",
+    "theme": "dark",
+    "family": "suite-actividades",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_actividades-filtered_dark.png"
+  },
+  {
+    "key": "suite:actividades-filtered@light",
+    "app": "suite",
+    "view": "actividades-filtered",
+    "theme": "light",
+    "family": "suite-actividades",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_actividades-filtered_light.png"
+  },
+  {
+    "key": "suite:actividades-marked-hice@dark",
+    "app": "suite",
+    "view": "actividades-marked-hice",
+    "theme": "dark",
+    "family": "suite-actividades",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_actividades-marked-hice_dark.png"
+  },
+  {
+    "key": "suite:actividades-marked-hice@light",
+    "app": "suite",
+    "view": "actividades-marked-hice",
+    "theme": "light",
+    "family": "suite-actividades",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_actividades-marked-hice_light.png"
+  },
+  {
+    "key": "suite:actividades@dark",
+    "app": "suite",
+    "view": "actividades",
+    "theme": "dark",
+    "family": "suite-actividades",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_actividades_dark.png"
+  },
+  {
+    "key": "suite:actividades@light",
+    "app": "suite",
+    "view": "actividades",
+    "theme": "light",
+    "family": "suite-actividades",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_actividades_light.png"
+  },
+  {
+    "key": "suite:animo@dark",
+    "app": "suite",
+    "view": "animo",
+    "theme": "dark",
+    "family": "suite-animo",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_animo_dark.png"
+  },
+  {
+    "key": "suite:animo@light",
+    "app": "suite",
+    "view": "animo",
+    "theme": "light",
+    "family": "suite-animo",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_animo_light.png"
+  },
+  {
+    "key": "suite:avisos-empty@dark",
+    "app": "suite",
+    "view": "avisos-empty",
+    "theme": "dark",
+    "family": "suite-avisos",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_avisos-empty_dark.png"
+  },
+  {
+    "key": "suite:avisos-empty@light",
+    "app": "suite",
+    "view": "avisos-empty",
+    "theme": "light",
+    "family": "suite-avisos",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_avisos-empty_light.png"
+  },
+  {
+    "key": "suite:avisos-filter-activos@dark",
+    "app": "suite",
+    "view": "avisos-filter-activos",
+    "theme": "dark",
+    "family": "suite-avisos",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_avisos-filter-activos_dark.png"
+  },
+  {
+    "key": "suite:avisos-filter-activos@light",
+    "app": "suite",
+    "view": "avisos-filter-activos",
+    "theme": "light",
+    "family": "suite-avisos",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_avisos-filter-activos_light.png"
+  },
+  {
+    "key": "suite:avisos-search@dark",
+    "app": "suite",
+    "view": "avisos-search",
+    "theme": "dark",
+    "family": "suite-avisos",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_avisos-search_dark.png"
+  },
+  {
+    "key": "suite:avisos-search@light",
+    "app": "suite",
+    "view": "avisos-search",
+    "theme": "light",
+    "family": "suite-avisos",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_avisos-search_light.png"
+  },
+  {
+    "key": "suite:avisos-today@dark",
+    "app": "suite",
+    "view": "avisos-today",
+    "theme": "dark",
+    "family": "suite-avisos",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_avisos-today_dark.png"
+  },
+  {
+    "key": "suite:avisos-today@light",
+    "app": "suite",
+    "view": "avisos-today",
+    "theme": "light",
+    "family": "suite-avisos",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_avisos-today_light.png"
+  },
+  {
+    "key": "suite:avisos@dark",
+    "app": "suite",
+    "view": "avisos",
+    "theme": "dark",
+    "family": "suite-avisos",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_avisos_dark.png"
+  },
+  {
+    "key": "suite:avisos@light",
+    "app": "suite",
+    "view": "avisos",
+    "theme": "light",
+    "family": "suite-avisos",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_avisos_light.png"
+  },
+  {
+    "key": "suite:dbt-library@dark",
+    "app": "suite",
+    "view": "dbt-library",
+    "theme": "dark",
+    "family": "suite-dbt",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_dbt-library_dark.png"
+  },
+  {
+    "key": "suite:dbt-library@light",
+    "app": "suite",
+    "view": "dbt-library",
+    "theme": "light",
+    "family": "suite-dbt",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_dbt-library_light.png"
+  },
+  {
+    "key": "suite:dbt-now@dark",
+    "app": "suite",
+    "view": "dbt-now",
+    "theme": "dark",
+    "family": "suite-dbt",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_dbt-now_dark.png"
+  },
+  {
+    "key": "suite:dbt-now@light",
+    "app": "suite",
+    "view": "dbt-now",
+    "theme": "light",
+    "family": "suite-dbt",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_dbt-now_light.png"
+  },
+  {
+    "key": "suite:dbt-practice-stop@dark",
+    "app": "suite",
+    "view": "dbt-practice-stop",
+    "theme": "dark",
+    "family": "suite-dbt",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_dbt-practice-stop_dark.png"
+  },
+  {
+    "key": "suite:dbt-practice-stop@light",
+    "app": "suite",
+    "view": "dbt-practice-stop",
+    "theme": "light",
+    "family": "suite-dbt",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_dbt-practice-stop_light.png"
+  },
+  {
+    "key": "suite:home-no-score@dark",
+    "app": "suite",
+    "view": "home-no-score",
+    "theme": "dark",
+    "family": "suite-home",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_home-no-score_dark.png"
+  },
+  {
+    "key": "suite:home-no-score@light",
+    "app": "suite",
+    "view": "home-no-score",
+    "theme": "light",
+    "family": "suite-home",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_home-no-score_light.png"
+  },
+  {
+    "key": "suite:home@dark",
+    "app": "suite",
+    "view": "home",
+    "theme": "dark",
+    "family": "suite-home",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_home_dark.png"
+  },
+  {
+    "key": "suite:home@light",
+    "app": "suite",
+    "view": "home",
+    "theme": "light",
+    "family": "suite-home",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_home_light.png"
+  },
+  {
+    "key": "suite:onboarding-error@dark",
+    "app": "suite",
+    "view": "onboarding-error",
+    "theme": "dark",
+    "family": "suite-onboarding",
+    "status": "PAIRED",
+    "sizes": "520x600 vs 520x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_onboarding-error_dark.png"
+  },
+  {
+    "key": "suite:onboarding-error@light",
+    "app": "suite",
+    "view": "onboarding-error",
+    "theme": "light",
+    "family": "suite-onboarding",
+    "status": "PAIRED",
+    "sizes": "520x600 vs 520x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_onboarding-error_light.png"
+  },
+  {
+    "key": "suite:onboarding@dark",
+    "app": "suite",
+    "view": "onboarding",
+    "theme": "dark",
+    "family": "suite-onboarding",
+    "status": "PAIRED",
+    "sizes": "520x600 vs 520x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_onboarding_dark.png"
+  },
+  {
+    "key": "suite:onboarding@light",
+    "app": "suite",
+    "view": "onboarding",
+    "theme": "light",
+    "family": "suite-onboarding",
+    "status": "PAIRED",
+    "sizes": "520x600 vs 520x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_onboarding_light.png"
+  },
+  {
+    "key": "suite:recuperar-acceso@dark",
+    "app": "suite",
+    "view": "recuperar-acceso",
+    "theme": "dark",
+    "family": "suite-recuperar-acceso",
+    "status": "PAIRED",
+    "sizes": "520x600 vs 520x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_recuperar-acceso_dark.png"
+  },
+  {
+    "key": "suite:recuperar-acceso@light",
+    "app": "suite",
+    "view": "recuperar-acceso",
+    "theme": "light",
+    "family": "suite-recuperar-acceso",
+    "status": "PAIRED",
+    "sizes": "520x600 vs 520x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_recuperar-acceso_light.png"
+  },
+  {
+    "key": "suite:registro-step1-emotion-otro@dark",
+    "app": "suite",
+    "view": "registro-step1-emotion-otro",
+    "theme": "dark",
+    "family": "suite-registro",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_registro-step1-emotion-otro_dark.png"
+  },
+  {
+    "key": "suite:registro-step1-emotion-otro@light",
+    "app": "suite",
+    "view": "registro-step1-emotion-otro",
+    "theme": "light",
+    "family": "suite-registro",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_registro-step1-emotion-otro_light.png"
+  },
+  {
+    "key": "suite:registro-step1-emotion@dark",
+    "app": "suite",
+    "view": "registro-step1-emotion",
+    "theme": "dark",
+    "family": "suite-registro",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_registro-step1-emotion_dark.png"
+  },
+  {
+    "key": "suite:registro-step1-emotion@light",
+    "app": "suite",
+    "view": "registro-step1-emotion",
+    "theme": "light",
+    "family": "suite-registro",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_registro-step1-emotion_light.png"
+  },
+  {
+    "key": "suite:registro-step2-distortions@dark",
+    "app": "suite",
+    "view": "registro-step2-distortions",
+    "theme": "dark",
+    "family": "suite-registro",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_registro-step2-distortions_dark.png"
+  },
+  {
+    "key": "suite:registro-step2-distortions@light",
+    "app": "suite",
+    "view": "registro-step2-distortions",
+    "theme": "light",
+    "family": "suite-registro",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_registro-step2-distortions_light.png"
+  },
+  {
+    "key": "suite:registro-step3-filled@dark",
+    "app": "suite",
+    "view": "registro-step3-filled",
+    "theme": "dark",
+    "family": "suite-registro",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_registro-step3-filled_dark.png"
+  },
+  {
+    "key": "suite:registro-step3-filled@light",
+    "app": "suite",
+    "view": "registro-step3-filled",
+    "theme": "light",
+    "family": "suite-registro",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_registro-step3-filled_light.png"
+  },
+  {
+    "key": "suite:registro-success@dark",
+    "app": "suite",
+    "view": "registro-success",
+    "theme": "dark",
+    "family": "suite-registro",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_registro-success_dark.png"
+  },
+  {
+    "key": "suite:registro-success@light",
+    "app": "suite",
+    "view": "registro-success",
+    "theme": "light",
+    "family": "suite-registro",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_registro-success_light.png"
+  },
+  {
+    "key": "suite:registro@dark",
+    "app": "suite",
+    "view": "registro",
+    "theme": "dark",
+    "family": "suite-registro",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_registro_dark.png"
+  },
+  {
+    "key": "suite:registro@light",
+    "app": "suite",
+    "view": "registro",
+    "theme": "light",
+    "family": "suite-registro",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_registro_light.png"
+  },
+  {
+    "key": "suite:respiracion-paused@dark",
+    "app": "suite",
+    "view": "respiracion-paused",
+    "theme": "dark",
+    "family": "suite-respiracion",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_respiracion-paused_dark.png"
+  },
+  {
+    "key": "suite:respiracion-paused@light",
+    "app": "suite",
+    "view": "respiracion-paused",
+    "theme": "light",
+    "family": "suite-respiracion",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_respiracion-paused_light.png"
+  },
+  {
+    "key": "suite:respiracion-running@dark",
+    "app": "suite",
+    "view": "respiracion-running",
+    "theme": "dark",
+    "family": "suite-respiracion",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_respiracion-running_dark.png"
+  },
+  {
+    "key": "suite:respiracion-running@light",
+    "app": "suite",
+    "view": "respiracion-running",
+    "theme": "light",
+    "family": "suite-respiracion",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_respiracion-running_light.png"
+  },
+  {
+    "key": "suite:respiracion@dark",
+    "app": "suite",
+    "view": "respiracion",
+    "theme": "dark",
+    "family": "suite-respiracion",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_respiracion_dark.png"
+  },
+  {
+    "key": "suite:respiracion@light",
+    "app": "suite",
+    "view": "respiracion",
+    "theme": "light",
+    "family": "suite-respiracion",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_respiracion_light.png"
+  },
+  {
+    "key": "suite:rutina-add-task@dark",
+    "app": "suite",
+    "view": "rutina-add-task",
+    "theme": "dark",
+    "family": "suite-rutina",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_rutina-add-task_dark.png"
+  },
+  {
+    "key": "suite:rutina-add-task@light",
+    "app": "suite",
+    "view": "rutina-add-task",
+    "theme": "light",
+    "family": "suite-rutina",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_rutina-add-task_light.png"
+  },
+  {
+    "key": "suite:rutina-all-completed@dark",
+    "app": "suite",
+    "view": "rutina-all-completed",
+    "theme": "dark",
+    "family": "suite-rutina",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_rutina-all-completed_dark.png"
+  },
+  {
+    "key": "suite:rutina-all-completed@light",
+    "app": "suite",
+    "view": "rutina-all-completed",
+    "theme": "light",
+    "family": "suite-rutina",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_rutina-all-completed_light.png"
+  },
+  {
+    "key": "suite:rutina-empty@dark",
+    "app": "suite",
+    "view": "rutina-empty",
+    "theme": "dark",
+    "family": "suite-rutina",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_rutina-empty_dark.png"
+  },
+  {
+    "key": "suite:rutina-empty@light",
+    "app": "suite",
+    "view": "rutina-empty",
+    "theme": "light",
+    "family": "suite-rutina",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_rutina-empty_light.png"
+  },
+  {
+    "key": "suite:rutina@dark",
+    "app": "suite",
+    "view": "rutina",
+    "theme": "dark",
+    "family": "suite-rutina",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_rutina_dark.png"
+  },
+  {
+    "key": "suite:rutina@light",
+    "app": "suite",
+    "view": "rutina",
+    "theme": "light",
+    "family": "suite-rutina",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_rutina_light.png"
+  },
+  {
+    "key": "suite:timer-empty@dark",
+    "app": "suite",
+    "view": "timer-empty",
+    "theme": "dark",
+    "family": "suite-timer",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_timer-empty_dark.png"
+  },
+  {
+    "key": "suite:timer-empty@light",
+    "app": "suite",
+    "view": "timer-empty",
+    "theme": "light",
+    "family": "suite-timer",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_timer-empty_light.png"
+  },
+  {
+    "key": "suite:timer-paused@dark",
+    "app": "suite",
+    "view": "timer-paused",
+    "theme": "dark",
+    "family": "suite-timer",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_timer-paused_dark.png"
+  },
+  {
+    "key": "suite:timer-paused@light",
+    "app": "suite",
+    "view": "timer-paused",
+    "theme": "light",
+    "family": "suite-timer",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_timer-paused_light.png"
+  },
+  {
+    "key": "suite:timer-running@dark",
+    "app": "suite",
+    "view": "timer-running",
+    "theme": "dark",
+    "family": "suite-timer",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_timer-running_dark.png"
+  },
+  {
+    "key": "suite:timer-running@light",
+    "app": "suite",
+    "view": "timer-running",
+    "theme": "light",
+    "family": "suite-timer",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_timer-running_light.png"
+  },
+  {
+    "key": "suite:timer@dark",
+    "app": "suite",
+    "view": "timer",
+    "theme": "dark",
+    "family": "suite-timer",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_timer_dark.png"
+  },
+  {
+    "key": "suite:timer@light",
+    "app": "suite",
+    "view": "timer",
+    "theme": "light",
+    "family": "suite-timer",
+    "status": "PAIRED",
+    "sizes": "960x600 vs 960x600",
+    "side_by_side": "reports\\manual_zip_compare_20260628\\manual_review\\pairs\\suite_timer_light.png"
+  }
+]

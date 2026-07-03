@@ -1,0 +1,103 @@
+{
+  "harness": "capture_v8.py",
+  "generated_at": "2026-06-24T04:06:15.357868",
+  "git": {
+    "head": "936813115a9cba4727e3751fc2353c4109624dc6",
+    "short_head": "9368131",
+    "branch": "main",
+    "tracked_dirty": true,
+    "tracked_status": [
+      "M app/modules/dbt_qt.py",
+      " M qa/LOOP_LOG.md"
+    ]
+  },
+  "command": [
+    "qa/capture_v8.py",
+    "--app",
+    "suite",
+    "--view",
+    "dbt-library",
+    "--theme",
+    "light",
+    "--out",
+    "qa/_captures_v8/iter61_after"
+  ],
+  "cwd": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "isolation_scope": "subprocess_per_recipe",
+  "auto_residual_popup_capture": false,
+  "success": 1,
+  "failed": 0,
+  "total": 1,
+  "expected_recipe_captures": 1,
+  "elapsed_seconds": 3.2,
+  "themes": [
+    "light"
+  ],
+  "resolutions": [
+    "960x600"
+  ],
+  "requested_scale_factor": 1.0,
+  "output_dir": "qa\\_captures_v8\\iter61_after",
+  "matrix_paths": {
+    "csv": "qa\\_captures_v8\\iter61_after\\CAPTURE_MATRIX.csv",
+    "markdown": "qa\\_captures_v8\\iter61_after\\CAPTURE_MATRIX.md"
+  },
+  "evidence_summary": {
+    "semantic_visual_review": "NOT_RUN",
+    "visual_review_outcome": "REVIEW_INCOMPLETE",
+    "technical_capture_only": true,
+    "state_valid_capture_count": 1,
+    "technical_valid_capture_count": 1,
+    "technical_960_capture_count": 1,
+    "main_base_capture_count": 1,
+    "main_scale125_capture_count": 0,
+    "natural_dialog_capture_count": 0,
+    "main_scaled_other_capture_count": 0,
+    "unsupported_contract_count": 0,
+    "invalid_or_unsupported_contract_count": 0,
+    "contract_mismatch_count": 0,
+    "unique_hash_count": 1,
+    "duplicate_group_count": 0,
+    "duplicate_groups": [],
+    "status_counts": {
+      "CAPTURED_VALID": 1
+    },
+    "requires_runtime": [],
+    "requires_data_state": [],
+    "wrong_view_or_fallback": [],
+    "main_capture_contract_mismatch": [],
+    "blank_or_flat": []
+  },
+  "results": [
+    {
+      "file": "suite-dbt-library-light-960x600.png",
+      "app": "suite",
+      "view": "dbt-library",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 55244,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.9441,
+        "gray_stddev": 0.1031
+      },
+      "sha256": "bdeb4608a3bf901e5d581541c9ca73249965596503b4538ff6eacb9c4c995f40",
+      "capture_status": "CAPTURED_VALID"
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "harness": "capture_v8.py",
+  "generated_at": "2026-06-23T18:15:37.512645",
+  "git": {
+    "head": "e9af6333fb80a4703d7500f2a4a6814e7f5417b6",
+    "short_head": "e9af633",
+    "branch": "main",
+    "tracked_dirty": false,
+    "tracked_status": []
+  },
+  "command": [
+    "qa\\capture_v8.py",
+    "--app",
+    "suite",
+    "--view",
+    "timer",
+    "--theme",
+    "light",
+    "--out",
+    "qa/_captures_v8/iter15_timer"
+  ],
+  "cwd": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "isolation_scope": "subprocess_per_recipe",
+  "auto_residual_popup_capture": false,
+  "success": 1,
+  "failed": 0,
+  "total": 1,
+  "expected_recipe_captures": 1,
+  "elapsed_seconds": 3.1,
+  "themes": [
+    "light"
+  ],
+  "resolutions": [
+    "960x600"
+  ],
+  "requested_scale_factor": 1.0,
+  "output_dir": "qa\\_captures_v8\\iter15_timer",
+  "matrix_paths": {
+    "csv": "qa\\_captures_v8\\iter15_timer\\CAPTURE_MATRIX.csv",
+    "markdown": "qa\\_captures_v8\\iter15_timer\\CAPTURE_MATRIX.md"
+  },
+  "evidence_summary": {
+    "semantic_visual_review": "NOT_RUN",
+    "visual_review_outcome": "REVIEW_INCOMPLETE",
+    "technical_capture_only": true,
+    "state_valid_capture_count": 1,
+    "technical_valid_capture_count": 1,
+    "technical_960_capture_count": 1,
+    "main_base_capture_count": 1,
+    "main_scale125_capture_count": 0,
+    "natural_dialog_capture_count": 0,
+    "main_scaled_other_capture_count": 0,
+    "unsupported_contract_count": 0,
+    "invalid_or_unsupported_contract_count": 0,
+    "contract_mismatch_count": 0,
+    "unique_hash_count": 1,
+    "duplicate_group_count": 0,
+    "duplicate_groups": [],
+    "status_counts": {
+      "CAPTURED_VALID": 1
+    },
+    "requires_runtime": [],
+    "requires_data_state": [],
+    "wrong_view_or_fallback": [],
+    "main_capture_contract_mismatch": [],
+    "blank_or_flat": []
+  },
+  "results": [
+    {
+      "file": "suite-timer-light-960x600.png",
+      "app": "suite",
+      "view": "timer",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 39055,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.9477,
+        "gray_stddev": 0.1078
+      },
+      "sha256": "e976aeb1f966f15bb616374fb2b41511827a8b9ccb297f9d8295d89c77c8353e",
+      "capture_status": "CAPTURED_VALID"
+    }
+  ]
+}

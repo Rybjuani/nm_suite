@@ -1,0 +1,58 @@
+============================================================
+ANTI-FRAUD STATIC SCAN (runtime/product)
+Roots: app, hub, shared
+Result: CLEAN - no canonical/reference/mockup artifact usage found.
+============================================================
+[QA] Using isolated database: C:\Users\nosom\AppData\Local\Temp\nm_qa_db_0icbds1n\test_nm_data.db
+
+============================================================
+CAPTURE V8 — Exhaustive Harness
+Suite recipes: 0 | Hub recipes: 1
+Themes: 1 | Scale: 1 | Output: qa\_captures_v8
+============================================================
+
+
+--- LIGHT ---
+  HUB (1 recipes)
+    [textos-globales] CAPTURED
+
+============================================================
+RESULTS
+  Saved captures:       1
+  Failed captures:      0
+  Total results:        1
+  Technical evidence:   1
+  Technical 960x600:    1
+  State-valid evidence: 1
+  Time:                 4.3s
+============================================================
+
+Manifest: qa\_captures_v8\CAPTURE_MANIFEST.json
+Matrix:   qa\_captures_v8\CAPTURE_MATRIX.md
+
+============================================================
+TECHNICAL_CAPTURE_ONLY
+Semantic visual review: NOT_RUN
+Visual review outcome: REVIEW_INCOMPLETE
+HANDOFF_CLOSURE_ALLOWED: NO
+Visual fidelity gate: NOT_A_GATE_USE_LAYERED_VISUAL_COMPARE
+capture_v8 produces fresh technical captures only. Do not mark VISUAL_REPAIR_HANDOFF.md items complete from CAPTURE_MANIFEST alone; run qa/layered_visual_compare.py against qa/_mockup_canonical and qa/_captures_v8, then inspect the panels.
+============================================================
+============================================================
+LAYERED VISUAL COMPARE
+Authority:             LAYERED_VISUAL_COMPARE
+Canonical source:      qa\_mockup_canonical
+Actual source:         qa\_captures_v8
+Report scope:          PARTIAL
+Report filters:        {'app': None, 'view': None, 'theme': None, 'key': 'hub:textos-globales@light', 'keys_file': None, 'keys_file_keys': []}
+Report evidence valid: YES
+Handoff closure:      NO
+Closure reason:       partial_scope; real_divergence_present
+Source policy:         Use qa/_mockup_canonical plus a fresh complete qa/_captures_v8 run for operational handoff decisions. Zip inputs are archive/forensics only and must not close VISUAL_REPAIR_HANDOFF.md items.
+Total:                 1
+Pass:                  0
+Review/divergence:     1
+QA missed raw/layout:  1
+State/recipe suspects: 0
+Report:                C:\Users\nosom\Desktop\nm_suite\reports\qa\handoff_false_pass_audit\20260630_113720\hub_textos-globales_light\layered\LAYERED_VISUAL_REPORT.md
+============================================================

@@ -1,0 +1,2 @@
+key,status,severity,repair_bucket,real_divergence,suspicious_perfect_match,findings,raw_changed_ratio,mean_abs_diff,ssim,odiff_pct,max_bbox_delta_px,largest_region_ratio,canonical_file,actual_file,panel_path
+suite:avisos-search@light,PASS,none,NONE,False,False,,0.06319,0.01555,0.47042,0.89,13,0.014269,qa\_mockup_canonical\suite-avisos-search-light-960x600.png,qa\_captures_v8\suite-avisos-search-light-960x600.png,C:\Users\nosom\Desktop\nm_suite\reports\qa\handoff_false_pass_audit\20260630_113720\suite_avisos-search_light\layered\panels\suite_avisos-search_light.png

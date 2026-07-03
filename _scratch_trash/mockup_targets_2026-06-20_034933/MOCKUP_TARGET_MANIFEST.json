@@ -1,0 +1,45 @@
+{
+  "harness": "capture_mockup.py",
+  "generated_at": "2026-06-20T03:49:18",
+  "git": {
+    "commit": "0fcb0cc6b7a429cd3b7d011a0744270a29cb9740",
+    "branch": "main"
+  },
+  "mockup": "neuromood-mockup.html",
+  "command": [
+    "qa\\capture_mockup.py",
+    "--app",
+    "hub",
+    "--view",
+    "detalle-resumen-ia",
+    "--theme",
+    "dark",
+    "--no-clean"
+  ],
+  "output_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_targets",
+  "targets": 1,
+  "themes": [
+    "dark"
+  ],
+  "success": 1,
+  "failed": 0,
+  "elapsed_seconds": 2.0,
+  "matrix_paths": {
+    "csv": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_targets\\MOCKUP_TARGET_MATRIX.csv",
+    "markdown": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_targets\\MOCKUP_TARGET_MATRIX.md"
+  },
+  "results": [
+    {
+      "file": "qa\\_mockup_targets\\hub-detalle-resumen-ia-0-dark-480x325.png",
+      "app": "hub",
+      "view": "detalle-resumen-ia",
+      "file_view": "detalle-resumen-ia-0",
+      "screen": "detalle",
+      "state": null,
+      "theme": "dark",
+      "resolution": "480x325",
+      "capture": "modal",
+      "success": true
+    }
+  ]
+}

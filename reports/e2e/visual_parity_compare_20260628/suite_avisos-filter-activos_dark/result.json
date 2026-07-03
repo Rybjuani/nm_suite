@@ -1,0 +1,276 @@
+{
+  "surface_key": "suite:avisos-filter-activos@dark",
+  "status": "FAIL",
+  "repair_decision": "FIX_PRODUCT_STRONG",
+  "passed": false,
+  "failures": [
+    "ssim<0.92",
+    "changed>0.08"
+  ],
+  "metrics": {
+    "target_size": {
+      "w": 960,
+      "h": 600
+    },
+    "actual_size": {
+      "w": 960,
+      "h": 600
+    },
+    "size_mismatch": false,
+    "ssim": 0.15561,
+    "mean_abs_diff": 0.02656,
+    "max_abs_diff": 0.85098,
+    "changed_pixel_floor": 12,
+    "changed_pixels": 84066,
+    "total_pixels": 576000,
+    "changed_pixel_ratio": 0.14595
+  },
+  "regions": [
+    {
+      "x": 16,
+      "y": 152,
+      "w": 919,
+      "h": 70,
+      "area": 12883,
+      "area_ratio": 0.022366,
+      "hint": "layout_shift_or_spacing"
+    },
+    {
+      "x": 264,
+      "y": 68,
+      "w": 320,
+      "h": 46,
+      "area": 11088,
+      "area_ratio": 0.01925,
+      "hint": "component_region"
+    },
+    {
+      "x": 17,
+      "y": 233,
+      "w": 926,
+      "h": 43,
+      "area": 7914,
+      "area_ratio": 0.01374,
+      "hint": "layout_shift_or_spacing"
+    },
+    {
+      "x": 17,
+      "y": 309,
+      "w": 926,
+      "h": 13,
+      "area": 6436,
+      "area_ratio": 0.011174,
+      "hint": "layout_shift_or_spacing"
+    },
+    {
+      "x": 17,
+      "y": 385,
+      "w": 926,
+      "h": 11,
+      "area": 5526,
+      "area_ratio": 0.009594,
+      "hint": "layout_shift_or_spacing"
+    },
+    {
+      "x": 25,
+      "y": 54,
+      "w": 227,
+      "h": 66,
+      "area": 5510,
+      "area_ratio": 0.009566,
+      "hint": "component_region"
+    },
+    {
+      "x": 28,
+      "y": 263,
+      "w": 815,
+      "h": 35,
+      "area": 2905,
+      "area_ratio": 0.005043,
+      "hint": "layout_shift_or_spacing"
+    },
+    {
+      "x": 728,
+      "y": 247,
+      "w": 96,
+      "h": 44,
+      "area": 2623,
+      "area_ratio": 0.004554,
+      "hint": "component_region"
+    }
+  ],
+  "canonical": {
+    "surface_key": "suite:avisos-filter-activos@dark",
+    "app": "suite",
+    "view": "avisos-filter-activos",
+    "theme": "dark",
+    "resolution": "960x600",
+    "file": "suite-avisos-filter-activos-dark-960x600.png",
+    "path": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_canonical\\suite-avisos-filter-activos-dark-960x600.png",
+    "screen": "avisos",
+    "state": "active",
+    "surface": "window",
+    "capture_selector": ".window",
+    "dom_w": 960,
+    "dom_h": 600,
+    "dom_size_match": true,
+    "mockup_sha256": "0fa4b834e50a8936e829a493b6b31c9e181edb84621f9f7861f98ea609a07c87"
+  },
+  "actual_path": "qa\\_captures_compare_20260628\\suite-avisos-filter-activos-dark-960x600.png",
+  "diff_path": "reports\\e2e\\visual_parity_compare_20260628\\suite_avisos-filter-activos_dark\\suite-avisos-filter-activos-dark-960x600-diff.png",
+  "report_path": "reports\\e2e\\visual_parity_compare_20260628\\suite_avisos-filter-activos_dark\\result.json",
+  "agent_package": {
+    "surface_key": "suite:avisos-filter-activos@dark",
+    "status": "FAIL",
+    "repair_decision": "FIX_PRODUCT_STRONG",
+    "passed": false,
+    "failures": [
+      "ssim<0.92",
+      "changed>0.08"
+    ],
+    "metrics": {
+      "target_size": {
+        "w": 960,
+        "h": 600
+      },
+      "actual_size": {
+        "w": 960,
+        "h": 600
+      },
+      "size_mismatch": false,
+      "ssim": 0.15561,
+      "mean_abs_diff": 0.02656,
+      "max_abs_diff": 0.85098,
+      "changed_pixel_floor": 12,
+      "changed_pixels": 84066,
+      "total_pixels": 576000,
+      "changed_pixel_ratio": 0.14595
+    },
+    "thresholds": {
+      "min_ssim": 0.92,
+      "max_mean_abs_diff": 0.035,
+      "max_changed_pixel_ratio": 0.08,
+      "changed_pixel_floor": 12,
+      "render_noise_max_mean_abs_diff": 0.004,
+      "render_noise_max_changed_pixel_ratio": 0.003,
+      "render_noise_max_region_area_ratio": 0.001,
+      "strong_fail_changed_pixel_ratio": 0.18,
+      "strong_fail_region_area_ratio": 0.08,
+      "strong_fail_mean_abs_diff": 0.08,
+      "max_regions": 8
+    },
+    "canonical_index": {
+      "root": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_canonical",
+      "total_surfaces": 86,
+      "mockup_sha256": "0fa4b834e50a8936e829a493b6b31c9e181edb84621f9f7861f98ea609a07c87",
+      "all_captured": true,
+      "all_sizes_match": true,
+      "all_dom_sizes_match": true
+    },
+    "canonical": {
+      "surface_key": "suite:avisos-filter-activos@dark",
+      "app": "suite",
+      "view": "avisos-filter-activos",
+      "theme": "dark",
+      "resolution": "960x600",
+      "file": "suite-avisos-filter-activos-dark-960x600.png",
+      "path": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_canonical\\suite-avisos-filter-activos-dark-960x600.png",
+      "screen": "avisos",
+      "state": "active",
+      "surface": "window",
+      "capture_selector": ".window",
+      "dom_w": 960,
+      "dom_h": 600,
+      "dom_size_match": true,
+      "mockup_sha256": "0fa4b834e50a8936e829a493b6b31c9e181edb84621f9f7861f98ea609a07c87"
+    },
+    "actual_path": "qa\\_captures_compare_20260628\\suite-avisos-filter-activos-dark-960x600.png",
+    "diff_path": "reports\\e2e\\visual_parity_compare_20260628\\suite_avisos-filter-activos_dark\\suite-avisos-filter-activos-dark-960x600-diff.png",
+    "largest_regions": [
+      {
+        "x": 16,
+        "y": 152,
+        "w": 919,
+        "h": 70,
+        "area": 12883,
+        "area_ratio": 0.022366,
+        "hint": "layout_shift_or_spacing"
+      },
+      {
+        "x": 264,
+        "y": 68,
+        "w": 320,
+        "h": 46,
+        "area": 11088,
+        "area_ratio": 0.01925,
+        "hint": "component_region"
+      },
+      {
+        "x": 17,
+        "y": 233,
+        "w": 926,
+        "h": 43,
+        "area": 7914,
+        "area_ratio": 0.01374,
+        "hint": "layout_shift_or_spacing"
+      },
+      {
+        "x": 17,
+        "y": 309,
+        "w": 926,
+        "h": 13,
+        "area": 6436,
+        "area_ratio": 0.011174,
+        "hint": "layout_shift_or_spacing"
+      },
+      {
+        "x": 17,
+        "y": 385,
+        "w": 926,
+        "h": 11,
+        "area": 5526,
+        "area_ratio": 0.009594,
+        "hint": "layout_shift_or_spacing"
+      },
+      {
+        "x": 25,
+        "y": 54,
+        "w": 227,
+        "h": 66,
+        "area": 5510,
+        "area_ratio": 0.009566,
+        "hint": "component_region"
+      },
+      {
+        "x": 28,
+        "y": 263,
+        "w": 815,
+        "h": 35,
+        "area": 2905,
+        "area_ratio": 0.005043,
+        "hint": "layout_shift_or_spacing"
+      },
+      {
+        "x": 728,
+        "y": 247,
+        "w": 96,
+        "h": 44,
+        "area": 2623,
+        "area_ratio": 0.004554,
+        "hint": "component_region"
+      }
+    ],
+    "what_to_check_first": [
+      "Inspect the largest diff regions first; this usually means layout, modal position, missing widget, or wrong state.",
+      "Compare Qt widget geometry against the canonical manifest resolution and selector."
+    ],
+    "do_not_touch_if": [
+      "The canonical manifest has all_dom_sizes_match=false or the capture selector is stale.",
+      "The actual screenshot contains an unrelated dialog, hover state, focus ring, cursor, toast, or loading state."
+    ],
+    "repair_hints": [
+      "Open the largest bbox first: {'x': 16, 'y': 152, 'w': 919, 'h': 70, 'area': 12883, 'area_ratio': 0.022366, 'hint': 'layout_shift_or_spacing'}.",
+      "After a product patch, rerun only this surface before expanding to the full visual suite."
+    ]
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "harness": "capture_v8.py",
+  "generated_at": "2026-06-24T05:05:04.833091",
+  "git": {
+    "head": "c0048457685154bb737f57c024cf5f58b1d6f00b",
+    "short_head": "c004845",
+    "branch": "main",
+    "tracked_dirty": true,
+    "tracked_status": [
+      "M app/modules/avisos_qt.py"
+    ]
+  },
+  "command": [
+    "qa/capture_v8.py",
+    "--app",
+    "suite",
+    "--view",
+    "avisos",
+    "--theme",
+    "light",
+    "--out-dir",
+    "qa/_captures_v8/iter62_after",
+    "--clean"
+  ],
+  "cwd": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "isolation_scope": "subprocess_per_recipe",
+  "auto_residual_popup_capture": false,
+  "success": 1,
+  "failed": 0,
+  "total": 1,
+  "expected_recipe_captures": 1,
+  "elapsed_seconds": 3.0,
+  "themes": [
+    "light"
+  ],
+  "resolutions": [
+    "960x600"
+  ],
+  "requested_scale_factor": 1.0,
+  "output_dir": "qa\\_captures_v8\\iter62_after",
+  "matrix_paths": {
+    "csv": "qa\\_captures_v8\\iter62_after\\CAPTURE_MATRIX.csv",
+    "markdown": "qa\\_captures_v8\\iter62_after\\CAPTURE_MATRIX.md"
+  },
+  "evidence_summary": {
+    "semantic_visual_review": "NOT_RUN",
+    "visual_review_outcome": "REVIEW_INCOMPLETE",
+    "technical_capture_only": true,
+    "state_valid_capture_count": 1,
+    "technical_valid_capture_count": 1,
+    "technical_960_capture_count": 1,
+    "main_base_capture_count": 1,
+    "main_scale125_capture_count": 0,
+    "natural_dialog_capture_count": 0,
+    "main_scaled_other_capture_count": 0,
+    "unsupported_contract_count": 0,
+    "invalid_or_unsupported_contract_count": 0,
+    "contract_mismatch_count": 0,
+    "unique_hash_count": 1,
+    "duplicate_group_count": 0,
+    "duplicate_groups": [],
+    "status_counts": {
+      "CAPTURED_VALID": 1
+    },
+    "requires_runtime": [],
+    "requires_data_state": [],
+    "wrong_view_or_fallback": [],
+    "main_capture_contract_mismatch": [],
+    "blank_or_flat": []
+  },
+  "results": [
+    {
+      "file": "suite-avisos-light-960x600.png",
+      "app": "suite",
+      "view": "avisos",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 49270,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.95,
+        "gray_stddev": 0.0847
+      },
+      "sha256": "839d976508f2bf5b6845ab0c7f6a1fa36af1d82611829921f75542a49769d3c3",
+      "capture_status": "CAPTURED_VALID"
+    }
+  ]
+}

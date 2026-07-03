@@ -1,0 +1,107 @@
+{
+  "harness": "capture_v8.py",
+  "generated_at": "2026-06-27T09:50:05.839538",
+  "git": {
+    "head": "3c61045b3199e9949ab0fe5af09efea010e06e19",
+    "short_head": "3c61045",
+    "branch": "fix/visual-divergences-minimax-night",
+    "tracked_dirty": true,
+    "tracked_status": [
+      "M app/modules/avisos_qt.py",
+      " M qa/_visual_auditor_spec/report.json",
+      " M qa/capture_v8.py",
+      " M qa/specs/specs.json",
+      " M shared/components/overlays.py",
+      " M shared/components/patient.py",
+      " M shared/components/session.py",
+      " M shared/theme.py"
+    ]
+  },
+  "command": [
+    "qa/capture_v8.py",
+    "--view",
+    "registro-success",
+    "--theme",
+    "light",
+    "--app",
+    "suite"
+  ],
+  "cwd": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "isolation_scope": "subprocess_per_recipe",
+  "auto_residual_popup_capture": false,
+  "success": 1,
+  "failed": 0,
+  "total": 1,
+  "expected_recipe_captures": 1,
+  "elapsed_seconds": 4.4,
+  "themes": [
+    "light"
+  ],
+  "resolutions": [
+    "960x600"
+  ],
+  "requested_scale_factor": 1.0,
+  "output_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8",
+  "matrix_paths": {
+    "csv": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.csv",
+    "markdown": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.md"
+  },
+  "evidence_summary": {
+    "semantic_visual_review": "NOT_RUN",
+    "visual_review_outcome": "REVIEW_INCOMPLETE",
+    "technical_capture_only": true,
+    "state_valid_capture_count": 1,
+    "technical_valid_capture_count": 1,
+    "technical_960_capture_count": 1,
+    "main_base_capture_count": 1,
+    "main_scale125_capture_count": 0,
+    "natural_dialog_capture_count": 0,
+    "main_scaled_other_capture_count": 0,
+    "unsupported_contract_count": 0,
+    "invalid_or_unsupported_contract_count": 0,
+    "contract_mismatch_count": 0,
+    "unique_hash_count": 1,
+    "duplicate_group_count": 0,
+    "duplicate_groups": [],
+    "status_counts": {
+      "CAPTURED_VALID": 1
+    },
+    "requires_runtime": [],
+    "requires_data_state": [],
+    "wrong_view_or_fallback": [],
+    "main_capture_contract_mismatch": [],
+    "blank_or_flat": []
+  },
+  "results": [
+    {
+      "file": "suite-registro-success-light-960x600.png",
+      "app": "suite",
+      "view": "registro-success",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 27064,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.9553,
+        "gray_stddev": 0.0797
+      },
+      "sha256": "2f3ef776b51b98dff6e566e29499a58a5daf757bf37e0070f1191e4ae8412c3c",
+      "capture_status": "CAPTURED_VALID"
+    }
+  ]
+}

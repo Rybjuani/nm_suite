@@ -1,0 +1,2 @@
+key,status,severity,repair_bucket,real_divergence,findings,raw_changed_ratio,mean_abs_diff,ssim,odiff_pct,max_bbox_delta_px,largest_region_ratio,canonical_file,actual_file,panel_path
+suite:recuperar-acceso@light,PASS,none,NONE,False,,0.0,0.0,1.0,0.0,0,0.0,qa\_mockup_canonical\suite-recuperar-acceso-light-520x600.png,qa\_captures_v8\suite-recuperar-acceso-light-520x600.png,reports\qa\layered_visual_compare_cal\panels\suite_recuperar-acceso_light.png

@@ -1,0 +1,143 @@
+{
+  "harness": "capture_v8.py",
+  "generated_at": "2026-06-20T19:48:03.764501",
+  "git": {
+    "head": "1da995f97789cfb77f0550e3b2ed4064669a621a",
+    "short_head": "1da995f",
+    "branch": "main",
+    "tracked_dirty": true,
+    "tracked_status": [
+      "M app/home_qt.py"
+    ]
+  },
+  "command": [
+    "qa/capture_v8.py",
+    "--app",
+    "suite",
+    "--view",
+    "home-no-score",
+    "--theme",
+    "both",
+    "--no-clean"
+  ],
+  "cwd": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "isolation_scope": "subprocess_per_recipe",
+  "auto_residual_popup_capture": false,
+  "success": 2,
+  "failed": 0,
+  "total": 2,
+  "expected_recipe_captures": 2,
+  "elapsed_seconds": 6.1,
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "resolutions": [
+    "960x600"
+  ],
+  "requested_scale_factor": 1.0,
+  "output_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8",
+  "matrix_paths": {
+    "csv": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.csv",
+    "markdown": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MATRIX.md"
+  },
+  "evidence_summary": {
+    "semantic_visual_review": "NOT_RUN",
+    "visual_review_outcome": "REVIEW_INCOMPLETE",
+    "technical_capture_only": true,
+    "state_valid_capture_count": 0,
+    "technical_valid_capture_count": 2,
+    "technical_960_capture_count": 2,
+    "main_base_capture_count": 2,
+    "main_scale125_capture_count": 0,
+    "natural_dialog_capture_count": 0,
+    "main_scaled_other_capture_count": 0,
+    "unsupported_contract_count": 0,
+    "invalid_or_unsupported_contract_count": 0,
+    "contract_mismatch_count": 0,
+    "unique_hash_count": 2,
+    "duplicate_group_count": 0,
+    "duplicate_groups": [],
+    "status_counts": {
+      "REQUIRES_DATA_STATE": 2
+    },
+    "requires_runtime": [],
+    "requires_data_state": [
+      "suite-home-no-score-light-960x600.png",
+      "suite-home-no-score-dark-960x600.png"
+    ],
+    "wrong_view_or_fallback": [],
+    "main_capture_contract_mismatch": [],
+    "blank_or_flat": []
+  },
+  "results": [
+    {
+      "file": "suite-home-no-score-light-960x600.png",
+      "app": "suite",
+      "view": "home-no-score",
+      "theme": "light",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 60309,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [
+        "REQUIRES_DATA_STATE"
+      ],
+      "evidence_notes": [
+        "No-score depends on real persisted mood state; QA cache forcing is not product evidence."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": false,
+      "content_metrics": {
+        "gray_mean": 0.9241,
+        "gray_stddev": 0.1048
+      },
+      "sha256": "dbe061043aee0279f895e9dc6bed28a1a6c7db8418b66d383b5acf339c1d1b4e",
+      "capture_status": "REQUIRES_DATA_STATE"
+    },
+    {
+      "file": "suite-home-no-score-dark-960x600.png",
+      "app": "suite",
+      "view": "home-no-score",
+      "theme": "dark",
+      "resolution": "960x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "960x600",
+      "captured_pixel_resolution": "960x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "main_base",
+      "success": true,
+      "size_bytes": 60374,
+      "is_dialog_or_auxiliary": false,
+      "is_child_dialog": false,
+      "actual_resolution": "960x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [
+        "REQUIRES_DATA_STATE"
+      ],
+      "evidence_notes": [
+        "No-score depends on real persisted mood state; QA cache forcing is not product evidence."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": false,
+      "content_metrics": {
+        "gray_mean": 0.1407,
+        "gray_stddev": 0.105
+      },
+      "sha256": "a63b8e8cab3195566aadac5ab7c1f9709717d905773da5001b877102a9258c6d",
+      "capture_status": "REQUIRES_DATA_STATE"
+    }
+  ]
+}

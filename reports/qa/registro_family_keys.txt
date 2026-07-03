@@ -1,0 +1,12 @@
+suite:registro@light
+suite:registro@dark
+suite:registro-step1-emotion@light
+suite:registro-step1-emotion@dark
+suite:registro-step1-emotion-otro@light
+suite:registro-step1-emotion-otro@dark
+suite:registro-step2-distortions@light
+suite:registro-step2-distortions@dark
+suite:registro-step3-filled@light
+suite:registro-step3-filled@dark
+suite:registro-success@light
+suite:registro-success@dark

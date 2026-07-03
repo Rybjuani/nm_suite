@@ -1,0 +1,2 @@
+producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
+suite,timer,Timer idle,dark,960x600,navigate:timer > drain:8 > capture:timer,suite-timer-dark-960x600.png,pendiente,pendiente,requiere inspeccion manual

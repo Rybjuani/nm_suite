@@ -1,0 +1,120 @@
+{
+  "surface_key": "hub:pacientes@light",
+  "status": "PASS",
+  "repair_decision": "NONE",
+  "passed": true,
+  "failures": [],
+  "metrics": {
+    "target_size": {
+      "w": 960,
+      "h": 600
+    },
+    "actual_size": {
+      "w": 960,
+      "h": 600
+    },
+    "size_mismatch": false,
+    "ssim": 1.0,
+    "mean_abs_diff": 0.0,
+    "max_abs_diff": 0.0,
+    "changed_pixel_floor": 12,
+    "changed_pixels": 0,
+    "total_pixels": 576000,
+    "changed_pixel_ratio": 0.0
+  },
+  "regions": [],
+  "canonical": {
+    "surface_key": "hub:pacientes@light",
+    "app": "hub",
+    "view": "pacientes",
+    "theme": "light",
+    "resolution": "960x600",
+    "file": "hub-pacientes-light-960x600.png",
+    "path": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_canonical\\hub-pacientes-light-960x600.png",
+    "screen": "pacientes",
+    "state": "list",
+    "surface": "window",
+    "capture_selector": ".window",
+    "dom_w": 960,
+    "dom_h": 600,
+    "dom_size_match": true,
+    "mockup_sha256": "0fa4b834e50a8936e829a493b6b31c9e181edb84621f9f7861f98ea609a07c87"
+  },
+  "actual_path": "qa\\_mockup_canonical\\hub-pacientes-light-960x600.png",
+  "diff_path": "reports\\e2e\\visual_parity_selfcheck\\hub_pacientes_light\\hub-pacientes-light-960x600-diff.png",
+  "report_path": "reports\\e2e\\visual_parity_selfcheck\\hub_pacientes_light\\result.json",
+  "agent_package": {
+    "surface_key": "hub:pacientes@light",
+    "status": "PASS",
+    "repair_decision": "NONE",
+    "passed": true,
+    "failures": [],
+    "metrics": {
+      "target_size": {
+        "w": 960,
+        "h": 600
+      },
+      "actual_size": {
+        "w": 960,
+        "h": 600
+      },
+      "size_mismatch": false,
+      "ssim": 1.0,
+      "mean_abs_diff": 0.0,
+      "max_abs_diff": 0.0,
+      "changed_pixel_floor": 12,
+      "changed_pixels": 0,
+      "total_pixels": 576000,
+      "changed_pixel_ratio": 0.0
+    },
+    "thresholds": {
+      "min_ssim": 0.92,
+      "max_mean_abs_diff": 0.035,
+      "max_changed_pixel_ratio": 0.08,
+      "changed_pixel_floor": 12,
+      "render_noise_max_mean_abs_diff": 0.004,
+      "render_noise_max_changed_pixel_ratio": 0.003,
+      "render_noise_max_region_area_ratio": 0.001,
+      "strong_fail_changed_pixel_ratio": 0.18,
+      "strong_fail_region_area_ratio": 0.08,
+      "strong_fail_mean_abs_diff": 0.08,
+      "max_regions": 8
+    },
+    "canonical_index": {
+      "root": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_canonical",
+      "total_surfaces": 86,
+      "mockup_sha256": "0fa4b834e50a8936e829a493b6b31c9e181edb84621f9f7861f98ea609a07c87",
+      "all_captured": true,
+      "all_sizes_match": true,
+      "all_dom_sizes_match": true
+    },
+    "canonical": {
+      "surface_key": "hub:pacientes@light",
+      "app": "hub",
+      "view": "pacientes",
+      "theme": "light",
+      "resolution": "960x600",
+      "file": "hub-pacientes-light-960x600.png",
+      "path": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_mockup_canonical\\hub-pacientes-light-960x600.png",
+      "screen": "pacientes",
+      "state": "list",
+      "surface": "window",
+      "capture_selector": ".window",
+      "dom_w": 960,
+      "dom_h": 600,
+      "dom_size_match": true,
+      "mockup_sha256": "0fa4b834e50a8936e829a493b6b31c9e181edb84621f9f7861f98ea609a07c87"
+    },
+    "actual_path": "qa\\_mockup_canonical\\hub-pacientes-light-960x600.png",
+    "diff_path": "reports\\e2e\\visual_parity_selfcheck\\hub_pacientes_light\\hub-pacientes-light-960x600-diff.png",
+    "largest_regions": [],
+    "what_to_check_first": [
+      "Keep the artifact for audit, but avoid product changes unless the same area repeats across surfaces."
+    ],
+    "do_not_touch_if": [
+      "The canonical manifest has all_dom_sizes_match=false or the capture selector is stale.",
+      "The actual screenshot contains an unrelated dialog, hover state, focus ring, cursor, toast, or loading state."
+    ],
+    "repair_hints": []
+  }
+}

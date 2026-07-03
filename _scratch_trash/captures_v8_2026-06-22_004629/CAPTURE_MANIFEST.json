@@ -1,0 +1,144 @@
+{
+  "harness": "capture_v8.py",
+  "generated_at": "2026-06-22T00:45:21.045836",
+  "git": {
+    "head": "cd7479b5b789949507c90585f7f4d2a934d1bc4a",
+    "short_head": "cd7479b",
+    "branch": "main",
+    "tracked_dirty": true,
+    "tracked_status": [
+      "M app/modules/dbt_qt.py",
+      " M app/modules/registro_tcc_qt.py",
+      " M app/onboarding_qt.py",
+      " M qa/capture_v8.py",
+      " M tests/test_component_visual_contract.py",
+      " M tests/test_dbt_visual_contract.py",
+      " M tests/test_mockup_qa_tools.py"
+    ]
+  },
+  "command": [
+    "qa\\capture_v8.py",
+    "--app",
+    "suite",
+    "--view",
+    "onboarding-error",
+    "--theme",
+    "both",
+    "--out-dir",
+    "qa\\_captures_c2_suite_critical_after",
+    "--no-clean"
+  ],
+  "cwd": "C:\\Users\\nosom\\Desktop\\nm_suite",
+  "isolation_scope": "subprocess_per_recipe",
+  "auto_residual_popup_capture": false,
+  "success": 2,
+  "failed": 0,
+  "total": 2,
+  "expected_recipe_captures": 2,
+  "elapsed_seconds": 5.5,
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "resolutions": [
+    "960x600"
+  ],
+  "requested_scale_factor": 1.0,
+  "output_dir": "qa\\_captures_c2_suite_critical_after",
+  "matrix_paths": {
+    "csv": "qa\\_captures_c2_suite_critical_after\\CAPTURE_MATRIX.csv",
+    "markdown": "qa\\_captures_c2_suite_critical_after\\CAPTURE_MATRIX.md"
+  },
+  "evidence_summary": {
+    "semantic_visual_review": "NOT_RUN",
+    "visual_review_outcome": "REVIEW_INCOMPLETE",
+    "technical_capture_only": true,
+    "state_valid_capture_count": 2,
+    "technical_valid_capture_count": 2,
+    "technical_960_capture_count": 0,
+    "main_base_capture_count": 0,
+    "main_scale125_capture_count": 0,
+    "natural_dialog_capture_count": 2,
+    "main_scaled_other_capture_count": 0,
+    "unsupported_contract_count": 0,
+    "invalid_or_unsupported_contract_count": 0,
+    "contract_mismatch_count": 0,
+    "unique_hash_count": 2,
+    "duplicate_group_count": 0,
+    "duplicate_groups": [],
+    "status_counts": {
+      "CAPTURED_VALID": 2
+    },
+    "requires_runtime": [],
+    "requires_data_state": [],
+    "wrong_view_or_fallback": [],
+    "main_capture_contract_mismatch": [],
+    "blank_or_flat": []
+  },
+  "results": [
+    {
+      "file": "suite-onboarding-error-light-520x600.png",
+      "app": "suite",
+      "view": "onboarding-error",
+      "theme": "light",
+      "resolution": "520x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "520x600",
+      "captured_pixel_resolution": "520x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "natural_dialog",
+      "success": true,
+      "size_bytes": 44380,
+      "is_dialog_or_auxiliary": true,
+      "is_child_dialog": true,
+      "actual_resolution": "520x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [
+        "Natural dialog capture accepted as technical evidence; inspect for complete content, clipping, overlap, and accessible controls."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.919,
+        "gray_stddev": 0.1305
+      },
+      "sha256": "482c090e24393553dccc254433de6814b49f04fa2377cf4b1d72e4b739ab4c5e",
+      "capture_status": "CAPTURED_VALID"
+    },
+    {
+      "file": "suite-onboarding-error-dark-520x600.png",
+      "app": "suite",
+      "view": "onboarding-error",
+      "theme": "dark",
+      "resolution": "520x600",
+      "requested_resolution": "960x600",
+      "requested_logical_resolution": "960x600",
+      "captured_logical_resolution": "520x600",
+      "captured_pixel_resolution": "520x600",
+      "device_pixel_ratio": 1.0,
+      "requested_scale_factor": 1.0,
+      "evidence_contract": "natural_dialog",
+      "success": true,
+      "size_bytes": 44579,
+      "is_dialog_or_auxiliary": true,
+      "is_child_dialog": true,
+      "actual_resolution": "520x600",
+      "isolation_scope": "subprocess_per_recipe",
+      "evidence_flags": [],
+      "evidence_notes": [
+        "Natural dialog capture accepted as technical evidence; inspect for complete content, clipping, overlap, and accessible controls."
+      ],
+      "technical_capture_valid": true,
+      "state_evidence_valid": true,
+      "content_metrics": {
+        "gray_mean": 0.1637,
+        "gray_stddev": 0.1199
+      },
+      "sha256": "286970b21eb7e9cfc069bb2ed84fdde551d88d81da4f0a3cc2156dc5a3b6ceae",
+      "capture_status": "CAPTURED_VALID"
+    }
+  ]
+}

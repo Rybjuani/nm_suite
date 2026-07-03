@@ -1,0 +1,2 @@
+producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
+hub,textos-globales,Textos globales de Suite (personalizacion),dark,960x600,call:_hub_open_textos_globales > drain:8 > capture:textos-globales,hub-textos-globales-dark-960x600.png,pendiente,pendiente,requiere inspeccion manual

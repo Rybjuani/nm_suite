@@ -1,0 +1,195 @@
+{
+  "generated_at": "2026-06-30T11:35:40",
+  "authority": "LAYERED_VISUAL_COMPARE",
+  "source_policy": "Use qa/_mockup_canonical plus a fresh complete qa/_captures_v8 run for operational handoff decisions. Zip inputs are archive/forensics only and must not close VISUAL_REPAIR_HANDOFF.md items.",
+  "report_scope": "PARTIAL",
+  "report_filters": {
+    "app": null,
+    "view": null,
+    "theme": null,
+    "key": "hub:detalle-plan-rutina@light",
+    "keys_file": null,
+    "keys_file_keys": []
+  },
+  "report_evidence_valid": true,
+  "report_evidence_reason": null,
+  "handoff_closure_allowed": false,
+  "handoff_closure_reason": "partial_scope",
+  "sources": {
+    "canonical_source": "qa\\_mockup_canonical",
+    "actual_source": "qa\\_captures_v8",
+    "canonical_root": "qa\\_mockup_canonical",
+    "actual_root": "qa\\_captures_v8",
+    "canonical_source_kind": "directory",
+    "actual_source_kind": "directory",
+    "active_repo_pair": true
+  },
+  "thresholds": {
+    "min_ssim": 0.92,
+    "text_dense_canonical_std": 35.0,
+    "text_dense_min_windowed_ssim": 0.65,
+    "text_dense_max_changed_pixel_ratio": 0.1,
+    "max_mean_abs_diff": 0.035,
+    "max_changed_pixel_ratio": 0.08,
+    "changed_pixel_floor": 12,
+    "text_dense_changed_pixel_floor": 14,
+    "max_odiff_diff_pct": 8.0,
+    "odiff_threshold": 0.3,
+    "max_bbox_shift_px": 18,
+    "max_bbox_size_delta_px": 36,
+    "max_largest_region_ratio": 0.08,
+    "strong_changed_pixel_ratio": 0.18,
+    "strong_mean_abs_diff": 0.08,
+    "strong_largest_region_ratio": 0.18
+  },
+  "summary": {
+    "total": 1,
+    "pass": 1,
+    "real_divergence": 0,
+    "by_status": {
+      "PASS": 1
+    },
+    "by_severity": {
+      "none": 1
+    },
+    "by_repair_bucket": {
+      "NONE": 1
+    },
+    "qa_missed_raw_or_layout": 0,
+    "state_or_recipe_suspect": 0,
+    "suspicious_perfect_match": 0
+  },
+  "results": [
+    {
+      "key": "hub:detalle-plan-rutina@light",
+      "app": "hub",
+      "view": "detalle-plan-rutina",
+      "theme": "light",
+      "status": "PASS",
+      "severity": "none",
+      "repair_bucket": "NONE",
+      "real_divergence": false,
+      "suspicious_perfect_match": false,
+      "findings": [],
+      "canonical_file": "qa\\_mockup_canonical\\hub-detalle-plan-rutina-light-960x600.png",
+      "actual_file": "qa\\_captures_v8\\hub-detalle-plan-rutina-light-960x600.png",
+      "canonical_size": "960x600",
+      "actual_size": "960x600",
+      "metrics": {
+        "ssim": 0.70755,
+        "windowed_ssim": 0.79493,
+        "canonical_gray_std": 34.128,
+        "mean_abs_diff": 0.02844,
+        "max_abs_diff": 0.81176,
+        "changed_pixel_floor": 14,
+        "changed_pixels": 47300,
+        "total_pixels": 576000,
+        "changed_pixel_ratio": 0.08212,
+        "largest_region_ratio": 0.00745
+      },
+      "layout": {
+        "target_content_bbox": [
+          1,
+          2,
+          959,
+          598
+        ],
+        "actual_content_bbox": [
+          0,
+          17,
+          960,
+          583
+        ],
+        "bbox_dx": -1,
+        "bbox_dy": 15,
+        "bbox_dw": 1,
+        "bbox_dh": -15,
+        "max_bbox_delta_px": 15,
+        "bbox_area_delta_ratio": 0.02407
+      },
+      "odiff": {
+        "diff_pixels": 12590,
+        "diff_percentage": 2.19,
+        "diff_png_path": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\handoff_false_pass_audit\\20260630_113201\\hub_detalle-plan-rutina_light\\layered\\odiff\\hub-detalle-plan-rutina-light-960x600-odiff.png",
+        "match": false,
+        "available": true,
+        "accepted": true
+      },
+      "regions": [
+        {
+          "x": 0,
+          "y": 48,
+          "w": 960,
+          "h": 552,
+          "area": 4291,
+          "area_ratio": 0.00745,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 24,
+          "y": 185,
+          "w": 912,
+          "h": 46,
+          "area": 2832,
+          "area_ratio": 0.004917,
+          "hint": "layout_shift_or_spacing"
+        },
+        {
+          "x": 634,
+          "y": 102,
+          "w": 263,
+          "h": 44,
+          "area": 2595,
+          "area_ratio": 0.004505,
+          "hint": "component_region"
+        },
+        {
+          "x": 46,
+          "y": 266,
+          "w": 258,
+          "h": 42,
+          "area": 2531,
+          "area_ratio": 0.004394,
+          "hint": "component_region"
+        },
+        {
+          "x": 44,
+          "y": 93,
+          "w": 54,
+          "h": 55,
+          "area": 1885,
+          "area_ratio": 0.003273,
+          "hint": "component_region"
+        },
+        {
+          "x": 407,
+          "y": 189,
+          "w": 165,
+          "h": 38,
+          "area": 1395,
+          "area_ratio": 0.002422,
+          "hint": "component_region"
+        },
+        {
+          "x": 603,
+          "y": 102,
+          "w": 138,
+          "h": 40,
+          "area": 1067,
+          "area_ratio": 0.001852,
+          "hint": "component_region"
+        },
+        {
+          "x": 155,
+          "y": 113,
+          "w": 91,
+          "h": 16,
+          "area": 957,
+          "area_ratio": 0.001661,
+          "hint": "component_region"
+        }
+      ],
+      "panel_path": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\handoff_false_pass_audit\\20260630_113201\\hub_detalle-plan-rutina_light\\layered\\panels\\hub_detalle-plan-rutina_light.png"
+    }
+  ]
+}

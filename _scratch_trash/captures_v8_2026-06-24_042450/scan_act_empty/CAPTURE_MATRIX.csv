@@ -1,0 +1,2 @@
+producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
+suite,actividades-empty,Actividades empty state deterministico,light,960x600,navigate:actividades > call:_actividades_force_empty > drain:6 > capture:actividades-empty,suite-actividades-empty-light-960x600.png,pendiente,pendiente,requiere inspeccion manual

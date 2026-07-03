@@ -1,0 +1,11 @@
+[
+  {
+    "key": "hub:detalle-plan-activacion@dark",
+    "exit_code": 0,
+    "result": "PASS",
+    "cause": "OK",
+    "stdout": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\suspicious_closure_audit\\20260630_132105\\hub_detalle-plan-activacion_dark\\stdout.log",
+    "stderr": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\suspicious_closure_audit\\20260630_132105\\hub_detalle-plan-activacion_dark\\stderr.log",
+    "report_dir": "C:\\Users\\nosom\\Desktop\\nm_suite\\reports\\qa\\suspicious_closure_audit\\20260630_132105\\hub_detalle-plan-activacion_dark\\layered"
+  }
+]

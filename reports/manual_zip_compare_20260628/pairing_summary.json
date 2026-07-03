@@ -1,0 +1,1206 @@
+[
+  {
+    "key": "hub:detalle-plan-activacion@dark",
+    "canonical_file": "hub-detalle-plan-activacion-dark-960x600.png",
+    "v8_file": "hub-detalle-plan-activacion-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "hub:detalle-plan-activacion@light",
+    "canonical_file": "hub-detalle-plan-activacion-light-960x600.png",
+    "v8_file": "hub-detalle-plan-activacion-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "hub:detalle-plan-rutina@dark",
+    "canonical_file": "hub-detalle-plan-rutina-dark-960x600.png",
+    "v8_file": "hub-detalle-plan-rutina-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "hub:detalle-plan-rutina@light",
+    "canonical_file": "hub-detalle-plan-rutina-light-960x600.png",
+    "v8_file": "hub-detalle-plan-rutina-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "hub:detalle-plan-timer@dark",
+    "canonical_file": "hub-detalle-plan-timer-dark-960x600.png",
+    "v8_file": "hub-detalle-plan-timer-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "hub:detalle-plan-timer@light",
+    "canonical_file": "hub-detalle-plan-timer-light-960x600.png",
+    "v8_file": "hub-detalle-plan-timer-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "hub:detalle-resumen-ia-0@dark",
+    "canonical_file": "hub-detalle-resumen-ia-0-dark-560x220.png",
+    "v8_file": "hub-detalle-resumen-ia-0-dark-480x325.png",
+    "canonical_size": [
+      560,
+      220
+    ],
+    "v8_size": [
+      480,
+      325
+    ],
+    "status": "SIZE_MISMATCH"
+  },
+  {
+    "key": "hub:detalle-resumen-ia-0@light",
+    "canonical_file": "hub-detalle-resumen-ia-0-light-560x220.png",
+    "v8_file": "hub-detalle-resumen-ia-0-light-480x325.png",
+    "canonical_size": [
+      560,
+      220
+    ],
+    "v8_size": [
+      480,
+      325
+    ],
+    "status": "SIZE_MISMATCH"
+  },
+  {
+    "key": "hub:detalle@dark",
+    "canonical_file": "hub-detalle-dark-960x600.png",
+    "v8_file": "hub-detalle-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "hub:detalle@light",
+    "canonical_file": "hub-detalle-light-960x600.png",
+    "v8_file": "hub-detalle-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "hub:pacientes-empty@dark",
+    "canonical_file": "hub-pacientes-empty-dark-960x600.png",
+    "v8_file": "hub-pacientes-empty-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "hub:pacientes-empty@light",
+    "canonical_file": "hub-pacientes-empty-light-960x600.png",
+    "v8_file": "hub-pacientes-empty-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "hub:pacientes@dark",
+    "canonical_file": "hub-pacientes-dark-960x600.png",
+    "v8_file": "hub-pacientes-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "hub:pacientes@light",
+    "canonical_file": "hub-pacientes-light-960x600.png",
+    "v8_file": "hub-pacientes-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "hub:textos-globales@dark",
+    "canonical_file": "hub-textos-globales-dark-960x600.png",
+    "v8_file": "hub-textos-globales-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "hub:textos-globales@light",
+    "canonical_file": "hub-textos-globales-light-960x600.png",
+    "v8_file": "hub-textos-globales-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:actividades-empty@dark",
+    "canonical_file": "suite-actividades-empty-dark-960x600.png",
+    "v8_file": "suite-actividades-empty-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:actividades-empty@light",
+    "canonical_file": "suite-actividades-empty-light-960x600.png",
+    "v8_file": "suite-actividades-empty-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:actividades-filtered@dark",
+    "canonical_file": "suite-actividades-filtered-dark-960x600.png",
+    "v8_file": "suite-actividades-filtered-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:actividades-filtered@light",
+    "canonical_file": "suite-actividades-filtered-light-960x600.png",
+    "v8_file": "suite-actividades-filtered-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:actividades-marked-hice@dark",
+    "canonical_file": "suite-actividades-marked-hice-dark-960x600.png",
+    "v8_file": "suite-actividades-marked-hice-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:actividades-marked-hice@light",
+    "canonical_file": "suite-actividades-marked-hice-light-960x600.png",
+    "v8_file": "suite-actividades-marked-hice-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:actividades@dark",
+    "canonical_file": "suite-actividades-dark-960x600.png",
+    "v8_file": "suite-actividades-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:actividades@light",
+    "canonical_file": "suite-actividades-light-960x600.png",
+    "v8_file": "suite-actividades-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:animo@dark",
+    "canonical_file": "suite-animo-dark-960x600.png",
+    "v8_file": "suite-animo-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:animo@light",
+    "canonical_file": "suite-animo-light-960x600.png",
+    "v8_file": "suite-animo-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:avisos-empty@dark",
+    "canonical_file": "suite-avisos-empty-dark-960x600.png",
+    "v8_file": "suite-avisos-empty-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:avisos-empty@light",
+    "canonical_file": "suite-avisos-empty-light-960x600.png",
+    "v8_file": "suite-avisos-empty-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:avisos-filter-activos@dark",
+    "canonical_file": "suite-avisos-filter-activos-dark-960x600.png",
+    "v8_file": "suite-avisos-filter-activos-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:avisos-filter-activos@light",
+    "canonical_file": "suite-avisos-filter-activos-light-960x600.png",
+    "v8_file": "suite-avisos-filter-activos-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:avisos-search@dark",
+    "canonical_file": "suite-avisos-search-dark-960x600.png",
+    "v8_file": "suite-avisos-search-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:avisos-search@light",
+    "canonical_file": "suite-avisos-search-light-960x600.png",
+    "v8_file": "suite-avisos-search-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:avisos-today@dark",
+    "canonical_file": "suite-avisos-today-dark-960x600.png",
+    "v8_file": "suite-avisos-today-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:avisos-today@light",
+    "canonical_file": "suite-avisos-today-light-960x600.png",
+    "v8_file": "suite-avisos-today-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:avisos@dark",
+    "canonical_file": "suite-avisos-dark-960x600.png",
+    "v8_file": "suite-avisos-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:avisos@light",
+    "canonical_file": "suite-avisos-light-960x600.png",
+    "v8_file": "suite-avisos-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:dbt-library@dark",
+    "canonical_file": "suite-dbt-library-dark-960x600.png",
+    "v8_file": "suite-dbt-library-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:dbt-library@light",
+    "canonical_file": "suite-dbt-library-light-960x600.png",
+    "v8_file": "suite-dbt-library-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:dbt-now@dark",
+    "canonical_file": "suite-dbt-now-dark-960x600.png",
+    "v8_file": "suite-dbt-now-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:dbt-now@light",
+    "canonical_file": "suite-dbt-now-light-960x600.png",
+    "v8_file": "suite-dbt-now-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:dbt-practice-stop@dark",
+    "canonical_file": "suite-dbt-practice-stop-dark-960x600.png",
+    "v8_file": "suite-dbt-practice-stop-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:dbt-practice-stop@light",
+    "canonical_file": "suite-dbt-practice-stop-light-960x600.png",
+    "v8_file": "suite-dbt-practice-stop-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:home-no-score@dark",
+    "canonical_file": "suite-home-no-score-dark-960x600.png",
+    "v8_file": "suite-home-no-score-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:home-no-score@light",
+    "canonical_file": "suite-home-no-score-light-960x600.png",
+    "v8_file": "suite-home-no-score-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:home@dark",
+    "canonical_file": "suite-home-dark-960x600.png",
+    "v8_file": "suite-home-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:home@light",
+    "canonical_file": "suite-home-light-960x600.png",
+    "v8_file": "suite-home-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:onboarding-error@dark",
+    "canonical_file": "suite-onboarding-error-dark-520x600.png",
+    "v8_file": "suite-onboarding-error-dark-520x600.png",
+    "canonical_size": [
+      520,
+      600
+    ],
+    "v8_size": [
+      520,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:onboarding-error@light",
+    "canonical_file": "suite-onboarding-error-light-520x600.png",
+    "v8_file": "suite-onboarding-error-light-520x600.png",
+    "canonical_size": [
+      520,
+      600
+    ],
+    "v8_size": [
+      520,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:onboarding@dark",
+    "canonical_file": "suite-onboarding-dark-520x600.png",
+    "v8_file": "suite-onboarding-dark-520x600.png",
+    "canonical_size": [
+      520,
+      600
+    ],
+    "v8_size": [
+      520,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:onboarding@light",
+    "canonical_file": "suite-onboarding-light-520x600.png",
+    "v8_file": "suite-onboarding-light-520x600.png",
+    "canonical_size": [
+      520,
+      600
+    ],
+    "v8_size": [
+      520,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:recuperar-acceso@dark",
+    "canonical_file": "suite-recuperar-acceso-dark-520x600.png",
+    "v8_file": "suite-recuperar-acceso-dark-520x600.png",
+    "canonical_size": [
+      520,
+      600
+    ],
+    "v8_size": [
+      520,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:recuperar-acceso@light",
+    "canonical_file": "suite-recuperar-acceso-light-520x600.png",
+    "v8_file": "suite-recuperar-acceso-light-520x600.png",
+    "canonical_size": [
+      520,
+      600
+    ],
+    "v8_size": [
+      520,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:registro-step1-emotion-otro@dark",
+    "canonical_file": "suite-registro-step1-emotion-otro-dark-960x600.png",
+    "v8_file": "suite-registro-step1-emotion-otro-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:registro-step1-emotion-otro@light",
+    "canonical_file": "suite-registro-step1-emotion-otro-light-960x600.png",
+    "v8_file": "suite-registro-step1-emotion-otro-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:registro-step1-emotion@dark",
+    "canonical_file": "suite-registro-step1-emotion-dark-960x600.png",
+    "v8_file": "suite-registro-step1-emotion-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:registro-step1-emotion@light",
+    "canonical_file": "suite-registro-step1-emotion-light-960x600.png",
+    "v8_file": "suite-registro-step1-emotion-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:registro-step2-distortions@dark",
+    "canonical_file": "suite-registro-step2-distortions-dark-960x600.png",
+    "v8_file": "suite-registro-step2-distortions-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:registro-step2-distortions@light",
+    "canonical_file": "suite-registro-step2-distortions-light-960x600.png",
+    "v8_file": "suite-registro-step2-distortions-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:registro-step3-filled@dark",
+    "canonical_file": "suite-registro-step3-filled-dark-960x600.png",
+    "v8_file": "suite-registro-step3-filled-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:registro-step3-filled@light",
+    "canonical_file": "suite-registro-step3-filled-light-960x600.png",
+    "v8_file": "suite-registro-step3-filled-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:registro-success@dark",
+    "canonical_file": "suite-registro-success-dark-960x600.png",
+    "v8_file": "suite-registro-success-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:registro-success@light",
+    "canonical_file": "suite-registro-success-light-960x600.png",
+    "v8_file": "suite-registro-success-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:registro@dark",
+    "canonical_file": "suite-registro-dark-960x600.png",
+    "v8_file": "suite-registro-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:registro@light",
+    "canonical_file": "suite-registro-light-960x600.png",
+    "v8_file": "suite-registro-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:respiracion-paused@dark",
+    "canonical_file": "suite-respiracion-paused-dark-960x600.png",
+    "v8_file": "suite-respiracion-paused-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:respiracion-paused@light",
+    "canonical_file": "suite-respiracion-paused-light-960x600.png",
+    "v8_file": "suite-respiracion-paused-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:respiracion-running@dark",
+    "canonical_file": "suite-respiracion-running-dark-960x600.png",
+    "v8_file": "suite-respiracion-running-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:respiracion-running@light",
+    "canonical_file": "suite-respiracion-running-light-960x600.png",
+    "v8_file": "suite-respiracion-running-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:respiracion@dark",
+    "canonical_file": "suite-respiracion-dark-960x600.png",
+    "v8_file": "suite-respiracion-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:respiracion@light",
+    "canonical_file": "suite-respiracion-light-960x600.png",
+    "v8_file": "suite-respiracion-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:rutina-add-task@dark",
+    "canonical_file": "suite-rutina-add-task-dark-960x600.png",
+    "v8_file": "suite-rutina-add-task-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:rutina-add-task@light",
+    "canonical_file": "suite-rutina-add-task-light-960x600.png",
+    "v8_file": "suite-rutina-add-task-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:rutina-all-completed@dark",
+    "canonical_file": "suite-rutina-all-completed-dark-960x600.png",
+    "v8_file": "suite-rutina-all-completed-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:rutina-all-completed@light",
+    "canonical_file": "suite-rutina-all-completed-light-960x600.png",
+    "v8_file": "suite-rutina-all-completed-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:rutina-empty@dark",
+    "canonical_file": "suite-rutina-empty-dark-960x600.png",
+    "v8_file": "suite-rutina-empty-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:rutina-empty@light",
+    "canonical_file": "suite-rutina-empty-light-960x600.png",
+    "v8_file": "suite-rutina-empty-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:rutina@dark",
+    "canonical_file": "suite-rutina-dark-960x600.png",
+    "v8_file": "suite-rutina-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:rutina@light",
+    "canonical_file": "suite-rutina-light-960x600.png",
+    "v8_file": "suite-rutina-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:timer-empty@dark",
+    "canonical_file": "suite-timer-empty-dark-960x600.png",
+    "v8_file": "suite-timer-empty-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:timer-empty@light",
+    "canonical_file": "suite-timer-empty-light-960x600.png",
+    "v8_file": "suite-timer-empty-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:timer-paused@dark",
+    "canonical_file": "suite-timer-paused-dark-960x600.png",
+    "v8_file": "suite-timer-paused-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:timer-paused@light",
+    "canonical_file": "suite-timer-paused-light-960x600.png",
+    "v8_file": "suite-timer-paused-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:timer-running@dark",
+    "canonical_file": "suite-timer-running-dark-960x600.png",
+    "v8_file": "suite-timer-running-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:timer-running@light",
+    "canonical_file": "suite-timer-running-light-960x600.png",
+    "v8_file": "suite-timer-running-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:timer@dark",
+    "canonical_file": "suite-timer-dark-960x600.png",
+    "v8_file": "suite-timer-dark-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  },
+  {
+    "key": "suite:timer@light",
+    "canonical_file": "suite-timer-light-960x600.png",
+    "v8_file": "suite-timer-light-960x600.png",
+    "canonical_size": [
+      960,
+      600
+    ],
+    "v8_size": [
+      960,
+      600
+    ],
+    "status": "PAIRED"
+  }
+]

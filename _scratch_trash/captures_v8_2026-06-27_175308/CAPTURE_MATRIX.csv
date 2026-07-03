@@ -1,0 +1,2 @@
+producto,vista,estado,tema,resolucion,receta,captura,inspeccion_manual,resultado,deuda_pendiente
+hub,pacientes,Pacientes default,dark,960x600,navigate:pacientes > drain:8 > capture:pacientes,hub-pacientes-dark-960x600.png,pendiente,pendiente,requiere inspeccion manual
