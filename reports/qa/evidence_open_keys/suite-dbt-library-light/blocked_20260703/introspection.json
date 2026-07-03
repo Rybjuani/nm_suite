@@ -1,0 +1,141 @@
+[
+  {
+    "surface_key": "suite:dbt-library@light",
+    "widgets_audited": 93,
+    "component_counts": {
+      "NeuroMoodApp": 1,
+      "_ShellWidget": 1,
+      "NMWindowChrome": 1,
+      "QWidget": 8,
+      "QPushButton": 8,
+      "QLabel": 34,
+      "_ChromeThemeToggle": 1,
+      "NMFadeWidget": 1,
+      "ModuloDBT": 1,
+      "_DBTScreen": 1,
+      "NMTabs": 2,
+      "QStackedWidget": 1,
+      "QScrollArea": 1,
+      "_SkillCard": 16,
+      "_TwoLineElideLabel": 16
+    },
+    "inventory": {
+      "NMFadeWidget": {
+        "count": 1,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "None"
+        ]
+      },
+      "NMTabs": {
+        "count": 2,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "None"
+        ]
+      },
+      "NMWindowChrome": {
+        "count": 1,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "None"
+        ]
+      },
+      "QPushButton": {
+        "count": 8,
+        "with_shadow": 0,
+        "qss_radii": [
+          8.0,
+          12.0,
+          15.0
+        ],
+        "shape_attrs": [
+          "None"
+        ]
+      },
+      "_ChromeThemeToggle": {
+        "count": 1,
+        "with_shadow": 0,
+        "qss_radii": [],
+        "shape_attrs": [
+          "None"
+        ]
+      },
+      "_SkillCard": {
+        "count": 16,
+        "with_shadow": 16,
+        "qss_radii": [],
+        "shape_attrs": [
+          "22"
+        ]
+      }
+    },
+    "divergences": [],
+    "fail_count": 0,
+    "size_review": [
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "QPushButton",
+        "object_name": "",
+        "rect": [
+          16,
+          8,
+          26,
+          32
+        ],
+        "severity": "medium",
+        "message": "QPushButton exceeds its declared maximum size: height 32px > max 26px (a global QSS rule or layout likely overrides setFixedSize)"
+      },
+      {
+        "kind": "GEOMETRY_FIXED_SIZE_VIOLATED",
+        "component": "_ChromeThemeToggle",
+        "object_name": "",
+        "rect": [
+          855,
+          8,
+          24,
+          32
+        ],
+        "severity": "medium",
+        "message": "_ChromeThemeToggle exceeds its declared maximum size: height 32px > max 24px (a global QSS rule or layout likely overrides setFixedSize)"
+      }
+    ],
+    "provenance": {
+      "schema": "capture_v8.provenance.v1",
+      "key": "suite:dbt-library@light",
+      "capture_file": "suite-dbt-library-light-960x600.png",
+      "capture_path": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\suite-dbt-library-light-960x600.png",
+      "png_sha256": "d090f44cf11490d839b7fa77dd05d0b4303866af5a3439dc12a6559d3a583f38",
+      "captured_at": "2026-07-03T09:16:13.239275+00:00",
+      "command_args": [
+        "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\capture_v8.py",
+        "--app",
+        "suite",
+        "--view",
+        "dbt-library",
+        "--theme",
+        "light",
+        "--res",
+        "960x600",
+        "--out-dir",
+        "qa\\_captures_v8",
+        "--scale",
+        "1.0",
+        "--no-clean",
+        "--_child-single"
+      ],
+      "cwd": "C:\\Users\\nosom\\Desktop\\nm_suite",
+      "git_head": "b882248f05723ebc8904433cbeff84dcd155e3cd",
+      "git_branch": "main",
+      "git_tracked_dirty": true,
+      "capture_script": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\capture_v8.py",
+      "capture_script_sha256": "7d02f6a49a3f0d44659d70f72b7a3c635fd31fe8c8a695ff918c41c4130032ab",
+      "capture_manifest": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_captures_v8\\CAPTURE_MANIFEST.json",
+      "introspection_sidecar": "C:\\Users\\nosom\\Desktop\\nm_suite\\qa\\_visual_auditor_spec\\introspection.json",
+      "introspection_entry_id": "40b9725be3eb9673b7b30658845e181c2560823763efc48b2980cdd861110637"
+    }
+  }
+]
