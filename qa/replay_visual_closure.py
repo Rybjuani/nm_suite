@@ -225,19 +225,53 @@ EVIDENCE_NOTE_NAMES = ("evidence", "evidence-record", "commit")
 
 
 def evidence_changed_keys(base_items: list[HandoffItem], head_items: list[HandoffItem]) -> set[str]:
-    """Closed keys whose evidence notes were added or edited relative to base.
+    """Closed keys whose notes were added or edited relative to base.
 
     Catches in-place tampering (or legacy re-closure) that never flips the
     checkbox in the diff, so it would escape parse_closed_checkbox_keys.
+
+    Two detection modes:
+    - Legacy items (``legacy: true``): full-notes-block comparison. Legacy
+      closures were migrated pre-replay-era and carry freeform narrative
+      notes (e.g. "CLOSURE INVALIDATED (...)", "Partial fidelity repair
+      (...)") that don't fit the ``name: value`` shape ``NOTE_RE`` parses —
+      restricting the check to ``EVIDENCE_NOTE_NAMES`` let edits to that
+      narrative (or a fabricated evidence claim slipped into it) go
+      undetected, since most legacy items never carry
+      evidence/evidence-record/commit notes at all. Any line change under a
+      legacy ``[x]`` entry now forces re-validation.
+    - Non-legacy items: unchanged value-level comparison of
+      ``EVIDENCE_NOTE_NAMES`` only, so real evidence-based closures (real
+      ``docs/closure_evidence/*.json`` records) aren't over-flagged by
+      unrelated note churn.
     """
     changed: set[str] = set()
     for item in head_items:
         if item.state != "closed":
             continue
         notes = note_values(item)
+        base_item = first_item(base_items, item.key, state="closed")
+
+        if notes.get("legacy") == "true":
+            if base_item is None:
+                # No closed key at this position in base: either a fresh
+                # checkbox flip (parse_closed_checkbox_keys already covers
+                # that from the diff) or an untracked new closure — not this
+                # function's concern.
+                continue
+            base_notes = note_values(base_item)
+            if base_notes.get("legacy") != "true":
+                # The migration event itself (migrate_legacy_closures.py
+                # stamping `legacy: true` for the first time): expected,
+                # whitelisted via find_legacy_migrations + skip_legacy, not
+                # tampering.
+                continue
+            if item.notes != base_item.notes:
+                changed.add(item.key)
+            continue
+
         if not any(name in notes for name in EVIDENCE_NOTE_NAMES):
             continue
-        base_item = first_item(base_items, item.key, state="closed")
         if base_item is None:
             changed.add(item.key)
             continue

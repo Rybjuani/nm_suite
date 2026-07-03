@@ -356,3 +356,124 @@ def test_replay_no_regen_validates_structurally_without_regeneration(monkeypatch
     assert result.ok is True
     assert result.replayed_keys == 1
     assert result.regenerated is False
+
+
+# ─── evidence_changed_keys legacy-note hardening ────────────────────────────
+#
+# Legacy [x] closures carry freeform narrative notes ("CLOSURE INVALIDATED
+# (...)", "Partial fidelity repair (...)") that never match the `name: value`
+# shape NOTE_RE parses, and most never carry evidence/evidence-record/commit
+# notes at all. The original evidence_changed_keys() only compared those 3
+# canonical note values, so editing anything else under a legacy [x] entry
+# (or a legacy item with no canonical notes at all) went undetected — no
+# checkbox transition, no tracked note-value change, no failure.
+
+_LEGACY_BASE = (
+    f"- [x] `{KEY}` old closure\n"
+    "  - legacy: true\n"
+    "  - legacy-reason: pre_replay_era\n"
+    "  - legacy-migrated-by: migrate_legacy_closures.py\n"
+    "  - Closure evidence (2026-06-29): manual panel review confirms alignment.\n"
+)
+
+
+def test_replay_flags_legacy_note_edit_without_checkbox_transition(monkeypatch, tmp_path):
+    """(1) Editing a legacy item's narrative note (not evidence/evidence-record/
+    commit) with no checkbox transition must still force re-validation and fail,
+    since legacy items have no real docs/closure_evidence/*.json record."""
+    tampered = (
+        f"- [x] `{KEY}` old closure\n"
+        "  - legacy: true\n"
+        "  - legacy-reason: pre_replay_era\n"
+        "  - legacy-migrated-by: migrate_legacy_closures.py\n"
+        "  - Closure evidence (2026-06-29): FABRICATED — actually never reviewed.\n"
+    )
+    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
+    handoff.write_text(tampered, encoding="utf-8")
+    _patch_git(
+        monkeypatch,
+        base_text=_LEGACY_BASE,
+        diff_text=(
+            "@@ -5 +5 @@\n"
+            "-  - Closure evidence (2026-06-29): manual panel review confirms alignment.\n"
+            "+  - Closure evidence (2026-06-29): FABRICATED — actually never reviewed.\n"
+        ),
+    )
+
+    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
+
+    assert result.ok is False
+    assert result.failed_keys
+    assert result.failed_keys[0].key == KEY
+    assert result.failed_keys[0].reason == "missing_evidence"
+
+
+def test_replay_legacy_unchanged_notes_still_skipped(monkeypatch, tmp_path):
+    """(2) A legacy item whose notes are byte-for-byte unchanged relative to
+    base must still be skipped (not forced into re-validation)."""
+    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
+    handoff.write_text(_LEGACY_BASE, encoding="utf-8")
+    _patch_git(monkeypatch, base_text=_LEGACY_BASE, diff_text="")
+
+    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
+
+    assert result.ok is True
+    assert result.replayed_keys == 0
+    assert result.skipped_legacy == 1
+    assert result.failed_keys == []
+
+
+def test_replay_unrelated_handoff_edit_does_not_flag_untouched_legacy_key(monkeypatch, tmp_path):
+    """(3) Editing handoff content outside a legacy item's own note block (an
+    unrelated open item's text) must not cause that legacy key to be flagged."""
+    other_key = "suite:animo@light"
+    base_text = _LEGACY_BASE + f"- [ ] `{other_key}` needs polish\n"
+    head_text = _LEGACY_BASE + f"- [ ] `{other_key}` needs a different polish pass\n"
+    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
+    handoff.write_text(head_text, encoding="utf-8")
+    _patch_git(
+        monkeypatch,
+        base_text=base_text,
+        diff_text=(
+            "@@ -6 +6 @@\n"
+            f"- - [ ] `{other_key}` needs polish\n"
+            f"+ - [ ] `{other_key}` needs a different polish pass\n"
+        ),
+    )
+
+    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
+
+    assert result.ok is True
+    assert result.replayed_keys == 0
+    assert result.skipped_legacy == 1
+    assert result.failed_keys == []
+
+
+def test_replay_new_canonical_record_unaffected_by_legacy_hardening(monkeypatch, tmp_path):
+    """(4) A real, non-legacy evidence-based closure with an extra freeform
+    note line (not evidence/evidence-record/commit) added must not be forced
+    into re-validation by the legacy-notes hardening — canonical closures
+    keep working exactly as before."""
+    record = _record()
+    record_rel, evidence = _write_record(tmp_path, record)
+    base_text = _handoff_closed(KEY, evidence, record_rel)
+    head_text = base_text + "  - reviewed-by: qa-team\n"
+    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
+    handoff.write_text(head_text, encoding="utf-8")
+    _patch_git(
+        monkeypatch,
+        base_text=base_text,
+        diff_text="@@ -4,0 +5 @@\n+  - reviewed-by: qa-team\n",
+        changed_files=["VISUAL_REPAIR_HANDOFF.md"],
+    )
+
+    def explode(_root, _key, _commit):
+        raise AssertionError("adding an unrelated note must not force re-validation")
+
+    monkeypatch.setattr(replay, "regenerate_record_at_commit", explode)
+
+    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
+
+    assert result.ok is True
+    assert result.replayed_keys == 0
+    assert result.failed_keys == []
