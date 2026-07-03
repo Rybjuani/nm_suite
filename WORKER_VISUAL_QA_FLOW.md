@@ -104,29 +104,19 @@ Y en `qa\_visual_auditor_spec\introspection.json` para tu key:
 
 ### 2.4 Cuándo parar de iterar
 
-Regla dual según señal métrica:
+Si 3 iteraciones consecutivas no mejoran las métricas, no sigas con ajustes
+locales del mismo tipo.
 
-- **Si 3 iteraciones consecutivas no mueven el `changed_pixel_ratio`**
-  (no hay mejora objetiva iteración a iteración): **pará a las 3**. No hay
-  convergencia visible; seguir iterando sin input es tirar tokens.
+En ese punto:
 
-- **Si cada iteración mejora objetivamente el `changed_pixel_ratio`**
-  (aunque sea por 0.001): podés iterar **hasta 7**. Si a las 7 seguís sin
-  PASS, pará.
+1. preservá el mejor diff si corrige un bug real;
+2. identificá la causa dominante restante;
+3. cambiá de estrategia sólo si la causa está localizada;
+4. si la causa toca componente compartido, evaluá opción scoped primero;
+5. si no hay ruta técnica clara, reportá bloqueo con métricas y diffs.
 
-- **Tope duro absoluto: 10 iteraciones**. Aunque la métrica siga bajando,
-  después de 10 pará y reportá. El riesgo de falso PASS por desesperación
-  (el agente "afina" thresholds en vez de arreglar el problema) crece
-  exponencialmente después de 7-10 ciclos.
-
-Cuando pares, posteá en el canal:
-- Key exacta
-- Número de iteraciones hechas y por qué paraste (sin mejora / alcanzó 7 / tope 10)
-- Cambios intentados (commit hashes si los hay, o diff summary por iteración)
-- `changed_pixel_ratio`, `mean_abs_diff`, `windowed_ssim` de cada una de las
-  últimas 3 iteraciones (para que se vea la tendencia)
-- Hipótesis sobre MISMATCH# relevante (¿es IRREDUCIBLE?)
-- ¿Cuál fue la iteración que más se acercó al PASS y qué cambió?
+La regla frena loops ciegos; no autoriza abandonar una key con causa
+reparable identificada.
 
 ---
 
@@ -370,7 +360,8 @@ Cualquier otro error → pará, reportá el stderr completo en el canal de hando
    ↓           ↑
    ↓     PASS?  ↑
    ↓           ↑ NO
-   ↓           └── (3 sin mejora / 7 con mejora / tope 10 → parar y reportar)
+   ↓           └── (3 sin mejora → preservar diff real, localizar causa,
+   ↓               scoped antes que shared, o reportar bloqueo — §2.4)
    ↓ SÍ
 [close_visual_key.py [--preflight] --key <key>]  (30-90 s, worktree aislado)
    ↓
