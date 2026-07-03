@@ -3,11 +3,20 @@
 Status: RESET on 2026-06-28 after a false stale/pass closure.
 Branch base: `main`.
 
-Read first: `VISUAL_QA_AGENT_PROTOCOL.md`.
+Read first: `WORKER_VISUAL_QA_FLOW.md` (protocolo completo archivado en
+`docs/_archive/protocol_v1.md`).
 
 > **WORKERS**: Para cerrar una key NO leas este archivo completo.
 > Seguí `WORKER_VISUAL_QA_FLOW.md` (se entrega por separado, <=300 líneas,
 > 2 comandos por key).
+
+> ⚠️ **60 keys marcadas `[x]` son legacy pre-replay-era sin evidence canónica**
+> en `docs/closure_evidence/` (0 records al día de esta nota). No confiar en
+> el checkbox por sí solo como prueba de cierre — la evidencia versionable
+> (`evidence:`/`evidence-record:`/`commit:` + record en `docs/closure_evidence/`)
+> es la única fuente de verdad para una key cerrada post-replay-era. Este
+> warning es informativo; no reabre ni invalida las 60 keys, y no bloquea
+> nuevos cierres.
 
 ## NEXT_KEY
 
