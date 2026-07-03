@@ -2937,8 +2937,31 @@ def main() -> int:
         if view_name in _RECIPES.get(app_key, {}):
             targets = [(app_key, view_name)]
         else:
-            print(f"[ERROR] Vista '{args.view}' no encontrada en {app_key}. Usa --list.")
-            return 1
+            # Vistas producidas DENTRO de una receta con otro id (dialogos
+            # indexados, ej. "detalle-resumen-ia-0" la produce la receta
+            # "detalle-resumen-ia"). Los flujos per-key (run_visual_*.ps1,
+            # close_visual_key, replay) invocan --view con el view de la KEY
+            # canonica, no con el id de receta — sin este fallback ninguna
+            # key de dialogo puede capturarse/cerrarse per-key.
+            producers = [
+                rid
+                for rid, recipe in _RECIPES.get(app_key, {}).items()
+                if any(
+                    act.get("action") == "capture" and act.get("view") == view_name
+                    for act in recipe.get("actions", [])
+                )
+            ]
+            if len(producers) == 1:
+                targets = [(app_key, producers[0])]
+            elif len(producers) > 1:
+                print(
+                    f"[ERROR] Vista '{args.view}' la producen varias recetas de "
+                    f"{app_key}: {producers}. Usa el id de receta exacto."
+                )
+                return 1
+            else:
+                print(f"[ERROR] Vista '{args.view}' no encontrada en {app_key}. Usa --list.")
+                return 1
     elif args.clean:
         _clean_output(out_dir)
         return 0

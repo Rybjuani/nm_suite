@@ -148,10 +148,12 @@ seguí usando `run_visual_family.ps1` con el plan de las 56 keys.
 
 Ambos caminos ejecutan en secuencia, abortando en el primer fallo:
 1. `anti_fraud_scan.py` (modo full — bloquea si hay canonical injection)
-2. `capture_v8.py` por key (`NM_VAS_INTROSPECT=1`)
+2. `capture_v8.py` por key (`NM_VAS_INTROSPECT=1`) + `vas_gate.py --key <key>`
+   inmediatamente después de cada captura (el sidecar vivo se reescribe por
+   invocación, así que el gate es POR KEY; el runner archiva cada sidecar en
+   `<OutDir>\introspection\<key_safe>.json`)
 3. `layered_visual_compare.py` (filtrado por `--key` o por `--keys-file`)
 4. Para cada key modal del set: `audit_modal_backdrop_blur.py --key <key>`
-5. `vas_gate.py`
 
 ### 2.3 Criterio de PASS del pre-flight
 
@@ -164,9 +166,14 @@ para N keys) y verificá, para ESA key:
 - `suspicious_perfect_match: false`
 - `near_perfect_match: false`
 
-Y en `qa\_visual_auditor_spec\introspection.json` para esa key:
+Y en el sidecar VAS de esa key:
 - `fail_count: 0`
 - cero `divergences` con `severity ∈ {high, medium}`
+
+> El `qa\_visual_auditor_spec\introspection.json` vivo sólo retiene la ÚLTIMA
+> key capturada. Para un set de N keys, el sidecar de cada key queda archivado
+> por `run_visual_family.ps1` en `<OutDir>\introspection\<key_safe>.json`
+> (y el gate por key ya corrió durante la captura — ver §2.2).
 
 > **`HANDOFF_CLOSURE_ALLOWED: NO` es normal** para un pre-flight de scope
 > parcial (motivo: `partial_scope`), incluso si tu target mode es
@@ -219,8 +226,10 @@ que alcanzó PASS:
 
 (Opcional, recomendado para iteraciones baratas: agregar `--preflight` corre
 el pipeline en working tree antes de armar el worktree, ahorrando ~30-60 s
-si el código sigue roto. La evidencia siempre se construye dentro del worktree;
-`--preflight` es sólo un guard de early-exit, no afecta al gate.)
+si el código sigue roto. Captura y reporta en un directorio TEMPORAL fuera del
+repo — no ensucia `qa/_captures_v8` ni dispara `dirty_working_tree`. La
+evidencia siempre se construye dentro del worktree; `--preflight` es sólo un
+guard de early-exit, no afecta al gate.)
 
 Cada invocación hace, atómicamente, en un **worktree separado** al commit HEAD:
 1. Verifica working tree limpio en rutas scoped (app, hub, shared, qa, tools/qa, handoff, .github/workflows).
@@ -239,12 +248,12 @@ Cada invocación hace, atómicamente, en un **worktree separado** al commit HEAD
 7. Escribe atómicamente (rename) para evitar corrupt-write.
 
 Si tu target set tiene N keys en PASS, repetí la invocación N veces
-(secuencial — el working tree debe estar limpio antes de cada una, así que
-si vas a commitear en batch, esperá a haber cerrado todas antes del commit;
-ver §4a). Cada invocación construye su **propio** `docs/closure_evidence/
-<key>.json` y agrega sus **propias** notas al checkbox de esa key
-exclusivamente. No hay cierre sin evidence propio — para ninguna key, sea
-cual sea el target mode.
+(secuencial). **El gate exige working tree limpio — incluido el handoff —
+antes de CADA invocación**, así que después de cada cierre tenés que
+commitear ese cierre antes de cerrar la siguiente key (ver §4a). Cada
+invocación construye su **propio** `docs/closure_evidence/<key>.json` y
+agrega sus **propias** notas al checkbox de esa key exclusivamente. No hay
+cierre sin evidence propio — para ninguna key, sea cual sea el target mode.
 
 > **No edites el handoff ni los records de evidencia por fuera de `close_visual_key.py`.**
 > Cualquier mutación fuera de ese script rompe el hash y
@@ -267,16 +276,14 @@ git add -A
 git status
 ```
 
-**Granularidad de commit según target mode** (el owner ya la definió al
-declarar el modo, no la elegís vos):
-- `next-key` / `first-N` / `explicit-list`: default 1 commit por key cerrada
-  (secuencial — cerrar key → verificar diff → commit → repetir con la
-  siguiente).
-- `batch` / `all-open-keys` / `family`: el owner autorizó agrupar — cerrá
-  todas las keys del set que llegaron a PASS primero, y recién ahí hacé **1
-  commit que bundlea las N closures**. El evidence sigue siendo por key (N
-  records en `docs/closure_evidence/`, N sets de notas en el handoff) — sólo
-  el commit se agrupa.
+**Granularidad de commit**: siempre **1 commit por key cerrada**, secuencial
+(cerrar key → verificar diff → commit → repetir con la siguiente). El gate de
+`close_visual_key.py` exige el handoff limpio antes de cada cierre, así que
+bundlear N closures en un commit no es ejecutable — para TODOS los target
+modes, incluidos `batch`/`family`/`all-open-keys`. Lo que agrupan esos modos
+es el **trabajo** (todas las keys del set en una misma corrida), no el
+commit. El evidence sigue siendo por key (N records en
+`docs/closure_evidence/`, N sets de notas en el handoff).
 
 Verificá que el staged diff muestra ÚNICAMENTE:
 - `VISUAL_REPAIR_HANDOFF.md` (1 checkbox flip + 3 notas por cada key cerrada)
@@ -287,8 +294,7 @@ no commiteaste antes del cierre), deshacelos con `git restore --staged <file>`.
 El commit de cierre debe ser limpio: handoff + evidence record(s), nada más.
 
 ```powershell
-git commit -m "close: <key>"                              # 1 key
-git commit -m "close: batch <N> keys — <family/modo>"      # batch/all-open-keys/family
+git commit -m "close: <key>"      # uno por key, antes de cerrar la siguiente
 ```
 
 ### 4b. Verificación local pre-push (vos)
@@ -297,8 +303,13 @@ Antes de pensar en publicar, corré el replay local con `--regen`. La máquina
 que cierra es la **única** que verifica pixeles:
 
 ```powershell
-.\.venv\Scripts\python.exe qa\replay_visual_closure.py --base <base-real>
+.\.venv\Scripts\python.exe qa\replay_visual_closure.py --base <base-real> --skip-legacy
 ```
+
+> `--skip-legacy` es necesario mientras existan los 60 cierres legacy
+> marcados invalidated-pending-revalidation: sin el flag el replay falla con
+> `legacy_closure_without_evidence` para cada uno, aunque tus cierres nuevos
+> estén perfectos. Es el mismo modo que corre CI.
 
 **Cómo resolver `<base-real>`**: el replay audita el rango `base..HEAD`. Tenés
 que elegir `base` como el último commit **anterior** a tus cierres. Opciones:
@@ -307,7 +318,7 @@ que elegir `base` como el último commit **anterior** a tus cierres. Opciones:
   ```powershell
   git rev-parse origin/main
   # usá ese hash como --base
-  .\.venv\Scripts\python.exe qa\replay_visual_closure.py --base <hash-de-origin/main>
+  .\.venv\Scripts\python.exe qa\replay_visual_closure.py --base <hash-de-origin/main> --skip-legacy
   ```
 
 - Si tu local está atrasado respecto a `origin/main` (alguien más pusheó):
@@ -325,7 +336,7 @@ que elegir `base` como el último commit **anterior** a tus cierres. Opciones:
 
 - **Atajo simple**: si tenés un solo commit de cierre encima de `origin/main`:
   ```powershell
-  .\.venv\Scripts\python.exe qa\replay_visual_closure.py --base HEAD~1
+  .\.venv\Scripts\python.exe qa\replay_visual_closure.py --base HEAD~1 --skip-legacy
   ```
 
 El replay re-captura + re-compara + re-VAS cada key cerrada en el rango y
@@ -500,10 +511,10 @@ tree, porque ninguna invocación posterior puede correr sobre un tree sucio.
 [close_visual_key.py [--preflight] --key <key>]  (30-90 s/key, worktree aislado)
    ↓
 ─── ETAPA 4a: CIERRE LOCAL ───
-[git add + commit]  (1 commit/key, o 1 commit batch si el modo lo autoriza — §4a)
+[git add + commit]  (SIEMPRE 1 commit por key, antes del siguiente cierre — §4a)
    ↓
 ─── ETAPA 4b: VERIFICACIÓN LOCAL ───
-[replay_visual_closure.py --base <base-real>]  (valida TODO el rango cerrado, --regen)
+[replay_visual_closure.py --base <base-real> --skip-legacy]  (valida TODO el rango cerrado, --regen)
    ↓ PASS
 ─── ETAPA 4c: PUBLICACIÓN (owner decide) ───
 [reportar al owner: target set + keys cerradas + commit(s) + replay PASS]

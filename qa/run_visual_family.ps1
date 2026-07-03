@@ -71,7 +71,18 @@ if ($LASTEXITCODE -ne 0) {
 $env:NM_VAS_INTROSPECT = "1"
 
 # VAS: remove stale sidecar before capturing so evidence is from THIS run only.
-Remove-Item .\qa\_visual_auditor_spec\introspection.json -ErrorAction SilentlyContinue
+# Con -SkipCapture NO se borra: no habría captura que lo regenere y el gate
+# por key de abajo debe correr contra el sidecar existente.
+if (-not $SkipCapture) {
+  Remove-Item .\qa\_visual_auditor_spec\introspection.json -ErrorAction SilentlyContinue
+}
+
+# capture_v8 REESCRIBE el sidecar en cada invocación (una key por proceso),
+# así que el gate VAS corre por key inmediatamente después de su captura y el
+# sidecar se archiva por key en $OutDir\introspection\ — el introspection.json
+# vivo sólo retiene la última key del set.
+$introspectionArchiveDir = Join-Path $OutDir "introspection"
+New-Item -ItemType Directory -Force $introspectionArchiveDir | Out-Null
 
 $rows = @()
 foreach ($line in Get-Content -LiteralPath $PlanFile) {
@@ -128,6 +139,35 @@ foreach ($row in $rows) {
       --out-dir qa\_captures_v8 `
       --no-clean
   }
+
+  # VAS Gate por key: el sidecar recién escrito corresponde a ESTA key; si se
+  # gateara una sola vez al final, sólo la última key del set quedaría
+  # validada (bug observado 2026-07-03 con un set de 2 keys: "all 1 entries").
+  $safeRowKey = ([string]$row.Key) -replace '[:@\\\/]', '_'
+  $archivedSidecar = Join-Path $introspectionArchiveDir "$safeRowKey.json"
+  if (-not $SkipCapture) {
+    & .\.venv\Scripts\python.exe qa\vas_gate.py --key $($row.Key)
+    if ($LASTEXITCODE -ne 0) {
+      Write-Error "VAS GATE FAILED for key '$($row.Key)'. QA NOT approved. Do not close this item."
+      exit 1
+    }
+    Copy-Item .\qa\_visual_auditor_spec\introspection.json $archivedSidecar -Force
+  }
+  else {
+    # -SkipCapture: sin captura fresca, el gate corre contra el sidecar
+    # archivado de esa key (o el vivo como último recurso). Si ninguno cubre
+    # la key, el gate falla — no hay aprobación VAS sin evidencia propia.
+    if (Test-Path -LiteralPath $archivedSidecar) {
+      & .\.venv\Scripts\python.exe qa\vas_gate.py --sidecar $archivedSidecar --key $($row.Key)
+    }
+    else {
+      & .\.venv\Scripts\python.exe qa\vas_gate.py --key $($row.Key)
+    }
+    if ($LASTEXITCODE -ne 0) {
+      Write-Error "VAS GATE FAILED for key '$($row.Key)'. QA NOT approved. Do not close this item."
+      exit 1
+    }
+  }
 }
 
 $keysFile = New-TemporaryFile
@@ -158,9 +198,7 @@ foreach ($modalRow in $modalRows) {
   }
 }
 
-# VAS Gate: validate the sidecar for all keys captured in this family run.
-& .\.venv\Scripts\python.exe qa\vas_gate.py
-if ($LASTEXITCODE -ne 0) {
-  Write-Error "VAS GATE FAILED. QA NOT approved. One or more keys have VAS failures or blocking divergences."
-  exit 1
-}
+# VAS Gate: ya corrió POR KEY dentro del loop de capturas (el sidecar vivo se
+# reescribe por invocación de capture_v8; un gate único al final sólo cubría
+# la última key del set). Los sidecars por key quedan archivados en
+# $OutDir\introspection\<key_safe>.json.

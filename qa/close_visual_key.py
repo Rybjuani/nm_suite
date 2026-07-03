@@ -558,6 +558,44 @@ def write_record(repo_root: Path, build: EvidenceBuild) -> Path:
     return record_path
 
 
+def run_preflight(
+    *,
+    repo_root: Path,
+    key: str,
+    capture_dir: Path | None = None,
+    report_dir: Path | None = None,
+) -> None:
+    """Early-exit guard: full pipeline over the CURRENT working tree.
+
+    Sin dirs explícitos captura y reporta en un directorio temporal fuera del
+    repo: capturar en ``qa/_captures_v8`` ensuciaba rutas scoped y el propio
+    ``ensure_clean_for_closure`` posterior abortaba con ``dirty_working_tree``
+    (bug observado 2026-07-03). El sidecar VAS se resuelve relativo al padre
+    del capture dir (contrato de ``capture_v8``), así que también queda en el
+    directorio temporal.
+    """
+    parsed_pf = parse_key(key)
+    if capture_dir is not None or report_dir is not None:
+        cap_pf = capture_dir or (repo_root / DEFAULT_CAPTURE_DIR)
+        rep_pf = report_dir or (repo_root / DEFAULT_REPORT_DIR)
+        rep_pf.mkdir(parents=True, exist_ok=True)
+        run_anti_fraud(repo_root)
+        run_capture(repo_root, parsed_pf, cap_pf)
+        _, _, sidecar_pf = locate_capture_artifacts(cap_pf, parsed_pf.key)
+        run_comparator(repo_root, parsed_pf, cap_pf, rep_pf)
+        run_vas(repo_root, parsed_pf.key, sidecar_pf)
+        return
+    with tempfile.TemporaryDirectory(prefix="nm_closure_preflight_") as tmp:
+        cap_pf = Path(tmp) / "captures"
+        rep_pf = Path(tmp) / "report"
+        rep_pf.mkdir(parents=True, exist_ok=True)
+        run_anti_fraud(repo_root)
+        run_capture(repo_root, parsed_pf, cap_pf)
+        _, _, sidecar_pf = locate_capture_artifacts(cap_pf, parsed_pf.key)
+        run_comparator(repo_root, parsed_pf, cap_pf, rep_pf)
+        run_vas(repo_root, parsed_pf.key, sidecar_pf)
+
+
 def close_visual_key(
     *,
     key: str,
@@ -580,15 +618,12 @@ def close_visual_key(
         # ClosureError and returns the right exit code. We deliberately do NOT
         # try/except here: close_visual_key() must return EvidenceBuild on
         # success or raise ClosureError on failure — never int.
-        parsed_pf = parse_key(key)
-        cap_pf = capture_dir or (repo_root / DEFAULT_CAPTURE_DIR)
-        rep_pf = report_dir or (repo_root / DEFAULT_REPORT_DIR)
-        rep_pf.mkdir(parents=True, exist_ok=True)
-        run_anti_fraud(repo_root)
-        run_capture(repo_root, parsed_pf, cap_pf)
-        _, _, sidecar_pf = locate_capture_artifacts(cap_pf, parsed_pf.key)
-        run_comparator(repo_root, parsed_pf, cap_pf, rep_pf)
-        run_vas(repo_root, parsed_pf.key, sidecar_pf)
+        run_preflight(
+            repo_root=repo_root,
+            key=key,
+            capture_dir=capture_dir,
+            report_dir=report_dir,
+        )
         print("preflight: PASS - proceeding to worktree closure", file=sys.stderr)
     parsed = parse_key(key)
     ensure_clean_for_closure(repo_root)

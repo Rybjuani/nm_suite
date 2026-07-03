@@ -83,7 +83,11 @@ $backScreenTarget = Get-BackScreenTarget -Capture $canonicalCapture
 $env:NM_VAS_INTROSPECT = "1"
 
 # VAS: remove stale sidecar before capturing so evidence is from THIS run only.
-Remove-Item .\qa\_visual_auditor_spec\introspection.json -ErrorAction SilentlyContinue
+# Con -SkipCapture NO se borra: no habría captura que lo regenere y el gate
+# `vas_gate.py --key` del final quedaría sin sidecar (fallo espurio).
+if (-not $SkipCapture) {
+  Remove-Item .\qa\_visual_auditor_spec\introspection.json -ErrorAction SilentlyContinue
+}
 
 if (-not $SkipCapture) {
   if ($isModalKey -and $null -ne $backScreenTarget) {
