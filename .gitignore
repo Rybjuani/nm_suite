@@ -19,3 +19,25 @@
 dist/
 node_modules/
 __pycache__/
+
+# Stale scratch / tmp captures / false-pass investigations (purged repo cleanup)
+_scratch_trash/
+qa/_captures_tmp*/
+qa/_captures_v8_c4/
+qa/_captures_compare_*/
+qa/_calibration_run_*/
+qa/_night_session/
+qa/_diff_results/
+qa/_fidelity_diff/
+qa/graphify-out/
+graphify-out/
+build.log
+pytest_full.log
+test_icon.py
+.hermes/
+reports/manual_zip_compare_*/
+reports/qa/false_pass_evidence_zips/
+reports/qa/handoff_false_pass_audit/
+reports/qa/codex_audit_*_iter*/
+reports/qa/cheap_agent_rescue/
+reports/qa/*_crop.png
