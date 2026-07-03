@@ -565,8 +565,31 @@ def close_visual_key(
     dry_run: bool = False,
     capture_dir: Path | None = None,
     report_dir: Path | None = None,
+    preflight: bool = False,
 ) -> EvidenceBuild:
     repo_root = repo_root.resolve()
+
+    if preflight:
+        # Run the pipeline in the working tree BEFORE setting up the worktree.
+        # Aborts early on any failure, saving ~30-60s of worktree setup +
+        # capture on broken code. The worktree closure below re-runs the
+        # same pipeline; preflight is a cheap early-exit guard, NOT evidence.
+        # Evidence is always built inside the worktree.
+        #
+        # Any GateError raised here propagates to main(), which catches it as
+        # ClosureError and returns the right exit code. We deliberately do NOT
+        # try/except here: close_visual_key() must return EvidenceBuild on
+        # success or raise ClosureError on failure — never int.
+        parsed_pf = parse_key(key)
+        cap_pf = capture_dir or (repo_root / DEFAULT_CAPTURE_DIR)
+        rep_pf = report_dir or (repo_root / DEFAULT_REPORT_DIR)
+        rep_pf.mkdir(parents=True, exist_ok=True)
+        run_anti_fraud(repo_root)
+        run_capture(repo_root, parsed_pf, cap_pf)
+        _, _, sidecar_pf = locate_capture_artifacts(cap_pf, parsed_pf.key)
+        run_comparator(repo_root, parsed_pf, cap_pf, rep_pf)
+        run_vas(repo_root, parsed_pf.key, sidecar_pf)
+        print("preflight: PASS - proceeding to worktree closure", file=sys.stderr)
     parsed = parse_key(key)
     ensure_clean_for_closure(repo_root)
     commit_head = git_rev_parse(repo_root, "HEAD")
@@ -608,6 +631,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--capture-dir", type=Path, default=None, help=argparse.SUPPRESS)
     parser.add_argument("--report-dir", type=Path, default=None, help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--preflight",
+        action="store_true",
+        help="Run capture+compare+vas in the working tree before worktree setup; "
+             "abort early on failure (saves ~30-60s per broken attempt). "
+             "Evidence is still built inside the worktree.",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -616,6 +646,7 @@ def main(argv: list[str] | None = None) -> int:
             dry_run=args.dry_run,
             capture_dir=args.capture_dir,
             report_dir=args.report_dir,
+            preflight=args.preflight,
         )
     except ClosureError as exc:
         print(str(exc), file=sys.stderr)

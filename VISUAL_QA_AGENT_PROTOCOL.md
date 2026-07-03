@@ -93,22 +93,11 @@ For the current visual key, in order:
 
    Consult the generated graph before opening product code by hand.
 
-1. Regenerate runtime captures before a broad visual decision or final regression:
+1. For per-key work, NEVER run `capture_v8.py --all --clean` (see "Resource-Safe Validation" below). Use `qa\run_visual_item.ps1 -App <app> -View <view> -Theme <theme> -Key <key>` which captures + compares + (modal audit) + VAS gates one key in one call (~15-45 s).
 
-   ```powershell
-   .\.venv\Scripts\python.exe qa\capture_v8.py --all --clean --out-dir qa\_captures_v8
-   ```
+2. `capture_v8.py --all --clean` + full `layered_visual_compare.py` is reserved for **final transversal regression only** (rare; usually once per family completion, not per microfix).
 
-2. Compare active folders:
-
-   ```powershell
-   .\.venv\Scripts\python.exe qa\layered_visual_compare.py `
-     --canonical qa\_mockup_canonical `
-     --actual qa\_captures_v8 `
-     --out-dir reports\qa\layered_visual_compare_fresh
-   ```
-
-3. Inspect the side-by-side panel for each item before editing or closing it.
+3. Inspect the side-by-side panel for the exact key before editing or closing it. The panel lives under `reports\qa\<run-name>\panels\<key_safe>.png`.
 
 ## Canonical HTML / Mockup Parity Harness
 

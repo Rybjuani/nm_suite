@@ -83,6 +83,14 @@ jobs:
           echo "base=$base_commit" >> "$GITHUB_OUTPUT"
 
       - name: Replay visual closures (structural)
+        # Structural-only (--no-regen) by design: CI runs on stdlib-only
+        # Ubuntu runners without PyQt6 / odiff binary. Full pixel-regen
+        # replay is the closing machine's responsibility, run locally with:
+        #     python qa/replay_visual_closure.py --base <base>
+        # (without --no-regen). The closing machine is the only environment
+        # with the PyQt6 + odiff toolchain required to reproduce captures
+        # pixel-for-pixel. Closing operator MUST run --regen locally before
+        # pushing; CI only validates hashes, paths, R0, schema.
         shell: bash
         run: |
           set -euo pipefail
