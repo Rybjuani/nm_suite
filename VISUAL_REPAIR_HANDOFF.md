@@ -975,7 +975,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - commit: c4cf6912a938b7f0a401c04fdf5b4b754f25f357
   - closed-by: close_visual_key.py
   - OPEN DBT v2 debt: latest canon-116 report is exact-key `FAIL`; keep open until fresh repair evidence has `REPORT_EVIDENCE_VALID: YES`, exact key `PASS`, anti-fraud CLEAN, and VAS PASS. Prompt 2 hardening/noise gates do not close it.
-- [ ] `suite:dbt-library@dark` - status=FAIL; severity=medium; bucket=VISUAL_STYLE_REVIEW; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.14219; odiff=4.03; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-library_dark.png`.
+- [x] `suite:dbt-library@dark` - status=FAIL; severity=medium; bucket=VISUAL_STYLE_REVIEW; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.14219; odiff=4.03; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-library_dark.png`.
+  - evidence: ec8c45702d999e04c6a0174505251010ea462cb3d23527455587900465de3079
+  - evidence-record: docs/closure_evidence/suite_dbt-library-dark.json
+  - commit: f1e48be376e22aea9f81ddd5ea6b2c8096d07003
+  - closed-by: close_visual_key.py
   - OPEN DBT v2 debt: latest canon-116 report is exact-key `FAIL`; keep open until fresh repair evidence has `REPORT_EVIDENCE_VALID: YES`, exact key `PASS`, anti-fraud CLEAN, and VAS PASS. Prompt 2 hardening/noise gates do not close it.
 - [x] `suite:dbt-practice-observe-describe@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06620; odiff=1.48; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-observe-describe_light.png`.
   - legacy: true
