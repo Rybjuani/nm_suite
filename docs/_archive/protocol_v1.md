@@ -1,4 +1,8 @@
-# Visual QA Agent Protocol
+# Visual QA Agent Protocol (v1 — archived)
+
+> HISTORICAL SNAPSHOT ONLY. Superseded by `WORKER_VISUAL_QA_FLOW.md` (repo root)
+> as the entry-point for closing an exact-key. Not required reading for a
+> single-key repair; kept here for full-protocol background context only.
 
 This file is the active protocol for visual parity work. Read it before editing
 `VISUAL_REPAIR_HANDOFF.md`.
