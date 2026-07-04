@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Atomic visual closure tool for one handoff key."""
+"""Atomic visual closure/reopen tool for one handoff key.
+
+Close: re-runs the full gate in an isolated worktree and writes a
+deterministic evidence record. Reopen (``--reopen --reason``): the ONLY
+sanctioned way to revoke a closure whose evidence turned out to be fraudulent
+or invalid — flips the checkbox back to ``[ ]``, replaces the closure notes
+with traceable ``reopened:``/``revoked-evidence:``/``revoked-record:`` notes
+and moves the record to ``docs/closure_evidence/revoked/``. Any reopen done
+by hand (deleting records or editing notes) fails ``replay_visual_closure``.
+"""
 
 from __future__ import annotations
 
@@ -22,6 +31,7 @@ ROOT = Path(__file__).resolve().parents[1]
 HANDOFF = "VISUAL_REPAIR_HANDOFF.md"
 EVIDENCE_SCHEMA = "nm_suite.evidence_record.v1"
 EVIDENCE_DIR = Path("docs") / "closure_evidence"
+REVOKED_DIR = EVIDENCE_DIR / "revoked"
 CANONICAL_DIR = Path("qa") / "_mockup_canonical"
 DEFAULT_CAPTURE_DIR = Path("qa") / "_captures_v8"
 DEFAULT_REPORT_DIR = Path("reports") / "qa" / "visual_closure_replay"
@@ -37,7 +47,9 @@ SCOPED_STATUS_PATHS = (
 )
 KEY_RE = re.compile(r"(?P<app>suite|hub):(?P<view>[^@\s`\"'\]\)]+)@(?P<theme>light|dark)")
 CHECKBOX_RE = re.compile(r"^(?P<indent>\s*)-\s*\[(?P<state>[xX ])\]\s*(?P<body>.*)$")
+NOTE_RE = re.compile(r"^\s*-\s*(?P<name>[A-Za-z0-9_-]+):\s*(?P<value>.*)$")
 NOTE_INDENT = "  "
+CLOSURE_NOTE_NAMES = ("evidence", "evidence-record", "commit", "closed-by")
 VOLATILE_JSON_KEYS = {
     "generated_at",
     "captured_at",
@@ -774,9 +786,136 @@ def close_visual_key(
     return build
 
 
+@dataclass(frozen=True)
+class ReopenResult:
+    key: str
+    revoked_evidence: str
+    revoked_record_path: Path
+
+
+def reopen_visual_key(
+    *,
+    key: str,
+    reason: str,
+    repo_root: Path = ROOT,
+) -> ReopenResult:
+    """Sanctioned revocation of an evidence-backed closure.
+
+    Requires a clean scoped tree and a CLOSED, non-legacy checkbox whose
+    ``evidence:`` note matches the stored record's canonical hash (integrity
+    check before revoking). Moves the record to ``docs/closure_evidence/
+    revoked/`` and rewrites the checkbox to ``[ ]`` with traceable notes.
+    ``replay_visual_closure.py`` recognizes exactly this shape; any other
+    record removal/edit fails the replay as tampering.
+    """
+    repo_root = repo_root.resolve()
+    parsed = parse_key(key)
+    reason = (reason or "").strip()
+    if not reason:
+        raise PreflightError("missing_reopen_reason")
+    ensure_clean_for_closure(repo_root)
+
+    handoff_path = repo_root / HANDOFF
+    original = handoff_path.read_text(encoding="utf-8")
+    newline = _line_ending(original)
+    lines = original.splitlines()
+
+    start: int | None = None
+    for idx, line in enumerate(lines):
+        match = CHECKBOX_RE.match(line)
+        if not match or match.group("state").lower() != "x":
+            continue
+        if parsed.key in [m.group(0) for m in KEY_RE.finditer(line)]:
+            start = idx
+            break
+    if start is None:
+        state, _line_no = _checkbox_state_for_key(original, parsed.key)
+        raise PreflightError("key_not_closed" if state == "open" else "unknown_key")
+
+    end = start + 1
+    while end < len(lines):
+        nxt = lines[end]
+        if CHECKBOX_RE.match(nxt):
+            break
+        if nxt.strip() and not nxt.startswith((" ", "\t")):
+            break
+        end += 1
+
+    notes: dict[str, str] = {}
+    for line in lines[start + 1 : end]:
+        note = NOTE_RE.match(line)
+        if note:
+            notes[note.group("name")] = note.group("value").strip()
+    if notes.get("legacy") == "true":
+        raise PreflightError("legacy_key_reopen_unsupported")
+    evidence = notes.get("evidence", "")
+    record_value = notes.get("evidence-record", "")
+    if not evidence or not record_value:
+        raise PreflightError("closed_without_evidence_record")
+
+    if Path(record_value).is_absolute():
+        raise PreflightError("invalid_evidence_record_path")
+    record_path = (repo_root / record_value).resolve()
+    evidence_root = (repo_root / EVIDENCE_DIR).resolve()
+    if record_path.parent != evidence_root or record_path.suffix != ".json":
+        raise PreflightError("invalid_evidence_record_path")
+    if not record_path.exists():
+        raise PreflightError("missing_evidence_record")
+    try:
+        stored = json.loads(record_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise PreflightError(f"invalid_evidence_record: {exc}") from exc
+    if stored.get("schema") != EVIDENCE_SCHEMA or canonical_record_sha256(stored) != evidence:
+        raise PreflightError("evidence_integrity_mismatch")
+
+    revoked_rel = REVOKED_DIR / record_path.name
+    revoked_path = repo_root / revoked_rel
+    if revoked_path.exists():
+        raise PreflightError("revoked_record_already_exists")
+
+    checkbox = lines[start]
+    match = CHECKBOX_RE.match(checkbox)
+    assert match is not None
+    lines[start] = checkbox[: match.start("state")] + " " + checkbox[match.end("state") :]
+    kept = [
+        line
+        for line in lines[start + 1 : end]
+        if not (NOTE_RE.match(line) and NOTE_RE.match(line).group("name") in CLOSURE_NOTE_NAMES)
+    ]
+    reopen_notes = [
+        f"{NOTE_INDENT}- reopened: {reason}",
+        f"{NOTE_INDENT}- revoked-evidence: {evidence}",
+        f"{NOTE_INDENT}- revoked-record: {revoked_rel.as_posix()}",
+        f"{NOTE_INDENT}- reopened-by: close_visual_key.py",
+    ]
+    new_lines = lines[: start + 1] + reopen_notes + kept + lines[end:]
+    new_text = newline.join(new_lines) + (newline if original.endswith(("\n", "\r\n")) else "")
+
+    revoked_path.parent.mkdir(parents=True, exist_ok=True)
+    record_path.replace(revoked_path)
+    tmp_path = handoff_path.with_name(f".{handoff_path.name}.tmp")
+    tmp_path.write_text(new_text, encoding="utf-8")
+    tmp_path.replace(handoff_path)
+    return ReopenResult(
+        key=parsed.key,
+        revoked_evidence=evidence,
+        revoked_record_path=revoked_rel,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Close one visual handoff key with replayable evidence.")
+    parser = argparse.ArgumentParser(description="Close (or reopen) one visual handoff key with replayable evidence.")
     parser.add_argument("--key", required=True, help="Exact visual key, e.g. suite:home@light")
+    parser.add_argument(
+        "--reopen",
+        action="store_true",
+        help="Revoke a closed key's evidence (sanctioned reopen). Requires --reason.",
+    )
+    parser.add_argument(
+        "--reason",
+        default=None,
+        help="Objective reason for the reopen (required with --reopen).",
+    )
     parser.add_argument("--dry-run", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--capture-dir", type=Path, default=None, help=argparse.SUPPRESS)
     parser.add_argument("--report-dir", type=Path, default=None, help=argparse.SUPPRESS)
@@ -790,6 +929,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        if args.reopen:
+            reopened = reopen_visual_key(key=args.key, reason=args.reason or "")
+            print(f"reopened: {reopened.key}")
+            print(f"revoked-evidence: {reopened.revoked_evidence}")
+            print(f"revoked-record: {reopened.revoked_record_path.as_posix()}")
+            return 0
         build = close_visual_key(
             key=args.key,
             dry_run=args.dry_run,

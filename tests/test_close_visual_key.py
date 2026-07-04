@@ -245,3 +245,93 @@ def test_record_hash_is_deterministic_for_same_logical_inputs():
     right = {"a": {"n": 1, "z": "same"}, "b": [2, 1]}
 
     assert close.canonical_record_sha256(left) == close.canonical_record_sha256(right)
+
+
+# ─── reopen (sanctioned revocation) ─────────────────────────────────────────
+
+
+def _write_closed_fixture(root: Path, key: str = KEY) -> close.EvidenceBuild:
+    """A closed key with real record file + matching evidence note."""
+    build = _build(key)
+    record_path = root / build.record_path
+    record_path.parent.mkdir(parents=True, exist_ok=True)
+    record_path.write_text(
+        json.dumps(build.record, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    _write_handoff(
+        root,
+        f"- [x] `{key}` done\n"
+        f"  - evidence: {build.record_sha256}\n"
+        f"  - evidence-record: {build.record_path.as_posix()}\n"
+        f"  - commit: {FIX_COMMIT}\n"
+        "  - closed-by: close_visual_key.py\n",
+    )
+    return build
+
+
+def test_reopen_moves_record_and_rewrites_checkbox(monkeypatch, tmp_path):
+    build = _write_closed_fixture(tmp_path)
+    _patch_clean_git(monkeypatch)
+
+    result = close.reopen_visual_key(key=KEY, reason="cierre con gaming", repo_root=tmp_path)
+
+    assert result.revoked_evidence == build.record_sha256
+    assert not (tmp_path / build.record_path).exists()
+    revoked = tmp_path / "docs" / "closure_evidence" / "revoked" / f"{close.key_safe(KEY)}.json"
+    assert revoked.exists()
+    assert json.loads(revoked.read_text(encoding="utf-8")) == build.record
+
+    handoff = (tmp_path / "VISUAL_REPAIR_HANDOFF.md").read_text(encoding="utf-8")
+    assert f"- [ ] `{KEY}` done" in handoff
+    assert "  - reopened: cierre con gaming" in handoff
+    assert f"  - revoked-evidence: {build.record_sha256}" in handoff
+    assert f"  - revoked-record: docs/closure_evidence/revoked/{close.key_safe(KEY)}.json" in handoff
+    assert "  - evidence: " not in handoff
+    assert "  - evidence-record: " not in handoff
+    assert "  - closed-by:" not in handoff
+
+
+def test_reopen_requires_reason(monkeypatch, tmp_path):
+    _write_closed_fixture(tmp_path)
+    _patch_clean_git(monkeypatch)
+
+    with pytest.raises(close.PreflightError, match="missing_reopen_reason"):
+        close.reopen_visual_key(key=KEY, reason="  ", repo_root=tmp_path)
+
+
+def test_reopen_rejects_open_key(monkeypatch, tmp_path):
+    _write_handoff(tmp_path, f"- [ ] `{KEY}` pending\n")
+    _patch_clean_git(monkeypatch)
+
+    with pytest.raises(close.PreflightError, match="key_not_closed"):
+        close.reopen_visual_key(key=KEY, reason="x", repo_root=tmp_path)
+
+
+def test_reopen_rejects_legacy_closure(monkeypatch, tmp_path):
+    _write_handoff(
+        tmp_path,
+        f"- [x] `{KEY}` old\n"
+        "  - legacy: true\n"
+        "  - legacy-reason: pre_replay_era\n",
+    )
+    _patch_clean_git(monkeypatch)
+
+    with pytest.raises(close.PreflightError, match="legacy_key_reopen_unsupported"):
+        close.reopen_visual_key(key=KEY, reason="x", repo_root=tmp_path)
+
+
+def test_reopen_rejects_tampered_record(monkeypatch, tmp_path):
+    build = _write_closed_fixture(tmp_path)
+    record_path = tmp_path / build.record_path
+    tampered = dict(build.record)
+    tampered["metrics"] = dict(tampered["metrics"], changed_pixel_ratio=0.0)
+    record_path.write_text(json.dumps(tampered, sort_keys=True), encoding="utf-8")
+    _patch_clean_git(monkeypatch)
+
+    with pytest.raises(close.PreflightError, match="evidence_integrity_mismatch"):
+        close.reopen_visual_key(key=KEY, reason="x", repo_root=tmp_path)
+
+    # Nothing moved, nothing rewritten.
+    assert record_path.exists()
+    assert "- [x]" in (tmp_path / "VISUAL_REPAIR_HANDOFF.md").read_text(encoding="utf-8")

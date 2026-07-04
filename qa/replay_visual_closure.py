@@ -282,13 +282,32 @@ def evidence_changed_keys(base_items: list[HandoffItem], head_items: list[Handof
 
 
 EVIDENCE_RECORD_PREFIX = "docs/closure_evidence/"
+REVOKED_RECORD_PREFIX = EVIDENCE_RECORD_PREFIX + "revoked/"
+
+
+def _key_from_record_filename(name: str) -> str:
+    """Reverse of close_visual_key.key_safe: `<app>_<view>-<theme>.json` -> key."""
+    stem = name[:-5] if name.endswith(".json") else name
+    app, sep, rest = stem.partition("_")
+    if not sep or app not in {"suite", "hub"}:
+        return ""
+    view, sep, theme = rest.rpartition("-")
+    if not sep or theme not in {"light", "dark"} or not view:
+        return ""
+    return f"{app}:{view}@{theme}"
 
 
 def keys_for_changed_records(
     head_items: list[HandoffItem],
     changed_files: list[str],
 ) -> tuple[set[str], list[str]]:
-    """Map changed evidence-record files to their closed keys; report orphans."""
+    """Map changed evidence-record files to their closed keys; report orphans.
+
+    Sanctioned reopens (close_visual_key.py --reopen) are the ONE allowed
+    shape for a record change without a closed item: the active record
+    disappears, an identical file appears under revoked/, and the head
+    handoff has the key OPEN with matching `reopened:`/`revoked-record:`
+    notes. Anything else is an orphan (tampering)."""
     changed_records = sorted(
         {
             _normalize_path(path)
@@ -297,21 +316,55 @@ def keys_for_changed_records(
             and _normalize_path(path).endswith(".json")
         }
     )
+    revoked_changed = {p for p in changed_records if p.startswith(REVOKED_RECORD_PREFIX)}
+    active_changed = [p for p in changed_records if p not in revoked_changed]
     referenced: dict[str, str] = {}
+    reopened_notes: dict[str, dict[str, str]] = {}
     for item in head_items:
-        if item.state != "closed":
-            continue
-        record = note_values(item).get("evidence-record", "")
-        if record:
-            referenced[_normalize_path(record)] = item.key
+        notes = note_values(item)
+        if item.state == "closed":
+            record = notes.get("evidence-record", "")
+            if record:
+                referenced[_normalize_path(record)] = item.key
+        elif "reopened" in notes:
+            reopened_notes[item.key] = notes
     keys: set[str] = set()
     orphans: list[str] = []
-    for path in changed_records:
+    sanctioned_revoked: set[str] = set()
+    for path in active_changed:
         key = referenced.get(path)
         if key:
             keys.add(key)
-        else:
-            orphans.append(path)
+            continue
+        filename = path[len(EVIDENCE_RECORD_PREFIX):]
+        derived = _key_from_record_filename(filename)
+        revoked_path = REVOKED_RECORD_PREFIX + filename
+        notes = reopened_notes.get(derived, {})
+        if (
+            derived
+            and _normalize_path(notes.get("revoked-record", "")) == revoked_path
+            and notes.get("revoked-evidence")
+            and revoked_path in revoked_changed
+        ):
+            sanctioned_revoked.add(revoked_path)
+            continue
+        orphans.append(path)
+    for path in sorted(revoked_changed):
+        if path in sanctioned_revoked:
+            continue
+        # A revoked/ record may only appear as the counterpart of a
+        # sanctioned reopen in the same range.
+        filename = path[len(REVOKED_RECORD_PREFIX):]
+        derived = _key_from_record_filename(filename)
+        notes = reopened_notes.get(derived, {})
+        if (
+            derived
+            and _normalize_path(notes.get("revoked-record", "")) == path
+            and notes.get("revoked-evidence")
+            and (EVIDENCE_RECORD_PREFIX + filename) in changed_records
+        ):
+            continue
+        orphans.append(path)
     return keys, orphans
 
 

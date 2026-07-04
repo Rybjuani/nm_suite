@@ -332,6 +332,88 @@ def test_replay_fails_on_orphan_changed_evidence_record(monkeypatch, tmp_path):
     assert result.failed_keys[0].reason == "orphan_evidence_record"
 
 
+def _handoff_reopened(key: str, evidence: str) -> str:
+    rel = f"docs/closure_evidence/revoked/{close.key_safe(key)}.json"
+    return (
+        f"- [ ] `{key}` pending\n"
+        "  - reopened: cierre dependia de gaming de modal\n"
+        f"  - revoked-evidence: {evidence}\n"
+        f"  - revoked-record: {rel}\n"
+        "  - reopened-by: close_visual_key.py\n"
+    )
+
+
+def test_replay_accepts_sanctioned_reopen(monkeypatch, tmp_path):
+    """close_visual_key --reopen: record moved to revoked/ + open checkbox with
+    reopened notes must NOT be flagged as orphan tampering."""
+    record = _record()
+    evidence = close.canonical_record_sha256(record)
+    record_rel = Path("docs/closure_evidence") / f"{close.key_safe(KEY)}.json"
+    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
+    handoff.write_text(_handoff_reopened(KEY, evidence), encoding="utf-8")
+    _patch_git(
+        monkeypatch,
+        base_text=_handoff_closed(KEY, evidence, record_rel),
+        diff_text=f"""
+@@ -1,5 +1,5 @@
+- - [x] `{KEY}` pending
+-   - evidence: {evidence}
++ - [ ] `{KEY}` pending
++   - reopened: cierre dependia de gaming de modal
+""",
+        changed_files=[
+            "VISUAL_REPAIR_HANDOFF.md",
+            record_rel.as_posix(),
+            f"docs/closure_evidence/revoked/{close.key_safe(KEY)}.json",
+        ],
+    )
+
+    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
+
+    assert result.ok is True, result.failed_keys
+    assert result.replayed_keys == 0
+
+
+def test_replay_fails_record_removal_without_reopen_notes(monkeypatch, tmp_path):
+    """Moving/deleting a record without the sanctioned reopen notes is tampering."""
+    record = _record()
+    evidence = close.canonical_record_sha256(record)
+    record_rel = Path("docs/closure_evidence") / f"{close.key_safe(KEY)}.json"
+    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
+    handoff.write_text(f"- [ ] `{KEY}` pending\n", encoding="utf-8")
+    _patch_git(
+        monkeypatch,
+        base_text=_handoff_closed(KEY, evidence, record_rel),
+        diff_text="",
+        changed_files=[
+            record_rel.as_posix(),
+            f"docs/closure_evidence/revoked/{close.key_safe(KEY)}.json",
+        ],
+    )
+
+    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
+
+    assert result.ok is False
+    assert {f.reason for f in result.failed_keys} == {"orphan_evidence_record"}
+
+
+def test_replay_fails_revoked_record_without_matching_reopen(monkeypatch, tmp_path):
+    """A file appearing under revoked/ with no reopened item is tampering."""
+    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
+    handoff.write_text(f"- [ ] `{KEY}` pending\n", encoding="utf-8")
+    _patch_git(
+        monkeypatch,
+        base_text=f"- [ ] `{KEY}` pending\n",
+        diff_text="",
+        changed_files=[f"docs/closure_evidence/revoked/{close.key_safe(KEY)}.json"],
+    )
+
+    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
+
+    assert result.ok is False
+    assert result.failed_keys[0].reason == "orphan_evidence_record"
+
+
 def test_replay_no_regen_validates_structurally_without_regeneration(monkeypatch, tmp_path):
     record = _record()
     record_rel, evidence = _write_record(tmp_path, record)
