@@ -42,7 +42,7 @@ extract` salvo que quieras extracción semántica con LLM (necesita backend/API 
 npm install -g odiff-bin   # binario odiff
 ```
 
-Lo consume `qa/odiff_runner.py` / `qa/diff_fidelity.py --engine odiff`.
+Lo consume `qa/odiff_runner.py` (capa odiff de `qa/layered_visual_compare.py`).
 
 ## Capturas canónicas
 

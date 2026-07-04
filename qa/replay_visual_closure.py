@@ -264,10 +264,10 @@ def evidence_changed_keys(base_items: list[HandoffItem], head_items: list[Handof
                 continue
             base_notes = note_values(base_item)
             if base_notes.get("legacy") != "true":
-                # The migration event itself (migrate_legacy_closures.py
-                # stamping `legacy: true` for the first time): expected,
-                # whitelisted via find_legacy_migrations + skip_legacy, not
-                # tampering.
+                # The migration event itself (the retired one-shot
+                # migrate_legacy_closures tool stamping `legacy: true` for the
+                # first time): expected, whitelisted via find_legacy_migrations
+                # + skip_legacy, not tampering.
                 continue
             if item.notes != base_item.notes:
                 changed.add(item.key)

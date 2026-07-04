@@ -7,7 +7,6 @@ on:
       - docs/closure_evidence/**
       - qa/close_visual_key.py
       - qa/replay_visual_closure.py
-      - qa/migrate_legacy_closures.py
       - qa/capture_v8.py
       - qa/layered_visual_compare.py
       - qa/vas_gate.py
@@ -19,7 +18,6 @@ on:
       - docs/closure_evidence/**
       - qa/close_visual_key.py
       - qa/replay_visual_closure.py
-      - qa/migrate_legacy_closures.py
       - qa/capture_v8.py
       - qa/layered_visual_compare.py
       - qa/vas_gate.py

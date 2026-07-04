@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Layered visual comparison for canonical mockups vs runtime captures.
 
-This comparator is intentionally stricter than qa/diff_fidelity.py. It keeps
+This comparator is the ONLY active closure comparator. It keeps
 odiff as one layer, but it also records raw pixel deltas, rough layout drift,
 size/pairing mismatches, and state-sensitive surfaces. A surface can therefore
 be flagged even when odiff considers it acceptable.

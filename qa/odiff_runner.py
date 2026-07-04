@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """odiff runner — antialiasing-aware pixel comparison via the odiff binary.
 
-Wraps the external ``odiff`` binary (npm: ``odiff-bin``) to provide a
-drop-in alternative to the legacy SSIM/MAD comparison in ``diff_fidelity.py``.
+Wraps the external ``odiff`` binary (npm: ``odiff-bin``); it is the odiff
+layer consumed by ``qa/layered_visual_compare.py`` (kernel R0).
 
 odiff with ``--antialiasing`` is specifically designed to suppress the
 sub-pixel rasterization differences that plague cross-renderer image

@@ -318,26 +318,18 @@ Su PASS/FAIL convive con `capture_v8`, `layered_visual_compare`, anti-fraud y
 VAS; no reemplaza ningun gate runtime ni autoriza cerrar una divergencia visual
 sin exact-key `PASS` del comparador activo.
 
-Runtime scope/noise hardening auxiliar:
+Reglas de scope adicionales:
 
-- `tools/qa/audit_diff_confinement.py` valida que el diff quede dentro de una
-  allowlist de paths y, si corresponde, dentro de bloques marcados.
-- `qa/runtime_noise_envelope.py` compara corridas runtime repetidas para separar
-  ruido de renderer de delta real; `delta_best` es diagnostico, `REVIEW_NOISE`
-  no es PASS y `NOISE_WARNING` no es cierre fuerte.
-- `qa/runtime_internal_nav_parity.py` compara imagen/metadata de entrada directa
-  vs navegacion interna; los probes PyQt reales quedan como extension QA futura
-  si se pueden agregar sin tocar producto.
-- `qa/run_visual_scope_regression.ps1` encadena estas ayudas con anti-fraud,
-  captura filtrada, comparator filtrado, modal audit y VAS cuando se pasan los
-  inputs necesarios. Es no-regresion/advisory y no reemplaza
-  `run_visual_item.ps1`, `run_visual_family.ps1`, `run_visual_full.ps1` ni el
-  exact-key `PASS` del comparator activo.
+- Los wrappers advisory retirados (`run_visual_scope_regression`,
+  `runtime_noise_envelope`, `runtime_internal_nav_parity`,
+  `audit_diff_confinement`, `diff_fidelity`) ya no existen; sus etiquetas
+  historicas (`REVIEW_NOISE`, `NOISE_WARNING`, `delta_best`) nunca fueron ni
+  seran evidencia de cierre.
 - Ningun agente puede saltar DBT v2 porque no estaba sembrado en la checklist
   vieja: DBT v2 tiene 36 exact keys y esta seccion gobierna la cola actual.
-- `REVIEW_NOISE`, `NOISE_WARNING`, `delta_best`, `panel_crop`,
-  `capture_v8` success, `audit_mockup_parity_baseline.py` PASS aislado,
-  criterios subjetivos de aceptacion o etiquetas esteticas no cierran checklist.
+- `panel_crop`, `capture_v8` success, `audit_mockup_parity_baseline.py` PASS
+  aislado, criterios subjetivos de aceptacion o etiquetas esteticas no cierran
+  checklist.
 - Si `qa/anti_fraud_scan.py` falla, ningun PASS posterior del comparator es
   valido hasta corregir la causa y rerun anti-fraud.
 
@@ -772,9 +764,13 @@ locally on the closing machine with the same command without `--no-regen`. A
 diff that closes a visual key and also touches the verification kernel
 (capture/compare/VAS/anti-fraud/close/replay tools, this workflow, or the
 canonical PNGs) fails replay (R0). Closures predating this protocol are marked
-`legacy: true` by `qa/migrate_legacy_closures.py` and are skipped only with
-`--skip-legacy`; re-closing a legacy key requires real evidence via
-`qa/close_visual_key.py`.
+`legacy: true` (migración one-shot ya aplicada; la herramienta fue retirada)
+and are skipped only with `--skip-legacy`; re-closing a legacy key requires
+real evidence via `qa/close_visual_key.py`. Revocar un cierre con evidencia
+comprometida se hace únicamente con `qa/close_visual_key.py --reopen --reason
+"<motivo>"` (mueve el record a `docs/closure_evidence/revoked/` y deja notas
+`reopened:`/`revoked-evidence:`/`revoked-record:`); cualquier otra edición o
+borrado de records falla el replay.
 
 If any gate fails or evidence is missing, leave the checkbox open and add a note.
 

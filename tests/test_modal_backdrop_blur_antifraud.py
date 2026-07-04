@@ -15,7 +15,6 @@ PRODUCT_ROOTS = (ROOT / "app", ROOT / "hub", ROOT / "shared")
 RUNNERS = (
     ROOT / "qa" / "run_visual_item.ps1",
     ROOT / "qa" / "run_visual_family.ps1",
-    ROOT / "qa" / "run_visual_scope_regression.ps1",
 )
 DIALOGS_PY = ROOT / "shared" / "components" / "dialogs.py"
 DBT_QT_PY = ROOT / "app" / "modules" / "dbt_qt.py"

@@ -419,7 +419,6 @@ Estos criterios **no son evidencia de cierre** y nunca deben invocarse:
   "avance parcial", "cosmético", "menor") — un fix parcial no es un cierre.
 - **Frases de abandono** ("bloqueado", "demasiado difícil", "no se puede arreglar",
   "downgrade") — si no se puede cerrar, reportá el bloqueo; no lo enmascares como cierre.
-- `diff_fidelity.py PASS` (es LEGACY, no cierra)
 - `capture_v8.py` exit 0 solito (no es PASS)
 - "fidelity PASS" sin `REPORT_EVIDENCE_VALID: YES`
 - zip-based / desktop zip evidence
@@ -485,8 +484,8 @@ tree, porque ninguna invocación posterior puede correr sobre un tree sucio.
   final oficial.
 - ❌ Correr `audit_mockup_parity_baseline.py` (sólo si cambiaste canonical HTML/recipe/PNGs).
 - ❌ Correr `replay_visual_closure.py` antes de cerrar (es post-cierre).
-- ❌ Correr los 5 `audit_*.py` por separado (ya están integrados en
-  `run_visual_item.ps1` / `run_visual_family.ps1` y `close_visual_key.py`).
+- ❌ Correr `audit_modal_backdrop_blur.py` a mano por separado (ya está
+  integrado en el runner y en `close_visual_key.py`).
 - ❌ Editar `docs/closure_evidence/*.json` por fuera de `close_visual_key.py`.
 - ❌ Editar el handoff por fuera de `close_visual_key.py`.
 - ❌ Tocar kernel R0 en el mismo PR que un cierre.
