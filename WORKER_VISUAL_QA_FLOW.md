@@ -183,9 +183,26 @@ Y en el sidecar VAS de esa key:
 > **`HANDOFF_CLOSURE_ALLOWED: NO` es normal** para un pre-flight de scope
 > parcial (motivo: `partial_scope`), incluso si tu target mode es
 > `all-open-keys` (el reporte cubre las keys abiertas, no las 116 del canon
-> completo). NO bloquea el cierre individual de cada key que sí está `PASS`.
+> completo). Esto no es cierre: el cierre oficial requiere PASS completo del
+> target set salvo autorizacion explicita del owner para cerrar un subconjunto.
 
-### 2.4 Cuándo parar de iterar
+### 2.4 Agotamiento objetivo antes de declarar bloqueo
+
+Partial PASS is not closure. Si cualquier key del target set queda `FAIL`, el
+worker debe seguir iterando reparacion de producto hasta `PASS`; no puede
+detenerse con "pending", "bloqueado" o "cercana al umbral" como resultado
+operativo. Una key cercana al umbral no es bloqueo por defecto.
+
+Para target mode `family`, no cierres una key individual si otra key de la
+misma family sigue `FAIL`, salvo autorizacion explicita del owner.
+
+Durante reparacion/cierre visual queda prohibido modificar `qa/`, `tools/qa/`,
+`.github/`, `docs/closure_evidence/`, canon, thresholds, comparator, capture
+harness, replay, close scripts o evidence. Si parece bug del gate, deten la
+tarea visual y reporta una tarea R0 separada, sin cierre de keys, sin handoff
+ni evidence.
+
+### 2.5 Cuándo cambiar de estrategia
 
 Esta regla aplica **por key**: si una key del target set no converge, aplicá
 lo de abajo para ESA key sin abandonar el resto del set declarado por el
@@ -209,7 +226,10 @@ En ese punto:
      sin cambiar tras un fix real).
 3. cambiá de estrategia sólo si la causa está localizada;
 4. si la causa toca componente compartido, evaluá opción scoped primero;
-5. si no hay ruta técnica clara, reportá bloqueo con métricas y diffs.
+5. si no hay ruta técnica clara, no declares bloqueo visual por defecto:
+   cambia de estrategia, reduce el cambio a producto, o escala al owner con la
+   evidencia objetiva y la siguiente hipotesis de producto. Solo un bug del
+   gate/R0 permite detener la tarea visual, y se reporta como tarea R0 separada.
 
 La regla frena loops ciegos; no autoriza abandonar una key con causa
 reparable identificada.
@@ -218,12 +238,14 @@ reparable identificada.
 
 ## 3. Cierre oficial (~30-90 s por key)
 
-**Sólo cuando el pre-flight da PASS para esa key.** No antes.
+**Sólo cuando el pre-flight da PASS para todo el target set declarado.** No
+antes. En target mode `family`, no cierres una key individual si otra key de
+esa family sigue `FAIL`, salvo autorizacion explicita del owner.
 
 El cierre es **siempre por key** — `close_visual_key.py` no tiene modo
 multi-key, y eso es intencional (cada cierre es atómico en su propio
 worktree aislado). Para un target set de N keys, invocalo una vez por key
-que alcanzó PASS:
+que alcanzó PASS despues de que el target set completo alcanzo PASS:
 
 ```powershell
 .\.venv\Scripts\python.exe qa\close_visual_key.py --key <key>
@@ -438,7 +460,8 @@ Estos criterios **no son evidencia de cierre** y nunca deben invocarse:
 - **Frases de progreso parcial** ("mayormente arreglado", "residuo aceptable",
   "avance parcial", "cosmético", "menor") — un fix parcial no es un cierre.
 - **Frases de abandono** ("bloqueado", "demasiado difícil", "no se puede arreglar",
-  "downgrade") — si no se puede cerrar, reportá el bloqueo; no lo enmascares como cierre.
+  "downgrade") no son resultado operativo de Visual QA; segui iterando producto
+  o detenete solo por bug de gate/R0 para abrir una tarea separada.
 - `capture_v8.py` exit 0 solito (no es PASS)
 - "fidelity PASS" sin `REPORT_EVIDENCE_VALID: YES`
 - zip-based / desktop zip evidence
@@ -453,15 +476,14 @@ Tampoco podés:
 - Cerrar una key sin que `close_visual_key.py` haya escrito el record propio
   de esa key — sin importar el target mode (batch/all-open-keys incluidos).
 - **Achicar el target set** que declaró el owner por costo, cansancio, límite
-  interno o "riesgo" percibido. Si una key del set bloquea, reportala
-  bloqueada (§2.4) y seguí con el resto del set — no la saltees en silencio
-  y no abandones el set completo por ella.
+  interno o "riesgo" percibido. Si una key del set sigue `FAIL`, no cierres
+  parcialmente ni la saltees: segui iterando producto segun §2.4/§2.5.
 - **Ampliar el target set** más allá de lo declarado por el owner, salvo
   evidencia objetiva de que una key no existe, está duplicada, o ya no está
   abierta (reportá la desviación, no la apliques en silencio).
 - Invocar antialiasing/text-rendering (MISMATCH#20 o similar) como excusa de
   bloqueo sin evidencia real de `regions[]` / `largest_region_ratio` /
-  `bbox_dy` que lo respalde — seguí el procedimiento mecánico de §2.4 antes
+  `bbox_dy` que lo respalde — seguí el procedimiento mecánico de §2.5 antes
   de declarar una divergencia "irreducible".
 
 ---
@@ -486,10 +508,11 @@ El script falla ruidosamente con uno de estos códigos:
 Cualquier otro error → pará, reportá el stderr completo en el canal de handoff.
 
 **Con target set de N keys**: si `close_visual_key.py` falla para UNA key del
-set, no aborta el set completo — reportá esa key bloqueada con su motivo,
-seguí cerrando el resto de las keys del set que sí están en PASS. Excepción:
-`dirty_working_tree` sí bloquea todo el set hasta que resolvés el working
-tree, porque ninguna invocación posterior puede correr sobre un tree sucio.
+set, no modifiques el gate/harness para destrabar el cierre. Si parece bug de
+gate/R0, detené la tarea visual y reportá tarea R0 separada, sin cierre de
+keys. En target mode `family`, no cierres el resto de las keys del set salvo
+autorización explícita del owner. `dirty_working_tree` bloquea todo el set
+hasta que resolvés el working tree.
 
 ---
 
@@ -530,7 +553,7 @@ tree, porque ninguna invocación posterior puede correr sobre un tree sucio.
    ↓  PASS? (por key) ↑
    ↓           ↑ NO
    ↓           └── (3 sin mejora → preservar diff real, localizar causa,
-   ↓               scoped antes que shared, o reportar bloqueo — §2.4)
+   ↓               cambiar estrategia de producto — §2.5)
    ↓ SÍ (repetir para cada key del target set)
 [close_visual_key.py [--preflight] --key <key>]  (30-90 s/key, worktree aislado)
    ↓
