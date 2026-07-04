@@ -102,7 +102,7 @@ def _empty_hint_label(text: str, modo: str) -> QWidget:
     wrap = QWidget()
     # Mockup: 1px dashed --line + radius 16. Usa v3c('line', modo) para
     # el color que sigue al tema.
-    line_color = v3c("line", modo).name()
+    line_color = qcolor_to_rgba_css(v3c("line", modo))
     wrap.setStyleSheet(
         "background: transparent;"
         f"border: 1px dashed {line_color};"

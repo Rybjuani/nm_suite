@@ -70,7 +70,7 @@ def _detail_screen_qss(modo: str, *, bottom_edge: bool = False) -> str:
     surface = v3c("surface", modo).name()
     if not bottom_edge:
         return f"background-color: {surface};"
-    border = v3c("borderSoft", modo).name()
+    border = qcolor_to_rgba_css(v3c("borderSoft", modo))
     return (
         f"background-color: {surface};"
         f"border-bottom: 1px solid {border};"
@@ -464,7 +464,7 @@ class DetallePacienteView(QWidget):
 
         header = QFrame()
         header.setObjectName("ResumenIAHeader")
-        header.setFixedHeight(86)
+        header.setFixedHeight(85)
         header.setStyleSheet(f"QFrame#ResumenIAHeader {{ border-bottom: 1px solid {line}; background: transparent; }}")
         header_lay = QHBoxLayout(header)
         header_lay.setContentsMargins(22, 18, 22, 14)
@@ -493,7 +493,7 @@ class DetallePacienteView(QWidget):
         chips = QFrame()
         chips.setStyleSheet("background: transparent;")
         chips_lay = QGridLayout(chips)
-        chips_lay.setContentsMargins(22, 14, 22, 4)
+        chips_lay.setContentsMargins(22, 13, 22, 4)
         chips_lay.setHorizontalSpacing(8)
         chips_lay.setVerticalSpacing(0)
 
@@ -530,7 +530,7 @@ class DetallePacienteView(QWidget):
         body.setFixedHeight(246)
         body.setStyleSheet("background: transparent;")
         body_content = QFrame(body)
-        body_content.setGeometry(22, 6, 676, 304)
+        body_content.setGeometry(22, 3, 676, 304)
         body_content.setStyleSheet("background: transparent;")
         body_lay = QVBoxLayout(body_content)
         body_lay.setContentsMargins(0, 0, 0, 0)
