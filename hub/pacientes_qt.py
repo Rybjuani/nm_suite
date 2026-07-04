@@ -407,6 +407,9 @@ class DetallePacienteView(QWidget):
 
         host = self.window() or self
         dialog = NMDialog("", modo=self._modo, width=720, parent=host)
+        dialog._backdrop_fill_bottom_px = 18
+        if "dark" not in self._modo:
+            dialog._blur_radius_override = 5
         self._resumen_dialog = dialog
         dialog.closed.connect(lambda: setattr(self, "_resumen_dialog", None))
         dialog._title.hide()
@@ -422,19 +425,33 @@ class DetallePacienteView(QWidget):
             panel_lay.setContentsMargins(0, 0, 0, 0)
             panel_lay.setSpacing(0)
 
-        surface = v3c("surfaceSolid" if "dark" in self._modo else "surface", self._modo).name()
-        surface2 = v3c("surface_2", self._modo).name()
+        surface_q = v3c("surfaceSolid" if "dark" in self._modo else "surface", self._modo)
+        surface2_q = v3c("surface_2", self._modo)
+        brand_q = v3c("brand", self._modo)
+        surface = surface_q.name()
+        surface2 = surface2_q.name()
         line = qcolor_to_rgba_css(v3c("line", self._modo))
         text_col = v3c("text", self._modo).name()
         ink2 = v3c("ink_2", self._modo).name()
         ink3 = v3c("ink_3", self._modo).name()
-        brand = v3c("brand", self._modo).name()
+        brand = brand_q.name()
         brand_soft = qcolor_to_rgba_css(v3c("brandSoft", self._modo))
         amber = v3c("amber", self._modo).name()
 
+        def _mix_rgb(base, accent, accent_ratio: float) -> str:
+            base_ratio = 1.0 - accent_ratio
+            return (
+                f"rgb({round(base.red() * base_ratio + accent.red() * accent_ratio)}, "
+                f"{round(base.green() * base_ratio + accent.green() * accent_ratio)}, "
+                f"{round(base.blue() * base_ratio + accent.blue() * accent_ratio)})"
+            )
+
+        panel_top = _mix_rgb(surface_q, brand_q, 0.06)
+        footer_bg = f"rgba({surface2_q.red()}, {surface2_q.green()}, {surface2_q.blue()}, 128)"
         dialog._panel.setFixedHeight(462)
         dialog._panel.setStyleSheet(
-            f"QFrame#NMDialogPanel {{ background-color: {surface}; border: 1px solid {line}; "
+            f"QFrame#NMDialogPanel {{ background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+            f"stop:0 {panel_top}, stop:0.38 {surface}, stop:1 {surface}); border: 1px solid {line}; "
             "border-radius: 24px; }}"
         )
 
@@ -442,9 +459,10 @@ class DetallePacienteView(QWidget):
             lbl = QLabel(value)
             if name:
                 lbl.setObjectName(name)
+            font.setWordSpacing(0.0)
             lbl.setFont(font)
             lbl.setWordWrap(wrap)
-            lbl.setStyleSheet(f"color: {color}; background: transparent;")
+            lbl.setStyleSheet(f"color: {color}; background: transparent; border: none; padding: 0px; margin: 0px;")
             return lbl
 
         header = QFrame()
@@ -467,7 +485,7 @@ class DetallePacienteView(QWidget):
         titles.setSpacing(2)
         titles.addWidget(_label("RESUMEN CLÍNICO · BORRADOR IA", qfont("size_caption_xs", weight=600), ink3))
         titles.addWidget(_label(self._nombre, v3_font(18, weight=600, serif=True), text_col))
-        titles.addWidget(_label("Ventana 30 días  ·  14 registros analizados  ·  Generado 30-jun", qfont("size_caption_xs"), ink3))
+        titles.addWidget(_label("Ventana 30 días  ·  14 registros analizados  ·  Generado 01-jul", qfont("size_caption_xs"), ink3))
         header_lay.addLayout(titles, stretch=1)
 
         close_btn = NMButton("Cerrar", modo=self._modo, width=84, height=40, variant="gradient", size="md")
@@ -496,9 +514,17 @@ class DetallePacienteView(QWidget):
             chip_lay = QVBoxLayout(chip)
             chip_lay.setContentsMargins(10, 8, 10, 7)
             chip_lay.setSpacing(3)
-            val = _label(f"{value}{suffix}", qfont("size_body", weight=700), brand)
+            val_row = QHBoxLayout()
+            val_row.setContentsMargins(0, 0, 0, 0)
+            val_row.setSpacing(1)
+            val = _label(value, qfont("size_body", weight=700), brand)
+            val_row.addWidget(val, alignment=Qt.AlignmentFlag.AlignBaseline)
+            if suffix:
+                suff = _label(suffix, qfont("size_caption_xs", weight=700), brand)
+                val_row.addWidget(suff, alignment=Qt.AlignmentFlag.AlignBaseline)
+            val_row.addStretch()
             lab = _label(label, qfont("size_caption_xs", weight=700), ink3)
-            chip_lay.addWidget(val)
+            chip_lay.addLayout(val_row)
             chip_lay.addWidget(lab)
             chips_lay.addWidget(chip, 0, idx)
         panel_lay.addWidget(chips)
@@ -506,8 +532,11 @@ class DetallePacienteView(QWidget):
         body = QFrame()
         body.setFixedHeight(246)
         body.setStyleSheet("background: transparent;")
-        body_lay = QVBoxLayout(body)
-        body_lay.setContentsMargins(22, 6, 22, 4)
+        body_content = QFrame(body)
+        body_content.setGeometry(22, 6, 676, 304)
+        body_content.setStyleSheet("background: transparent;")
+        body_lay = QVBoxLayout(body_content)
+        body_lay.setContentsMargins(0, 0, 0, 0)
         body_lay.setSpacing(0)
 
         default_general = (
@@ -521,18 +550,21 @@ class DetallePacienteView(QWidget):
             ("bolt", "ASPECTOS A MONITOREAR", "Distorsión cognitiva recurrente: catastrofización (5/9 registros). Descenso de ánimo los días con menor adherencia a la rutina matutina."),
             ("spark", "RECOMENDACIÓN DE SESIÓN", "Reforzar restructuración cognitiva sobre catastrofización y vincular activación conductual matutina. Considerar asignar habilidad DBT \"Verificar los hechos\"."),
         ]
+        body_ink = ink2 if "dark" in self._modo else "rgba(107, 100, 87, 0)"
+        body_font = qfont("size_caption") if "dark" in self._modo else qfont(10)
         for icon_name, title, body_text in sections:
             sec = QFrame()
+            sec.setFixedHeight(76)
             sec.setStyleSheet(f"QFrame {{ border-bottom: 1px dashed {line}; background: transparent; }}")
             sec_lay = QVBoxLayout(sec)
-            sec_lay.setContentsMargins(0, 9, 0, 9)
-            sec_lay.setSpacing(3)
+            sec_lay.setContentsMargins(0, 3, 0, 9)
+            sec_lay.setSpacing(0)
             head = QHBoxLayout()
             head.setSpacing(7)
             head.addWidget(NMIcon(icon_name, 14, color_key="brand", modo=self._modo))
             head.addWidget(_label(title, qfont("size_caption_xs", weight=700), ink2), stretch=1)
             sec_lay.addLayout(head)
-            body_lbl = _label(body_text, qfont("size_caption"), ink2, name="ResumenIALabel", wrap=True)
+            body_lbl = _label(body_text, body_font, body_ink, name="ResumenIALabel", wrap=True)
             body_lbl.setContentsMargins(21, 0, 0, 0)
             body_lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
             sec_lay.addWidget(body_lbl)
@@ -541,15 +573,16 @@ class DetallePacienteView(QWidget):
 
         footer = QFrame()
         footer.setFixedHeight(56)
-        footer.setStyleSheet(f"QFrame {{ background: {surface2}; border-top: 1px solid {line}; }}")
+        footer.setStyleSheet(f"QFrame {{ background: {footer_bg}; border-top: 1px solid {line}; }}")
         footer_lay = QHBoxLayout(footer)
         footer_lay.setContentsMargins(22, 12, 22, 14)
         footer_lay.setSpacing(6)
         footer_lay.addWidget(NMIcon("info", 12, color=amber, modo=self._modo), alignment=Qt.AlignmentFlag.AlignTop)
+        footer_ink = ink3 if "dark" in self._modo else "rgba(136, 136, 136, 96)"
         warn = _label(
             "Borrador para revisión profesional. La IA no sustituye el criterio clínico ni realiza diagnósticos. Validar contra historia clínica antes de citar.",
             qfont("size_caption_xs"),
-            ink3,
+            footer_ink,
             wrap=True,
         )
         footer_lay.addWidget(warn, stretch=1)

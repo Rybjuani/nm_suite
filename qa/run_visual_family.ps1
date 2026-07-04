@@ -83,6 +83,8 @@ if (-not $SkipCapture) {
 # vivo sólo retiene la última key del set.
 $introspectionArchiveDir = Join-Path $OutDir "introspection"
 New-Item -ItemType Directory -Force $introspectionArchiveDir | Out-Null
+$manifestArchiveDir = Join-Path $OutDir "manifests"
+New-Item -ItemType Directory -Force $manifestArchiveDir | Out-Null
 
 $rows = @()
 foreach ($line in Get-Content -LiteralPath $PlanFile) {
@@ -145,6 +147,7 @@ foreach ($row in $rows) {
   # validada (bug observado 2026-07-03 con un set de 2 keys: "all 1 entries").
   $safeRowKey = ([string]$row.Key) -replace '[:@\\\/]', '_'
   $archivedSidecar = Join-Path $introspectionArchiveDir "$safeRowKey.json"
+  $archivedManifest = Join-Path $manifestArchiveDir "$safeRowKey.json"
   if (-not $SkipCapture) {
     & .\.venv\Scripts\python.exe qa\vas_gate.py --key $($row.Key)
     if ($LASTEXITCODE -ne 0) {
@@ -152,6 +155,7 @@ foreach ($row in $rows) {
       exit 1
     }
     Copy-Item .\qa\_visual_auditor_spec\introspection.json $archivedSidecar -Force
+    Copy-Item .\qa\_captures_v8\CAPTURE_MANIFEST.json $archivedManifest -Force
   }
   else {
     # -SkipCapture: sin captura fresca, el gate corre contra el sidecar
@@ -172,7 +176,12 @@ foreach ($row in $rows) {
 
 $keysFile = New-TemporaryFile
 try {
-  $rows | ForEach-Object { $_.Key } | Set-Content -LiteralPath $keysFile -Encoding UTF8
+  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllLines(
+    $keysFile,
+    [string[]]($rows | ForEach-Object { $_.Key }),
+    $utf8NoBom
+  )
 
   & .\.venv\Scripts\python.exe qa\layered_visual_compare.py `
     --canonical qa\_mockup_canonical `
@@ -191,10 +200,26 @@ finally {
 foreach ($modalRow in $modalRows) {
   $safeKey = ([string]$modalRow.Key) -replace '[:@\\\/]', '_'
   $modalAuditOut = Join-Path (Join-Path $OutDir "modal_backdrop_blur") $safeKey
-  & .\.venv\Scripts\python.exe tools\qa\audit_modal_backdrop_blur.py --key $($modalRow.Key) --out-dir $modalAuditOut
-  if ($LASTEXITCODE -ne 0) {
-    Write-Error "MODAL BACKDROP/BLUR AUDIT FAILED for key '$($modalRow.Key)'. QA NOT approved. Do not close this modal from panel similarity alone."
-    exit 1
+  $archivedManifest = Join-Path $manifestArchiveDir "$safeKey.json"
+  $liveManifest = ".\qa\_captures_v8\CAPTURE_MANIFEST.json"
+  $manifestBackup = $null
+  if (Test-Path -LiteralPath $archivedManifest) {
+    $manifestBackup = New-TemporaryFile
+    Copy-Item $liveManifest $manifestBackup -Force
+    Copy-Item $archivedManifest $liveManifest -Force
+  }
+  try {
+    & .\.venv\Scripts\python.exe tools\qa\audit_modal_backdrop_blur.py --key $($modalRow.Key) --out-dir $modalAuditOut
+    if ($LASTEXITCODE -ne 0) {
+      Write-Error "MODAL BACKDROP/BLUR AUDIT FAILED for key '$($modalRow.Key)'. QA NOT approved. Do not close this modal from panel similarity alone."
+      exit 1
+    }
+  }
+  finally {
+    if ($null -ne $manifestBackup) {
+      Copy-Item $manifestBackup $liveManifest -Force
+      Remove-Item -LiteralPath $manifestBackup -Force -ErrorAction SilentlyContinue
+    }
   }
 }
 

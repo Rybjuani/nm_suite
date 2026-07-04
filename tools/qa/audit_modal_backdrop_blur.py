@@ -445,6 +445,29 @@ def choose_bbox_pair(
     canonical_candidates: list[tuple[int, int, int, int]],
     actual_candidates: list[tuple[int, int, int, int]],
 ) -> tuple[tuple[int, int, int, int], tuple[int, int, int, int]] | tuple[None, None]:
+    def _with_inferred_full_height(
+        candidates: list[tuple[int, int, int, int]],
+        references: list[tuple[int, int, int, int]],
+    ) -> list[tuple[int, int, int, int]]:
+        expanded = list(candidates)
+        seen = set(expanded)
+        for cand in candidates:
+            cx = cand[0] + cand[2] / 2.0
+            for ref in references:
+                ref_cx = ref[0] + ref[2] / 2.0
+                top_aligned = abs(cand[1] - ref[1]) <= 32
+                same_band = abs(cx - ref_cx) <= 32 and abs(cand[2] - ref[2]) <= 64
+                taller_ref = ref[3] >= cand[3] * 1.45
+                if not (top_aligned and same_band and taller_ref):
+                    continue
+                inferred = (cand[0], cand[1], cand[2], ref[3])
+                if inferred not in seen:
+                    expanded.append(inferred)
+                    seen.add(inferred)
+        return expanded
+
+    canonical_candidates = _with_inferred_full_height(canonical_candidates, actual_candidates)
+    actual_candidates = _with_inferred_full_height(actual_candidates, canonical_candidates)
     best: tuple[float, tuple[int, int, int, int], tuple[int, int, int, int]] | None = None
     for canonical_bbox in canonical_candidates:
         c_center = (
