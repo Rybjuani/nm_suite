@@ -1189,7 +1189,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - revoked-evidence: ec1ecc983ffc25d63390e9f5047f7fc00bd50bd469ca4a67462ec9d270d56b1f
   - revoked-record: docs/closure_evidence/revoked/hub_detalle-resumen-ia-0-light.json
   - reopened-by: close_visual_key.py
-- [ ] `hub:detalle-resumen-ia-0@dark` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.16215; odiff=7.3; bbox=0; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-resumen-ia-0_dark.png`.
+- [x] `hub:detalle-resumen-ia-0@dark` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.16215; odiff=7.3; bbox=0; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-resumen-ia-0_dark.png`.
+  - evidence: 3ed13ff0c8ff8c651ce73cceb2ec0f10380d805f1b4c196a647840c5a8cbbbc6
+  - evidence-record: docs/closure_evidence/hub_detalle-resumen-ia-0-dark.json
+  - commit: 5e017e68a9ca162644e30faf30ead665d83d1acc
+  - closed-by: close_visual_key.py
   - reopened: cierre 67e1cc15e dependia de gaming de modal (_backdrop_fill_bottom_px=18 aplicaba en ambos temas); render honesto post-fix adefbf8df mide FAIL changed=0.09525 ssim=0.53067 layout_drift
   - revoked-evidence: 8cd7b1c7e1d843a411f0f3697a2b7af4a2d3df6d86a221b189b9230c4256065d
   - revoked-record: docs/closure_evidence/revoked/hub_detalle-resumen-ia-0-dark.json
