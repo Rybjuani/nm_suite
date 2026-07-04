@@ -25,6 +25,7 @@ EVIDENCE_DIR = Path("docs") / "closure_evidence"
 CANONICAL_DIR = Path("qa") / "_mockup_canonical"
 DEFAULT_CAPTURE_DIR = Path("qa") / "_captures_v8"
 DEFAULT_REPORT_DIR = Path("reports") / "qa" / "visual_closure_replay"
+MODAL_AUDIT_TOOL = Path("tools") / "qa" / "audit_modal_backdrop_blur.py"
 SCOPED_STATUS_PATHS = (
     "app",
     "hub",
@@ -272,6 +273,92 @@ def locate_capture_artifacts(capture_dir: Path, key: str) -> tuple[Path, Path, P
     raise GateError("capture_manifest_missing_key")
 
 
+def load_canonical_manifest(repo_root: Path) -> dict[str, Any]:
+    path = repo_root / CANONICAL_DIR / "MANIFEST.json"
+    if not path.exists():
+        raise GateError("missing_canonical_manifest")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _capture_file_to_key(filename: str) -> str:
+    match = re.match(r"^(suite|hub)-(.+)-(light|dark)-\d+x\d+(?:-scale\d+)?\.png$", filename)
+    if match:
+        return f"{match.group(1)}:{match.group(2)}@{match.group(3)}"
+    return ""
+
+
+def is_modal_key(repo_root: Path, key: str) -> bool:
+    """Return True when the canonical manifest marks this key as a modal."""
+    manifest = load_canonical_manifest(repo_root)
+    for capture in manifest.get("captures", []):
+        if not isinstance(capture, dict):
+            continue
+        file_key = _capture_file_to_key(str(capture.get("file", "")))
+        if file_key != key:
+            continue
+        if capture.get("is_modal") is True:
+            return True
+        if str(capture.get("surface", "")).lower() in {"modal", "window_modal"}:
+            return True
+    return False
+
+
+def _modal_back_screen_key(repo_root: Path, key: str) -> str | None:
+    manifest = load_canonical_manifest(repo_root)
+    for capture in manifest.get("captures", []):
+        if not isinstance(capture, dict):
+            continue
+        file_key = _capture_file_to_key(str(capture.get("file", "")))
+        if file_key != key:
+            continue
+        back_key = capture.get("back_screen_key")
+        if isinstance(back_key, str) and back_key:
+            return back_key
+    return None
+
+
+def run_modal_audit(
+    repo_root: Path,
+    parsed: ParsedKey,
+    capture_dir: Path,
+    report_dir: Path,
+) -> Path:
+    """Run the modal backdrop/blur audit for a modal key.
+
+    Requires the back-screen capture to be present in ``capture_dir``.
+    The audit report is written under ``report_dir`` and its stable hash is
+    stored in the evidence record.
+    """
+    audit_report_dir = report_dir / f"modal_audit_{key_safe(parsed.key)}"
+    audit_report_dir.mkdir(parents=True, exist_ok=True)
+    proc = _run(
+        [
+            sys.executable,
+            str(MODAL_AUDIT_TOOL),
+            "--key",
+            parsed.key,
+            "--canonical",
+            str(CANONICAL_DIR),
+            "--actual",
+            _repo_arg_path(repo_root, capture_dir),
+            "--out-dir",
+            _repo_arg_path(repo_root, audit_report_dir),
+        ],
+        cwd=repo_root,
+        timeout=120,
+    )
+    if proc.returncode != 0:
+        _print_process_failure("modal_backdrop_blur_audit", proc)
+        raise GateError("modal_audit_failed")
+    report_path = audit_report_dir / "AUDIT.json"
+    if not report_path.exists():
+        raise GateError("missing_modal_audit_report")
+    audit = json.loads(report_path.read_text(encoding="utf-8"))
+    if audit.get("summary", {}).get("test_blur_pass") is not True:
+        raise GateError("modal_audit_blur_not_pass")
+    return report_path
+
+
 def _report_result(report: dict[str, Any], key: str) -> dict[str, Any]:
     if report.get("report_evidence_valid") is not True:
         raise GateError("report_evidence_invalid")
@@ -317,6 +404,22 @@ def run_capture(repo_root: Path, parsed: ParsedKey, capture_dir: Path) -> None:
         _print_process_failure("capture_v8", proc)
         raise GateError("capture_failed")
 
+
+
+def run_capture_for_key(repo_root: Path, key: str, capture_dir: Path) -> None:
+    parsed = parse_key(key)
+    run_capture(repo_root, parsed, capture_dir)
+
+
+def _ensure_modal_backdrop_capture(
+    repo_root: Path,
+    parsed: ParsedKey,
+    capture_dir: Path,
+) -> None:
+    back_key = _modal_back_screen_key(repo_root, parsed.key)
+    if not back_key:
+        raise GateError("modal_missing_back_screen_key")
+    run_capture_for_key(repo_root, back_key, capture_dir)
 
 def run_comparator(repo_root: Path, parsed: ParsedKey, capture_dir: Path, report_dir: Path) -> Path:
     proc = _run(
@@ -380,11 +483,16 @@ def build_evidence_record(
     png_path: Path,
     report_path: Path,
     sidecar_path: Path,
+    modal_audit_path: Path | None = None,
 ) -> dict[str, Any]:
     report = json.loads(report_path.read_text(encoding="utf-8"))
     result = _report_result(report, parsed.key)
     metrics = result.get("metrics") if isinstance(result.get("metrics"), dict) else {}
     layout = result.get("layout") if isinstance(result.get("layout"), dict) else {}
+
+    modal_audit_sha256 = (
+        stable_json_file_sha256(modal_audit_path) if modal_audit_path else None
+    )
 
     return {
         "schema": EVIDENCE_SCHEMA,
@@ -398,7 +506,7 @@ def build_evidence_record(
         "manifest_sha256": stable_json_file_sha256(manifest_path),
         "report_sha256": stable_json_file_sha256(report_path),
         "sidecar_sha256": stable_json_file_sha256(sidecar_path),
-        "modal_audit_sha256": None,
+        "modal_audit_sha256": modal_audit_sha256,
         "result": "PASS",
         "metrics": {
             "changed_pixel_ratio": _metric_float(metrics, "changed_pixel_ratio"),
@@ -436,9 +544,14 @@ def regenerate_record_for_key(
     report_dir = report_dir or (repo_root / DEFAULT_REPORT_DIR)
     run_anti_fraud(repo_root)
     run_capture(repo_root, parsed, capture_dir)
+    if is_modal_key(repo_root, parsed.key):
+        _ensure_modal_backdrop_capture(repo_root, parsed, capture_dir)
     manifest_path, png_path, sidecar_path = locate_capture_artifacts(capture_dir, parsed.key)
     report_path = run_comparator(repo_root, parsed, capture_dir, report_dir)
     run_vas(repo_root, parsed.key, sidecar_path)
+    modal_audit_path: Path | None = None
+    if is_modal_key(repo_root, parsed.key):
+        modal_audit_path = run_modal_audit(repo_root, parsed, capture_dir, report_dir)
     record = build_evidence_record(
         repo_root=repo_root,
         parsed=parsed,
@@ -447,6 +560,7 @@ def regenerate_record_for_key(
         png_path=png_path,
         report_path=report_path,
         sidecar_path=sidecar_path,
+        modal_audit_path=modal_audit_path,
     )
     record_path = EVIDENCE_DIR / f"{key_safe(parsed.key)}.json"
     return EvidenceBuild(

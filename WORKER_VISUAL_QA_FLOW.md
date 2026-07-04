@@ -155,6 +155,10 @@ Ambos caminos ejecutan en secuencia, abortando en el primer fallo:
 3. `layered_visual_compare.py` (filtrado por `--key` o por `--keys-file`)
 4. Para cada key modal del set: `audit_modal_backdrop_blur.py --key <key>`
 
+Si un modal falla por la pantalla trasera, se repara esa pantalla/familia
+dependiente; **no se tapa con blur, opacidad, alpha, crop, bbox detector ni
+densidad** (regla MISMATCH#17 / back-screen-first).
+
 ### 2.3 Criterio de PASS del pre-flight
 
 Por cada key del target set, abrí el reporte correspondiente
@@ -239,6 +243,7 @@ Cada invocación hace, atómicamente, en un **worktree separado** al commit HEAD
 5. Construye `docs/closure_evidence/<key_safe>.json` con schema `nm_suite.evidence_record.v1`:
    - `commit_head`, `anti_fraud_sha256`, `capture_v8_sha256`, `layered_compare_sha256`, `vas_gate_sha256`
    - `capture_png_sha256`, `manifest_sha256`, `report_sha256`, `sidecar_sha256`
+   - `modal_audit_sha256` para keys modales (None para keys no modales)
    - `result: PASS`, `metrics{changed_pixel_ratio, mean_abs_diff, windowed_ssim, max_bbox_delta_px}`
    - `record_sha256` = hash canónico del propio record (sin campos volátiles)
 6. Marca el checkbox `[ ]` → `[x]` en el handoff y agrega 3 notas:

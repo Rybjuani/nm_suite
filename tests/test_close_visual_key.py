@@ -180,6 +180,66 @@ def test_close_tool_pass_writes_versioned_record_and_handoff_note(monkeypatch, t
     assert "  - closed-by: close_visual_key.py" in handoff
 
 
+def test_close_visual_key_modal_runs_modal_audit(monkeypatch, tmp_path):
+    """When the canonical manifest marks a key as modal, close_visual_key must run
+    the modal backdrop audit and record its hash in the evidence record."""
+    modal_key = "suite:dbt-practice-stop@light"
+    _write_handoff(tmp_path, f"- [ ] `{modal_key}` pending\n")
+    _patch_clean_git(monkeypatch)
+
+    # Fake modal audit report
+    audit_dir = tmp_path / "reports" / "modal_audit_suite-dbt-practice-stop-light"
+    audit_dir.mkdir(parents=True)
+    audit_path = audit_dir / "AUDIT.json"
+    audit_path.write_text(json.dumps({"summary": {"test_blur_pass": True}}, sort_keys=True), encoding="utf-8")
+
+    # Mock everything expensive; only test the orchestration decision
+    monkeypatch.setattr(close, "sha256_file", lambda path: "a" * 64)
+    monkeypatch.setattr(close, "stable_json_file_sha256", lambda path: "b" * 64)
+    monkeypatch.setattr(close, "run_anti_fraud", lambda repo_root: None)
+    monkeypatch.setattr(close, "run_capture", lambda repo_root, parsed, capture_dir: None)
+    monkeypatch.setattr(close, "_ensure_modal_backdrop_capture", lambda repo_root, parsed, capture_dir: None)
+    monkeypatch.setattr(close, "run_comparator", lambda repo_root, parsed, capture_dir, report_dir: report_path)
+    monkeypatch.setattr(close, "run_vas", lambda repo_root, key, sidecar_path: None)
+    monkeypatch.setattr(close, "run_modal_audit", lambda repo_root, parsed, capture_dir, report_dir: audit_path)
+    monkeypatch.setattr(close, "locate_capture_artifacts", lambda capture_dir, key: (Path("m.json"), Path("p.png"), Path("s.json")))
+    monkeypatch.setattr(close, "is_modal_key", lambda repo_root, key: True)
+
+    # Minimal report for build_evidence_record
+    report_path = tmp_path / "LAYERED_VISUAL_REPORT.json"
+    report_path.write_text(
+        json.dumps(
+            {
+                "report_evidence_valid": True,
+                "results": [
+                    {
+                        "key": modal_key,
+                        "status": "PASS",
+                        "suspicious_perfect_match": False,
+                        "near_perfect_match": False,
+                        "metrics": {"changed_pixel_ratio": 0, "mean_abs_diff": 0, "windowed_ssim": 1},
+                        "layout": {"max_bbox_delta_px": None},
+                    }
+                ],
+            },
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(close, "run_comparator", lambda repo_root, parsed, capture_dir, report_dir: report_path)
+
+    build = close.regenerate_record_for_key(
+        repo_root=tmp_path,
+        key=modal_key,
+        commit_head=FIX_COMMIT,
+        capture_dir=tmp_path / "captures",
+        report_dir=tmp_path / "reports",
+    )
+
+    assert build.record["modal_audit_sha256"] is not None
+    assert build.record["modal_audit_sha256"] == close.stable_json_file_sha256(audit_path)
+
+
 def test_record_hash_is_deterministic_for_same_logical_inputs():
     left = {"b": [2, 1], "a": {"z": "same", "n": 1}}
     right = {"a": {"n": 1, "z": "same"}, "b": [2, 1]}
