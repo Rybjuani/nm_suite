@@ -1,2 +1,0 @@
-key,exit_code,result,cause,stdout,stderr,report_dir
-hub:detalle-plan-activacion@dark,0,PASS,OK,C:\Users\nosom\Desktop\nm_suite\reports\qa\suspicious_closure_audit\20260630_132303\hub_detalle-plan-activacion_dark\stdout.log,C:\Users\nosom\Desktop\nm_suite\reports\qa\suspicious_closure_audit\20260630_132303\hub_detalle-plan-activacion_dark\stderr.log,C:\Users\nosom\Desktop\nm_suite\reports\qa\suspicious_closure_audit\20260630_132303\hub_detalle-plan-activacion_dark\layered

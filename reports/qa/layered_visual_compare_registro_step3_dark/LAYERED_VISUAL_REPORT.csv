@@ -1,2 +1,0 @@
-key,status,severity,repair_bucket,real_divergence,suspicious_perfect_match,findings,raw_changed_ratio,mean_abs_diff,ssim,odiff_pct,max_bbox_delta_px,largest_region_ratio,canonical_file,actual_file,panel_path
-suite:registro-step3-filled@dark,PASS,none,NONE,False,False,,0.06049,0.02667,0.36952,2.02,16,0.007295,qa\_mockup_canonical\suite-registro-step3-filled-dark-960x600.png,qa\_captures_v8\suite-registro-step3-filled-dark-960x600.png,reports\qa\layered_visual_compare_registro_step3_dark\panels\suite_registro-step3-filled_dark.png

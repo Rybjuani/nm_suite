@@ -1,5 +1,0 @@
-verdict=PASS
-diff_confined=True
-touched_count=2
-prohibited_count=0
-hunks_outside_block_count=0

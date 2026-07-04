@@ -1,3 +1,0 @@
-suite:onboarding@light
-suite:onboarding-error@light
-suite:recuperar-acceso@light

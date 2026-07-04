@@ -1,2 +1,0 @@
-key,status,severity,repair_bucket,real_divergence,suspicious_perfect_match,findings,raw_changed_ratio,mean_abs_diff,ssim,odiff_pct,max_bbox_delta_px,largest_region_ratio,canonical_file,actual_file,panel_path
-suite:dbt-practice-stop@light,PASS,none,NONE,False,False,,0.07749,0.02015,0.95234,1.04,1,0.011068,qa\_mockup_canonical\suite-dbt-practice-stop-light-960x600.png,qa\_captures_v8\suite-dbt-practice-stop-light-960x600.png,reports\qa\layered_visual_compare_dbt_light_reg\panels\suite_dbt-practice-stop_light.png

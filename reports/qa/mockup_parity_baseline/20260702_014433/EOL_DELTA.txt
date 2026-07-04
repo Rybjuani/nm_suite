@@ -1,5 +1,0 @@
-raw_changed=True
-eol_only_delta=True
-normalized_changed=False
-original_eol={'crlf': 0, 'lf': 2084, 'cr': 0}
-modified_eol={'crlf': 2084, 'lf': 0, 'cr': 0}

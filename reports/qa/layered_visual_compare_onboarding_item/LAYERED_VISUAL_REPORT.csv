@@ -1,2 +1,0 @@
-key,status,severity,repair_bucket,real_divergence,suspicious_perfect_match,findings,raw_changed_ratio,mean_abs_diff,ssim,odiff_pct,max_bbox_delta_px,largest_region_ratio,canonical_file,actual_file,panel_path
-suite:onboarding@light,PASS,none,NONE,False,False,,0.09899,0.03066,0.51423,2.68,1,0.005365,qa\_mockup_canonical\suite-onboarding-light-520x600.png,qa\_captures_v8\suite-onboarding-light-520x600.png,reports\qa\layered_visual_compare_onboarding_item\panels\suite_onboarding_light.png

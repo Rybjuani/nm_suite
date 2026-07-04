@@ -35,9 +35,10 @@ build.log
 pytest_full.log
 test_icon.py
 .hermes/
-reports/manual_zip_compare_*/
-reports/qa/false_pass_evidence_zips/
-reports/qa/handoff_false_pass_audit/
-reports/qa/codex_audit_*_iter*/
-reports/qa/cheap_agent_rescue/
-reports/qa/*_crop.png
+
+# Generated Visual QA artifacts (regenerables; NUNCA son evidencia por sí solos —
+# la evidencia versionable vive en docs/closure_evidence/). Autorizado por mandato
+# owner 2026-07-04 (purga de artefactos generados trackeados por error).
+reports/
+qa/_captures_v8/
+qa/_visual_auditor_spec/

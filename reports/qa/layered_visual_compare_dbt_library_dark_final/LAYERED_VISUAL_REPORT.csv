@@ -1,2 +1,0 @@
-key,status,severity,repair_bucket,real_divergence,suspicious_perfect_match,findings,raw_changed_ratio,mean_abs_diff,ssim,odiff_pct,max_bbox_delta_px,largest_region_ratio,canonical_file,actual_file,panel_path
-suite:dbt-library@dark,PASS,none,NONE,False,False,,0.08844,0.02573,0.49731,2.22,16,0.001663,qa\_mockup_canonical\suite-dbt-library-dark-960x600.png,qa\_captures_v8\suite-dbt-library-dark-960x600.png,reports\qa\layered_visual_compare_dbt_library_dark_final\panels\suite_dbt-library_dark.png

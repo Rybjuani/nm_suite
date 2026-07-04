@@ -1,2 +1,0 @@
-key,status,severity,repair_bucket,real_divergence,suspicious_perfect_match,findings,raw_changed_ratio,mean_abs_diff,ssim,odiff_pct,max_bbox_delta_px,largest_region_ratio,canonical_file,actual_file,panel_path
-hub:detalle-plan-timer@dark,PASS,none,NONE,False,False,,0.09571,0.03217,0.65964,2.57,16,0.004253,qa\_mockup_canonical\hub-detalle-plan-timer-dark-960x600.png,qa\_captures_v8\hub-detalle-plan-timer-dark-960x600.png,reports\qa\codex_audit_detalle_plan_timer_dark_anchor_after_detalle_postcommit\panels\hub_detalle-plan-timer_dark.png
