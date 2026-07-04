@@ -117,7 +117,10 @@ def git_show_text(repo_root: Path, revision: str, path: Path) -> str:
 
 
 def git_changed_files(repo_root: Path, base: str, head: str = "HEAD") -> list[str]:
-    proc = _run_git(repo_root, ["diff", "--name-only", f"{base}..{head}"])
+    # --no-renames: la detección de renames (default de git) pliega un move en
+    # una sola ruta nueva y esconde la desaparición de la ruta vieja — el audit
+    # necesita ver ambas (p.ej. record activo movido a revoked/ en un reopen).
+    proc = _run_git(repo_root, ["diff", "--name-only", "--no-renames", f"{base}..{head}"])
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip() or "git diff --name-only failed")
     return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
