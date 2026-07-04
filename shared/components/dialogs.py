@@ -170,9 +170,6 @@ class NMDialog(QWidget):
         # trasera (regla back-screen-first, MISMATCH#17).
         return _NM_MODAL_BLUR_RADIUS_DARK if self._modo.startswith("dark") else _NM_MODAL_BLUR_RADIUS_LIGHT
 
-    def _scrim_rgba(self) -> tuple[int, int, int, int]:
-        return _NM_MODAL_SCRIM_RGBA
-
     def _capture_backdrop(self) -> None:
         parent = self.parent()
         if parent is None:
@@ -220,7 +217,7 @@ class NMDialog(QWidget):
         tinted = QPixmap(pix.size())
         p = QPainter(tinted)
         p.drawPixmap(0, 0, pix)
-        p.fillRect(tinted.rect(), QColor(*self._scrim_rgba()))
+        p.fillRect(tinted.rect(), QColor(*_NM_MODAL_SCRIM_RGBA))
         p.end()
         self._bg_pixmap = tinted
 
@@ -297,7 +294,7 @@ class NMDialog(QWidget):
         if self._bg_pixmap is not None:
             p.drawPixmap(self.rect(), self._bg_pixmap, self._bg_pixmap.rect())
         else:
-            p.fillRect(self.rect(), QColor(*self._scrim_rgba()))
+            p.fillRect(self.rect(), QColor(*_NM_MODAL_SCRIM_RGBA))
         # El panel se pinta como QFrame con su stylesheet
         p.end()
 

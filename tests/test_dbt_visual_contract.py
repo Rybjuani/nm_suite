@@ -212,8 +212,10 @@ def test_dbt_skill_card_title_uses_serif_font(qtbot, monkeypatch) -> None:
     card = _SkillCard(DBT_SKILLS["stop"], modo="light_hybrid")
     qtbot.addWidget(card)
 
-    assert card.minimumHeight() == 96
-    assert card.maximumHeight() == 96
+    # Pitch de fila canónico medido 103px = 97px card + 6px gap (cierre
+    # dbt-library c4cf6912a; con 96 el grid acumulaba -1px por fila).
+    assert card.minimumHeight() == 97
+    assert card.maximumHeight() == 97
     assert card.family_bar.width() == 30
     assert card.family_bar.height() == 3
     assert card.dur_lbl.text() == "2m"
