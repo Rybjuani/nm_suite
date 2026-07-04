@@ -1189,7 +1189,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/hub_detalle-resumen-ia-0-light.json
   - commit: d669cd8c93dde7c666daa39b24b2d9bf200b134d
   - closed-by: close_visual_key.py
-- [ ] `hub:detalle-resumen-ia-0@dark` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.16215; odiff=7.3; bbox=0; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-resumen-ia-0_dark.png`.
+- [x] `hub:detalle-resumen-ia-0@dark` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.16215; odiff=7.3; bbox=0; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-resumen-ia-0_dark.png`.
+  - evidence: 8cd7b1c7e1d843a411f0f3697a2b7af4a2d3df6d86a221b189b9230c4256065d
+  - evidence-record: docs/closure_evidence/hub_detalle-resumen-ia-0-dark.json
+  - commit: bcc16f517e1e1119a1109c5a96d0b6da2d8ce4e4
+  - closed-by: close_visual_key.py
 
 ### Hub Patients / Global Texts (F10, F14, F11, F5) (6)
 
