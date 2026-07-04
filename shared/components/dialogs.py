@@ -165,13 +165,13 @@ class NMDialog(QWidget):
     panel_scale = pyqtProperty(float, _get_panel_scale, _set_panel_scale)
 
     def _blur_radius(self) -> int:
-        override = getattr(self, "_blur_radius_override", None)
-        if override is not None:
-            return max(0, int(override))
+        # Contrato canónico fijo (.modal-bg backdrop-filter: blur(3px)); sin
+        # overrides por instancia: taparían divergencia real de la pantalla
+        # trasera (regla back-screen-first, MISMATCH#17).
         return _NM_MODAL_BLUR_RADIUS_DARK if self._modo.startswith("dark") else _NM_MODAL_BLUR_RADIUS_LIGHT
 
     def _scrim_rgba(self) -> tuple[int, int, int, int]:
-        return tuple(getattr(self, "_scrim_rgba_override", _NM_MODAL_SCRIM_RGBA))
+        return _NM_MODAL_SCRIM_RGBA
 
     def _capture_backdrop(self) -> None:
         parent = self.parent()
@@ -221,12 +221,6 @@ class NMDialog(QWidget):
         p = QPainter(tinted)
         p.drawPixmap(0, 0, pix)
         p.fillRect(tinted.rect(), QColor(*self._scrim_rgba()))
-        fill_bottom_px = max(0, int(getattr(self, "_backdrop_fill_bottom_px", 0) or 0))
-        if fill_bottom_px > 0:
-            fill_bottom_px = min(fill_bottom_px, tinted.height())
-            source_y = max(0, tinted.height() - fill_bottom_px - 1)
-            edge = tinted.copy(0, source_y, tinted.width(), 1)
-            p.drawPixmap(0, tinted.height() - fill_bottom_px, edge.scaled(tinted.width(), fill_bottom_px))
         p.end()
         self._bg_pixmap = tinted
 

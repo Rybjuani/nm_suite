@@ -407,9 +407,6 @@ class DetallePacienteView(QWidget):
 
         host = self.window() or self
         dialog = NMDialog("", modo=self._modo, width=720, parent=host)
-        dialog._backdrop_fill_bottom_px = 18
-        if "dark" not in self._modo:
-            dialog._blur_radius_override = 5
         self._resumen_dialog = dialog
         dialog.closed.connect(lambda: setattr(self, "_resumen_dialog", None))
         dialog._title.hide()
@@ -550,8 +547,9 @@ class DetallePacienteView(QWidget):
             ("bolt", "ASPECTOS A MONITOREAR", "Distorsión cognitiva recurrente: catastrofización (5/9 registros). Descenso de ánimo los días con menor adherencia a la rutina matutina."),
             ("spark", "RECOMENDACIÓN DE SESIÓN", "Reforzar restructuración cognitiva sobre catastrofización y vincular activación conductual matutina. Considerar asignar habilidad DBT \"Verificar los hechos\"."),
         ]
-        body_ink = ink2 if "dark" in self._modo else "rgba(107, 100, 87, 0)"
-        body_font = qfont("size_caption") if "dark" in self._modo else qfont(10)
+        # Canónico .ia-sum-sec .b: color var(--ink-2), 12.5px — en ambos temas.
+        body_ink = ink2
+        body_font = qfont("size_caption")
         for icon_name, title, body_text in sections:
             sec = QFrame()
             sec.setFixedHeight(76)
@@ -578,7 +576,8 @@ class DetallePacienteView(QWidget):
         footer_lay.setContentsMargins(22, 12, 22, 14)
         footer_lay.setSpacing(6)
         footer_lay.addWidget(NMIcon("info", 12, color=amber, modo=self._modo), alignment=Qt.AlignmentFlag.AlignTop)
-        footer_ink = ink3 if "dark" in self._modo else "rgba(136, 136, 136, 96)"
+        # Canónico .ia-sum-footer .warn: color var(--ink-3) — en ambos temas.
+        footer_ink = ink3
         warn = _label(
             "Borrador para revisión profesional. La IA no sustituye el criterio clínico ni realiza diagnósticos. Validar contra historia clínica antes de citar.",
             qfont("size_caption_xs"),
