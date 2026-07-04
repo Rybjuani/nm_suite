@@ -486,6 +486,30 @@ Tampoco podés:
   `bbox_dy` que lo respalde — seguí el procedimiento mecánico de §2.5 antes
   de declarar una divergencia "irreducible".
 
+### 6.1 Disclosure obligatorio de intentos revertidos
+
+El reporte final debe declarar cualquier intento revertido que haya tocado
+rutas R0, shared sensibles o rutas prohibidas, aunque el diff final quede
+limpio.
+
+Debe incluir:
+- archivo tocado;
+- cambio intentado;
+- motivo de reversión;
+- evidencia de reversión (`git diff -- <archivo>` vacío o equivalente).
+
+Omitir un intento revertido sobre rutas sensibles se considera reporte
+incompleto. Un diff final limpio no reemplaza la trazabilidad del camino.
+
+Rutas sensibles incluyen, como mínimo: `qa/`, `tools/qa/`, `.github/`,
+`docs/closure_evidence/`, canon, thresholds, comparator, capture harness,
+close/replay scripts, evidence y componentes compartidos que afecten múltiples
+visual keys, como modales/base dialogs.
+
+Tocar y revertir puede ser tolerable si queda limpio.
+Tocar, revertir y no declararlo deja el reporte incompleto.
+Tocar y commitear sin autorización invalida la tarea.
+
 ---
 
 ## 7. Cierre bloqueado — cuándo parar
