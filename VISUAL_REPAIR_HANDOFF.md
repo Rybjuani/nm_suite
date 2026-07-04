@@ -27,20 +27,24 @@ prompt — puede ser `next-key` (esta key sola), `first-N`, `batch`, `family`,
 `all-open-keys`, o `explicit-list`. Resolvé mecánicamente con
 `qa\target_scope.py --mode <modo>` en vez de re-derivar a mano.
 
-A la fecha del último reset (2026-06-28), `NEXT_KEY` es:
+A la fecha del último refresh (2026-07-04), `NEXT_KEY` es:
 
 ```
-suite:dbt-library@light
+hub:detalle-resumen-ia-0@light
 ```
+
+(reabierta por revocación de cierre fraudulento — ver sus notas `reopened:`
+en el Checklist; resolvé siempre en vivo con `qa\target_scope.py --mode
+next-key`, no confíes en este snapshot.)
 
 > El "Repair Order" histórico quedó obsoleto y fue removido (ver git log).
 > La selección de `NEXT_KEY` es puramente posicional (top-down en Checklist).
 
 ## OPEN KEYS — family/complexity order
 
-Vista de conveniencia: las 56 keys abiertas, agrupadas por familia (mismo
-orden que aparecen en `## Checklist`) y ordenadas por complejidad
-descendente dentro de cada familia. Tier derivado de datos ya presentes en
+Vista de conveniencia (refresh 2026-07-04): las 54 keys abiertas, agrupadas
+por familia (mismo orden que aparecen en `## Checklist`) y ordenadas por
+complejidad descendente dentro de cada familia. Tier derivado de datos ya presentes en
 cada línea del checklist: `HIGH` = `severity=high`; `LOW` = `severity=medium`
 con `changed_pixel_ratio <= 0.10` (el umbral dense-aware del comparador,
 `LayeredThresholds.text_dense_max_changed_pixel_ratio` en
@@ -49,11 +53,7 @@ snapshot legible para elegir scope — la fuente de verdad mecánica sigue
 siendo el `- [ ]` real en `## Checklist` (`qa\target_scope.py` lee ese, no
 esta tabla). No cierres ni edites keys desde acá.
 
-### DBT v2 / Habilidades DBT — 2 open
-- [MED] `suite:dbt-library@light`
-- [MED] `suite:dbt-library@dark`
-
-### Hub Detail / Plan / IA — 2 open
+### Hub Detail / Plan / IA — 2 open (reabiertas 2026-07-04, cierre previo revocado)
 - [MED] `hub:detalle-resumen-ia-0@light`
 - [MED] `hub:detalle-resumen-ia-0@dark`
 

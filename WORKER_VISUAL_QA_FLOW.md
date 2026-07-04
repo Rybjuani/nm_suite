@@ -265,6 +265,22 @@ cierre sin evidence propio — para ninguna key, sea cual sea el target mode.
 > Cualquier mutación fuera de ese script rompe el hash y
 > `replay_visual_closure.py` lo detecta como `evidence_hash_mismatch`.
 
+### 3.1 Reapertura sancionada (revocar un cierre comprometido)
+
+Si se demuestra que un cierre dependió de fraude/gaming (overlay, blur/alpha,
+manipulación de evidence), la ÚNICA forma de reabrirlo es:
+
+```powershell
+.\.venv\Scripts\python.exe qa\close_visual_key.py --key <key> --reopen --reason "<motivo objetivo con métricas>"
+```
+
+Exige tree limpio + record íntegro; mueve el record a
+`docs/closure_evidence/revoked/` y deja notas `reopened:`/`revoked-evidence:`/
+`revoked-record:` en el checkbox (que vuelve a `[ ]`). El replay reconoce
+exactamente esa forma; borrar/editar records o notas a mano falla como
+`orphan_evidence_record`/`evidence_hash_mismatch`. La reapertura es un acto
+visible y auditable — nunca la uses para "resetear" una key sin causa.
+
 ---
 
 ## 4. Post-cierre

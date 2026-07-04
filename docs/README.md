@@ -14,7 +14,7 @@ Todo agente que opere Visual QA debe leer ambos **antes** de tocar código de UI
 [`_archive/protocol_v1.md`](_archive/protocol_v1.md); ya no es lectura obligatoria
 para cerrar una key individual.
 
-La evidencia versionable de cierre vive en [`closure_evidence/`](closure_evidence/) (un record determinístico por exact-key, escrito por `qa/close_visual_key.py` y auditado por `qa/replay_visual_closure.py`); toda transición `[ ]` → `[x]` debe llevar sus notas `evidence:`/`evidence-record:`/`commit:`. `visual_closure_bundle.json` fue purgado (histórico, ya no autoridad de cierre).
+La evidencia versionable de cierre vive en [`closure_evidence/`](closure_evidence/) (un record determinístico por exact-key, escrito por `qa/close_visual_key.py` y auditado por `qa/replay_visual_closure.py`); toda transición `[ ]` → `[x]` debe llevar sus notas `evidence:`/`evidence-record:`/`commit:`. Un cierre revocado (`qa/close_visual_key.py --reopen`) conserva su record en `closure_evidence/revoked/` como rastro auditable. `visual_closure_bundle.json` fue purgado (histórico, ya no autoridad de cierre).
 
 ## Documentos de referencia activos (bridge)
 
