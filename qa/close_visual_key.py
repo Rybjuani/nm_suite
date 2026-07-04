@@ -423,6 +423,49 @@ def run_capture_for_key(repo_root: Path, key: str, capture_dir: Path) -> None:
     run_capture(repo_root, parsed, capture_dir)
 
 
+def _merge_back_screen_capture(capture_dir: Path, back_capture_dir: Path) -> None:
+    """Merge an isolated back-screen capture run into ``capture_dir``.
+
+    ``capture_v8.py`` fully overwrites ``CAPTURE_MANIFEST.json`` on every
+    invocation instead of appending to it. Capturing the modal's back-screen
+    key straight into ``capture_dir`` (as a second invocation with
+    ``--no-clean``) therefore erases the modal key's own manifest entry that
+    ``locate_capture_artifacts`` and the modal backdrop audit depend on — the
+    PNG survives on disk, but its manifest record is gone
+    (``capture_manifest_missing_key``). Capturing the back screen into its own
+    ``back_capture_dir`` and merging its PNG + manifest result into
+    ``capture_dir`` keeps both records intact.
+    """
+    back_manifest_path = back_capture_dir / "CAPTURE_MANIFEST.json"
+    if not back_manifest_path.exists():
+        raise GateError("missing_capture_manifest")
+    back_manifest = json.loads(back_manifest_path.read_text(encoding="utf-8"))
+    back_results = [r for r in back_manifest.get("results", []) if isinstance(r, dict)]
+
+    for result in back_results:
+        filename = result.get("file")
+        if not filename:
+            continue
+        src = back_capture_dir / str(filename)
+        if src.exists():
+            shutil.copy2(src, capture_dir / str(filename))
+
+    manifest_path = capture_dir / "CAPTURE_MANIFEST.json"
+    if not manifest_path.exists():
+        raise GateError("missing_capture_manifest")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest.setdefault("results", [])
+    existing_keys = {
+        _key_from_capture_result(r) for r in manifest["results"] if isinstance(r, dict)
+    }
+    for result in back_results:
+        if _key_from_capture_result(result) not in existing_keys:
+            manifest["results"].append(result)
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+
+
 def _ensure_modal_backdrop_capture(
     repo_root: Path,
     parsed: ParsedKey,
@@ -431,7 +474,14 @@ def _ensure_modal_backdrop_capture(
     back_key = _modal_back_screen_key(repo_root, parsed.key)
     if not back_key:
         raise GateError("modal_missing_back_screen_key")
-    run_capture_for_key(repo_root, back_key, capture_dir)
+    # Captured OUTSIDE capture_dir (not a nested subfolder) so recursive PNG
+    # scans over capture_dir (e.g. layered_visual_compare's rglob) never see
+    # a second copy of the back-screen capture.
+    with tempfile.TemporaryDirectory(prefix="nm_modal_back_screen_") as tmp:
+        back_capture_dir = Path(tmp)
+        run_capture_for_key(repo_root, back_key, back_capture_dir)
+        _merge_back_screen_capture(capture_dir, back_capture_dir)
+
 
 def run_comparator(repo_root: Path, parsed: ParsedKey, capture_dir: Path, report_dir: Path) -> Path:
     proc = _run(
