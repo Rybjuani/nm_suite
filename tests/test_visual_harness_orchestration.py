@@ -1,19 +1,22 @@
 """Contratos de orquestación del harness visual owner-directed.
 
-Cubre los bugs de orquestación encontrados el 2026-07-03:
+Cubre los bugs de orquestación encontrados el 2026-07-03 (hoy sobre el runner
+unificado ``qa/run_visual.ps1``):
 
 1. ``close_visual_key --preflight`` capturaba en ``qa/_captures_v8`` del
    working tree y luego su propio ``ensure_clean_for_closure`` abortaba con
    ``dirty_working_tree`` (el preflight se auto-ensuciaba).
-2. ``run_visual_family.ps1`` corría UN ``vas_gate.py`` al final, pero
-   ``capture_v8`` reescribe el sidecar por invocación → con N keys sólo la
-   última quedaba gateada ("all 1 entries" con un set de 2).
-3. ``run_visual_family.ps1`` / ``run_visual_item.ps1`` borraban el sidecar
-   incluso con ``-SkipCapture`` (ninguna captura lo regenera → gate espurio).
+2. Un ``vas_gate.py`` único al final del set: ``capture_v8`` reescribe el
+   sidecar por invocación → con N keys sólo la última quedaba gateada
+   ("all 1 entries" con un set de 2). El gate DEBE correr por key dentro del
+   loop; el gate sin filtro sólo es válido en la rama ``-All`` (una única
+   invocación padre escribe todas las keys en el sidecar).
+3. El runner borraba el sidecar incluso con ``-SkipCapture`` (ninguna captura
+   lo regenera → gate espurio).
 
-Los tests de los .ps1 son contratos estructurales sobre el texto del script:
+Los tests del .ps1 son contratos estructurales sobre el texto del script:
 el e2e completo por modo es costo de captura real (ver
-``WORKER_VISUAL_QA_FLOW.md`` §2.2); el modo family se ejercita e2e en cada
+``WORKER_VISUAL_QA_FLOW.md`` §2.2); el modo plan se ejercita e2e en cada
 corrida real de reparación.
 """
 
@@ -30,8 +33,7 @@ from qa import close_visual_key as cvk
 from qa import target_scope as ts
 
 ROOT = Path(__file__).resolve().parents[1]
-FAMILY_PS1 = (ROOT / "qa" / "run_visual_family.ps1").read_text(encoding="utf-8")
-ITEM_PS1 = (ROOT / "qa" / "run_visual_item.ps1").read_text(encoding="utf-8")
+RUNNER_PS1 = (ROOT / "qa" / "run_visual.ps1").read_text(encoding="utf-8")
 
 
 # ─── close_visual_key --preflight: aislamiento del working tree ─────────────
@@ -117,7 +119,7 @@ def test_preflight_respects_explicit_dirs(monkeypatch, tmp_path):
     assert rep.exists()
 
 
-# ─── run_visual_family.ps1: contratos estructurales ─────────────────────────
+# ─── run_visual.ps1: contratos estructurales ────────────────────────────────
 
 
 def _foreach_capture_loop(script: str) -> str:
@@ -128,45 +130,49 @@ def _foreach_capture_loop(script: str) -> str:
     return script[start:end]
 
 
-def test_family_runner_gates_vas_per_key_inside_capture_loop():
+def test_runner_gates_vas_per_key_inside_capture_loop():
     """capture_v8 reescribe el sidecar por invocación: el gate VAS tiene que
     correr POR KEY dentro del loop, no una vez al final (bug: con N keys sólo
     la última quedaba validada)."""
-    loop = _foreach_capture_loop(FAMILY_PS1)
+    loop = _foreach_capture_loop(RUNNER_PS1)
     assert re.search(r"vas_gate\.py\s+--key", loop), (
-        "run_visual_family.ps1 perdió el vas_gate.py --key por key dentro "
+        "run_visual.ps1 perdió el vas_gate.py --key por key dentro "
         "del loop de capturas"
     )
 
 
-def test_family_runner_has_no_final_bare_vas_gate():
-    """Un vas_gate.py sin --key/--sidecar al final sólo valida la última key
-    capturada — da falsa cobertura para sets multi-key."""
-    tail = FAMILY_PS1[FAMILY_PS1.index("$keysFile = New-TemporaryFile"):]
-    for match in re.finditer(r"vas_gate\.py([^\r\n]*)", tail):
+def test_runner_bare_vas_gate_only_in_all_branch():
+    """Un vas_gate.py sin --key/--sidecar sólo es válido en la rama -All (la
+    única donde el sidecar contiene el set completo en una invocación). En el
+    camino por keys da falsa cobertura multi-key."""
+    per_key_start = RUNNER_PS1.index("foreach ($row in $rows)")
+    for match in re.finditer(r"vas_gate\.py([^\r\n]*)", RUNNER_PS1):
         args = match.group(1)
-        assert "--key" in args or "--sidecar" in args, (
-            f"vas_gate.py sin filtro por key fuera del loop: '{args.strip()}'"
+        if "--key" in args or "--sidecar" in args:
+            continue
+        assert match.start() < per_key_start, (
+            f"vas_gate.py sin filtro en el camino por keys: '{args.strip()}'"
         )
 
 
-def test_family_runner_archives_per_key_introspection():
+def test_runner_archives_per_key_introspection():
     """El sidecar vivo retiene sólo la última key; el runner debe archivar el
     de cada key para que §2.3 pueda auditarse por key."""
-    assert "introspection" in FAMILY_PS1
-    assert re.search(r"Copy-Item\s+\.\\qa\\_visual_auditor_spec\\introspection\.json", FAMILY_PS1)
+    assert "introspection" in RUNNER_PS1
+    assert re.search(r"Copy-Item\s+\.\\qa\\_visual_auditor_spec\\introspection\.json", RUNNER_PS1)
 
 
-@pytest.mark.parametrize(
-    ("script", "name"),
-    [(FAMILY_PS1, "run_visual_family.ps1"), (ITEM_PS1, "run_visual_item.ps1")],
-)
-def test_runners_do_not_delete_sidecar_when_skipping_capture(script, name):
+def test_runner_does_not_delete_sidecar_when_skipping_capture():
     """Con -SkipCapture nada regenera el sidecar: borrarlo garantiza un fallo
     espurio (o una validación vacía) del gate VAS."""
-    for match in re.finditer(
-        r"Remove-Item\s+\.\\qa\\_visual_auditor_spec\\introspection\.json", script
-    ):
+    script, name = RUNNER_PS1, "run_visual.ps1"
+    matches = list(
+        re.finditer(
+            r"Remove-Item\s+\.\\qa\\_visual_auditor_spec\\introspection\.json", script
+        )
+    )
+    assert matches, f"{name}: el runner ya no limpia el sidecar antes de capturar"
+    for match in matches:
         prefix = script[: match.start()]
         guard = prefix.rfind("if (-not $SkipCapture)")
         assert guard != -1, f"{name}: Remove-Item del sidecar sin guard -SkipCapture"
@@ -179,8 +185,15 @@ def test_runners_do_not_delete_sidecar_when_skipping_capture(script, name):
         )
 
 
-def test_item_runner_gates_vas_with_key_filter():
-    assert re.search(r"vas_gate\.py\s+--key", ITEM_PS1)
+def test_runner_uses_full_anti_fraud_mode():
+    """El runner corre el scan antifraude completo (runtime + qa-harness),
+    no sólo runtime."""
+    assert re.search(r"anti_fraud_scan\.py\s+--mode\s+all", RUNNER_PS1)
+
+
+def test_runner_rejects_ambiguous_mode_selection():
+    """Exactamente uno de -Key/-PlanFile/-All."""
+    assert "$modes.Count -ne 1" in RUNNER_PS1
 
 
 # ─── target_scope CLI: todos los modos owner-directed vía main() ────────────

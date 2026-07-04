@@ -53,12 +53,12 @@ el protocolo; el bridge no lo reemplaza).
    .\.venv\Scripts\python.exe qa\vas_introspect.py --introspect   # SHADOW/RADIUS/GRADIENT
    ```
 
-7. **Cerrar SOLO con el gate técnico automatizado** vía los wrappers
-   `run_visual_item.ps1` / `run_visual_family.ps1`, que orquestan anti-fraud
-   scan, captura con `NM_VAS_INTROSPECT=1`, comparador, y `vas_gate.py`:
+7. **Validar SOLO con el runner oficial** `qa\run_visual.ps1`, que orquesta
+   anti-fraud scan (`--mode all`), captura con `NM_VAS_INTROSPECT=1`,
+   comparador, modal audit y `vas_gate.py`:
 
    ```powershell
-   .\qa\run_visual_item.ps1 -App <app> -View <view> -Theme <theme>
+   .\qa\run_visual.ps1 -Key "<app>:<view>@<theme>"
    ```
 
    Si se necesita invocar manualmente los pasos individuales:

@@ -55,7 +55,7 @@ mecánicamente, no lo re-interpreta ni lo negocia.
 
 Lee `VISUAL_REPAIR_HANDOFF.md` en vivo (nunca una copia stale) e imprime la
 lista exacta de keys en el orden correcto. Agregá `--plan` para obtener filas
-`app,view,theme,key` listas para `qa\run_visual_family.ps1 -PlanFile` (§2.2).
+`app,view,theme,key` listas para `qa\run_visual.ps1 -PlanFile` (§2.2).
 
 > No uses "Repair Order" del handoff como guía aunque exista: históricamente
 > quedó stale (sprint pin apuntando a familia fully closed).
@@ -115,45 +115,47 @@ No toques **ningún** archivo de la lista R0 (sección 5 abajo) en el mismo PR.
 
 ### 2.2 Validá
 
+Hay UN solo runner de validación: `qa\run_visual.ps1`, con tres modos
+mutuamente excluyentes.
+
 **1 key** (Windows / PowerShell):
 
 ```powershell
-.\qa\run_visual_item.ps1 `
-  -App <app> `
-  -View <view> `
-  -Theme <theme> `
-  -Key <key> `
-  -OutDir reports\qa\layered_visual_compare_item
+.\qa\run_visual.ps1 -Key <app>:<view>@<theme>
 ```
 
 **N keys del target set** (`first-N`/`batch`/`family`/`all-open-keys`/
 `explicit-list` con más de 1 key) — generá el plan con `target_scope.py
---plan` (§0) y corré `run_visual_family.ps1`:
+--plan` (§0):
 
 ```powershell
 .\.venv\Scripts\python.exe qa\target_scope.py --mode <modo> [--n N] --plan `
-  > reports\qa\visual_family_keys_plan.csv
-.\qa\run_visual_family.ps1 `
-  -PlanFile reports\qa\visual_family_keys_plan.csv `
-  -OutDir reports\qa\layered_visual_compare_family
+  > reports\qa\visual_keys_plan.csv
+.\qa\run_visual.ps1 -PlanFile reports\qa\visual_keys_plan.csv
 ```
 
-`run_visual_family.ps1` ya existe y ya es multi-key: corre anti-fraude,
-captura cada key (con manejo de modal/back-screen), UN compare batcheado
-(`--keys-file`), audit modal para las keys modales, y VAS gate — todo en una
-corrida. No corras `capture_v8.py --all --clean` / `run_visual_full.ps1`
-salvo target mode `all-open-keys` con un cambio verdaderamente transversal
-(theme/chrome/`NMCard`/shell); para `all-open-keys` sin cambio transversal,
-seguí usando `run_visual_family.ps1` con el plan de las 56 keys.
+**Regresión completa** (SOLO cambio transversal real — theme/chrome/`NMCard`/
+shell — o regresión final):
 
-Ambos caminos ejecutan en secuencia, abortando en el primer fallo:
-1. `anti_fraud_scan.py` (modo full — bloquea si hay canonical injection)
-2. `capture_v8.py` por key (`NM_VAS_INTROSPECT=1`) + `vas_gate.py --key <key>`
-   inmediatamente después de cada captura (el sidecar vivo se reescribe por
-   invocación, así que el gate es POR KEY; el runner archiva cada sidecar en
+```powershell
+.\qa\run_visual.ps1 -All
+```
+
+`-OutDir` es opcional (default `reports\qa\run_visual`; `-All` escribe en
+`reports\qa\layered_visual_compare_fresh`). Para `all-open-keys` sin cambio
+transversal, usá `-PlanFile` con el plan de las keys abiertas, no `-All`.
+
+Todos los modos ejecutan en secuencia, abortando en el primer fallo:
+1. `anti_fraud_scan.py --mode all` (runtime + qa-harness — bloquea si hay
+   canonical injection)
+2. `capture_v8.py` por key (`NM_VAS_INTROSPECT=1`, con manejo de
+   modal/back-screen) + `vas_gate.py --key <key>` inmediatamente después de
+   cada captura (el sidecar vivo se reescribe por invocación, así que el gate
+   es POR KEY; el runner archiva cada sidecar en
    `<OutDir>\introspection\<key_safe>.json`)
-3. `layered_visual_compare.py` (filtrado por `--key` o por `--keys-file`)
+3. `layered_visual_compare.py` (batcheado por `--keys-file`, o full en `-All`)
 4. Para cada key modal del set: `audit_modal_backdrop_blur.py --key <key>`
+   (en `-All`: `--all`)
 
 Si un modal falla por la pantalla trasera, se repara esa pantalla/familia
 dependiente; **no se tapa con blur, opacidad, alpha, crop, bbox detector ni
@@ -161,10 +163,9 @@ densidad** (regla MISMATCH#17 / back-screen-first).
 
 ### 2.3 Criterio de PASS del pre-flight
 
-Por cada key del target set, abrí el reporte correspondiente
-(`reports\qa\layered_visual_compare_item\LAYERED_VISUAL_REPORT.json` para 1
-key, o `reports\qa\layered_visual_compare_family\LAYERED_VISUAL_REPORT.json`
-para N keys) y verificá, para ESA key:
+Por cada key del target set, abrí el reporte
+(`<OutDir>\LAYERED_VISUAL_REPORT.json`, default
+`reports\qa\run_visual\LAYERED_VISUAL_REPORT.json`) y verificá, para ESA key:
 - `REPORT_EVIDENCE_VALID: YES`
 - `exact key status: PASS`
 - `suspicious_perfect_match: false`
@@ -176,7 +177,7 @@ Y en el sidecar VAS de esa key:
 
 > El `qa\_visual_auditor_spec\introspection.json` vivo sólo retiene la ÚLTIMA
 > key capturada. Para un set de N keys, el sidecar de cada key queda archivado
-> por `run_visual_family.ps1` en `<OutDir>\introspection\<key_safe>.json`
+> por `run_visual.ps1` en `<OutDir>\introspection\<key_safe>.json`
 > (y el gate por key ya corrió durante la captura — ver §2.2).
 
 > **`HANDOFF_CLOSURE_ALLOWED: NO` es normal** para un pre-flight de scope
@@ -480,7 +481,7 @@ tree, porque ninguna invocación posterior puede correr sobre un tree sucio.
   family/complexity order` (vista compacta en el handoff).
 - ❌ Correr `capture_v8.py --all --clean` salvo target mode `all-open-keys`
   con un cambio verdaderamente transversal (theme/chrome/`NMCard`/shell).
-- ❌ Correr `run_visual_full.ps1` fuera de ese mismo caso o de una regresión
+- ❌ Correr `run_visual.ps1 -All` fuera de ese mismo caso o de una regresión
   final oficial.
 - ❌ Correr `audit_mockup_parity_baseline.py` (sólo si cambiaste canonical HTML/recipe/PNGs).
 - ❌ Correr `replay_visual_closure.py` antes de cerrar (es post-cierre).
@@ -504,8 +505,8 @@ tree, porque ninguna invocación posterior puede correr sobre un tree sucio.
    ↓
 [Pre-flight mapping] → graphify + matriz + mismatches (≤2 min, por key nueva)
    ↓
-[Ciclo de reparación] → editar app/ + run_visual_item.ps1 (1 key) o
-                         run_visual_family.ps1 -PlanFile (N keys) — 15-45 s/key
+[Ciclo de reparación] → editar app/ + run_visual.ps1 -Key <key> (1 key) o
+                         run_visual.ps1 -PlanFile <csv> (N keys) — 15-45 s/key
    ↓           ↑
    ↓  PASS? (por key) ↑
    ↓           ↑ NO

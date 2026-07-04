@@ -509,8 +509,8 @@ the comparator thresholds are unchanged.
 `qa/anti_fraud_scan.py` statically scans `app/`, `hub/`, `shared/` and fails if
 runtime/product code reads, renders, copies, mounts or overlays any
 canonical / reference / mockup / QA-report artifact. It is wired into the
-resource-safe wrappers (`qa/run_visual_item.ps1`, `qa/run_visual_family.ps1`,
-`qa/run_visual_full.ps1`) and runs BEFORE capture/compare. If the scan fails the
+official runner (`qa/run_visual.ps1`, modos `-Key`/`-PlanFile`/`-All`)
+and runs BEFORE capture/compare. If the scan fails the
 run aborts and **no report it would have produced is valid closure evidence,
 even if the comparator reports `PASS`**. Run standalone with
 `.\.venv\Scripts\python.exe qa\anti_fraud_scan.py`. It does not ban `QPixmap`
