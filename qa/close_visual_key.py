@@ -73,6 +73,12 @@ VOLATILE_JSON_KEYS = {
     "git_tracked_dirty",
     "tracked_dirty",
     "tracked_status",
+    # audit_modal_backdrop_blur.py AUDIT.json: resolved absolute paths of the
+    # capture dirs, which live inside a fresh randomly-named worktree on every
+    # closure/replay run — without stripping these, modal_audit_sha256 (and
+    # thus the whole record hash) can never reproduce across independent runs.
+    "actual_dir",
+    "canonical_dir",
 }
 
 

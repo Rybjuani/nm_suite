@@ -315,6 +315,38 @@ def test_ensure_modal_backdrop_capture_preserves_modal_manifest_entry(monkeypatc
     assert keys == {modal_key, back_key}
 
 
+def test_stable_json_file_sha256_ignores_modal_audit_worktree_paths(tmp_path):
+    """Regression: audit_modal_backdrop_blur.py's AUDIT.json embeds the resolved
+    absolute path of the capture dirs (inputs.actual_dir / inputs.canonical_dir).
+    Every closure/replay run resolves these inside a freshly created, randomly
+    named temp worktree, so two independent runs over identical code/pixels
+    produced two different modal_audit_sha256 values (and thus two different
+    whole-record hashes) purely from path noise, breaking replay --regen for
+    every modal key."""
+    run1 = {
+        "inputs": {
+            "actual_dir": r"C:\Users\x\AppData\Local\Temp\nm_visual_worktree_aaaaaaaa\worktree\qa\_captures_v8",
+            "canonical_dir": r"C:\Users\x\AppData\Local\Temp\nm_visual_worktree_aaaaaaaa\worktree\qa\_mockup_canonical",
+            "keys": ["hub:detalle-resumen-ia-0@dark"],
+        },
+        "summary": {"test_blur_pass": True},
+    }
+    run2 = {
+        "inputs": {
+            "actual_dir": r"C:\Users\x\AppData\Local\Temp\nm_visual_worktree_bbbbbbbb\worktree\qa\_captures_v8",
+            "canonical_dir": r"C:\Users\x\AppData\Local\Temp\nm_visual_worktree_bbbbbbbb\worktree\qa\_mockup_canonical",
+            "keys": ["hub:detalle-resumen-ia-0@dark"],
+        },
+        "summary": {"test_blur_pass": True},
+    }
+    path1 = tmp_path / "audit1.json"
+    path2 = tmp_path / "audit2.json"
+    path1.write_text(json.dumps(run1), encoding="utf-8")
+    path2.write_text(json.dumps(run2), encoding="utf-8")
+
+    assert close.stable_json_file_sha256(path1) == close.stable_json_file_sha256(path2)
+
+
 def test_record_hash_is_deterministic_for_same_logical_inputs():
     left = {"b": [2, 1], "a": {"z": "same", "n": 1}}
     right = {"a": {"n": 1, "z": "same"}, "b": [2, 1]}
