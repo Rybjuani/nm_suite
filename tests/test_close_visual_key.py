@@ -240,6 +240,113 @@ def test_close_visual_key_modal_runs_modal_audit(monkeypatch, tmp_path):
     assert build.record["modal_audit_sha256"] == close.stable_json_file_sha256(audit_path)
 
 
+def _write_capture_manifest(capture_dir: Path, results: list[dict]) -> None:
+    capture_dir.mkdir(parents=True, exist_ok=True)
+    (capture_dir / "CAPTURE_MANIFEST.json").write_text(
+        json.dumps({"results": results}, ensure_ascii=False), encoding="utf-8"
+    )
+
+
+def test_ensure_modal_backdrop_capture_preserves_modal_manifest_entry(monkeypatch, tmp_path):
+    """Regression: capture_v8.py fully overwrites CAPTURE_MANIFEST.json on every
+    invocation instead of appending to it. Capturing the modal's back-screen key
+    straight into the modal's own capture_dir used to erase the modal key's
+    manifest entry, breaking locate_capture_artifacts with
+    capture_manifest_missing_key (reproduced against `hub:detalle-resumen-ia-0@light`).
+    """
+    modal_key = "hub:detalle-resumen-ia-0@light"
+    back_key = "hub:detalle@light"
+    capture_dir = tmp_path / "captures"
+
+    modal_png = "hub-detalle-resumen-ia-0-light-960x600.png"
+    back_png = "hub-detalle-light-960x600.png"
+
+    _write_capture_manifest(
+        capture_dir,
+        [
+            {
+                "key": modal_key,
+                "file": modal_png,
+                "app": "hub",
+                "view": "detalle-resumen-ia-0",
+                "theme": "light",
+            }
+        ],
+    )
+    (capture_dir / modal_png).write_bytes(b"modal-png")
+
+    sidecar_dir = capture_dir.parent / "_visual_auditor_spec"
+    sidecar_dir.mkdir(parents=True, exist_ok=True)
+    (sidecar_dir / "introspection.json").write_text("{}", encoding="utf-8")
+
+    def fake_run_capture_for_key(_repo_root, key, out_dir):
+        assert key == back_key
+        # Simulate capture_v8.py: a fresh out-dir gets its own, unrelated manifest
+        # with no knowledge of anything captured previously elsewhere.
+        _write_capture_manifest(
+            out_dir,
+            [
+                {
+                    "key": back_key,
+                    "file": back_png,
+                    "app": "hub",
+                    "view": "detalle",
+                    "theme": "light",
+                }
+            ],
+        )
+        (out_dir / back_png).write_bytes(b"back-png")
+
+    monkeypatch.setattr(close, "run_capture_for_key", fake_run_capture_for_key)
+    monkeypatch.setattr(close, "_modal_back_screen_key", lambda repo_root, key: back_key)
+
+    parsed = close.parse_key(modal_key)
+    close._ensure_modal_backdrop_capture(tmp_path, parsed, capture_dir)
+
+    # The modal key must still be resolvable after merging the back-screen capture.
+    manifest_path, png_path, _sidecar = close.locate_capture_artifacts(capture_dir, modal_key)
+    assert manifest_path == capture_dir / "CAPTURE_MANIFEST.json"
+    assert png_path == capture_dir / modal_png
+
+    # The back-screen PNG must land alongside it for the modal backdrop audit.
+    assert (capture_dir / back_png).exists()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    keys = {r.get("key") for r in manifest["results"]}
+    assert keys == {modal_key, back_key}
+
+
+def test_stable_json_file_sha256_ignores_modal_audit_worktree_paths(tmp_path):
+    """Regression: audit_modal_backdrop_blur.py's AUDIT.json embeds the resolved
+    absolute path of the capture dirs (inputs.actual_dir / inputs.canonical_dir).
+    Every closure/replay run resolves these inside a freshly created, randomly
+    named temp worktree, so two independent runs over identical code/pixels
+    produced two different modal_audit_sha256 values (and thus two different
+    whole-record hashes) purely from path noise, breaking replay --regen for
+    every modal key."""
+    run1 = {
+        "inputs": {
+            "actual_dir": r"C:\Users\x\AppData\Local\Temp\nm_visual_worktree_aaaaaaaa\worktree\qa\_captures_v8",
+            "canonical_dir": r"C:\Users\x\AppData\Local\Temp\nm_visual_worktree_aaaaaaaa\worktree\qa\_mockup_canonical",
+            "keys": ["hub:detalle-resumen-ia-0@dark"],
+        },
+        "summary": {"test_blur_pass": True},
+    }
+    run2 = {
+        "inputs": {
+            "actual_dir": r"C:\Users\x\AppData\Local\Temp\nm_visual_worktree_bbbbbbbb\worktree\qa\_captures_v8",
+            "canonical_dir": r"C:\Users\x\AppData\Local\Temp\nm_visual_worktree_bbbbbbbb\worktree\qa\_mockup_canonical",
+            "keys": ["hub:detalle-resumen-ia-0@dark"],
+        },
+        "summary": {"test_blur_pass": True},
+    }
+    path1 = tmp_path / "audit1.json"
+    path2 = tmp_path / "audit2.json"
+    path1.write_text(json.dumps(run1), encoding="utf-8")
+    path2.write_text(json.dumps(run2), encoding="utf-8")
+
+    assert close.stable_json_file_sha256(path1) == close.stable_json_file_sha256(path2)
+
+
 def test_record_hash_is_deterministic_for_same_logical_inputs():
     left = {"b": [2, 1], "a": {"z": "same", "n": 1}}
     right = {"a": {"n": 1, "z": "same"}, "b": [2, 1]}
