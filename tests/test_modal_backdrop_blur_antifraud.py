@@ -212,7 +212,9 @@ def test_close_visual_key_has_modal_audit_helpers() -> None:
 # 6. Text essential must not be invisible/alpha-zero on modal surfaces
 # ─────────────────────────────────────────────────────────────────────────────
 
-_ALPHA_ZERO_RE = re.compile(r"rgba\([^)]*,\s*0\s*\)|color\s*:\s*transparent", re.IGNORECASE)
+# (?<!-)color evita falsos positivos en border-color/background-color:
+# transparent, que son estilos legítimos; el ban es para COLOR de texto.
+_ALPHA_ZERO_RE = re.compile(r"rgba\([^)]*,\s*0\s*\)|(?<![-\w])color\s*:\s*transparent", re.IGNORECASE)
 
 
 def _scan_modal_alpha_zero(path: Path) -> list[tuple[int, str]]:
@@ -235,12 +237,16 @@ def _scan_modal_alpha_zero(path: Path) -> list[tuple[int, str]]:
     return findings
 
 
-def test_modal_resumen_ia_text_not_alpha_zero() -> None:
-    """Resumen IA modal must not hide essential text via alpha-zero color."""
-    findings = _scan_modal_alpha_zero(PACIENTES_QT_PY)
-    # Allowlist: none. Any alpha-zero text on a modal surface is banned.
+@pytest.mark.parametrize("path", [PACIENTES_QT_PY, DIALOGS_PY, DBT_QT_PY])
+def test_modal_surfaces_text_not_alpha_zero(path: Path) -> None:
+    """Modal-bearing product files must not hide text via alpha-zero color.
+
+    Caso real: el modal Resumen IA cerró sus keys con body text
+    rgba(107,100,87,0) — el token ink_2 canónico con alfa CERO (saneado en
+    adefbf8df). Allowlist: none."""
+    findings = _scan_modal_alpha_zero(path)
     assert not findings, (
-        "alpha-zero text color found in pacientes_qt.py modal code:\n"
+        f"alpha-zero text color found in {path.name} modal code:\n"
         + "\n".join(f"  ln {ln}: {snippet}" for ln, snippet in findings)
     )
 

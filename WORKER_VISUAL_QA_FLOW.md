@@ -390,6 +390,7 @@ separado, mergealo, y después cerrá keys.
 ```
 qa/capture_v8.py
 qa/layered_visual_compare.py
+qa/odiff_runner.py
 qa/vas_gate.py
 qa/vas_engine.py
 qa/vas_introspect.py
@@ -398,15 +399,17 @@ qa/close_visual_key.py
 qa/replay_visual_closure.py
 qa/spec_generator.py
 qa/specs/specs.json
+tools/qa/audit_modal_backdrop_blur.py
 .github/workflows/visual-closure-replay.yml
 qa/_mockup_canonical/                  (dir, recursivo)
 qa/pack canonico/                       (dir, recursivo)
 ```
 
-Lista sincronizada con `R0_KERNEL_PATHS` en `qa/replay_visual_closure.py` (fuente
-de verdad en código). `vas_engine.py`, `vas_introspect.py`, `spec_generator.py`
-y `specs/specs.json` ya están en vigor ahí — sin ellos un agente podría debilitar
-los contratos VAS y cerrar una key en el mismo PR sin disparar el gate.
+Lista sincronizada con `R0_KERNEL_PATHS` en `qa/replay_visual_closure.py`
+(fuente de verdad en código). `odiff_runner.py` (dependencia directa del
+comparador) y `audit_modal_backdrop_blur.py` (gate modal) están incluidos:
+sin ellos un agente podría debilitar la capa odiff o el audit de backdrop y
+cerrar una key en el mismo PR sin disparar el gate.
 
 ---
 

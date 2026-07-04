@@ -27,6 +27,7 @@ NOTE_RE = re.compile(r"^\s*-\s*(?P<name>[A-Za-z0-9_-]+):\s*(?P<value>.*)$")
 R0_KERNEL_PATHS = (
     "qa/capture_v8.py",
     "qa/layered_visual_compare.py",
+    "qa/odiff_runner.py",
     "qa/vas_gate.py",
     "qa/vas_engine.py",
     "qa/vas_introspect.py",
@@ -35,6 +36,7 @@ R0_KERNEL_PATHS = (
     "qa/replay_visual_closure.py",
     "qa/spec_generator.py",
     "qa/specs/specs.json",
+    "tools/qa/audit_modal_backdrop_blur.py",
     ".github/workflows/visual-closure-replay.yml",
     "qa/_mockup_canonical/",
     "qa/pack canonico/",

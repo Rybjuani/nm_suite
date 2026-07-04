@@ -641,8 +641,10 @@ def _filter_keys(keys: list[str], filters: ReportFilters) -> list[str]:
 
 
 def load_keys_file(path: Path) -> tuple[str, ...]:
+    # utf-8-sig: un BOM (PowerShell redirection) dejaría ﻿ pegado a la
+    # primera key y la sacaría SILENCIOSAMENTE del scope del reporte.
     keys: list[str] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
         value = line.strip()
         if not value or value.startswith("#"):
             continue

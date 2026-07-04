@@ -46,7 +46,13 @@ DEFAULT_ROOTS = ("app", "hub", "shared")
 QA_HARNESS_ROOTS = (
     "qa/capture_v8.py",
     "qa/layered_visual_compare.py",
+    "qa/odiff_runner.py",
     "qa/vas_gate.py",
+    "qa/vas_engine.py",
+    "qa/vas_introspect.py",
+    "qa/spec_generator.py",
+    "qa/close_visual_key.py",
+    "qa/replay_visual_closure.py",
     "tools/qa",
 )
 
@@ -116,6 +122,10 @@ QA_CANONICAL_SOURCE_ALLOWED = (
     "qa/visual_gate_calibration.py",
     "qa/spec_generator.py",
     "qa/visual_auditor_spec.py",
+    # Orquestadores de cierre/replay: construyen la ruta canónica sólo para
+    # pasarla como --canonical al comparador; no leen pixeles.
+    "qa/close_visual_key.py",
+    "qa/replay_visual_closure.py",
     "tools/qa/",
 )
 QA_OBFUSCATION_PRIMITIVES = {"chr", "eval", "exec"}
