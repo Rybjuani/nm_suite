@@ -377,9 +377,31 @@ def run_modal_audit(
     return report_path
 
 
-def _report_result(report: dict[str, Any], key: str) -> dict[str, Any]:
-    if report.get("report_evidence_valid") is not True:
-        raise GateError("report_evidence_invalid")
+def _report_result(
+    report: dict[str, Any],
+    key: str,
+    *,
+    allow_non_active_sources: bool = False,
+) -> dict[str, Any]:
+    """Extract the comparator result for ``key`` and enforce PASS semantics.
+
+    By default this enforces the same evidence-validity contract the comparator
+    builds for closure (``report_evidence_valid: True``). When
+    ``allow_non_active_sources`` is set (used only by the preflight guard), a
+    ``report_evidence_valid: False`` whose sole reason is ``non_active_sources``
+    is tolerated: the preflight captures in a temp dir outside ``qa/_captures_v8``
+    precisely to keep scoped paths clean, so ``non_active_sources`` is the
+    *expected* state there, not a real defect. Any other evidence-invalid reason
+    (empty_results, non_default_thresholds, odiff_disabled, panels_disabled)
+    still aborts, as does a missing/non-PASS key.
+    """
+    valid = report.get("report_evidence_valid") is True
+    if not valid:
+        reason = report.get("report_evidence_reason") or ""
+        reasons = [r.strip() for r in reason.split(";") if r.strip()]
+        tolerated = {"non_active_sources"} if allow_non_active_sources else set()
+        if not (reasons and set(reasons).issubset(tolerated)):
+            raise GateError("report_evidence_invalid")
     matches = [
         result
         for result in report.get("results", [])
@@ -489,7 +511,14 @@ def _ensure_modal_backdrop_capture(
         _merge_back_screen_capture(capture_dir, back_capture_dir)
 
 
-def run_comparator(repo_root: Path, parsed: ParsedKey, capture_dir: Path, report_dir: Path) -> Path:
+def run_comparator(
+    repo_root: Path,
+    parsed: ParsedKey,
+    capture_dir: Path,
+    report_dir: Path,
+    *,
+    allow_non_active_sources: bool = False,
+) -> Path:
     proc = _run(
         [
             sys.executable,
@@ -513,7 +542,7 @@ def run_comparator(repo_root: Path, parsed: ParsedKey, capture_dir: Path, report
     if not report_path.exists():
         raise GateError("missing_layered_report")
     report = json.loads(report_path.read_text(encoding="utf-8"))
-    _report_result(report, parsed.key)
+    _report_result(report, parsed.key, allow_non_active_sources=allow_non_active_sources)
     return report_path
 
 
@@ -755,8 +784,19 @@ def run_preflight(
     (bug observado 2026-07-03). El sidecar VAS se resuelve relativo al padre
     del capture dir (contrato de ``capture_v8``), así que también queda en el
     directorio temporal.
+
+    Como el capture vive fuera de ``qa/_captures_v8``, el comparator reporta
+    ``report_evidence_valid: False`` por ``non_active_sources``. Eso es
+    esperable en un guard (no construye evidencia) y se tolera: igual se
+    enforcea PASS/suspicious/near-perfect de la key (ver ``_report_result``).
+    Cualquier otra razón de invalidez o un no-PASS sí aborta el preflight.
     """
     parsed_pf = parse_key(key)
+    # Preflight is a guard, not evidence: it deliberately captures outside
+    # ``qa/_captures_v8`` (temp dir by default), so the comparator will report
+    # ``report_evidence_valid: False`` with reason ``non_active_sources``. That
+    # is the expected state for a preflight, not a defect — tolerate it and
+    # still enforce PASS/suspicious/near-perfect for the key (see _report_result).
     if capture_dir is not None or report_dir is not None:
         cap_pf = capture_dir or (repo_root / DEFAULT_CAPTURE_DIR)
         rep_pf = report_dir or (repo_root / DEFAULT_REPORT_DIR)
@@ -764,7 +804,7 @@ def run_preflight(
         run_anti_fraud(repo_root)
         run_capture(repo_root, parsed_pf, cap_pf)
         _, _, sidecar_pf = locate_capture_artifacts(cap_pf, parsed_pf.key)
-        run_comparator(repo_root, parsed_pf, cap_pf, rep_pf)
+        run_comparator(repo_root, parsed_pf, cap_pf, rep_pf, allow_non_active_sources=True)
         run_vas(repo_root, parsed_pf.key, sidecar_pf)
         return
     with tempfile.TemporaryDirectory(prefix="nm_closure_preflight_") as tmp:
@@ -774,7 +814,7 @@ def run_preflight(
         run_anti_fraud(repo_root)
         run_capture(repo_root, parsed_pf, cap_pf)
         _, _, sidecar_pf = locate_capture_artifacts(cap_pf, parsed_pf.key)
-        run_comparator(repo_root, parsed_pf, cap_pf, rep_pf)
+        run_comparator(repo_root, parsed_pf, cap_pf, rep_pf, allow_non_active_sources=True)
         run_vas(repo_root, parsed_pf.key, sidecar_pf)
 
 
