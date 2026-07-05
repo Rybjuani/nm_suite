@@ -878,7 +878,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_dbt-now-light.json
   - commit: 7956fa7d5a587739f5c77468ed8c7139dc5b5842
   - closed-by: close_visual_key.py
-- [ ] `suite:dbt-now@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.08224; odiff=2.05; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-now_dark.png`.
+- [x] `suite:dbt-now@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.08224; odiff=2.05; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-now_dark.png`.
+  - evidence: cc8428c6f1e98d7532bef8ca8bdf83527c5bc8cacab33275737cb113a5a9d1c7
+  - evidence-record: docs/closure_evidence/suite_dbt-now-dark.json
+  - commit: 18c22aad491ba88ef6872029841d5c0ff5b2ba4e
+  - closed-by: close_visual_key.py
 - [x] `suite:dbt-library@light` - status=FAIL; severity=medium; bucket=VISUAL_STYLE_REVIEW; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.13243; odiff=3.84; bbox=14; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-library_light.png`.
   - evidence: 40648c7442f3d786b1d0ba273d7afd40612778dd5eb34abfc50a00758556e74a
   - evidence-record: docs/closure_evidence/suite_dbt-library-light.json
