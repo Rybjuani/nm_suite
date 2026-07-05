@@ -61,10 +61,10 @@ _STATE_SENSITIVE_PREFIXES = (
 # (ssim=1.0 / mad=0.0 / changed=0) on a NON-trivial surface is not physically
 # plausible and is the signature of a reference-artifact injection (see the
 # recovery overlay fraud). Such a result is flagged and blocks closure pending
-# audit. Trivial surfaces are exempt by an explicit, tested rule:
-#   - empty-state views (name ends with ``-empty``), and
-#   - flat / near-constant canonicals (grayscale std below the epsilon, e.g.
-#     solid test fixtures) where a perfect match carries no information.
+# audit. The ONLY exemption is a flat / near-constant canonical (grayscale std
+# below the epsilon, e.g. a solid test fixture) where a perfect match carries no
+# information. There is NO name-based ``-empty`` exemption (removed 2026-07-04):
+# real ``*-empty`` canonicals are content-rich (std 13-16) and stay protected.
 _TRIVIAL_SURFACE_STD = 2.0
 _NEAR_PERFECT_CHANGED_RATIO = 0.005
 _NEAR_PERFECT_SSIM = 0.995

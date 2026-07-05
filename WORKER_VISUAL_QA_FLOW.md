@@ -350,10 +350,11 @@ que cierra es la **única** que verifica pixeles:
 .\.venv\Scripts\python.exe qa\replay_visual_closure.py --base <base-real> --skip-legacy
 ```
 
-> `--skip-legacy` es necesario mientras existan los 60 cierres legacy
-> marcados invalidated-pending-revalidation: sin el flag el replay falla con
-> `legacy_closure_without_evidence` para cada uno, aunque tus cierres nuevos
-> estén perfectos. Es el mismo modo que corre CI.
+> `--skip-legacy` ya no es estrictamente necesario: los 60 cierres legacy sin
+> evidence fueron reabiertos (2026-07-04), así que no quedan closures
+> `legacy: true` que disparen `legacy_closure_without_evidence`. Se mantiene el
+> flag por compatibilidad (es el mismo modo que corre CI y es inofensivo si no
+> hay legacy).
 
 **Cómo resolver `<base-real>`**: el replay audita el rango `base..HEAD`. Tenés
 que elegir `base` como el último commit **anterior** a tus cierres. Opciones:

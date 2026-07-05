@@ -1,16 +1,18 @@
 # Visual QA — Governance Hardening: Final Validation (post-hardening reaudit)
 
-SHA base: `5ffcca1a3b4abb1d3fd161d24c3cd2fd39f26ec2`
-SHA final: `42567e6be991c7de8d4762fb4f3217b3e9bea88d`
-Branch: `qa/governance-hardening` (no push — owner decides).
+SHA base: `5ffcca1a3b4abb1d3fd161d24c3cd2fd39f26ec2` (= `origin/main`, intacto).
+Branch: `qa/governance-hardening` (no push — owner decides). El SHA final es el
+tip de la branch tras el commit de correcciones; no se hardcodea acá para no
+quedar stale — usá `git rev-parse qa/governance-hardening`.
 
-## Commits
+## Commits (ver `git log 5ffcca1a3..qa/governance-hardening`)
 
-| # | SHA | Scope | Files | Δ |
-|---|---|---|---|---|
-| 1 | `7891c12bd` | Fase 1 audit + PoCs (no code change) | `reports/qa/governance_hardening/{REPORT.md,poc/*}` | +362 |
-| 2 | `42567e6be` | Fase 2 gate hardening + tests + doc cure | `qa/layered_visual_compare.py`, `qa/replay_visual_closure.py`, `tests/test_suspicious_perfect_match.py`, `tests/test_replay_visual_closure.py`, `VISUAL_REPAIR_HANDOFF.md` | +288 / −21 |
-| 3 | this | Final validation report | `reports/qa/governance_hardening/FINAL_VALIDATION.md` | — |
+| # | Scope | Files |
+|---|---|---|
+| 1 | Fase 1 audit + PoCs (sin cambio de código) | `reports/qa/governance_hardening/{REPORT.md,poc/*}` |
+| 2 | Fase 2 gate hardening + tests + doc cure | `qa/layered_visual_compare.py`, `qa/replay_visual_closure.py`, `tests/test_suspicious_perfect_match.py`, `tests/test_replay_visual_closure.py`, `VISUAL_REPAIR_HANDOFF.md` |
+| 3 | Reporte de validación final | `reports/qa/governance_hardening/FINAL_VALIDATION.md` |
+| 4 | Correcciones del audit del owner: reopen 60 legacy, asset-identity scan, NEXT_KEY/OPEN KEYS stale-proof, contradicciones `-empty`/manual-review/thresholds | `qa/close_visual_key.py`, `qa/anti_fraud_scan.py`, `qa/layered_visual_compare.py`, `VISUAL_REPAIR_HANDOFF.md`, `WORKER_VISUAL_QA_FLOW.md`, tests, este reporte |
 
 ## Mandatory validation results
 
@@ -44,19 +46,18 @@ Branch: `qa/governance-hardening` (no push — owner decides).
 A worker can drive any of the six without reading stale/contradictory docs: the
 `## NEXT_KEY` snapshot and `## OPEN KEYS` view now agree with the resolver.
 
-## Keys state (116)
+## Keys state (116) — after the owner-audit corrections
 
-| Class | Count | Status after hardening |
+| Class | Count | Status |
 |---|---|---|
-| Open `[ ]` | 52 | Working set (unchanged). |
-| Closed — legacy (no evidence) | 60 | Skipped with `--skip-legacy`; still `invalidated-pending-revalidation`. Re-closing needs real evidence. |
-| Closed — evidence-backed | 4 | Integrity-valid; **still PASS under the hardened gate**. Legitimate. |
+| Open `[ ]` | **112** | Working set. Now includes the 60 formerly-legacy keys (reopened). |
+| Closed — evidence-backed | 4 | Integrity-valid; **still PASS under the hardened gate**. The only closed keys. |
+| Closed — legacy (no evidence) | **0** | **Reopened** via `close_visual_key.py --reopen-legacy-all` (2026-07-04): they never had a record proving they passed the gate, so keeping them `[x]` misrepresented the checklist. Now `[ ]`, to revalidate with real evidence. `--skip-legacy` no longer needed. |
 | Revoked records | 2 | Well-formed sanctioned-reopen shape. |
 
-No old PASS became illegitimate under the hardened gate (the 4 evidence-backed
-keys re-verified PASS; the 60 legacy were already flagged non-trustworthy — the
-hardening does not change their status, it only makes any *future* re-closure
-harder to fake).
+The checklist is now honest: only evidence-backed closures remain `[x]`.
+No old PASS survives unverified. The 4 evidence-backed keys re-verified PASS
+under the hardened gate.
 
 ## What changed in the gate (net)
 
@@ -72,13 +73,20 @@ No control was weakened, none added without a reproduced false-PASS path, and
 every threshold is calibrated on the real 116-key corpus with a verified
 zero-honest-regression margin. The six official triggers remain usable as-is.
 
-## Residual (documented, not a known false PASS)
+## Residual — now closed from both ends
 
-A determined attacker who smuggles a canonical PNG as a product asset AND adds
-enough noise to drop global ssim below the density ceiling still has to clear
-`changed_pixel_ratio` / windowed-SSIM (both degrade as noise rises), the VAS
-introspection contract, and the static anti-fraud scan on any code path that
-loads the asset. This is a narrow, quality-degrading needle, not the wide easy
-band that existed before. Closing it fully would require an asset-vs-canonical
-byte/perceptual identity scan over `assets/`; deferred as it needs its own
-corpus calibration and is out of the reproduced-vector scope.
+The canonical-injection vector is closed at both entry points:
+
+- **Verbatim canonical shipped as a product asset**: `anti_fraud_scan.py` now
+  scans `assets/`, `app/`, `hub/`, `shared/` for any PNG byte-identical to a
+  canonical (`asset_canonical_identity`), stdlib-only so it runs in CI and in
+  `close_visual_key`. Verified: CLEAN on the real repo (no false positive),
+  FAIL when a canonical is copied into `assets/`.
+- **Render implausibly close to canonical** (with or without noise): the
+  density-aware injection ceiling blocks it at compare time.
+
+Together these leave no free ride from the canonical. Beyond them, a capture
+whose global ssim is genuinely below the density ceiling is, by definition, a
+materially different render that must pass the honest gate (changed / windowed /
+bbox / region / odiff / VAS) on its own merits — that is the gate working, not a
+bypass. No known false-PASS path remains.

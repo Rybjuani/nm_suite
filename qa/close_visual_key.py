@@ -959,9 +959,68 @@ def reopen_visual_key(
     )
 
 
+def reopen_legacy_all(*, repo_root: Path = ROOT) -> list[str]:
+    """Bulk-reopen every legacy (evidence-less) closure in the handoff.
+
+    Legacy closures predate the evidence-record era: they carry a ``legacy:
+    true`` note and NO ``docs/closure_evidence/`` record, so nothing proves
+    they ever passed the current gate. Keeping them ``[x]`` misrepresents the
+    checklist as "closed". This flips each such item to ``[ ]`` and strips ALL
+    its sub-notes (the legacy markers plus the untrustworthy free-text closure
+    narrative), leaving the bare checkbox line with its inline
+    ``severity=/findings=/changed=`` metadata so ``target_scope`` still tiers
+    it. It is a one-shot governance reset, NOT a sanctioned per-key
+    ``--reopen`` (there is no evidence record to revoke). Replay stays green:
+    the reopened items become OPEN, so they are neither closed keys nor legacy
+    migrations. Returns the ordered list of reopened keys.
+
+    Unlike the sanctioned per-key ``--reopen`` it does NOT require a clean tree:
+    it only rewrites handoff text (no evidence record is created or revoked), so
+    a clean-tree guard would add no safety and only block running it as part of
+    a governance commit. It is idempotent — a second run finds no legacy items.
+    """
+    repo_root = repo_root.resolve()
+    handoff_path = repo_root / HANDOFF
+    original = handoff_path.read_text(encoding="utf-8")
+    newline = _line_ending(original)
+    lines = original.splitlines()
+    out: list[str] = []
+    reopened: list[str] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        match = CHECKBOX_RE.match(line)
+        if match and match.group("state").lower() == "x":
+            j = i + 1
+            note_lines: list[str] = []
+            while j < len(lines) and lines[j].startswith((" ", "\t")):
+                note_lines.append(lines[j])
+                j += 1
+            notes: dict[str, str] = {}
+            for nl in note_lines:
+                nm = NOTE_RE.match(nl)
+                if nm:
+                    notes[nm.group("name")] = nm.group("value").strip()
+            keys = [m.group(0) for m in KEY_RE.finditer(line)]
+            if notes.get("legacy") == "true" and keys:
+                out.append(line[: match.start("state")] + " " + line[match.end("state") :])
+                reopened.append(keys[0])
+                i = j  # skip the stripped note block
+                continue
+        out.append(line)
+        i += 1
+    if not reopened:
+        return []
+    new_text = newline.join(out) + (newline if original.endswith(("\n", "\r\n")) else "")
+    tmp_path = handoff_path.with_name(f".{handoff_path.name}.tmp")
+    tmp_path.write_text(new_text, encoding="utf-8")
+    tmp_path.replace(handoff_path)
+    return reopened
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Close (or reopen) one visual handoff key with replayable evidence.")
-    parser.add_argument("--key", required=True, help="Exact visual key, e.g. suite:home@light")
+    parser.add_argument("--key", required=False, help="Exact visual key, e.g. suite:home@light")
     parser.add_argument(
         "--reopen",
         action="store_true",
@@ -971,6 +1030,12 @@ def main(argv: list[str] | None = None) -> int:
         "--reason",
         default=None,
         help="Objective reason for the reopen (required with --reopen).",
+    )
+    parser.add_argument(
+        "--reopen-legacy-all",
+        action="store_true",
+        help="One-shot governance reset: reopen every evidence-less legacy "
+             "closure ([x] with a legacy: true note) to [ ], stripping its notes.",
     )
     parser.add_argument("--dry-run", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--capture-dir", type=Path, default=None, help=argparse.SUPPRESS)
@@ -985,6 +1050,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        if args.reopen_legacy_all:
+            reopened_keys = reopen_legacy_all()
+            print(f"reopened-legacy: {len(reopened_keys)} keys")
+            for key in reopened_keys:
+                print(f"  - {key}")
+            return 0
+        if not args.key:
+            parser.error("--key is required unless --reopen-legacy-all is given")
         if args.reopen:
             reopened = reopen_visual_key(key=args.key, reason=args.reason or "")
             print(f"reopened: {reopened.key}")

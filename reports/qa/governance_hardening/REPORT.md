@@ -37,7 +37,7 @@ between code and docs. All six modes resolve mechanically and correctly
 | Class | Count | Verdict |
 |---|---|---|
 | Open `[ ]` | 52 | Working set. |
-| Closed — legacy (no evidence record) | 60 | Pre-replay-era; `invalidated-pending-revalidation`; skipped only with `--skip-legacy`. **Not trustworthy as closures** — re-closing needs real evidence. |
+| Closed — legacy (no evidence record) | 60 | Pre-replay-era; **not trustworthy as closures**. → In the owner-audit correction round these 60 were **reopened** (`--reopen-legacy-all`): the honest end-state is 112 open / 4 closed (see `FINAL_VALIDATION.md`). |
 | Closed — evidence-backed | 4 | `suite:dbt-library@{light,dark}`, `hub:detalle-resumen-ia-0@{light,dark}`. Record hash matches handoff note, schema v1, `result: PASS`. **Still PASS under a fresh gate; still PASS under the hardened gate** (global ssim 0.61–0.94, none `-empty`). LEGITIMATE. |
 | Revoked records | 2 | `docs/closure_evidence/revoked/hub_detalle-resumen-ia-0-*.json` — well-formed, sanctioned-reopen shape. |
 

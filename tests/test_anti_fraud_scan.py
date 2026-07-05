@@ -6,11 +6,54 @@ from pathlib import Path
 
 import pytest
 
-from qa.anti_fraud_scan import scan_source, scan_paths, scan_qa_harness_source, scan_qa_harness_paths, main
+from PIL import Image
+
+from qa.anti_fraud_scan import (
+    scan_asset_canonical_identity,
+    scan_source,
+    scan_paths,
+    scan_qa_harness_source,
+    scan_qa_harness_paths,
+    main,
+)
 
 
 def _kinds(violations):
     return {v.kind for v in violations}
+
+
+def _make_png(path: Path, color=(10, 20, 30)) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.new("RGB", (8, 8), color).save(path)
+
+
+def test_asset_identity_clean_when_no_collision(tmp_path):
+    _make_png(tmp_path / "qa" / "_mockup_canonical" / "hub-detalle-dark-960x600.png", (1, 2, 3))
+    _make_png(tmp_path / "assets" / "brand.png", (200, 100, 50))  # different content
+    assert scan_asset_canonical_identity(base=tmp_path) == []
+
+
+def test_asset_identity_flags_smuggled_canonical(tmp_path):
+    canon = tmp_path / "qa" / "_mockup_canonical" / "hub-detalle-dark-960x600.png"
+    _make_png(canon, (7, 7, 7))
+    smuggled = tmp_path / "assets" / "sneaky.png"
+    smuggled.parent.mkdir(parents=True, exist_ok=True)
+    smuggled.write_bytes(canon.read_bytes())  # byte-identical copy
+    violations = scan_asset_canonical_identity(base=tmp_path)
+    assert len(violations) == 1
+    assert violations[0].kind == "asset_canonical_identity"
+    assert violations[0].pattern == "hub-detalle-dark-960x600.png"
+
+
+def test_asset_identity_detects_copy_under_product_dirs(tmp_path):
+    canon = tmp_path / "qa" / "_mockup_canonical" / "suite-home-light-960x600.png"
+    _make_png(canon, (9, 9, 9))
+    for root in ("app", "hub", "shared"):
+        dst = tmp_path / root / "x.png"
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes(canon.read_bytes())
+    violations = scan_asset_canonical_identity(base=tmp_path)
+    assert len(violations) == 3
 
 
 def test_clean_source_has_no_violations():

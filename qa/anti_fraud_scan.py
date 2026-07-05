@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import json
 import sys
 from dataclasses import dataclass, asdict
@@ -43,6 +44,64 @@ from pathlib import Path
 
 _PROJ = Path(__file__).resolve().parent.parent
 DEFAULT_ROOTS = ("app", "hub", "shared")
+
+# Asset-vs-canonical identity scan. A canonical PNG smuggled into the product as
+# a plain asset (a path with no forbidden token) defeats the string/AST scan, so
+# the runtime could render it and pass the visual compare by injection. This
+# byte-identity check closes the verbatim-copy path at the source; the noised
+# variant is closed at compare time by the density-aware injection ceiling in
+# qa/layered_visual_compare.py. Stdlib-only (hashlib) so it runs in CI.
+CANONICAL_PNG_DIRS = ("qa/_mockup_canonical", "qa/pack canonico")
+ASSET_IDENTITY_ROOTS = ("assets", "app", "hub", "shared")
+
+
+def _sha256_path(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _canonical_png_hashes(base: Path) -> dict[str, str]:
+    """sha256 -> canonical filename, for every canonical PNG."""
+    hashes: dict[str, str] = {}
+    for rel in CANONICAL_PNG_DIRS:
+        root = base / rel
+        if not root.exists():
+            continue
+        for png in root.rglob("*.png"):
+            hashes[_sha256_path(png)] = png.name
+    return hashes
+
+
+def scan_asset_canonical_identity(base: Path | None = None) -> list["Violation"]:
+    """Flag any product PNG byte-identical to a canonical PNG (smuggled asset)."""
+    base = base or _PROJ
+    canon = _canonical_png_hashes(base)
+    if not canon:
+        return []
+    violations: list[Violation] = []
+    for rel in ASSET_IDENTITY_ROOTS:
+        root = base / rel
+        if not root.exists():
+            continue
+        for png in sorted(root.rglob("*.png")):
+            if "__pycache__" in png.parts:
+                continue
+            digest = _sha256_path(png)
+            name = canon.get(digest)
+            if name is not None:
+                violations.append(
+                    Violation(
+                        str(png.relative_to(base)),
+                        0,
+                        "asset_canonical_identity",
+                        name,
+                        f"product PNG is byte-identical to canonical '{name}'",
+                    )
+                )
+    return violations
 QA_HARNESS_ROOTS = (
     "qa/capture_v8.py",
     "qa/layered_visual_compare.py",
@@ -701,6 +760,11 @@ def main(argv: list[str] | None = None) -> int:
     violations: list[Violation] = []
     if args.mode in {"runtime", "all"}:
         violations.extend(scan_paths(runtime_roots))
+        # Byte-identity of a canonical PNG smuggled as a product asset is a
+        # runtime injection the AST scan can't see. Only run with default roots
+        # (a custom --roots is a scoped AST scan, not a full asset audit).
+        if args.roots is None:
+            violations.extend(scan_asset_canonical_identity())
     if args.mode in {"qa-harness", "all"}:
         violations.extend(scan_qa_harness_paths(qa_roots))
 
