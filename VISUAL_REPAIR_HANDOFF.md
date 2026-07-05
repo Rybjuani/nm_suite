@@ -792,7 +792,11 @@ If any gate fails or evidence is missing, leave the checkbox open and add a note
   - evidence-record: docs/closure_evidence/suite_onboarding-error-dark.json
   - commit: 1418a4460b6ac570411f6b1b770bc6a474e0b1da
   - closed-by: close_visual_key.py
-- [ ] `suite:onboarding@dark` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.17923; odiff=5.29; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding_dark.png`.
+- [x] `suite:onboarding@dark` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.17923; odiff=5.29; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding_dark.png`.
+  - evidence: 4c74430d9b71175d05895842883a11e1ff3a875ed5e2e88198647ee75ce3024e
+  - evidence-record: docs/closure_evidence/suite_onboarding-dark.json
+  - commit: 64e65c89eb82971dbdfa1f7e8c57b2dc86cf207b
+  - closed-by: close_visual_key.py
 
 ### Registro TCC Forms / Mood Stepper (F8, F5, F15, F2) (12)
 
