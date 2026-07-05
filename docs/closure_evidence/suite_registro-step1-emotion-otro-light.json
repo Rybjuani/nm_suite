@@ -1,0 +1,35 @@
+{
+  "anti_fraud_sha256": "0bf57265b40ea08abef21efb0b467039c74559c0ada98e4480b94d48ef3cdee4",
+  "capture_png_sha256": "6723ecc76c4b9db13b58e91de580e30aa705895c8fa3b8a6c936a43f4b995828",
+  "capture_v8_sha256": "0d5f1310b00115fbcab43407f099f560d3f9f5ce5a6ba04ed8a93f2c875eeda8",
+  "command_spec": {
+    "capture": {
+      "app": "suite",
+      "theme": "light",
+      "tool": "qa/capture_v8.py",
+      "vas_introspect": true,
+      "view": "registro-step1-emotion-otro"
+    },
+    "compare": {
+      "canonical": "qa/_mockup_canonical",
+      "scope": "suite:registro-step1-emotion-otro@light",
+      "tool": "qa/layered_visual_compare.py"
+    }
+  },
+  "commit_head": "c14eda176e4dd26407400a91caf02b93d24faba2",
+  "key": "suite:registro-step1-emotion-otro@light",
+  "layered_compare_sha256": "309b128553ee24dc4b0d8d1a49703bf4992b62ad4976cfadb5813a8a85e5ed30",
+  "manifest_sha256": "159b16b821b814d6f07e972ad3464301d6e336aeb88b96d6af70b26f3d69bd8a",
+  "metrics": {
+    "changed_pixel_ratio": 0.07517,
+    "max_bbox_delta_px": 1,
+    "mean_abs_diff": 0.03224,
+    "windowed_ssim": 0.83361
+  },
+  "modal_audit_sha256": null,
+  "report_sha256": "09c4fb8d35830c72551f2496194dc3e1074d93364e9b5c600df003f3bca1eaac",
+  "result": "PASS",
+  "schema": "nm_suite.evidence_record.v1",
+  "sidecar_sha256": "e5f5c5fdeca468d8a4b9056f43318b43adfa1ef8cae605aaa47d8f585f16112c",
+  "vas_gate_sha256": "ebd4c3e52e50e2248eafd0261cd085ba0769d0663ff3e09a5b63b8b83c4ae408"
+}
