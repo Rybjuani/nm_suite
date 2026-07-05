@@ -1157,7 +1157,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_home-light.json
   - commit: 2448680cecb6b1b02c1402ce034a25785b3b701a
   - closed-by: close_visual_key.py
-- [ ] `suite:home-no-score@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.3842; odiff=3.84; bbox=24; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_home-no-score_light.png`.
+- [x] `suite:home-no-score@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.3842; odiff=3.84; bbox=24; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_home-no-score_light.png`.
+  - evidence: 74ffbc56618180416157df941029553f92af95392702f6e744753676a3333940
+  - evidence-record: docs/closure_evidence/suite_home-no-score-light.json
+  - commit: a252945e57f539bdb80a8ecc2fd03dd930fc2adb
+  - closed-by: close_visual_key.py
 - [x] `suite:home@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.29231; odiff=4.78; bbox=25; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_home_dark.png`.
   - evidence: 2825aaacb32a97805c113e4f019f12fbefce4b2d9c7543f8bf575a3f5fc8bf82
   - evidence-record: docs/closure_evidence/suite_home-dark.json
