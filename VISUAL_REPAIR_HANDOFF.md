@@ -900,7 +900,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_dbt-practice-observe-describe-light.json
   - commit: b8d20a8726e22180b38ffb221425fda46d82342a
   - closed-by: close_visual_key.py
-- [ ] `suite:dbt-practice-observe-describe@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06924; odiff=0.97; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-observe-describe_dark.png`.
+- [x] `suite:dbt-practice-observe-describe@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06924; odiff=0.97; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-observe-describe_dark.png`.
+  - evidence: ee1186ad1ca661d8de9622f3ca5e9fdecd968df9feda310cb90ed1907895a1b8
+  - evidence-record: docs/closure_evidence/suite_dbt-practice-observe-describe-dark.json
+  - commit: 60b9fa31f6d6f9442ab40241dc10319142b7b2f7
+  - closed-by: close_visual_key.py
 - [ ] `suite:dbt-practice-wise-mind@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06221; odiff=0.88; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-wise-mind_light.png`.
 - [ ] `suite:dbt-practice-wise-mind@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07056; odiff=0.97; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-wise-mind_dark.png`.
 - [ ] `suite:dbt-practice-participate@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06534; odiff=1.42; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-participate_light.png`.
