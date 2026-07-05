@@ -62,7 +62,7 @@ lista exacta de keys en el orden correcto. Agregá `--plan` para obtener filas
 > No leas los `[x]` cerrados: son ruido histórico. La evidencia canónica
 > vive en `docs/closure_evidence/<key_safe>.json`.
 > Para una vista humana rápida del scope disponible, ver
-> `VISUAL_REPAIR_HANDOFF.md` § "OPEN KEYS — family/complexity order".
+> `VISUAL_REPAIR_HANDOFF.md` § "OPEN KEYS — cómo listarlas (sin snapshot)".
 
 Estructura de la key: `<app>:<view>@<theme>` donde `app ∈ {suite, hub}`,
 `theme ∈ {light, dark}`. Ej: `suite:dbt-library@light` → app=suite, view=dbt-library, theme=light.
@@ -394,7 +394,7 @@ stderr completo.
 **Vos no decidís el push.** El owner decide cuándo y cómo publicar.
 
 Después de que 4a + 4b pasan, el estado es:
-- 1 o más commits locales de cierre (1 por key, o 1 batch — según §4a)
+- 1 o más commits locales de cierre, siempre 1 por key cerrada (§4a)
 - Replay `--regen` PASS para el rango completo
 
 Reportá al owner:
@@ -543,9 +543,9 @@ hasta que resolvés el working tree.
 
 ## 8. Lo que NO tenés que hacer
 
-- ❌ Leer `VISUAL_REPAIR_HANDOFF.md` completo (1120 líneas) para trabajar el
+- ❌ Leer `VISUAL_REPAIR_HANDOFF.md` completo para trabajar el
   target set declarado — usá `qa\target_scope.py` + `## OPEN KEYS —
-  family/complexity order` (vista compacta en el handoff).
+  cómo listarlas (sin snapshot)` (vista compacta en el handoff).
 - ❌ Correr `capture_v8.py --all --clean` salvo target mode `all-open-keys`
   con un cambio verdaderamente transversal (theme/chrome/`NMCard`/shell).
 - ❌ Correr `run_visual.ps1 -All` fuera de ese mismo caso o de una regresión
