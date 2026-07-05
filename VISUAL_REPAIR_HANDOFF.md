@@ -1088,7 +1088,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/hub_detalle-light.json
   - commit: 89202771d0cef2c447cb53b9607444229e3c7bd3
   - closed-by: close_visual_key.py
-- [ ] `hub:detalle-plan-activacion@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.38631; odiff=3.75; bbox=43; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-activacion_dark.png`.
+- [x] `hub:detalle-plan-activacion@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.38631; odiff=3.75; bbox=43; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-activacion_dark.png`.
+  - evidence: 776d10b4b7b2a503b0aba657cc9520037bb6d19abb943847164fd230bb4cab9e
+  - evidence-record: docs/closure_evidence/hub_detalle-plan-activacion-dark.json
+  - commit: 2b0ca8cac3d10dc20227087d0894438c6f1b1d86
+  - closed-by: close_visual_key.py
 - [ ] `hub:detalle-plan-activacion@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.37762; odiff=3.61; bbox=42; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-activacion_light.png`.
 - [x] `hub:detalle-resumen-ia-0@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.16481; odiff=7.34; bbox=0; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-resumen-ia-0_light.png`.
   - evidence: 1c0c4a38dd3fe50bc7c619da597d59878d500cf2c98515637cf8cbdfce19b008
