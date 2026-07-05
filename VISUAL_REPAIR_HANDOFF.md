@@ -767,7 +767,11 @@ If any gate fails or evidence is missing, leave the checkbox open and add a note
 
 ### Onboarding / Access Forms (F5, F13, F2) (6)
 
-- [ ] `suite:recuperar-acceso@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.3327; odiff=5.47; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_recuperar-acceso_light.png`.
+- [x] `suite:recuperar-acceso@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.3327; odiff=5.47; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_recuperar-acceso_light.png`.
+  - evidence: cf90098b49adf1470cf1ff6f369d78dc5b832d54b36b4750a045f05c5bec3f13
+  - evidence-record: docs/closure_evidence/suite_recuperar-acceso-light.json
+  - commit: d665d5b2a08303b7734f3a519dcc1f2646042626
+  - closed-by: close_visual_key.py
 - [ ] `suite:onboarding-error@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.33185; odiff=6.07; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding-error_light.png`.
 - [ ] `suite:onboarding@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.3006; odiff=5.64; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding_light.png`.
 - [ ] `suite:recuperar-acceso@dark` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.19032; odiff=5.3; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_recuperar-acceso_dark.png`.
