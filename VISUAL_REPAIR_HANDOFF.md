@@ -1096,7 +1096,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
 
 ### Home Cards / Rings (F3, F9, F2, F7) (4)
 
-- [ ] `suite:home@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.38609; odiff=4.65; bbox=24; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_home_light.png`.
+- [x] `suite:home@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.38609; odiff=4.65; bbox=24; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_home_light.png`.
+  - evidence: 73ab5aa2126a7e6e7046e62a3aa217e7846616aeedba9b2ea700be93d5ddb747
+  - evidence-record: docs/closure_evidence/suite_home-light.json
+  - commit: 2448680cecb6b1b02c1402ce034a25785b3b701a
+  - closed-by: close_visual_key.py
 - [ ] `suite:home-no-score@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.3842; odiff=3.84; bbox=24; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_home-no-score_light.png`.
 - [ ] `suite:home@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.29231; odiff=4.78; bbox=25; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_home_dark.png`.
 - [ ] `suite:home-no-score@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.29109; odiff=4.03; bbox=25; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_home-no-score_dark.png`.
