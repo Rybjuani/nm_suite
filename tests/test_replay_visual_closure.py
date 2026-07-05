@@ -667,3 +667,114 @@ def test_replay_batch_closure_requires_evidence_per_key(monkeypatch, tmp_path):
     assert failures_by_key.get(key_bad) == "missing_evidence_record"
     assert key_ok not in failures_by_key
     assert result.replayed_keys == 1
+
+
+# ─── Sequential closures: commit_head == base off-by-one fix ─────────────────
+#
+# close_visual_key.py records `commit_head = HEAD` BEFORE the worker creates the
+# `close: <key>` commit. For sequential closures with base = "commit immediately
+# before the first close:" (HEAD~1 / <primer-close>^), the FIRST record's
+# commit_head == base. git_rev_list(base..HEAD) = (base, HEAD] excludes base,
+# so the old replay falsely flagged the first closure of every sequence as
+# `commit_outside_range`. The fix accepts commit == base_commit (integrity is
+# still guaranteed by regeneration + R0 + record sanity).
+
+
+def test_replay_accepts_first_sequential_closure_commit_equals_base(monkeypatch, tmp_path):
+    """First record of a sequential closure run has commit_head == base (because
+    close_visual_key.py records HEAD before the worker makes the close: commit,
+    and base = parent of the first close:). Must PASS, not commit_outside_range."""
+    record = _record(commit=BASE)
+    record_rel, evidence = _write_record(tmp_path, record)
+    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
+    handoff.write_text(_handoff_closed(KEY, evidence, record_rel, commit=BASE), encoding="utf-8")
+    # audited = git_rev_list(base..HEAD) excludes base; only a later close is in it.
+    _patch_git(
+        monkeypatch,
+        base_text=f"- [ ] `{KEY}` pending\n",
+        diff_text=_closure_diff().replace(FIX, BASE),
+        audited={HEAD},  # base NOT in audited
+        changed_files=["VISUAL_REPAIR_HANDOFF.md", record_rel.as_posix()],
+    )
+    monkeypatch.setattr(
+        replay,
+        "regenerate_record_at_commit",
+        lambda _root, _key, _commit: close.EvidenceBuild(record, evidence, record_rel),
+    )
+
+    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
+
+    assert result.ok is True, result.failed_keys
+    assert result.replayed_keys == 1
+
+
+def test_replay_sequential_closures_first_at_base_second_in_range(monkeypatch, tmp_path):
+    """Two sequential closures: first record commit_head == base, second
+    commit_head == first close (in audited range). Both must PASS."""
+    key1 = KEY
+    key2 = "suite:animo@light"
+
+    record1 = _record(key=key1, commit=BASE)
+    rel1, ev1 = _write_record(tmp_path, record1)
+    record2 = _record(key=key2, commit=FIX)
+    rel2, ev2 = _write_record(tmp_path, record2)
+
+    base_text = f"- [ ] `{key1}` pending\n- [ ] `{key2}` pending\n"
+    head_text = (
+        _handoff_closed(key1, ev1, rel1, commit=BASE)
+        + _handoff_closed(key2, ev2, rel2, commit=FIX)
+    )
+    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
+    handoff.write_text(head_text, encoding="utf-8")
+
+    _patch_git(
+        monkeypatch,
+        base_text=base_text,
+        diff_text=_closure_diff(key1).replace(FIX, BASE) + _closure_diff(key2),
+        audited={FIX},  # base excluded, second close in range
+        changed_files=["VISUAL_REPAIR_HANDOFF.md", rel1.as_posix(), rel2.as_posix()],
+    )
+
+    def regen(_root, key, _commit):
+        if key == key1:
+            return close.EvidenceBuild(record1, ev1, rel1)
+        return close.EvidenceBuild(record2, ev2, rel2)
+
+    monkeypatch.setattr(replay, "regenerate_record_at_commit", regen)
+
+    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
+
+    assert result.ok is True, result.failed_keys
+    assert result.replayed_keys == 2
+
+
+def test_replay_still_rejects_commit_outside_base_and_range(monkeypatch, tmp_path):
+    """Guard: accepting base does NOT open the door to arbitrary commits. A
+    commit that is neither base nor in audited must still fail."""
+    outside = "f" * 40  # not BASE, not in audited
+    record = _record(commit=outside)
+    record_rel, evidence = _write_record(tmp_path, record)
+    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
+    handoff.write_text(_handoff_closed(KEY, evidence, record_rel, commit=outside), encoding="utf-8")
+    _patch_git(
+        monkeypatch,
+        base_text=f"- [ ] `{KEY}` pending\n",
+        diff_text=_closure_diff().replace(FIX, outside),
+        audited={HEAD},
+    )
+
+    def rev_parse(_root: Path, revision: str) -> str:
+        if revision in {"base", BASE}:
+            return BASE
+        if revision in {"HEAD", HEAD}:
+            return HEAD
+        if revision == outside:
+            return outside
+        raise RuntimeError(f"invalid git revision: {revision}")
+
+    monkeypatch.setattr(replay, "git_rev_parse", rev_parse)
+
+    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
+
+    assert result.ok is False
+    assert result.failed_keys[0].reason == "commit_outside_range"

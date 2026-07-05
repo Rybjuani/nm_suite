@@ -389,6 +389,36 @@ compara el hash. **Si una sola key no reproduce el hash, todo falla** —
 es el gate fuerte. Si falla, NO intentes arreglar el hash; reportá el
 stderr completo.
 
+> **Por qué `base` debe ser el padre del primer `close:`** (no un commit
+> arbitrario). `close_visual_key.py` registra `commit_head = HEAD` **antes**
+> de que el worker cree el commit `close: <key>`, así que el evidence de un
+> cierre se captura contra el HEAD previo al commit de cierre. Para una
+> secuencia de cierres `c1 → c2 → ... → cN`, eso significa que el record del
+> PRIMER cierre tiene `commit_head == padre(c1)`. Si elegís `base =
+> padre(c1)` (los atajos `HEAD~1` o `<primer-close>^` hacen exactamente
+> eso), el replay acepta ese `commit_head == base` como punto legítimo de
+> captura. Cualquier otro record de la secuencia tiene `commit_head` dentro
+> de `(base, HEAD]` y se valida normalmente.
+>
+> **Guardia conceptual — esto NO habilita marker commits ni bases
+> arbitrarias**: aceptar `commit_head == base` SÓLO es válido cuando `base`
+> es el commit real inmediatamente anterior al primer `close:` del rango.
+> No es una licencia para elegir `base` en otro punto del historial y
+> esquivar así commits de producto o kernel fuera del rango auditado: el
+> replay sigue verificando hashes, R0 dentro del rango y la integridad del
+> record, y un `base` mal elegido (no el padre inmediato del primer
+> `close:`) deja fuera del rango a commits reales que tocaron código.
+>
+> **RIESGO RESIDUAL**: al aceptar `base_commit` como `commit_head` válido
+> se elimina el falso negativo del off-by-one entre cómo se captura
+> `commit_head` y cómo se define el rango, pero esto vuelve MÁS IMPORTANTE
+> la elección correcta de `<base-real>`. Un `base` mal elegido (p.ej. un
+> commit de marker, o un commit más viejo para "achicar" el rango y que
+> R0 no flaggee cambios kernel) reabre superficie de manipulación. Regla
+> operativa: `base` = `git rev-parse <primer-close-de-la-secuencia>^`,
+> SIEMPRE. Si duda, derivelo mecánicamente del `git log --oneline`, no lo
+> elija a mano.
+
 ### 4c. Publicación (decisión del owner)
 
 **Vos no decidís el push.** El owner decide cuándo y cómo publicar.

@@ -473,6 +473,7 @@ def _validate_one_closure(
     repo_root: Path,
     item: HandoffItem,
     audited_commits: set[str],
+    base_commit: str,
     regenerate: bool = True,
 ) -> ReplayFailure | None:
     notes = note_values(item)
@@ -490,7 +491,20 @@ def _validate_one_closure(
         commit = git_rev_parse(repo_root, commit_value)
     except RuntimeError:
         return ReplayFailure(item.key, "commit_outside_range")
-    if commit not in audited_commits:
+    # ``audited_commits`` is ``git_rev_list(base..HEAD)`` = ``(base, HEAD]`` —
+    # it excludes ``base``. But ``close_visual_key.py`` records
+    # ``commit_head = HEAD`` *before* the worker creates the ``close:`` commit,
+    # so for sequential closures the FIRST record legitimately has
+    # ``commit_head == base``. Excluding it would falsely flag the first closure
+    # of every sequence as ``commit_outside_range`` (off-by-one between how
+    # ``commit_head`` is captured and how the replay range is defined). Accepting
+    # ``base`` only fixes that off-by-one — it does NOT weaken the gate: the
+    # evidence integrity is still verified by the regeneration path
+    # (``regenerate_record_at_commit`` re-captures at this commit and compares
+    # the hash), and ``base`` is still bound by R0 + record-sanity checks.
+    # VALID ONLY when ``base`` is the real commit immediately before the first
+    # ``close:`` of the range — see WORKER_VISUAL_QA_FLOW.md §4b for the guard.
+    if commit != base_commit and commit not in audited_commits:
         return ReplayFailure(item.key, "commit_outside_range")
 
     record_path = _record_path(repo_root, record_value)
@@ -586,6 +600,7 @@ def replay(
             repo_root=repo_root,
             item=item,
             audited_commits=audited_commits,
+            base_commit=base_commit,
             regenerate=regenerate,
         )
         if failure is not None:
