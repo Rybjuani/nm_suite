@@ -787,7 +787,11 @@ If any gate fails or evidence is missing, leave the checkbox open and add a note
   - evidence-record: docs/closure_evidence/suite_recuperar-acceso-dark.json
   - commit: af118b7e33f61fe5323020e986ec195e51fe3778
   - closed-by: close_visual_key.py
-- [ ] `suite:onboarding-error@dark` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.18894; odiff=5.8; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding-error_dark.png`.
+- [x] `suite:onboarding-error@dark` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.18894; odiff=5.8; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding-error_dark.png`.
+  - evidence: 7f598cd474c0cb94a684792fc6617a9963b09c000cf62e8464bca1d735cacc20
+  - evidence-record: docs/closure_evidence/suite_onboarding-error-dark.json
+  - commit: 1418a4460b6ac570411f6b1b770bc6a474e0b1da
+  - closed-by: close_visual_key.py
 - [ ] `suite:onboarding@dark` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.17923; odiff=5.29; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding_dark.png`.
 
 ### Registro TCC Forms / Mood Stepper (F8, F5, F15, F2) (12)
