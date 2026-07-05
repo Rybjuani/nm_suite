@@ -1050,7 +1050,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_dbt-practice-validation-limits-light.json
   - commit: 318ea59410148e67a0cf818fdae9a0f67b48b71e
   - closed-by: close_visual_key.py
-- [ ] `suite:dbt-practice-validation-limits@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07236; odiff=1.15; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-validation-limits_dark.png`.
+- [x] `suite:dbt-practice-validation-limits@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07236; odiff=1.15; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-validation-limits_dark.png`.
+  - evidence: e4d187022a5c16b1a833a1e4c460708567126210b366464d99171bb14fc772bf
+  - evidence-record: docs/closure_evidence/suite_dbt-practice-validation-limits-dark.json
+  - commit: 22fabab3e30cdd01e88381030e948b2dd0e71dd2
+  - closed-by: close_visual_key.py
 
 ### Hub Detail / Plan / IA (F6, F5, F3, F9, F10, F12, F8) (10)
 
