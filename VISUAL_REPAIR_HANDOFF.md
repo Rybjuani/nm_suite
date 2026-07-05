@@ -850,7 +850,11 @@ If any gate fails or evidence is missing, leave the checkbox open and add a note
   - evidence-record: docs/closure_evidence/suite_registro-dark.json
   - commit: 95285c3e2ef6b9fd60fe0246e9465ec116227bc0
   - closed-by: close_visual_key.py
-- [ ] `suite:registro-success@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08708; odiff=1.03; bbox=131; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-success_dark.png`.
+- [x] `suite:registro-success@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08708; odiff=1.03; bbox=131; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-success_dark.png`.
+  - evidence: a60791cc6ff99cde0f9d55dfc3b811a3f8c5606bf43ad6d55c686aacee4512fa
+  - evidence-record: docs/closure_evidence/suite_registro-success-dark.json
+  - commit: 4e9fe5b3b5157e085cd72a8542222f786b359af8
+  - closed-by: close_visual_key.py
 - [ ] `suite:registro-success@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.06139; odiff=1.0; bbox=13; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-success_light.png`.
 
 ### DBT v2 / Habilidades DBT (36)
