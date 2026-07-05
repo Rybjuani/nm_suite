@@ -1167,7 +1167,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_home-dark.json
   - commit: 259cc51173cce1162b2b2514f6a76b8988527468
   - closed-by: close_visual_key.py
-- [ ] `suite:home-no-score@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.29109; odiff=4.03; bbox=25; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_home-no-score_dark.png`.
+- [x] `suite:home-no-score@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.29109; odiff=4.03; bbox=25; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_home-no-score_dark.png`.
+  - evidence: 676210492370abd905e0245ecb32546c07d516f688b87ca1c2d5fdabfd9dbbba
+  - evidence-record: docs/closure_evidence/suite_home-no-score-dark.json
+  - commit: 43b400f30d1e75fadbe8774c0ba872967f5a30e1
+  - closed-by: close_visual_key.py
 
 ### Timer Rings / Controls / Empty (F9, F4, F11) (8)
 
