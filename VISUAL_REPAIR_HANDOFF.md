@@ -855,7 +855,11 @@ If any gate fails or evidence is missing, leave the checkbox open and add a note
   - evidence-record: docs/closure_evidence/suite_registro-success-dark.json
   - commit: 4e9fe5b3b5157e085cd72a8542222f786b359af8
   - closed-by: close_visual_key.py
-- [ ] `suite:registro-success@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.06139; odiff=1.0; bbox=13; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-success_light.png`.
+- [x] `suite:registro-success@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.06139; odiff=1.0; bbox=13; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-success_light.png`.
+  - evidence: 4d1dbea085f511815c0a2b024ff54c8319bf689eb710a5d0789d453554c05102
+  - evidence-record: docs/closure_evidence/suite_registro-success-light.json
+  - commit: 95a7e7776091c499a49ad03cd7a38e581dcb4fc5
+  - closed-by: close_visual_key.py
 
 ### DBT v2 / Habilidades DBT (36)
 
