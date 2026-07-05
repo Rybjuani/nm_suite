@@ -58,8 +58,9 @@ _NM_EMPTY_TITLE_SIZE = 20
 # Segoe UI 13.5px (default FONT_SANS de la app) el glyph "0" mide 10px →
 # 34ch ≈ 340px. Antes pineado a 300px (<ch) y el body wrapeaba a 4 líneas
 # en lugar de las 3 del spec. Ancho fijo para que el subtítulo wordwrap
-# respete heightForWidth (ver nota en __init__).
-_NM_EMPTY_SUBTITLE_WIDTH = 340
+# respete heightForWidth (ver nota en __init__). 280 ≈ max-width:34ch del
+# mockup a 13.5px (línea más larga canónica medida: 276px).
+_NM_EMPTY_SUBTITLE_WIDTH = 280
 
 
 class _NMEmptyStateChip(QWidget):
@@ -138,6 +139,7 @@ class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
         subtitle: str,
         cta_primary: str = "",
         cta_secondary: str = "",
+        padding: tuple[int, int, int, int] | None = None,
         parent=None,
     ):
         super().__init__(parent)
@@ -147,9 +149,10 @@ class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         layout = QVBoxLayout(self)
-        # Mockup canónico .empty (línea 306-307): padding 50px vertical × 24px horizontal.
-        # Antes: sp("xl")=16 uniforme (tight).
-        layout.setContentsMargins(24, 50, 24, 50)
+        # Mockup canónico `.empty` (L320-321): padding 50px 24px, gap 10.
+        # Algunas pantallas lo overridean inline (ej. pacientes: 46px 20px) →
+        # `padding` opcional (l, t, r, b).
+        layout.setContentsMargins(*(padding or (24, 50, 24, 50)))
         layout.setSpacing(V3_SP["md"])
         # Sin alignment a nivel layout: comprimía los QLabel wordwrap a su
         # sizeHint mínimo (título pisando el ícono, subtítulo recortado). Los
@@ -171,10 +174,11 @@ class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
         layout.addWidget(self._title_lbl)
 
         self._subtitle_lbl = QLabel(subtitle)
-        # Mockup línea 312: .empty p { font-size: 13.5px; color: ink-2; max-width: 34ch; line-height: 1.5 }
-        # size_body=14 NO es canónico; pasamos 13.5 como setPointSizeFloat (QFont admite float).
-        sub_font = v3_font("size_body", weight=TYPOGRAPHY["weight_regular"])
-        sub_font.setPointSizeF(13.5)
+        # Mockup L326: .empty p { font-size:13.5px; color:ink-2; max-width:34ch;
+        # line-height:1.5 }. La escala del runtime es en PIXELES (v3_font →
+        # setPixelSize); el viejo setPointSizeF(13.5) re-interpretaba 13.5 como
+        # POINTS (~18px a 96dpi) y rompía el wrap canónico de 2 líneas en 3.
+        sub_font = v3_font(13, weight=TYPOGRAPHY["weight_regular"])
         self._subtitle_lbl.setFont(sub_font)
         # Un QLabel wordwrap añadido a un QVBoxLayout CON alignment colapsa a su
         # sizeHint de una línea (Qt no llama heightForWidth en items alineados):
@@ -231,7 +235,7 @@ class NMEmptyState(ThemeAwareWidgetMixin, QWidget):
         )
         self._title_lbl.setStyleSheet(f"color: {c['text_primary']}; background: transparent;")
         self._subtitle_lbl.setStyleSheet(
-            f"color: {C('mute', self._modo)}; background: transparent;"
+            f"color: {v3c('ink_2', self._modo).name()}; background: transparent;"
         )
 
 

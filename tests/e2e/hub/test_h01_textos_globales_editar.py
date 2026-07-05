@@ -55,7 +55,8 @@ def test_h01_sin_cambios_pendientes_boton_guardar_deshabilitado(qapp, sb):
     view = _make_view(qapp, sb)
 
     assert not view.has_pending_changes()
-    assert view._pending_badge.text() == "Sin cambios"
+    # `.tg-foot` canónico: el status es un QLabel de texto plano (no pill).
+    assert view._pending_status.text() == "Sin cambios"
     assert view._save.isEnabled() is False
 
     view.close()

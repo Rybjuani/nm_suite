@@ -55,7 +55,9 @@ _PATIENT_AVATAR_PAIRS = [
     ("accent", "violet"),
 ]
 
-_NM_PATIENT_ROW_HEIGHT = 70
+# Mockup `.prow` (L247): padding 14px 16px + avatar 40 + border 1px transparente
+# → alto real 76 (pitch canónico medido 78 con gap 2 de `.plist`).
+_NM_PATIENT_ROW_HEIGHT = 76
 _NM_PATIENT_ROW_PAD_X = 16
 _NM_PATIENT_ROW_PAD_Y = 14
 _NM_PATIENT_ROW_GAP = 14
@@ -245,22 +247,24 @@ class NMSparkline(QWidget):
         elif trend_down:
             stroke = v3c("danger", self._modo)
         else:
-            stroke = v3c("primary", self._modo)
+            stroke = v3c("brand", self._modo)
 
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         pw, ph = self.width(), self.height()
-        pad = 3
-        eff_w = pw - pad * 2
-        eff_h = ph - pad * 2
+        # Mockup sparkline() (L1714): x ∈ [2, w-2]; y = (h-2) − norm·(h-8),
+        # o sea padding x=2, top=6, bottom=2 — no un pad uniforme.
+        pad_x, pad_top, pad_bottom = 2, 6, 2
+        eff_w = pw - pad_x * 2
+        eff_h = ph - pad_top - pad_bottom
         n_total = max(len(self._data), 1)
         mn, mx = min(vals), max(vals)
         span = (mx - mn) if mx > mn else 1.0
 
         def _xy(idx: int, val: float) -> tuple:
-            x = pad + idx * eff_w / max(n_total - 1, 1)
-            y = pad + eff_h - (val - mn) / span * eff_h
+            x = pad_x + idx * eff_w / max(n_total - 1, 1)
+            y = pad_top + eff_h - (val - mn) / span * eff_h
             return x, y
 
         pen = QPen(stroke)
@@ -282,11 +286,9 @@ class NMSparkline(QWidget):
         painter.drawPath(path)
 
         last_x, last_y = _xy(valid[-1][0], valid[-1][1])
-        dot = QColor(stroke)
-        dot.setAlpha(200)
-        painter.setBrush(dot)
+        painter.setBrush(QColor(stroke))
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawEllipse(QPointF(last_x, last_y), 2.5, 2.5)
+        painter.drawEllipse(QPointF(last_x, last_y), 2.6, 2.6)
         painter.end()
 
 
@@ -457,6 +459,7 @@ class NMPatientRowPremium(QFrame):
         selected: bool = False,
         modo: str = None,
         on_unlink=None,
+        avatar_color_key: str | None = None,
         parent=None,
     ):
         super().__init__(parent)
@@ -468,6 +471,7 @@ class NMPatientRowPremium(QFrame):
         self._full_subtitle = subtitle or "Sin programa vinculado"
         self._full_next_session = next_session or self._sync_copy()
         self._name_hash = sum(ord(c) for c in (name or "?")) % len(_PATIENT_AVATAR_PAIRS)
+        self._avatar_color_key = avatar_color_key
         self.setObjectName("NMPatientRowPremium")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setFixedHeight(_NM_PATIENT_ROW_HEIGHT)
@@ -483,9 +487,11 @@ class NMPatientRowPremium(QFrame):
         )
         lay.setSpacing(_NM_PATIENT_ROW_GAP)
 
-        # Status dot
+        # Status dot `.pstatus`: 9px brand; el halo (box-shadow 0 0 0 3px
+        # brand-soft) lo pinta el paintEvent de la fila alrededor del dot,
+        # porque en CSS el shadow no ocupa layout.
         self._status_dot = QLabel()
-        self._status_dot.setFixedSize(10, 10)
+        self._status_dot.setFixedSize(9, 9)
         self._status_dot.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lay.addWidget(self._status_dot, 0, Qt.AlignmentFlag.AlignVCenter)
 
@@ -494,46 +500,62 @@ class NMPatientRowPremium(QFrame):
         self._avatar = QLabel(initials or "P")
         self._avatar.setFixedSize(_NM_PATIENT_AVATAR_SIZE, _NM_PATIENT_AVATAR_SIZE)
         self._avatar.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._avatar.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_bold"]))
+        self._avatar.setFont(qfont(13, weight=TYPOGRAPHY["weight_bold"]))
         lay.addWidget(self._avatar, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        # Patient identity column
-        patient_col = QVBoxLayout()
+        # Patient identity column — mockup: div min-width:150 content-sized
+        # (name 14/600 + "Último registro" 12 ink-3, margin-top 2).
+        patient_wrap = QWidget()
+        patient_wrap.setStyleSheet("background: transparent;")
+        patient_wrap.setMinimumWidth(150)
+        patient_col = QVBoxLayout(patient_wrap)
         patient_col.setContentsMargins(0, 0, 0, 0)
-        patient_col.setSpacing(1)
+        patient_col.setSpacing(2)
         self._name = QLabel(self._full_name)
-        self._name.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_semibold"]))
+        self._name.setFont(qfont("size_body", weight=TYPOGRAPHY["weight_semibold"]))
         self._name.setToolTip(self._full_name)
-        self._name.setMinimumWidth(150)
         patient_col.addWidget(self._name)
 
         self._activity_lbl = QLabel(self._full_last_activity)
-        self._activity_lbl.setFont(qfont("size_caption_xs"))
+        self._activity_lbl.setFont(qfont("size_small"))
         self._activity_lbl.setToolTip(self._full_last_activity)
         patient_col.addWidget(self._activity_lbl)
-        lay.addLayout(patient_col, stretch=3)
+        lay.addWidget(patient_wrap, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        # Program / context column
-        program_col = QVBoxLayout()
+        # Program / context column — mockup `.pcol-mail`: 230px fijo
+        # (mail 13 ink-2 + "Próxima:" 12 ink-3, margin-top 2).
+        program_wrap = QWidget()
+        program_wrap.setStyleSheet("background: transparent;")
+        program_wrap.setFixedWidth(230)
+        program_col = QVBoxLayout(program_wrap)
         program_col.setContentsMargins(0, 0, 0, 0)
-        program_col.setSpacing(1)
+        program_col.setSpacing(2)
         self._subtitle_lbl = QLabel(self._full_subtitle)
-        self._subtitle_lbl.setFont(qfont("size_caption_xs"))
+        self._subtitle_lbl.setFont(qfont(13))
         self._subtitle_lbl.setToolTip(self._full_subtitle)
         program_col.addWidget(self._subtitle_lbl)
 
         self._context_lbl = QLabel(self._full_next_session)
-        self._context_lbl.setFont(qfont("size_caption_xs"))
+        self._context_lbl.setFont(qfont("size_small"))
         self._context_lbl.setToolTip(self._full_next_session)
         program_col.addWidget(self._context_lbl)
-        lay.addLayout(program_col, stretch=2)
+        lay.addWidget(program_wrap, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        # Sparkline
+        # Mockup: spacer flex:1 entre mail y las columnas métricas.
+        lay.addStretch(1)
+
+        # Sparkline — `.pcol-trend`: columna 90px con el svg 78 centrado.
         self._sparkline = None
         self._no_mood_lbl = None
         if mood_data:
             self._sparkline = NMSparkline(data=mood_data, modo=self._modo)
-            lay.addWidget(self._sparkline, 0, Qt.AlignmentFlag.AlignVCenter)
+            _trend_wrap = QWidget()
+            _trend_wrap.setStyleSheet("background: transparent;")
+            _trend_wrap.setFixedWidth(_NM_PATIENT_TREND_COL_W)
+            _trend_wl = QHBoxLayout(_trend_wrap)
+            _trend_wl.setContentsMargins(0, 0, 0, 0)
+            _trend_wl.addWidget(self._sparkline, 0, Qt.AlignmentFlag.AlignCenter)
+            lay.addWidget(_trend_wrap, 0, Qt.AlignmentFlag.AlignVCenter)
         else:
             # Sin datos de ánimo: marcador "—" muteado (convención del mockup,
             # p.ej. ánimo "— / 10") en vez de dejar la columna ÁNIMO 7D en
@@ -619,6 +641,22 @@ class NMPatientRowPremium(QFrame):
             if not visible and self._btn_unlink.hasFocus():
                 self._btn_unlink.clearFocus()
 
+    def paintEvent(self, event: QPaintEvent):  # noqa: N802 (Qt API)
+        super().paintEvent(event)
+        # `.pstatus`: dot 9px var(--brand) + box-shadow 0 0 0 3px brand-soft.
+        # El shadow CSS no ocupa layout → acá se pinta alrededor del placeholder.
+        if getattr(self, "_status_dot", None) is None:
+            return
+        center = QPointF(self._status_dot.geometry().center()) + QPointF(0.5, 0.5)
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(v3c("brandSoft", self._modo)))
+        p.drawEllipse(center, 7.5, 7.5)
+        p.setBrush(QBrush(v3c("brand", self._modo)))
+        p.drawEllipse(center, 4.5, 4.5)
+        p.end()
+
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.pos()):
             self.clicked.emit()
@@ -631,8 +669,10 @@ class NMPatientRowPremium(QFrame):
         self._refresh_subtitle_text()
         self._refresh_context_text()
 
-    def _fit_label(self, label: QLabel, text: str, minimum: int = 72):
-        width = max(minimum, label.width() - 4)
+    def _fit_label(self, label: QLabel, text: str, minimum: int = 72, slack: int = 0):
+        # slack=0: las columnas ahora son content-sized/fijas como en el mockup;
+        # restar 4px al ancho exacto elidía el último carácter ("hace 2 días"→"hace …").
+        width = max(minimum, label.width() - slack)
         metrics = QFontMetrics(label.font())
         label.setText(metrics.elidedText(text, Qt.TextElideMode.ElideRight, width))
 
@@ -655,11 +695,13 @@ class NMPatientRowPremium(QFrame):
     def _apply_theme(self, modo: str):
         self._modo = norm_modo(modo)
         is_dark = "dark" in self._modo
-        bg_key = "surfaceSolid" if is_dark else "surface"
+        # Mockup `.prow`: fondo y borde transparentes en reposo; sólo el hover
+        # pinta surface-2 + border line. (Antes: bg surface permanente, que
+        # dibujaba una "card" por fila inexistente en el canónico.)
         bg = (
             _rgba(v3c("accent", self._modo).name(), 0.08)
             if self._selected
-            else v3c(bg_key, self._modo).name()
+            else "transparent"
         )
         border = (
             _rgba(C("accent", self._modo), 0.38)
@@ -669,29 +711,37 @@ class NMPatientRowPremium(QFrame):
         hover_bg = v3c("surface2", self._modo).name()
         self.setStyleSheet(
             f"QFrame#NMPatientRowPremium {{ background: {bg}; border: 1px solid {border}; "
-            f"border-left: 3px solid {C('accent', self._modo) if self._selected else border}; "
             f"border-radius: 12px; }}"
             f"QFrame#NMPatientRowPremium:hover {{ background: {hover_bg}; "
             f"border-color: {qcolor_to_rgba_css(v3c('line', self._modo))}; }}"
         )
-        k1, k2 = _PATIENT_AVATAR_PAIRS[self._name_hash]
-        self._avatar.setStyleSheet(
-            f"QLabel {{ background: qlineargradient(x1:0,y1:0,x2:1,y2:1, "
-            f"stop:0 {C(k1, self._modo)}, stop:1 {C(k2, self._modo)}); "
-            f"color: white; border-radius: {_NM_PATIENT_AVATAR_RADIUS}px; "
-            f"border: 1px solid {_rgba('#ffffff', 0.22 if is_dark else 0.42)}; }}"
-        )
+        if self._avatar_color_key:
+            # Mockup `.avatar`: color plano por paciente (PATIENTS[i].color),
+            # sin gradiente ni borde. v3c (no C): C('accent') alias a brand.
+            self._avatar.setStyleSheet(
+                f"QLabel {{ background: {v3c(self._avatar_color_key, self._modo).name()}; "
+                f"color: white; border-radius: {_NM_PATIENT_AVATAR_RADIUS}px; "
+                "border: none; }"
+            )
+        else:
+            k1, k2 = _PATIENT_AVATAR_PAIRS[self._name_hash]
+            self._avatar.setStyleSheet(
+                f"QLabel {{ background: qlineargradient(x1:0,y1:0,x2:1,y2:1, "
+                f"stop:0 {C(k1, self._modo)}, stop:1 {C(k2, self._modo)}); "
+                f"color: white; border-radius: {_NM_PATIENT_AVATAR_RADIUS}px; "
+                f"border: 1px solid {_rgba('#ffffff', 0.22 if is_dark else 0.42)}; }}"
+            )
         self._name.setStyleSheet(
             f"color: {v3c('text', self._modo).name()}; background: transparent;"
         )
         self._activity_lbl.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;"
         )
         self._subtitle_lbl.setStyleSheet(
-            f"color: {v3c('text', self._modo).name()}; background: transparent;"
+            f"color: {v3c('ink_2', self._modo).name()}; background: transparent;"
         )
         self._context_lbl.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;"
         )
         if getattr(self, "_no_mood_lbl", None) is not None:
             self._no_mood_lbl.setStyleSheet(
@@ -708,13 +758,11 @@ class NMPatientRowPremium(QFrame):
 
         if self._btn_unlink is not None:
             from shared.theme_qt import nm_icon
-            # Acción destructiva legible: el icono lleva el tono danger en reposo
-            # (no un gris neutro que se leía como "cerrar") y el hover refuerza
-            # con un fondo danger translúcido. Quitar un paciente es irreversible
-            # → debe verse como tal sin gritar (alpha bajo en el fondo).
-            _danger = v3c("danger", self._modo).name()
-            self._btn_unlink.setIcon(nm_icon("close", _danger, size=13))
-            self._btn_unlink.setIconSize(QSize(13, 13))
+            # Mockup `.prow-x`: icono 15px color ink-3 en reposo; el hover
+            # refuerza con rose/rose-soft (destructivo al interactuar).
+            _ink3 = v3c("text3", self._modo).name()
+            self._btn_unlink.setIcon(nm_icon("close", _ink3, size=15))
+            self._btn_unlink.setIconSize(QSize(15, 15))
             self._btn_unlink.setStyleSheet(
                 "QToolButton#NMRowUnlink { background: transparent; border: none; "
                 f"border-radius: {_NM_PATIENT_UNLINK_RADIUS}px; }}"
@@ -722,11 +770,11 @@ class NMPatientRowPremium(QFrame):
                 f"background: {_rgba(C('danger', self._modo), 0.18)}; }}"
             )
 
-        # Status dot color based on sync state
-        dot_color = v3c(self._SYNC_TO_KEY.get(self._sync_state, "ok"), self._modo).name()
-        self._status_dot.setStyleSheet(
-            f"background: {dot_color}; border-radius: 5px;"
-        )
+        # Status dot `.pstatus`: el QLabel es sólo placeholder de layout;
+        # halo brand-soft + dot brand se pintan como círculos reales en
+        # paintEvent (QSS border-radius no da un círculo limpio a 9px).
+        self._status_dot.setStyleSheet("background: transparent;")
+        self.update()
 
         for chip in self.findChildren(QLabel):
             tone_key = chip.property("tone_key")

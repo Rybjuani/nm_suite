@@ -34,6 +34,7 @@ from PyQt6.QtGui import (
     QBrush,
     QPainter,
     QPainterPath,
+    QPen,
     QPixmap,
 )
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
@@ -2062,6 +2063,81 @@ def paint_shell_background(painter, rect: QRectF, modo: str):
     grad.setColorAt(0.0, bg_top)
     grad.setColorAt(1.0, bg_bot)
     painter.fillRect(rect, QBrush(grad))
+
+
+_SCREEN_FRAME_WINDOW_RADIUS = 28  # `.window{border-radius:28px}` (mockup L175)
+
+
+def paint_screen_frame_bg(painter, rect: QRectF, modo: str):
+    """Fondo canónico `.screen-frame` (mockup L251-254) para pantallas Hub.
+
+    Pinta, para el tramo de la pantalla bajo el chrome:
+    - base surface + radial-gradient(900px 500px at 50% -20%, surface-2,
+      transparent 70%);
+    - el resto del anillo `.window` (border 1px --line en laterales/base;
+      el tramo del titlebar lo pinta NMWindowChrome — ver chrome.py);
+    - las esquinas inferiores redondeadas (r28) con el page-bg sombreado
+      del mockup fuera del arco (MISMATCH#18: flat-region reparable).
+    """
+    r = float(_SCREEN_FRAME_WINDOW_RADIUS)
+    # Path de `.window` en coords locales del tramo: el tope se extiende hacia
+    # arriba para que sólo las esquinas inferiores tengan arco acá.
+    win_path = QPainterPath()
+    win_path.addRoundedRect(
+        QRectF(rect.left(), rect.top() - 2 * r, rect.width(), rect.height() + 2 * r),
+        r,
+        r,
+    )
+
+    # 1. Fuera del arco: page-bg oscurecido por la sombra de la ventana
+    #    (canónico ~(214,209,197) en light — bg #E9E3D6 · factor ~0.92).
+    outside = QColor(v3c("bg", modo)).darker(108)
+    painter.fillRect(rect, outside)
+
+    # 2. Cuerpo de la ventana: surface + radial surface-2 desde el tope.
+    painter.save()
+    painter.setClipPath(win_path)
+    painter.fillRect(rect, v3c("surface", modo))
+    sy = 500.0 / 900.0  # radios CSS: rx 900, ry 500
+    c2 = v3c("surface2", modo)
+    fade = QColor(c2)
+    fade.setAlpha(0)
+    grad = QRadialGradient(
+        QPointF(rect.center().x(), (rect.top() - 0.2 * rect.height()) / sy), 900.0
+    )
+    grad.setColorAt(0.0, c2)
+    grad.setColorAt(0.7, fade)
+    grad.setColorAt(1.0, fade)
+    painter.save()
+    painter.scale(1.0, sy)
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.setBrush(QBrush(grad))
+    painter.drawRect(
+        QRectF(rect.left(), rect.top() / sy, rect.width(), rect.height() / sy)
+    )
+    painter.restore()
+    painter.restore()
+
+    # 3. Border 1px de `.window`: base surface + --line alpha encima (mismo
+    #    compositing que NMWindowChrome.paintEvent para el tramo del chrome).
+    win_line = QColor(v3c("line", modo))
+    if win_line.alpha() == 255:
+        win_line.setAlpha(23 if "dark" in norm_modo(modo) else 26)
+    stroke_rect = QRectF(
+        rect.left() + 0.5,
+        rect.top() - 2 * r + 0.5,
+        rect.width() - 1.0,
+        rect.height() + 2 * r - 1.0,
+    )
+    painter.save()
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+    for color in (QColor(v3c("surface", modo)), win_line):
+        pen = QPen(color)
+        pen.setWidthF(1.0)
+        painter.setPen(pen)
+        painter.drawRoundedRect(stroke_rect, r, r)
+    painter.restore()
 
 
 import random as _random

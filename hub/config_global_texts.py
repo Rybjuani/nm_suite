@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from PyQt6.QtCore import QEvent, QPoint, QRect, QRectF, Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QPainter, QPen
+from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPen
 from PyQt6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -40,7 +40,17 @@ from shared.suite_text_catalog import (
     suite_text_sections,
 )
 from shared.theme import TYPOGRAPHY
-from shared.theme_qt import norm_modo, qfont, stylesheet_combobox, stylesheet_scrollarea, v3_font, v3c, V3_SP
+from shared.theme_qt import (
+    norm_modo,
+    paint_screen_frame_bg,
+    qcolor_to_rgba_css,
+    qfont,
+    stylesheet_combobox,
+    stylesheet_scrollarea,
+    v3_font,
+    v3c,
+    V3_SP,
+)
 
 
 class _TextEntryRow(NMCard):
@@ -49,7 +59,21 @@ class _TextEntryRow(NMCard):
     def __init__(self, entry: SuiteTextEntry, modo: str, parent=None):
         self._dirty = False
         self._interactive_controls_visible = True
-        super().__init__(parent=parent, modo=modo, clickable=False, glow=False, radius=16)
+        # `padding` explícito: NMCard re-sincroniza los margins del layout a su
+        # `_padding_margins` (20px default) vía _sync_layout_padding — pasarlo
+        # acá evita que pise el padding canónico 12px 14px de `.tg-row`.
+        super().__init__(
+            parent=parent,
+            modo=modo,
+            clickable=False,
+            glow=False,
+            radius=16,
+            padding=(14, 12, 14, 12),
+        )
+        # `.tg-row` NO es una card elevada (bg surface-2, sin sombra) — el
+        # objectName propio la saca del contrato de sombra de cards (VAS) y
+        # scopea el QSS de fila sin heredar los estilos #NMCard.
+        self.setObjectName("TgRow")
         self.entry = entry
         self._modo = norm_modo(modo)
         self._build()
@@ -59,20 +83,30 @@ class _TextEntryRow(NMCard):
 
     def _build(self) -> None:
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(V3_SP["md"], V3_SP["sm"], V3_SP["md"], V3_SP["sm"])
-        lay.setSpacing(V3_SP["md"])
+        # `.tg-row` (L428): padding 12px 14px, gap 16.
+        lay.setContentsMargins(14, 12, 14, 12)
+        lay.setSpacing(16)
 
-        meta_col = QVBoxLayout()
+        # `.tg-label` (L431): columna fija de 150px.
+        meta_wrap = QWidget()
+        meta_wrap.setStyleSheet("background: transparent; border: none;")
+        meta_wrap.setFixedWidth(150)
+        meta_col = QVBoxLayout(meta_wrap)
+        meta_col.setContentsMargins(0, 0, 0, 0)
         meta_col.setSpacing(2)
         self._section_lbl = QLabel(self.entry.section.upper())  # mockup: eyebrow en mayúsculas
-        self._section_lbl.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
+        # `.tg-mod`: 10.5px letter-spacing .1em semibold ink-3.
+        _mod_f = qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"])
+        _mod_f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1.1)
+        self._section_lbl.setFont(_mod_f)
         meta_col.addWidget(self._section_lbl)
 
         self._field_lbl = QLabel(self.entry.field)
         self._field_lbl.setWordWrap(True)
-        self._field_lbl.setFont(qfont("size_small", weight=TYPOGRAPHY["weight_semibold"]))
+        # `.tg-name`: 13.5px weight 600.
+        self._field_lbl.setFont(qfont(13, weight=TYPOGRAPHY["weight_semibold"]))
         meta_col.addWidget(self._field_lbl)
-        lay.addLayout(meta_col, stretch=1)
+        lay.addWidget(meta_wrap, 0, Qt.AlignmentFlag.AlignVCenter)
 
         # El editor lleva el VALOR actual (override si existe, sino el default),
         # como en el mockup canonico: no hay un label de "valor por defecto" aparte.
@@ -86,8 +120,12 @@ class _TextEntryRow(NMCard):
             self.editor = NMInput("", modo=self._modo, max_length=self.entry.max_chars)
             self.editor.setText(self.entry.default)
             self.editor.textChanged.connect(self._on_text_changed)
+            # `.input` (L301): padding 12px vertical + texto 13.5 ≈ 39px de
+            # alto en `.tg-row` (fila canónica de 65px). El default de NMInput
+            # (44, _NM_CONTROL_HEIGHT) es de los forms del Suite.
+            self.editor.setFixedHeight(39)
         self.editor.setMinimumWidth(230)
-        lay.addWidget(self.editor, stretch=3)
+        lay.addWidget(self.editor, stretch=1)
 
         # Mockup: el contador y "Restaurar" van INLINE (contador a la izquierda
         # del botón), ambos centrados verticalmente en la fila. Antes era un
@@ -95,10 +133,12 @@ class _TextEntryRow(NMCard):
         # lo que inflaba la altura de la fila (~112px vs ~64px del mockup) y
         # rompía la alineación. HBox compacto.
         side = QHBoxLayout()
-        side.setSpacing(V3_SP["sm"])
+        # `.tg-meta` (L435): gap 10; contador 11.5px min-width 48 right-aligned.
+        side.setSpacing(10)
         self._count_lbl = QLabel()
         self._count_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        self._count_lbl.setFont(qfont("size_caption_xs"))
+        self._count_lbl.setFont(qfont("size_caption"))
+        self._count_lbl.setMinimumWidth(48)
         side.addWidget(self._count_lbl, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self._restore_btn = NMButtonOutline("Restaurar", modo=self._modo, size="sm")
@@ -183,15 +223,26 @@ class _TextEntryRow(NMCard):
 
     def _apply_row_theme(self) -> None:
         self._section_lbl.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
+            f"color: {v3c('text3', self._modo).name()}; background: transparent; border: none;"
         )
         self._field_lbl.setStyleSheet(
-            f"color: {v3c('text', self._modo).name()}; background: transparent;"
+            f"color: {v3c('text', self._modo).name()}; background: transparent; border: none;"
         )
+
+    def _apply_theme(self, modo: str) -> None:
+        # El signal de ThemeManager llega directo a NMCard._apply_theme y
+        # resetea el QSS → sin este override la fila vuelve al surface default
+        # (blanco) en vez del surface-2 de `.tg-row`.
+        super()._apply_theme(modo)
+        self._modo = norm_modo(modo)
+        self._apply_row_theme()
+        self._apply_dirty_shadow()
 
     def _apply_dirty_shadow(self) -> None:
         if not self._dirty:
-            self._apply_card_shadow()
+            # `.tg-row` no tiene sombra en reposo (NMCard sí, shadow_1).
+            self.setGraphicsEffect(None)
+            self._card_shadow = None
             return
         if self._card_shadow is None:
             self._card_shadow = QGraphicsDropShadowEffect(self)
@@ -202,22 +253,140 @@ class _TextEntryRow(NMCard):
         self.setGraphicsEffect(self._card_shadow)
 
     def paintEvent(self, event) -> None:
-        super().paintEvent(event)
-        if not self._dirty:
-            return
+        # `.tg-row` (L428): bg surface-2 + border 1px --line + radius 16 — NO
+        # es la superficie de card de NMCard (surface + lift + border card),
+        # así que se pinta acá sin delegar en NMCard.paintEvent. Dirty:
+        # border brand-line (el halo brand-soft lo pone _apply_dirty_shadow).
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        p.setPen(QPen(v3c("brandLine", self._modo), 1.0))
-        p.setBrush(Qt.BrushStyle.NoBrush)
-        p.drawRoundedRect(QRectF(0.5, 0.5, self.width() - 1, self.height() - 1), 16, 16)
+        rect = QRectF(0.5, 0.5, self.width() - 1, self.height() - 1)
+        p.setBrush(QBrush(v3c("surface_2", self._modo)))
+        if self._dirty:
+            border = v3c("brandLine", self._modo)
+        else:
+            # Mockup: `border:1px solid var(--line)` sobre surface-2. El render
+            # del navegador difumina ese border (subpixel) y queda casi
+            # imperceptible; el QPen opaco con el token `line` lo marcaba
+            # demasiado. Una versión con alpha baja (~6%) replica el efecto
+            # visual del canónico sin tocar el token compartido.
+            line = QColor(v3c("line", self._modo))
+            line.setAlpha(10 if "light" in self._modo else 16)
+            border = line
+        p.setPen(QPen(border, 1.0))
+        p.drawRoundedRect(rect, 16, 16)
         p.end()
 
     def apply_theme(self, modo: str) -> None:
-        self._modo = norm_modo(modo)
-        self._apply_theme(self._modo)
-        self._apply_row_theme()
-        self._apply_dirty_shadow()
+        self._apply_theme(norm_modo(modo))
         self._sync_counter()
+
+
+class _TgSearchInput(NMSearchInput):
+    """`NMSearchInput` con bg `surface_3` para el topbar de Textos Globales.
+
+    El mockup canónico muestra el search input del `.tg-top` sobre la zona
+    central del radial del `.screen-frame`, donde el composite del navegador
+    (radial `.screen-frame` + radial `.screen` apilados) satura `surface_2` a un
+    tono intermedio entre `surface_2` y `surface_3`. El `NMSearchInput` base
+    pinta `surface_2` opaco, que en esa posición queda claro de más. Esta
+    subclase local (sólo Textos Globales) usa `surface_3` para acercarse al
+    canónico sin tocar el componente compartido (Pacientes y otras vistas siguen
+    usando `surface_2`).
+    """
+
+    def __init__(self, placeholder: str = "Buscar...", modo: str | None = None, parent=None):
+        super().__init__(placeholder, modo=modo, parent=parent)
+        # En el search global compartido se reserva un margen de 3px para el
+        # halo de foco; en `.tg-top` el mockup captura el input sin foco y el
+        # fill ocupa todo el control. Si dejamos ese margen, se ve el `surface`
+        # del topbar como un marco claro y sube el changed_ratio de light.
+        self.setContentsMargins(0, 0, 0, 0)
+
+    def paintEvent(self, event) -> None:
+        # Mismo dibujo que NMSearchInput.paintEvent pero con bg surface_3.
+        from shared.components.buttons import _NM_CONTROL_RADIUS
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        r = float(_NM_CONTROL_RADIUS)
+        rect = QRectF(0.5, 0.5, self.width() - 1, self.height() - 1)
+        bg = v3c("surface_3", self._modo)
+        focused = self._edit.hasFocus()
+        if focused:
+            from PyQt6.QtGui import QPen as _QPen
+            from PyQt6.QtCore import Qt as _Qt
+            brand_soft = QColor(v3c("primary_soft", self._modo))
+            brand_line = QColor(v3c("brandLine", self._modo))
+            halo_rect = rect.adjusted(0, 0, 0, 0)
+            p.setBrush(QBrush(brand_soft))
+            p.setPen(_Qt.PenStyle.NoPen)
+            p.drawRoundedRect(halo_rect, r, r)
+            p.setBrush(QBrush(bg))
+            p.setPen(_QPen(brand_line, 1.0))
+            p.drawRoundedRect(rect, r, r)
+        else:
+            border = v3c("border", self._modo)
+            p.setBrush(QBrush(bg))
+            p.setPen(QPen(border, 1.0))
+            p.drawRoundedRect(rect, r, r)
+        p.end()
+
+
+class _TgTopBar(QWidget):
+    """Contenedor del header `.tg-top` con fondo local surface.
+
+    El mockup canónico muestra `.tg-top` sobre el fondo del `.screen-frame` con
+    el radial ya fadeado a `surface` en su padding-bottom (la zona entre los
+    controles y el border-bottom de la lista). El radial compartido del frame
+    no replica ese fade exactamente (diferencia de render Qt vs Chromium), así
+    que este widget pinta `surface` localmente en toda su área; los controles
+    opacos (search, combo, badge) se dibujan encima y muestran su propio bg
+    `surface_2`, mientras que la padding-bottom queda `surface` limpio como en
+    el canónico.
+    """
+
+    def __init__(self, modo: str = "dark_hybrid", parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+
+    def apply_theme(self, modo: str) -> None:
+        self._modo = norm_modo(modo)
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        p = QPainter(self)
+        p.fillRect(self.rect(), QBrush(v3c("surface", self._modo)))
+        p.end()
+
+
+class _TgFoot(QWidget):
+    """Footer local de Textos Globales.
+
+    El canónico deja el footer principal en `surface`, pero la banda inmediata
+    bajo la lista queda en `surface_2` y lleva el hairline superior. Pintarlo
+    localmente evita mover `paint_screen_frame_bg`, que ya está compartido con
+    Pacientes.
+    """
+
+    def __init__(self, modo: str = "dark_hybrid", parent=None):
+        super().__init__(parent)
+        self._modo = norm_modo(modo)
+        self.setObjectName("TgFoot")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+
+    def apply_theme(self, modo: str) -> None:
+        self._modo = norm_modo(modo)
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        p = QPainter(self)
+        p.fillRect(self.rect(), QBrush(v3c("surface", self._modo)))
+        p.fillRect(QRect(0, 0, self.width(), 12), QBrush(v3c("surface_2", self._modo)))
+        line = QColor(v3c("line", self._modo))
+        line.setAlpha(18 if "light" in self._modo else 24)
+        p.setPen(QPen(line, 1.0))
+        p.drawLine(0, 0, self.width(), 0)
+        p.end()
 
 
 class TextosGlobalesSuiteView(QWidget):
@@ -236,38 +405,49 @@ class TextosGlobalesSuiteView(QWidget):
 
     def _build(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], 0)
-        root.setSpacing(V3_SP["sm"])
+        # Mockup `.screen.tg-body` (L255/1989): padding 24; el foot llega hasta
+        # ~12px del borde inferior de la ventana.
+        root.setContentsMargins(24, 24, 24, 12)
+        root.setSpacing(0)
 
         top = QHBoxLayout()
-        top.setSpacing(V3_SP["sm"])
+        # `.tg-top` (L426): gap 12.
+        top.setSpacing(12)
         self._title_lbl = QLabel("Textos globales")
-        self._title_lbl.setFont(v3_font("size_heading_l", weight=TYPOGRAPHY["weight_semibold"], serif=True))
+        # Mockup L1991: h2 h-serif 19px 600.
+        self._title_lbl.setFont(v3_font(19, weight=TYPOGRAPHY["weight_semibold"], serif=True))
         top.addWidget(self._title_lbl)
 
-        self._search = NMSearchInput("Buscar textos", modo=self._modo)
+        self._search = _TgSearchInput("Buscar textos", modo=self._modo)
         self._search.text_changed.connect(self._apply_filters)
-        self._search.setMinimumWidth(220)
+        # `.tg-search`: flex:1, min-width 160; alto canónico ~38
+        # (input 9px padding + 15px de línea + borde) vs 44 del control Suite.
+        self._search.setMinimumWidth(160)
+        self._search.setFixedHeight(38)
         top.addWidget(self._search, stretch=1)
 
         self._section_filter = QComboBox()
-        self._section_filter.setMinimumHeight(32)
-        self._section_filter.setMinimumWidth(210)
+        self._section_filter.setFixedHeight(38)
+        # Mockup: `select` con width:auto → ~140px con "Todos los módulos"
+        # a 13px (el QSS base de combobox lo inflaba a ~280).
+        self._section_filter.setFixedWidth(140)
         self._section_filter.addItem("Todos los módulos", "")
         for section in suite_text_sections():
             self._section_filter.addItem(section, section)
         self._section_filter.currentIndexChanged.connect(self._apply_filters)
         top.addWidget(self._section_filter)
 
-        self._count = NMBadge("0 textos", tone="info", modo=self._modo)
+        # Mockup L1999: `badge brand`.
+        self._count = NMBadge("0 textos", tone="brand", modo=self._modo)
         top.addWidget(self._count, alignment=Qt.AlignmentFlag.AlignVCenter)
 
         # Mockup l.383: .tg-top tiene padding-bottom 16px + border-bottom 1px
         # var(--line). Antes el row de búsqueda/filtro estaba pegado a la lista
         # sin separador — el mockup define una línea sutil que ancla el bloque
         # de controles y le da aire a la lista de cards debajo.
-        top_wrap = QWidget()
+        top_wrap = _TgTopBar(modo=self._modo)
         top_wrap.setObjectName("TextosGlobalesTopBar")
+        self._top_wrap = top_wrap
         top_wrap_lay = QVBoxLayout(top_wrap)
         top_wrap_lay.setContentsMargins(0, 0, 0, 0)
         top_wrap_lay.setSpacing(0)
@@ -287,11 +467,15 @@ class TextosGlobalesSuiteView(QWidget):
         self._scroll.setWidgetResizable(True)
         self._scroll.setFrameShape(QFrame.Shape.NoFrame)
         self._scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        # Mockup `.tg-list`: overflow-y auto sin rail visible (el wheel sigue
+        # scrolleando; mismo criterio que la lista de PacientesView).
+        self._scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._content = QWidget()
         self._content.setStyleSheet("background: transparent;")
         self._list_lay = QVBoxLayout(self._content)
-        self._list_lay.setContentsMargins(0, 0, 0, V3_SP["sm"])
-        self._list_lay.setSpacing(V3_SP["md"] + 2)
+        # `.tg-list` (L427): padding 14px 2px, gap 8.
+        self._list_lay.setContentsMargins(2, 14, 2, 14)
+        self._list_lay.setSpacing(8)
         self._list_lay.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._scroll.setWidget(self._content)
         self._scroll.verticalScrollBar().valueChanged.connect(
@@ -309,19 +493,31 @@ class TextosGlobalesSuiteView(QWidget):
             self._list_lay.addWidget(row)
         self._list_lay.addStretch(1)
 
-        bottom = QHBoxLayout()
-        bottom.setContentsMargins(0, 0, 0, V3_SP["xs"])
-        self._pending_badge = NMBadge("Sin cambios", tone="neutral", modo=self._modo)
-        bottom.addWidget(self._pending_badge, alignment=Qt.AlignmentFlag.AlignVCenter)
+        # `.tg-foot` (L437): border-top 1px --line + padding 14px 2px 4px;
+        # status como TEXTO plano 12.5px ink-3 (el mockup no usa pill acá).
+        foot_wrap = _TgFoot(modo=self._modo)
+        self._foot_wrap = foot_wrap
+        bottom = QHBoxLayout(foot_wrap)
+        bottom.setContentsMargins(2, 14, 2, 4)
+        bottom.setSpacing(10)
+        self._pending_status = QLabel("Sin cambios")
+        self._pending_status.setFont(qfont("size_caption"))
+        self._status_tone = "neutral"
+        bottom.addWidget(self._pending_status, alignment=Qt.AlignmentFlag.AlignVCenter)
         bottom.addStretch()
         self._restore_all = NMButtonOutline("Restaurar todos", modo=self._modo, size="sm")
         self._restore_all.clicked.connect(self._restore_all_rows)
         bottom.addWidget(self._restore_all)
         self._save = NMButton("Guardar cambios", modo=self._modo, size="sm", width=150)
+        # Mockup `.btn:disabled { opacity:.5 }`: el botón Guardar arranca
+        # deshabilitado y el canónico lo muestra con brand al 50% sobre surface
+        # (verde sage ~148,170,153). El default de NMButton es 0.65 (tuneado
+        # para el mockup "Animo"), que acá da un verde demasiado saturado.
+        self._save._disabled_opacity = 0.5
         self._save.setEnabled(False)
         self._save.clicked.connect(self._save_changes)
         bottom.addWidget(self._save)
-        root.addLayout(bottom)
+        root.addWidget(foot_wrap)
 
         self._apply_filters()
         self._update_pending_state()
@@ -470,15 +666,20 @@ class TextosGlobalesSuiteView(QWidget):
         invalid = bool(self._invalid_rows())
         pending = self.has_pending_changes()
         if invalid:
-            self._pending_badge.setText("Revisar limites")
-            self._pending_badge.set_tone("danger")
+            self._set_status("Revisar limites", "danger")
         elif pending:
-            self._pending_badge.setText("Cambios pendientes")
-            self._pending_badge.set_tone("warning")
+            self._set_status("Cambios pendientes", "warning")
         else:
-            self._pending_badge.setText("Sin cambios")
-            self._pending_badge.set_tone("neutral")
+            self._set_status("Sin cambios", "neutral")
         self._save.setEnabled(pending and not invalid)
+
+    def _set_status(self, text: str, tone: str) -> None:
+        self._status_tone = tone
+        self._pending_status.setText(text)
+        color_key = {"danger": "danger", "warning": "amber"}.get(tone, "text3")
+        self._pending_status.setStyleSheet(
+            f"color: {v3c(color_key, self._modo).name()}; background: transparent;"
+        )
 
     def _save_changes(self) -> None:
         invalid = self._invalid_rows()
@@ -545,24 +746,42 @@ class TextosGlobalesSuiteView(QWidget):
             return str(value)
         return ""
 
+    def paintEvent(self, event) -> None:
+        # Mockup `.window` + `.screen-frame`: surface + radial surface-2 del
+        # tope + anillo de borde/esquinas del tramo de contenido.
+        p = QPainter(self)
+        paint_screen_frame_bg(p, QRectF(self.rect()), self._modo)
+        p.end()
+
     def _apply_theme(self, modo: str) -> None:
         self._modo = norm_modo(modo)
         self._title_lbl.setStyleSheet(
             f"color: {v3c('text', self._modo).name()}; background: transparent;"
         )
-        self._section_filter.setStyleSheet(stylesheet_combobox(self._modo))
+        # Select del mockup: texto 13px, padding 8/12 (el control base Suite
+        # usa 14px + padding ancho y no entra en los ~140px canónicos).
+        self._section_filter.setStyleSheet(
+            stylesheet_combobox(self._modo)
+            + " QComboBox { font-size: 13px; padding: 6px 12px; min-height: 20px; }"
+        )
         self._scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
         # Separador bajo la fila de controles: color v3c('line', modo) — el
         # mismo token que el resto de las cards/listas usan como border.
+        line_css = qcolor_to_rgba_css(v3c("line", self._modo))
         if hasattr(self, "_top_sep"):
-            sep_color = v3c("line", self._modo).name()
             self._top_sep.setStyleSheet(
-                f"QFrame#TextosGlobalesSeparator {{ background: {sep_color}; border: none; }}"
+                f"QFrame#TextosGlobalesSeparator {{ background: {line_css}; border: none; }}"
             )
-        if hasattr(self, "_pending_badge"):
-            self._pending_badge._apply_theme(self._modo)
+        if hasattr(self, "_foot_wrap"):
+            self._foot_wrap.setStyleSheet("")
+            self._foot_wrap.apply_theme(self._modo)
+        if hasattr(self, "_pending_status"):
+            self._set_status(self._pending_status.text(), self._status_tone)
+        if hasattr(self, "_top_wrap"):
+            self._top_wrap.apply_theme(self._modo)
         for row in self._rows:
             row.apply_theme(self._modo)
+        self.update()
 
     def apply_theme(self, modo: str) -> None:
         self._apply_theme(modo)

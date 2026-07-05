@@ -783,7 +783,9 @@ def test_patient_row_premium_matches_mockup_prow_contract(qtbot) -> None:
     )
     qtbot.addWidget(row)
 
-    assert row.height() == _NM_PATIENT_ROW_HEIGHT == 70
+    # `.prow` (mockup L247): padding 14px + avatar 40 + borde 1px transparente
+    # arriba/abajo = 76 (pitch canónico 78 con gap 2 de `.plist`).
+    assert row.height() == _NM_PATIENT_ROW_HEIGHT == 76
     assert row.layout().spacing() == _NM_PATIENT_ROW_GAP == 14
     assert row._avatar.width() == _NM_PATIENT_AVATAR_SIZE == 40
     assert row._avatar.height() == _NM_PATIENT_AVATAR_SIZE

@@ -146,6 +146,8 @@ def timer_sessions() -> list[str]:
 
 
 def hub_patients() -> list[dict]:
+    # mood_data_7d / avatar_color espejan PATIENTS del mockup canónico
+    # (trend + color por paciente): Ana usa accent, el resto brand.
     return [
         {
             "patient_id": "qa-am-001",
@@ -154,6 +156,8 @@ def hub_patients() -> list[dict]:
             "last_mood": 7.2,
             "adherence": 0.75,
             "last_session": "hace 2 días",
+            "mood_data_7d": [5, 6, 6, 7, 6, 8, 7],
+            "avatar_color": "accent",
         },
         {
             "patient_id": "qa-jr-002",
@@ -162,6 +166,8 @@ def hub_patients() -> list[dict]:
             "last_mood": 5.8,
             "adherence": 0.50,
             "last_session": "hace 5 días",
+            "mood_data_7d": [4, 4, 5, 4, 6, 5, 6],
+            "avatar_color": "brand",
         },
         {
             "patient_id": "qa-cl-003",
@@ -170,6 +176,8 @@ def hub_patients() -> list[dict]:
             "last_mood": 8.1,
             "adherence": 0.88,
             "last_session": "ayer",
+            "mood_data_7d": [6, 6, 7, 7, 8, 8, 9],
+            "avatar_color": "brand",
         },
         {
             "patient_id": "qa-ps-004",
@@ -178,6 +186,8 @@ def hub_patients() -> list[dict]:
             "last_mood": 6.5,
             "adherence": 0.62,
             "last_session": "hace 3 días",
+            "mood_data_7d": [4, 5, 5, 6, 6, 6, 7],
+            "avatar_color": "brand",
         },
         {
             "patient_id": "qa-lg-005",
@@ -186,6 +196,8 @@ def hub_patients() -> list[dict]:
             "last_mood": 8.8,
             "adherence": 0.94,
             "last_session": "hoy",
+            "mood_data_7d": [5, 6, 6, 7, 8, 8, 9],
+            "avatar_color": "brand",
         },
     ]
 

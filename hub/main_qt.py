@@ -35,13 +35,14 @@ from PyQt6.QtWidgets import (
     QDialog,
 )
 from PyQt6.QtCore import QEvent, QPoint, QRect, Qt, QTimer, QRectF, pyqtSignal, QSettings
-from PyQt6.QtGui import QIcon, QPainter, QBrush, QLinearGradient
+from PyQt6.QtGui import QFont, QIcon, QPainter, QBrush, QLinearGradient
 from PyQt6 import sip
 
 from shared.theme_qt import (
     v3c,
     colors,
     norm_modo,
+    qcolor_to_rgba_css,
     qfont,
     app_palette,
     stylesheet_base,
@@ -51,6 +52,7 @@ from shared.theme_qt import (
     ThemeAwareWidgetMixin,
     apply_hub_density,
     HUB_DENSITY_OBJECT_NAME,
+    paint_screen_frame_bg,
     V3_SP,
 )
 from shared.adaptive_layout_qt import (
@@ -64,7 +66,6 @@ from shared.components import (
     NMFadeWidget,
     NMButton,
     NMButtonOutline,
-    NMCard,
     NMToast,
     NMPatientRowPremium,
     NMEmptyState,
@@ -263,11 +264,9 @@ def _add_local_unlinked(pid: str) -> None:
 class PacientesView(QWidget):
     """Hub > Pacientes Dashboard v3.
 
-    Layout:
-      Header: eyebrow "PACIENTES" + título "Pacientes (N)"
-      Search NMCard: NMInput + 4 filter pills (Todos/Activos/Sin registros/
-        Sin sincronización reciente)
-      NMCard tabla: NMPatientRow × N con avatar + nombre + adherencia ring
+    Layout (mockup `pacientes`, sin card envolvente):
+      Header: título serif "Lista activa" + badge + hint + botón Textos globales
+      `.phead` con border-bottom + `.plist` de NMPatientRowPremium × N
 
     Filtros — criterios neutrales descriptivos (decisión 7 — sin semáforos
     clínicos sobre uso de la app):
@@ -312,28 +311,27 @@ class PacientesView(QWidget):
         self.setStyleSheet("background: transparent;")
 
         layout = QVBoxLayout(self)
-        # Fit-first 960x600: márgenes compactos para que las 5 filas de pacientes
-        # quepan completas en el primer viewport sin fila cortada al pie. El
-        # alto se redistribuye al table_card (stretch=1) → más filas visibles
-        # sin fila cortada al pie.
-        layout.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], 0)
-        layout.setSpacing(V3_SP["xs"])
+        # Mockup canónico `.screen` (L255): padding 24px; el contenido va
+        # DIRECTO sobre el fondo — no existe card contenedora en Pacientes.
+        layout.setContentsMargins(24, 24, 24, 0)
+        layout.setSpacing(0)
 
         # (Antes había un NMPageHeader plegado a la titlebar que se ocultaba
         # pero seguía ocupando 640x480 en el layout → vaciío superior en
         # Pacientes. Eliminado: la titlebar ya muestra "NeuroMood Hub /
         # Pacientes" y la barra "Lista activa" del roster hace de header.)
 
-        # 2. Tabla NMCard con NMPatientRow × N
-        table_card = NMCard(modo=self._modo, clickable=False, glow=False)
+        # 2. Contenedor transparente (el mockup no tiene card envolvente).
+        table_card = QWidget()
+        table_card.setStyleSheet("background: transparent;")
         tc_lay = QVBoxLayout(table_card)
-        tc_lay.setContentsMargins(V3_SP["sm"], V3_SP["xs"], V3_SP["sm"], V3_SP["xs"])
-        tc_lay.setSpacing(2)
+        tc_lay.setContentsMargins(0, 0, 0, 0)
+        tc_lay.setSpacing(0)
         self._table_card = table_card
 
         roster_meta = QHBoxLayout()
-        roster_meta.setContentsMargins(2, 0, 2, 0)
-        roster_meta.setSpacing(V3_SP["sm"])
+        roster_meta.setContentsMargins(0, 0, 0, 0)
+        roster_meta.setSpacing(12)
         self._table_title = QLabel("Lista activa")
         self._table_title.setFont(qfont("size_h1", weight=_TY["weight_semibold"]))
         self._table_title.setStyleSheet(
@@ -347,9 +345,10 @@ class PacientesView(QWidget):
         self._results_badge = NMBadge("0 pacientes", tone="brand", modo=self._modo)
         roster_meta.addWidget(self._results_badge, alignment=Qt.AlignmentFlag.AlignVCenter)
         self._table_hint = QLabel("Mail, ánimo de 7 días y uso por paciente")
-        self._table_hint.setFont(qfont("size_caption_xs"))
+        # Mockup: hint 12.5px color ink-3 (12px es el token más cercano en px).
+        self._table_hint.setFont(qfont("size_caption"))
         self._table_hint.setStyleSheet(
-            f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
+            f"color: {v3c('text3', self._modo).name()}; background: transparent;"
         )
         roster_meta.addWidget(self._table_hint, alignment=Qt.AlignmentFlag.AlignVCenter)
         if callable(self._on_global_texts):
@@ -365,44 +364,47 @@ class PacientesView(QWidget):
         else:
             roster_meta.addStretch()
         tc_lay.addLayout(roster_meta)
+        # Mockup: el bloque de título lleva margin-bottom 18px hasta `.phead`.
+        tc_lay.addSpacing(18)
 
         self._table_header = table_header = QWidget()
-        # Sin border-bottom: un border-bottom sin selector se PROPAGABA a cada
-        # QLabel hijo dibujando un subrayado bajo cada encabezado (el "subrayado
-        # doble" que reaparecía al cambiar de tema). La separación con la primera
-        # fila se da con margen/espaciado, no con una línea dura (ADN §7).
-        table_header.setStyleSheet("background: transparent;")
+        # `.phead` (L402): padding 0 16px 8px + border-bottom 1px var(--line).
+        # El border va scoped por objectName para NO propagarse a los QLabel
+        # hijos (bug histórico del "subrayado doble").
+        table_header.setObjectName("PacientesPhead")
+        table_header.setStyleSheet(
+            "#PacientesPhead { background: transparent; "
+            f"border-bottom: 1px solid {qcolor_to_rgba_css(v3c('line', self._modo))}; }}"
+        )
         th_lay = QHBoxLayout(table_header)
-        th_lay.setContentsMargins(94, 0, 14, V3_SP["md"])
-        # Spacing 12 = al de NMPatientRowPremium: con sm(6) las columnas Mail /
-        # Ánimo 7d / Uso no caían sobre sus datos (desalineadas).
-        th_lay.setSpacing(12)
+        # Mockup: padding-left 16 + 60 extra del primer span (`.phead>span:first-child`).
+        th_lay.setContentsMargins(76, 0, 16, 8)
+        th_lay.setSpacing(14)
         # Sin jerga ni abreviaturas técnicas (informe owner v1.0): la columna
         # central muestra email/vínculo (no un "diagnóstico"), y "TEND./ADHER."
         # no le dicen nada a un profesional no técnico.
-        for text, stretch in (
-            ("Paciente", 3),
-            ("Mail", 2),
-            ("Ánimo 7d", 0),  # Sparkline area (60px)
-            ("Uso", 0),  # Ring area
+        for text, width in (
+            ("Paciente", 0),          # flex:1 en el mockup
+            ("Mail", 230),            # `.pcol-mail`
+            ("Ánimo 7d", _NM_PATIENT_TREND_COL_W),
+            ("Uso", _NM_PATIENT_RING_COL_W),
         ):
             lbl = QLabel(text.upper())
-            lbl.setFont(qfont("size_caption_xs", weight=_TY["weight_semibold"]))
-            is_metric = stretch == 0
+            _hf = qfont("size_caption_xs", weight=_TY["weight_semibold"])
+            # `.phead`: letter-spacing .1em a 11px ≈ 1.1px.
+            _hf.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1.1)
+            lbl.setFont(_hf)
             lbl.setStyleSheet(
-                f"color: {v3c('ink_secondary', self._modo).name()}; "
-                "background: transparent;"
+                f"color: {v3c('text3', self._modo).name()}; "
+                "background: transparent; border: none;"
             )
-            if is_metric:
-                # Ancho coherente con las columnas de la fila (sparkline / ring),
-                # texto centrado sobre su columna.
-                lbl.setFixedWidth(
-                    _NM_PATIENT_TREND_COL_W if "Ánimo" in text else _NM_PATIENT_RING_COL_W
-                )
-                lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            if width:
+                lbl.setFixedWidth(width)
+                if text in ("Ánimo 7d", "Uso"):
+                    lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 th_lay.addWidget(lbl)
             else:
-                th_lay.addWidget(lbl, stretch=stretch)
+                th_lay.addWidget(lbl, stretch=1)
         # Columna de la X de desvincular, sin título.
         th_lay.addSpacing(_NM_PATIENT_UNLINK_SIZE)
         tc_lay.addWidget(table_header)
@@ -420,7 +422,8 @@ class PacientesView(QWidget):
         self._rows_w = QWidget()
         self._rows_w.setStyleSheet("background: transparent;")
         self._table_lay = QVBoxLayout(self._rows_w)
-        self._table_lay.setContentsMargins(0, 0, 0, V3_SP["xs"])
+        # `.plist` (L405): margin-top 8, gap 2.
+        self._table_lay.setContentsMargins(0, 8, 0, 0)
         self._table_lay.setSpacing(2)
         self._table_lay.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._rows_scroll.setWidget(self._rows_w)
@@ -445,10 +448,14 @@ class PacientesView(QWidget):
 
         if not rows:
             self._table_header.hide()
+            # Mockup empty (L1748-1753): sin `.phead`/`.plist` — el `.empty`
+            # (padding inline 46px 20px) va directo tras el header del roster.
+            self._table_lay.setContentsMargins(0, 0, 0, 0)
             empty = NMEmptyState(
                 "users",
                 "Sin pacientes vinculados",
                 "Cuando un paciente complete el alta desde la Suite, aparecerá acá automáticamente.",
+                padding=(20, 46, 20, 46),
                 parent=self._table_card,
             )
             self._table_lay.addWidget(empty)
@@ -457,6 +464,7 @@ class PacientesView(QWidget):
 
         # Hay filas: el header de columnas vuelve a tener sentido.
         self._table_header.show()
+        self._table_lay.setContentsMargins(0, 8, 0, 0)  # `.plist` margin-top 8
         rows_pendientes = max(0, len(rows) - self._rows_limit)
         rows = rows[: self._rows_limit]
         for p in rows:
@@ -507,6 +515,9 @@ class PacientesView(QWidget):
                 on_unlink=lambda _checked=False, _pid=pid, _n=nombre, _e=email: self._confirm_unlink(
                     _pid, _n, _e
                 ),
+                # Mockup PATIENTS[i].color: color plano por paciente (brand por
+                # defecto; Ana usa accent). Sin dato → gradiente legacy.
+                avatar_color_key=p.get("avatar_color") or "brand",
             )
             _tip = f"ID del paciente: {pid}"
             if email:
@@ -540,6 +551,14 @@ class PacientesView(QWidget):
             self._table_lay.addWidget(_more_wrap)
         self._queue_row_control_visibility_refresh()
         return
+
+    def paintEvent(self, event) -> None:
+        # Mockup `.window` + `.screen-frame` (L251-254): el contenido de
+        # Pacientes va sobre surface con el radial surface-2 del tope, no
+        # sobre el gradiente bg/bgAlt del shell.
+        p = QPainter(self)
+        paint_screen_frame_bg(p, QRectF(self.rect()), self._modo)
+        p.end()
 
     def eventFilter(self, obj, event) -> bool:
         if (
@@ -697,16 +716,19 @@ class PacientesView(QWidget):
             self._table_card.setMaximumHeight(520)
             return
         visible = min(len(rows), self._rows_limit)
-        # Overhead real: roster_meta ~34 + col-header ~26 + tc_margins 8 + spacing 4
-        # + table_lay_bottom 4 + row_gaps (n-1)*2 = 76 + 2*(n-1) ~80-90. Buffer 20.
-        target_h = min(520, max(252, 108 + visible * _NM_PATIENT_ROW_HEIGHT))
+        # Overhead canónico: roster ~38 + margin-bottom 18 + phead 26 + plist
+        # margin-top 8 = 90; filas 76 + gap 2 (pitch 78 del mockup).
+        # Viewport útil: 600 - 48 titlebar - 24 padding-top = 528.
+        target_h = min(
+            528, max(252, 90 + visible * (_NM_PATIENT_ROW_HEIGHT + 2) - 2)
+        )
         self._table_card.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum
         )
         self._table_card.setMinimumHeight(target_h)
         self._table_card.setMaximumHeight(target_h)
         # Scrollbar solo cuando las filas superan la capacidad del card máximo.
-        max_rows_no_scroll = (520 - 108) // _NM_PATIENT_ROW_HEIGHT  # 5 rows
+        max_rows_no_scroll = (528 - 90) // (_NM_PATIENT_ROW_HEIGHT + 2)  # 5 rows
         scroll_policy = (
             Qt.ScrollBarPolicy.ScrollBarAlwaysOff
             if visible <= max_rows_no_scroll
@@ -743,16 +765,19 @@ class PacientesView(QWidget):
             )
         if hasattr(self, "_table_hint"):
             self._table_hint.setStyleSheet(
-                f"color: {v3c('ink_secondary', self._modo).name()}; background: transparent;"
+                f"color: {v3c('text3', self._modo).name()}; background: transparent;"
             )
         if hasattr(self, "_table_header"):
-            # Sin border-bottom (ver _setup): evitar el subrayado doble que
-            # reaparecía al togglear el tema. Solo fondo transparente.
-            self._table_header.setStyleSheet("background: transparent;")
+            # `.phead`: border-bottom scoped por objectName (no se propaga a
+            # los QLabel hijos — evita el subrayado doble histórico).
+            self._table_header.setStyleSheet(
+                "#PacientesPhead { background: transparent; "
+                f"border-bottom: 1px solid {qcolor_to_rgba_css(v3c('line', self._modo))}; }}"
+            )
             for child in self._table_header.findChildren(QLabel):
                 child.setStyleSheet(
-                    f"color: {v3c('ink_secondary', self._modo).name()}; "
-                    "background: transparent;"
+                    f"color: {v3c('text3', self._modo).name()}; "
+                    "background: transparent; border: none;"
                 )
         if hasattr(self, "_rows_scroll"):
             self._rows_scroll.setStyleSheet(stylesheet_scrollarea(self._modo))
