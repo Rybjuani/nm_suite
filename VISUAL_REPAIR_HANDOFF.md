@@ -960,7 +960,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_dbt-practice-self-soothe-light.json
   - commit: 5961705e11464cebd8b312c03c7c3f22eecd98ed
   - closed-by: close_visual_key.py
-- [ ] `suite:dbt-practice-self-soothe@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06974; odiff=0.98; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-self-soothe_dark.png`.
+- [x] `suite:dbt-practice-self-soothe@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06974; odiff=0.98; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-self-soothe_dark.png`.
+  - evidence: bdda6c414ab8aecb9a159f8d85932aeec399cb25be60dbdf0465116004476ebb
+  - evidence-record: docs/closure_evidence/suite_dbt-practice-self-soothe-dark.json
+  - commit: 763466a1ba9c8866ce59d08ebeb8146dae91f006
+  - closed-by: close_visual_key.py
 - [ ] `suite:dbt-practice-radical-acceptance@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06717; odiff=1.50; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-radical-acceptance_light.png`.
 - [ ] `suite:dbt-practice-radical-acceptance@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07055; odiff=1.05; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-radical-acceptance_dark.png`.
 - [ ] `suite:dbt-practice-check-facts@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06169; odiff=0.86; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-check-facts_light.png`.
