@@ -1,0 +1,35 @@
+{
+  "anti_fraud_sha256": "0bf57265b40ea08abef21efb0b467039c74559c0ada98e4480b94d48ef3cdee4",
+  "capture_png_sha256": "6a2f9ba19e2af13b70a0281a8cf1a4bc893d2d5495a246a9ec11938afc1acf90",
+  "capture_v8_sha256": "0d5f1310b00115fbcab43407f099f560d3f9f5ce5a6ba04ed8a93f2c875eeda8",
+  "command_spec": {
+    "capture": {
+      "app": "suite",
+      "theme": "light",
+      "tool": "qa/capture_v8.py",
+      "vas_introspect": true,
+      "view": "dbt-practice-wise-mind"
+    },
+    "compare": {
+      "canonical": "qa/_mockup_canonical",
+      "scope": "suite:dbt-practice-wise-mind@light",
+      "tool": "qa/layered_visual_compare.py"
+    }
+  },
+  "commit_head": "ff658b3d5dddbbe1308d5ed6fe05dc7c99c39a93",
+  "key": "suite:dbt-practice-wise-mind@light",
+  "layered_compare_sha256": "309b128553ee24dc4b0d8d1a49703bf4992b62ad4976cfadb5813a8a85e5ed30",
+  "manifest_sha256": "34529b91561be99a013a30d99e113fd7a2170819db85b58115252f2eafad8c7d",
+  "metrics": {
+    "changed_pixel_ratio": 0.04029,
+    "max_bbox_delta_px": 1,
+    "mean_abs_diff": 0.01429,
+    "windowed_ssim": 0.92526
+  },
+  "modal_audit_sha256": "7044e226840142fca89045cb6077b0995a34e907a30be69b9bde540d29bab1dd",
+  "report_sha256": "cf85625e1f0c75c302f12988d4570c1d905fd5662196fd90f9eb05da5ccbc839",
+  "result": "PASS",
+  "schema": "nm_suite.evidence_record.v1",
+  "sidecar_sha256": "34e1038f6cdb627c1e587d3bd3c0f6ef3e43f44cd1863aba331be004158a65b4",
+  "vas_gate_sha256": "ebd4c3e52e50e2248eafd0261cd085ba0769d0663ff3e09a5b63b8b83c4ae408"
+}
