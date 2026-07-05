@@ -772,7 +772,11 @@ If any gate fails or evidence is missing, leave the checkbox open and add a note
   - evidence-record: docs/closure_evidence/suite_recuperar-acceso-light.json
   - commit: d665d5b2a08303b7734f3a519dcc1f2646042626
   - closed-by: close_visual_key.py
-- [ ] `suite:onboarding-error@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.33185; odiff=6.07; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding-error_light.png`.
+- [x] `suite:onboarding-error@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.33185; odiff=6.07; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding-error_light.png`.
+  - evidence: 759819fe85d69cba8de895c5707a83b7f5cb786b07e3e5ed0ea0f72f8bb84e00
+  - evidence-record: docs/closure_evidence/suite_onboarding-error-light.json
+  - commit: 8c7d4abe17135cd4c8b1c85f0899a7f5a31f34ae
+  - closed-by: close_visual_key.py
 - [ ] `suite:onboarding@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.3006; odiff=5.64; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding_light.png`.
 - [ ] `suite:recuperar-acceso@dark` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.19032; odiff=5.3; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_recuperar-acceso_dark.png`.
 - [ ] `suite:onboarding-error@dark` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.18894; odiff=5.8; bbox=14; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_onboarding-error_dark.png`.
