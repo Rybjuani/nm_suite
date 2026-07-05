@@ -1037,8 +1037,14 @@ class ModuloRegistroTCC(NMModule):
         )
         self._custom_emotion_wrap = QWidget()
         self._custom_emotion_wrap.setStyleSheet("background: transparent;")
+        # NMInput canónico = 42px (_NM_CONTROL_HEIGHT). Si el layout del wrap
+        # agrega margen top (xs=4) sin elevar la altura del parent, el input
+        # rebasa 4px el parent → VAS GEOMETRY_OVERFLOW. Wrap a la altura exacta
+        # del input, margen top trasladado a un QSpacerItem para no romper el
+        # spacing vertical de la página.
+        self._custom_emotion_wrap.setFixedHeight(42)
         _otro_lay = QHBoxLayout(self._custom_emotion_wrap)
-        _otro_lay.setContentsMargins(0, V3_SP["xs"], 0, 0)
+        _otro_lay.setContentsMargins(0, 0, 0, 0)
         _otro_lay.setSpacing(0)
         self._custom_emotion_input = NMInput("", modo=self._modo)
         self._custom_emotion_input.setMaxLength(12)
@@ -1050,6 +1056,9 @@ class ModuloRegistroTCC(NMModule):
         self._custom_emotion_input.textChanged.connect(self._on_custom_emotion_changed)
         _otro_lay.addWidget(self._custom_emotion_input, stretch=1)
         self._custom_emotion_wrap.hide()
+        # Espaciado superior equivalente al margen xs original (4px), ahora
+        # fuera del wrap para no romper su altura fija (= input canónico).
+        layout.addSpacing(V3_SP["xs"])
         layout.addWidget(self._custom_emotion_wrap)
 
         # Intensidad: header + NMHeatBar full-width (mockup TCC línea 1235-1236).
@@ -1387,10 +1396,11 @@ class ModuloRegistroTCC(NMModule):
                     and hasattr(self, "_custom_emotion_wrap")
                     and not self._custom_emotion_wrap.isHidden()
                 )
-                stack_h = {0: 244, 1: 252 if step1_otro else 226, 2: 288, 3: 244}.get(
+                # step1 "Otro" suma wrap NMInput (42) + spacer xs (4) = 46px extra.
+                stack_h = {0: 244, 1: 256 if step1_otro else 226, 2: 288, 3: 244}.get(
                     self._step, 260
                 )
-                card_h = {0: 324, 1: 306 if step1_otro else 247, 2: 372, 3: 324}.get(
+                card_h = {0: 324, 1: 310 if step1_otro else 247, 2: 372, 3: 324}.get(
                     self._step, 342
                 )
                 self._stack.setMaximumHeight(stack_h)
