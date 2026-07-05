@@ -920,7 +920,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_dbt-practice-participate-light.json
   - commit: 30761a59f86539b2ef2096f779d7cd7c9364424e
   - closed-by: close_visual_key.py
-- [ ] `suite:dbt-practice-participate@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06836; odiff=0.87; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-participate_dark.png`.
+- [x] `suite:dbt-practice-participate@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06836; odiff=0.87; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-participate_dark.png`.
+  - evidence: be5083f45d8103240055f93495dcdff27a67e7255e3a68ff08efe22b69d1b72e
+  - evidence-record: docs/closure_evidence/suite_dbt-practice-participate-dark.json
+  - commit: fc094b145d71416655fe2d4520b04a6d93566e67
+  - closed-by: close_visual_key.py
 - [ ] `suite:dbt-practice-non-judgmental@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06614; odiff=1.44; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-non-judgmental_light.png`.
 - [ ] `suite:dbt-practice-non-judgmental@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06903; odiff=0.95; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-non-judgmental_dark.png`.
 - [ ] `suite:dbt-practice-stop@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06718; odiff=1.49; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-stop_light.png`.
