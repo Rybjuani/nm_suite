@@ -810,7 +810,11 @@ If any gate fails or evidence is missing, leave the checkbox open and add a note
   - evidence-record: docs/closure_evidence/suite_registro-step3-filled-light.json
   - commit: 4d6de8da311699bd1fefa7eac29dd49d4ab9b137
   - closed-by: close_visual_key.py
-- [ ] `suite:registro@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.2591; odiff=2.16; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro_light.png`.
+- [x] `suite:registro@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.2591; odiff=2.16; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro_light.png`.
+  - evidence: eb2aee9fcc1a734a95111324cc9030f7ef439a1283ba1adb3aa13eaea0e8540b
+  - evidence-record: docs/closure_evidence/suite_registro-light.json
+  - commit: 20dbfc9e7730dfeb68e2f9f9f30919726f847feb
+  - closed-by: close_visual_key.py
 - [ ] `suite:registro-step2-distortions@dark` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.24881; odiff=3.4; bbox=58; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step2-distortions_dark.png`.
 - [ ] `suite:registro-step1-emotion-otro@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.19019; odiff=5.63; bbox=3; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step1-emotion-otro_light.png`.
 - [ ] `suite:registro-step1-emotion-otro@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.14207; odiff=5.64; bbox=60; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_registro-step1-emotion-otro_dark.png`.
