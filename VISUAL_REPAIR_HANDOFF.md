@@ -1040,7 +1040,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_dbt-practice-fast-light.json
   - commit: 40b2be83d1d8e9393ef05c6367261f7e82a4e85a
   - closed-by: close_visual_key.py
-- [ ] `suite:dbt-practice-fast@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06941; odiff=0.97; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-fast_dark.png`.
+- [x] `suite:dbt-practice-fast@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06941; odiff=0.97; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-fast_dark.png`.
+  - evidence: 1c26cb45181ae479f592e10283b21dd462c34b2f828602191bf7deaeda4cb99e
+  - evidence-record: docs/closure_evidence/suite_dbt-practice-fast-dark.json
+  - commit: 1ca02df7aadcfa77311d5a33babe0445e02f1110
+  - closed-by: close_visual_key.py
 - [ ] `suite:dbt-practice-validation-limits@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06886; odiff=1.59; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-validation-limits_light.png`.
 - [ ] `suite:dbt-practice-validation-limits@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07236; odiff=1.15; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-validation-limits_dark.png`.
 
