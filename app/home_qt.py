@@ -27,6 +27,7 @@ from PyQt6.QtCore import (
     QAbstractAnimation,
     QVariantAnimation,
     QPoint,
+    QPointF,
     pyqtSignal,
 )
 from PyQt6.QtGui import (
@@ -34,6 +35,7 @@ from PyQt6.QtGui import (
     QFont,
     QFontMetrics,
     QPainter,
+    QPainterPath,
     QPen,
     QBrush,
     QLinearGradient,
@@ -276,10 +278,14 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
 
         self._shadow: QGraphicsDropShadowEffect | None = None
         self._fade_eff: QGraphicsOpacityEffect | None = None
+        # Radio de card declarado como shape attr (contrato VAS/design-system,
+        # mismo idiom que NMCard._radius_override): paintEvent lo consume.
+        self._radius = float(V3_RD["lg"])
 
-        # Mockup homeCard: min-height:148px; el contenido puede crecer hasta 190.
-        self.setMinimumHeight(148)
-        self.setMaximumHeight(190)
+        # Mockup homeCard: height:168px FIJO (`.hcard` inline style). Con altura
+        # expandible las cards quedaban en 181 y el badge (margin-top:auto)
+        # caía 13px más abajo que el canon.
+        self.setFixedHeight(168)
         self.setMinimumWidth(0)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -310,7 +316,9 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 14, 20, 14)
+        # Mockup homeCard: .card.pad 20px; vertical calibrado contra el canon
+        # (icon box en +18 del tope, badge box terminando a -22 del borde).
+        layout.setContentsMargins(20, 18, 20, 22)
         layout.setSpacing(0)
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
@@ -329,27 +337,44 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         top.addStretch()
         self._chip = QLabel(self._config.get("chip", ""))
         self._chip.setFont(qfont("size_caption_xs", weight=TYPOGRAPHY["weight_semibold"]))
-        top.addWidget(self._chip)
+        # Canon: chip box en y 249..272 (6px bajo el tope del icon row de 32).
+        chip_box = QVBoxLayout()
+        chip_box.setContentsMargins(0, 0, 0, 0)
+        chip_box.setSpacing(0)
+        chip_box.addSpacing(6)
+        chip_box.addWidget(self._chip)
+        chip_box.addStretch(1)
+        top.addLayout(chip_box)
         layout.addLayout(top)
 
-        layout.addSpacing(6)
+        # Mockup hcard: flex gap 8px; 4 acá porque el line-box Qt del título
+        # mete ~4px de leading interno arriba del ink (canon ink L1 en y=285).
+        layout.addSpacing(4)
 
         # Title — mockup homeCard: `.h-serif` 16.5px (Fraunces) con el título CORTO
-        # de card (no el nombre largo del módulo). Serif por ADN del mockup.
+        # de card, line-clamp 2: los títulos largos WRAPPEAN a 2 líneas en el
+        # canon (Termómetro emocional, Registro de pensamientos) — sin shrink.
         self._title_lbl = QLabel(self._config.get("card_title", self._config["title"]))
+        # Mockup 16.5px → 16 (setPixelSize entero; 17 y pointSizeF fraccional
+        # rinden más anchos que el canon por métrica Qt-vs-Chromium).
         self._title_lbl.setFont(v3_font(16, weight=600, serif=True))
         self._title_lbl.setWordWrap(True)
+        self._title_lbl.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self._title_lbl.setStyleSheet("background: transparent;")
         layout.addWidget(self._title_lbl)
+        layout.addSpacing(3)  # mockup: sub margin-top 3px
 
-        self._desc_lbl = QLabel(self._config["desc"])
-        self._desc_lbl.setFont(qfont("size_caption_xs"))
-        self._desc_lbl.setWordWrap(True)
+        # Mockup: sub con line-clamp:1 → una sola línea con elipsis (las descs
+        # largas como "Trabajo con pensamientos automáticos" NO wrappean).
+        self._desc_full = self._config["desc"]
+        self._desc_lbl = QLabel(self._desc_full)
+        self._desc_lbl.setFont(v3_font(12))  # mockup 12.5px
+        self._desc_lbl.setWordWrap(False)
         self._desc_lbl.setStyleSheet("background: transparent;")
         layout.addWidget(self._desc_lbl)
 
         self._badge_wrap = QFrame(self)
-        self._badge_wrap.setFixedHeight(23)
+        self._badge_wrap.setFixedHeight(22)  # canon: badge box h22 (345..367)
         self._badge_wrap.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         badge_lay = QHBoxLayout(self._badge_wrap)
         badge_lay.setContentsMargins(11, 0, 11, 0)
@@ -462,7 +487,7 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         is_dark = "dark" in self._modo
-        r = float(V3_RD["lg"])
+        r = self._radius
         w, h = float(self.width()), float(self.height())
         rect = QRectF(0, 0, w, h)
 
@@ -502,43 +527,22 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
     # ── eventos ───────────────────────────────────────────────────────────────
 
     def resizeEvent(self, event):
-        # El mockup muestra todos los títulos de card en 1 línea
-        # (l.640 neuromood-mockup.html: font-size 16.5px). A 960px de viewport
-        # las cards miden ~219px; con 20px de padding queda ~179px para el
-        # título. En Newsreader 16px algunos títulos largos ("Registro de
-        # pensamientos", "Activación conductual", "Termómetro emocional")
-        # overflow y Qt los wrappea a 2 líneas, desalineando el contenido.
-        # Ajuste adaptativo: mantener 16px cuando entre, reducir 1px hasta
-        # que entre o llegar a 13px como piso. setWordWrap(True) sigue
-        # cubriendo anchos aún menores (sub-720px → 3 cols, sub-540px → 2).
-        # El test test_home_module_card_title_uses_serif_font lee el font al
-        # init (pre-resizeEvent), por eso este ajuste no rompe la aserción
-        # 16px sobre `animo` — el fix se aplica en runtime, no en build_ui.
+        # Mockup: sub line-clamp:1 — elide con "…" al ancho disponible.
         super().resizeEvent(event)
-        if not hasattr(self, "_title_lbl"):
-            return
-        title_text = self._title_lbl.text()
-        if not title_text:
-            return
-        avail = self._title_lbl.width()
-        if avail <= 0:
-            return
-        # No tocar el font si ya encajaba en el intento previo — evita
-        # re-correr QFontMetrics en cada resize sub-pixel.
-        current = self._title_lbl.font()
-        fm = QFontMetrics(current)
-        if fm.horizontalAdvance(title_text) <= avail:
-            return
-        candidate = QFont(current)
-        for px in (15, 14, 13):
-            candidate.setPixelSize(px)
-            fm_c = QFontMetrics(candidate)
-            if fm_c.horizontalAdvance(title_text) <= avail:
-                self._title_lbl.setFont(candidate)
-                return
-        # Si ni a 13px entra, se queda con 13px + wordwrap (caso extremo).
-        candidate.setPixelSize(13)
-        self._title_lbl.setFont(candidate)
+        if hasattr(self, "_desc_lbl") and self._desc_full:
+            fm = QFontMetrics(self._desc_lbl.font())
+            avail = max(0, self._desc_lbl.width())
+            self._desc_lbl.setText(
+                fm.elidedText(self._desc_full, Qt.TextElideMode.ElideRight, avail)
+            )
+        # Line-box canónico del título: CSS line-height 1.2 → 20px por línea
+        # (Qt usa ~22 y corría la desc 2px en cards de título de 1 línea).
+        if hasattr(self, "_title_lbl") and self._title_lbl.width() > 0:
+            tfm = QFontMetrics(self._title_lbl.font())
+            one_line = (
+                tfm.horizontalAdvance(self._title_lbl.text()) <= self._title_lbl.width()
+            )
+            self._title_lbl.setFixedHeight(20 if one_line else 40)
 
     def enterEvent(self, event):
         self._hover = True
@@ -646,7 +650,20 @@ class _HeroBienestar(QFrame):
 
     No tiene lógica clínica propia: lee el último score vía callback y lo
     presenta visualmente. Si no hay registro, muestra un mensaje suave.
+
+    Métrica compacta (fitHome del mockup): a 960×600 el Home no entra a
+    tamaño natural, y el mockup canónico encoge SOLO el welcome card via
+    ``transform: scale(s)`` (grid intacta). El canon congelado quedó con el
+    hero a ~0.78 (variante con score) / ~0.90 (variante sin score, menos
+    contenido → menos shrink). Acá esas escalas se aplican como constantes
+    de diseño sobre fuentes/paddings (Qt no escala widgets), medidas del
+    canon: título ink 238×21 (score) / 273×25 (no-score), score "10" ink
+    h23, barra h6, hero card 71..220.
     """
+
+    # fitHome del mockup, medido sobre qa/_mockup_canonical (ver docstring).
+    _FIT_SCORE = 0.78
+    _FIT_EMPTY = 0.90
 
     def __init__(
         self, modo: str, get_status_fn, username: str = "", on_module_open=None, parent=None
@@ -661,6 +678,9 @@ class _HeroBienestar(QFrame):
         # vacío (nombre sólo-espacios → "Paciente").
         _parts = (username or "Paciente").split()
         self._username = _parts[0].capitalize() if _parts else "Paciente"
+        # Radio declarado como shape attr (contrato VAS/design-system, idiom
+        # NMCard._radius_override — este frame se presenta como NMCard).
+        self._radius = float(V3_RD["lg"])
         self.setObjectName("NMCard")
         # Sin altura fija: el sizeHint del contenido manda (con el score "10"
         # lleno necesita ~142px; fijarlo en 112 recortaba el número grande).
@@ -692,8 +712,10 @@ class _HeroBienestar(QFrame):
 
     def _build_ui(self):
         root = QVBoxLayout(self)
-        root.setContentsMargins(20, 10, 20, 10)
-        root.setSpacing(4)
+        # Padding .card.pad 20px × fit; calibrado contra el canon: eyebrow
+        # ink en (44,93), barra x 43..916, bottom 16 para barra en y 196..202.
+        root.setContentsMargins(19, 18, 20, 16)
+        root.setSpacing(2)
 
         # Eyebrow row + badge derecho
         top = QHBoxLayout()
@@ -705,10 +727,12 @@ class _HeroBienestar(QFrame):
         top.addWidget(self._eyebrow)
         top.addStretch()
         root.addLayout(top)
+        # Canon: gap ink eyebrow→título 15px (mockup margin 6 × fit + leading).
+        root.addSpacing(4)
 
         self._hero_title = QLabel(self._greeting_text())
-        # Mockup hero: `.h-serif` 30px (saludo contextual). size_display_l = 30.
-        self._hero_title.setFont(v3_font("size_display_l", weight=TYPOGRAPHY["weight_semibold"], serif=True))
+        # Tamaño real lo fija _apply_fit() según variante (23px score / 27px empty).
+        self._hero_title.setFont(v3_font(23, weight=TYPOGRAPHY["weight_semibold"], serif=True))
         root.addWidget(self._hero_title)
 
         # Stacked area for empty vs filled
@@ -726,7 +750,7 @@ class _HeroBienestar(QFrame):
                 "Aún no registraste tu ánimo hoy.",
             )
         )
-        self._msg.setFont(qfont("size_small"))
+        self._msg.setFont(v3_font(12))  # mockup 13.5px × fit empty
         empty_lay.addWidget(self._msg)
         # Mockup l.673: CTA inline "Registrar ahora" → navega al módulo animo
         self._register_btn = NMButton(
@@ -743,34 +767,55 @@ class _HeroBienestar(QFrame):
         # ── Filled page ──
         self._filled_page = QWidget()
         filled_lay = QVBoxLayout(self._filled_page)
-        filled_lay.setContentsMargins(0, 0, 0, 0)
+        # Canon: score ink en y=155 (gap ink título→score 21px).
+        filled_lay.setContentsMargins(0, 8, 0, 0)
         filled_lay.setSpacing(2)
 
         score_row = QHBoxLayout()
-        score_row.setSpacing(10)
+        score_row.setSpacing(8)  # mockup gap 10 × fit
         score_row.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         self._score = QLabel("—")
         # Mockup hero: <span class="h-serif" style="font-size:40px; color:var(--brand)">.
-        # Número serif 40 brand (antes sans display_m en color accent → no canónico).
-        self._score.setFont(v3_font(40, weight=600, serif=True))
+        # Número serif brand; 40 × fit ≈ 33 (canon ink digits h23).
+        self._score.setFont(v3_font(33, weight=600, serif=True))
         # Ancho mínimo para que "10" (dos dígitos) no se corte a 960×600.
-        self._score.setMinimumWidth(40)
+        self._score.setMinimumWidth(33)
         self._score.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         score_row.addWidget(self._score)
+        # Mockup: align-items:baseline — unit y chip cuelgan de la baseline
+        # del score (ink bottom canon y=178), no del centro del row.
         self._score_unit = QLabel("/ 10")
-        self._score_unit.setFont(qfont("size_small"))
-        score_row.addWidget(self._score_unit)
+        self._score_unit.setFont(v3_font(11))  # mockup 14px × fit
+        unit_col = QVBoxLayout()
+        unit_col.setContentsMargins(0, 0, 0, 0)
+        unit_col.setSpacing(0)
+        unit_col.addStretch(1)
+        unit_col.addWidget(self._score_unit)
+        unit_col.addSpacing(7)
+        score_row.addLayout(unit_col)
 
         # Delta inline
         self._delta_lbl = QLabel("")
-        self._delta_lbl.setFont(qfont("size_small", bold=True))
-        score_row.addWidget(self._delta_lbl)
+        self._delta_lbl.setFont(v3_font(9, weight=600))  # .badge 11.5px × fit
+        chip_col = QVBoxLayout()
+        chip_col.setContentsMargins(0, 0, 0, 0)
+        chip_col.setSpacing(0)
+        chip_col.addStretch(1)
+        chip_col.addWidget(self._delta_lbl)
+        chip_col.addSpacing(3)
+        score_row.addLayout(chip_col)
         score_row.addStretch()
         filled_lay.addLayout(score_row)
+        # Canon: barra en y 197..203 (mockup margin-top 14 × fit + leading).
+        filled_lay.addSpacing(10)
 
         # Progress bar — dithered density gradient (reemplaza los QFrames raw)
-        self._progress_bar = NMProgressBar(height=8, modo=self._modo)
+        # Mockup 8px × fit = 6 (canon: barra en y 196..202).
+        self._progress_bar = NMProgressBar(height=6, modo=self._modo)
         filled_lay.addWidget(self._progress_bar)
+        # Pack al tope: sin esto el layout centra el contenido en el alto
+        # sobrante del stack y el score/bar derivan del canon.
+        filled_lay.addStretch(1)
 
         self._stack.addWidget(self._filled_page)
 
@@ -779,7 +824,7 @@ class _HeroBienestar(QFrame):
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        r = float(V3_RD["lg"])
+        r = self._radius
         w, h = float(self.width()), float(self.height())
         rect = QRectF(0, 0, w, h)
 
@@ -795,15 +840,11 @@ class _HeroBienestar(QFrame):
         p.drawRoundedRect(rect, r, r)
 
         # Mockup l.667: glow radial en upper-right (brand-soft → transparent,
-        # 200x200 en right:-30 top:-40). Da calidez al hero y lo diferencia
-        # del resto de cards (que usan solo surface sólido).
-        # 2026-06-24: v3c("brand_soft", "light_hybrid") devolvía #888888 (gris,
-        # 100% alpha) en lugar del rgba(46,93,67,.13) (verde brand 13%) del
-        # mockup. Usamos v3c("brand", ...) con alpha 100 (~40%) para que el
-        # glow sea visible sobre el fondo beige claro (alpha 33 era casi
-        # imperceptible al mezclarse con surface).
+        # 200x200 en right:-30 top:-40). Canon vigente: rgba(brand, .13) —
+        # alpha 33. (El alpha 100 anterior estaba calibrado contra un canon
+        # viejo y dejaba una mancha verde fuerte en el diff.)
         glow_color = v3c("brand", self._modo)
-        glow_color.setAlpha(100)
+        glow_color.setAlpha(33)
         glow = QRadialGradient(w - 30, -40, 200)
         glow.setColorAt(0.0, glow_color)
         glow.setColorAt(0.7, QColor(glow_color.red(), glow_color.green(), glow_color.blue(), 0))
@@ -832,10 +873,8 @@ class _HeroBienestar(QFrame):
         # We'll use a mix: "Hola," in sans, name in serif if possible
         self._hero_title.setStyleSheet(f"color: {text.name()}; background: transparent;")
 
-        # Try to use Newsreader for name
-        from shared.theme_qt import v3_font
-
-        self._hero_title.setFont(v3_font("size_display_l", weight=600, serif=True))
+        # Fuentes de eyebrow/título dependen de la página activa (fit).
+        self._apply_fit()
 
         # Mockup: número del hero en color brand (verde/menta), no accent (cobre).
         self._score.setStyleSheet(f"color: {brand.name()}; background: transparent;")
@@ -844,6 +883,21 @@ class _HeroBienestar(QFrame):
         if hasattr(self, "_progress_bar"):
             self._progress_bar._apply_theme(self._modo)
 
+
+    def _apply_fit(self):
+        """Tamaños de eyebrow/título según página activa (fitHome del mockup).
+
+        El mockup escala el welcome card entero; los tamaños resultantes en el
+        canon difieren por variante: con score fit≈0.78 (título 30→23px,
+        eyebrow 11→9px), sin score fit≈0.90 (título 27px, eyebrow 10px).
+        """
+        filled = self._stack.currentIndex() == 1
+        title_px = 23 if filled else 27
+        eyebrow_px = 9 if filled else 10
+        self._hero_title.setFont(v3_font(title_px, weight=600, serif=True))
+        eb = eyebrow_font()
+        eb.setPixelSize(eyebrow_px)
+        self._eyebrow.setFont(eb)
 
     def _parse_score(self, text: str):
         """Extrae float 0-10 del formato 'N/10' que emite _get_module_status."""
@@ -870,9 +924,11 @@ class _HeroBienestar(QFrame):
         score = self._parse_score(raw)
         if score is None:
             self._stack.setCurrentIndex(0)
+            self._apply_fit()
             return
 
         self._stack.setCurrentIndex(1)
+        self._apply_fit()
 
         # Mockup muestra "10" (entero) y "8.5" (con decimal): sin ceros sobrantes.
         self._score.setText(f"{score:.1f}".rstrip("0").rstrip("."))
@@ -886,7 +942,7 @@ class _HeroBienestar(QFrame):
             self._delta_lbl.setStyleSheet(
                 f"color: {delta_c.name()}; "
                 f"background: rgba({delta_bg.red()},{delta_bg.green()},{delta_bg.blue()},{delta_bg.alpha()}); "
-                "border-radius: 10px; padding: 2px 8px;"
+                "border-radius: 8px; padding: 3px 9px;"  # .badge 4px 11px × fit
             )
             self._delta_lbl.show()
         else:
@@ -1034,8 +1090,11 @@ class HomeView(QWidget):
         content.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
 
         content_lay = QVBoxLayout(content)
-        # Mockup `.screen`: 16px de padding antes del hero.
-        content_lay.setContentsMargins(24, 16, 24, 12)
+        # Mockup `.screen`: padding 24 (canon: hero card top en y=71; el
+        # chrome Qt termina en 48, 1px más abajo que el mockup → top 23).
+        # Bottom libre: las cards son de altura fija 168 (grid termina ~571
+        # y el resto respira como el canon).
+        content_lay.setContentsMargins(24, 23, 24, 2)
         content_lay.setSpacing(0)
 
         self._hero = _HeroBienestar(
@@ -1045,24 +1104,25 @@ class HomeView(QWidget):
             on_module_open=self._open_cb,
             parent=content,
         )
-        # Mockup Home: hero desde y=60 hasta ~190 a 960x600.
+        # Canon fitHome: hero card ocupa y 71..220 (h=149) y su margin-bottom
+        # queda comprimido a ~3 (mockup: 18px menos el alto ahorrado).
         # Bienvenida PRIMERO (decisión owner): el hero de bienestar abre el Home.
-        self._hero.setMaximumHeight(138)
+        self._hero.setFixedHeight(149)
         self._hero.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
         self._session_card = _ProximaSesionCard(self._modo, parent=content)
         self._session_card.hide()
-        content_lay.addWidget(self._hero, stretch=1)
-        content_lay.addSpacing(12)
+        content_lay.addWidget(self._hero)
+        content_lay.addSpacing(3)
 
         # P2.C: cards de "Progreso de Ánimo" y "Resumen Semanal" removidas.
         # El espacio liberado se usa para agrandar las 8 cards de módulo (la grilla
         # pasa a ocupar el área que antes usaban esas dos cards).
         self._grid = QGridLayout()
         self._grid.setContentsMargins(0, 0, 0, 0)
-        self._grid.setVerticalSpacing(12)  # Premium: 12px gap
-        self._grid.setHorizontalSpacing(12)  # Premium: 12px gap
+        self._grid.setVerticalSpacing(12)  # canon: fila 2 en y=403
+        self._grid.setHorizontalSpacing(12)
         self._grid.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         self._module_configs = module_configs()
@@ -1284,9 +1344,44 @@ class HomeView(QWidget):
     # ── fondo ─────────────────────────────────────────────────────────────────
 
     def paintEvent(self, event):
-        from shared.theme_qt import paint_shell_background
-
+        # Fondo canónico de pantalla (idéntico a registro/dbt, ambos PASS):
+        # surface plano + glow radial `.screen-frame` (50%, -20%, r500,
+        # surface-2 → transparente 70%). El shell gradient bg→bgAlt que se
+        # usaba acá no existe en el mockup y oscurecía todo el fondo del Home.
         p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        paint_shell_background(p, QRectF(self.rect()), self._modo)
+        rect = QRectF(self.rect())
+        surface = v3c("surface", self._modo)
+        surface_2 = v3c("surface_2", self._modo)
+
+        p.fillRect(rect, QBrush(surface))
+
+        glow = QRadialGradient(QPointF(rect.width() * 0.5, -rect.height() * 0.2), 500)
+        glow.setColorAt(0.0, surface_2)
+        fade = QColor(surface_2)
+        fade.setAlpha(0)
+        glow.setColorAt(0.7, fade)
+        p.fillRect(rect, QBrush(glow))
+
+        # Borde de `.window` del mockup (idéntico a _DBTScreen): 1px --line en
+        # laterales y base, esquinas inferiores r-xl=28. El borde superior lo
+        # pinta el chrome; este widget cubre el resto de la ventana.
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        line_c = QColor(v3c("line", self._modo))
+        if line_c.alpha() == 255:
+            # Alpha canónico: light rgba(49,45,39,.10) / dark rgba(255,255,255,.09)
+            line_c.setAlpha(23 if "dark" in self._modo else 26)
+        radius = 28.0
+        win_path = QPainterPath()
+        win_path.addRoundedRect(
+            QRectF(0.5, -radius, rect.width() - 1.0, rect.height() + radius - 0.5),
+            radius,
+            radius,
+        )
+        exterior = QPainterPath()
+        exterior.addRect(rect)
+        exterior = exterior.subtracted(win_path)
+        p.fillPath(exterior, QBrush(v3c("bg", self._modo)))
+        p.setPen(QPen(line_c, 1))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawPath(win_path)
         p.end()
