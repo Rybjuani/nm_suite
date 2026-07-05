@@ -1123,7 +1123,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
 - [ ] `hub:pacientes@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.36517; odiff=4.73; bbox=89; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_pacientes_light.png`.
 - [ ] `hub:textos-globales@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.36355; odiff=2.49; bbox=17; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_textos-globales_dark.png`.
 - [ ] `hub:pacientes@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.28366; odiff=4.93; bbox=105; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_pacientes_dark.png`.
-- [ ] `hub:pacientes-empty@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.22697; odiff=1.25; bbox=42; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_pacientes-empty_light.png`.
+- [x] `hub:pacientes-empty@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.22697; odiff=1.25; bbox=42; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_pacientes-empty_light.png`.
+  - evidence: dbdd7fe8194feced05cf03d1d1be5af701b6ca9ff0ae2de30df618c6eca6872b
+  - evidence-record: docs/closure_evidence/hub_pacientes-empty-light.json
+  - commit: 56d1c2d85c5ccd7cfbfee3e045a57a98c3e0c490
+  - closed-by: close_visual_key.py
 - [x] `hub:pacientes-empty@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.12378; odiff=1.35; bbox=43; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_pacientes-empty_dark.png`.
   - evidence: eabc9a7ecbac4651424954a100765c825234be737832511af32394dc450a31c1
   - evidence-record: docs/closure_evidence/hub_pacientes-empty-dark.json
