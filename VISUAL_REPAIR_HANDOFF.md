@@ -1068,7 +1068,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/hub_detalle-plan-rutina-dark.json
   - commit: cc2a26c1eb211fa2623ab438181a132b02a06992
   - closed-by: close_visual_key.py
-- [ ] `hub:detalle-plan-timer@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.44912; odiff=5.96; bbox=142; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-timer_light.png`.
+- [x] `hub:detalle-plan-timer@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.44912; odiff=5.96; bbox=142; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-timer_light.png`.
+  - evidence: 127eb48124e734792640c0b846e644354c85373a670c6cb2b21cdd8f9ad009b4
+  - evidence-record: docs/closure_evidence/hub_detalle-plan-timer-light.json
+  - commit: 14baced8ba28674266205ff25b053fd8a694cd57
+  - closed-by: close_visual_key.py
 - [ ] `hub:detalle-plan-rutina@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.44284; odiff=5.05; bbox=150; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle-plan-rutina_light.png`.
 - [ ] `hub:detalle@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.42572; odiff=5.24; bbox=111; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle_dark.png`.
 - [ ] `hub:detalle@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.41556; odiff=5.06; bbox=110; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_detalle_light.png`.
