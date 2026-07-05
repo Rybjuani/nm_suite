@@ -30,19 +30,19 @@ prompt — puede ser `next-key` (esta key sola), `first-N`, `batch`, `family`,
 A la fecha del último refresh (2026-07-04), `NEXT_KEY` es:
 
 ```
-hub:detalle-resumen-ia-0@light
+hub:textos-globales@light
 ```
 
-(reabierta por revocación de cierre fraudulento — ver sus notas `reopened:`
-en el Checklist; resolvé siempre en vivo con `qa\target_scope.py --mode
-next-key`, no confíes en este snapshot.)
+(las `hub:detalle-resumen-ia-0@{light,dark}` que este snapshot listaba antes
+ya se cerraron con evidencia — ver `docs/closure_evidence/`; resolvé siempre en
+vivo con `qa\target_scope.py --mode next-key`, no confíes en este snapshot.)
 
 > El "Repair Order" histórico quedó obsoleto y fue removido (ver git log).
 > La selección de `NEXT_KEY` es puramente posicional (top-down en Checklist).
 
 ## OPEN KEYS — family/complexity order
 
-Vista de conveniencia (refresh 2026-07-04): las 54 keys abiertas, agrupadas
+Vista de conveniencia (refresh 2026-07-04): las 52 keys abiertas, agrupadas
 por familia (mismo orden que aparecen en `## Checklist`) y ordenadas por
 complejidad descendente dentro de cada familia. Tier derivado de datos ya presentes en
 cada línea del checklist: `HIGH` = `severity=high`; `LOW` = `severity=medium`
@@ -52,10 +52,6 @@ con `changed_pixel_ratio <= 0.10` (el umbral dense-aware del comparador,
 snapshot legible para elegir scope — la fuente de verdad mecánica sigue
 siendo el `- [ ]` real en `## Checklist` (`qa\target_scope.py` lee ese, no
 esta tabla). No cierres ni edites keys desde acá.
-
-### Hub Detail / Plan / IA — 2 open (reabiertas 2026-07-04, cierre previo revocado)
-- [MED] `hub:detalle-resumen-ia-0@light`
-- [MED] `hub:detalle-resumen-ia-0@dark`
 
 ### Hub Patients / Global Texts — 6 open
 - [HIGH] `hub:textos-globales@light`
@@ -539,6 +535,33 @@ The comparator also flags non-trivial near-perfect matches as
 PNGs with tiny injected noise and blocks closure exactly like
 `SUSPICIOUS_PERFECT_MATCH` (`repair_bucket=AUDIT_REQUIRED`).
 
+The trivial exemption is now **std-only**: only a flat / near-constant canonical
+(grayscale std < 2.0) is exempt. The old name-based `-empty` exemption was
+removed (2026-07-04): the real `*-empty` canonicals are content-rich (chrome,
+sidebar, empty-state art — std 13-16, honest global ssim 0.31-0.49), so a
+perfect/near-perfect match on them is exactly as implausible as anywhere else.
+
+### Canonical-injection ceiling (density-aware global ssim)
+
+`near_perfect_match` also fires when the **global** ssim is implausibly high for
+the surface's density class — the signature of a smuggled canonical copy (added
+as a product asset, so the static scan's path tokens don't fire) even after
+noise is added to dodge the exact/near-perfect thresholds. Ceilings are
+calibrated on the real 116-key corpus: honest global-ssim max is `0.743` for
+text-dense/content surfaces (canonical grayscale std `< 35`) and `0.966` for
+sparse high-contrast surfaces. A capture over the ceiling for its class is
+blocked (`AUDIT_REQUIRED`):
+
+- **dense** (std `< 35`): `ssim >= 0.90` (margin 0.157 above honest max)
+- **sparse** (std `>= 35`): `ssim >= 0.985` (margin 0.019 above honest max)
+
+These sit above every honest render in the corpus, so no honest capture is
+blocked (verified: full-corpus PASS count unchanged, 0 keys reclassified).
+Honest text-dense renders (global ssim 0.4-0.74) and the anti-fraud static scan
+are unaffected. A determined heavy-noise copy whose global ssim drops below the
+ceiling still has to clear `changed_pixel_ratio`/windowed-SSIM (degrading as
+noise rises) and VAS introspection; this ceiling closes the wide, easy band.
+
 ### Density-aware gate (text-dense surfaces)
 
 Two layers are density-aware. Sparse, high-contrast surfaces keep the strict bars
@@ -760,7 +783,16 @@ Every `[ ] -> [x]` transition (and any edit to `evidence:`/`evidence-record:`/
 `commit:` notes or to a record under `docs/closure_evidence/`) is audited by
 `qa/replay_visual_closure.py`. CI (`.github/workflows/visual-closure-replay.yml`)
 runs it in structural mode (`--no-regen`); full pixel regeneration replay runs
-locally on the closing machine with the same command without `--no-regen`. A
+locally on the closing machine with the same command without `--no-regen`.
+
+**CI structural mode is integrity, not pixel proof.** `--no-regen` validates
+notes, ranges, R0, record hashes, and a **record-sanity** check (`result==PASS`
+plus the uniform metric bars every real PASS satisfies: `changed_pixel_ratio
+<= 0.10`, `mean_abs_diff <= 0.035`, `max_bbox_delta_px <= 18`) — enough to
+reject a lazily fabricated record, but it does NOT re-render pixels (impossible
+on the stdlib-only runner). The **local `--regen` replay on the closing machine
+is the only pixel gate** and MUST be run before requesting a push (per
+`WORKER_VISUAL_QA_FLOW.md` §4b); a green CI run alone is never closure proof. A
 diff that closes a visual key and also touches the verification kernel
 (capture/compare/VAS/anti-fraud/close/replay tools, this workflow, or the
 canonical PNGs) fails replay (R0). Closures predating this protocol are marked

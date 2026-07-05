@@ -14,6 +14,9 @@ from PIL import Image, ImageDraw
 
 from qa.layered_visual_compare import (
     LayeredThresholds,
+    _INJECTION_SSIM_CEILING_DENSE,
+    _INJECTION_SSIM_CEILING_SPARSE,
+    _is_near_perfect_match,
     compare_pair,
     compare_sources,
     parse_capture_name,
@@ -59,11 +62,38 @@ def test_perfect_match_on_nontrivial_surface_is_suspicious(tmp_path):
     assert result.status != "PASS"
 
 
-def test_empty_state_view_is_exempt(tmp_path):
+def test_content_rich_empty_view_is_flagged(tmp_path):
+    """A content-rich ``*-empty`` view is NO LONGER exempt (2026-07-04).
+
+    Real ``-empty`` canonicals carry chrome/sidebar/empty-state art (measured
+    grayscale std 13-16), so a verbatim canonical copy is just as implausible as
+    on any other surface and must be flagged, not waved through by name.
+    """
     canonical = tmp_path / "c" / "suite-timer-empty-light-120x80.png"
     actual = tmp_path / "a" / "suite-timer-empty-light-120x80.png"
     _content_png(canonical)
-    _content_png(actual)
+    _content_png(actual)  # identical content -> perfect match
+
+    result = compare_pair(
+        "suite:timer-empty@light",
+        parse_capture_name(canonical),
+        parse_capture_name(actual),
+        thresholds=LayeredThresholds(),
+        use_odiff=False,
+    )
+
+    assert result.suspicious_perfect_match is True
+    assert result.status == "SUSPICIOUS_PERFECT_MATCH"
+    assert result.status != "PASS"
+
+
+def test_flat_empty_view_stays_exempt(tmp_path):
+    """A genuinely FLAT ``-empty`` canonical (std < 2) stays exempt via the std
+    rule — the only surviving trivial exemption."""
+    canonical = tmp_path / "c" / "suite-timer-empty-light-120x80.png"
+    actual = tmp_path / "a" / "suite-timer-empty-light-120x80.png"
+    _solid_png(canonical)
+    _solid_png(actual)
 
     result = compare_pair(
         "suite:timer-empty@light",
@@ -74,6 +104,7 @@ def test_empty_state_view_is_exempt(tmp_path):
     )
 
     assert result.suspicious_perfect_match is False
+    assert result.near_perfect_match is False
     assert result.status == "PASS"
 
 
@@ -171,6 +202,55 @@ def test_near_perfect_match_blocks_closure_in_report(tmp_path, monkeypatch):
     assert payload["handoff_closure_allowed"] is False
     assert payload["results"][0]["near_perfect_match"] is True
     assert payload["results"][0]["status"] == "NEAR_PERFECT_MATCH"
+
+
+def _nontrivial_canonical(tmp_path: Path) -> "Image.Image":
+    """A canonical whose grayscale std is above the trivial epsilon (2.0)."""
+    p = tmp_path / "canon.png"
+    _content_png(p)
+    return Image.open(p).convert("RGB")
+
+
+# ─── Canonical-injection ceiling (density-aware global ssim) ────────────────
+
+
+def test_injection_ceiling_flags_dense_copy(tmp_path):
+    """Dense surface (canon std < 35): global ssim >= 0.90 is copy-suspect even
+    when noise pushed changed_pixel_ratio out of the near-perfect band."""
+    canon = _nontrivial_canonical(tmp_path)
+    metrics = {"ssim": 0.94, "changed_pixel_ratio": 0.03, "canonical_gray_std": 20.0}
+    assert _is_near_perfect_match(metrics, canon, "home") is True
+
+
+def test_injection_ceiling_allows_honest_dense(tmp_path):
+    """Honest dense render (global ssim 0.74, corpus max) stays below the 0.90
+    dense ceiling and is NOT flagged."""
+    canon = _nontrivial_canonical(tmp_path)
+    metrics = {"ssim": 0.743, "changed_pixel_ratio": 0.05, "canonical_gray_std": 20.0}
+    assert _is_near_perfect_match(metrics, canon, "home") is False
+
+
+def test_injection_ceiling_allows_honest_sparse_max(tmp_path):
+    """Honest sparse render at the corpus max (0.966) stays below the 0.985
+    sparse ceiling and is NOT flagged."""
+    canon = _nontrivial_canonical(tmp_path)
+    metrics = {"ssim": 0.966, "changed_pixel_ratio": 0.05, "canonical_gray_std": 57.0}
+    assert _is_near_perfect_match(metrics, canon, "dbt-practice-stop") is False
+
+
+def test_injection_ceiling_flags_sparse_copy(tmp_path):
+    """Sparse surface: global ssim >= 0.985 is copy-suspect."""
+    canon = _nontrivial_canonical(tmp_path)
+    metrics = {"ssim": 0.99, "changed_pixel_ratio": 0.02, "canonical_gray_std": 57.0}
+    assert _is_near_perfect_match(metrics, canon, "dbt-practice-stop") is True
+
+
+def test_injection_ceilings_ordered_and_above_corpus_max():
+    """Ceilings must sit above the measured honest corpus maxima (dense 0.743,
+    sparse 0.966) so honest renders never trip them."""
+    assert _INJECTION_SSIM_CEILING_DENSE > 0.743
+    assert _INJECTION_SSIM_CEILING_SPARSE > 0.966
+    assert _INJECTION_SSIM_CEILING_DENSE < _INJECTION_SSIM_CEILING_SPARSE
 
 
 def test_suspicious_match_blocks_closure_in_report(tmp_path, monkeypatch):

@@ -440,6 +440,69 @@ def test_replay_no_regen_validates_structurally_without_regeneration(monkeypatch
     assert result.regenerated is False
 
 
+# ─── Structural record-sanity (both modes; hardens the CI --no-regen path) ──
+
+
+def _sanity_case(monkeypatch, tmp_path, mutate) -> replay.ReplayResult:
+    record = _record()
+    mutate(record)
+    record_rel, evidence = _write_record(tmp_path, record)
+    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
+    handoff.write_text(_handoff_closed(KEY, evidence, record_rel), encoding="utf-8")
+    _patch_git(
+        monkeypatch,
+        base_text=f"- [ ] `{KEY}` pending\n",
+        diff_text=_closure_diff(),
+        changed_files=["VISUAL_REPAIR_HANDOFF.md", record_rel.as_posix()],
+    )
+    # regenerate must never run: sanity rejects BEFORE regeneration, and in
+    # --no-regen mode it is the only pixel-independent metric check.
+    monkeypatch.setattr(
+        replay,
+        "regenerate_record_at_commit",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("must not regenerate")),
+    )
+    return replay.replay(
+        base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path, regenerate=False
+    )
+
+
+def test_structural_sanity_rejects_non_pass_record(monkeypatch, tmp_path):
+    def mutate(rec):
+        rec["result"] = "FAIL"
+    result = _sanity_case(monkeypatch, tmp_path, mutate)
+    assert result.ok is False
+    assert result.failed_keys[0].reason == "record_not_pass"
+
+
+def test_structural_sanity_rejects_out_of_bounds_changed(monkeypatch, tmp_path):
+    def mutate(rec):
+        rec["metrics"]["changed_pixel_ratio"] = 0.42  # > 0.10 loosest bar
+    result = _sanity_case(monkeypatch, tmp_path, mutate)
+    assert result.ok is False
+    assert result.failed_keys[0].reason == "record_metrics_out_of_bounds"
+
+
+def test_structural_sanity_rejects_out_of_bounds_bbox(monkeypatch, tmp_path):
+    def mutate(rec):
+        rec["metrics"]["max_bbox_delta_px"] = 99  # > 18
+    result = _sanity_case(monkeypatch, tmp_path, mutate)
+    assert result.ok is False
+    assert result.failed_keys[0].reason == "record_metrics_out_of_bounds"
+
+
+def test_structural_sanity_bounds_track_gate_thresholds():
+    """Drift-guard: the stdlib-only replay literals must equal the real gate
+    bars in qa/layered_visual_compare.py (which pull numpy, so replay can't
+    import them at CI time)."""
+    from qa.layered_visual_compare import LayeredThresholds
+
+    th = LayeredThresholds()
+    assert replay.RECORD_MAX_CHANGED_PIXEL_RATIO == th.text_dense_max_changed_pixel_ratio
+    assert replay.RECORD_MAX_MEAN_ABS_DIFF == th.max_mean_abs_diff
+    assert replay.RECORD_MAX_BBOX_DELTA_PX == th.max_bbox_shift_px
+
+
 # ─── evidence_changed_keys legacy-note hardening ────────────────────────────
 #
 # Legacy [x] closures carry freeform narrative notes ("CLOSURE INVALIDATED
