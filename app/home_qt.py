@@ -233,6 +233,7 @@ _TONE_COLOR_KEYS = {
     "efect": "efect",
     "accent": "accent",
     "gold": "gold",
+    "neutral": "textMuted",
     "rose": "rose",
 }
 
@@ -242,6 +243,7 @@ _TONE_SOFT_KEYS = {
     "efect": "brandSoft",
     "accent": "accentSoft",
     "gold": "goldSoft",
+    "neutral": "surface3",
     "rose": "roseSoft",
 }
 
@@ -448,7 +450,7 @@ class ModuleCard(ThemeAwareWidgetMixin, QWidget):
         elif self._config["id"] == "animo":
             # Mockup: card animo muestra estado vacío cuando no hay registro del día
             self._badge.setText(t("text.home.animo_no_record", "Sin registro hoy"))
-            self._apply_status_badge_style("gold")
+            self._apply_status_badge_style("neutral")
             self._badge_wrap.show()
         else:
             self._badge.setText("")
@@ -714,7 +716,7 @@ class _HeroBienestar(QFrame):
         root = QVBoxLayout(self)
         # Padding .card.pad 20px × fit; calibrado contra el canon: eyebrow
         # ink en (44,93), barra x 43..916, bottom 16 para barra en y 196..202.
-        root.setContentsMargins(19, 18, 20, 16)
+        root.setContentsMargins(19, 23, 20, 11)
         root.setSpacing(2)
 
         # Eyebrow row + badge derecho
@@ -742,8 +744,8 @@ class _HeroBienestar(QFrame):
         # ── Empty page ──
         self._empty_page = QWidget()
         empty_lay = QHBoxLayout(self._empty_page)
-        empty_lay.setContentsMargins(0, 0, 0, 0)
-        empty_lay.setSpacing(14)  # mockup l.671: gap:14px
+        empty_lay.setContentsMargins(0, 9, 0, 0)
+        empty_lay.setSpacing(22)
         self._msg = QLabel(
             t(
                 "text.home.empty_message",
@@ -758,7 +760,10 @@ class _HeroBienestar(QFrame):
             variant="primary",
             size="sm",
             modo=self._modo,
+            width=0,
+            height=38,
         )
+        self._register_btn.setFixedWidth(137)
         self._register_btn.clicked.connect(lambda: self._on_module_open("animo"))
         empty_lay.addWidget(self._register_btn)
         empty_lay.addStretch()
@@ -768,7 +773,7 @@ class _HeroBienestar(QFrame):
         self._filled_page = QWidget()
         filled_lay = QVBoxLayout(self._filled_page)
         # Canon: score ink en y=155 (gap ink título→score 21px).
-        filled_lay.setContentsMargins(0, 8, 0, 0)
+        filled_lay.setContentsMargins(0, 3, 0, 0)
         filled_lay.setSpacing(2)
 
         score_row = QHBoxLayout()
@@ -884,14 +889,15 @@ class _HeroBienestar(QFrame):
             self._progress_bar._apply_theme(self._modo)
 
 
-    def _apply_fit(self):
+    def _apply_fit(self, filled: bool | None = None):
         """Tamaños de eyebrow/título según página activa (fitHome del mockup).
 
         El mockup escala el welcome card entero; los tamaños resultantes en el
         canon difieren por variante: con score fit≈0.78 (título 30→23px,
         eyebrow 11→9px), sin score fit≈0.90 (título 27px, eyebrow 10px).
         """
-        filled = self._stack.currentIndex() == 1
+        if filled is None:
+            filled = self._stack.currentIndex() == 1
         title_px = 23 if filled else 27
         eyebrow_px = 9 if filled else 10
         self._hero_title.setFont(v3_font(title_px, weight=600, serif=True))
@@ -924,11 +930,11 @@ class _HeroBienestar(QFrame):
         score = self._parse_score(raw)
         if score is None:
             self._stack.setCurrentIndex(0)
-            self._apply_fit()
+            self._apply_fit(filled=False)
             return
 
         self._stack.setCurrentIndex(1)
-        self._apply_fit()
+        self._apply_fit(filled=True)
 
         # Mockup muestra "10" (entero) y "8.5" (con decimal): sin ceros sobrantes.
         self._score.setText(f"{score:.1f}".rstrip("0").rstrip("."))

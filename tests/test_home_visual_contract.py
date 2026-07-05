@@ -36,8 +36,8 @@ def test_home_hero_filled_state_matches_mockup_score_and_delta(qtbot, monkeypatc
     assert hero._score.text() == "4"
     assert hero._score_unit.text() == "/ 10"
     assert hero._delta_lbl.text() == "▲ 0.8 vs semana"
-    assert "border-radius: 10px" in hero._delta_lbl.styleSheet()
-    assert hero._progress_bar.height() == 8
+    assert "border-radius: 8px" in hero._delta_lbl.styleSheet()
+    assert hero._progress_bar.height() == 6
 
 
 def test_home_view_vertical_rhythm_matches_mockup(qtbot, monkeypatch) -> None:
@@ -53,12 +53,12 @@ def test_home_view_vertical_rhythm_matches_mockup(qtbot, monkeypatch) -> None:
 
     assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == (
         24,
-        16,
+        23,
         24,
-        12,
+        2,
     )
-    assert view._hero.maximumHeight() == 138
-    assert content_lay.itemAt(1).spacerItem().sizeHint().height() == 12
+    assert view._hero.maximumHeight() == 149
+    assert content_lay.itemAt(1).spacerItem().sizeHint().height() == 3
     assert content_lay.count() == 3
     assert content_lay.itemAt(2).layout() is view._grid
 
@@ -76,12 +76,12 @@ def test_home_module_card_matches_mockup_badge_contract(qtbot) -> None:
     )
     qtbot.addWidget(card)
 
-    assert card.minimumHeight() == 148
-    assert card.maximumHeight() == 190
+    assert card.minimumHeight() == 168
+    assert card.maximumHeight() == 168
     assert card._icon_box.size().width() == 32
     assert card._icon_box.size().height() == 32
     assert card._badge.text() == "60% hoy"
-    assert card._badge_wrap.height() == 23
+    assert card._badge_wrap.height() == 22
     assert card._badge_dot.size().width() == 6
     assert card._badge_dot.size().height() == 6
     assert "border-radius: 11px" in card._badge_wrap.styleSheet()
