@@ -61,14 +61,28 @@ _STATE_SENSITIVE_PREFIXES = (
 # (ssim=1.0 / mad=0.0 / changed=0) on a NON-trivial surface is not physically
 # plausible and is the signature of a reference-artifact injection (see the
 # recovery overlay fraud). Such a result is flagged and blocks closure pending
-# audit. Trivial surfaces are exempt by an explicit, tested rule:
-#   - empty-state views (name ends with ``-empty``), and
-#   - flat / near-constant canonicals (grayscale std below the epsilon, e.g.
-#     solid test fixtures) where a perfect match carries no information.
+# audit. The ONLY exemption is a flat / near-constant canonical (grayscale std
+# below the epsilon, e.g. a solid test fixture) where a perfect match carries no
+# information. There is NO name-based ``-empty`` exemption (removed 2026-07-04):
+# real ``*-empty`` canonicals are content-rich (std 13-16) and stay protected.
 _TRIVIAL_SURFACE_STD = 2.0
-_TRIVIAL_EMPTY_VIEW_SUFFIX = "-empty"
 _NEAR_PERFECT_CHANGED_RATIO = 0.005
 _NEAR_PERFECT_SSIM = 0.995
+# Canonical-injection ceiling. A genuine Qt capture of a Chromium-rendered
+# canonical can never reach a copy's GLOBAL ssim: the honest ceiling is bounded
+# by cross-renderer text/shape rasterisation. Measured on the real 116-key
+# corpus (2026-07-04): honest global-ssim max is 0.743 on text-dense / content
+# surfaces (canonical grayscale std < text_dense_canonical_std) and 0.966 on
+# sparse high-contrast surfaces. A capture whose global ssim exceeds the ceiling
+# for its density class is therefore the signature of a smuggled canonical copy
+# (asset-injected, so the static scan's path tokens don't fire) — with or
+# without added noise. The ceilings sit above every honest render (margins 0.157
+# dense / 0.019 sparse), so this never blocks an honest capture; it is tightest
+# exactly where fraud is most tempting (dense surfaces, honest ssim 0.4-0.74).
+# It complements — never replaces — the exact/near-perfect flags below and the
+# static anti-fraud scan.
+_INJECTION_SSIM_CEILING_DENSE = 0.90
+_INJECTION_SSIM_CEILING_SPARSE = 0.985
 
 
 @dataclass(frozen=True)
@@ -963,15 +977,30 @@ def _layout_fail(
 def _is_trivial_surface(canonical_img: Image.Image, view: str) -> bool:
     """A surface where a perfect pixel match carries no fraud signal.
 
-    Explicit, tested exception for SUSPICIOUS_PERFECT_MATCH:
-      - empty-state views (name ends with ``-empty``);
-      - flat / near-constant canonicals (grayscale std below the epsilon),
-        e.g. solid colour test fixtures.
+    The ONLY exemption is a flat / near-constant canonical (grayscale std below
+    the epsilon), e.g. a solid-colour test fixture, where a perfect match is
+    information-free.
+
+    The former name-based ``-empty`` exemption was REMOVED (2026-07-04): the
+    real ``*-empty`` canonicals are content-rich (chrome, sidebar, empty-state
+    art — measured grayscale std 13-16, honest global ssim 0.31-0.49), so a
+    perfect/near-perfect match on them is just as implausible as on any other
+    surface and must stay flagged. ``view`` is kept in the signature for
+    call-site stability but is no longer consulted.
     """
-    if view.endswith(_TRIVIAL_EMPTY_VIEW_SUFFIX):
-        return True
+    del view  # name-based exemption removed; std is the only trivial signal
     arr = np.asarray(canonical_img.convert("L"), dtype=np.float64)
     return float(arr.std()) < _TRIVIAL_SURFACE_STD
+
+
+def _injection_ssim_ceiling(metrics: dict[str, Any]) -> float:
+    """Density-aware GLOBAL-ssim ceiling above which a capture is copy-suspect."""
+    canon_std = float(
+        metrics.get("canonical_gray_std", LayeredThresholds.text_dense_canonical_std + 1.0)
+    )
+    if canon_std < LayeredThresholds.text_dense_canonical_std:
+        return _INJECTION_SSIM_CEILING_DENSE
+    return _INJECTION_SSIM_CEILING_SPARSE
 
 
 def _is_suspicious_perfect_match(metrics: dict[str, Any], canonical_img: Image.Image, view: str) -> bool:
@@ -984,11 +1013,18 @@ def _is_suspicious_perfect_match(metrics: dict[str, Any], canonical_img: Image.I
 
 
 def _is_near_perfect_match(metrics: dict[str, Any], canonical_img: Image.Image, view: str) -> bool:
+    if _is_trivial_surface(canonical_img, view):
+        return False
+    ssim = float(metrics.get("ssim", 0.0))
     near_perfect = (
         float(metrics.get("changed_pixel_ratio", 1.0)) < _NEAR_PERFECT_CHANGED_RATIO
-        and float(metrics.get("ssim", 0.0)) > _NEAR_PERFECT_SSIM
+        and ssim > _NEAR_PERFECT_SSIM
     )
-    return near_perfect and not _is_trivial_surface(canonical_img, view)
+    # Canonical-injection: global ssim implausibly high for the surface's density
+    # class (catches a copy even after noise is added to dodge the exact/near
+    # thresholds above). See _INJECTION_SSIM_CEILING_* for the corpus calibration.
+    canonical_injection = ssim >= _injection_ssim_ceiling(metrics)
+    return near_perfect or canonical_injection
 
 
 def _is_state_sensitive(app: str, view: str) -> bool:

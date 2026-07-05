@@ -442,3 +442,55 @@ def test_reopen_rejects_tampered_record(monkeypatch, tmp_path):
     # Nothing moved, nothing rewritten.
     assert record_path.exists()
     assert "- [x]" in (tmp_path / "VISUAL_REPAIR_HANDOFF.md").read_text(encoding="utf-8")
+
+
+# ─── reopen_legacy_all (governance bulk reset) ──────────────────────────────
+
+
+def test_reopen_legacy_all_flips_only_legacy_and_strips_notes(tmp_path):
+    handoff = (
+        "## Checklist\n"
+        "\n"
+        "### Fam\n"
+        "- [x] `suite:legacy-a@light` - severity=high; changed=0.20\n"
+        "  - legacy: true\n"
+        "  - legacy-reason: pre_replay_era\n"
+        "  - Closure evidence (2026): manual panel review, no overlay.\n"
+        "- [x] `suite:evidence-b@light` - severity=high; changed=0.05\n"
+        "  - evidence: " + "d" * 64 + "\n"
+        "  - evidence-record: docs/closure_evidence/suite_evidence-b-light.json\n"
+        "  - commit: " + "a" * 40 + "\n"
+        "- [ ] `suite:open-c@light` - severity=medium; changed=0.09\n"
+        "- [x] `suite:legacy-d@dark` - severity=medium; changed=0.10\n"
+        "  - legacy: true\n"
+    )
+    path = _write_handoff(tmp_path, handoff)
+
+    reopened = close.reopen_legacy_all(repo_root=tmp_path)
+
+    assert reopened == ["suite:legacy-a@light", "suite:legacy-d@dark"]
+    text = path.read_text(encoding="utf-8")
+    # legacy items are now open, with notes stripped
+    assert "- [ ] `suite:legacy-a@light`" in text
+    assert "- [ ] `suite:legacy-d@dark`" in text
+    assert "legacy: true" not in text
+    assert "manual panel review" not in text
+    # evidence-backed closure untouched
+    assert "- [x] `suite:evidence-b@light`" in text
+    assert "evidence: " + "d" * 64 in text
+    # already-open item untouched
+    assert "- [ ] `suite:open-c@light`" in text
+    # inline metadata preserved on reopened line (target_scope tiers on it)
+    assert "severity=high; changed=0.20" in text
+
+
+def test_reopen_legacy_all_is_idempotent(tmp_path):
+    handoff = (
+        "## Checklist\n"
+        "- [x] `suite:legacy-a@light` - severity=high\n"
+        "  - legacy: true\n"
+    )
+    _write_handoff(tmp_path, handoff)
+    assert close.reopen_legacy_all(repo_root=tmp_path) == ["suite:legacy-a@light"]
+    # second run finds nothing
+    assert close.reopen_legacy_all(repo_root=tmp_path) == []

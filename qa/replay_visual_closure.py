@@ -289,6 +289,58 @@ def evidence_changed_keys(base_items: list[HandoffItem], head_items: list[Handof
 EVIDENCE_RECORD_PREFIX = "docs/closure_evidence/"
 REVOKED_RECORD_PREFIX = EVIDENCE_RECORD_PREFIX + "revoked/"
 
+# Structural record-sanity bounds. Every genuine PASS record satisfies these
+# UNIFORM upper bounds (they are the loosest gate bars, applied to all surfaces
+# regardless of density), so checking them costs nothing yet rejects a lazily
+# fabricated record with implausible/out-of-bounds metrics — the CI (--no-regen)
+# path otherwise trusts a record whose canonical hash merely matches its own
+# note. Kept as literals (not imported) so replay stays stdlib-only on the CI
+# runner; a drift-guard test pins them to LayeredThresholds.
+# Sources in qa/layered_visual_compare.py::LayeredThresholds:
+#   RECORD_MAX_CHANGED_PIXEL_RATIO = text_dense_max_changed_pixel_ratio (0.10)
+#   RECORD_MAX_MEAN_ABS_DIFF       = max_mean_abs_diff (0.035)
+#   RECORD_MAX_BBOX_DELTA_PX       = max_bbox_shift_px (18)
+RECORD_MAX_CHANGED_PIXEL_RATIO = 0.10
+RECORD_MAX_MEAN_ABS_DIFF = 0.035
+RECORD_MAX_BBOX_DELTA_PX = 18
+
+
+def _record_sanity_failure(record_path: Path, key: str) -> ReplayFailure | None:
+    """Structural sanity of a closure record (no pixels): PASS + metric bounds.
+
+    Runs in BOTH replay modes. It enforces the invariant that close_visual_key
+    already guarantees when it writes a record (it only writes on a real PASS
+    within the gate bars), so a real record never trips it, while a fabricated
+    record claiming a non-PASS result or out-of-bounds metrics is caught even in
+    structural (--no-regen / CI) mode.
+    """
+    try:
+        payload = json.loads(record_path.read_text(encoding="utf-8"))
+    except Exception:
+        return ReplayFailure(key, "invalid_evidence_record")
+    if payload.get("schema") != close_visual_key.EVIDENCE_SCHEMA:
+        return ReplayFailure(key, "record_unexpected_schema")
+    if payload.get("result") != "PASS":
+        return ReplayFailure(key, "record_not_pass")
+    metrics = payload.get("metrics")
+    if not isinstance(metrics, dict):
+        return ReplayFailure(key, "record_metrics_missing")
+    try:
+        changed = float(metrics["changed_pixel_ratio"])
+        mad = float(metrics["mean_abs_diff"])
+    except (KeyError, TypeError, ValueError):
+        return ReplayFailure(key, "record_metrics_missing")
+    bbox = metrics.get("max_bbox_delta_px")
+    if changed > RECORD_MAX_CHANGED_PIXEL_RATIO or mad > RECORD_MAX_MEAN_ABS_DIFF:
+        return ReplayFailure(key, "record_metrics_out_of_bounds")
+    if bbox is not None:
+        try:
+            if int(bbox) > RECORD_MAX_BBOX_DELTA_PX:
+                return ReplayFailure(key, "record_metrics_out_of_bounds")
+        except (TypeError, ValueError):
+            return ReplayFailure(key, "record_metrics_out_of_bounds")
+    return None
+
 
 def _key_from_record_filename(name: str) -> str:
     """Reverse of close_visual_key.key_safe: `<app>_<view>-<theme>.json` -> key."""
@@ -452,6 +504,10 @@ def _validate_one_closure(
         return ReplayFailure(item.key, "invalid_evidence_record")
     if stored_hash != evidence:
         return ReplayFailure(item.key, "evidence_hash_mismatch")
+
+    sanity = _record_sanity_failure(record_path, item.key)
+    if sanity is not None:
+        return sanity
 
     if not regenerate:
         return None
