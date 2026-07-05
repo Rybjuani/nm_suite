@@ -1120,7 +1120,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
 ### Hub Patients / Global Texts (F10, F14, F11, F5) (6)
 
 - [ ] `hub:textos-globales@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.64067; odiff=2.09; bbox=17; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_textos-globales_light.png`.
-- [ ] `hub:pacientes@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.36517; odiff=4.73; bbox=89; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_pacientes_light.png`.
+- [x] `hub:pacientes@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.36517; odiff=4.73; bbox=89; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_pacientes_light.png`.
+  - evidence: dc37c33bb394a843d88f7f4ea2906217da004cac2598426f1306f83e593a389a
+  - evidence-record: docs/closure_evidence/hub_pacientes-light.json
+  - commit: 9d95d64baeba42f72aec13e50aea497e547b80c0
+  - closed-by: close_visual_key.py
 - [ ] `hub:textos-globales@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.36355; odiff=2.49; bbox=17; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_textos-globales_dark.png`.
 - [x] `hub:pacientes@dark` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.28366; odiff=4.93; bbox=105; panel=`reports\qa\layered_visual_compare_fresh\panels\hub_pacientes_dark.png`.
   - evidence: 54314d190804ad912c7b2d1dbc4b704be551ea3e9c33423cab0f6d727cafdae9
