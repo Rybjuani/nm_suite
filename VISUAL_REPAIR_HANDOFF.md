@@ -1045,7 +1045,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_dbt-practice-fast-dark.json
   - commit: 1ca02df7aadcfa77311d5a33babe0445e02f1110
   - closed-by: close_visual_key.py
-- [ ] `suite:dbt-practice-validation-limits@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06886; odiff=1.59; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-validation-limits_light.png`.
+- [x] `suite:dbt-practice-validation-limits@light` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.06886; odiff=1.59; bbox=1; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-validation-limits_light.png`.
+  - evidence: 7500edf9ca2d1dd4f9adc04f3b06c71463a30dd88216fe0452a067ae346f2e75
+  - evidence-record: docs/closure_evidence/suite_dbt-practice-validation-limits-light.json
+  - commit: 318ea59410148e67a0cf818fdae9a0f67b48b71e
+  - closed-by: close_visual_key.py
 - [ ] `suite:dbt-practice-validation-limits@dark` - status=PASS; severity=none; bucket=NONE; findings=none; changed=0.07236; odiff=1.15; bbox=16; panel=`reports\qa\dbt_full_compare_after_shadow\panels\suite_dbt-practice-validation-limits_dark.png`.
 
 ### Hub Detail / Plan / IA (F6, F5, F3, F9, F10, F12, F8) (10)
