@@ -1270,7 +1270,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
 
 ### Actividades Filters / Rows / Empty (F10, F7, F11) (8)
 
-- [ ] `suite:actividades@light` - severity=high; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.18503; odiff=2.44; bbox=11; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades_light.png`.
+- [x] `suite:actividades@light` - severity=high; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.18503; odiff=2.44; bbox=11; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades_light.png`.
+  - evidence: 5717a7469504aeb211d8b66c2eaee3ce8255fe97e91f0cd4f02ef7757914b5cb
+  - evidence-record: docs/closure_evidence/suite_actividades-light.json
+  - commit: 76bd67ce6a89688bb4edf43f9b9b15c3805dd3d0
+  - closed-by: close_visual_key.py
 - [ ] `suite:actividades-marked-hice@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.18298; odiff=2.4; bbox=11; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades-marked-hice_light.png`.
 - [ ] `suite:actividades-filtered@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.1523; odiff=1.7; bbox=11; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades-filtered_light.png`.
 - [ ] `suite:actividades@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.14331; odiff=2.61; bbox=19; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades_dark.png`.
