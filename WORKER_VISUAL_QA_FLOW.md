@@ -45,7 +45,9 @@ mecánicamente, no lo re-interpreta ni lo negocia.
   silencies).
 - Reportá el target set resuelto al inicio de tu respuesta. No pidas
   confirmación si el owner ya declaró el scope — eso ya es autoridad
-  suficiente.
+  suficiente. El owner puede cambiar el scope sólo con un prompt nuevo y
+  explícito; el worker no debe pedir permiso para saltear, aceptar o achicar
+  keys dentro del scope ya declarado.
 
 **Resolución mecánica** (no derives la lista a mano):
 
@@ -110,7 +112,9 @@ y varias keys del set comparten causa raíz en un componente compartido, un
 fix compartido es válido (el contrato lo permite) — pero **medí el impacto
 en cada key del set por separado**: un fix compartido puede mejorar una key
 y no otra, o incluso regresionar una tercera fuera del set (correlo contra
-neighbors si tocás `shared/`).
+neighbors si tocás `shared/`). El alcance transversal o que el cambio pueda
+afectar muchas keys no es bloqueo: es una señal para validar más, no para
+abandonar el target set.
 No toques **ningún** archivo de la lista R0 (sección 5 abajo) en el mismo PR.
 
 ### 2.2 Validá
@@ -184,17 +188,47 @@ Y en el sidecar VAS de esa key:
 > parcial (motivo: `partial_scope`), incluso si tu target mode es
 > `all-open-keys` (el reporte cubre las keys abiertas, no las 116 del canon
 > completo). Esto no es cierre: el cierre oficial requiere PASS completo del
-> target set salvo autorizacion explicita del owner para cerrar un subconjunto.
+> target set salvo que el owner cambie explícitamente el scope antes del cierre.
 
-### 2.4 Agotamiento objetivo antes de declarar bloqueo
+### 2.4 Freno permitido antes de declarar bloqueo
 
 Partial PASS is not closure. Si cualquier key del target set queda `FAIL`, el
-worker debe seguir iterando reparacion de producto hasta `PASS`; no puede
-detenerse con "pending", "bloqueado" o "cercana al umbral" como resultado
-operativo. Una key cercana al umbral no es bloqueo por defecto.
+worker debe seguir iterando reparación de producto hasta `PASS`. "Bloqueado",
+"riesgo alto", "afecta muchas keys", "requiere decisión", "cercana al umbral"
+o "no conviene tocar" no son estados operativos; sin el paquete mínimo de abajo
+son **ABANDONO NO VÁLIDO**.
+
+Un worker sólo puede detener una key `FAIL` si demuestra una de estas
+condiciones:
+1. MISMATCH activo marcado **IRREDUCIBLE** en
+   `docs/QT_HTML_KNOWN_MISMATCHES.md`.
+2. **DECISIÓN-OWNER** activa y explícita en una fuente vigente listada por
+   `docs/README.md`.
+3. Bug R0/gate/capture/comparator demostrado y reportado como tarea R0
+   separada, sin cierre de keys.
+4. Key inexistente, duplicada o ya cerrada.
+5. Bloqueo técnico del entorno que impide ejecutar el flujo, con comando
+   exacto, error completo, ruta alternativa intentada y alcance del bloqueo.
+   Si sólo bloquea una operación puntual, no autoriza detener las demás keys.
+
+Paquete mínimo antes de invocar bloqueo:
+- key exacta y bucket del comparator;
+- métricas antes/después, incluyendo `largest_region_ratio`, `bbox_dy`,
+  `bbox_dh` y los primeros 4 `regions[]` con `hint`;
+- 3 estrategias distintas probadas, o descartadas sólo por contraindicación
+  técnica verificable, con evidencia objetiva, archivos tocados por hipótesis
+  y por qué la siguiente ruta de producto no sirve;
+- próxima hipótesis mínima si no hay bug R0.
+
+MISMATCH#18 no es `IRREDUCIBLE`; es `WORKAROUND`. No autoriza bloqueo por sí
+solo. Si aparece `bbox_dh`/`bbox_dy` alto, tratá primero como
+layout/producto/estado. Comentarios de código, `docs/_archive/`, logs
+históricos o "user feedback" no son `DECISIÓN-OWNER`.
 
 Para target mode `family`, no cierres una key individual si otra key de la
-misma family sigue `FAIL`, salvo autorizacion explicita del owner.
+misma family sigue `FAIL`, salvo que el owner haya cambiado explícitamente el
+scope antes de ese cierre. El worker no debe pedir ese cambio para saltear una
+key difícil.
 
 Durante reparacion/cierre visual queda prohibido modificar `qa/`, `tools/qa/`,
 `.github/`, `docs/closure_evidence/`, canon, thresholds, comparator, capture
@@ -227,9 +261,11 @@ En ese punto:
 3. cambiá de estrategia sólo si la causa está localizada;
 4. si la causa toca componente compartido, evaluá opción scoped primero;
 5. si no hay ruta técnica clara, no declares bloqueo visual por defecto:
-   cambia de estrategia, reduce el cambio a producto, o escala al owner con la
-   evidencia objetiva y la siguiente hipotesis de producto. Solo un bug del
-   gate/R0 permite detener la tarea visual, y se reporta como tarea R0 separada.
+   cambia de estrategia, reduce el cambio a producto o arma el paquete mínimo
+   de §2.4. No pidas al owner aceptar/saltear una key dentro del scope ya
+   autorizado. Si no aplica una condición de §2.4, la siguiente acción es otra
+   hipótesis mínima de producto; un bug de gate/R0 se reporta como tarea R0
+   separada.
 
 La regla frena loops ciegos; no autoriza abandonar una key con causa
 reparable identificada.
@@ -240,7 +276,9 @@ reparable identificada.
 
 **Sólo cuando el pre-flight da PASS para todo el target set declarado.** No
 antes. En target mode `family`, no cierres una key individual si otra key de
-esa family sigue `FAIL`, salvo autorizacion explicita del owner.
+esa family sigue `FAIL`, salvo que el owner haya emitido un cambio de scope
+explícito antes del cierre; el worker no debe solicitarlo para evitar una key
+difícil.
 
 El cierre es **siempre por key** — `close_visual_key.py` no tiene modo
 multi-key, y eso es intencional (cada cierre es atómico en su propio
@@ -492,7 +530,7 @@ Estos criterios **no son evidencia de cierre** y nunca deben invocarse:
   "avance parcial", "cosmético", "menor") — un fix parcial no es un cierre.
 - **Frases de abandono** ("bloqueado", "demasiado difícil", "no se puede arreglar",
   "downgrade") no son resultado operativo de Visual QA; segui iterando producto
-  o detenete solo por bug de gate/R0 para abrir una tarea separada.
+  o detenete sólo bajo las condiciones de §2.4.
 - `capture_v8.py` exit 0 solito (no es PASS)
 - "fidelity PASS" sin `REPORT_EVIDENCE_VALID: YES`
 - zip-based / desktop zip evidence
@@ -516,6 +554,9 @@ Tampoco podés:
   bloqueo sin evidencia real de `regions[]` / `largest_region_ratio` /
   `bbox_dy` que lo respalde — seguí el procedimiento mecánico de §2.5 antes
   de declarar una divergencia "irreducible".
+- Invocar MISMATCH#18, riesgo transversal, históricos, comentarios UX o
+  "user feedback" como bloqueo si no existe una entrada activa
+  `IRREDUCIBLE`/`DECISIÓN-OWNER` en las fuentes vigentes.
 
 ### 6.1 Disclosure obligatorio de intentos revertidos
 
@@ -566,7 +607,8 @@ Cualquier otro error → pará, reportá el stderr completo en el canal de hando
 set, no modifiques el gate/harness para destrabar el cierre. Si parece bug de
 gate/R0, detené la tarea visual y reportá tarea R0 separada, sin cierre de
 keys. En target mode `family`, no cierres el resto de las keys del set salvo
-autorización explícita del owner. `dirty_working_tree` bloquea todo el set
+que el owner cambie explícitamente el scope antes del cierre; el worker no debe
+pedir ese cambio para saltear una key. `dirty_working_tree` bloquea todo el set
 hasta que resolvés el working tree.
 
 ---

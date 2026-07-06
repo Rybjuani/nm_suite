@@ -39,7 +39,8 @@ el protocolo; el bridge no lo reemplaza).
      excesivo como escape general.
    - Si es **WORKAROUND**: usar el helper/painter correcto (conic, radial, ring,
      elided, chevron SVG, etc.).
-   - Si es **DECISIÓN-OWNER** (#10, #19): no "corregir" hacia el mockup.
+   - Si es **DECISIÓN-OWNER** (p.ej. #10 u opacity disabled documentada):
+     no "corregir" hacia el mockup.
 
 5. **Reparar con el componente/token del catálogo** (`VISUAL_COMPONENT_CATALOG.md`):
    - Color/radio/sombra/fuente: SIEMPRE desde `shared.theme` vía `shared.theme_qt`

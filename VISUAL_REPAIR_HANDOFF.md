@@ -120,6 +120,10 @@ officially valid report. Also forbidden: owner acceptance, human review,
 blocked / too hard / won’t fix, degrading or reclassifying to skip, or any
 claim that a divergence is "minor", "cosmetic", or "acceptable" without a
 comparator `PASS`.
+Soft-block phrases such as "risk", "affects many keys", "needs decision",
+"near threshold" or "not worth touching" are not operational states. A FAIL key
+can stop only under `WORKER_VISUAL_QA_FLOW.md` §2.4 with the required evidence
+package.
 
 Manual/panel inspection is only diagnostic context; it never closes a checkbox
 without the mandatory technical gates in Required Closure Evidence. (The old
@@ -362,9 +366,10 @@ declares scope (`next-key`, `first-N`, `batch`, `family`, `all-open-keys`,
    declared scope.
 3. You may not ask the owner for a decision to skip or accept a key inside
    the declared scope.
-4. You may not close, downgrade, or reclassify a key because it is
-   difficult, costly, or "risky" — if a key in scope can't be closed, report
-   the blockage per `WORKER_VISUAL_QA_FLOW.md` §2.4; don't mask it as done.
+4. You may not close, downgrade, reclassify, skip, or request acceptance for a
+   key because it is difficult, costly, risky, transversal, or close to a
+   threshold. If a key in scope cannot be closed, §2.4 of
+   `WORKER_VISUAL_QA_FLOW.md` is the only valid stop path.
 5. The only way to advance any key's checkbox is a `PASS` from the active
    layered comparator (`qa/layered_visual_compare.py`) plus a real evidence
    record (see Required Closure Evidence) — regardless of target mode.
@@ -387,14 +392,13 @@ declares scope (`next-key`, `first-N`, `batch`, `family`, `all-open-keys`,
 - Closure remains per-key: each exact key must independently reach `PASS`
   before its own checkbox flips, and each closed key requires its own
   evidence record under `docs/closure_evidence/`.
-- Commit granularity follows the target mode: `next-key`/`first-N`/
-  `explicit-list` default to one commit per closed key; `batch`/
-  `all-open-keys`/`family` may bundle multiple closures (each still with its
-  own evidence record) into fewer commits. The replay gate validates the
-  full audited range regardless of how commits are split.
+- Commit granularity follows `WORKER_VISUAL_QA_FLOW.md` §4a: always one
+  closure commit per key, sequentially. Target modes group repair work, not
+  closure records or commits.
 - The agent does not switch to keys outside the declared target set on its
   own initiative. If the declared set is exhausted (all keys closed or
-  blocked with a report), stop and report — don't silently expand scope.
+  stopped with a valid §2.4 package), stop and report — don't silently expand
+  scope.
 
 ## Comparator Command Lock
 
@@ -572,11 +576,9 @@ pushed — a local-only closure or fraud removal is not done until it's
 pushed. But **the owner decides when and how to publish**
 (`WORKER_VISUAL_QA_FLOW.md` §4c) — the agent does not push unilaterally.
 
-Commit cadence follows the declared target mode (see "Current Item
-Definition" above): `next-key`/`first-N`/`explicit-list` default to one
-commit per closed key; `batch`/`all-open-keys`/`family` may bundle multiple
-closures into fewer commits. Either way, each closed key still carries its
-own evidence record, and the replay gate validates the whole audited range
+Commit cadence follows `WORKER_VISUAL_QA_FLOW.md` §4a: one closure commit per
+closed key, even for `batch`/`all-open-keys`/`family`. Each closed key carries
+its own evidence record, and the replay gate validates the whole audited range
 before any push is authorized.
 
 ## Gate Calibration Snapshot (tracked)
@@ -758,8 +760,9 @@ If any gate fails or evidence is missing, leave the checkbox open and add a note
   may be documented but is not closed unless the owner's declared scope
   covers it.
 - When you reach a later item in the target set that is already `PASS` from
-  the same commit/official report, you may mark it closed with the same
-  evidence, citing the commit and the exact key `PASS`.
+  the same product fix/report, close it normally with its own
+  `qa/close_visual_key.py --key <key>` run and its own evidence record. A
+  shared fix is allowed; shared closure evidence is not.
 - If a shared fix worsens any previously closed key, that is a regression and
   must be fixed before proceeding.
 

@@ -18,6 +18,11 @@ Clasificación de impacto:
 - **DECISIÓN-OWNER** — el runtime difiere a propósito por decisión de diseño
   documentada; no se "corrige" hacia el mockup.
 
+Sólo una entrada activa marcada `IRREDUCIBLE` o `DECISIÓN-OWNER` en esta fuente
+o en otra fuente vigente listada por `docs/README.md` puede justificar detener
+una key `FAIL`. Comentarios de código, `docs/_archive/`, logs históricos,
+"user feedback", costo o riesgo transversal no cambian esta clasificación.
+
 ---
 
 ## MISMATCH#1 · Fuentes web (Fraunces / Inter) — WORKAROUND
@@ -203,7 +208,9 @@ Clasificación de impacto:
   `_aplicar_acento_win10()`. Las esquinas de la ventana son una flat-region
   citada en el handoff (`recuperar-acceso`).
 - **Impacto:** esquinas/sombra de ventana pueden diferir levemente; parte es
-  reparable (corners).
+  reparable (corners). MISMATCH#18 no es `IRREDUCIBLE` y no autoriza bloqueo
+  por sí solo: `bbox_dy`/`bbox_dh` alto debe tratarse primero como
+  layout/producto/estado.
 
 ## MISMATCH#19 · Colores de semáforo del titlebar literales — WORKAROUND
 
@@ -212,7 +219,8 @@ Clasificación de impacto:
 - **Qt:** `_ChromeWinBtn` debe usar esos hex literales (no `danger/warning/
   success` del tema, que difieren).
 - **Impacto:** usar tokens de tema en vez de los literales produce un tono
-  distinto (citado: chrome amber dot en `recuperar-acceso`).
+  distinto (citado: chrome amber dot en `recuperar-acceso`). Es un
+  `WORKAROUND`, no una `DECISIÓN-OWNER`.
 
 ## MISMATCH#20 · Rasterización de texto Qt-vs-Chromium — IRREDUCIBLE
 
@@ -236,5 +244,5 @@ Clasificación de impacto:
 |---|---|
 | IRREDUCIBLE | #3 (parcial), #20 |
 | WORKAROUND (paridad lograble) | #1, #2, #4, #5, #6, #8, #9, #11, #12, #13, #14, #15, #16, #17, #18 |
-| DECISIÓN-OWNER | #10, #19, y opacity disabled de botón (matriz F4) |
+| DECISIÓN-OWNER | #10 y opacity disabled de botón (matriz F4) |
 | N/A (no se captura) | #7 |
