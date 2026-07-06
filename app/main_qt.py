@@ -43,7 +43,7 @@ from PyQt6.QtCore import (
     QSettings,
     pyqtSignal,
 )
-from PyQt6.QtGui import QIcon, QPainter
+from PyQt6.QtGui import QIcon, QPainter, QPainterPath
 from PyQt6 import sip
 
 
@@ -91,6 +91,7 @@ from shared.identidad import obtener_nombre_paciente
 from app import avisos_daemon
 from shared.visual_qa import visual_qa_enabled, qa_patient_name, module_status as qa_module_status
 from shared.remote_config import t
+from shared.modal_state import any_modal_active
 
 _MODULE_MAP = {
     "animo": ("app.modules.animo_qt", "ModuloAnimo"),
@@ -115,16 +116,82 @@ _MODULE_UI_META = {
 }
 
 
+_WINDOW_CORNER_RADIUS = 28  # `.window{border-radius:28px}` (mockup canónico L177)
+
+
+class _CornerShadowOverlay(QWidget):
+    """Expone el fondo `shell` (bg/bgAlt) fuera del arco r28 de `.window`.
+
+    El canónico HTML recorta cada captura al bounding-box de `.window`
+    (`border-radius:28px; overflow:hidden`) — las 4 esquinas del recorte
+    cuadrado muestran el `body`/`.stage` bg de detrás, no `--surface`.
+    Nuestra captura (``win.grab()``) es un rect pleno sin ese recorte: sin
+    este overlay las 4 esquinas quedan en `surface`, lo que cambia el color
+    de referencia que usa el comparador (``qa/layered_visual_compare.py
+    _content_bbox``, sample de 24×24px por esquina) para inferir "fondo" —
+    encogiendo el bbox detectado muy por debajo del target en casi toda
+    vista sin overlay (bucket LAYOUT_FIX, ver VISUAL_REPAIR_HANDOFF).
+
+    Se desactiva mientras haya un modal visible (``any_modal_active()``):
+    un modal se captura recortado a SU PROPIO bbox, mucho más chico que el
+    de la ventana completa — pintar la esquina de la VENTANA ahí infla el
+    bbox detectado del modal y rompe su contrato (regresión dbt-practice-*
+    de 2026-07-06, ver handoff §4).
+    """
+
+    def __init__(self, parent=None, modo: str = "dark_hybrid"):
+        super().__init__(parent)
+        self._modo = modo
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
+
+    def set_modo(self, modo: str):
+        self._modo = modo
+        self.update()
+
+    def paintEvent(self, event):
+        if any_modal_active():
+            return
+        rect = QRectF(self.rect())
+        r = float(_WINDOW_CORNER_RADIUS)
+        win_path = QPainterPath()
+        win_path.addRoundedRect(rect, r, r)
+        outside = QPainterPath()
+        outside.addRect(rect)
+        outside = outside.subtracted(win_path)
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        p.setClipPath(outside)
+        paint_shell_background(p, rect, self._modo)
+        p.end()
+
+
 class _ShellWidget(QWidget):
     """Central widget con fondo shell v3: gradiente + blobs."""
 
     def __init__(self, parent=None, modo: str = "dark_hybrid"):
         super().__init__(parent)
         self._modo = modo
+        self._corner_overlay: "_CornerShadowOverlay | None" = None
+
+    def set_corner_overlay(self, overlay: "_CornerShadowOverlay") -> None:
+        self._corner_overlay = overlay
+        self._sync_overlay_geometry()
+
+    def _sync_overlay_geometry(self) -> None:
+        if self._corner_overlay is not None:
+            self._corner_overlay.setGeometry(self.rect())
+            self._corner_overlay.raise_()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._sync_overlay_geometry()
 
     def set_shell_modo(self, modo: str):
         self._modo = modo
         self.update()
+        if self._corner_overlay is not None:
+            self._corner_overlay.set_modo(modo)
 
     def paintEvent(self, event):
         p = QPainter(self)
@@ -259,6 +326,13 @@ class NeuroMoodApp(ThemeAwareWidgetMixin, QMainWindow):
 
         content_lay.addWidget(right, 1)
         main_layout.addWidget(content, 1)
+
+        # ── Corner-shadow overlay (esquinas r28 de `.window`) ──────────────────
+        # Último hijo de `central` → siempre queda por encima de chrome+content
+        # (incluidos modales que viven dentro de `content`, ver
+        # shared/modal_state.any_modal_active).
+        self._corner_overlay = _CornerShadowOverlay(central, modo=self._modo)
+        central.set_corner_overlay(self._corner_overlay)
 
         # ── Home ──────────────────────────────────────────────────────────────
         from app.home_qt import HomeView

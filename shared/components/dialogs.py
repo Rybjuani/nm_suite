@@ -38,6 +38,7 @@ from shared.theme_qt import (
     shadow_3,
     v3c,
 )
+from shared.modal_state import modal_hidden, modal_shown
 from shared.components.buttons import (
     NMButton,
     _NM_CONTROL_FONT,
@@ -286,6 +287,14 @@ class NMDialog(QWidget):
         self.closed.emit()
         super().closeEvent(event)
 
+    def showEvent(self, event):
+        modal_shown(self)
+        super().showEvent(event)
+
+    def hideEvent(self, event):
+        modal_hidden(self)
+        super().hideEvent(event)
+
     # ── Paint ────────────────────────────────────────────────────────────────
 
     def paintEvent(self, event):
@@ -494,6 +503,14 @@ class NMDialogScaffold(QWidget):
 
         _tm().theme_changed.connect(self._apply_scaffold_theme)
         self._apply_scaffold_theme(self._modo)
+
+    def showEvent(self, event) -> None:
+        modal_shown(self)
+        super().showEvent(event)
+
+    def hideEvent(self, event) -> None:
+        modal_hidden(self)
+        super().hideEvent(event)
 
     def set_title(self, text: str) -> None:
         self._title_lbl.setText(text or "")
