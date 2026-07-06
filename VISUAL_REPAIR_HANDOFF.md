@@ -1348,7 +1348,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_rutina-empty-light.json
   - commit: fb683b9cfbb39f973910d771a3a2024e28900fc7
   - closed-by: close_visual_key.py
-- [ ] `suite:rutina-empty@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.0324; odiff=1.03; bbox=333; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_rutina-empty_dark.png`.
+- [x] `suite:rutina-empty@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.0324; odiff=1.03; bbox=333; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_rutina-empty_dark.png`.
+  - evidence: 6ee2c18efdc8aa25783e2869df316ac31f44f38304c031d904effc1aece97fe3
+  - evidence-record: docs/closure_evidence/suite_rutina-empty-dark.json
+  - commit: 44f82e1570da175cbd7ea3d9d07230b59c5a9f17
+  - closed-by: close_visual_key.py
 
 ### Respiracion Rings / Controls (F9, F4) (6)
 
