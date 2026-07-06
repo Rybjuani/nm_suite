@@ -148,11 +148,15 @@ def _cat_canon(cat: str) -> str:
 
 
 def _cat_color(cat: str, modo: str) -> str:
+    # mockup ACTS (L1121-1124): Física/Social usan cl:'mind', Maestría usa
+    # cl:'gold' — Física tenía el hex de warning/amber y Maestría el de
+    # violet (ninguno matchea el mockup); Social coincidía sólo en light
+    # (cyan==mind ahí) pero diverge en dark (cyan es celeste, no verde).
     cmap = {
-        "Física": "warning",
+        "Física": "mind",
         "Placer": "accent",
-        "Maestría": "violet",
-        "Social": "cyan",
+        "Maestría": "gold",
+        "Social": "mind",
         "Autocuidado": "success",
         "Cognitiva": "accent",
     }
@@ -484,9 +488,12 @@ class _SuggestedCard(NMCard):
         top.addWidget(self._chip)
         lay.addLayout(top)
 
-        # Título + descripción — mockup act-card: `.h-serif` 16px (Fraunces).
+        # Título — medido sobre el PNG canónico (suite:actividades): "Caminata
+        # 20 min" mide ~108px de ancho; nuestro serif (Newsreader) a 16px daba
+        # ~137px (27% más ancho que la Fraunces del canónico). 13px iguala el
+        # ancho canónico. _SuggestedCard sólo vive en actividades_qt.py.
         self._title_lbl = QLabel(self._nombre)
-        self._title_lbl.setFont(v3_font(16, weight=600, serif=True))
+        self._title_lbl.setFont(v3_font(13, weight=600, serif=True))
         self._title_lbl.setWordWrap(True)
         self._title_lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         lay.addWidget(self._title_lbl)
@@ -613,7 +620,11 @@ class ModuloActividades(NMModule):
         outer.addWidget(_scroll, stretch=1)
 
         self._scroll_layout = QVBoxLayout(self._scroll_content)
-        self._scroll_layout.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], V3_SP["md"])
+        # Top 21 (medido sobre el PNG canónico suite:actividades): la filter
+        # card arranca en y≈69 sobre titlebar y≈48 (gap 21). Con sm(8) la card
+        # y toda la grilla quedaban ~13px demasiado arriba (card title y≈240 vs
+        # canónico 251), fantasmeando el texto de todas las tarjetas.
+        self._scroll_layout.setContentsMargins(V3_SP["lg"], 21, V3_SP["lg"], V3_SP["md"])
         self._scroll_layout.setSpacing(V3_SP["sm"])
         self._scroll_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
@@ -702,6 +713,10 @@ class ModuloActividades(NMModule):
         # 3. Filtros como tabs pill del design system
         filter_card = NMCard(modo=self._modo, clickable=False, glow=False)
         filter_lay = QVBoxLayout(filter_card)
+        # NMCard fuerza sus propios márgenes (20px, `_NM_CARD_PADDED_MARGINS`)
+        # vía `_sync_layout_padding` — lo que se ponga acá para top/left/right/
+        # bottom se pisa solo, así que esto ya rendereaba en 20px real pese al
+        # (10,4,10,4) nominal. Se deja documentado para no re-intentar esto.
         filter_lay.setContentsMargins(V3_SP["md"], V3_SP["xs"], V3_SP["md"], V3_SP["xs"])
         filter_lay.setSpacing(V3_SP["xs"])
         self._filter_header = NMSectionHeader(

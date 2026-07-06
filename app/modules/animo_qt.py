@@ -383,7 +383,10 @@ class ModuloAnimo(NMModule):
         outer.addWidget(body)
 
         lay = QVBoxLayout(body)
-        lay.setContentsMargins(24, 14, 24, 14)
+        # Mockup: la grilla de 2 columnas arranca a ~24px del borde del
+        # `.screen` (card top y≈73 sobre titlebar y≈49). Top 14 dejaba las
+        # cards 11px demasiado arriba (y≈62).
+        lay.setContentsMargins(24, 24, 24, 14)
         lay.setSpacing(0)
 
         self._main_row = QBoxLayout(QBoxLayout.Direction.LeftToRight)
@@ -402,8 +405,13 @@ class ModuloAnimo(NMModule):
         # 1. Historial como panel dominante de la columna derecha: las stats
         # viven a la izquierda para evitar el vacío central del layout previo.
         self._hist_card = NMChartPanel("Últimos días", modo=self._modo)
-        self._hist_card.setMinimumHeight(470)
-        self._hist_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        # Mockup: la card del historial se dimensiona a su contenido y las dos
+        # columnas quedan top-aligned sobre el fondo del screen (card y 73→466,
+        # ≈393px). Expanding vertical la estiraba a viewport pleno (~522px),
+        # 129px más alta que el canónico. Maximum + altura fija + stretch abajo
+        # (ver right_lay) reproduce el layout content-sized del canon.
+        self._hist_card.setFixedHeight(393)
+        self._hist_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         self._range_lbl = None  # ya manejado internamente por NMChartPanel
         # Selector 7D/30D — el chart muestra el promedio DIARIO de los
         # registros (varios registros en el mismo día se promedian a un solo
@@ -416,10 +424,13 @@ class ModuloAnimo(NMModule):
         # Serie ÚNICA: el valor de ánimo (puntaje) promediado por día. Sin separar
         # positivo/negativo — un solo punto diario, misma fórmula que Home y Hub.
         self._wave_chart = NMWaveChart(modo=self._modo)
-        self._wave_chart.setMinimumHeight(330)
+        # min reducido para caber en la card fija de 393px (header+márgenes
+        # ~90px → canvas ~300); 330 forzaba la card por encima de 393.
+        self._wave_chart.setMinimumHeight(300)
         self._wave_chart.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._hist_card.set_chart(self._wave_chart)
-        right_lay.addWidget(self._hist_card, stretch=1)
+        right_lay.addWidget(self._hist_card, stretch=0)
+        right_lay.addStretch(1)
 
         # 2026-06: dos tarjetas de progreso (7 y 30 días) en lugar de una
         # sola "Progreso". Se integran debajo del registro, como en el mock de
@@ -453,11 +464,16 @@ class ModuloAnimo(NMModule):
 
         # 2. Registro del ánimo: escala sobria + mensaje de cuidado.
         slider_card = NMCard(modo=self._modo, clickable=False, glow=False)
-        slider_card.setMinimumHeight(262)
-        slider_card.setMaximumHeight(292)
+        # Altura medida sobre el PNG canónico (suite:animo@light): card
+        # 73→250 ≈ 177px, botón "Guardar registro" en y≈204-243, márgenes
+        # asimétricos (top ~18, bottom ~7). El slider real es compacto
+        # (track ~46 + números), no 80px. 210 con slider 80 dejaba el botón
+        # ~20px demasiado abajo (y≈224).
+        slider_card.setMinimumHeight(188)
+        slider_card.setMaximumHeight(188)
         slider_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         slider_lay = QVBoxLayout(slider_card)
-        slider_lay.setContentsMargins(20, 18, 20, 18)
+        slider_lay.setContentsMargins(20, 18, 20, 8)
         slider_lay.setSpacing(14)
         slider_lay.setAlignment(Qt.AlignmentFlag.AlignTop)
 
@@ -488,8 +504,11 @@ class ModuloAnimo(NMModule):
             unset=True,
             show_zero=False,
         )
-        self._v3_slider.setMinimumHeight(102)
-        self._v3_slider.setMaximumHeight(118)
+        # Compact: track 46 + spacing xs 4 + num_row 20 = 70. Con track 56
+        # (80 total) el bar y los números quedaban ~4-11px demasiado abajo
+        # vs el PNG canónico (bar y≈156, números y≈178).
+        self._v3_slider.setMinimumHeight(70)
+        self._v3_slider.setMaximumHeight(70)
         self._v3_slider.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         self._v3_slider.level_changed.connect(self._on_level_changed)
         slider_lay.addWidget(self._v3_slider)

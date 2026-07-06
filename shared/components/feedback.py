@@ -670,7 +670,7 @@ class NMWaveChart(QWidget):
         n = len(self._data_current)
         if n < 2:
             return
-        ml, mr = 32, 16
+        ml, mr = 11, 12  # debe coincidir con paintEvent (markers canónicos)
         step = (self.width() - ml - mr) / max(1, n - 1)
         idx = round((event.pos().x() - ml) / step)
         idx = max(0, min(n - 1, idx))
@@ -690,12 +690,14 @@ class NMWaveChart(QWidget):
 
         w, h = self.width(), self.height()
         colors(self._modo)
-        ml, mr = 32, 16
-        # mt ampliado: la leyenda (●Positivo ●Negativo) y el label "10" del eje
-        # vivían pegados al borde superior (y≈1) y se cortaban. Con una banda
-        # propia arriba del gridline ya no se recortan. Aplica a todos los usos
-        # del chart (pos/neg en Ánimo, semana previa, etc.).
-        mt, mb = 34, 28
+        # Márgenes del plot medidos SOBRE EL PNG canónico (canon-first: el PNG
+        # es la verdad, no el `pl/pr/pt` del CSS del mockup, que no mapea 1:1 a
+        # los device-px del render). suite:animo@light: markers canónicos en
+        # x≈[493..903] (span 410, spacing 68) → ml=11,mr=12; gridline "10" en
+        # y≈160 y "0" en y≈440 → mt=28,mb=26. NMWaveChart sólo lo consume
+        # animo_qt.py (el ejemplo de cards.py es docstring).
+        ml, mr = 11, 12
+        mt, mb = 28, 26
         cw = w - ml - mr
         ch = h - mt - mb
 
@@ -722,7 +724,7 @@ class NMWaveChart(QWidget):
                 result.append(QPointF(x, y))
             return result
 
-        def _draw_area(pts, color_hex, alpha_fill=50, alpha_line=190):
+        def _draw_area(pts, color_hex, alpha_fill=50, alpha_line=190, alpha_fill_bottom=0):
             if len(pts) < 2:
                 return
             bottom_y = mt + ch
@@ -736,7 +738,7 @@ class NMWaveChart(QWidget):
             fc = QColor(color_hex)
             fc.setAlpha(alpha_fill)
             ec = QColor(color_hex)
-            ec.setAlpha(0)
+            ec.setAlpha(alpha_fill_bottom)
             fill_grad.setColorAt(0.0, fc)
             fill_grad.setColorAt(1.0, ec)
             p.fillPath(path, QBrush(fill_grad))
@@ -759,7 +761,15 @@ class NMWaveChart(QWidget):
         _draw_area(prev_pts, violet_hex, alpha_fill=sec_alpha_fill, alpha_line=sec_alpha_line)
 
         curr_pts = _pts(self._data_current)
-        _draw_area(curr_pts, teal_hex, alpha_fill=64 if is_dark else 46, alpha_line=210)
+        # Fill medido sobre el PNG canónico (suite:animo@light): alpha efectivo
+        # ~0.23 justo bajo la línea, ~2x lo que daba alpha_fill=58 (efectivo
+        # ~0.12). El gradiente del painter atenúa respecto al valor nominal, así
+        # que light necesita ~113 para igualar la densidad canónica. Dark ya
+        # matchea el canónico con 64 (key en PASS).
+        _draw_area(
+            curr_pts, teal_hex,
+            alpha_fill=64 if is_dark else 113, alpha_line=210,
+        )
 
         # Dots — ambas series cuando hay leyenda (pos/neg en paralelo)
         if self._series_labels:
@@ -767,10 +777,15 @@ class NMWaveChart(QWidget):
             p.setPen(Qt.PenStyle.NoPen)
             for pt in prev_pts:
                 p.drawEllipse(pt, 3, 3)
-        p.setBrush(QBrush(QColor(teal_hex)))
-        p.setPen(Qt.PenStyle.NoPen)
+        # mockup L922: <circle r="4" fill="var(--surface)" stroke="var(--brand)"
+        # stroke-width="2.2"/> — marcador hueco (surface fill + ring brand), no
+        # un punto sólido.
+        surface_c = QColor(v3c("surface", self._modo).name())
+        marker_pen = QPen(QColor(teal_hex), 2.2)
+        p.setBrush(QBrush(surface_c))
         for i, pt in enumerate(curr_pts):
-            r = 5 if i == self._hover_idx else 3
+            r = 5.5 if i == self._hover_idx else 4
+            p.setPen(marker_pen)
             p.drawEllipse(pt, r, r)
 
         # Leyenda discreta arriba a la derecha: ● lbl1  ● lbl2

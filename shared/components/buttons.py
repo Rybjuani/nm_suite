@@ -74,7 +74,7 @@ _NM_TAB_FONT = "size_caption"
 _NM_TAB_CONTAINER_PAD = 5
 _NM_TAB_CONTAINER_GAP = 4
 _NM_TAB_PILL_BUTTON_HEIGHT = 30
-_NM_TAB_FILTER_BUTTON_HEIGHT = 32
+_NM_TAB_FILTER_BUTTON_HEIGHT = 26  # medido sobre PNG canónico suite:actividades (chip "Todas" 26px alto; 32 daba ~31). density=compact (dbt) usa su propia const, no afectada.
 # variant="filter" + density="compact": único consumidor es el filtro de
 # familia de suite:dbt-library (mockup `#dbtFilter .fchip`, padding 5px 10px
 # + font-size 11px inline, no el `.fchip` base). Medido en el canónico
@@ -171,7 +171,7 @@ class NMButton(QPushButton):
         self._hover = False
         self._pressed = False
         self._press_scale = 1.0
-        self._disabled_opacity = 0.65
+        self._disabled_opacity = 0.5
         self._success_anim: QSequentialAnimationGroup | None = None
         self._scale_anim: QPropertyAnimation | None = None
         self._btn_shadow: QGraphicsDropShadowEffect | None = None
@@ -229,12 +229,15 @@ class NMButton(QPushButton):
         path.addRoundedRect(rect, r, r)
         is_dark = "dark" in self._modo
 
-        # 2026-06-24 iter 71: opacity 0.4 → 0.65 (gradient variant) — el mockup
-        # "Animo" muestra el botón "Guardar registro" disabled en verde brand
-        # pleno, no en sage claro. El real con 0.4 daba un verde sage que no
-        # matcheaba el mockup.
+        # `.btn:disabled{opacity:.5}` (mockup canónico L299) — canon-first
+        # (docs/QT_HTML_KNOWN_MISMATCHES.md "Disabled button opacity"): el
+        # iter 71 (2026-06-24, 0.4→0.65) es HISTORICAL_OWNER_DECISION, no
+        # bloquea cierre. Verificado por muestreo directo del PNG canónico:
+        # "Guardar registro" disabled en suite:animo mide rgb(147,169,153),
+        # que es brand #2E5D43 a opacity 0.5 sobre surface #FBF8F1
+        # ((149,171,154) esperado) casi exacto.
         if not self.isEnabled():
-            p.setOpacity(getattr(self, "_disabled_opacity", 0.65))
+            p.setOpacity(getattr(self, "_disabled_opacity", 0.5))
 
         if self._variant == "gradient":
             primary = v3c("primary", self._modo)
@@ -1334,8 +1337,8 @@ class NMTabs(QWidget):
                 # compact: mockup `#dbtFilter .fchip` inline override
                 # (`style="padding:5px 10px; font-size:11px;"`), no el `.fchip`
                 # base de 12.5px/15px usado por el resto de consumidores.
-                filter_font = "11px" if self._density == "compact" else "12.5px"
-                filter_pad = "0px 10px" if self._density == "compact" else "0px 15px"
+                filter_font = "11px" if self._density == "compact" else "12px"
+                filter_pad = "0px 10px" if self._density == "compact" else "0px 12px"
                 if checked:
                     b.setStyleSheet(
                         f"QPushButton {{ background: {primary}; color: {primary_ink}; "

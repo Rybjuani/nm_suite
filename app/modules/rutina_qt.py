@@ -119,9 +119,11 @@ class _HeroDayCard(NMCard):
 
     def _build(self):
         lay = QHBoxLayout(self)
-        # Compacto: el hero es solo visual; el "+ Agregar tarea" vive en cada sección.
-        lay.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], V3_SP["sm"])
-        lay.setSpacing(V3_SP["md"])
+        # mockup `.card.pad{padding:20px}` (L273) + `#rtSummary{gap:18px}`
+        # (L1083) — el padding vertical (6) dejaba el hero ~24px más bajo
+        # que el canónico (118px medido).
+        lay.setContentsMargins(V3_SP["2xl"], V3_SP["2xl"], V3_SP["2xl"], V3_SP["2xl"])
+        lay.setSpacing(V3_SP["xl"])
 
         self._ring = NMModuleRing(size=64, pct=0.0, modo=self._modo)
         lay.addWidget(self._ring, alignment=Qt.AlignmentFlag.AlignVCenter)
@@ -277,9 +279,24 @@ class _SectionCard(NMCard):
     def _sync_height_to_content(self, total: int):
         rows = max(1, min(total, 5))
         footer_h = 34 if self._add_btn.isVisible() else 0
-        target = max(154, min(252, 92 + rows * 30 + footer_h))
+        # Calibrado contra mockup canónico (L1067-1079): header 63px + 40px/fila
+        # (medido Mañana 3 filas=183px, Tarde 5 filas=263px). El coef. anterior
+        # (92 + 30/fila) quedaba ~20px corto en cards de 5 filas.
+        target = max(154, min(300, 63 + rows * 40 + footer_h))
         self.setMinimumHeight(target)
         self.setMaximumHeight(target)
+        # `_body_scroll` tenía un cap fijo (62-172px) independiente de este
+        # cálculo: con filas de 38px (ver `_compact_task_check`) 5 filas
+        # necesitan ~194px, y el cap viejo recortaba el scroll dejando hueco
+        # vacío en la card en vez de mostrar las filas completas.
+        # +6px de margen: con el viewport exactamente igual al contenido,
+        # QScrollArea igual disparaba un scrollbar fantasma (ScrollBarAsNeeded
+        # con overflow de 1-2px por redondeo), agregando una barra visible de
+        # min-height 44 (`_clinical_scrollbar_qss`) donde el mockup no tiene
+        # ninguna — el `_SectionCard` no scrollea con ≤5 tareas.
+        scroll_h = rows * 39 + 6
+        self._body_scroll.setMinimumHeight(min(62, scroll_h))
+        self._body_scroll.setMaximumHeight(max(scroll_h, 62))
 
     def set_manual_enabled(self, enabled: bool):
         self._add_btn.setVisible(enabled)
@@ -402,8 +419,11 @@ class ModuloRutina(NMModule):
         outer.addWidget(body)
 
         lay = QVBoxLayout(body)
-        lay.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], V3_SP["md"])
-        lay.setSpacing(V3_SP["sm"])
+        # mockup `.screen{padding:24px}` (L256) + `#rtSummary{margin-bottom:18px}`
+        # (L1083) — antes (14,6,14,10) dejaba el hero ~18px más arriba/corto
+        # que el canónico (hero medido top~80/alto~118 vs top~62/alto~90).
+        lay.setContentsMargins(V3_SP["3xl"], V3_SP["3xl"], V3_SP["3xl"], V3_SP["3xl"])
+        lay.setSpacing(V3_SP["xl"])
         lay.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # 1. Hero Day Card (Ring grande del día, sin CTA — el "+ Agregar tarea"
@@ -507,12 +527,17 @@ class ModuloRutina(NMModule):
             )
 
     def _compact_task_check(self, cb: NMCustomCheck) -> NMCustomCheck:
-        cb.setMinimumHeight(28)
-        cb.setMaximumHeight(30)
+        # mockup `.rt-row{padding:8px 4px}` + `.rt-cb{22x22}` (L224,1074):
+        # alto de fila ~38px (22 + 8+8). El cap anterior (28-30) comprimía
+        # las filas por debajo de eso, dejando hueco vacío al pie de cada
+        # `_SectionCard` una vez calibrado el alto de la card contra el
+        # mockup (ver `_sync_height_to_content`).
+        cb.setMinimumHeight(36)
+        cb.setMaximumHeight(38)
         cb.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout = cb.layout()
         if layout is not None:
-            layout.setContentsMargins(0, 2, 0, 2)
+            layout.setContentsMargins(0, 8, 0, 8)
             layout.setSpacing(6)
         label = getattr(cb, "_label", None)
         if label is not None:

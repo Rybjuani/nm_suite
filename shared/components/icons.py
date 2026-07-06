@@ -22,7 +22,7 @@ from PyQt6.QtWidgets import (
 
 from shared.theme import TYPOGRAPHY
 from shared.theme_manager import ThemeManager
-from shared.theme_qt import V3_SP, eyebrow_font, nm_icon, norm_modo, qfont, v3c
+from shared.theme_qt import V3_SP, eyebrow_font, nm_icon, norm_modo, qfont, v3_font, v3c
 
 try:
     from shared.icons_svg import has_icon as _has_v3_icon, nm_svg_pixmap as _nm_svg_pixmap
@@ -168,7 +168,11 @@ class NMSectionHeader(QWidget):
         title_row = QHBoxLayout()
         title_row.setSpacing(V3_SP["md"])
         self._title = QLabel(title or "")
-        self._title.setFont(qfont("size_h2", weight=TYPOGRAPHY["weight_semibold"]))
+        # mockup L1162: `.h-serif{font-family:var(--font-display); font-weight:600}`,
+        # `style="font-size:17px"` — único consumidor real de NMSectionHeader
+        # (filtro de categorías de Actividades); antes sans (qfont) en vez del
+        # display serif que pide el mockup.
+        self._title.setFont(v3_font(17, weight=TYPOGRAPHY["weight_semibold"], serif=True))
         self._title.setWordWrap(True)
         title_row.addWidget(self._title, stretch=1)
         lay.addLayout(title_row)

@@ -58,6 +58,7 @@ try:
         stylesheet_scrollarea,
     )
     from shared.db import conexion
+    from shared.modal_state import modal_hidden, modal_shown
 except ImportError:
     # Fallback paths
     _dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -81,6 +82,7 @@ except ImportError:
         stylesheet_scrollarea,
     )
     from shared.db import conexion
+    from shared.modal_state import modal_hidden, modal_shown
 
 _log = logging.getLogger(__name__)
 
@@ -1275,6 +1277,14 @@ class _PracticeModalScrim(QWidget):
         if obj is self.parent() and event.type() == QEvent.Type.Resize:
             self.setGeometry(self.parent().rect())
         return False
+
+    def showEvent(self, event):
+        modal_shown(self)
+        super().showEvent(event)
+
+    def hideEvent(self, event):
+        modal_hidden(self)
+        super().hideEvent(event)
 
 
 class ModuloDBT(NMModule):

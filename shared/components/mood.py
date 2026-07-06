@@ -520,7 +520,10 @@ class _MoodTrackBar(QWidget):
         # 0 visual que NO es un valor registrable — al primer click/drag se
         # mueve a 1-10 y deja de estar unset. El 0 no responde a clicks.
         self._unset = bool(unset)
-        self.setFixedHeight(56)
+        # 46 (antes 56): el bar canónico de suite:animo es fino y su banda
+        # reserva ~46px; 56 empujaba bar+números ~4-6px abajo. V3MoodSlider
+        # (único consumidor) sólo vive en animo_qt.py.
+        self.setFixedHeight(46)
         self.setMinimumWidth(280)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -573,52 +576,29 @@ class _MoodTrackBar(QWidget):
         p.fillPath(path, QBrush(grad))
         p.setOpacity(1.0)
 
-        # Muesca 0 (estacionamiento): anillo neutro sutil; el thumb descansa
-        # acá mientras el paciente no eligió valor. Theme-aware: en light el
-        # anillo blanco-sobre-card-clara era INVISIBLE (informe user feedback) —
-        # se delinea con slate oscuro.
-        _is_dark = "dark" in norm_modo(_tm().modo)
-        slot0_x = self._slot_positions()[0]
+        # Thumb. Mockup (`<input type=range value=5>`, L856): un único thumb,
+        # sin dots intermedios — el runtime agregaba 10 dots de nivel que el
+        # canon no tiene. "Sin selección": el mockup arranca en el valor
+        # medio (5) porque un range input sin JS extra no puede mostrarse
+        # "vacío" — la captura canónica SIEMPRE muestra el thumb con el
+        # estilo brand normal (ring 3px + halo), sea cual sea el value; no
+        # hay contraparte visual posible para un estado que el mockup no
+        # puede representar. Preservamos la semántica real (is_unset sigue
+        # existiendo, "—/10" y el primer click/drag recién ahí fija un
+        # nivel) parqueando el thumb en el slot 5 con ese mismo estilo, en
+        # vez de un ring gris/apagado que el canon jamás muestra.
         center_y = h / 2
-        if self._unset:
-            if _is_dark:
-                ring = QColor(255, 255, 255, 120)
-                halo = QColor(255, 255, 255, 18)
-            else:
-                ring = QColor(71, 85, 105, 150)
-                halo = QColor(71, 85, 105, 18)
-            p.setPen(Qt.PenStyle.NoPen)
-            p.setBrush(QBrush(halo))
-            p.drawEllipse(QPointF(slot0_x, center_y), 9, 9)
-            p.setBrush(QBrush(QColor("#ffffff")))
-            p.setPen(QPen(ring, 2))
-            p.drawEllipse(QPointF(slot0_x, center_y), 5.5, 5.5)
-        else:
-            _parked = (
-                QColor(255, 255, 255, 110) if _is_dark else QColor(71, 85, 105, 110)
-            )
-            p.setPen(Qt.PenStyle.NoPen)
-            p.setBrush(QBrush(_parked))
-            p.drawEllipse(QPointF(slot0_x, center_y), 2.5, 2.5)
-
-        # Dots (10)
         positions = self._dot_positions()
-        for i, x in enumerate(positions):
-            n = i + 1
-            if n == self._level and not self._unset:
-                brand = v3c("brand", _tm().modo)
-                halo = QColor(v3c("brandSoft", _tm().modo))
-                p.setPen(Qt.PenStyle.NoPen)
-                p.setBrush(QBrush(halo))
-                p.drawEllipse(QPointF(x, center_y), 14, 14)
-                # Mockup range thumb: 22x22, blanco/surface, borde brand 3px.
-                p.setBrush(QBrush(QColor("#ffffff")))
-                p.setPen(QPen(brand, 3))
-                p.drawEllipse(QPointF(x, center_y), 11, 11)
-            else:
-                p.setPen(Qt.PenStyle.NoPen)
-                p.setBrush(QBrush(QColor(255, 255, 255, 180)))
-                p.drawEllipse(QPointF(x, center_y), 3, 3)
+        x = positions[4] if self._unset else positions[self._level - 1]
+        brand = v3c("brand", _tm().modo)
+        halo = QColor(v3c("brandSoft", _tm().modo))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(halo))
+        p.drawEllipse(QPointF(x, center_y), 14, 14)
+        # Mockup range thumb: 22x22, blanco/surface, borde brand 3px.
+        p.setBrush(QBrush(QColor("#ffffff")))
+        p.setPen(QPen(brand, 3))
+        p.drawEllipse(QPointF(x, center_y), 11, 11)
         p.end()
 
     def _level_at_x(self, x: float) -> int:

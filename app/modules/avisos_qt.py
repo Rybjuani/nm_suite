@@ -34,6 +34,7 @@ from PyQt6.QtWidgets import (
     QFrame,
     QPushButton,
     QSizePolicy,
+    QGraphicsDropShadowEffect,
 )
 
 try:
@@ -58,7 +59,7 @@ try:
         stylesheet_scrollarea,
         eyebrow_font,
     )
-    from shared.theme import TYPOGRAPHY
+    from shared.theme import TYPOGRAPHY, V3_SHADOWS
     from shared.db import obtener_conexion, leer_config, conexion
     from shared.visual_qa import visual_qa_enabled, reminder_rows
 except ImportError:
@@ -85,6 +86,7 @@ except ImportError:
         stylesheet_scrollarea,
         eyebrow_font,
     )
+    from shared.theme import V3_SHADOWS
     from shared.visual_qa import visual_qa_enabled, reminder_rows
 
 from shared.remote_config import t
@@ -104,12 +106,12 @@ def _categorize(msg: str) -> tuple[str, str, str]:
     """Infiere (categoria, icon_v3, color_token) según keywords del mensaje."""
     m = (msg or "").lower()
     if any(k in m for k in ("medic", "remedio", "pastilla", "pildora")):
-        return ("Salud", "medicine", "amber")
+        return ("Salud", "medicine", "rose")
     if any(k in m for k in ("agua", "hidrat", "beber")):
         return ("Hidratación", "water", "cyan")
     # 2026-06-24: mockup "Respiración 5 min" usa icono "water" (gota).
     if any(k in m for k in ("respir", "calma", "medit", "mindful")):
-        return ("Calma", "water", "teal")
+        return ("Calma", "water", "mind")
     if any(k in m for k in ("ejerci", "yoga", "camin", "estira", "correr", "gimnasio", "gym")):
         return ("Actividad", "run", "teal")
     if any(
@@ -136,7 +138,7 @@ def _categorize(msg: str) -> tuple[str, str, str]:
         return ("Descanso", "moon", "violet")
     if any(k in m for k in ("terap", "doctor", "psico", "médic", "medic")):
         return ("Terapia", "therapy", "violet")
-    return ("Recordatorio", "bell", "text2")
+    return ("Recordatorio", "bell", "brand")
 
 
 def _format_frequency(dias: str) -> str:
@@ -340,13 +342,24 @@ class _ReminderCardV3(QFrame):
         self._apply_card_shadow()
 
     def _apply_card_shadow(self):
-        self._shadow = shadow_effect("card", self._modo, self)
+        # mockup `.card{box-shadow:var(--shadow-1)}` (L271-272) — reposo
+        # sutil (blur 2-6, alpha baja). El bucket "card" de `shadow_effect`
+        # (blur 16/28, offset 8, alpha 25-115) es shadow-2-like, pensado
+        # para cards elevadas grandes: sobre una fila de lista se veía un
+        # borde/gap mucho más oscuro que el canónico.
+        s = V3_SHADOWS["dark" if "dark" in self._modo else "light"]["shadow_1"]
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(s["blur"])
+        shadow.setOffset(*s["offset"])
+        shadow.setColor(QColor(*s["color"]))
+        self._shadow = shadow
         self.setGraphicsEffect(self._shadow)
 
     def _build(self):
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(14, 8, 14, 8)
-        lay.setSpacing(10)
+        # mockup `.card.pad{padding:20px}` + `.av-row{gap:14px}` (L1205,1273).
+        lay.setContentsMargins(V3_SP["2xl"], V3_SP["2xl"], V3_SP["2xl"], V3_SP["2xl"])
+        lay.setSpacing(V3_SP["lg"])
 
         # Icon tile: mockup l.1057 (av-row) define 34x34 con svg 17, surface-3
         # + radius 10. Antes era 32x32 + svg 18 (contrato copiado de homeCard
@@ -514,9 +527,11 @@ class ModuloAvisos(NMModule):
         outer.addWidget(body)
 
         lay = QVBoxLayout(body)
-        # Gaps verticales xs: el stack (filtros+lista+silencio) entra en 960×600.
-        lay.setContentsMargins(V3_SP["lg"], V3_SP["sm"], V3_SP["lg"], V3_SP["sm"])
-        lay.setSpacing(V3_SP["xs"])
+        # mockup `.screen{padding:24px}` (L256) + gap filtros→lista 16px (L1216).
+        # La lista vive en QScrollArea (stretch=1): un margen mayor no genera
+        # overflow, sólo más scroll si "opciones" (silencio) no entra.
+        lay.setContentsMargins(V3_SP["3xl"], V3_SP["3xl"], V3_SP["3xl"], V3_SP["3xl"])
+        lay.setSpacing(V3_SP["xl"])
 
         # 1. Header eyebrow (sin CTA "+ Nuevo aviso": los recordatorios los
         # determina el profesional desde el Hub; el paciente solo los lee/marca).
@@ -588,7 +603,8 @@ class ModuloAvisos(NMModule):
         self._list_widget.setStyleSheet("background: transparent;")
         self._list_layout = QVBoxLayout(self._list_widget)
         self._list_layout.setContentsMargins(0, 0, 0, 0)
-        self._list_layout.setSpacing(8)
+        # mockup `.av-row{margin-bottom:10px}` (L1205).
+        self._list_layout.setSpacing(10)
         self._list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._scroll.setWidget(self._list_widget)
         lay.addWidget(self._scroll, stretch=1)
@@ -689,15 +705,15 @@ class ModuloAvisos(NMModule):
                 if self._search_query in self._row_get(r, "mensaje", 2).lower()
                 or self._search_query in self._row_get(r, "hora", 1).lower()
             ]
-        # Tab filter
-        if self._current_filter == "activos":
+        # Tab filter. Mockup (L1198-1199): "active" filtra state!=='done' y
+        # "today" filtra state==='today'||state==='active' — para este set
+        # de datos ambos predicados son EL MISMO conjunto (todo lo no-done).
+        # `activo` ya codifica "no completado" (ver UPDATE en _toggle_active:
+        # completar pone activo=0), así que Hoy no necesita re-derivar por
+        # día de la semana — eso vive en el badge por-fila (_is_today), no en
+        # qué filas se listan.
+        if self._current_filter in ("activos", "hoy"):
             rows = [r for r in rows if self._row_get(r, "activo", 4)]
-        elif self._current_filter == "hoy":
-            rows = [
-                r
-                for r in rows
-                if self._row_get(r, "activo", 4) and _is_today(self._row_get(r, "dias", 3) or "")
-            ]
 
         if not rows:
             empty_msg = (

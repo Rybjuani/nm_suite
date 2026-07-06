@@ -755,6 +755,8 @@ CATEGORY_COLORS = {
     "Física": "#3C8A6B",
     "Cognitiva": "#2E5D43",
     "Placer": "#B0683B",
-    "Social": "#C2912F",
-    "Maestría": "#7CC6F0",
+    # mockup ACTS (L1121-1124): Social usa cl:'mind', Maestría usa cl:'gold'
+    # — estaban cruzados (Social tenía el hex de gold, Maestría uno sin token).
+    "Social": "#3C8A6B",
+    "Maestría": "#C2912F",
 }

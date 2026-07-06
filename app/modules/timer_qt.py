@@ -45,7 +45,6 @@ try:
         NMButtonOutline,
         NMInput,
         NMToast,
-        NMCard,
         NMPlayButton,
         NMFocusArc,
         NMRingPulse,
@@ -71,7 +70,6 @@ except ImportError:
         NMButtonOutline,
         NMInput,
         NMToast,
-        NMCard,
         NMPlayButton,
         NMFocusArc,
         NMRingPulse,
@@ -336,8 +334,15 @@ class ModuloTimer(NMModule):
         self._eyebrow = QLabel(t("text.module.timer.eyebrow", "Timer de enfoque"))
         self._eyebrow.setFont(eyebrow_font())
 
-        # Card principal del temporizador, equivalente al panel 6 columnas del mockup.
-        timer_card = NMCard(modo=self._modo, clickable=False, glow=False)
+        # Mockup l.1009-1023/l.1005-1007: ring+controles viven directo sobre
+        # el fondo del `.screen`, sin ningún `.card` envolvente (ni en
+        # idle/running/paused ni en empty). `timer_card` es sólo el
+        # contenedor estructural (layout/stretch) — un QWidget plano, no
+        # NMCard, para no heredar su chrome (bg/border/shadow) ni disparar
+        # la regla VAS "NMCard sin shadow" sobre una superficie que el
+        # mockup nunca eleva.
+        timer_card = QWidget()
+        timer_card.setStyleSheet("background: transparent;")
         timer_card.setMinimumHeight(280)
         timer_card_lay = QVBoxLayout(timer_card)
         timer_card_lay.setContentsMargins(V3_SP["lg"], V3_SP["xs"], V3_SP["lg"], V3_SP["xs"])
@@ -371,11 +376,15 @@ class ModuloTimer(NMModule):
         )
         cent_lay.addSpacerItem(self._cent_top_stretch)
 
-        # Canvas: bigring 230×230 (mockup canónico línea 207), con inner core
-        # 200×200 + número central 46px font-display (mockup línea 861:
-        # <div class="h-serif" id="tmNum" style="font-size:46px;">). El CSS base
-        # pide 52px (.bigring .num), pero el Timer overridea inline a 46px.
-        self._canvas = NMFocusArc(size=180, modo=self._modo, num_size=46)
+        # Canvas: ring 230×230 (mockup canónico línea 207, core 200×200).
+        # Canon-first (WORKER_VISUAL_QA_FLOW.md "Canon-first precedence
+        # override"): V2-P1-040 (230→180, episode doc 20260622_VISUAL_DEBT_FINAL)
+        # es una decisión histórica que precede esta regla — no revalidada como
+        # excepción activa, no bloquea el cierre canon-first. Número central
+        # 46px font-display (mockup línea 861: <div class="h-serif" id="tmNum"
+        # style="font-size:46px;">). El CSS base pide 52px (.bigring .num),
+        # pero el Timer overridea inline a 46px.
+        self._canvas = NMFocusArc(size=230, modo=self._modo, num_size=46)
         self._canvas.set_data(0.0, self._format_time(self._remaining_sec))
         cent_lay.addWidget(self._canvas, alignment=Qt.AlignmentFlag.AlignHCenter)
 
@@ -568,13 +577,6 @@ class ModuloTimer(NMModule):
         if self._has_activity:
             outer.addWidget(timer_card, stretch=1)
         else:
-            # Mockup l.856-858: empty state en pantalla directa, SIN card
-            # chrome. NMCard tiene paintEvent propio (no responde a
-            # stylesheet) — usamos el flag borderless agregado al widget
-            # para que pinte sin border/bg/shadow en este modo. El
-            # cent_container con el empty_state queda sobre el fondo del
-            # screen, matcheando el spec del mockup.
-            timer_card.set_borderless(True)
             outer.addWidget(timer_card, stretch=0)
             outer.addStretch(1)
         self._timer_card = timer_card

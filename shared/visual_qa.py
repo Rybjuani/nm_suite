@@ -99,7 +99,12 @@ def reminder_rows() -> list[dict]:
             "hora": "08:00",
             "mensaje": "Medicación matutina",
             "dias": "1,2,3,4,5",
-            "activo": 1,
+            # activo=0 en completado: refleja el esquema real (_toggle_active
+            # en avisos_qt.py pone activo=0 al completar, vía UPDATE
+            # recordatorios SET activo=?). "done" sólo maneja el badge; sin
+            # este activo=0 los tabs Activos/Hoy (que filtran por `activo`)
+            # incluían ítems ya completados — no matcheaba el canónico.
+            "activo": 0,
             "done": True,
         },
         {
@@ -107,7 +112,7 @@ def reminder_rows() -> list[dict]:
             "hora": "10:30",
             "mensaje": "Respiración 5 min",
             "dias": "1,2,3,4,5,6,7",
-            "activo": 1,
+            "activo": 0,
             "done": True,
         },
         {
