@@ -1371,7 +1371,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_respiracion-paused-dark.json
   - commit: 1a77f7be912734c3252d21235167d654e4f4b708
   - closed-by: close_visual_key.py
-- [ ] `suite:respiracion-running@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08741; odiff=1.58; bbox=23; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion-running_dark.png`.
+- [x] `suite:respiracion-running@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08741; odiff=1.58; bbox=23; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion-running_dark.png`.
+  - evidence: 17c3f5b69ee31461a5cdb32ae4ba50da5a306afb8065501b392c7fe298804ac0
+  - evidence-record: docs/closure_evidence/suite_respiracion-running-dark.json
+  - commit: da39d64f9b48e2d936c177334b2bf757377fd668
+  - closed-by: close_visual_key.py
 - [ ] `suite:respiracion-paused@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08584; odiff=1.48; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion-paused_light.png`.
 - [ ] `suite:respiracion-running@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08381; odiff=1.5; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion-running_light.png`.
 
