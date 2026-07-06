@@ -1300,7 +1300,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_actividades-filtered-dark.json
   - commit: 344968bad3ede221c5424dbf065a6462afc0cb39
   - closed-by: close_visual_key.py
-- [ ] `suite:actividades-empty@light` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.0403; odiff=0.89; bbox=335; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades-empty_light.png`.
+- [x] `suite:actividades-empty@light` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.0403; odiff=0.89; bbox=335; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades-empty_light.png`.
+  - evidence: c4669172fc4eb285c4fb922517f43bfbf2bb980f99e1d295a975ffb3bc119cfd
+  - evidence-record: docs/closure_evidence/suite_actividades-empty-light.json
+  - commit: 5a8159d5dd801f10737ac7b2b5a00469bcaa794b
+  - closed-by: close_visual_key.py
 - [ ] `suite:actividades-empty@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.03241; odiff=0.95; bbox=337; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades-empty_dark.png`.
 
 ### Rutina Rows / Empty (F10, F8, F11) (8)
