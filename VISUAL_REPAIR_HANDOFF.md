@@ -1179,7 +1179,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
 ### Timer Rings / Controls / Empty (F9, F4, F11) (8)
 
 - [ ] `suite:timer-running@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.21044; odiff=1.98; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-running_light.png`.
-- [ ] `suite:timer-paused@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.20767; odiff=2.07; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-paused_light.png`.
+- [x] `suite:timer-paused@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.20767; odiff=2.07; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-paused_light.png`.
+  - evidence: 07f263a323f94edec36614eea7c01452bdd707dfd5026dc411195b7ebc13750d
+  - evidence-record: docs/closure_evidence/suite_timer-paused-light.json
+  - commit: b322aeb5762193481f2c8d67e9b4f4da5cb0d8fd
+  - closed-by: close_visual_key.py
 - [ ] `suite:timer@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.21179; odiff=2.0; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer_light.png`.
 - [ ] `suite:timer-running@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.06445; odiff=2.07; bbox=21; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-running_dark.png`.
 - [ ] `suite:timer-paused@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.06273; odiff=2.16; bbox=21; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-paused_dark.png`.
