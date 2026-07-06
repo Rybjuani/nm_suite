@@ -1204,7 +1204,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_timer-dark.json
   - commit: 74f9f74e5ddd9cf0c45d2fd7c6670327d26c9e01
   - closed-by: close_visual_key.py
-- [ ] `suite:timer-empty@light` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.04063; odiff=1.17; bbox=299; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-empty_light.png`.
+- [x] `suite:timer-empty@light` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.04063; odiff=1.17; bbox=299; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-empty_light.png`.
+  - evidence: 1a2e2e3e30b9afb5a8fa9e69c3c7a89321f3a18dfd92587add17b70f647c62a3
+  - evidence-record: docs/closure_evidence/suite_timer-empty-light.json
+  - commit: 8d85b98e5637679d6db19cc9bb55a6efb24a6d61
+  - closed-by: close_visual_key.py
 - [ ] `suite:timer-empty@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.03361; odiff=1.33; bbox=299; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-empty_dark.png`.
 
 ### Avisos Filters / Rows / Empty (F7, F10, F5, F11) (10)
