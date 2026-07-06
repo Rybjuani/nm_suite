@@ -1389,7 +1389,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
 
 ### Animo Mood System (F15, F4) (2)
 
-- [ ] `suite:animo@light` - severity=high; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.20312; odiff=4.4; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_animo_light.png`.
+- [x] `suite:animo@light` - severity=high; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.20312; odiff=4.4; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_animo_light.png`.
+  - evidence: 692a16ddc69c9cd3aea6fe7ceb1769cf5bdcc6f7f0416added7a3cc1e5173046
+  - evidence-record: docs/closure_evidence/suite_animo-light.json
+  - commit: e542ce5e59fc814dfb46107efe643e2c9c26b31c
+  - closed-by: close_visual_key.py
 - [ ] `suite:animo@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.1705; odiff=2.78; bbox=27; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_animo_dark.png`.
 
 ### Pairing / Capture Alignment (0)
