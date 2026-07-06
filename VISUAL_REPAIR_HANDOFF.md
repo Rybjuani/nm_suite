@@ -1333,7 +1333,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_rutina-add-task-dark.json
   - commit: 0fc4fe693045a409a81f5b1a4456bea81b80e4dc
   - closed-by: close_visual_key.py
-- [ ] `suite:rutina-all-completed@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.09193; odiff=3.23; bbox=211; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_rutina-all-completed_dark.png`.
+- [x] `suite:rutina-all-completed@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.09193; odiff=3.23; bbox=211; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_rutina-all-completed_dark.png`.
+  - evidence: 618b2dba5f349fc0f9be182c370a3f865e0fe956bc01bac01ab22cd3044292e4
+  - evidence-record: docs/closure_evidence/suite_rutina-all-completed-dark.json
+  - commit: f4398efb1194662db34481f88221985ea2073175
+  - closed-by: close_visual_key.py
 - [ ] `suite:rutina@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.08561; odiff=2.52; bbox=211; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_rutina_dark.png`.
 - [ ] `suite:rutina-empty@light` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.04036; odiff=0.95; bbox=332; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_rutina-empty_light.png`.
 - [ ] `suite:rutina-empty@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.0324; odiff=1.03; bbox=333; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_rutina-empty_dark.png`.
