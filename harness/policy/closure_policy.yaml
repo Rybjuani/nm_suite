@@ -1,0 +1,211 @@
+# nm_suite — Visual Closure Policy (V2)
+#
+# This is the ONLY authority for visual closure in nm_suite. The handoff
+# checklist (VISUAL_REPAIR_HANDOFF.md) is a derived read-only view; it does
+# NOT decide closure.
+#
+# The policy is consumed by harness/ci_gate/gate.py on every closure request
+# and on every CI run. Changes to this file require a PR with explicit review.
+#
+# V2 adds rules for: EOL normalization, capture determinism, state verification,
+# replay cardinality, semantic lint, duplicate-key check, family/scope
+# enforcement, near-threshold audit, and DECISIÓN-OWNER migration.
+# See harness/docs/FORENSIC_FINDINGS_V2.md for the red-team findings that
+# motivated each rule.
+
+schema_version: "2.0.0"
+project: nm_suite
+policy_version: "2026-07-07-v2"
+
+# ─── Required properties for ANY closure ────────────────────────────────────
+# All four must be true. The harness validates each one independently and
+# refuses closure if any is false.
+
+required_properties:
+  - tests_pass              # 100% of test suite passes (no skipped, no stale)
+  - anti_fraud_clean        # harness/anti_fraud/scan.py returns CLEAN
+  - replay_full_regen_pass  # harness/replay/replay.py --regen (NOT --no-regen)
+  - evidence_byte_reproducible  # bundle hashes reproduce on LF-normalized re-read
+  - determinism_pass        # VisualParity --determinism-check passes for this surface
+  - state_assertion_valid   # capture_state_assertion matches declared surface_key state
+
+# ─── Per-state rules ────────────────────────────────────────────────────────
+# Maps bundle SurfaceStatus → harness action + additional requirements.
+
+rules:
+  - state: NO_DIFF
+    action: ALLOW_CLOSURE
+    requires: [tests_pass, anti_fraud_clean, replay_full_regen_pass,
+               evidence_byte_reproducible, determinism_pass, state_assertion_valid]
+
+  - state: LOW_DIFF
+    action: ENQUEUE_HUMAN_REVIEW
+    requires: []
+    note: "LOW_DIFF never closes automatically. Requires HUMAN_REVIEWED_PASS."
+
+  - state: SUSPICIOUS
+    action: BLOCK_CLOSURE
+    requires: [audit_required, issue_file]
+    note: "SUSPICIOUS is the signature of fraud. Never closes."
+
+  - state: HIGH_DIFF
+    action: BLOCK_CLOSURE
+    requires: [agent_repair]
+
+  - state: MISSING_PAIR
+    action: BLOCK_CLOSURE
+    requires: [issue_file, capture_fix]
+
+  - state: SIZE_MISMATCH
+    action: BLOCK_CLOSURE
+    requires: [capture_fix]
+
+  - state: HUMAN_REVIEWED_PASS
+    action: ALLOW_CLOSURE
+    requires: [reviewer, timestamp_utc, reviewer_screenshot, reason_text_min_50_chars,
+               tests_pass, anti_fraud_clean, replay_full_regen_pass,
+               evidence_byte_reproducible, determinism_pass, state_assertion_valid]
+    note: "The only path to close a LOW_DIFF or IRREDUCIBLE case."
+
+  - state: HUMAN_REVIEWED_FAIL
+    action: BLOCK_CLOSURE
+    requires: [agent_repair]
+
+# ─── Near-threshold audit ───────────────────────────────────────────────────
+# Surfaces whose metrics are within 5% of a closing threshold get the
+# near_threshold flag in the bundle. Even if technically PASS, they require
+# HUMAN_REVIEWED_PASS — a small drift in the next regen could flip them.
+
+near_threshold_policy:
+  margin_fraction: 0.05
+  action: REQUIRE_HUMAN_REVIEW
+  rationale: |
+    Red-team VQA-THRESH-001 (#36): suite:home-no-score@light at 0.09977/0.10,
+    hub:detalle-resumen-ia-0@light at 0.07933/0.08. A small drift in capture
+    or comparator could flip these to false PASS. Force human review.
+
+# ─── Semantic lint (forbidden handoff phrases) ──────────────────────────────
+# The harness runs handoff_text_lint.py on the visible handoff line BEFORE
+# closure. If any forbidden phrase appears, closure is REFUSED regardless of
+# what the JSON evidence says.
+#
+# Red-team VQA-SEM-001 (#18): close_visual_key.py closed suite:timer@light
+# even though the visible line contained status=FAIL, OPEN debt, risk, etc.
+
+forbidden_handoff_phrases:
+  - "status=FAIL"
+  - "OPEN debt"
+  - "keep open"
+  - "risk"
+  - "not worth touching"
+  - "needs owner decision"
+  - "requires decision"
+  - "near threshold"
+  - "mostly fixed"
+  - "acceptable residue"
+  - "looks good"
+  - "STALE"
+  - "fidelity PASS"
+  - "diff_fidelity PASS"
+  - "capture_v8 success"
+
+# ─── Replay cardinality ─────────────────────────────────────────────────────
+# Red-team VQA-REPLAY-001 (#20): replay can return PASS with 0 keys replayed.
+
+replay_policy:
+  structural_replay:
+    allowed_as: pre_check_only  # fast, but NEVER sufficient for closure
+    min_keys_required: 1        # if 0 keys replayed, FAIL
+  full_regen_replay:
+    required_for: closure       # MANDATORY for any closure
+    min_keys_required: 1
+    forbidden_flags: ["--no-regen"]
+  range_audit:
+    # Red-team #7: replay only audits base..HEAD range. Keys closed before
+    # base are not revalidated. The harness must run replay with --all-closed
+    # to cover the entire closure history, not just the commit range.
+    require_all_closed: true
+
+# ─── Duplicate-key check ────────────────────────────────────────────────────
+# Red-team VQA-DUP-001 (#21): a key can appear both [x] and [ ] in the handoff.
+
+duplicate_key_policy:
+  action: REFUSE_OPERATION
+  check: "len(set(surface_keys)) == len(surface_keys)"
+  failure_reason: "duplicate_surface_key_in_handoff"
+  remediation: "Manually deduplicate the handoff before any closure or scope operation."
+
+# ─── Family/scope enforcement ───────────────────────────────────────────────
+# Red-team VQA-FAMILY-001 (#37): docs prohibit closing a key if a family
+# member is FAIL, but closer does not enforce it.
+
+family_scope_policy:
+  require_target_set: true    # closer refuses to operate without --target-set
+  require_family: true        # closer refuses to operate without --family
+  block_if_family_member_failing: true
+  block_reason: "family_member_still_failing"
+  bypass_only_via:
+    - "OWNER_EXCEPTION_ACTIVE with signed reason and reviewer"
+    - "PR review with explicit family-partial-close approval"
+
+# ─── DECISIÓN-OWNER migration ───────────────────────────────────────────────
+# Red-team VQA-DOC-001 (#34): QT_HTML_KNOWN_MISMATCHES.md still uses
+# DECISIÓN-OWNER, creating exploitable ambiguity.
+
+doc_keyword_policy:
+  forbidden_keyword: "DECISIÓN-OWNER"
+  required_keyword: "OWNER_EXCEPTION_ACTIVE"
+  scan_paths:
+    - "docs/**/*.md"
+    - "VISUAL_REPAIR_HANDOFF.md"
+  exclude_paths:
+    - "docs/_archive/**"
+    - "harness/docs/FORENSIC_FINDINGS_V2.md"  # this file mentions the keyword for documentation
+  action_on_violation: BLOCK_CI
+
+# ─── Non-deterministic capture registry ─────────────────────────────────────
+# Red-team #4, #13: 11 surfaces have unstable captures or volatile reports.
+# These are blocked until the capture pipeline is stabilized.
+
+known_non_deterministic_surfaces:
+  - suite:actividades@light        # capture instability
+  - suite:actividades@dark         # capture instability
+  - suite:actividades-filtered@light   # capture instability
+  - suite:actividades-filtered@dark    # report hash volatility
+  - suite:actividades-marked-hice@light  # capture instability
+  - suite:actividades-marked-hice@dark   # capture instability
+  - suite:respiracion-paused@light   # animated ring/counter variance
+  - suite:respiracion-paused@dark    # animated ring/counter variance
+  - suite:respiracion-running@light  # animated ring/counter variance
+  - suite:respiracion-running@dark   # animated ring/counter variance
+  - suite:rutina-add-task@dark       # report hash volatility
+  # These surfaces cannot close until they pass --determinism-check on two
+  # consecutive regenerations. The agent runner refuses to dispatch closure
+  # prompts for any key in this list.
+
+# ─── State-ambiguous surface registry ───────────────────────────────────────
+# Red-team VQA-STATE-001 (#16): timer-paused can pass as timer-running.
+# These surface pairs have small inter-canonical distance and require extra
+# state verification at capture time.
+
+state_ambiguous_pairs:
+  - [suite:timer-running@light, suite:timer-paused@light]
+  - [suite:timer-running@dark,  suite:timer-paused@dark]
+  - [suite:respiracion-running@light, suite:respiracion-paused@light]
+  - [suite:respiracion-running@dark,  suite:respiracion-paused@dark]
+  # For these pairs, the harness MUST verify capture_state_assertion matches
+  # the declared surface_key state, via the V8 state fingerprint.
+
+# ─── Deprecated operations ──────────────────────────────────────────────────
+# Red-team #28: reopen_legacy_all is a dangerous mass-reopen path.
+
+deprecated_operations:
+  - operation: "close_visual_key.py --reopen-legacy-all"
+    replacement: "individual --reopen --key <key> --reason <text> --reviewer <id>"
+    rationale: "Mass reopen deletes notes and lacks the strong audit trail of individual reopen."
+  - operation: "close_visual_key.py --no-regen"
+    replacement: "harness/replay/replay.py --regen"
+    rationale: "Structural replay is diagnostic only; never sufficient for closure."
+  - operation: "layered_visual_compare.py with --no-odiff / --no-panels / threshold overrides"
+    replacement: "visualparity compare --profile strict"
+    rationale: "Comparator Command Lock: exploratory flags produce invalid closure evidence."
