@@ -1394,7 +1394,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_animo-light.json
   - commit: e542ce5e59fc814dfb46107efe643e2c9c26b31c
   - closed-by: close_visual_key.py
-- [ ] `suite:animo@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.1705; odiff=2.78; bbox=27; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_animo_dark.png`.
+- [x] `suite:animo@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.1705; odiff=2.78; bbox=27; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_animo_dark.png`.
+  - evidence: bad05fef3cad7b875ca01440ddea8f29cfde64e6b34eb9ce80e21441c1636d5d
+  - evidence-record: docs/closure_evidence/suite_animo-dark.json
+  - commit: 93817c493bfe1b67317c721df8bfdc7137051c59
+  - closed-by: close_visual_key.py
 
 ### Pairing / Capture Alignment (0)
 
