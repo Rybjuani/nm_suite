@@ -1,0 +1,35 @@
+{
+  "anti_fraud_sha256": "0bf57265b40ea08abef21efb0b467039c74559c0ada98e4480b94d48ef3cdee4",
+  "capture_png_sha256": "48025f081f445132762430c4121e05d7733b9e2a9d9f20a43159c09f71785394",
+  "capture_v8_sha256": "0d5f1310b00115fbcab43407f099f560d3f9f5ce5a6ba04ed8a93f2c875eeda8",
+  "command_spec": {
+    "capture": {
+      "app": "suite",
+      "theme": "dark",
+      "tool": "qa/capture_v8.py",
+      "vas_introspect": true,
+      "view": "respiracion"
+    },
+    "compare": {
+      "canonical": "qa/_mockup_canonical",
+      "scope": "suite:respiracion@dark",
+      "tool": "qa/layered_visual_compare.py"
+    }
+  },
+  "commit_head": "7598ea849bb6756ee9c976927d7fac5984e46a8f",
+  "key": "suite:respiracion@dark",
+  "layered_compare_sha256": "309b128553ee24dc4b0d8d1a49703bf4992b62ad4976cfadb5813a8a85e5ed30",
+  "manifest_sha256": "10826ec29ccf734c54cd9abf800f0daf27a29235e2a1c45c8782c06a7c4d752d",
+  "metrics": {
+    "changed_pixel_ratio": 0.08884,
+    "max_bbox_delta_px": 0,
+    "mean_abs_diff": 0.0221,
+    "windowed_ssim": 0.88558
+  },
+  "modal_audit_sha256": null,
+  "report_sha256": "f2d1e42e5cb259ec0245f928762aa0232063d8d6e8f77e19f7a92525f897d3db",
+  "result": "PASS",
+  "schema": "nm_suite.evidence_record.v1",
+  "sidecar_sha256": "012f9cef28d765d0cf141c2f476c8e1295c3c4a2a312e9a8412d59c60c506114",
+  "vas_gate_sha256": "ebd4c3e52e50e2248eafd0261cd085ba0769d0663ff3e09a5b63b8b83c4ae408"
+}

@@ -1356,7 +1356,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
 
 ### Respiracion Rings / Controls (F9, F4) (6)
 
-- [ ] `suite:respiracion@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.10211; odiff=1.58; bbox=23; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion_dark.png`.
+- [x] `suite:respiracion@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.10211; odiff=1.58; bbox=23; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion_dark.png`.
+  - evidence: 4c63fa7d0ba883f43a31fbb8e2e88ff7770da8c1a246b7863d907b19e56fc636
+  - evidence-record: docs/closure_evidence/suite_respiracion-dark.json
+  - commit: 7598ea849bb6756ee9c976927d7fac5984e46a8f
+  - closed-by: close_visual_key.py
 - [ ] `suite:respiracion@light` - severity=medium; findings=raw_pixel_delta,qa_missed_raw_or_layout; changed=0.09777; odiff=1.5; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion_light.png`.
 - [ ] `suite:respiracion-paused@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.09105; odiff=1.55; bbox=23; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion-paused_dark.png`.
 - [ ] `suite:respiracion-running@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08741; odiff=1.58; bbox=23; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion-running_dark.png`.
