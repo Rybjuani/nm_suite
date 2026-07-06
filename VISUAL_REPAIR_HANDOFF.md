@@ -1376,7 +1376,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_respiracion-running-dark.json
   - commit: da39d64f9b48e2d936c177334b2bf757377fd668
   - closed-by: close_visual_key.py
-- [ ] `suite:respiracion-paused@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08584; odiff=1.48; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion-paused_light.png`.
+- [x] `suite:respiracion-paused@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08584; odiff=1.48; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion-paused_light.png`.
+  - evidence: 8f3b2887a2dfd39489188169400593d0fe433c1aad335c1800acf6f666e5d06c
+  - evidence-record: docs/closure_evidence/suite_respiracion-paused-light.json
+  - commit: 27fd6b0d1e9bde6c6bc4c5dcd7b0feaa6db0ed37
+  - closed-by: close_visual_key.py
 - [ ] `suite:respiracion-running@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08381; odiff=1.5; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion-running_light.png`.
 
 ### Animo Mood System (F15, F4) (2)
