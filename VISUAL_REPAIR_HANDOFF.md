@@ -1178,7 +1178,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
 
 ### Timer Rings / Controls / Empty (F9, F4, F11) (8)
 
-- [ ] `suite:timer-running@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.21044; odiff=1.98; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-running_light.png`.
+- [x] `suite:timer-running@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.21044; odiff=1.98; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-running_light.png`.
+  - evidence: 99b809ada9216c0565712a35bff9b7b10465283f04241a3b7945ae94ffaa91ed
+  - evidence-record: docs/closure_evidence/suite_timer-running-light.json
+  - commit: 432f3c7b50b41a232775baf69d9d0678982a6d21
+  - closed-by: close_visual_key.py
 - [x] `suite:timer-paused@light` - severity=high; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.20767; odiff=2.07; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-paused_light.png`.
   - evidence: 07f263a323f94edec36614eea7c01452bdd707dfd5026dc411195b7ebc13750d
   - evidence-record: docs/closure_evidence/suite_timer-paused-light.json
