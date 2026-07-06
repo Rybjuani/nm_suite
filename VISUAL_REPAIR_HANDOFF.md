@@ -1184,7 +1184,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_timer-paused-light.json
   - commit: b322aeb5762193481f2c8d67e9b4f4da5cb0d8fd
   - closed-by: close_visual_key.py
-- [ ] `suite:timer@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.21179; odiff=2.0; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer_light.png`.
+- [x] `suite:timer@light` - severity=high; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.21179; odiff=2.0; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer_light.png`.
+  - evidence: 51dadc8f3f0e4cfc4121796d55206e6825784f9b76b40c45da78b1dc27bf1fec
+  - evidence-record: docs/closure_evidence/suite_timer-light.json
+  - commit: 93abd407f166bfc10e10aa7cf57900561644abd0
+  - closed-by: close_visual_key.py
 - [ ] `suite:timer-running@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.06445; odiff=2.07; bbox=21; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-running_dark.png`.
 - [ ] `suite:timer-paused@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.06273; odiff=2.16; bbox=21; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-paused_dark.png`.
 - [ ] `suite:timer@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.06578; odiff=2.08; bbox=21; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer_dark.png`.
