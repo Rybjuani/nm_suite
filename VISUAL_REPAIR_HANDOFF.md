@@ -1275,7 +1275,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_actividades-light.json
   - commit: 76bd67ce6a89688bb4edf43f9b9b15c3805dd3d0
   - closed-by: close_visual_key.py
-- [ ] `suite:actividades-marked-hice@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.18298; odiff=2.4; bbox=11; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades-marked-hice_light.png`.
+- [x] `suite:actividades-marked-hice@light` - severity=high; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.18298; odiff=2.4; bbox=11; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades-marked-hice_light.png`.
+  - evidence: 1868ce8671568417781746075e8952c8219271082781fbeb5cd68e8a677ce148
+  - evidence-record: docs/closure_evidence/suite_actividades-marked-hice-light.json
+  - commit: 18221de3385f817c17fc8879dd2fdb12073e8417
+  - closed-by: close_visual_key.py
 - [ ] `suite:actividades-filtered@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.1523; odiff=1.7; bbox=11; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades-filtered_light.png`.
 - [ ] `suite:actividades@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.14331; odiff=2.61; bbox=19; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades_dark.png`.
 - [ ] `suite:actividades-marked-hice@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.13978; odiff=2.54; bbox=19; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_actividades-marked-hice_dark.png`.
