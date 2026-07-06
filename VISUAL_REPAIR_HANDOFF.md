@@ -1381,7 +1381,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_respiracion-paused-light.json
   - commit: 27fd6b0d1e9bde6c6bc4c5dcd7b0feaa6db0ed37
   - closed-by: close_visual_key.py
-- [ ] `suite:respiracion-running@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08381; odiff=1.5; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion-running_light.png`.
+- [x] `suite:respiracion-running@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08381; odiff=1.5; bbox=12; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_respiracion-running_light.png`.
+  - evidence: 84ad3eb6c9ee32fe3d07bc1b517b455d0149af871b5a310abd95133ade2a0f9b
+  - evidence-record: docs/closure_evidence/suite_respiracion-running-light.json
+  - commit: ebadb8aeaac020ab6e82711843b138692055fce3
+  - closed-by: close_visual_key.py
 
 ### Animo Mood System (F15, F4) (2)
 

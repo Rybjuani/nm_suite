@@ -1,0 +1,35 @@
+{
+  "anti_fraud_sha256": "0bf57265b40ea08abef21efb0b467039c74559c0ada98e4480b94d48ef3cdee4",
+  "capture_png_sha256": "39592db1ccac3c1dd44cd611238d4182d3cc4fd9ce2eed72c3f4ada1e7da1665",
+  "capture_v8_sha256": "0d5f1310b00115fbcab43407f099f560d3f9f5ce5a6ba04ed8a93f2c875eeda8",
+  "command_spec": {
+    "capture": {
+      "app": "suite",
+      "theme": "light",
+      "tool": "qa/capture_v8.py",
+      "vas_introspect": true,
+      "view": "respiracion-running"
+    },
+    "compare": {
+      "canonical": "qa/_mockup_canonical",
+      "scope": "suite:respiracion-running@light",
+      "tool": "qa/layered_visual_compare.py"
+    }
+  },
+  "commit_head": "ebadb8aeaac020ab6e82711843b138692055fce3",
+  "key": "suite:respiracion-running@light",
+  "layered_compare_sha256": "309b128553ee24dc4b0d8d1a49703bf4992b62ad4976cfadb5813a8a85e5ed30",
+  "manifest_sha256": "a9ac9557d056319a8f9394370257315905224489fb80b6d41b51751223b213e4",
+  "metrics": {
+    "changed_pixel_ratio": 0.06467,
+    "max_bbox_delta_px": 14,
+    "mean_abs_diff": 0.023,
+    "windowed_ssim": 0.89335
+  },
+  "modal_audit_sha256": null,
+  "report_sha256": "f1397a61519d9cdd8aad3aee330c4af4360d064c5bc6a3b080522ebe761e0dda",
+  "result": "PASS",
+  "schema": "nm_suite.evidence_record.v1",
+  "sidecar_sha256": "097bb0c73aa4167ce2356bbd29f1e1fedc847c700b9f927aa373b58285861757",
+  "vas_gate_sha256": "ebd4c3e52e50e2248eafd0261cd085ba0769d0663ff3e09a5b63b8b83c4ae408"
+}
