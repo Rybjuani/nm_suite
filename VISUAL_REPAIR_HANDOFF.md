@@ -1237,7 +1237,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_avisos-today-light.json
   - commit: b2e36ffef99f6159428937ac63796b80b45e079a
   - closed-by: close_visual_key.py
-- [ ] `suite:avisos-filter-activos@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.14595; odiff=1.97; bbox=220; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_avisos-filter-activos_dark.png`.
+- [x] `suite:avisos-filter-activos@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.14595; odiff=1.97; bbox=220; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_avisos-filter-activos_dark.png`.
+  - evidence: c9edc36fb88436ec2a7a1622238f866af3f8d19673b6396309ae8a97c3e2364f
+  - evidence-record: docs/closure_evidence/suite_avisos-filter-activos-dark.json
+  - commit: 6441b377f01018da0af104faa012afea38e59339
+  - closed-by: close_visual_key.py
 - [ ] `suite:avisos-today@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.12776; odiff=1.81; bbox=296; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_avisos-today_dark.png`.
 - [ ] `suite:avisos-search@light` - severity=medium; findings=raw_pixel_delta,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.08577; odiff=0.99; bbox=11; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_avisos-search_light.png`.
 - [ ] `suite:avisos-search@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,state_or_recipe_suspect,qa_missed_raw_or_layout; changed=0.06724; odiff=1.1; bbox=448; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_avisos-search_dark.png`.
