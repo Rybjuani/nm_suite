@@ -1,5 +1,18 @@
 # Qt ↔ HTML/CSS Known Mismatches
 
+## Current exception policy
+
+This document does not automatically preserve historical deviations.
+
+For the current canon-first Visual QA phase, any previous `DECISIÓN-OWNER` that conflicts with the active canonical PNG/HTML is treated as historical unless explicitly revalidated by the owner after the canon-first precedence override.
+
+Valid blocking entries must be marked one of:
+
+- `IRREDUCIBLE_ACTIVE`
+- `OWNER_EXCEPTION_ACTIVE`
+
+Entries marked `WORKAROUND`, historical `DECISIÓN-OWNER`, archived decisions, bridge-era notes, or old comments are not blockers and do not authorize keeping a visual mismatch.
+
 Registro de mecanismos CSS del mockup canónico que **PyQt6 no reproduce 1:1**.
 Cada entrada define: el mecanismo CSS, por qué Qt no lo hace igual, el workaround
 canónico ya usado en el runtime, y el impacto en el gate visual
@@ -122,10 +135,23 @@ una key `FAIL`. Comentarios de código, `docs/_archive/`, logs históricos,
 
 ## MISMATCH#10 · Hover glow exterior de botón primario — DECISIÓN-OWNER
 
+Status: HISTORICAL_OWNER_DECISION — not a current Visual QA blocker under canon-first precedence.
+
 - **CSS:** `.btn--primary:hover{box-shadow:var(--shadow-2)}` (`L294`).
 - **Runtime:** `NMButton gradient` usa un **ring interno** en hover, no glow
   exterior (decisión documentada en el código, `buttons.py:241`).
 - **Impacto:** los hovers no se capturan; bajo. No "corregir" hacia glow exterior.
+
+### Disabled button opacity
+
+Previous note:
+`NMButton _disabled_opacity=0.65` was documented as an owner deviation.
+
+Current status:
+HISTORICAL_OWNER_DECISION — not a current Visual QA blocker.
+
+Canon-first rule:
+If canonical CSS/PNG shows `.btn:disabled{opacity:.5}`, runtime must match `.5` for Visual QA closure. Any desire to restore `.65` is post-closure product debt or requires a refreshed canon.
 
 ## MISMATCH#11 · `rgba()` soft en QSS → variantes `*Solid` — WORKAROUND
 

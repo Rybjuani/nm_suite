@@ -31,6 +31,8 @@ La evidencia versionable de cierre vive en [`closure_evidence/`](closure_evidenc
 | [`QT_HTML_KNOWN_MISMATCHES.md`](QT_HTML_KNOWN_MISMATCHES.md) | Clasificación IRREDUCIBLE / WORKAROUND / DECISIÓN-OWNER. |
 | [`DESIGN_SYSTEM_TRANSLATION_BRIDGE.md`](DESIGN_SYSTEM_TRANSLATION_BRIDGE.md) | Puente de diseño Web → Qt (especificación de tokens y helpers). |
 
+Active bridge/reference documents are translation aids, not override authority. If a bridge note or historical owner decision conflicts with the active canonical PNG/HTML during canon-first Visual QA closure, the canon-first precedence rule in `WORKER_VISUAL_QA_FLOW.md` governs.
+
 ## Setup
 
 - [`dev-setup.md`](dev-setup.md) — entorno de desarrollo.

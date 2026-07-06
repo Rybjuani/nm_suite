@@ -236,6 +236,38 @@ harness, replay, close scripts o evidence. Si parece bug del gate, deten la
 tarea visual y reporta una tarea R0 separada, sin cierre de keys, sin handoff
 ni evidence.
 
+## Canon-first precedence override
+
+For the current Visual QA closure phase, the owner's active directive is:
+canonical PNG / canonical HTML parity is the closure target.
+
+Precedence order:
+
+1. Current explicit owner instruction for this Visual QA phase.
+2. Active canonical PNG / canonical HTML for the exact key.
+3. Active Visual QA protocol and gate outputs.
+4. Active bridge/reference docs, only as CSS→PyQt translation aids.
+5. Historical owner decisions, old comments, archived notes, previous episode docs, and bridge-era deviations.
+
+Historical `DECISIÓN-OWNER` entries do not block canon-first closure unless they are revalidated by the owner after this rule and explicitly marked as current active exception.
+
+A worker must not use old `DECISIÓN-OWNER`, bridge notes, comments, episode docs, `docs/_archive`, or prior UX decisions to:
+- stop a key;
+- keep a visual divergence;
+- request partial scope;
+- avoid implementing canonical parity;
+- mark a FAIL as acceptable.
+
+If a previous owner decision conflicts with the active canonical PNG/HTML, the worker must implement canonical parity for this phase and report the prior decision as a post-closure product follow-up, not as a blocker.
+
+Exceptions are allowed only if the owner explicitly creates a new current exception after this rule, with:
+- exact key or component;
+- exact visual property;
+- active source file;
+- reason;
+- date;
+- whether it blocks closure or only records post-closure product debt.
+
 ### 2.5 Cuándo cambiar de estrategia
 
 Esta regla aplica **por key**: si una key del target set no converge, aplicá
