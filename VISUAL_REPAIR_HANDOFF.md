@@ -1209,7 +1209,11 @@ for any future new closure; Prompt 2 hardening/noise gates do not close any key.
   - evidence-record: docs/closure_evidence/suite_timer-empty-light.json
   - commit: 8d85b98e5637679d6db19cc9bb55a6efb24a6d61
   - closed-by: close_visual_key.py
-- [ ] `suite:timer-empty@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.03361; odiff=1.33; bbox=299; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-empty_dark.png`.
+- [x] `suite:timer-empty@dark` - severity=medium; findings=raw_pixel_delta,layout_drift,qa_missed_raw_or_layout; changed=0.03361; odiff=1.33; bbox=299; panel=`reports\qa\layered_visual_compare_fresh\panels\suite_timer-empty_dark.png`.
+  - evidence: 924cfbb5d7b5c04cb1ad23380bfc600590273f1f831a6f94b764f3cee8c4da24
+  - evidence-record: docs/closure_evidence/suite_timer-empty-dark.json
+  - commit: 3b71b48b8af0307870beb957389ef577628720ec
+  - closed-by: close_visual_key.py
 
 ### Avisos Filters / Rows / Empty (F7, F10, F5, F11) (10)
 
