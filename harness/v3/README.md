@@ -1,12 +1,12 @@
 # harness/v3/ — VisualParity Consumer Harness v3
 
-> **Fase 0A skeleton — no runtime authority.**
+> **Fase 2 — contract-level. No runtime authority. No visual closure.**
 >
-> Este directorio es un placeholder. No contiene código productivo. El
-> harness v3 funcional se implementa en Fase 1B+. Ningún archivo aquí es
-> leído por CI, ni por agentes, ni aplica policy en Fase 0A. **No
-> reemplaza** el harness V2 en `harness/` (raíz); V2 sigue intacto y wired
-> al CI hasta la migración A+.
+> Este directorio contiene el scaffold del harness v3. En Fase 2 los
+> módulos son contract-level: implementan validación de policy, schema,
+> cardinality, anti-fraud estructural, pero **no** ejecutan captura real,
+> replay real, ni cierre. **No reemplaza** el harness V2 en `harness/`
+> (raíz); V2 sigue intacto y wired al CI hasta la migración A+.
 
 ## Tesis
 
