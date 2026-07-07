@@ -1,0 +1,20 @@
+{
+  "_note": "Fase 0A skeleton — no runtime authority. This is an example. The real visualparity.lock.json is created in Fase 1A when the VisualParity CLI binary exists and its vp_build_sha256 is known.",
+  "_schema_version": "1.0.0",
+  "_do_not_consume": true,
+  "schema_version": "1.0.0",
+  "project": "nm_suite",
+  "lockfile_version": "EXAMPLE-ONLY",
+  "allowlist": [
+    {
+      "vp_build_version": "3.1.0-alpha1",
+      "vp_build_sha256": "PLACEHOLDER_REPLACE_WITH_REAL_SHA256_OF_VISUALPARITY_CLI_BINARY",
+      "policy_sha256": "PLACEHOLDER_REPLACE_WITH_REAL_SHA256_OF_CLOSURE_POLICY_V3_YAML_CANONICALIZED",
+      "active_from": "PLACEHOLDER_ISO8601_TIMESTAMP",
+      "active_until": null,
+      "revoked_reason": null
+    }
+  ],
+  "denied": [],
+  "_notes": "The harness v3 (future) verifies vp_build_sha256 vs this allowlist before consuming any bundle. If the binary is not in the allowlist, BLOCK. This example file MUST NOT be consumed by any runtime. The real lockfile is visualparity.lock.json (without .example)."
+}
