@@ -1,13 +1,89 @@
 # Changelog VisualParity V3.1
 
-> **Fase 0D — migration planning. No runtime authority. No visual closure.**
+> **Fase 4 — operational docs. No runtime authority. No visual closure.**
 > Este changelog registra cambios de V3.1 (documentación + skeletons +
-> validadores + CI smoke + migration planning). No registra cambios de V1/V2.
+> validadores + CI smoke + migration planning + Core/CLI + harness v3 +
+> operational docs). No registra cambios de V1/V2.
 
 ## Convención
 
 Formato: `Keep a Changelog`. Versionado: `MAJOR.MINOR.PATCH` donde MAJOR
 es la fase (0, 1, 2, ...), MINOR es sub-fase, PATCH es corrección.
+
+## [1.0.0] — 2026-07-07 — Fase 1-4 (Core/CLI + harness v3 + CI + docs)
+
+### Fase 1 — feat(visual-parity-v3.1): add core cli scaffold (`d6351182`)
+
+- `tools/visualparity/VisualParity.sln` (.NET 8 solution).
+- `src/VisualParity.Core/`: Bundle (SurfaceStatus, BundleWriter),
+  Comparators (PixelDiff byte-equality), Pairing (Pairer).
+- `src/VisualParity.CLI/`: Program.cs (compare, batch, verify-bundle;
+  manual arg parser, no external NuGet).
+- `tests/VisualParity.Core.Tests/`: PixelDiffTests.cs (7 xUnit tests).
+- `visualparity.lock.json`: real lockfile (placeholder vp_build_sha256).
+- Estados: NO_DIFF, MISSING_PAIR, SIZE_MISMATCH, DIFF_UNCLASSIFIED.
+- dotnet build/test: NOT_EXECUTABLE localmente; CI usa setup-dotnet.
+
+### Fase 2 — feat(visual-parity-v3.1): add harness v3 scaffold (`ebd9b49b`)
+
+- `harness/v3/bundle_verifier.py`: verifica bundle + checksums + allowlist.
+- `harness/v3/policy_engine.py`: mapea estados → decisiones.
+- `harness/v3/state_assertion.py`: schema + validador sintáctico.
+- `harness/v3/capture_orchestrator.py`: contract only (NOT_IMPLEMENTED).
+- `harness/v3/replay/replay.py`: contract + cardinality + --no-regen rejection.
+- `harness/v3/anti_fraud/scan.py`: asset_byte_identity (1 vector, known-vector
+  initial coverage).
+- `harness/v3/tests/`: 4 test suites, 21 tests stdlib (all PASS).
+- HIGH_DIFF → BLOCK (no override). LOW_DIFF → HUMAN_REVIEW_REQUIRED (no
+  auto-close). --no-regen → BLOCK. replayed_keys=0 con expected>0 → BLOCK.
+
+### Fase 3 — ci(visual-parity-v3.1): expand governance checks (`e3e2030a`)
+
+- Workflow `visual-parity-v3-governance.yml` expandido:
+  - Job `governance-smoke` (hard gate): Fase 0B validator (13 grupos) +
+    ASCII check (2 archivos) + 4 harness v3 test suites (21 tests).
+  - Job `dotnet-tests` (soft gate, continue-on-error): setup-dotnet 8.0.x
+    + build + test.
+- Validador Fase 0B actualizado:
+  - Grupo B: acepta cualquier marker de fase + "no runtime authority"
+    (case-insensitive).
+  - Grupo L: permite .cs bajo src/ y tests/; prohibe en phase0b/, phase0d/.
+- Workflow legacy `visual-closure-replay.yml` NO tocado.
+
+### Fase 4 — docs(visual-parity-v3.1): document phase 1 to 5 contracts (this commit)
+
+- `CORE_CLI_CONTRACT.md` (nuevo): contrato VisualParity Core/CLI.
+- `HARNESS_V3_CONTRACT.md` (nuevo): contrato harness v3.
+- `PHASE_1_TO_5_STATUS.md` (nuevo): status por fase.
+- `CI_GOVERNANCE.md` (actualizado): jobs governance-smoke + dotnet-tests.
+- `ARCHITECTURE.md` (actualizado): estado Fase 4.
+- `CHANGELOG.md` (este archivo).
+
+### Not Modified (confirmado)
+
+- V1/V2 no removidos (preservados vía A+ snapshot tag `forensic-pre-v3.1`).
+- Producto, canon, evidence records, handoff: sin cambios.
+- Workflow legacy `visual-closure-replay.yml`: sin cambios.
+- `VISUAL_REPAIR_HANDOFF.md`: sin cambios.
+
+### Riesgos residuales
+
+- V1/V2 siguen en path activo y wired al CI legacy. Riesgo activo hasta
+  remoción (prompt explícito posterior, Fase 5+).
+- 6 owner decisions pendientes (PEND-1 a PEND-6) bloquean fases
+  posteriores específicas.
+- VisualParity CLI binary no construido; `vp_build_sha256` es placeholder.
+- Pixel metrics no implementadas; cualquier diff es `DIFF_UNCLASSIFIED`.
+- `capture_orchestrator.py` y `replay/replay.py` son contract-only
+  (NOT_IMPLEMENTED para runtime real).
+
+## [0.5.0] — 2026-07-07 — Fase 0E (A+ forensic snapshot executed)
+
+- Tag `forensic-pre-v3.1` creado apuntando a `2e36fb90`.
+- Bundle externo `nm_suite-forensic-pre-v3.1.bundle` creado.
+- SHA256: `1eee4987106c767ac154b222f5761ed4c44f34921fb31cc554a14f702cf129ee`.
+- GitHub Release `forensic-pre-v3.1` publicado.
+- Pointer commit `98df54b4`.
 
 ## [0.4.1] — 2026-07-07 — Fase 0D patch (PowerShell ASCII-safe)
 

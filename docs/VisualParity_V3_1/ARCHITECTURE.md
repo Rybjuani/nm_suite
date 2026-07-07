@@ -1,7 +1,11 @@
 # Arquitectura V3.1
 
-> **Fase 0A skeleton — no runtime authority.** Este documento describe la
-> arquitectura objetivo. Ningún módulo está implementado en Fase 0A.
+> **Fase 4 — status snapshot. No runtime authority. No visual closure.**
+>
+> Este documento describe la arquitectura V3.1. Fase 1 (Core/CLI) y Fase 2
+> (harness v3 contract) están implementadas. Fases posteriores (runtime
+> real, cierre, UI) pendientes. Ver `PHASE_1_TO_5_STATUS.md` para estado
+> detallado por fase.
 
 ## Tesis
 
@@ -204,10 +208,23 @@ VisualParity Core/CLI **nunca** emite estos estados (son del harness):
   `qa/capture_v8.py` (PyQt6 offscreen) y `qa/_mockup_canonical/`.
 - **CI:** GitHub Actions. Self-hosted runner para cierre (decisión owner #6).
 
-## Estado actual (Fase 0A)
+## Estado actual (Fase 4)
 
-- **Implementado:** sólo documentación y skeletons no funcionales
-  (`tools/visualparity/README.md`, `harness/v3/README.md`,
-  `harness/v3/policy/*.example.yaml`, `harness/v3/schemas/README.md`,
-  `harness/v3/agent_runner/denylist.example.yaml`).
-- **No implementado:** VisualParity Core, harness v3 funcional, CI V3.1.
+- **Implementado (Fase 1):** VisualParity Core/CLI scaffold .NET 8
+  (`tools/visualparity/src/`, `tools/visualparity/tests/`,
+  `visualparity.lock.json`). Medición only: `NO_DIFF`, `MISSING_PAIR`,
+  `SIZE_MISMATCH`, `DIFF_UNCLASSIFIED`. 7 tests xUnit.
+- **Implementado (Fase 2):** Harness v3 scaffold Python stdlib
+  (`harness/v3/bundle_verifier.py`, `policy_engine.py`,
+  `state_assertion.py`, `capture_orchestrator.py` contract,
+  `replay/replay.py` contract + cardinality, `anti_fraud/scan.py` 1
+  vector). 21 tests stdlib.
+- **Implementado (Fase 3):** CI governance expandido
+  (`visual-parity-v3-governance.yml` con governance-smoke + dotnet-tests
+  jobs).
+- **No implementado (fases posteriores):** pixel metrics en Core,
+  captura real en `capture_orchestrator.py`, replay real en
+  `replay/replay.py`, anti-fraud vectores 2-8, `ci_gate/gate.py`,
+  `agent_runner/runner.py`, `evidence_records/`, WPF UI.
+- **No removido:** V1/V2 siguen en `main` (preservados vía A+ snapshot
+  tag `forensic-pre-v3.1`). Remoción requiere prompt explícito posterior.

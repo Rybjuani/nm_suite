@@ -1,15 +1,15 @@
 # CI Governance — VisualParity V3.1 Governance Smoke
 
-> **Fase 0C — Governance smoke only. No runtime authority. No visual closure.**
+> **Fase 3 — Governance smoke + tests. No runtime authority. No visual closure.**
 
 ## Tesis
 
 El workflow `.github/workflows/visual-parity-v3-governance.yml` es un **smoke
-test de gobernanza** que protege el scaffold V3.1 (docs + skeletons creados
-en Fase 0A) contra degradación. No es CI de cierre visual. No autoriza
+test de gobernanza** que protege el scaffold V3.1 (docs + skeletons + Core/CLI
++ harness v3) contra degradación. No es CI de cierre visual. No autoriza
 cierre. No reemplaza el workflow legacy.
 
-## Qué corre el workflow nuevo
+## Qué corre el workflow (Fase 3)
 
 - **Trigger:** `pull_request` y `push` sobre los paths:
   - `docs/VisualParity_V3_1/**`
@@ -17,12 +17,30 @@ cierre. No reemplaza el workflow legacy.
   - `harness/v3/**`
   - `.github/workflows/visual-parity-v3-governance.yml`
 - **Runner:** `ubuntu-latest`.
-- **Steps:**
-  1. `checkout` (fetch-depth 1).
-  2. `setup-python` 3.12.
-  3. `python tools/visualparity/phase0b/validate_phase0b.py`.
-- **Resultado:** exit 0 (PASS) o exit 1 (FAIL). Si falla, el PR/push ha
-  degradado el scaffold V3.1 y debe corregirse antes de merge.
+
+### Job `governance-smoke` (hard gate)
+
+1. `checkout` (fetch-depth 1).
+2. `setup-python` 3.12.
+3. `python tools/visualparity/phase0b/validate_phase0b.py` (13 grupos).
+4. `python tools/visualparity/phase0d/check_ascii.py` (2 archivos .ps1).
+5. `python harness/v3/tests/test_policy_engine.py` (10 tests).
+6. `python harness/v3/tests/test_replay.py` (4 tests).
+7. `python harness/v3/tests/test_bundle_verifier.py` (4 tests).
+8. `python harness/v3/tests/test_duplicate_key.py` (3 tests).
+
+Si cualquiera falla, el PR/push es rechazado.
+
+### Job `dotnet-tests` (soft gate, `continue-on-error: true`)
+
+1. `checkout` (fetch-depth 1).
+2. `setup-dotnet` 8.0.x.
+3. `dotnet build VisualParity.sln --configuration Release`.
+4. `dotnet test VisualParity.sln --configuration Release --no-build`.
+
+Marcado `continue-on-error: true` para que el job `governance-smoke` siga
+siendo el hard gate. Si `dotnet-tests` falla, el PR no se bloquea pero se
+genera una advertencia visible.
 
 ## Qué NO corre el workflow nuevo
 
