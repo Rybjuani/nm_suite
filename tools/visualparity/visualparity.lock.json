@@ -1,0 +1,18 @@
+{
+  "_note": "Fase 1 - VisualParity V3.1 lockfile. The vp_build_sha256 field is a placeholder until the CLI binary is built and its real hash is computed. The harness v3 bundle_verifier.py treats any vp_build_sha256 NOT in this allowlist as BLOCK.",
+  "schema_version": "1.0.0",
+  "project": "nm_suite",
+  "lockfile_version": "2026-07-07-fase-1-scaffold",
+  "allowlist": [
+    {
+      "vp_build_version": "3.1.0-fase1-scaffold",
+      "vp_build_sha256": "unbuilt-fase-1-scaffold",
+      "policy_sha256": "pending-fase-2-policy-canonicalization",
+      "active_from": "2026-07-07T00:00:00Z",
+      "active_until": null,
+      "revoked_reason": null,
+      "note": "Scaffold only. The CLI binary has not been built yet. Once built in a later fase, replace 'unbuilt-fase-1-scaffold' with the real SHA256 of the published visualparity binary and bump lockfile_version."
+    }
+  ],
+  "denied": []
+}
