@@ -127,3 +127,19 @@ Tras confirmar que el bundle + SHA256 están publicados y son descargables:
 
 Ver `PHASE_0A_DECISIONS.md` #1: ubicación del bundle forense (GitHub Release
 asset en `nm_suite` vs. storage owner privado).
+
+## Snapshot forense A+ ejecutado
+
+- Estado: EXECUTED
+- Tag: forensic-pre-v3.1
+- Tagged commit: 2e36fb90c952f8503e50d8480879de82358ecb1f
+- Bundle filename: nm_suite-forensic-pre-v3.1.bundle
+- SHA256: 1eee4987106c767ac154b222f5761ed4c44f34921fb31cc554a14f702cf129ee
+- Storage: GitHub Release asset en Rybjuani/nm_suite
+- Release: forensic-pre-v3.1
+- Release URL: https://github.com/Rybjuani/nm_suite/releases/tag/forensic-pre-v3.1
+- Created from: Windows PowerShell nativo
+- Git Bash/WSL: NO
+- Bundle location during creation: C:\Users\nosom\Desktop\forensic_release_nm_suite
+- Main tree contains bundle: NO
+- Scope preserved: V1, V2, V3-previo, docs, evidence records, canon, workflows, full git history reachable by bundle

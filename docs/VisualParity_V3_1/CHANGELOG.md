@@ -325,3 +325,23 @@ es la fase (0, 1, 2, ...), MINOR es sub-fase, PATCH es corrección.
 (`capture_v8.py` conservado), #7 (stack VisualParity). Bloqueante para
 migración A+: #1 (bundle forense ubicación). Riesgo activo si se
 posterga: #9 (timing migración).
+
+## [0.5.0] - 2026-07-07 - Fase 0E - A+ forensic snapshot executed
+
+### Added
+
+- Tag forensic-pre-v3.1 creado apuntando a 2e36fb90c952f8503e50d8480879de82358ecb1f.
+- Bundle externo nm_suite-forensic-pre-v3.1.bundle creado en C:\Users\nosom\Desktop\forensic_release_nm_suite.
+- SHA256 calculado y verificado: 1eee4987106c767ac154b222f5761ed4c44f34921fb31cc554a14f702cf129ee.
+- GitHub Release forensic-pre-v3.1 publicado con bundle + sha256 como assets.
+- Puntero registrado en MIGRATION_A_PLUS.md.
+
+### Not Modified
+
+- V1/V2 no removidos.
+- Producto, canon, evidence, handoff, workflows: sin cambios.
+- No bundle/sha256 commiteados al working tree.
+
+### Commit
+
+- docs(visual-parity-v3.1): register forensic snapshot A+
