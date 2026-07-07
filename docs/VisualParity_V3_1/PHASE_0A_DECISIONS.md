@@ -3,6 +3,14 @@
 > **Fase 0A skeleton — no runtime authority.** Este documento lista las
 > decisiones reales que requieren input del owner antes de avanzar a Fase 0B
 > y Fase 1A. No son tareas de auditoría.
+>
+> **Actualización Fase 0D:** 5 decisiones (#1 bundle, #2 capture_v8, #7 stack,
+> #9 timing, #11 canon) han sido cerradas y movidas a
+> `OWNER_DECISIONS_LOCKED.md` como `LOCKED_FOR_V3_1`. Las restantes (#3
+> vas_introspect, #4 handoff, #5 tessdata, #6 self-hosted runner, #8
+> WORKER_VISUAL_QA_FLOW, #10 116 closures) siguen pendientes como
+> `STILL_OWNER_DECISION_REQUIRED`. Ver `OWNER_DECISIONS_LOCKED.md` para el
+> estado vinculante.
 
 ## Tesis
 
@@ -14,6 +22,11 @@ el owner puede aceptar la recomendación o elegir otra opción.
 ## Decisiones pendientes
 
 ### #1 — Bundle forense A+: ubicación
+
+> **✅ RESUELTO en Fase 0D → `OWNER_DECISIONS_LOCKED.md` LOCK-1.**
+> Decisión: GitHub Release asset del propio `nm_suite` como opción
+> primaria; storage owner privado como fallback documentado. No crear repo
+> externo.
 
 **Decisión:** ¿Dónde se publica el `git bundle` forense pre-V3.1?
 
@@ -33,6 +46,12 @@ indefinidamente.
 ---
 
 ### #2 — `capture_v8.py` conservado como generador transitorio
+
+> **✅ RESUELTO en Fase 0D → `OWNER_DECISIONS_LOCKED.md` LOCK-2.**
+> Decisión: conservar como generador transitorio. Sólo futuro
+> `harness/v3/capture_orchestrator.py` podrá invocarlo. VisualParity Core/CLI
+> nunca lo invoca. `--introspect` deshabilitado hasta auditar
+> `vas_introspect.py` (PEND-1).
 
 **Decisión:** ¿Se conserva `qa/capture_v8.py` como generador transitorio
 con los límites declarados en `CAPTURE_V8_TRANSITION.md`?
@@ -123,6 +142,9 @@ cierre es un step del workflow, no un proceso manual separado.
 
 ### #7 — Stack VisualParity
 
+> **✅ RESUELTO en Fase 0D → `OWNER_DECISIONS_LOCKED.md` LOCK-3.**
+> Decisión: .NET 8 + CLI/Core primero + WPF después + WinUI fuera de V3.1.
+
 **Decisión:** ¿Confirmar .NET 8 + CLI primero, WPF después, WinUI fuera?
 
 **Opciones:**
@@ -152,6 +174,10 @@ claro. Archivar sin reemplazar deja vacío operacional.
 ---
 
 ### #9 — Timing migración
+
+> **✅ RESUELTO en Fase 0D → `OWNER_DECISIONS_LOCKED.md` LOCK-4.**
+> Decisión: avanzar con migración A+ por fases. Fase 0D prepara; fase
+> posterior ejecutará tag/bundle/remoción sólo con prompt explícito.
 
 **Decisión:** ¿Fase 0 inmediatamente, o ventana de freeze?
 
@@ -186,6 +212,11 @@ estado limpio.
 ---
 
 ### #11 — Reconciliación canónica `pack canonico/` vs `_mockup_canonical/`
+
+> **✅ RESUELTO en Fase 0D → `OWNER_DECISIONS_LOCKED.md` LOCK-5.**
+> Decisión: target canónico futuro `qa/_mockup_canonical/`; no eliminar
+> `qa/pack canonico/` hasta reconciliación; MANIFEST futuro con paths
+> relativos; comparar PNGs por SHA256 raw bytes.
 
 **Decisión:** ¿Confirmar que `_mockup_canonical/` es canon único tras
 reconciliación, y qué hacer con assets únicos de `pack canonico/` si los

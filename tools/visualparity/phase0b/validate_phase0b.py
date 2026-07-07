@@ -485,6 +485,59 @@ def group_l(v: Validator) -> None:
                 f"validator must not import {imp} (found: {hits[:1]})")
 
 
+# ─── Group M: Fase 0D docs and scripts ─────────────────────────────────────
+PHASE_0D_REQUIRED_DOCS = [
+    DOCS_V31 / "OWNER_DECISIONS_LOCKED.md",
+    DOCS_V31 / "FORENSIC_SNAPSHOT_PREFLIGHT.md",
+    DOCS_V31 / "MIGRATION_A_PLUS_EXECUTION_PLAN.md",
+    DOCS_V31 / "PHASE_0D_CHECKLIST.md",
+]
+PHASE_0D_REQUIRED_SCRIPTS = [
+    Path("tools/visualparity/phase0d/preflight_snapshot_dry_run.ps1"),
+    Path("tools/visualparity/phase0d/README.md"),
+]
+
+
+def group_m(v: Validator) -> None:
+    v.group("M. Fase 0D docs and scripts existence")
+    for rel in PHASE_0D_REQUIRED_DOCS:
+        path = REPO_ROOT / rel
+        v.check(path.exists(), f"missing Fase 0D doc: {rel}")
+    for rel in PHASE_0D_REQUIRED_SCRIPTS:
+        path = REPO_ROOT / rel
+        v.check(path.exists(), f"missing Fase 0D script: {rel}")
+    # Validate OWNER_DECISIONS_LOCKED.md contains the 5 LOCKED decisions
+    locked_path = REPO_ROOT / DOCS_V31 / "OWNER_DECISIONS_LOCKED.md"
+    locked_content = _read_opt(locked_path)
+    if locked_content:
+        for lock_id in ["LOCK-1", "LOCK-2", "LOCK-3", "LOCK-4", "LOCK-5"]:
+            v.check(lock_id in locked_content,
+                    f"OWNER_DECISIONS_LOCKED.md missing {lock_id}")
+        v.check("LOCKED_FOR_V3_1" in locked_content,
+                "OWNER_DECISIONS_LOCKED.md missing LOCKED_FOR_V3_1 section")
+        v.check("STILL_OWNER_DECISION_REQUIRED" in locked_content,
+                "OWNER_DECISIONS_LOCKED.md missing STILL_OWNER_DECISION_REQUIRED section")
+    # Validate FORENSIC_SNAPSHOT_PREFLIGHT.md marks commands FUTURE_PHASE_ONLY
+    preflight_path = REPO_ROOT / DOCS_V31 / "FORENSIC_SNAPSHOT_PREFLIGHT.md"
+    preflight_content = _read_opt(preflight_path)
+    if preflight_content:
+        v.check("FUTURE_PHASE_ONLY" in preflight_content,
+                "FORENSIC_SNAPSHOT_PREFLIGHT.md must mark commands FUTURE_PHASE_ONLY")
+        v.check("DO NOT RUN IN PHASE 0D" in preflight_content
+                or "no ejecuta" in preflight_content.lower(),
+                "FORENSIC_SNAPSHOT_PREFLIGHT.md must declare Fase 0D does not execute")
+    # Validate MIGRATION_A_PLUS_EXECUTION_PLAN.md has 8 steps
+    plan_path = REPO_ROOT / DOCS_V31 / "MIGRATION_A_PLUS_EXECUTION_PLAN.md"
+    plan_content = _read_opt(plan_path)
+    if plan_content:
+        for step in ["Paso 1", "Paso 2", "Paso 3", "Paso 4",
+                     "Paso 5", "Paso 6", "Paso 7", "Paso 8"]:
+            v.check(step in plan_content,
+                    f"MIGRATION_A_PLUS_EXECUTION_PLAN.md missing {step}")
+        v.check("FUTURE_PHASE_ONLY" in plan_content,
+                "MIGRATION_A_PLUS_EXECUTION_PLAN.md must mark destructive commands FUTURE_PHASE_ONLY")
+
+
 # ─── Main ──────────────────────────────────────────────────────────────────
 def main() -> int:
     if not REPO_ROOT.exists():
@@ -500,7 +553,7 @@ def main() -> int:
     v = Validator()
     groups: list[Callable[[Validator], None]] = [
         group_a, group_b, group_c, group_d, group_e, group_f,
-        group_g, group_h, group_i, group_j, group_k, group_l,
+        group_g, group_h, group_i, group_j, group_k, group_l, group_m,
     ]
     for g in groups:
         try:

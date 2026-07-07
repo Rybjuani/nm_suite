@@ -1,13 +1,99 @@
 # Changelog VisualParity V3.1
 
-> **Fase 0C — governance smoke. No runtime authority. No visual closure.**
+> **Fase 0D — migration planning. No runtime authority. No visual closure.**
 > Este changelog registra cambios de V3.1 (documentación + skeletons +
-> validadores + CI smoke). No registra cambios de V1/V2.
+> validadores + CI smoke + migration planning). No registra cambios de V1/V2.
 
 ## Convención
 
 Formato: `Keep a Changelog`. Versionado: `MAJOR.MINOR.PATCH` donde MAJOR
 es la fase (0, 1, 2, ...), MINOR es sub-fase, PATCH es corrección.
+
+## [0.4.0] — 2026-07-07 — Fase 0D
+
+### Added
+
+- `docs/VisualParity_V3_1/OWNER_DECISIONS_LOCKED.md` — 5 decisiones owner
+  cerradas como `LOCKED_FOR_V3_1` (LOCK-1 bundle ubicación, LOCK-2
+  capture_v8, LOCK-3 stack .NET 8, LOCK-4 timing por fases, LOCK-5 canon
+  único). 6 decisiones pendientes como `STILL_OWNER_DECISION_REQUIRED`
+  (PEND-1 vas_introspect, PEND-2 handoff, PEND-3 tessdata, PEND-4
+  self-hosted runner, PEND-5 WORKER_VISUAL_QA_FLOW, PEND-6 116 closures).
+  5 decisiones como `NOT_DECIDED_IN_THIS_PHASE`.
+- `docs/VisualParity_V3_1/FORENSIC_SNAPSHOT_PREFLIGHT.md` — preflight A+
+  detallado. Comandos futuros (Paso F1 a F5) marcados `FUTURE_PHASE_ONLY`.
+  Prohibiciones explícitas: no tag/bundle/release en Fase 0D, no Git
+  Bash/WSL, no commit de `.bundle`/`.zip`/`.tar.gz`/evidence V1/scripts
+  V1/V2 a `main`.
+- `docs/VisualParity_V3_1/MIGRATION_A_PLUS_EXECUTION_PLAN.md` — plan de
+  ejecución de 8 pasos (snapshot → manifest pointer → archive docs →
+  remove V1/V2 → preserve capture_v8 → reconcile canon → replace workflow
+  → implement Core/CLI). Cada paso con objetivo, files allowed, files
+  forbidden, validation, rollback strategy. Comandos destructivos marcados
+  `FUTURE_PHASE_ONLY`.
+- `docs/VisualParity_V3_1/PHASE_0D_CHECKLIST.md` — checklist de aceptación
+  Fase 0D: docs creados, no tag/bundle/release reales, no V1/V2 removidos,
+  no producto/canon/evidence/handoff/workflow legacy modificados,
+  validador Fase 0B PASS, runners PowerShell PASS o NOT_EXECUTABLE.
+- `tools/visualparity/phase0d/preflight_snapshot_dry_run.ps1` — script
+  dry-run PowerShell nativo. Valida clean tree + HEAD == origin/main + no
+  tag `forensic-pre-v3.1` existe. Imprime comandos futuros marcados
+  `FUTURE_PHASE_ONLY`. No crea tag/bundle/SHA256/release. No escribe
+  archivos. No hace push. No modifica repo. Exit 0 si PASS, exit 1 si
+  fail.
+- `tools/visualparity/phase0d/README.md` — documentación del dry-run.
+
+### Changed
+
+- `docs/VisualParity_V3_1/PHASE_0A_DECISIONS.md` — 5 decisiones (#1, #2,
+  #7, #9, #11) marcadas como `✅ RESUELTO en Fase 0D` con referencia a
+  `OWNER_DECISIONS_LOCKED.md`. Header actualizado con resumen de estado.
+- `docs/VisualParity_V3_1/MIGRATION_A_PLUS.md` — header actualizado a
+  `Fase 0D`. Referencia `FORENSIC_SNAPSHOT_PREFLIGHT.md`,
+  `MIGRATION_A_PLUS_EXECUTION_PLAN.md`, `OWNER_DECISIONS_LOCKED.md`,
+  `PHASE_0D_CHECKLIST.md`, y el dry-run script. Aclara que Fase 0D no
+  ejecuta tag/bundle.
+- `tools/visualparity/phase0b/validate_phase0b.py` — grupo M agregado para
+  validar existencia de docs Fase 0D (OWNER_DECISIONS_LOCKED,
+  FORENSIC_SNAPSHOT_PREFLIGHT, MIGRATION_A_PLUS_EXECUTION_PLAN,
+  PHASE_0D_CHECKLIST) y del dry-run script.
+- `tools/visualparity/phase0b/README.md` — actualizado para reflejar
+  grupo M.
+
+### Not Modified (confirmado)
+
+- Producto: `app/`, `hub/`, `shared/`, `db/`, `assets/`, `installers/` —
+  sin cambios.
+- Canon: `qa/_mockup_canonical/`, `qa/pack canonico/` — sin cambios.
+- Evidence records: `docs/closure_evidence/` — sin cambios.
+- V1: `qa/` scripts — sin cambios.
+- V2: `harness/` (raíz) — sin cambios.
+- V3-previo: `docs/VisualParity_V3/` — sin cambios.
+- Workflow legacy: `.github/workflows/visual-closure-replay.yml` — sin
+  cambios.
+- Workflow governance: `.github/workflows/visual-parity-v3-governance.yml`
+  — sin cambios.
+- Handoff: `VISUAL_REPAIR_HANDOFF.md` — sin cambios.
+- Tests: `tests/` — sin cambios.
+- No tag real creado.
+- No bundle real creado.
+- No GitHub Release creado.
+
+### Commit
+
+- `docs(visual-parity-v3.1): lock phase 0D migration decisions` (HEAD
+  sobre `8ef984f5`).
+
+### Riesgos residuales
+
+- Fase 0D no ejecuta migración A+; sólo prepara. Riesgo activo de V1/V2
+  en path sigue hasta fase posterior con prompt explícito.
+- 6 decisiones owner pendientes (PEND-1 a PEND-6) bloquean Fases
+  posteriores específicas.
+- Dry-run PowerShell no ejecutado en este entorno (Linux sin pwsh);
+  marcado `NOT_EXECUTABLE`. Debe probarse en Windows real.
+- Plan de ejecución A+ (8 pasos) es documento; cualquier desviación en
+  fase futura requiere actualización de este changelog y del plan.
 
 ## [0.3.0] — 2026-07-07 — Fase 0C
 

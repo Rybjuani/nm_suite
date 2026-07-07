@@ -10,7 +10,7 @@
 
 ## Qué valida
 
-`validate_phase0b.py` verifica 12 grupos de invariantes del scaffold V3.1:
+`validate_phase0b.py` verifica 13 grupos de invariantes del scaffold V3.1:
 
 | Grupo | Validación |
 |---|---|
@@ -26,6 +26,7 @@
 | J | `CANON_RECONCILIATION_PLAN.md`: no eliminar `pack canonico/` en 0A/0B, reconciliar contra `_mockup_canonical/`, canon único con paths relativos, comparar sha256 raw bytes, migrar assets únicos antes de eliminar. |
 | K | `PHASE_0A_DECISIONS.md`: contiene las 11 owner decisions requeridas. |
 | L | No runtime leakage: el validador es el único `.py` en `phase0b/`, no hay `.cs` bajo `tools/visualparity/`, no hay workflows nuevos, el validador no importa pytest/pytestqt/PyQt ni importa/ejecuta/invoca V1/V2. Las referencias textuales a nombres V1/V2 son esperadas porque se usan para validar prohibiciones y denylist. |
+| M | Fase 0D docs y scripts: existencia de `OWNER_DECISIONS_LOCKED.md`, `FORENSIC_SNAPSHOT_PREFLIGHT.md`, `MIGRATION_A_PLUS_EXECUTION_PLAN.md`, `PHASE_0D_CHECKLIST.md`, `preflight_snapshot_dry_run.ps1`, `phase0d/README.md`. Valida que `OWNER_DECISIONS_LOCKED.md` contiene LOCK-1 a LOCK-5 y secciones `LOCKED_FOR_V3_1` / `STILL_OWNER_DECISION_REQUIRED`. Valida que preflight y plan marcan comandos `FUTURE_PHASE_ONLY`. Valida que el plan tiene los 8 pasos. |
 
 ## Cómo correr
 
@@ -49,8 +50,9 @@ Fase 0B — Governance Validators
   PASS  B. Skeleton authority ...  (0 errors)
   ...
   PASS  L. No runtime leakage ...  (0 errors)
+  PASS  M. Fase 0D docs and scripts existence  (0 errors)
 ------------------------------------------------------------------------
-Groups: 12/12 passed, 0 failed, 0 total errors
+Groups: 13/13 passed, 0 failed, 0 total errors
 ========================================================================
 ```
 

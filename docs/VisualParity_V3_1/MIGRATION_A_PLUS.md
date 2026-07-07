@@ -1,8 +1,19 @@
 # Migración A+ — Archivo forense pre-V3.1
 
-> **Fase 0A skeleton — no runtime authority.** Este documento describe el
-> plan de migración forense. No se ha ejecutado en Fase 0A. V1/V2 siguen
-> intactos en `main`.
+> **Fase 0D — migration planning. No runtime authority. No visual closure.**
+> Este documento describe el plan de migración forense. **Fase 0D NO ejecuta
+> tag/bundle/release.** Sólo documenta. V1/V2 siguen intactos en `main`.
+>
+> **Actualización Fase 0D:**
+> - Preflight detallado: ver `FORENSIC_SNAPSHOT_PREFLIGHT.md` (comandos
+>   futuros marcados `FUTURE_PHASE_ONLY`).
+> - Plan de ejecución de 8 pasos: ver
+>   `MIGRATION_A_PLUS_EXECUTION_PLAN.md` (cada paso con objetivo, files
+>   allowed/forbidden, validation, rollback).
+> - Decisiones owner cerradas: ver `OWNER_DECISIONS_LOCKED.md` (LOCK-1
+>   bundle ubicación, LOCK-4 timing).
+> - Dry-run script: `tools/visualparity/phase0d/preflight_snapshot_dry_run.ps1`.
+> - Checklist de aceptación Fase 0D: `PHASE_0D_CHECKLIST.md`.
 
 ## Tesis
 
