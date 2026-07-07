@@ -454,15 +454,20 @@ def group_l(v: Validator) -> None:
     cs_files = list((REPO_ROOT / "tools/visualparity").rglob("*.cs"))
     v.check(not cs_files,
             f"no .cs files allowed under tools/visualparity/, found: {[str(p.relative_to(REPO_ROOT)) for p in cs_files]}")
-    # No new workflows (only the original V1 visual-closure-replay.yml expected)
+    # Workflows: the legacy V1 visual-closure-replay.yml is untouched, and the
+    # Fase 0C governance smoke visual-parity-v3-governance.yml is the only new
+    # workflow allowed. Any other workflow is unexpected.
     workflows_dir = REPO_ROOT / ".github/workflows"
     if workflows_dir.exists():
         workflows = sorted(workflows_dir.glob("*.yml")) + sorted(workflows_dir.glob("*.yaml"))
         workflow_names = {p.name for p in workflows}
-        expected = {"visual-closure-replay.yml"}
+        expected = {
+            "visual-closure-replay.yml",          # legacy V1, untouched
+            "visual-parity-v3-governance.yml",    # Fase 0C governance smoke
+        }
         unexpected = workflow_names - expected
         v.check(not unexpected,
-                f"no new workflows allowed in Fase 0B, unexpected: {sorted(unexpected)}")
+                f"unexpected workflows found (only legacy + governance smoke allowed): {sorted(unexpected)}")
     # Structural check: the validator must not IMPORT any forbidden module.
     # We scan only import statements (not arbitrary string mentions, since the
     # validator legitimately references V1/V2 names as forbidden tokens in

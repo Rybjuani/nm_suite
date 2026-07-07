@@ -1,0 +1,55 @@
+# VisualParity V3.1 Governance Smoke
+#
+# Governance smoke only. No runtime authority. No visual closure.
+#
+# This workflow runs the Fase 0B governance validator to detect degradation of
+# the V3.1 scaffold (docs + skeletons created in Fase 0A). It does NOT authorize
+# visual closure, does NOT run pytest, does NOT run PyQt6, does NOT run V1/V2,
+# does NOT run capture_v8.py, and does NOT replace the legacy visual closure
+# workflow (.github/workflows/visual-closure-replay.yml).
+#
+# If this workflow fails, the PR/push has degraded the V3.1 scaffold and must
+# be fixed before merge.
+
+name: VisualParity V3.1 Governance Smoke
+
+on:
+  pull_request:
+    paths:
+      - "docs/VisualParity_V3_1/**"
+      - "tools/visualparity/**"
+      - "harness/v3/**"
+      - ".github/workflows/visual-parity-v3-governance.yml"
+  push:
+    paths:
+      - "docs/VisualParity_V3_1/**"
+      - "tools/visualparity/**"
+      - "harness/v3/**"
+      - ".github/workflows/visual-parity-v3-governance.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  governance-smoke:
+    name: Governance smoke (Fase 0B validator)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run Fase 0B governance validator
+        # Governance smoke only. No runtime authority. No visual closure.
+        # The validator is stdlib-only; no pip install required.
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/visualparity/phase0b/validate_phase0b.py

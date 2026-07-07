@@ -1,12 +1,91 @@
 # Changelog VisualParity V3.1
 
-> **Fase 0A skeleton — no runtime authority.** Este changelog registra
-> cambios de V3.1 (documentación + skeletons). No registra cambios de V1/V2.
+> **Fase 0C — governance smoke. No runtime authority. No visual closure.**
+> Este changelog registra cambios de V3.1 (documentación + skeletons +
+> validadores + CI smoke). No registra cambios de V1/V2.
 
 ## Convención
 
 Formato: `Keep a Changelog`. Versionado: `MAJOR.MINOR.PATCH` donde MAJOR
 es la fase (0, 1, 2, ...), MINOR es sub-fase, PATCH es corrección.
+
+## [0.3.0] — 2026-07-07 — Fase 0C
+
+### Added
+
+- `tools/visualparity/phase0b/run_phase0b.ps1` — runner PowerShell nativo
+  para Windows. Localiza repo root, busca Python (`.venv\Scripts\python.exe`
+  → `python` → `py -3`), ejecuta `validate_phase0b.py`, propaga exit code.
+  No invoca V1/V2. No invoca `capture_v8.py`. No toca archivos.
+- `.github/workflows/visual-parity-v3-governance.yml` — workflow CI nuevo
+  `VisualParity V3.1 Governance Smoke`. Trigger `pull_request` + `push` sobre
+  `docs/VisualParity_V3_1/**`, `tools/visualparity/**`, `harness/v3/**`, y el
+  propio workflow. Runner `ubuntu-latest`, Python 3.12. Ejecuta
+  `python tools/visualparity/phase0b/validate_phase0b.py`. Governance smoke
+  only. No runtime authority. No visual closure. No pytest. No PyQt6. No
+  V1/V2. No `capture_v8.py`. No reemplaza el workflow legacy.
+- `docs/VisualParity_V3_1/CI_GOVERNANCE.md` — documentación del workflow
+  nuevo: qué corre, qué NO corre, qué protege, relación con workflow legacy.
+
+### Changed
+
+- `tools/visualparity/phase0b/README.md` — corregida frase imprecisa sobre
+  referencias V1/V2 en el validador. Texto nuevo: "el validador no importa,
+  ejecuta ni invoca V1/V2; las referencias textuales a nombres V1/V2 son
+  esperadas porque se usan para validar prohibiciones y denylist." Sección
+  "Estado" actualizada para reflejar Fase 0C (runner PowerShell + CI smoke).
+
+### Not Modified (confirmado)
+
+- Producto: `app/`, `hub/`, `shared/`, `db/`, `assets/`, `installers/` —
+  sin cambios.
+- Canon: `qa/_mockup_canonical/`, `qa/pack canonico/` — sin cambios.
+- Evidence records: `docs/closure_evidence/` — sin cambios.
+- V1: `qa/` scripts — sin cambios.
+- V2: `harness/` (raíz) — sin cambios.
+- V3-previo: `docs/VisualParity_V3/` — sin cambios.
+- Workflow legacy: `.github/workflows/visual-closure-replay.yml` — sin
+  cambios, no reemplazado, no editado.
+- Handoff: `VISUAL_REPAIR_HANDOFF.md` — sin cambios.
+- `tools/visualparity/phase0b/validate_phase0b.py` — sin cambios (Fase 0B
+  intacta).
+- Fase 0A docs (`docs/VisualParity_V3_1/*.md` salvo CHANGELOG y
+  CI_GOVERNANCE nuevo) — sin cambios.
+
+### Commit
+
+- `ci(visual-parity-v3.1): add governance smoke workflow` (HEAD sobre
+  `41e3a8c6`).
+
+### Riesgos residuales
+
+- El workflow nuevo corre sólo en `ubuntu-latest`. No valida captura en
+  Windows (será workflow separado en Fase posterior si se requiere).
+- El workflow no verifica el árbol git completo (no-toque de producto/canon/
+  evidence). Esa verificación se hace manualmente vía `git status --short`
+  en review de PR.
+- El workflow legacy sigue wired a V1 scripts y ejecutando `--no-regen`.
+  Riesgo activo hasta migración A+ (owner decision #1 y #9).
+- El runner PowerShell no fue ejecutado en este entorno (Linux sin pwsh);
+  marcado `NOT_EXECUTABLE`. Debe probarse en Windows real en primera
+  oportunidad.
+
+## [0.2.0] — 2026-07-07 — Fase 0B
+
+### Added
+
+- `tools/visualparity/phase0b/validate_phase0b.py` — validador standalone
+  stdlib con 12 grupos (A-L) de invariantes del scaffold V3.1.
+- `tools/visualparity/phase0b/README.md` — documentación del validador.
+
+### Changed
+
+- `harness/v3/policy/closure_policy_v3.example.yaml` — agregada sección
+  `bulk_human_pass_policy` (requerida por validador grupo E).
+
+### Commit
+
+- `test(visual-parity-v3.1): add phase 0B governance validators` (`41e3a8c6`).
 
 ## [0.1.0] — 2026-07-07 — Fase 0A
 

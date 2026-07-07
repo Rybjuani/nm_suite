@@ -25,7 +25,7 @@
 | I | `CAPTURE_V8_TRANSITION.md`: sólo `capture_orchestrator.py` invoca `capture_v8.py`, VisualParity no lo invoca, `--introspect` deshabilitado hasta auditar `vas_introspect.py`. |
 | J | `CANON_RECONCILIATION_PLAN.md`: no eliminar `pack canonico/` en 0A/0B, reconciliar contra `_mockup_canonical/`, canon único con paths relativos, comparar sha256 raw bytes, migrar assets únicos antes de eliminar. |
 | K | `PHASE_0A_DECISIONS.md`: contiene las 11 owner decisions requeridas. |
-| L | No runtime leakage: el validador es el único `.py` en `phase0b/`, no hay `.cs` bajo `tools/visualparity/`, no hay workflows nuevos, el validador no referencia V1/V2 ni importa pytest/pytestqt/PyQt. |
+| L | No runtime leakage: el validador es el único `.py` en `phase0b/`, no hay `.cs` bajo `tools/visualparity/`, no hay workflows nuevos, el validador no importa pytest/pytestqt/PyQt ni importa/ejecuta/invoca V1/V2. Las referencias textuales a nombres V1/V2 son esperadas porque se usan para validar prohibiciones y denylist. |
 
 ## Cómo correr
 
@@ -76,10 +76,20 @@ Groups: 12/12 passed, 0 failed, 0 total errors
 ## Limitaciones
 
 - El validador verifica **presencia de texto** y **estructura de archivos**, no semántica profunda. Un doc que mencione `LOW_DIFF` pero lo mapee incorrectamente en prosa no será detectado si el texto literal está presente.
-- El grupo L (no runtime leakage) verifica estáticamente que el validador mismo no referencia V1/V2; no verifica el árbol git completo. La verificación de git se hace en el wrapper de Fase 0B (este README documenta la expectativa; el operador debe correr `git status --short` por separado).
+- El grupo L (no runtime leakage) verifica estáticamente que el validador no importa, ejecuta ni invoca V1/V2; las referencias textuales a nombres V1/V2 son esperadas porque se usan para validar prohibiciones y denylist. El grupo L no verifica el árbol git completo. La verificación de git se hace por separado (el operador debe correr `git status --short` por separado).
 - El validador no verifica que los `.example.yaml` sean YAML válidos parseables; verifica substrings. Si se requiere parseo YAML real, agregar en Fase posterior (sin introducir dependencia de `pyyaml` si no está en stdlib — usar `tomllib` o un parser minimalista propio).
 
 ## Estado
 
-- **Implementado:** `validate_phase0b.py` + este `README.md`.
-- **No implementado:** integración con CI (Fase posterior), parseo YAML estricto, validación de JSON Schemas (Fase 1B+ cuando los schemas existan).
+- **Implementado:** `validate_phase0b.py` + este `README.md` + `run_phase0b.ps1` (runner PowerShell nativo para Windows) + workflow CI `.github/workflows/visual-parity-v3-governance.yml` (governance smoke).
+- **No implementado:** parseo YAML estricto, validación de JSON Schemas (Fase 1B+ cuando los schemas existan).
+
+## Runner PowerShell para Windows
+
+`run_phase0b.ps1` es un runner nativo de Windows PowerShell (no Git Bash, no WSL) que localiza el repo root, busca Python en este orden (`.\.venv\Scripts\python.exe` → `python` → `py -3`), ejecuta el validador y propaga el exit code.
+
+```powershell
+.\tools\visualparity\phase0b\run_phase0b.ps1
+```
+
+No invoca V1/V2. No invoca `capture_v8.py`. No toca archivos. No tiene runtime authority.
