@@ -9,6 +9,48 @@
 Formato: `Keep a Changelog`. Versionado: `MAJOR.MINOR.PATCH` donde MAJOR
 es la fase (0, 1, 2, ...), MINOR es sub-fase, PATCH es corrección.
 
+## [0.4.1] — 2026-07-07 — Fase 0D patch (PowerShell ASCII-safe)
+
+### Fixed
+
+- `tools/visualparity/phase0d/preflight_snapshot_dry_run.ps1` —
+  reemplazados caracteres non-ASCII (em dash `—` U+2014, box drawing `─`
+  U+2500) por hyphen ASCII `-`. El script fallaba en Windows PowerShell
+  5.1 con `ParserError: Token ')' inesperado` porque 5.1 interpreta mal
+  UTF-8 sin BOM. Sin cambios lógicos: sigue siendo dry-run, no crea
+  tag/bundle/SHA/release, no escribe archivos, no hace push, exit 0 si
+  clean + HEAD == origin/main, exit 1 si divergencia.
+- `tools/visualparity/phase0b/run_phase0b.ps1` — mismo reemplazo de
+  caracteres non-ASCII por ASCII. Sin cambios lógicos.
+
+### Added
+
+- `tools/visualparity/phase0d/check_ascii.py` — script Python stdlib que
+  verifica que ambos `.ps1` sean ASCII-only. Exit 0 si PASS, exit 1 si
+  FAIL. No runtime authority. No invoca V1/V2. No invoca capture_v8.
+
+### Not Modified (confirmado)
+
+- Lógica de los scripts PowerShell: sin cambios.
+- Producto, canon, evidence, V1/V2, handoff, workflows: sin cambios.
+- No tag real, no bundle real, no release real.
+
+### Commit
+
+- `fix(visual-parity-v3.1): make PowerShell dry-run ASCII-safe` (HEAD
+  sobre `71f9ba34`).
+
+### Riesgos residuales
+
+- El fix no fue probado en Windows PowerShell 5.1 real en este entorno
+  (Linux sandbox). El ASCII check stdlib confirma 0 non-ASCII chars, lo
+  que elimina la causa raíz del ParserError reportado. Se recomienda
+  re-ejecutar `preflight_snapshot_dry_run.ps1` en Windows 5.1 para
+  confirmar el fix end-to-end.
+- El archivo sigue siendo UTF-8 sin BOM. Windows PowerShell 5.1 maneja
+  ASCII-only UTF-8 sin BOM correctamente; si en el futuro se agregan
+  caracteres non-ASCII, se requerirá BOM o re-aplicar ASCII-safe.
+
 ## [0.4.0] — 2026-07-07 — Fase 0D
 
 ### Added

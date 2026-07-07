@@ -16,11 +16,11 @@
     Devuelve exit code 1 si hay cambios locales o divergencia.
 
 .NOTES
-    Fase 0D — migration planning. No runtime authority. No visual closure.
+    Fase 0D - migration planning. No runtime authority. No visual closure.
     Windows PowerShell nativo (no Git Bash, no WSL).
 #>
 
-# ─── Locate repo root from this script's path ──────────────────────────────
+# --- Locate repo root from this script's path ------------------------------
 # This script lives at <repo-root>\tools\visualparity\phase0d\preflight_snapshot_dry_run.ps1
 $ScriptPath = $MyInvocation.MyCommand.Path
 $ScriptDir = Split-Path -Parent $ScriptPath
@@ -30,7 +30,7 @@ Write-Host "=== Fase 0D Forensic Snapshot Preflight (DRY-RUN) ===" -ForegroundCo
 Write-Host "Repo root: $RepoRoot"
 Write-Host ""
 
-# ─── Precondition 1: clean tree ────────────────────────────────────────────
+# --- Precondition 1: clean tree --------------------------------------------
 Write-Host "[1/3] Checking clean tree..." -ForegroundColor Yellow
 $StatusOutput = git -C $RepoRoot status --short --branch 2>&1
 $StatusShort = git -C $RepoRoot status --short 2>&1
@@ -55,7 +55,7 @@ if ($HasLocalChanges) {
 Write-Host "  PASS: clean tree." -ForegroundColor Green
 Write-Host ""
 
-# ─── Precondition 2: HEAD == origin/main ───────────────────────────────────
+# --- Precondition 2: HEAD == origin/main -----------------------------------
 Write-Host "[2/3] Checking HEAD == origin/main..." -ForegroundColor Yellow
 $LocalHead = git -C $RepoRoot rev-parse HEAD 2>&1
 $RemoteHead = git -C $RepoRoot rev-parse origin/main 2>&1
@@ -73,7 +73,7 @@ if ($LocalHead -ne $RemoteHead) {
 Write-Host "  PASS: HEAD == origin/main." -ForegroundColor Green
 Write-Host ""
 
-# ─── Precondition 3: no forensic-pre-v3.1 tag exists yet ───────────────────
+# --- Precondition 3: no forensic-pre-v3.1 tag exists yet -------------------
 Write-Host "[3/3] Checking no forensic-pre-v3.1 tag exists..." -ForegroundColor Yellow
 $ExistingTag = git -C $RepoRoot tag -l forensic-pre-v3.1 2>&1
 if ($ExistingTag -and $ExistingTag.Trim() -ne "") {
@@ -85,8 +85,8 @@ if ($ExistingTag -and $ExistingTag.Trim() -ne "") {
 }
 Write-Host ""
 
-# ─── Print FUTURE_PHASE_ONLY commands ──────────────────────────────────────
-Write-Host "=== Future commands (FUTURE_PHASE_ONLY — DO NOT RUN IN PHASE 0D) ===" -ForegroundColor Cyan
+# --- Print FUTURE_PHASE_ONLY commands --------------------------------------
+Write-Host "=== Future commands (FUTURE_PHASE_ONLY - DO NOT RUN IN PHASE 0D) ===" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "The following commands would be executed in a FUTURE phase, only after:"
 Write-Host "  - This dry-run returns exit code 0."
@@ -125,7 +125,7 @@ Write-Host ""
 Write-Host "=== End future commands ===" -ForegroundColor Cyan
 Write-Host ""
 
-# ─── Final summary ─────────────────────────────────────────────────────────
+# --- Final summary ---------------------------------------------------------
 Write-Host "=== Preflight result ===" -ForegroundColor Cyan
 Write-Host "Repo root:      $RepoRoot"
 Write-Host "HEAD:           $LocalHead"

@@ -13,11 +13,11 @@
     No tiene runtime authority. No cierra keys.
 
 .NOTES
-    Fase 0C — Governance smoke only. No runtime authority. No visual closure.
+    Fase 0C - Governance smoke only. No runtime authority. No visual closure.
     Compatible con Windows PowerShell nativo (no Git Bash, no WSL).
 #>
 
-# ─── Locate repo root from this script's path ──────────────────────────────
+# --- Locate repo root from this script's path ------------------------------
 # This script lives at <repo-root>\tools\visualparity\phase0b\run_phase0b.ps1
 $ScriptPath = $MyInvocation.MyCommand.Path
 $ScriptDir = Split-Path -Parent $ScriptPath
@@ -28,7 +28,7 @@ Write-Host "=== Fase 0B Governance Runner (PowerShell) ===" -ForegroundColor Cya
 Write-Host "Repo root: $RepoRoot"
 Write-Host ""
 
-# ─── Locate Python ──────────────────────────────────────────────────────────
+# --- Locate Python ----------------------------------------------------------
 $PythonExe = $null
 $PythonSource = $null
 
@@ -78,7 +78,7 @@ if ($PythonArgs) {
 }
 Write-Host ""
 
-# ─── Run validator ──────────────────────────────────────────────────────────
+# --- Run validator ----------------------------------------------------------
 $ValidatorPath = Join-Path $RepoRoot "tools\visualparity\phase0b\validate_phase0b.py"
 if (-not (Test-Path $ValidatorPath)) {
     Write-Host "ERROR: validator not found: $ValidatorPath" -ForegroundColor Red

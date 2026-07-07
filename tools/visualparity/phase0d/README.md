@@ -6,6 +6,23 @@
 > forense A+. **No crea tag, bundle, SHA256, ni release.** Sólo valida
 > precondiciones e imprime los comandos futuros.
 
+## Compatibilidad Windows PowerShell 5.1
+
+Los scripts `.ps1` en este directorio son **ASCII-only** (sin em dash, sin
+box drawing, sin acentos) para compatibilidad con Windows PowerShell 5.1
+nativo, que falla con `ParserError` si el archivo UTF-8 sin BOM contiene
+caracteres non-ASCII.
+
+El script `check_ascii.py` verifica que ambos `.ps1` (`preflight_snapshot_dry_run.ps1`
+y `tools/visualparity/phase0b/run_phase0b.ps1`) sean ASCII-only:
+
+```bash
+python tools/visualparity/phase0d/check_ascii.py
+```
+
+Exit 0 si PASS, exit 1 si FAIL. Si se agregan caracteres non-ASCII en el
+futuro, re-aplicar ASCII-safe o agregar BOM.
+
 ## Qué valida
 
 `preflight_snapshot_dry_run.ps1` valida 3 precondiciones:
