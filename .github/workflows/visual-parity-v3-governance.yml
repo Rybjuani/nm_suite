@@ -2,14 +2,14 @@
 #
 # Governance smoke only. No runtime authority. No visual closure.
 #
-# This workflow runs the Fase 0B governance validator to detect degradation of
-# the V3.1 scaffold (docs + skeletons created in Fase 0A). It does NOT authorize
-# visual closure, does NOT run pytest, does NOT run PyQt6, does NOT run V1/V2,
-# does NOT run capture_v8.py, and does NOT replace the legacy visual closure
-# workflow (.github/workflows/visual-closure-replay.yml).
+# This workflow runs governance validators + harness v3 stdlib tests + .NET
+# Core tests. It does NOT authorize visual closure, does NOT run PyQt6,
+# does NOT run V1/V2, does NOT run capture_v8.py, and does NOT replace the
+# legacy visual closure workflow
+# (.github/workflows/visual-closure-replay.yml).
 #
-# If this workflow fails, the PR/push has degraded the V3.1 scaffold and must
-# be fixed before merge.
+# If this workflow fails, the PR/push has degraded the V3.1 scaffold and
+# must be fixed before merge.
 
 name: VisualParity V3.1 Governance Smoke
 
@@ -32,7 +32,7 @@ permissions:
 
 jobs:
   governance-smoke:
-    name: Governance smoke (Fase 0B validator)
+    name: Governance smoke + tests
     runs-on: ubuntu-latest
 
     steps:
@@ -53,3 +53,53 @@ jobs:
         run: |
           set -euo pipefail
           python tools/visualparity/phase0b/validate_phase0b.py
+
+      - name: Run ASCII check (PowerShell scripts)
+        # Verifies .ps1 files are ASCII-only for Windows PowerShell 5.1 compat.
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/visualparity/phase0d/check_ascii.py
+
+      - name: Run harness v3 stdlib tests
+        # Python stdlib only. No pytest required (tests have __main__ runners).
+        # No PyQt6. No V1/V2. No capture_v8.
+        shell: bash
+        run: |
+          set -euo pipefail
+          python harness/v3/tests/test_policy_engine.py
+          python harness/v3/tests/test_replay.py
+          python harness/v3/tests/test_bundle_verifier.py
+          python harness/v3/tests/test_duplicate_key.py
+
+  dotnet-tests:
+    name: .NET Core tests (VisualParity.Core)
+    runs-on: ubuntu-latest
+    # Allow this job to fail gracefully if dotnet setup has issues; the
+    # governance-smoke job is the hard gate.
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Build VisualParity solution
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd tools/visualparity
+          dotnet build VisualParity.sln --configuration Release
+
+      - name: Run VisualParity.Core.Tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd tools/visualparity
+          dotnet test VisualParity.sln --configuration Release --no-build --logger "console;verbosity=normal"

@@ -128,16 +128,20 @@ SKELETON_FILES = [
 
 
 def group_b(v: Validator) -> None:
-    v.group("B. Skeleton authority (Fase 0A skeleton + no runtime authority)")
+    v.group("B. Skeleton authority (fase marker + no runtime authority)")
+    # Accept any fase marker (Fase 0A, Fase 0B, ..., Fase 1, Fase 2, etc.)
+    # The key invariant is "no runtime authority" + a declared fase.
+    import re as _re
+    fase_re = _re.compile(r"Fase\s+0[A-Z]?\b|Fase\s+[1-9]\b", _re.IGNORECASE)
     for rel in SKELETON_FILES:
         path = REPO_ROOT / rel
         content = _read_opt(path)
         if content is None:
             v.check(False, f"cannot read skeleton (missing): {rel}")
             continue
-        v.check("Fase 0A skeleton" in content,
-                f"skeleton missing 'Fase 0A skeleton' marker: {rel}")
-        v.check("no runtime authority" in content,
+        v.check(fase_re.search(content) is not None,
+                f"skeleton missing fase marker (Fase 0A/0B/.../1/2/...): {rel}")
+        v.check("no runtime authority" in content.lower(),
                 f"skeleton missing 'no runtime authority' marker: {rel}")
 
 
@@ -450,10 +454,18 @@ def group_l(v: Validator) -> None:
     py_names = {p.name for p in py_files}
     v.check(py_names == {"validate_phase0b.py"},
             f"phase0b/ must contain only validate_phase0b.py, found: {sorted(py_names)}")
-    # No .cs files anywhere under tools/visualparity/
+    # .cs files allowed ONLY under tools/visualparity/src/ and tools/visualparity/tests/
+    # (Fase 1 added VisualParity Core/CLI .NET 8 code). Forbidden elsewhere under
+    # tools/visualparity/ (e.g., phase0b/, phase0d/).
     cs_files = list((REPO_ROOT / "tools/visualparity").rglob("*.cs"))
-    v.check(not cs_files,
-            f"no .cs files allowed under tools/visualparity/, found: {[str(p.relative_to(REPO_ROOT)) for p in cs_files]}")
+    cs_outside_src_tests = [
+        p for p in cs_files
+        if "src/" not in str(p.relative_to(REPO_ROOT)).replace("\\", "/")
+        and "tests/" not in str(p.relative_to(REPO_ROOT)).replace("\\", "/")
+    ]
+    v.check(not cs_outside_src_tests,
+            f".cs files only allowed under tools/visualparity/src/ or tests/, "
+            f"found outside: {[str(p.relative_to(REPO_ROOT)) for p in cs_outside_src_tests]}")
     # Workflows: the legacy V1 visual-closure-replay.yml is untouched, and the
     # Fase 0C governance smoke visual-parity-v3-governance.yml is the only new
     # workflow allowed. Any other workflow is unexpected.
