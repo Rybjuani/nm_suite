@@ -98,6 +98,18 @@ rules:
 # --no-regen does NOT exist in V3.1. Replay = recaptura + recomparación +
 # cardinalidad exacta.
 
+# ─── Bulk human pass prohibition ──────────────────────────────────────────
+# Bulk HUMAN_REVIEWED_PASS is prohibited. One review_annotation.json per
+# surface. The harness rejects N identical annotations (same reviewer +
+# timestamp ± 60s + identical reason_text).
+
+bulk_human_pass_policy:
+  action: BLOCK
+  rule: "one_review_annotation_per_surface"
+  reject_identical_bursts: true
+  identical_burst_window_seconds: 60
+  note: "Bulk HUMAN_REVIEWED_PASS prohibited. Each surface requires individual review."
+
 replay_policy:
   structural_replay:
     allowed_as: pre_check_only
