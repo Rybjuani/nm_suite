@@ -64,7 +64,14 @@ public static class BundleWriter
 
     /// <summary>
     /// Writes bundle.json + integrity/checksums.json to outDir. Wipes outDir
-    /// first. Returns the final bundle_sha256.
+    /// first. Returns the bundle_sha256 (hash of the actual bundle.json bytes).
+    ///
+    /// The Checksums field is OMITTED from bundle.json (set to null before
+    /// serialization; WhenWritingNull drops it) to avoid a self-referential
+    /// hash loop. The bundle_sha256 stored in integrity/checksums.json is the
+    /// SHA256 of the actual bundle.json file bytes. The CLI verify-bundle
+    /// command reads bundle_sha256 from checksums.json and compares it to the
+    /// real hash of bundle.json, so tampering with bundle.json is detected.
     /// </summary>
     public static string Write(VisualParityBundle bundle, string outDir)
     {
@@ -74,61 +81,36 @@ public static class BundleWriter
         Directory.CreateDirectory(outPath);
         Directory.CreateDirectory(Path.Combine(outPath, "integrity"));
 
-        // Serialize once (LF line endings) for stable hashing.
+        // Ensure Checksums is null so it is omitted from bundle.json. This
+        // avoids the self-referential hash problem (bundle_sha256 inside
+        // bundle.json would change the file's own hash).
+        bundle.Checksums = null;
+
+        // Serialize bundle.json (LF line endings for cross-platform stability).
         var bundleJson = JsonSerializer.Serialize(bundle, JsonOpts);
         bundleJson = bundleJson.Replace("\r\n", "\n").Replace("\r", "\n");
         var bundleJsonBytes = Encoding.UTF8.GetBytes(bundleJson);
+        File.WriteAllBytes(Path.Combine(outPath, "bundle.json"), bundleJsonBytes);
 
-        // Compute bundle_json_sha256 (over the serialized JSON bytes).
-        string bundleJsonSha;
-        using (var sha = SHA256.Create())
-        {
-            bundleJsonSha = ToHex(sha.ComputeHash(bundleJsonBytes));
-        }
-
-        // Compute bundle_sha256 (over the bundle.json file bytes themselves).
+        // Compute bundle_sha256 = SHA256 of the actual bundle.json file bytes.
         string bundleSha;
         using (var sha = SHA256.Create())
         {
             bundleSha = ToHex(sha.ComputeHash(bundleJsonBytes));
         }
 
-        bundle.Checksums = new BundleChecksums
-        {
-            BundleSha256 = bundleSha,
-            BundleJsonSha256 = bundleJsonSha,
-        };
+        // bundle_json_sha256 is the same value (the bundle JSON IS bundle.json).
+        string bundleJsonSha = bundleSha;
 
-        // Re-serialize with checksums filled in, then recompute bundle_sha256
-        // so the recorded value matches the file on disk.
-        var finalJson = JsonSerializer.Serialize(bundle, JsonOpts);
-        finalJson = finalJson.Replace("\r\n", "\n").Replace("\r", "\n");
-        var finalBytes = Encoding.UTF8.GetBytes(finalJson);
-
-        string finalBundleSha;
-        using (var sha = SHA256.Create())
-        {
-            finalBundleSha = ToHex(sha.ComputeHash(finalBytes));
-        }
-
-        // Overwrite checksums with the final value (idempotent: bundle_json
-        // hash does not change because checksums field value is deterministic
-        // for the same input bytes).
-        bundle.Checksums.BundleSha256 = finalBundleSha;
-
-        // Final write.
-        finalJson = JsonSerializer.Serialize(bundle, JsonOpts);
-        finalJson = finalJson.Replace("\r\n", "\n").Replace("\r", "\n");
-        File.WriteAllText(Path.Combine(outPath, "bundle.json"), finalJson, new UTF8Encoding(false));
-
+        // Write integrity/checksums.json referencing the actual file hash.
         var checksums = new
         {
             schema = "visualparity.checksums.v1",
-            bundle_sha256 = finalBundleSha,
+            bundle_sha256 = bundleSha,
             bundle_json_sha256 = bundleJsonSha,
             files = new[]
             {
-                new { path = "bundle.json", sha256 = finalBundleSha, bytes = finalBytes.Length },
+                new { path = "bundle.json", sha256 = bundleSha, bytes = bundleJsonBytes.Length },
             },
         };
         var checksumsJson = JsonSerializer.Serialize(checksums, JsonOpts);
@@ -136,7 +118,14 @@ public static class BundleWriter
         File.WriteAllText(Path.Combine(outPath, "integrity", "checksums.json"),
                           checksumsJson, new UTF8Encoding(false));
 
-        return finalBundleSha;
+        // Populate Checksums on the in-memory object for callers that inspect it.
+        bundle.Checksums = new BundleChecksums
+        {
+            BundleSha256 = bundleSha,
+            BundleJsonSha256 = bundleJsonSha,
+        };
+
+        return bundleSha;
     }
 
     private static string ToHex(byte[] bytes)

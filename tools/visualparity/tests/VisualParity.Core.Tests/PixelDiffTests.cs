@@ -185,4 +185,51 @@ public class PixelDiffTests : IDisposable
         var actualSha = Pairer.Sha256File(bundlePath);
         Assert.NotEqual(bundleSha, actualSha);
     }
+
+    [Fact]
+    public void Bundle_Sha256_Matches_Actual_File_Hash_And_Checksums_Json()
+    {
+        // Regression: BundleWriter.Write used to return a bundle_sha256 that
+        // did NOT match the actual bundle.json file bytes on disk (self-
+        // referential hash loop). This test verifies the fix: the returned
+        // SHA, the SHA in integrity/checksums.json, and the SHA of the actual
+        // bundle.json file must all be equal.
+        var png = new byte[] { 0x89, 0x50, 0x4E, 0x47 };
+        var m = new SurfaceMeasurement
+        {
+            SurfaceKey = "surface-h",
+            Status = SurfaceStatus.NoDiff,
+            CanonicalPngSha256 = "abc",
+            ActualPngSha256 = "abc",
+            CanonicalBytes = png.Length,
+            ActualBytes = png.Length,
+        };
+        var bundle = new VisualParityBundle
+        {
+            GeneratedAtUtc = "2026-01-01T00:00:00Z",
+            GitHead = "deadbeef",
+            VpBuildSha256 = "scaffold",
+            Surfaces = new List<SurfaceMeasurement> { m },
+        };
+        var outDir = Path.Combine(_tmpDir, "out-consistency");
+        var returnedSha = BundleWriter.Write(bundle, outDir);
+
+        var bundlePath = Path.Combine(outDir, "bundle.json");
+        var checksumsPath = Path.Combine(outDir, "integrity", "checksums.json");
+
+        // 1. The returned SHA must equal the hash of the actual file on disk.
+        var actualFileSha = Pairer.Sha256File(bundlePath);
+        Assert.Equal(returnedSha, actualFileSha);
+
+        // 2. The bundle_sha256 in checksums.json must equal the returned SHA.
+        var checksumsJson = File.ReadAllText(checksumsPath);
+        using var doc = System.Text.Json.JsonDocument.Parse(checksumsJson);
+        var storedSha = doc.RootElement.GetProperty("bundle_sha256").GetString();
+        Assert.Equal(returnedSha, storedSha);
+
+        // 3. The bundle.json must NOT contain a "checksums" field (it would
+        //    reintroduce the self-referential loop). WhenWritingNull drops it.
+        var bundleJson = File.ReadAllText(bundlePath);
+        Assert.DoesNotContain("\"checksums\"", bundleJson);
+    }
 }

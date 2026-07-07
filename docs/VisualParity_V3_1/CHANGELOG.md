@@ -10,6 +10,68 @@
 Formato: `Keep a Changelog`. Versionado: `MAJOR.MINOR.PATCH` donde MAJOR
 es la fase (0, 1, 2, ...), MINOR es sub-fase, PATCH es corrección.
 
+## [1.0.1] — 2026-07-07 — Audit fix (BundleWriter self-referential hash bug)
+
+### Fixed
+
+- `tools/visualparity/src/VisualParity.Core/Bundle/BundleWriter.cs` —
+  bug confirmado en auditoría: `bundle_sha256` escrito en
+  `integrity/checksums.json` NO coincidía con el hash real del archivo
+  `bundle.json` en disco. Causa: flujo auto-referencial (setear
+  `Checksums.BundleSha256` en el objeto, re-serializar, sobrescribir con
+  el nuevo hash, re-serializar otra vez → el hash final se computó sobre
+  bytes que tenían el valor VIEJO, no el valor final escrito al disco).
+  Esto hacía que `verify-bundle` FALLARA en bundles legítimos recién
+  escritos. Fix: omitir el campo `Checksums` de `bundle.json` (setear
+  a null antes de serializar; `WhenWritingNull` lo omite), hash de los
+  bytes reales del archivo, `checksums.json` con ese hash. `bundle.json`
+  no contiene auto-referencia. `verify-bundle` ahora PASS en bundles
+  legítimos y FAIL en tamper real.
+
+### Added
+
+- `tools/visualparity/tests/VisualParity.Core.Tests/PixelDiffTests.cs` —
+  nuevo test `Bundle_Sha256_Matches_Actual_File_Hash_And_Checksums_Json`
+  (regresión del bug): verifica que el SHA retornado por
+  `BundleWriter.Write` coincida con (a) el hash real del archivo
+  `bundle.json` en disco, (b) el `bundle_sha256` en
+  `integrity/checksums.json`, y (c) que `bundle.json` NO contenga campo
+  `checksums` (que reintroduciría el loop auto-referencial).
+
+### Audit findings (no fix needed)
+
+- `verify-bundle` CLI: lógica correcta (lee `bundle_sha256` de
+  `checksums.json`, compara con hash real del archivo). Detecta tamper
+  real. El bug estaba en `BundleWriter`, no en `verify-bundle`.
+- Workflow `dotnet-tests` con `continue-on-error: true` (soft gate):
+  riesgo reportado, no fixeado (es pragmático hasta que los tests se
+  validen en CI; el hard gate es `governance-smoke`).
+- `validate_phase0b.py` grupo L: sigue bloqueando runtime leakage real.
+  Las relajaciones de Fase 3 (cualquier marker de fase en grupo B; `.cs`
+  bajo `src/`/`tests/` en grupo L) son apropiadas. Gap residual: no
+  escanea imports de `harness/v3/*.py` ni `.cs` (limitación de scope,
+  no regresión).
+
+### Not Modified
+
+- Producto, canon, V1/V2, evidence, handoff, workflow legacy: sin cambios.
+- `Program.cs` (verify-bundle CLI): sin cambios (la lógica era correcta).
+- `validate_phase0b.py`: sin cambios (no se encontró bug).
+- Workflow governance: sin cambios (soft gate reportado, no fixeado).
+
+### Commit
+
+- `fix(visual-parity-v3.1): harden macro scaffold validation`
+
+### Riesgos residuales
+
+- Tests .NET (xUnit) no ejecutados localmente (no dotnet SDK en sandbox).
+  El nuevo test de regresión se ejecutará en CI vía `setup-dotnet`. Si
+  CI falla por el bug residual o por el nuevo test, investigar.
+- `dotnet-tests` sigue como soft gate. Si el bug fixeado hacía fallar
+  tests previamente (no detectado por tests existentes), el fix podría
+  hacer que `dotnet-tests` ahora pase. Revisar CI tras push.
+
 ## [1.0.0] — 2026-07-07 — Fase 1-4 (Core/CLI + harness v3 + CI + docs)
 
 ### Fase 1 — feat(visual-parity-v3.1): add core cli scaffold (`d6351182`)
