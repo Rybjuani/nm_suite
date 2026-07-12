@@ -85,7 +85,7 @@ def test_capture_provenance_links_key_png_manifest_and_introspection(tmp_path):
         out_dir=tmp_path,
     )
 
-    assert provenance["schema"] == "capture_v8.provenance.v1"
+    assert provenance["schema"] == "capture_v8.provenance.v2"
     assert provenance["key"] == "suite:home@light"
     assert provenance["capture_file"] == png.name
     assert provenance["png_sha256"] == capture_v8._sha256_file(png)
@@ -94,6 +94,38 @@ def test_capture_provenance_links_key_png_manifest_and_introspection(tmp_path):
     assert provenance["capture_manifest"].endswith("CAPTURE_MANIFEST.json")
     assert provenance["introspection_sidecar"].endswith("introspection.json")
     assert len(provenance["introspection_entry_id"]) == 64
+    assert provenance["state_assertion_sha256"] is None
+
+
+def test_capture_provenance_signs_state_assertion(tmp_path):
+    png = tmp_path / "suite-timer-running-light-960x600.png"
+    png.write_bytes(b"runtime capture bytes")
+    assertion = {
+        "schema": "nm_suite.state_assertion.v1",
+        "key": "suite:timer-running@light",
+        "pass": True,
+        "observed": {"toggle_icon": "pause", "ring_state": "en curso"},
+    }
+
+    provenance = capture_v8._capture_provenance(
+        app_key="suite",
+        view_id="timer-running",
+        theme="light",
+        png_path=png,
+        out_dir=tmp_path,
+        state_assertion=assertion,
+    )
+
+    from qa.state_probes import state_assertion_sha256
+
+    assert provenance["state_assertion_sha256"] == state_assertion_sha256(assertion)
+
+
+def test_state_probe_is_evaluated_immediately_before_grab():
+    source = Path(capture_v8.__file__).read_text(encoding="utf-8")
+    function = source[source.index("def _grab_save(") : source.index("def _scan_and_capture_children(")]
+
+    assert function.index("evaluate_state_probe") < function.index("win.grab()")
 
 
 def test_capture_v8_clean_only_without_targets(monkeypatch, tmp_path):

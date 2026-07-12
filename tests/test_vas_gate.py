@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from qa.state_probes import state_assertion_sha256
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 GATE_SCRIPT = REPO_ROOT / "qa" / "vas_gate.py"
 
@@ -58,8 +60,10 @@ def _write_sidecar(tmp_path: Path, entries: list) -> Path:
         png_path.write_bytes(f"fake png payload for {key}".encode("utf-8"))
         png_sha = _sha256_file(png_path)
         entry_id = hashlib.sha256(f"{key}|{png_sha}|{idx}".encode("utf-8")).hexdigest()
+        assertion = entry.get("state_assertion")
+        assertion_sha = state_assertion_sha256(assertion)
         provenance = {
-            "schema": "capture_v8.provenance.v1",
+            "schema": "capture_v8.provenance.v2",
             "key": key,
             "capture_file": png_path.name,
             "capture_path": str(png_path),
@@ -75,13 +79,21 @@ def _write_sidecar(tmp_path: Path, entries: list) -> Path:
             "capture_manifest": str(capture_dir / "CAPTURE_MANIFEST.json"),
             "introspection_sidecar": str(sidecar),
             "introspection_entry_id": entry_id,
+            "state_assertion_sha256": assertion_sha,
         }
         entry.setdefault("provenance", provenance)
+        entry.setdefault("state_assertion_sha256", assertion_sha)
         manifest["results"].append({
             "key": key,
             "file": png_path.name,
             "sha256": png_sha,
             "provenance": provenance,
+            "success": True,
+            "technical_capture_valid": True,
+            "state_evidence_valid": True,
+            "capture_status": "CAPTURED_VALID",
+            "state_assertion": assertion,
+            "state_assertion_sha256": assertion_sha,
         })
         enriched_entries.append(entry)
     (capture_dir / "CAPTURE_MANIFEST.json").write_text(json.dumps(manifest), encoding="utf-8")
@@ -93,6 +105,20 @@ def _write_raw_sidecar(tmp_path: Path, entries: list) -> Path:
     sidecar = tmp_path / "introspection.json"
     sidecar.write_text(json.dumps(entries), encoding="utf-8")
     return sidecar
+
+
+def _timer_assertion(key: str, *, passed: bool = True) -> dict:
+    return {
+        "schema": "nm_suite.state_assertion.v1",
+        "key": key,
+        "probe_id": key.split("@", 1)[0],
+        "component": "timer",
+        "expected_state": "running",
+        "expected": {"toggle_icon": "pause", "ring_state": "en curso"},
+        "observed": {"toggle_icon": "pause", "ring_state": "en curso"},
+        "checks": {"toggle_icon": True, "ring_state": True},
+        "pass": passed,
+    }
 
 
 # ─── PASS cases ──────────────────────────────────────────────────────────────
@@ -147,6 +173,25 @@ def test_pass_skips_other_keys_when_key_specified(tmp_path):
         {"surface_key": "suite:target@dark", "fail_count": 0, "divergences": []},
     ])
     result = _run_gate(sidecar, key="suite:target@dark")
+    assert result.returncode == 0, result.stderr
+
+
+def test_pass_required_state_assertion_signed_in_sidecar_and_manifest(tmp_path):
+    key = "suite:timer-running@light"
+    sidecar = _write_sidecar(
+        tmp_path,
+        [
+            {
+                "surface_key": key,
+                "fail_count": 0,
+                "divergences": [],
+                "state_assertion": _timer_assertion(key),
+            }
+        ],
+    )
+
+    result = _run_gate(sidecar, key=key)
+
     assert result.returncode == 0, result.stderr
 
 
@@ -221,6 +266,60 @@ def test_fail_missing_fail_count_key(tmp_path):
     result = _run_gate(sidecar, key="suite:test@light")
     assert result.returncode == 1
     assert "missing key" in result.stderr.lower() and "fail_count" in result.stderr
+
+
+def test_fail_required_state_assertion_missing(tmp_path):
+    key = "suite:timer-running@light"
+    sidecar = _write_sidecar(
+        tmp_path,
+        [{"surface_key": key, "fail_count": 0, "divergences": []}],
+    )
+
+    result = _run_gate(sidecar, key=key)
+
+    assert result.returncode == 1
+    assert "required state_assertion is missing" in result.stderr
+
+
+def test_fail_state_assertion_false_or_tampered_hash(tmp_path):
+    key = "suite:timer-running@dark"
+    sidecar = _write_sidecar(
+        tmp_path,
+        [
+            {
+                "surface_key": key,
+                "fail_count": 0,
+                "divergences": [],
+                "state_assertion": _timer_assertion(key, passed=False),
+            }
+        ],
+    )
+    payload = json.loads(sidecar.read_text(encoding="utf-8"))
+    payload[0]["state_assertion_sha256"] = "0" * 64
+    sidecar.write_text(json.dumps(payload), encoding="utf-8")
+
+    result = _run_gate(sidecar, key=key)
+
+    assert result.returncode == 1
+    assert "state_assertion.pass must be true" in result.stderr
+    assert "state_assertion sha256 mismatch" in result.stderr
+
+
+def test_fail_capture_manifest_contract_status_even_with_clean_vas(tmp_path):
+    sidecar = _write_sidecar(
+        tmp_path,
+        [{"surface_key": "suite:test@light", "fail_count": 0, "divergences": []}],
+    )
+    payload = json.loads(sidecar.read_text(encoding="utf-8"))
+    manifest_path = Path(payload[0]["provenance"]["capture_manifest"])
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["results"][0]["capture_status"] = "DUPLICATE_SUSPECT"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = _run_gate(sidecar, key="suite:test@light")
+
+    assert result.returncode == 1
+    assert "capture_status must be CAPTURED_VALID" in result.stderr
 
 
 def test_fail_forged_sidecar_without_capture_provenance(tmp_path):

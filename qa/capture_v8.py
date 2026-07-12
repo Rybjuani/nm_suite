@@ -42,6 +42,12 @@ _PROJ = Path(__file__).resolve().parent.parent
 if str(_PROJ) not in sys.path:
     sys.path.insert(0, str(_PROJ))
 
+from qa.state_probes import (
+    evaluate_state_probe,
+    state_assertion_required,
+    state_assertion_sha256,
+)
+
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 os.environ.setdefault("NM_VISUAL_QA", "1")
 
@@ -1699,6 +1705,7 @@ def _capture_provenance(
     theme: str,
     png_path: Path,
     out_dir: Path,
+    state_assertion: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     png_sha = _sha256_file(png_path) or ""
     git = _git_metadata()
@@ -1706,10 +1713,11 @@ def _capture_provenance(
     key = _capture_key(app_key, view_id, theme)
     script_path = Path(__file__).resolve()
     script_sha = _sha256_file(script_path) or ""
-    entry_material = "|".join([key, png_sha, script_sha, captured_at])
+    assertion_sha = state_assertion_sha256(state_assertion)
+    entry_material = "|".join([key, png_sha, script_sha, assertion_sha or "none", captured_at])
     entry_id = hashlib.sha256(entry_material.encode("utf-8")).hexdigest()
     return {
-        "schema": "capture_v8.provenance.v1",
+        "schema": "capture_v8.provenance.v2",
         "key": key,
         "capture_file": png_path.name,
         "capture_path": str(png_path.resolve()),
@@ -1725,6 +1733,7 @@ def _capture_provenance(
         "capture_manifest": str(_capture_manifest_path(out_dir).resolve()),
         "introspection_sidecar": str(_introspect_sidecar_path(out_dir).resolve()),
         "introspection_entry_id": entry_id,
+        "state_assertion_sha256": assertion_sha,
     }
 
 
@@ -1916,6 +1925,24 @@ def _finalize_evidence(results: list[dict], out_dir: Path) -> dict[str, Any]:
     duplicate_groups = _mark_duplicate_groups(results, out_dir)
 
     for result in results:
+        key = str(result.get("key") or "")
+        if not key:
+            app = result.get("app")
+            view = result.get("view")
+            theme = result.get("theme")
+            if all(isinstance(part, str) and part for part in (app, view, theme)):
+                key = _capture_key(app, view, theme)
+        assertion = result.get("state_assertion")
+        assertion_valid = isinstance(assertion, dict) and assertion.get("pass") is True
+        assertion_required = state_assertion_required(key)
+        result["state_assertion_required"] = assertion_required
+        result["state_assertion_valid"] = assertion_valid if assertion is not None else not assertion_required
+        if assertion_required and not assertion_valid:
+            _append_flag(
+                result,
+                _STATUS_REQUIRES_DATA_STATE,
+                "Live pre-grab state assertion did not prove the requested surface state.",
+            )
         flags = result.get("evidence_flags", [])
         result["capture_status"] = _choose_status(flags)
         result["state_evidence_valid"] = (
@@ -2355,6 +2382,7 @@ def _record_introspection(
     modo: str,
     out_dir: Path,
     provenance: dict[str, Any],
+    state_assertion: dict[str, Any] | None = None,
 ) -> None:
     """Opt-in (NM_VAS_INTROSPECT=1) renderer-independent design audit.
 
@@ -2374,6 +2402,8 @@ def _record_introspection(
         surface_key = f"{app_key}:{view_id}@{_short_theme(modo)}"
         report = vas_introspect.audit_tree(win, surface_key)
         report["provenance"] = provenance
+        report["state_assertion"] = state_assertion
+        report["state_assertion_sha256"] = state_assertion_sha256(state_assertion)
 
         path = _introspect_sidecar_path(out_dir)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -2434,6 +2464,8 @@ def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Pa
     _drain(QApplication.instance(), cycles=4)
 
     try:
+        surface_key = _capture_key(app_key, view_id, st)
+        state_assertion = evaluate_state_probe(_module_target(win), surface_key)
         pm = win.grab()
         real_w = pm.width()
         real_h = pm.height()
@@ -2469,11 +2501,20 @@ def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Pa
                 theme=st,
                 png_path=out_path,
                 out_dir=out_dir,
+                state_assertion=state_assertion,
             )
             if ok and out_path.exists()
             else {}
         )
-        _record_introspection(win, app_key, view_id, modo, out_dir, provenance)
+        _record_introspection(
+            win,
+            app_key,
+            view_id,
+            modo,
+            out_dir,
+            provenance,
+            state_assertion,
+        )
         return {"file": fname, "app": app_key, "view": view_id, "theme": st,
                 "key": _capture_key(app_key, view_id, st),
                 "resolution": f"{real_w}x{real_h}",
@@ -2488,6 +2529,8 @@ def _grab_save(win, app_key: str, view_id: str, modo: str, res: str, out_dir: Pa
                 "size_bytes": out_path.stat().st_size if ok and out_path.exists() else 0,
                 "sha256": provenance.get("png_sha256", ""),
                 "provenance": provenance,
+                "state_assertion": state_assertion,
+                "state_assertion_sha256": state_assertion_sha256(state_assertion),
                 "is_dialog_or_auxiliary": is_dialog_or_auxiliary,
                 "is_child_dialog": is_dialog_or_auxiliary,
                 "actual_resolution": f"{real_w}x{real_h}",

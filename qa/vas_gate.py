@@ -26,7 +26,56 @@ from pathlib import Path
 DEFAULT_SIDECAR = Path("qa/_visual_auditor_spec/introspection.json")
 _PROJ = Path(__file__).resolve().parent.parent
 
+try:
+    from qa.state_probes import (
+        STATE_ASSERTION_SCHEMA,
+        state_assertion_required,
+        state_assertion_sha256,
+    )
+except ModuleNotFoundError:
+    from state_probes import (
+        STATE_ASSERTION_SCHEMA,
+        state_assertion_required,
+        state_assertion_sha256,
+    )
+
 BLOCKING_SEVERITIES = {"high", "medium"}
+
+
+def _check_state_assertion(
+    entry: dict,
+    matching_result: dict,
+    provenance: dict,
+    surface: str,
+) -> list[str]:
+    reasons: list[str] = []
+    sidecar_assertion = entry.get("state_assertion")
+    manifest_assertion = matching_result.get("state_assertion")
+    sidecar_sha = entry.get("state_assertion_sha256")
+    manifest_sha = matching_result.get("state_assertion_sha256")
+    provenance_sha = provenance.get("state_assertion_sha256")
+    required = state_assertion_required(surface)
+    exists = sidecar_assertion is not None or manifest_assertion is not None
+    if required and not exists:
+        return [f"[{surface}] required state_assertion is missing"]
+    if not exists:
+        return reasons
+    if not isinstance(sidecar_assertion, dict) or not isinstance(manifest_assertion, dict):
+        return [f"[{surface}] state_assertion must exist in sidecar and manifest"]
+    if sidecar_assertion != manifest_assertion:
+        reasons.append(f"[{surface}] state_assertion sidecar/manifest mismatch")
+    expected_sha = state_assertion_sha256(sidecar_assertion)
+    if not expected_sha or any(
+        value != expected_sha for value in (sidecar_sha, manifest_sha, provenance_sha)
+    ):
+        reasons.append(f"[{surface}] state_assertion sha256 mismatch")
+    if sidecar_assertion.get("schema") != STATE_ASSERTION_SCHEMA:
+        reasons.append(f"[{surface}] state_assertion schema mismatch")
+    if sidecar_assertion.get("key") != surface:
+        reasons.append(f"[{surface}] state_assertion key mismatch")
+    if sidecar_assertion.get("pass") is not True:
+        reasons.append(f"[{surface}] state_assertion.pass must be true")
+    return reasons
 
 
 def _sha256_file(path: Path) -> str | None:
@@ -178,12 +227,28 @@ def _check_provenance(entry: dict, sidecar_path: Path) -> list[str]:
     if not isinstance(result_provenance, dict):
         reasons.append(f"[{surface}] capture manifest result lacks provenance")
         return reasons
-    for field in ("png_sha256", "introspection_entry_id", "capture_script_sha256"):
+    for field in (
+        "png_sha256",
+        "introspection_entry_id",
+        "capture_script_sha256",
+        "state_assertion_sha256",
+    ):
         if result_provenance.get(field) != provenance.get(field):
             reasons.append(f"[{surface}] capture manifest provenance mismatch for '{field}'")
 
     if matching_result.get("sha256") and matching_result.get("sha256") != provenance.get("png_sha256"):
         reasons.append(f"[{surface}] capture manifest sha256 does not match provenance")
+
+    if matching_result.get("success") is not True:
+        reasons.append(f"[{surface}] capture manifest success must be true")
+    if matching_result.get("technical_capture_valid") is not True:
+        reasons.append(f"[{surface}] technical_capture_valid must be true")
+    if matching_result.get("state_evidence_valid") is not True:
+        reasons.append(f"[{surface}] state_evidence_valid must be true")
+    if matching_result.get("capture_status") != "CAPTURED_VALID":
+        reasons.append(f"[{surface}] capture_status must be CAPTURED_VALID")
+
+    reasons.extend(_check_state_assertion(entry, matching_result, provenance, surface))
 
     return reasons
 
