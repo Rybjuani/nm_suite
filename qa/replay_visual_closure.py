@@ -85,6 +85,8 @@ KERNEL_PATHS = (
     "qa/odiff_runner.py",
     "qa/render_handoff.py",
     "qa/replay_visual_closure.py",
+    "qa/spec_generator.py",
+    "qa/specs/specs.json",
     "qa/state_probes.py",
     "qa/surface_scope.py",
     "qa/surface_notes.json",
@@ -93,6 +95,8 @@ KERNEL_PATHS = (
     "qa/vas_gate.py",
     "qa/vas_introspect.py",
     "qa/run_visual.ps1",
+    "qa/_mockup_canonical/",
+    "qa/pack canonico/",
     "tools/qa/",
     ".github/workflows/",
     ".github/CODEOWNERS",
@@ -177,7 +181,10 @@ def _run_bytes(args: list[str], *, cwd: Path) -> subprocess.CompletedProcess[byt
 
 
 def _normalize_path(path: str | Path) -> str:
-    return str(path).replace("\\", "/").lstrip("./")
+    value = str(path).replace("\\", "/")
+    while value.startswith("./"):
+        value = value[2:]
+    return value
 
 
 def key_safe(key: str) -> str:
@@ -211,6 +218,8 @@ def _is_ancestor(repo_root: Path, ancestor: str, descendant: str = "HEAD") -> bo
 
 
 def git_changed_paths(repo_root: Path, base: str, head: str = "HEAD") -> list[str]:
+    """Return the final tree delta, used for staleness and active-record changes."""
+
     proc = _run_text(
         ["git", "diff", "--name-only", "--find-renames", f"{base}..{head}"],
         cwd=repo_root,
@@ -218,6 +227,53 @@ def git_changed_paths(repo_root: Path, base: str, head: str = "HEAD") -> list[st
     if proc.returncode != 0:
         raise ValueError("git changed-path query failed")
     return sorted({_normalize_path(line) for line in proc.stdout.splitlines() if line.strip()})
+
+
+def git_touched_paths(repo_root: Path, base: str, head: str = "HEAD") -> list[str]:
+    """Return every path touched by every commit in the audited range.
+
+    Unlike the final delta, this retains change-then-revert history. ``-m``
+    expands merge commits against each parent, and name-status parsing keeps
+    both sides of renames/copies so an R0 path cannot disappear by moving it.
+    Merge diffs use the first parent, avoiding unrelated base-parent changes
+    in the synthetic merge ref used by pull-request CI.
+    """
+
+    proc = _run_bytes(
+        [
+            "git",
+            "log",
+            "--format=",
+            "--name-status",
+            "--find-renames",
+            "--diff-merges=first-parent",
+            "-z",
+            f"{base}..{head}",
+        ],
+        cwd=repo_root,
+    )
+    if proc.returncode != 0:
+        raise ValueError("git touched-path query failed")
+    tokens = proc.stdout.split(b"\0")
+    paths: set[str] = set()
+    index = 0
+    while index < len(tokens):
+        raw_status = tokens[index]
+        index += 1
+        if not raw_status.strip():
+            continue
+        status = os.fsdecode(raw_status).strip()
+        if not re.fullmatch(r"[ACDMRTUXB][0-9]*", status):
+            raise ValueError("git touched-path output invalid")
+        path_count = 2 if status.startswith(("R", "C")) else 1
+        if index + path_count > len(tokens):
+            raise ValueError("git touched-path output truncated")
+        for raw_path in tokens[index : index + path_count]:
+            if not raw_path:
+                raise ValueError("git touched-path output missing path")
+            paths.add(_normalize_path(os.fsdecode(raw_path)))
+        index += path_count
+    return sorted(paths)
 
 
 def kernel_paths_touched(paths: Iterable[str]) -> list[str]:
@@ -559,14 +615,25 @@ def audit_structure(
     if base is not None:
         try:
             base_commit = git_rev_parse(repo_root, base)
+            if not _is_ancestor(repo_root, base_commit):
+                raise ValueError("base_not_ancestor")
             paths = git_changed_paths(repo_root, base_commit)
+            touched_paths = git_touched_paths(repo_root, base_commit)
         except ValueError as exc:
             failures.append(ReplayFailure("<range>", str(exc)))
         else:
             for path in unmapped_visual_sources(paths):
                 failures.append(ReplayFailure(path, "unmapped_visual_source"))
             active_changed = _changed_active_keys(paths)
-            touched = kernel_paths_touched(paths)
+            touched = kernel_paths_touched(touched_paths)
+            for key in sorted(active_changed & set(records)):
+                record_commit = records[key].get("commit_head")
+                if not isinstance(record_commit, str) or not _is_ancestor(
+                    repo_root, base_commit, record_commit
+                ):
+                    failures.append(
+                        ReplayFailure(key, "record_commit_outside_audited_range")
+                    )
             if active_changed and touched:
                 for key in sorted(active_changed):
                     failures.append(ReplayFailure(key, "kernel_changed_with_visual_closure"))
@@ -940,7 +1007,15 @@ def replay_full(
             return ReplayResult(
                 "full", len(records), len(records), 0, (ReplayFailure("<range>", "base_required"),)
             )
-        candidates = _changed_active_keys(git_changed_paths(repo_root, git_rev_parse(repo_root, base)))
+        try:
+            base_commit = git_rev_parse(repo_root, base)
+            if not _is_ancestor(repo_root, base_commit):
+                raise ValueError("base_not_ancestor")
+            candidates = _changed_active_keys(git_changed_paths(repo_root, base_commit))
+        except ValueError as exc:
+            return ReplayResult(
+                "full", len(records), len(records), 0, (ReplayFailure("<range>", str(exc)),)
+            )
         candidates &= set(records)
 
     failures: list[ReplayFailure] = []

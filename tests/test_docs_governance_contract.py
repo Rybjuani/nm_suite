@@ -34,6 +34,12 @@ ACTIVE_PROTOCOL_DOCS = [
     REPO_ROOT / "VISUAL_REPAIR_HANDOFF.md",
 ]
 
+# El handoff es una vista generada por qa/render_handoff.py (estado, no
+# protocolo): los criterios técnicos de cierre viven sólo en el flow.
+CLOSURE_PROTOCOL_DOCS = [
+    REPO_ROOT / "WORKER_VISUAL_QA_FLOW.md",
+]
+
 ACTIVE_DOCS_DIR = REPO_ROOT / "docs"
 ARCHIVE_DIR = ACTIVE_DOCS_DIR / "_archive"
 
@@ -283,7 +289,7 @@ class TestSubjectiveClosureAbsent:
                 f"{doc_path.name}: subjective closure phrase(s) in affirmative context: {detail}"
             )
 
-    @pytest.mark.parametrize("doc_path", ACTIVE_PROTOCOL_DOCS)
+    @pytest.mark.parametrize("doc_path", CLOSURE_PROTOCOL_DOCS)
     def test_closure_sections_have_vas_gate(self, doc_path):
         """Closure evidence sections must reference the VAS gate requirement."""
         content = _read(doc_path)
@@ -291,7 +297,7 @@ class TestSubjectiveClosureAbsent:
             f"{doc_path.name} closure criteria must reference the VAS Gate"
         )
 
-    @pytest.mark.parametrize("doc_path", ACTIVE_PROTOCOL_DOCS)
+    @pytest.mark.parametrize("doc_path", CLOSURE_PROTOCOL_DOCS)
     def test_closure_requires_technical_gates(self, doc_path):
         """Closure sections must list mandatory technical PASS requirements."""
         content = _read(doc_path)
@@ -308,6 +314,17 @@ class TestSubjectiveClosureAbsent:
         assert "NM_VAS_INTROSPECT" in content, (
             f"{doc_path.name} must require NM_VAS_INTROSPECT=1"
         )
+
+    def test_handoff_is_generated_view_that_defers_authority(self):
+        """El handoff se declara vista generada y delega la autoridad en los
+        records v2 activos; no re-declara criterios de PASS (viven sólo en el
+        doc de protocolo de cierre)."""
+        content = _read(REPO_ROOT / "VISUAL_REPAIR_HANDOFF.md")
+        assert "VISTA GENERADA" in content and "NO EDITAR" in content
+        assert "docs/closure_evidence/active/" in content
+        assert "qa/_mockup_canonical/MANIFEST.json" in content
+        assert "Criterio de PASS" not in content
+        assert "PASS requirements" not in content
 
 
 # ─── Canonical index ────────────────────────────────────────────────────────

@@ -104,15 +104,22 @@ def scan_asset_canonical_identity(base: Path | None = None) -> list["Violation"]
                 )
     return violations
 QA_HARNESS_ROOTS = (
+    "qa/approval_verifier.py",
     "qa/capture_v8.py",
+    "qa/closure_policy.py",
+    "qa/hash_utils.py",
     "qa/layered_visual_compare.py",
     "qa/odiff_runner.py",
+    "qa/render_handoff.py",
+    "qa/replay_visual_closure.py",
+    "qa/state_probes.py",
+    "qa/surface_scope.py",
+    "qa/target_scope.py",
     "qa/vas_gate.py",
     "qa/vas_engine.py",
     "qa/vas_introspect.py",
     "qa/spec_generator.py",
     "qa/close_visual_key.py",
-    "qa/replay_visual_closure.py",
     "tools/qa",
 )
 
@@ -181,6 +188,7 @@ QA_CANONICAL_SOURCE_ALLOWED = (
     "qa/layered_visual_compare.py",
     "qa/visual_gate_calibration.py",
     "qa/spec_generator.py",
+    "qa/surface_scope.py",
     "qa/visual_auditor_spec.py",
     # Orquestadores de cierre/replay: construyen la ruta canónica sólo para
     # pasarla como --canonical al comparador; no leen pixeles.

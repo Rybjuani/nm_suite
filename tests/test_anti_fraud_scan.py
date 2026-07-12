@@ -10,6 +10,7 @@ import pytest
 from PIL import Image
 
 from qa.anti_fraud_scan import (
+    QA_HARNESS_ROOTS,
     scan_asset_canonical_identity,
     scan_source,
     scan_paths,
@@ -300,12 +301,7 @@ def test_qa_harness_allows_comparator_declared_canonical_source():
 
 
 def test_real_qa_harness_scan_is_clean():
-    violations = scan_qa_harness_paths([
-        "qa/capture_v8.py",
-        "qa/layered_visual_compare.py",
-        "qa/vas_gate.py",
-        "tools/qa",
-    ])
+    violations = scan_qa_harness_paths(list(QA_HARNESS_ROOTS))
     assert violations == [], f"anti-fraud QA harness violations: {[v.to_dict() for v in violations]}"
 
 

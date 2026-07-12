@@ -1,14 +1,14 @@
 
+import importlib.util
 import os
 import sys
 
 import pytest
 
-# Activar pytest-qt: expone los fixtures `qapp`, `qapp_args`, `qapp_cls`, `qtbot`.
-# Requerido por tests/test_tcc_otro_placeholder.py y
-# tests/test_global_texts_integration.py (8 tests parametricos).
-# pytest-qt==4.5.0 ya esta en requirements-dev.txt; este unico cambio lo cablea.
-pytest_plugins = ["pytestqt"]
+# El subset estructural de CI instala sólo pytest. La suite local completa carga
+# pytest-qt cuando está disponible y conserva sus fixtures Qt sin volverlos una
+# dependencia del replay stdlib.
+pytest_plugins = ["pytestqt"] if importlib.util.find_spec("pytestqt") else []
 
 # Forzar plataforma offscreen ANTES de cualquier import de PyQt6.
 # Sin esto, los tests que crean QApplication fallan en entornos sin display

@@ -3,43 +3,47 @@ name: Visual Closure Replay
 on:
   pull_request:
     paths:
-      - VISUAL_REPAIR_HANDOFF.md
-      - docs/closure_evidence/**
-      - qa/close_visual_key.py
-      - qa/replay_visual_closure.py
-      - qa/capture_v8.py
-      - qa/layered_visual_compare.py
-      - qa/odiff_runner.py
-      - qa/vas_gate.py
-      - qa/vas_engine.py
-      - qa/vas_introspect.py
-      - qa/spec_generator.py
-      - qa/anti_fraud_scan.py
-      - tools/qa/audit_modal_backdrop_blur.py
-      - .github/workflows/visual-closure-replay.yml
+      - "app/**"
+      - "hub/**"
+      - "shared/**"
+      - "assets/**"
+      - "qa/**"
+      - "tools/qa/**"
+      - "tests/**"
+      - "docs/closure_evidence/**"
+      - "VISUAL_REPAIR_HANDOFF.md"
+      - "WORKER_VISUAL_QA_FLOW.md"
+      - ".gitattributes"
+      - ".github/CODEOWNERS"
+      - ".github/workflows/**"
   push:
     paths:
-      - VISUAL_REPAIR_HANDOFF.md
-      - docs/closure_evidence/**
-      - qa/close_visual_key.py
-      - qa/replay_visual_closure.py
-      - qa/capture_v8.py
-      - qa/layered_visual_compare.py
-      - qa/odiff_runner.py
-      - qa/vas_gate.py
-      - qa/vas_engine.py
-      - qa/vas_introspect.py
-      - qa/spec_generator.py
-      - qa/anti_fraud_scan.py
-      - tools/qa/audit_modal_backdrop_blur.py
-      - .github/workflows/visual-closure-replay.yml
+      - "app/**"
+      - "hub/**"
+      - "shared/**"
+      - "assets/**"
+      - "qa/**"
+      - "tools/qa/**"
+      - "tests/**"
+      - "docs/closure_evidence/**"
+      - "VISUAL_REPAIR_HANDOFF.md"
+      - "WORKER_VISUAL_QA_FLOW.md"
+      - ".gitattributes"
+      - ".github/CODEOWNERS"
+      - ".github/workflows/**"
 
 permissions:
   contents: read
+  issues: read
 
 jobs:
-  replay:
+  structural-precheck:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      NM_VISUAL_APPROVAL_REPO: ${{ github.repository }}
+      NM_VISUAL_APPROVAL_OWNER: Rybjuani
+      NM_VISUAL_APPROVAL_ISSUE: ${{ vars.NM_VISUAL_APPROVAL_ISSUE }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,17 +55,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      # No pip install on purpose: anti_fraud_scan.py and the structural replay
-      # are stdlib-only, and requirements.txt is Windows-bound (pywin32/winotify)
-      # so it cannot install on ubuntu. Full pixel regeneration is platform-bound
-      # to the closing machine and runs locally via
-      # `qa/replay_visual_closure.py --base <base>` (without --no-regen).
-
       - name: Run anti-fraud scans
-        shell: bash
-        run: |
-          set -euo pipefail
-          python qa/anti_fraud_scan.py --mode all
+        run: python qa/anti_fraud_scan.py --mode all
 
       - name: Resolve audited base
         id: base
@@ -74,36 +69,51 @@ jobs:
             before="${{ github.event.before }}"
             zeros="0000000000000000000000000000000000000000"
             if [ -z "$before" ] || [ "$before" = "$zeros" ]; then
-              # First push of a new branch: fall back to merge-base with main.
               base_commit="$(git merge-base origin/main HEAD)"
             elif git cat-file -e "${before}^{commit}" 2>/dev/null; then
               base_commit="$before"
             else
-              echo "push base ${before} is unreachable (force push?); refusing to audit an unknown range" >&2
+              echo "push base ${before} is unreachable; refusing unknown range" >&2
               exit 1
             fi
           fi
-          if [ -z "$base_commit" ]; then
-            echo "could not resolve an audited base commit" >&2
+          test -n "$base_commit"
+          if ! git merge-base --is-ancestor "$base_commit" HEAD; then
+            echo "audited base is not an ancestor of HEAD" >&2
             exit 1
           fi
-          echo "resolved audited base: $base_commit"
           echo "base=$base_commit" >> "$GITHUB_OUTPUT"
 
-      - name: Replay visual closures (structural)
-        # Structural-only (--no-regen) by design: CI runs on stdlib-only
-        # Ubuntu runners without PyQt6 / odiff binary. Full pixel-regen
-        # replay is the closing machine's responsibility, run locally with:
-        #     python qa/replay_visual_closure.py --base <base>
-        # (without --no-regen). The closing machine is the only environment
-        # with the PyQt6 + odiff toolchain required to reproduce captures
-        # pixel-for-pixel. Closing operator MUST run --regen locally before
-        # pushing; CI only validates hashes, paths, R0, schema.
-        shell: bash
+      - name: Validate structural closure evidence
+        run: >-
+          python qa/replay_visual_closure.py
+          --structural-precheck
+          --base "${{ steps.base.outputs.base }}"
+
+  pytest-stdlib:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pytest only
+        run: python -m pip install --disable-pip-version-check pytest==9.0.3
+
+      - name: Run explicit stdlib harness tests
         run: |
-          set -euo pipefail
-          python qa/replay_visual_closure.py \
-            --base "${{ steps.base.outputs.base }}" \
-            --handoff VISUAL_REPAIR_HANDOFF.md \
-            --skip-legacy \
-            --no-regen
+          python -m pytest -q \
+            tests/test_hash_utils.py \
+            tests/test_closure_policy.py \
+            tests/test_approval_verifier.py \
+            tests/test_state_probes.py \
+            tests/test_surface_scope.py \
+            tests/test_target_scope.py \
+            tests/test_handoff_integrity.py \
+            tests/test_replay_visual_closure.py \
+            tests/test_vas_gate.py \
+            tests/test_visual_closure_governance.py

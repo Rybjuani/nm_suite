@@ -16,13 +16,12 @@ from qa.closure_policy import (
     REPORT_SCHEMA,
     VAS_SUMMARY_SCHEMA,
 )
-from qa.hash_utils import sha256_canonical_json
-from qa.layered_visual_compare import LayeredThresholds
 
 
 KEY = "suite:home@light"
 COMMIT = "a" * 40
 HASH = "b" * 64
+PINNED_THRESHOLDS_SHA256 = "36b5d295d93ccc96cddd2992974fb9895b7b28686dda88a49524189c7268b781"
 
 
 def _valid_report(key: str = KEY, *, report_sha: str = HASH) -> dict:
@@ -31,7 +30,7 @@ def _valid_report(key: str = KEY, *, report_sha: str = HASH) -> dict:
         "report_evidence_valid": True,
         "report_scope": "PARTIAL",
         "report_sha256": report_sha,
-        "thresholds": LayeredThresholds().to_dict(),
+        "thresholds": {"min_ssim": 0.92},
         "modal_audit_required": False,
         "modal_audit": None,
         "results": [
@@ -152,12 +151,36 @@ def test_removed_replay_flags_are_rejected(flag):
     assert raised.value.code == 2
 
 
-def test_threshold_hash_is_rederived_from_source_without_importing_runtime():
+def test_threshold_hash_is_pinned_against_silent_drift_without_importing_runtime():
     source = Path("qa/layered_visual_compare.py").read_text(encoding="utf-8")
 
-    assert replay.thresholds_sha_from_source(source) == sha256_canonical_json(
-        LayeredThresholds().to_dict()
-    )
+    assert replay.thresholds_sha_from_source(source) == PINNED_THRESHOLDS_SHA256
+
+
+def test_kernel_paths_include_inherited_and_v2_governance_roots():
+    expected = {
+        "qa/spec_generator.py",
+        "qa/specs/specs.json",
+        "qa/_mockup_canonical/",
+        "qa/pack canonico/",
+        "qa/hash_utils.py",
+        "qa/closure_policy.py",
+        "qa/render_handoff.py",
+        "qa/surface_scope.py",
+        "qa/surface_notes.json",
+        ".github/CODEOWNERS",
+    }
+
+    assert expected <= set(replay.KERNEL_PATHS)
+
+
+def test_kernel_path_matching_preserves_dot_prefixed_github_paths():
+    paths = [
+        ".github/workflows/visual-closure-replay.yml",
+        ".github/CODEOWNERS",
+    ]
+
+    assert replay.kernel_paths_touched(paths) == sorted(paths)
 
 
 def test_record_sanity_accepts_complete_v2_and_rejects_tampering():
@@ -198,7 +221,9 @@ def test_structural_precheck_passes_truthfully_with_zero_active_records(
     monkeypatch.setattr(replay, "manifest_keys", lambda _root: _universe())
     monkeypatch.setattr(replay, "_read_active_records", lambda _root: ({}, []))
     monkeypatch.setattr(replay, "git_rev_parse", lambda _root, _base: COMMIT)
+    monkeypatch.setattr(replay, "_is_ancestor", lambda *_args: True)
     monkeypatch.setattr(replay, "git_changed_paths", lambda _root, _base: [])
+    monkeypatch.setattr(replay, "git_touched_paths", lambda _root, _base: [])
 
     result = replay.audit_structure(
         repo_root=tmp_path,
@@ -234,6 +259,7 @@ def test_structural_precheck_blocks_unmapped_source_and_kernel_plus_closure(
     monkeypatch.setattr(replay, "manifest_keys", lambda _root: _universe())
     monkeypatch.setattr(replay, "_read_active_records", lambda _root: ({}, []))
     monkeypatch.setattr(replay, "git_rev_parse", lambda _root, _base: COMMIT)
+    monkeypatch.setattr(replay, "_is_ancestor", lambda *_args: True)
     monkeypatch.setattr(
         replay,
         "git_changed_paths",
@@ -242,6 +268,11 @@ def test_structural_precheck_blocks_unmapped_source_and_kernel_plus_closure(
             "qa/closure_policy.py",
             "docs/closure_evidence/active/suite_home-light.json",
         ],
+    )
+    monkeypatch.setattr(
+        replay,
+        "git_touched_paths",
+        lambda _root, _base: ["qa/closure_policy.py"],
     )
 
     result = replay.audit_structure(
@@ -252,6 +283,119 @@ def test_structural_precheck_blocks_unmapped_source_and_kernel_plus_closure(
     reasons = {(failure.key, failure.reason) for failure in result.failures}
     assert ("app/new_visual.py", "unmapped_visual_source") in reasons
     assert (KEY, "kernel_changed_with_visual_closure") in reasons
+
+
+def test_r0_guard_keeps_change_then_revert_history(monkeypatch, tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "Test")
+    kernel = repo / "qa" / "closure_policy.py"
+    kernel.parent.mkdir(parents=True)
+    kernel.write_text("SAFE = True\n", encoding="utf-8")
+    (repo / replay.HANDOFF).write_text("generated\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-m", "baseline")
+    base = _git(repo, "rev-parse", "HEAD")
+
+    kernel.write_text("SAFE = False\n", encoding="utf-8")
+    _git(repo, "add", str(kernel.relative_to(repo)))
+    _git(repo, "commit", "-m", "weaken kernel")
+
+    active = repo / replay.ACTIVE_DIR / "suite_home-light.json"
+    active.parent.mkdir(parents=True)
+    active.write_text("{}\n", encoding="utf-8")
+    _git(repo, "add", str(active.relative_to(repo)))
+    _git(repo, "commit", "-m", "close with weakened kernel")
+
+    kernel.write_text("SAFE = True\n", encoding="utf-8")
+    _git(repo, "add", str(kernel.relative_to(repo)))
+    _git(repo, "commit", "-m", "restore kernel")
+
+    assert "qa/closure_policy.py" not in replay.git_changed_paths(repo, base)
+    assert "qa/closure_policy.py" in replay.git_touched_paths(repo, base)
+
+    monkeypatch.setattr(replay, "manifest_keys", lambda _root: _universe())
+    monkeypatch.setattr(replay, "_read_active_records", lambda _root: ({}, []))
+    result = replay.audit_structure(
+        repo_root=repo,
+        base=base,
+        render_func=lambda _root: "generated\n",
+    )
+
+    assert replay.ReplayFailure(KEY, "kernel_changed_with_visual_closure") in result.failures
+
+
+def test_touched_paths_merge_diff_does_not_import_base_parent_changes(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "Test")
+    kernel = repo / "qa" / "closure_policy.py"
+    kernel.parent.mkdir(parents=True)
+    kernel.write_text("SAFE = True\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-m", "baseline")
+    default_branch = _git(repo, "branch", "--show-current")
+    _git(repo, "branch", "feature")
+
+    kernel.write_text("SAFE = 'base-only-change'\n", encoding="utf-8")
+    _git(repo, "add", str(kernel.relative_to(repo)))
+    _git(repo, "commit", "-m", "base changes kernel")
+    base = _git(repo, "rev-parse", "HEAD")
+
+    _git(repo, "switch", "feature")
+    active = repo / replay.ACTIVE_DIR / "suite_home-light.json"
+    active.parent.mkdir(parents=True)
+    active.write_text("{}\n", encoding="utf-8")
+    _git(repo, "add", str(active.relative_to(repo)))
+    _git(repo, "commit", "-m", "feature closes key")
+
+    _git(repo, "switch", default_branch)
+    _git(repo, "merge", "--no-ff", "feature", "-m", "synthetic pr merge")
+
+    touched = replay.git_touched_paths(repo, base)
+
+    assert "docs/closure_evidence/active/suite_home-light.json" in touched
+    assert "qa/closure_policy.py" not in touched
+
+
+def test_structural_precheck_rejects_changed_record_commit_before_base(
+    monkeypatch, tmp_path
+):
+    handoff = f"- [x] `{KEY}`\n"
+    (tmp_path / replay.HANDOFF).write_text(handoff, encoding="utf-8")
+    record = _valid_record()
+    monkeypatch.setattr(replay, "manifest_keys", lambda _root: _universe())
+    monkeypatch.setattr(replay, "_read_active_records", lambda _root: ({KEY: record}, []))
+    monkeypatch.setattr(replay, "_record_sanity_reasons", lambda *_args: [])
+    monkeypatch.setattr(replay, "_class_a_reasons", lambda *_args: [])
+    monkeypatch.setattr(replay, "_verified_approval", lambda *_args: (None, []))
+    monkeypatch.setattr(replay, "_stored_policy_reasons", lambda *_args: [])
+    monkeypatch.setattr(replay, "git_rev_parse", lambda *_args: "f" * 40)
+    monkeypatch.setattr(
+        replay,
+        "_is_ancestor",
+        lambda _root, _ancestor, descendant="HEAD": descendant == "HEAD",
+    )
+    monkeypatch.setattr(
+        replay,
+        "git_changed_paths",
+        lambda *_args: ["docs/closure_evidence/active/suite_home-light.json"],
+    )
+    monkeypatch.setattr(replay, "git_touched_paths", lambda *_args: [])
+
+    result = replay.audit_structure(
+        repo_root=tmp_path,
+        base="too-new-base",
+        render_func=lambda _root: handoff,
+    )
+
+    assert replay.ReplayFailure(
+        KEY, "record_commit_outside_audited_range"
+    ) in result.failures
 
 
 def _git(repo: Path, *args: str) -> str:
