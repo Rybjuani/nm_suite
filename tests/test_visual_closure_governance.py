@@ -48,4 +48,5 @@ def test_codeowners_protects_all_visual_kernel_namespaces():
         "/tools/qa/**": "@Rybjuani",
         "/.github/workflows/**": "@Rybjuani",
         "/.github/CODEOWNERS": "@Rybjuani",
+        "/.gitattributes": "@Rybjuani",
     }

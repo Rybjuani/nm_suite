@@ -63,6 +63,8 @@ except ModuleNotFoundError:  # direct ``python qa/replay_visual_closure.py`` exe
 
 EVIDENCE_SCHEMA = "nm_suite.evidence_record.v2"
 ACTIVE_DIR = Path("docs") / "closure_evidence" / "active"
+RECEIPT_DIR = Path("docs") / "closure_evidence" / "receipts"
+CLOSURE_RECEIPT_SCHEMA = "nm_suite.closure_receipt.v1"
 HANDOFF = Path("VISUAL_REPAIR_HANDOFF.md")
 CANONICAL_DIR = Path("qa") / "_mockup_canonical"
 MODAL_AUDIT_TOOL = Path("tools") / "qa" / "audit_modal_backdrop_blur.py"
@@ -100,6 +102,7 @@ KERNEL_PATHS = (
     "tools/qa/",
     ".github/workflows/",
     ".github/CODEOWNERS",
+    ".gitattributes",
 )
 VOLATILE_JSON_KEYS = {
     "generated_at",
@@ -286,11 +289,12 @@ def kernel_paths_touched(paths: Iterable[str]) -> list[str]:
 
 
 def _changed_active_keys(paths: Iterable[str]) -> set[str]:
-    prefix = ACTIVE_DIR.as_posix() + "/"
+    prefixes = (ACTIVE_DIR.as_posix() + "/", RECEIPT_DIR.as_posix() + "/")
     keys: set[str] = set()
     for value in paths:
         path = _normalize_path(value)
-        if not path.startswith(prefix) or "/revoked/" in path or not path.endswith(".json"):
+        prefix = next((candidate for candidate in prefixes if path.startswith(candidate)), None)
+        if prefix is None or "/revoked/" in path or not path.endswith(".json"):
             continue
         relative = path[len(prefix) :]
         if "/" not in relative:
@@ -343,16 +347,37 @@ def _read_active_records(repo_root: Path) -> tuple[dict[str, dict[str, Any]], li
     records: dict[str, dict[str, Any]] = {}
     failures: list[ReplayFailure] = []
     root = repo_root / ACTIVE_DIR
-    if not root.exists():
-        return records, failures
-    for path in sorted(root.glob("*.json")):
+    active_file_keys: set[str] = set()
+    active_entries = (
+        sorted(
+            (
+                entry
+                for entry in root.iterdir()
+                if not (entry.name == "revoked" and entry.is_dir())
+                and not (entry.name == ".gitkeep" and entry.is_file())
+            ),
+            key=lambda entry: entry.name,
+        )
+        if root.exists()
+        else ()
+    )
+    for path in active_entries:
         filename_key = _key_from_record_name(path.name)
-        if not filename_key:
+        if not path.is_file() or not filename_key:
             failures.append(ReplayFailure(path.name, "invalid_active_record_filename"))
             continue
+        active_file_keys.add(filename_key)
         try:
-            payload = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+            raw_record = path.read_bytes()
+        except OSError:
+            failures.append(ReplayFailure(filename_key, "invalid_active_record_json"))
+            continue
+        receipt_failure = _closure_receipt_failure(repo_root, filename_key, raw_record)
+        if receipt_failure is not None:
+            failures.append(ReplayFailure(filename_key, receipt_failure))
+        try:
+            payload = json.loads(raw_record.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
             failures.append(ReplayFailure(filename_key, "invalid_active_record_json"))
             continue
         if not isinstance(payload, dict):
@@ -366,7 +391,56 @@ def _read_active_records(repo_root: Path) -> tuple[dict[str, dict[str, Any]], li
             failures.append(ReplayFailure(filename_key, "duplicate_active_record"))
             continue
         records[filename_key] = payload
+    receipt_root = repo_root / RECEIPT_DIR
+    receipt_entries = (
+        sorted(receipt_root.iterdir(), key=lambda entry: entry.name)
+        if receipt_root.exists()
+        else ()
+    )
+    for path in receipt_entries:
+        receipt_key = _key_from_record_name(path.name)
+        if not path.is_file() or not receipt_key:
+            failures.append(ReplayFailure(path.name, "invalid_closure_receipt_filename"))
+        elif receipt_key not in active_file_keys:
+            failures.append(ReplayFailure(receipt_key, "orphan_closure_receipt"))
     return records, failures
+
+
+def _closure_receipt_failure(
+    repo_root: Path,
+    key: str,
+    raw_record: bytes,
+) -> str | None:
+    """Validate an unauthenticated checksum independently of record semantics."""
+
+    path = repo_root / RECEIPT_DIR / f"{key_safe(key)}.json"
+    try:
+        receipt = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return "closure_receipt_missing"
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return "closure_receipt_invalid"
+    expected_fields = {
+        "schema",
+        "key",
+        "record_path",
+        "record_sha256",
+        "issued_by",
+    }
+    if (
+        not isinstance(receipt, dict)
+        or set(receipt) != expected_fields
+        or receipt.get("schema") != CLOSURE_RECEIPT_SCHEMA
+        or receipt.get("key") != key
+        or receipt.get("record_path") != (ACTIVE_DIR / f"{key_safe(key)}.json").as_posix()
+        or receipt.get("issued_by") != "qa/close_visual_key.py"
+        or not isinstance(receipt.get("record_sha256"), str)
+        or not HEX64_RE.fullmatch(receipt["record_sha256"])
+    ):
+        return "closure_receipt_invalid"
+    if receipt["record_sha256"] != _sha256_bytes(raw_record):
+        return "evidence_hash_mismatch"
+    return None
 
 
 def _record_sanity_reasons(record: Mapping[str, Any], key: str) -> list[str]:
@@ -1031,12 +1105,13 @@ def replay_full(
     )
     records, load_failures = _read_active_records(repo_root)
     if structural.failures or load_failures:
+        preflight_failures = tuple(dict.fromkeys((*structural.failures, *load_failures)))
         return ReplayResult(
             "full",
             len(records),
             structural.checked_keys,
             0,
-            tuple([*structural.failures, *load_failures]),
+            preflight_failures,
         )
     if all_closed:
         candidates = set(records)

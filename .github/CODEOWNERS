@@ -3,3 +3,4 @@
 /tools/qa/** @Rybjuani
 /.github/workflows/** @Rybjuani
 /.github/CODEOWNERS @Rybjuani
+/.gitattributes @Rybjuani
