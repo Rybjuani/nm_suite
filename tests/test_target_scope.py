@@ -49,6 +49,33 @@ def test_parse_open_keys_skips_closed_and_assigns_section_and_tier():
     assert by_key["hub:open-b1@dark"].section == "Family B (2)"
 
 
+def test_parse_open_keys_deduplicates_first_occurrence_across_sections():
+    text = _handoff(
+        "### First\n\n- [ ] `suite:duplicate@light`\n",
+        "### Second\n\n- [ ] `suite:duplicate@light`\n- [ ] `suite:unique@dark`\n",
+    )
+
+    open_keys = ts.parse_open_keys(text)
+
+    assert [item.key for item in open_keys] == [
+        "suite:duplicate@light",
+        "suite:unique@dark",
+    ]
+    assert open_keys[0].section == "First"
+
+
+def test_parse_open_keys_does_not_reopen_a_duplicate_closed_or_blocked_key():
+    text = _handoff(
+        "### Authority\n\n"
+        "- [x] `suite:closed@light`\n"
+        "- [~] `suite:blocked@dark`\n"
+        "- [ ] `suite:closed@light`\n"
+        "- [ ] `suite:blocked@dark`\n"
+    )
+
+    assert ts.parse_open_keys(text) == []
+
+
 # ─── next-key ───────────────────────────────────────────────────────────────
 
 

@@ -1,0 +1,5 @@
+# Visual closure kernel (R0). Branch rules must require this owner's review.
+/qa/** @Rybjuani
+/tools/qa/** @Rybjuani
+/.github/workflows/** @Rybjuani
+/.github/CODEOWNERS @Rybjuani

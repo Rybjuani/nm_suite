@@ -5,16 +5,14 @@
 > El scope por defecto es **el que declare el owner** (ver §0
 > `OWNER_TARGET_MODE`) — no es "1 key" fijo. El agente no achica ese scope
 > por costo/cansancio/riesgo percibido, ni lo amplía por cuenta propia.
-> Si seguís esto no necesitás leer el protocolo completo archivado
-> (`docs/_archive/protocol_v1.md`) ni `VISUAL_REPAIR_HANDOFF.md` completo
-> para **intentar** el target set declarado.
-> El gate fuerte (`close_visual_key.py`, replay, anti-fraud, R0) queda reservado
-> para el **cierre oficial de cada key**, no para cada intento de reparación.
+> Si seguís esto no necesitás leer `VISUAL_REPAIR_HANDOFF.md` completo para
+> **intentar** el target set declarado. El handoff es una vista generada: no
+> se edita nunca. La única autoridad de cierre es un record v2 validable en
+> `docs/closure_evidence/active/`.
 >
-> **Mantenimiento**: este doc puede quedar stale. Antes de cada uso verificá
-> que las rutas y los flags coincidan con el repo actual. Si el handoff tiene
-> sección `## NEXT_KEY`, esa es la fuente de verdad para la key `next-key` —
-> ignorá cualquier key hardcodeada que veas abajo como ejemplo.
+> El gate fuerte (`close_visual_key.py`, replay, anti-fraud, R0) queda
+> reservado para el **cierre oficial de cada key**, no para cada intento de
+> reparación. Los comandos de este documento corresponden al schema v2.
 
 ---
 
@@ -27,10 +25,10 @@ mecánicamente, no lo re-interpreta ni lo negocia.
 
 | Modo | Selección | Disparador ejemplo |
 |---|---|---|
-| `next-key` | `## NEXT_KEY` (1 key) | "ejecutá ese flujo para `## NEXT_KEY`" |
-| `first-N` | primeras N keys abiertas, orden del handoff | "las primeras X keys abiertas del orden del handoff" |
-| `batch` | misma selección que `first-N`; difiere sólo en granularidad de commit (§4a) | "en modo batch para las primeras X keys" |
-| `family` | `## NEXT_KEY` (u otra seed) + keys de la misma sección `###` | "`## NEXT_KEY` y su familia equivalente" |
+| `next-key` | primera key abierta de la vista generada | "ejecutá el flujo para la próxima key" |
+| `first-n` | primeras N keys abiertas, orden del handoff | "las primeras X keys abiertas del orden del handoff" |
+| `batch` | misma selección que `first-n`; difiere sólo en granularidad de trabajo | "en modo batch para las primeras X keys" |
+| `family` | primera key abierta (u otra seed) + keys abiertas de su sección `###` | "la próxima key y su familia equivalente" |
 | `all-open-keys` | todas las keys abiertas actuales | "para todas las keys abiertas" |
 | `explicit-list` | exactamente la lista dada | "para esta lista explícita: <keys>" |
 
@@ -59,17 +57,14 @@ Lee `VISUAL_REPAIR_HANDOFF.md` en vivo (nunca una copia stale) e imprime la
 lista exacta de keys en el orden correcto. Agregá `--plan` para obtener filas
 `app,view,theme,key` listas para `qa\run_visual.ps1 -PlanFile` (§2.2).
 
-> No uses "Repair Order" del handoff como guía aunque exista: históricamente
-> quedó stale (sprint pin apuntando a familia fully closed).
-> No leas los `[x]` cerrados: son ruido histórico. La evidencia canónica
-> vive en `docs/closure_evidence/<key_safe>.json`.
-> Para una vista humana rápida del scope disponible, ver
-> `VISUAL_REPAIR_HANDOFF.md` § "OPEN KEYS — cómo listarlas (sin snapshot)".
+> No derives la lista a mano ni edites checkboxes. Los `[x]` son sólo una
+> proyección de `docs/closure_evidence/active/*.json`; los `[~]` provienen de
+> `qa/surface_notes.json` y no pertenecen al conjunto abierto.
 
 Estructura de la key: `<app>:<view>@<theme>` donde `app ∈ {suite, hub}`,
 `theme ∈ {light, dark}`. Ej: `suite:dbt-library@light` → app=suite, view=dbt-library, theme=light.
-(**Este es un ejemplo**, no necesariamente la key `next-key` actual — resolvé
-con `target_scope.py` o leé `## NEXT_KEY`.)
+(**Este es un ejemplo**, no necesariamente la próxima key actual: resolvé
+siempre con `target_scope.py`.)
 
 ---
 
@@ -134,7 +129,7 @@ mutuamente excluyentes.
 
 ```powershell
 .\.venv\Scripts\python.exe qa\target_scope.py --mode <modo> [--n N] --plan `
-  > reports\qa\visual_keys_plan.csv
+  | Set-Content -Encoding ascii reports\qa\visual_keys_plan.csv
 .\qa\run_visual.ps1 -PlanFile reports\qa\visual_keys_plan.csv
 ```
 
@@ -225,10 +220,9 @@ solo. Si aparece `bbox_dh`/`bbox_dy` alto, tratá primero como
 layout/producto/estado. Comentarios de código, `docs/_archive/`, logs
 históricos o "user feedback" no son `DECISIÓN-OWNER`.
 
-Para target mode `family`, no cierres una key individual si otra key de la
-misma family sigue `FAIL`, salvo que el owner haya cambiado explícitamente el
-scope antes de ese cierre. El worker no debe pedir ese cambio para saltear una
-key difícil.
+Cada key conserva elegibilidad independiente. Una hermana en `FAIL` sigue
+dentro del trabajo pendiente y no se saltea ni se saca del scope, pero no
+bloquea el cierre de otra key que sí alcanza PASS y policy ALLOW.
 
 Durante reparacion/cierre visual queda prohibido modificar `qa/`, `tools/qa/`,
 `.github/`, `docs/closure_evidence/`, canon, thresholds, comparator, capture
@@ -306,56 +300,80 @@ reparable identificada.
 
 ## 3. Cierre oficial (~30-90 s por key)
 
-**Sólo cuando el pre-flight da PASS para todo el target set declarado.** No
-antes. En target mode `family`, no cierres una key individual si otra key de
-esa family sigue `FAIL`, salvo que el owner haya emitido un cambio de scope
-explícito antes del cierre; el worker no debe solicitarlo para evitar una key
-difícil.
+**Sólo cuando la key candidata da PASS y pertenece al target set declarado.**
+El target set limita alcance; no impone cierre all-or-nothing. Una key que
+sigue `FAIL` permanece pendiente y debe seguir trabajándose, pero no bloquea
+el cierre independiente de sus hermanas que sí cumplen la policy.
 
 El cierre es **siempre por key** — `close_visual_key.py` no tiene modo
 multi-key, y eso es intencional (cada cierre es atómico en su propio
-worktree aislado). Para un target set de N keys, invocalo una vez por key
-que alcanzó PASS despues de que el target set completo alcanzo PASS:
+worktree aislado). Para un target set de N keys, invocalo una vez por cada key
+que alcance PASS, sin retirar del scope las que todavía estén pendientes:
 
 ```powershell
-.\.venv\Scripts\python.exe qa\close_visual_key.py --key <key>
+.\.venv\Scripts\python.exe qa\target_scope.py --mode <modo> [opciones] `
+  | Set-Content -Encoding ascii reports\qa\target-set.txt
+.\.venv\Scripts\python.exe qa\close_visual_key.py `
+  --key <key> `
+  --target-set-file reports\qa\target-set.txt
 ```
 
-(Opcional, recomendado para iteraciones baratas: agregar `--preflight` corre
-el pipeline en working tree antes de armar el worktree, ahorrando ~30-60 s
-si el código sigue roto. Captura y reporta en un directorio TEMPORAL fuera del
-repo — no ensucia `qa/_captures_v8` ni dispara `dirty_working_tree`. La
-evidencia siempre se construye dentro del worktree; `--preflight` es sólo un
-guard de early-exit, no afecta al gate.)
+El archivo de target set es obligatorio en el flujo owner-directed: congela
+el scope exacto que se resolvió en §0. No lo sustituyas por una lista manual ni
+dependas del default de "todas las abiertas" del closer.
 
 Cada invocación hace, atómicamente, en un **worktree separado** al commit HEAD:
-1. Verifica working tree limpio en rutas scoped (app, hub, shared, qa, tools/qa, handoff, .github/workflows).
-2. Verifica la key está abierta en el handoff.
-3. Crea `git worktree add --detach <tmp> <HEAD>` (aislamiento anti-tamper).
-4. Re-ejecuta **todo** el pipeline (anti-fraud + capture + compare + VAS) sobre el worktree.
-5. Construye `docs/closure_evidence/<key_safe>.json` con schema `nm_suite.evidence_record.v1`:
-   - `commit_head`, `anti_fraud_sha256`, `capture_v8_sha256`, `layered_compare_sha256`, `vas_gate_sha256`
-   - `capture_png_sha256`, `manifest_sha256`, `report_sha256`, `sidecar_sha256`
-   - `modal_audit_sha256` para keys modales (None para keys no modales)
-   - `result: PASS`, `metrics{changed_pixel_ratio, mean_abs_diff, windowed_ssim, max_bbox_delta_px}`
-   - `record_sha256` = hash canónico del propio record (sin campos volátiles)
-6. Marca el checkbox `[ ]` → `[x]` en el handoff y agrega 3 notas:
-   - `evidence: <record_sha256>`
-   - `evidence-record: docs/closure_evidence/<key_safe>.json`
-   - `commit: <HEAD>`
-7. Escribe atómicamente (rename) para evitar corrupt-write.
+1. Verifica working tree limpio en rutas scoped, incluida la evidencia activa.
+2. Verifica `key ∈ target_set`, que pertenece al MANIFEST y que no está cerrada.
+3. Crea un worktree detached al `HEAD` que quedará firmado como `commit_head`.
+4. Corre anti-fraud completo, dos capturas independientes, comparator, VAS,
+   assertion de estado y audit modal cuando corresponde.
+5. Entrega todas las mediciones a `closure_policy.decide`; el closer no decide
+   PASS por su cuenta ni acepta overrides de thresholds.
+6. Si la policy permite, construye un record `nm_suite.evidence_record.v2` con
+   provenance exacta (canonical, manifest, herramientas, thresholds y scope),
+   mediciones, determinism, target set y aprobación externa si aplica.
+7. Publica en `docs/closure_evidence/active/<key_safe>.json` y regenera el
+   handoff desde MANIFEST + records activos + `surface_notes.json` en una sola
+   transición atómica.
 
 Si tu target set tiene N keys en PASS, repetí la invocación N veces
 (secuencial). **El gate exige working tree limpio — incluido el handoff —
 antes de CADA invocación**, así que después de cada cierre tenés que
 commitear ese cierre antes de cerrar la siguiente key (ver §4a). Cada
-invocación construye su **propio** `docs/closure_evidence/<key>.json` y
-agrega sus **propias** notas al checkbox de esa key exclusivamente. No hay
-cierre sin evidence propio — para ninguna key, sea cual sea el target mode.
+invocación construye su **propio** record activo v2. No hay cierre sin record
+propio validable — para ninguna key, sea cual sea el target mode.
 
-> **No edites el handoff ni los records de evidencia por fuera de `close_visual_key.py`.**
-> Cualquier mutación fuera de ese script rompe el hash y
-> `replay_visual_closure.py` lo detecta como `evidence_hash_mismatch`.
+> **Prohibición total:** no edites el handoff, un record activo ni un recibo
+> revocado. El closer es el único escritor; `render_handoff.py` produce la
+> vista. Una edición manual rompe la igualdad byte a byte o el replay.
+
+**Carril near-threshold.** Configurá desde el secret store una credencial
+fine-grained con lectura de metadata/issues y sin permisos de escritura, más
+el issue fijo y el owner esperado:
+
+```powershell
+$env:GH_TOKEN = "<PAT-restringido-solo-lectura>"
+$env:NM_VISUAL_APPROVAL_REPO = "Rybjuani/nm_suite"
+$env:NM_VISUAL_APPROVAL_OWNER = "Rybjuani"
+$env:NM_VISUAL_APPROVAL_ISSUE = "<numero-del-issue-fijo>"
+```
+
+El verifier nunca infiere el número de issue desde una URL no confiable. Si
+sólo falta la aprobación externa, el primer
+intento sale con código 3 y escribe un candidato inmutable bajo
+`reports/qa/visual_closure_pending/`. El owner, desde su cuenta separada,
+comenta en el issue fijo la key y los primeros 12 caracteres de
+`report_sha256`. Luego se reanuda sin re-medir:
+
+```powershell
+.\.venv\Scripts\python.exe qa\close_visual_key.py `
+  --resume-pending <pending.json> `
+  --approval-url <https://github.com/...#issuecomment-...>
+```
+
+El verifier exige repo, issue, comment ID, autor owner y contenido exacto. El
+token del agente no debe poder escribir comentarios ni aprobar su propio PR.
 
 ### 3.1 Reapertura sancionada (revocar un cierre comprometido)
 
@@ -367,18 +385,44 @@ manipulación de evidence), la ÚNICA forma de reabrirlo es:
 ```
 
 Exige tree limpio + record íntegro; mueve el record a
-`docs/closure_evidence/revoked/` y deja notas `reopened:`/`revoked-evidence:`/
-`revoked-record:` en el checkbox (que vuelve a `[ ]`). El replay reconoce
-exactamente esa forma; borrar/editar records o notas a mano falla como
-`orphan_evidence_record`/`evidence_hash_mismatch`. La reapertura es un acto
-visible y auditable — nunca la uses para "resetear" una key sin causa.
+`docs/closure_evidence/active/revoked/`, escribe un recibo inmutable con el
+motivo y regenera la vista. Borrar o editar a mano un record no equivale a
+reabrir. La reapertura es visible y auditable; nunca la uses para "resetear"
+una key sin causa.
+
+**Staleness.** Tras cambios de fuente, refrescá sólo lo alcanzado por el scope:
+
+```powershell
+.\.venv\Scripts\python.exe qa\close_visual_key.py --refresh-evidence --stale
+# o una selección explícita:
+.\.venv\Scripts\python.exe qa\close_visual_key.py --refresh-evidence --keys <k1> <k2>
+```
+
+Cada key se vuelve a medir. PASS reemplaza su record con nota de refresh;
+policy FAIL la reabre como `stale_fail`. Un error operativo no autoriza una
+revocación silenciosa.
+
+Si el ÚNICO bloqueo de una key es la aprobación externa (near-threshold), el
+refresh NO la reabre: deja el record viejo activo (sigue stale), escribe un
+candidato inmutable en `reports/qa/visual_closure_pending/` y sale con código 3.
+El owner comenta la key y el prefijo del `report_sha256` NUEVO del candidato en
+el issue fijo, y se reanuda con el mismo carril del cierre:
+
+```powershell
+.\.venv\Scripts\python.exe qa\close_visual_key.py `
+  --resume-pending <pending.json> `
+  --approval-url <https://github.com/...#issuecomment-...>
+```
+
+El resume de un refresh reemplaza el record activo sólo si sigue siendo el
+mismo del que partió la medición (`pending_refresh_source_mismatch` si cambió).
 
 ---
 
 ## 4. Post-cierre
 
-El post-cierre tiene **2 etapas separadas**: cierre local (vos) y publicación
-(owner). No las mezcles.
+El post-cierre tiene **3 etapas separadas**: commit local, replay full y
+publicación por decisión owner. No las mezcles.
 
 ### 4a. Cierre local (vos)
 
@@ -386,7 +430,7 @@ Después de correr `close_visual_key.py` para cada key del target set que
 llegó a PASS:
 
 ```powershell
-git add -A
+git add -- VISUAL_REPAIR_HANDOFF.md docs/closure_evidence/active
 git status
 ```
 
@@ -395,16 +439,15 @@ git status
 `close_visual_key.py` exige el handoff limpio antes de cada cierre, así que
 bundlear N closures en un commit no es ejecutable — para TODOS los target
 modes, incluidos `batch`/`family`/`all-open-keys`. Lo que agrupan esos modos
-es el **trabajo** (todas las keys del set en una misma corrida), no el
-commit. El evidence sigue siendo por key (N records en
-`docs/closure_evidence/`, N sets de notas en el handoff).
+es el **trabajo**, no el commit. Cada key conserva su record v2 propio.
 
 Verificá que el staged diff muestra ÚNICAMENTE:
-- `VISUAL_REPAIR_HANDOFF.md` (1 checkbox flip + 3 notas por cada key cerrada)
-- 1 archivo nuevo por key en `docs/closure_evidence/<key_safe>.json`
+- `VISUAL_REPAIR_HANDOFF.md` regenerado;
+- 1 record nuevo por key en `docs/closure_evidence/active/<key_safe>.json`.
 
 Si hay más archivos staged (capturas temporales, logs, cambios en `app/` que
 no commiteaste antes del cierre), deshacelos con `git restore --staged <file>`.
+Los fixes de producto deben estar commiteados antes de iniciar el closer.
 El commit de cierre debe ser limpio: handoff + evidence record(s), nada más.
 
 ```powershell
@@ -413,18 +456,28 @@ git commit -m "close: <key>"      # uno por key, antes de cerrar la siguiente
 
 ### 4b. Verificación local pre-push (vos)
 
-Antes de pensar en publicar, corré el replay local con `--regen`. La máquina
-que cierra es la **única** que verifica pixeles:
+Antes de pensar en publicar, corré el replay full local. La máquina que cierra
+es la **única** que vuelve a medir pixeles:
 
 ```powershell
-.\.venv\Scripts\python.exe qa\replay_visual_closure.py --base <base-real> --skip-legacy
+.\.venv\Scripts\python.exe qa\replay_visual_closure.py --base <base-real>
 ```
 
-> `--skip-legacy` ya no es estrictamente necesario: los 60 cierres legacy sin
-> evidence fueron reabiertos (2026-07-04), así que no quedan closures
-> `legacy: true` que disparen `legacy_closure_without_evidence`. Se mantiene el
-> flag por compatibilidad (es el mismo modo que corre CI y es inofensivo si no
-> hay legacy).
+En hitos de familia y al final, reproducí todos los records activos:
+
+```powershell
+.\.venv\Scripts\python.exe qa\replay_visual_closure.py --all-closed
+```
+
+El replay verifica la clase A de provenance de forma exacta y re-deriva la
+clase B con capturas nuevas. La recaptura y sus métricas pueden variar dentro
+de los bars; lo obligatorio es que la policy vuelva a dar ALLOW. Nunca exijas
+un hash PNG o un reporte nuevo byte-idéntico al almacenado. Para keys
+near-threshold, el replay reutiliza la aprobación almacenada de forma
+EXPLÍCITA (`binding: stored_record_reuse`): el hash verificado por GitHub no
+se reescribe nunca sobre el reporte regenerado, y el reuso sólo vale mientras
+los findings near-threshold regenerados no excedan los aprobados
+(`approval_reuse_findings_exceeded` si aparecen nuevos).
 
 **Cómo resolver `<base-real>`**: el replay audita el rango `base..HEAD`. Tenés
 que elegir `base` como el último commit **anterior** a tus cierres. Opciones:
@@ -433,13 +486,13 @@ que elegir `base` como el último commit **anterior** a tus cierres. Opciones:
   ```powershell
   git rev-parse origin/main
   # usá ese hash como --base
-  .\.venv\Scripts\python.exe qa\replay_visual_closure.py --base <hash-de-origin/main> --skip-legacy
+  .\.venv\Scripts\python.exe qa\replay_visual_closure.py --base <hash-de-origin/main>
   ```
 
-- Si tu local está atrasado respecto a `origin/main` (alguien más pusheó):
-  pará. Hacé `git fetch origin` y `git rebase origin/main` ANTES del replay,
-  porque sino el rango auditado no incluye tus cierres o incluye commits de
-  otros que vas a falsamente flaguear.
+- Sincronizá/rebaseá la rama de producto **antes** de ejecutar el closer. Si
+  `origin/main` avanza después de crear records, no rebases esos records a
+  ciegas: el rebase cambia ancestros y vuelve inválido `commit_head`. Actualizá
+  la rama y recreá/refrescá la evidencia por el carril sancionado antes del PR.
 
 - Si tu local está adelantado a `origin/main` con varios commits de cierre:
   ```powershell
@@ -451,13 +504,13 @@ que elegir `base` como el último commit **anterior** a tus cierres. Opciones:
 
 - **Atajo simple**: si tenés un solo commit de cierre encima de `origin/main`:
   ```powershell
-  .\.venv\Scripts\python.exe qa\replay_visual_closure.py --base HEAD~1 --skip-legacy
+  .\.venv\Scripts\python.exe qa\replay_visual_closure.py --base HEAD~1
   ```
 
 El replay re-captura + re-compara + re-VAS cada key cerrada en el rango y
-compara el hash. **Si una sola key no reproduce el hash, todo falla** —
-es el gate fuerte. Si falla, NO intentes arreglar el hash; reportá el
-stderr completo.
+vuelve a consultar la policy. **Si una sola key no alcanza ALLOW, todo
+falla.** No arregles el record para acomodarlo a la nueva medición: corregí
+producto/receta o reabrí/refrescá por el carril sancionado.
 
 > **Por qué `base` debe ser el padre del primer `close:`** (no un commit
 > arbitrario). `close_visual_key.py` registra `commit_head = HEAD` **antes**
@@ -483,7 +536,7 @@ stderr completo.
 > se elimina el falso negativo del off-by-one entre cómo se captura
 > `commit_head` y cómo se define el rango, pero esto vuelve MÁS IMPORTANTE
 > la elección correcta de `<base-real>`. Un `base` mal elegido (p.ej. un
-> commit de marker, o un commit más viejo para "achicar" el rango y que
+> commit de marker, o un commit más nuevo para "achicar" el rango y que
 > R0 no flaggee cambios kernel) reabre superficie de manipulación. Regla
 > operativa: `base` = `git rev-parse <primer-close-de-la-secuencia>^`,
 > SIEMPRE. Si duda, derivelo mecánicamente del `git log --oneline`, no lo
@@ -491,11 +544,12 @@ stderr completo.
 
 ### 4c. Publicación (decisión del owner)
 
-**Vos no decidís el push.** El owner decide cuándo y cómo publicar.
+**Vos no decidís el push, el merge ni una aprobación.** El owner decide cuándo
+y cómo publicar. Trabajá en una rama; nunca empujes directo a `main`.
 
 Después de que 4a + 4b pasan, el estado es:
 - 1 o más commits locales de cierre, siempre 1 por key cerrada (§4a)
-- Replay `--regen` PASS para el rango completo
+- Replay full PASS para el rango completo
 
 Reportá al owner:
 ```
@@ -503,19 +557,24 @@ Target set: <modo declarado> — <N> keys
 Keys cerradas: <key1>, <key2>, ...
 Commit(s): <hash1> [, <hash2>, ...]
 Replay base: <base-real>
-Replay: PASS
-Ready to push: awaiting owner decision
+Replay full: PASS
+Ready for owner review: no push/merge performed
 ```
 
-Si el owner autoriza el push:
+Sólo si el owner autoriza publicar la rama:
 ```powershell
-git push origin main
+git push origin <rama-de-trabajo>
 ```
 
 CI (`.github/workflows/visual-closure-replay.yml`) corre automáticamente
-después del push con `--no-regen` (estructural): valida hashes, paths, R0,
-schema — pero no re-renderiza pixeles. Es la verificación barata de integridad.
-Si CI falla, NO intentes fixear — reportá el log al owner.
+en el PR con `--structural-precheck`: valida clase A, cardinalidad, staleness,
+approvals, handoff generado y R0, pero no re-renderiza pixeles. Es un gate
+**solo-BLOCK**: jamás crea o valida un cierre por sí mismo.
+
+La credencial del agente debe estar restringida a la rama/PR necesarios, sin
+admin, sin bypass de rulesets, sin merge y sin escritura de issues/comentarios.
+La cuenta owner separada aplica branch protection, revisa CODEOWNERS, publica
+aprobaciones near-threshold y decide el merge.
 
 ---
 
@@ -527,28 +586,38 @@ cierre. Si los tocás, todas las keys cerradas en ese rango fallan con
 separado, mergealo, y después cerrá keys.
 
 ```
+qa/anti_fraud_scan.py
+qa/approval_verifier.py
 qa/capture_v8.py
+qa/close_visual_key.py
+qa/closure_policy.py
+qa/hash_utils.py
 qa/layered_visual_compare.py
 qa/odiff_runner.py
+qa/render_handoff.py
+qa/replay_visual_closure.py
+qa/run_visual.ps1
+qa/spec_generator.py
+qa/specs/specs.json
+qa/state_probes.py
+qa/surface_notes.json
+qa/surface_scope.py
+qa/target_scope.py
 qa/vas_gate.py
 qa/vas_engine.py
 qa/vas_introspect.py
-qa/anti_fraud_scan.py
-qa/close_visual_key.py
-qa/replay_visual_closure.py
-qa/spec_generator.py
-qa/specs/specs.json
-tools/qa/audit_modal_backdrop_blur.py
-.github/workflows/visual-closure-replay.yml
 qa/_mockup_canonical/                  (dir, recursivo)
 qa/pack canonico/                       (dir, recursivo)
+tools/qa/                                (dir, recursivo)
+.github/workflows/                       (dir, recursivo)
+.github/CODEOWNERS
 ```
 
-Lista sincronizada con `R0_KERNEL_PATHS` en `qa/replay_visual_closure.py`
-(fuente de verdad en código). `odiff_runner.py` (dependencia directa del
-comparador) y `audit_modal_backdrop_blur.py` (gate modal) están incluidos:
-sin ellos un agente podría debilitar la capa odiff o el audit de backdrop y
-cerrar una key en el mismo PR sin disparar el gate.
+Lista sincronizada con `KERNEL_PATHS` en `qa/replay_visual_closure.py` (fuente
+de verdad en código). `.github/CODEOWNERS` asigna estos namespaces a
+`@Rybjuani`; el owner debe activar en `main` require PR + code-owner review,
+sin force-push ni bypass para la credencial del agente. CODEOWNERS sin ese
+ruleset no alcanza.
 
 ---
 
@@ -577,8 +646,8 @@ Tampoco podés:
 - Cerrar una key sin que `close_visual_key.py` haya escrito el record propio
   de esa key — sin importar el target mode (batch/all-open-keys incluidos).
 - **Achicar el target set** que declaró el owner por costo, cansancio, límite
-  interno o "riesgo" percibido. Si una key del set sigue `FAIL`, no cierres
-  parcialmente ni la saltees: segui iterando producto segun §2.4/§2.5.
+  interno o "riesgo" percibido. Una key `FAIL` sigue pendiente y no se
+  saltea; esto no impide cerrar por separado las keys que sí dan ALLOW.
 - **Ampliar el target set** más allá de lo declarado por el owner, salvo
   evidencia objetiva de que una key no existe, está duplicada, o ya no está
   abierta (reportá la desviación, no la apliques en silencio).
@@ -624,32 +693,26 @@ El script falla ruidosamente con uno de estos códigos:
 | exit | motivo | acción |
 |------|-------|--------|
 | 2 | `dirty_working_tree` | commiteá o descartá cambios en scoped paths |
-| 2 | `unknown_key` / `key_already_closed` | verificá la key en el handoff |
-| 2 | `open_key_not_found` | la key no está abierta en el handoff |
-| 1 | `anti_fraud_failed` | tu código tiene canonical injection — leé `anti_fraud_scan.py` output |
-| 1 | `capture_failed` | Qt/app error — mirá `capture_v8.py` stderr |
-| 1 | `comparator_failed` / `comparator_not_pass` | la key no está en PASS — volvé a sección 2 |
-| 1 | `missing_metric_*` | el reporte del comparator está mal formado — posiblemente kernel dañado |
-| 1 | `vas_failed` | VAS gate falló — mirá `vas_gate.py` output |
-| 1 | `preflight failed: ...` (con `--preflight`) | el guard de early-exit detectó fallo antes del worktree — volvé a sección 2 |
+| 2 | `key_already_closed` | el record activo ya existe; no edites el handoff |
+| 2 | `key_outside_target_set` / `target_key_not_in_manifest` | regenerá el target set desde §0 |
+| 1 | `closure_policy_blocked: ...` | corregí la medición indicada; no cambies policy/record |
+| 3 | `pending-approval: <path>` | obtené aprobación owner externa y usá `--resume-pending` |
+| 1 | fallo de anti-fraud/capture/comparator/VAS/modal | revisá stderr y volvé a §2 |
 
 Cualquier otro error → pará, reportá el stderr completo en el canal de handoff.
 
-**Con target set de N keys**: si `close_visual_key.py` falla para UNA key del
-set, no modifiques el gate/harness para destrabar el cierre. Si parece bug de
-gate/R0, detené la tarea visual y reportá tarea R0 separada, sin cierre de
-keys. En target mode `family`, no cierres el resto de las keys del set salvo
-que el owner cambie explícitamente el scope antes del cierre; el worker no debe
-pedir ese cambio para saltear una key. `dirty_working_tree` bloquea todo el set
-hasta que resolvés el working tree.
+**Con target set de N keys**: si `close_visual_key.py` falla para una key, no
+modifiques gate/harness para destrabarla. Esa key sigue pendiente; las demás
+pueden cerrar independientemente si alcanzan ALLOW y pertenecen al set. Si
+parece bug R0, reportá una tarea separada sin fabricar evidencia. Un
+`dirty_working_tree` impide cualquier invocación hasta resolver el tree.
 
 ---
 
 ## 8. Lo que NO tenés que hacer
 
-- ❌ Leer `VISUAL_REPAIR_HANDOFF.md` completo para trabajar el
-  target set declarado — usá `qa\target_scope.py` + `## OPEN KEYS —
-  cómo listarlas (sin snapshot)` (vista compacta en el handoff).
+- ❌ Derivar el target set leyendo o copiando el handoff a mano: usá
+  `qa\target_scope.py` sobre la vista actual.
 - ❌ Correr `capture_v8.py --all --clean` salvo target mode `all-open-keys`
   con un cambio verdaderamente transversal (theme/chrome/`NMCard`/shell).
 - ❌ Correr `run_visual.ps1 -All` fuera de ese mismo caso o de una regresión
@@ -658,14 +721,15 @@ hasta que resolvés el working tree.
 - ❌ Correr `replay_visual_closure.py` antes de cerrar (es post-cierre).
 - ❌ Correr `audit_modal_backdrop_blur.py` a mano por separado (ya está
   integrado en el runner y en `close_visual_key.py`).
-- ❌ Editar `docs/closure_evidence/*.json` por fuera de `close_visual_key.py`.
-- ❌ Editar el handoff por fuera de `close_visual_key.py`.
+- ❌ Editar `docs/closure_evidence/active/**` por fuera de `close_visual_key.py`.
+- ❌ Editar el handoff manualmente, incluso para cambiar un checkbox o nota.
+- ❌ Editar `surface_notes.json` en el mismo PR/rango que cierra keys.
 - ❌ Tocar kernel R0 en el mismo PR que un cierre.
 - ❌ Cerrar una key sin su propio evidence record — sin importar si el
   commit es individual o batch (§3, §4a).
 - ❌ Achicar o ampliar el target set que declaró el owner sin evidencia
   objetiva de key inexistente/duplicada/ya cerrada (§6).
-- ❌ Decidir el `git push` vos — el owner decide.
+- ❌ Pushear directo a `main`, aprobar o mergear: el owner decide.
 
 ---
 
@@ -684,24 +748,24 @@ hasta que resolvés el working tree.
    ↓           └── (3 sin mejora → preservar diff real, localizar causa,
    ↓               cambiar estrategia de producto — §2.5)
    ↓ SÍ (repetir para cada key del target set)
-[close_visual_key.py [--preflight] --key <key>]  (30-90 s/key, worktree aislado)
+[close_visual_key.py --key <key> --target-set-file <archivo>]  (doble captura, worktree aislado)
    ↓
 ─── ETAPA 4a: CIERRE LOCAL ───
 [git add + commit]  (SIEMPRE 1 commit por key, antes del siguiente cierre — §4a)
    ↓
 ─── ETAPA 4b: VERIFICACIÓN LOCAL ───
-[replay_visual_closure.py --base <base-real> --skip-legacy]  (valida TODO el rango cerrado, --regen)
+[replay_visual_closure.py --base <base-real>]  (full regen independiente del rango)
    ↓ PASS
 ─── ETAPA 4c: PUBLICACIÓN (owner decide) ───
 [reportar al owner: target set + keys cerradas + commit(s) + replay PASS]
    ↓ owner autoriza
-[git push origin main]
+[git push origin <rama-de-trabajo>]
    ↓
-[CI corre --no-regen automáticamente]  (1-2 min)
+[CI corre --structural-precheck + pytest stdlib]  (solo-BLOCK, sin pixeles)
    ↓
-[Fin]
+[owner review + merge según ruleset]
 ```
 
 **Costo total por key exitosa**: ~10-30 min wall-clock + tiempo de doc proporcional al target set (no todo el handoff).
 **Costo por intento fallido (pre-flight sin cerrar)**: ~1-5 min (1-7 ciclos pre-flight) por key.
-**Costo de replay local `--regen`**: ~5-15 min por corrida, cubre todas las keys cerradas en el rango auditado (no escala 1:1 con N si se hizo en batch).
+**Costo de replay full local**: ~5-15 min por corrida, cubre todas las keys cerradas en el rango auditado (no escala 1:1 con N si se hizo en batch).
