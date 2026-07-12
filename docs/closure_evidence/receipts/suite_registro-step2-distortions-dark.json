@@ -1,0 +1,7 @@
+{
+  "issued_by": "qa/close_visual_key.py",
+  "key": "suite:registro-step2-distortions@dark",
+  "record_path": "docs/closure_evidence/active/suite_registro-step2-distortions-dark.json",
+  "record_sha256": "c5af3f7ea9eb9c2e0383b5c1c2c22cf18329bb93a121f9df9daf106c7b3a2a02",
+  "schema": "nm_suite.closure_receipt.v1"
+}
