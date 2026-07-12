@@ -33,7 +33,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HANDOFF = ROOT / "VISUAL_REPAIR_HANDOFF.md"
 
-CHECKBOX_RE = re.compile(r"^(?P<indent>\s*)-\s*\[(?P<state>[xX ])\]\s*(?P<body>.*)$")
+CHECKBOX_RE = re.compile(r"^(?P<indent>\s*)-\s*\[(?P<state>[xX ~])\]\s*(?P<body>.*)$")
 SECTION_RE = re.compile(r"^###\s+(.*)$")
 KEY_RE = re.compile(r"(?P<app>suite|hub):(?P<view>[^@\s`\"'\)\]]+)@(?P<theme>light|dark)")
 SEV_RE = re.compile(r"severity=(\w+)")
@@ -104,6 +104,7 @@ def parse_open_keys(handoff_text: str) -> list[OpenKey]:
     complexity tier. Only scans checkbox lines with a resolvable key; a
     checkbox line with no key (malformed) is skipped, not raised."""
     result: list[OpenKey] = []
+    seen_keys: set[str] = set()
     current_section: str | None = None
     for line_no, line in enumerate(handoff_text.splitlines(), start=1):
         section_match = SECTION_RE.match(line)
@@ -111,15 +112,21 @@ def parse_open_keys(handoff_text: str) -> list[OpenKey]:
             current_section = section_match.group(1).strip()
             continue
         match = CHECKBOX_RE.match(line)
-        if not match or match.group("state") != " ":
+        if not match:
             continue
         key_match = KEY_RE.search(line)
         if not key_match:
             continue
+        key = key_match.group(0)
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        if match.group("state") != " ":
+            continue
         chg = CHG_RE.search(line)
         result.append(
             OpenKey(
-                key=key_match.group(0),
+                key=key,
                 section=current_section,
                 tier=_tier_of(line),
                 changed_pixel_ratio=float(chg.group(1)) if chg else None,

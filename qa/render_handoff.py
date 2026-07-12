@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import json
-import re
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -17,10 +16,9 @@ except ModuleNotFoundError:
 
 HANDOFF = Path("VISUAL_REPAIR_HANDOFF.md")
 ACTIVE_DIR = Path("docs") / "closure_evidence" / "active"
+SURFACE_NOTES = Path("qa") / "surface_notes.json"
 EVIDENCE_SCHEMA = "nm_suite.evidence_record.v2"
-_BLOCKED_RE = re.compile(
-    r"^\s*-\s*\[~\]\s*`(?P<key>(?:suite|hub):[^`]+@(?:light|dark))`(?P<suffix>.*)$"
-)
+SURFACE_NOTES_SCHEMA = "nm_suite.surface_notes.v1"
 
 
 class HandoffRenderError(ValueError):
@@ -48,15 +46,38 @@ def load_active_records(repo_root: Path = ROOT) -> dict[str, dict[str, Any]]:
     return records
 
 
-def _legacy_blocked_notes(repo_root: Path) -> dict[str, str]:
-    path = repo_root / HANDOFF
-    if not path.exists():
-        return {}
+def load_surface_notes(repo_root: Path = ROOT) -> dict[str, str]:
+    """Load blocked annotations from their sole machine-readable authority."""
+
+    path = repo_root / SURFACE_NOTES
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise HandoffRenderError(f"invalid surface notes: {exc}") from exc
+    if not isinstance(payload, dict) or payload.get("schema") != SURFACE_NOTES_SCHEMA:
+        raise HandoffRenderError("invalid surface notes schema")
+    surfaces = payload.get("surfaces")
+    if not isinstance(surfaces, dict):
+        raise HandoffRenderError("surface notes must contain surfaces{}")
+
     notes: dict[str, str] = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        match = _BLOCKED_RE.match(line)
-        if match:
-            notes[match.group("key")] = match.group("suffix").strip()
+    for key, annotation in surfaces.items():
+        if not isinstance(key, str) or not isinstance(annotation, dict):
+            raise HandoffRenderError("surface note entries must be key/object pairs")
+        status = annotation.get("status")
+        reason = annotation.get("reason")
+        note = annotation.get("note")
+        if status != "blocked":
+            raise HandoffRenderError(f"unsupported surface note status for {key}: {status!r}")
+        if not isinstance(reason, str) or not reason.strip():
+            raise HandoffRenderError(f"missing surface note reason for {key}")
+        if (
+            not isinstance(note, str)
+            or not note.strip()
+            or note.splitlines() != [note]
+        ):
+            raise HandoffRenderError(f"invalid surface note text for {key}")
+        notes[key] = f"({note.strip()})"
     return notes
 
 
@@ -103,7 +124,7 @@ def render_handoff(
     universe = manifest_keys(repo_root)
     universe_set = set(universe)
     records = dict(active_records) if active_records is not None else load_active_records(repo_root)
-    notes = dict(blocked_notes) if blocked_notes is not None else _legacy_blocked_notes(repo_root)
+    notes = dict(blocked_notes) if blocked_notes is not None else load_surface_notes(repo_root)
     unknown_records = sorted(set(records) - universe_set)
     unknown_notes = sorted(set(notes) - universe_set)
     conflicts = sorted(set(records) & set(notes))
@@ -120,9 +141,10 @@ def render_handoff(
     lines = [
         "# Visual Repair Handoff",
         "",
-        "> AUTORIDAD GENERADA: no editar este archivo. El estado cerrado proviene",
-        "> exclusivamente de `docs/closure_evidence/active/`; el universo proviene",
-        "> de `qa/_mockup_canonical/MANIFEST.json`.",
+        "> VISTA GENERADA — NO EDITAR. Una key está cerrada si y solo si existe su",
+        "> record v2 validable en `docs/closure_evidence/active/`. El universo proviene",
+        "> de `qa/_mockup_canonical/MANIFEST.json` y los bloqueos de",
+        "> `qa/surface_notes.json`.",
         "",
         f"Estado: {closed} cerradas · {opened} abiertas · {blocked} bloqueadas · {len(universe)} total.",
         "",

@@ -204,7 +204,11 @@ def test_regenerate_builds_complete_v2_record_from_two_independent_captures(
         "count": 0,
         "violations": [],
     }
-    monkeypatch.setattr(close, "manifest_keys", lambda _root: (KEY,))
+    monkeypatch.setattr(
+        close,
+        "manifest_keys",
+        lambda _root: (KEY, "suite:home@dark"),
+    )
     monkeypatch.setattr(close, "run_anti_fraud", lambda _root, _path: antifraud)
     monkeypatch.setattr(close, "run_capture", fake_capture)
     monkeypatch.setattr(close, "is_modal_key", lambda _root, _key: False)

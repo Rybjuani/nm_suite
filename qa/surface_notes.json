@@ -1,0 +1,100 @@
+{
+  "schema": "nm_suite.surface_notes.v1",
+  "surfaces": {
+    "suite:respiracion@light": {
+      "status": "blocked",
+      "reason": "state_ambiguous",
+      "note": "state-ambiguous pair with respiracion-paused/running"
+    },
+    "suite:respiracion@dark": {
+      "status": "blocked",
+      "reason": "state_ambiguous",
+      "note": "state-ambiguous pair"
+    },
+    "suite:respiracion-paused@light": {
+      "status": "blocked",
+      "reason": "non_deterministic_capture",
+      "note": "non-deterministic capture; animated ring"
+    },
+    "suite:respiracion-paused@dark": {
+      "status": "blocked",
+      "reason": "non_deterministic_capture",
+      "note": "non-deterministic capture; animated ring"
+    },
+    "suite:respiracion-running@light": {
+      "status": "blocked",
+      "reason": "non_deterministic_capture",
+      "note": "non-deterministic capture; animated ring"
+    },
+    "suite:respiracion-running@dark": {
+      "status": "blocked",
+      "reason": "non_deterministic_capture",
+      "note": "non-deterministic capture; animated ring"
+    },
+    "suite:timer-paused@light": {
+      "status": "blocked",
+      "reason": "state_ambiguous",
+      "note": "state-ambiguous pair with timer-running"
+    },
+    "suite:timer-paused@dark": {
+      "status": "blocked",
+      "reason": "state_ambiguous",
+      "note": "state-ambiguous pair"
+    },
+    "suite:timer-running@light": {
+      "status": "blocked",
+      "reason": "state_ambiguous",
+      "note": "state-ambiguous pair; red-team VQA-STATE-001"
+    },
+    "suite:timer-running@dark": {
+      "status": "blocked",
+      "reason": "state_ambiguous",
+      "note": "state-ambiguous pair"
+    },
+    "suite:rutina-add-task@dark": {
+      "status": "blocked",
+      "reason": "report_hash_volatility",
+      "note": "report hash volatility; red-team #13"
+    },
+    "suite:actividades@light": {
+      "status": "blocked",
+      "reason": "non_deterministic_capture",
+      "note": "non-deterministic capture; red-team #4"
+    },
+    "suite:actividades@dark": {
+      "status": "blocked",
+      "reason": "non_deterministic_capture",
+      "note": "non-deterministic capture"
+    },
+    "suite:actividades-filtered@light": {
+      "status": "blocked",
+      "reason": "non_deterministic_capture",
+      "note": "non-deterministic capture"
+    },
+    "suite:actividades-filtered@dark": {
+      "status": "blocked",
+      "reason": "report_hash_volatility",
+      "note": "report hash volatility"
+    },
+    "suite:actividades-marked-hice@light": {
+      "status": "blocked",
+      "reason": "non_deterministic_capture",
+      "note": "non-deterministic capture"
+    },
+    "suite:actividades-marked-hice@dark": {
+      "status": "blocked",
+      "reason": "non_deterministic_capture",
+      "note": "non-deterministic capture"
+    },
+    "hub:detalle-resumen-ia-0@light": {
+      "status": "blocked",
+      "reason": "near_threshold",
+      "note": "near-threshold; red-team VQA-THRESH-001"
+    },
+    "hub:detalle-resumen-ia-0@dark": {
+      "status": "blocked",
+      "reason": "modal_gaming",
+      "note": "revoked V1 closure; modal gaming"
+    }
+  }
+}
