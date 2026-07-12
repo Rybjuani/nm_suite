@@ -762,15 +762,16 @@ def test_full_replay_blocks_fresh_measurement_that_fails_policy(monkeypatch, tmp
     assert any("regenerated_policy_blocked" in failure.reason for failure in result.failures)
 
 
-def test_v1_records_are_quarantined_and_active_authority_starts_empty():
+def test_v1_records_are_quarantined_and_active_authority_is_v2_only():
     root = Path("docs/closure_evidence")
     invalidated = list((root / "invalidated_v1").glob("*.json"))
     revoked = list((root / "invalidated_v1" / "revoked").glob("*.json"))
+    active = list((root / "active").glob("*.json"))
 
     assert len(invalidated) == 116
     assert len(revoked) == 2
-    assert list((root / "active").glob("*.json")) == []
     assert all(json.loads(path.read_text())["schema"] == "nm_suite.evidence_record.v1" for path in invalidated)
+    assert all(json.loads(path.read_text())["schema"] == "nm_suite.evidence_record.v2" for path in active)
     assert "forensic-pre-v3.1" in (root / "invalidated_v1" / "README.md").read_text()
 
 
