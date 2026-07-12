@@ -2,6 +2,6 @@
   "issued_by": "qa/close_visual_key.py",
   "key": "suite:registro-step3-filled@light",
   "record_path": "docs/closure_evidence/active/suite_registro-step3-filled-light.json",
-  "record_sha256": "7c8b422238410eb44be0e8346603e5fa7d95ad10f83bea439105d6e7e854fb29",
+  "record_sha256": "524b6680ae0ac1aeb7aec04c0b4a36f2dcf564a90bba0585d0b9a51d9078e08b",
   "schema": "nm_suite.closure_receipt.v1"
 }

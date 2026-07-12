@@ -2,6 +2,6 @@
   "issued_by": "qa/close_visual_key.py",
   "key": "suite:registro-step1-emotion-otro@light",
   "record_path": "docs/closure_evidence/active/suite_registro-step1-emotion-otro-light.json",
-  "record_sha256": "3c0f0fc5d7924a86be01f7cc1a8d7fc8d721e1d45a3ddb68616d837febaeb3dc",
+  "record_sha256": "f8b771a30ad102dc5a308448fb571923d99948e065753669001e9be4fa8c8a66",
   "schema": "nm_suite.closure_receipt.v1"
 }

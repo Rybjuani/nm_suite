@@ -2,6 +2,6 @@
   "issued_by": "qa/close_visual_key.py",
   "key": "suite:registro@light",
   "record_path": "docs/closure_evidence/active/suite_registro-light.json",
-  "record_sha256": "bdada35d6679fd4a1ae9cf0bf9f10be639a4d58deaa722e2ae6d049362087b29",
+  "record_sha256": "e044cf3fe587781c38d08680063be3d55072a4183151e6b12ba104513612ee75",
   "schema": "nm_suite.closure_receipt.v1"
 }
