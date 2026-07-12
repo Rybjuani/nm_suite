@@ -44,6 +44,7 @@ from pathlib import Path
 
 _PROJ = Path(__file__).resolve().parent.parent
 DEFAULT_ROOTS = ("app", "hub", "shared")
+ANTIFRAUD_SUMMARY_SCHEMA = "nm_suite.antifraud_summary.v1"
 
 # Asset-vs-canonical identity scan. A canonical PNG smuggled into the product as
 # a plain asset (a path with no forbidden token) defeats the string/AST scan, so
@@ -768,12 +769,28 @@ def main(argv: list[str] | None = None) -> int:
     if args.mode in {"qa-harness", "all"}:
         violations.extend(scan_qa_harness_paths(qa_roots))
 
+    if args.mode == "runtime":
+        roots_display = runtime_roots
+    elif args.mode == "qa-harness":
+        roots_display = qa_roots
+    else:
+        roots_display = [*runtime_roots, *qa_roots]
+
     if args.json:
         out = Path(args.json)
         out.parent.mkdir(parents=True, exist_ok=True)
+        scope = "default_full" if args.mode == "all" and args.roots is None else "scoped"
         out.write_text(
             json.dumps(
-                {"clean": not violations, "count": len(violations), "violations": [v.to_dict() for v in violations]},
+                {
+                    "schema": ANTIFRAUD_SUMMARY_SCHEMA,
+                    "mode": args.mode,
+                    "scope": scope,
+                    "roots": roots_display,
+                    "clean": not violations,
+                    "count": len(violations),
+                    "violations": [v.to_dict() for v in violations],
+                },
                 indent=2,
                 ensure_ascii=False,
             ),
@@ -782,12 +799,6 @@ def main(argv: list[str] | None = None) -> int:
 
     print("=" * 60)
     print(f"ANTI-FRAUD STATIC SCAN ({args.mode})")
-    if args.mode == "runtime":
-        roots_display = runtime_roots
-    elif args.mode == "qa-harness":
-        roots_display = qa_roots
-    else:
-        roots_display = [*runtime_roots, *qa_roots]
     print(f"Roots: {', '.join(roots_display)}")
     if not violations:
         print("Result: CLEAN - no canonical/reference/mockup artifact usage found.")

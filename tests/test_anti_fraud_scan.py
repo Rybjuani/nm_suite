@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -314,3 +315,19 @@ def test_main_qa_harness_mode_returns_zero(capsys):
     assert rc == 0
     assert "qa-harness" in captured.out
     assert "CLEAN" in captured.out
+
+
+def test_json_summary_identifies_full_default_scan(tmp_path, monkeypatch):
+    monkeypatch.setattr("qa.anti_fraud_scan.scan_paths", lambda roots: [])
+    monkeypatch.setattr("qa.anti_fraud_scan.scan_asset_canonical_identity", lambda: [])
+    monkeypatch.setattr("qa.anti_fraud_scan.scan_qa_harness_paths", lambda roots: [])
+    output = tmp_path / "antifraud.json"
+
+    assert main(["--mode", "all", "--json", str(output)]) == 0
+
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["schema"] == "nm_suite.antifraud_summary.v1"
+    assert payload["mode"] == "all"
+    assert payload["scope"] == "default_full"
+    assert payload["clean"] is True
+    assert payload["count"] == 0

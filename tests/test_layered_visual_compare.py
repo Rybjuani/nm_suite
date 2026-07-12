@@ -89,6 +89,7 @@ def test_state_sensitive_delta_is_classified_as_state_or_recipe(tmp_path):
     assert result.status == "FAIL"
     assert result.repair_bucket == "STATE_RECIPE_OR_PRODUCT_FIX"
     assert "state_or_recipe_suspect" in result.findings
+    assert result.state_assertion_required is True
 
 
 def test_pass_within_five_percent_of_bar_emits_near_threshold(tmp_path):
@@ -164,6 +165,7 @@ def test_compare_sources_writes_reports(tmp_path):
     assert len(results) == 1
     assert Path(reports["json"]).exists()
     payload = json.loads(Path(reports["json"]).read_text(encoding="utf-8"))
+    assert payload["schema"] == "nm_suite.layered_report.v2"
     assert payload["summary"]["pass"] == 1
     assert payload["authority"] == "LAYERED_VISUAL_COMPARE"
     assert payload["handoff_closure_allowed"] is False

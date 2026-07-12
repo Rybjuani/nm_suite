@@ -24,6 +24,11 @@ from typing import Any
 import numpy as np
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 
+try:
+    from qa.state_probes import STATE_PROBES
+except ModuleNotFoundError:
+    from state_probes import STATE_PROBES
+
 
 _PROJ = Path(__file__).resolve().parent.parent
 _NAME_RE = re.compile(r"^(suite|hub)-(.+)-(light|dark)-(\d+)x(\d+)\.png$")
@@ -37,7 +42,8 @@ _ACTIVE_SOURCE_POLICY = (
     "must not close VISUAL_REPAIR_HANDOFF.md items."
 )
 
-_STATE_SENSITIVE_EXACT = {
+_STATE_SENSITIVE_EXACT = frozenset(STATE_PROBES)
+_STATE_RECIPE_SENSITIVE_EXACT = {
     "suite:actividades-filtered",
     "suite:actividades-marked-hice",
     "suite:avisos-filter-activos",
@@ -45,10 +51,6 @@ _STATE_SENSITIVE_EXACT = {
     "suite:avisos-today",
     "suite:dbt-practice-stop",
     "suite:recuperar-acceso",
-    "suite:respiracion-paused",
-    "suite:respiracion-running",
-    "suite:timer-paused",
-    "suite:timer-running",
     "hub:detalle-resumen-ia-0",
 }
 _STATE_SENSITIVE_PREFIXES = (
@@ -225,6 +227,7 @@ class LayeredResult:
     findings: list[str] = field(default_factory=list)
     suspicious_perfect_match: bool = False
     near_perfect_match: bool = False
+    state_assertion_required: bool = False
     canonical_file: str = ""
     actual_file: str = ""
     canonical_size: str = ""
@@ -247,6 +250,7 @@ class LayeredResult:
             "real_divergence": self.real_divergence,
             "suspicious_perfect_match": self.suspicious_perfect_match,
             "near_perfect_match": self.near_perfect_match,
+            "state_assertion_required": self.state_assertion_required,
             "findings": self.findings,
             "canonical_file": self.canonical_file,
             "actual_file": self.actual_file,
@@ -453,6 +457,7 @@ def compare_pair(
         findings.append("layout_drift")
 
     state_sensitive = _is_state_sensitive(canonical.app, canonical.view)
+    state_assertion_required = canonical.family_key in _STATE_SENSITIVE_EXACT
     if state_sensitive and (raw_fail or layout_fail or size_mismatch):
         findings.append("state_or_recipe_suspect")
 
@@ -516,6 +521,7 @@ def compare_pair(
         real_divergence=real_divergence,
         suspicious_perfect_match=suspicious_perfect_match,
         near_perfect_match=near_perfect_match,
+        state_assertion_required=state_assertion_required,
         findings=findings,
         canonical_file=str(canonical.path),
         actual_file=str(actual.path),
@@ -566,6 +572,7 @@ def write_reports(
         write_panels,
     )
     payload = {
+        "schema": "nm_suite.layered_report.v2",
         "generated_at": _dt.datetime.now().isoformat(timespec="seconds"),
         "authority": _HANDOFF_AUTHORITY,
         "source_policy": _ACTIVE_SOURCE_POLICY,
@@ -1125,7 +1132,7 @@ def _is_near_perfect_match(metrics: dict[str, Any], canonical_img: Image.Image, 
 
 def _is_state_sensitive(app: str, view: str) -> bool:
     family_key = f"{app}:{view}"
-    return family_key in _STATE_SENSITIVE_EXACT or any(
+    return family_key in _STATE_SENSITIVE_EXACT or family_key in _STATE_RECIPE_SENSITIVE_EXACT or any(
         family_key.startswith(prefix) for prefix in _STATE_SENSITIVE_PREFIXES
     )
 
