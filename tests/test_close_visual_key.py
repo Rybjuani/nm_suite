@@ -1,496 +1,530 @@
 from __future__ import annotations
 
 import json
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
 from qa import close_visual_key as close
 
 
-FIX_COMMIT = "a" * 40
 KEY = "suite:home@light"
+COMMIT = "a" * 40
 
 
-def _write_handoff(root: Path, body: str) -> Path:
-    path = root / "VISUAL_REPAIR_HANDOFF.md"
-    path.write_text(body, encoding="utf-8")
-    return path
-
-
-def _record(key: str = KEY) -> dict:
+def _record(key: str = KEY, *, commit: str = COMMIT) -> dict:
     return {
         "schema": close.EVIDENCE_SCHEMA,
         "key": key,
-        "commit_head": FIX_COMMIT,
-        "anti_fraud_sha256": "1" * 64,
-        "capture_v8_sha256": "2" * 64,
-        "layered_compare_sha256": "3" * 64,
-        "vas_gate_sha256": "4" * 64,
-        "capture_png_sha256": "5" * 64,
-        "manifest_sha256": "6" * 64,
-        "report_sha256": "7" * 64,
-        "sidecar_sha256": "8" * 64,
-        "modal_audit_sha256": None,
+        "commit_head": commit,
         "result": "PASS",
-        "metrics": {
-            "changed_pixel_ratio": 0.01,
-            "mean_abs_diff": 0.02,
-            "windowed_ssim": 0.99,
-            "max_bbox_delta_px": None,
-        },
-        "command_spec": {
-            "capture": {
-                "tool": "qa/capture_v8.py",
-                "app": "suite",
-                "view": "home",
-                "theme": "light",
-                "vas_introspect": True,
-            },
-            "compare": {
-                "tool": "qa/layered_visual_compare.py",
-                "canonical": "qa/_mockup_canonical",
-                "scope": key,
-            },
-        },
+        "source_scope": {"schema": "nm_suite.source_scope.v1", "key": key},
+        "report_sha256": "b" * 64,
     }
 
 
-def _build(key: str = KEY) -> close.EvidenceBuild:
-    record = _record(key)
+def _build(key: str = KEY, *, commit: str = COMMIT) -> close.EvidenceBuild:
+    record = _record(key, commit=commit)
     return close.EvidenceBuild(
         record=record,
         record_sha256=close.canonical_record_sha256(record),
-        record_path=Path("docs/closure_evidence") / f"{close.key_safe(key)}.json",
+        record_path=close.active_record_path(key),
     )
 
 
-def _patch_clean_git(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(close, "ensure_clean_for_closure", lambda repo_root: None)
-    monkeypatch.setattr(close, "git_rev_parse", lambda repo_root, revision="HEAD": FIX_COMMIT)
+def _patch_repo_guards(monkeypatch, *, target_set=(KEY,)) -> None:
+    monkeypatch.setattr(close, "ensure_clean_for_closure", lambda _root: None)
+    monkeypatch.setattr(close, "git_rev_parse", lambda _root, revision="HEAD": COMMIT)
+    monkeypatch.setattr(close, "resolve_target_set", lambda _root, explicit=None: set(target_set))
 
 
-def test_close_tool_rejects_dirty_working_tree(monkeypatch, tmp_path):
-    handoff = _write_handoff(tmp_path, f"- [ ] `{KEY}` pending\n")
-
-    def dirty(_repo_root):
-        raise close.PreflightError("dirty_working_tree")
-
-    monkeypatch.setattr(close, "ensure_clean_for_closure", dirty)
-
-    with pytest.raises(close.PreflightError, match="dirty_working_tree"):
-        close.close_visual_key(
-            key=KEY,
-            repo_root=tmp_path,
-            capture_dir=tmp_path / "captures",
-            report_dir=tmp_path / "reports",
-        )
-
-    assert handoff.read_text(encoding="utf-8") == f"- [ ] `{KEY}` pending\n"
+def _write_active(root: Path, record: dict) -> Path:
+    path = root / close.active_record_path(record["key"])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(record), encoding="utf-8")
+    return path
 
 
-def test_close_tool_rejects_unknown_key(monkeypatch, tmp_path):
-    _write_handoff(tmp_path, "- [ ] `suite:other@light` pending\n")
-    _patch_clean_git(monkeypatch)
-
-    with pytest.raises(close.PreflightError, match="unknown_key"):
-        close.close_visual_key(
-            key=KEY,
-            repo_root=tmp_path,
-            capture_dir=tmp_path / "captures",
-            report_dir=tmp_path / "reports",
-        )
+def test_schema_and_scoped_clean_check_cover_new_authority():
+    assert close.EVIDENCE_SCHEMA == "nm_suite.evidence_record.v2"
+    assert "assets" in close.SCOPED_STATUS_PATHS
+    assert "docs/closure_evidence" in close.SCOPED_STATUS_PATHS
+    assert close.ACTIVE_DIR == Path("docs/closure_evidence/active")
 
 
-def test_close_tool_rejects_already_closed_key(monkeypatch, tmp_path):
-    _write_handoff(tmp_path, f"- [x] `{KEY}` done\n")
-    _patch_clean_git(monkeypatch)
-
-    with pytest.raises(close.PreflightError, match="key_already_closed"):
-        close.close_visual_key(
-            key=KEY,
-            repo_root=tmp_path,
-            capture_dir=tmp_path / "captures",
-            report_dir=tmp_path / "reports",
-        )
-
-
-def test_close_tool_aborts_if_capture_fails_without_touching_handoff(monkeypatch, tmp_path):
-    handoff = _write_handoff(tmp_path, f"- [ ] `{KEY}` pending\n")
-    _patch_clean_git(monkeypatch)
-
-    def fail(**_kwargs):
-        raise close.GateError("capture_failed")
-
-    monkeypatch.setattr(close, "regenerate_record_for_key", fail)
-
-    with pytest.raises(close.GateError, match="capture_failed"):
-        close.close_visual_key(
-            key=KEY,
-            repo_root=tmp_path,
-            capture_dir=tmp_path / "captures",
-            report_dir=tmp_path / "reports",
-        )
-
-    assert handoff.read_text(encoding="utf-8") == f"- [ ] `{KEY}` pending\n"
-
-
-def test_close_tool_aborts_if_comparator_fails_without_touching_handoff(monkeypatch, tmp_path):
-    handoff = _write_handoff(tmp_path, f"- [ ] `{KEY}` pending\n")
-    _patch_clean_git(monkeypatch)
-
-    def fail(**_kwargs):
-        raise close.GateError("comparator_not_pass")
-
-    monkeypatch.setattr(close, "regenerate_record_for_key", fail)
-
-    with pytest.raises(close.GateError, match="comparator_not_pass"):
-        close.close_visual_key(
-            key=KEY,
-            repo_root=tmp_path,
-            capture_dir=tmp_path / "captures",
-            report_dir=tmp_path / "reports",
-        )
-
-    assert handoff.read_text(encoding="utf-8") == f"- [ ] `{KEY}` pending\n"
-
-
-def test_close_tool_pass_writes_versioned_record_and_handoff_note(monkeypatch, tmp_path):
-    _write_handoff(tmp_path, f"- [ ] `{KEY}` pending\n")
-    _patch_clean_git(monkeypatch)
-    build = _build()
-    monkeypatch.setattr(close, "regenerate_record_for_key", lambda **_kwargs: build)
-
-    result = close.close_visual_key(
-        key=KEY,
-        repo_root=tmp_path,
-        capture_dir=tmp_path / "captures",
-        report_dir=tmp_path / "reports",
-    )
-
-    assert result.record_sha256 == build.record_sha256
-    record_path = tmp_path / build.record_path
-    assert record_path.exists()
-    assert json.loads(record_path.read_text(encoding="utf-8")) == build.record
-    handoff = (tmp_path / "VISUAL_REPAIR_HANDOFF.md").read_text(encoding="utf-8")
-    assert f"- [x] `{KEY}` pending" in handoff
-    assert f"  - evidence: {build.record_sha256}" in handoff
-    assert f"  - evidence-record: {build.record_path.as_posix()}" in handoff
-    assert f"  - commit: {FIX_COMMIT}" in handoff
-    assert "  - closed-by: close_visual_key.py" in handoff
-
-
-def test_close_visual_key_modal_runs_modal_audit(monkeypatch, tmp_path):
-    """When the canonical manifest marks a key as modal, close_visual_key must run
-    the modal backdrop audit and record its hash in the evidence record."""
-    modal_key = "suite:dbt-practice-stop@light"
-    _write_handoff(tmp_path, f"- [ ] `{modal_key}` pending\n")
-    _patch_clean_git(monkeypatch)
-
-    # Fake modal audit report
-    audit_dir = tmp_path / "reports" / "modal_audit_suite-dbt-practice-stop-light"
-    audit_dir.mkdir(parents=True)
-    audit_path = audit_dir / "AUDIT.json"
-    audit_path.write_text(json.dumps({"summary": {"test_blur_pass": True}}, sort_keys=True), encoding="utf-8")
-
-    # Mock everything expensive; only test the orchestration decision
-    monkeypatch.setattr(close, "sha256_file", lambda path: "a" * 64)
-    monkeypatch.setattr(close, "stable_json_file_sha256", lambda path: "b" * 64)
-    monkeypatch.setattr(close, "run_anti_fraud", lambda repo_root: None)
-    monkeypatch.setattr(close, "run_capture", lambda repo_root, parsed, capture_dir: None)
-    monkeypatch.setattr(close, "_ensure_modal_backdrop_capture", lambda repo_root, parsed, capture_dir: None)
-    monkeypatch.setattr(close, "run_comparator", lambda repo_root, parsed, capture_dir, report_dir: report_path)
-    monkeypatch.setattr(close, "run_vas", lambda repo_root, key, sidecar_path: None)
-    monkeypatch.setattr(close, "run_modal_audit", lambda repo_root, parsed, capture_dir, report_dir: audit_path)
-    monkeypatch.setattr(close, "locate_capture_artifacts", lambda capture_dir, key: (Path("m.json"), Path("p.png"), Path("s.json")))
-    monkeypatch.setattr(close, "is_modal_key", lambda repo_root, key: True)
-
-    # Minimal report for build_evidence_record
-    report_path = tmp_path / "LAYERED_VISUAL_REPORT.json"
-    report_path.write_text(
-        json.dumps(
-            {
-                "report_evidence_valid": True,
-                "results": [
-                    {
-                        "key": modal_key,
-                        "status": "PASS",
-                        "suspicious_perfect_match": False,
-                        "near_perfect_match": False,
-                        "metrics": {"changed_pixel_ratio": 0, "mean_abs_diff": 0, "windowed_ssim": 1},
-                        "layout": {"max_bbox_delta_px": None},
-                    }
-                ],
-            },
-            sort_keys=True,
-        ),
-        encoding="utf-8",
-    )
-    monkeypatch.setattr(close, "run_comparator", lambda repo_root, parsed, capture_dir, report_dir: report_path)
-
-    build = close.regenerate_record_for_key(
-        repo_root=tmp_path,
-        key=modal_key,
-        commit_head=FIX_COMMIT,
-        capture_dir=tmp_path / "captures",
-        report_dir=tmp_path / "reports",
-    )
-
-    assert build.record["modal_audit_sha256"] is not None
-    assert build.record["modal_audit_sha256"] == close.stable_json_file_sha256(audit_path)
-
-
-def _write_capture_manifest(capture_dir: Path, results: list[dict]) -> None:
-    capture_dir.mkdir(parents=True, exist_ok=True)
-    (capture_dir / "CAPTURE_MANIFEST.json").write_text(
-        json.dumps({"results": results}, ensure_ascii=False), encoding="utf-8"
-    )
-
-
-def test_ensure_modal_backdrop_capture_preserves_modal_manifest_entry(monkeypatch, tmp_path):
-    """Regression: capture_v8.py fully overwrites CAPTURE_MANIFEST.json on every
-    invocation instead of appending to it. Capturing the modal's back-screen key
-    straight into the modal's own capture_dir used to erase the modal key's
-    manifest entry, breaking locate_capture_artifacts with
-    capture_manifest_missing_key (reproduced against `hub:detalle-resumen-ia-0@light`).
-    """
-    modal_key = "hub:detalle-resumen-ia-0@light"
-    back_key = "hub:detalle@light"
-    capture_dir = tmp_path / "captures"
-
-    modal_png = "hub-detalle-resumen-ia-0-light-960x600.png"
-    back_png = "hub-detalle-light-960x600.png"
-
-    _write_capture_manifest(
-        capture_dir,
-        [
-            {
-                "key": modal_key,
-                "file": modal_png,
-                "app": "hub",
-                "view": "detalle-resumen-ia-0",
-                "theme": "light",
-            }
-        ],
-    )
-    (capture_dir / modal_png).write_bytes(b"modal-png")
-
-    sidecar_dir = capture_dir.parent / "_visual_auditor_spec"
-    sidecar_dir.mkdir(parents=True, exist_ok=True)
-    (sidecar_dir / "introspection.json").write_text("{}", encoding="utf-8")
-
-    def fake_run_capture_for_key(_repo_root, key, out_dir):
-        assert key == back_key
-        # Simulate capture_v8.py: a fresh out-dir gets its own, unrelated manifest
-        # with no knowledge of anything captured previously elsewhere.
-        _write_capture_manifest(
-            out_dir,
-            [
-                {
-                    "key": back_key,
-                    "file": back_png,
-                    "app": "hub",
-                    "view": "detalle",
-                    "theme": "light",
-                }
-            ],
-        )
-        (out_dir / back_png).write_bytes(b"back-png")
-
-    monkeypatch.setattr(close, "run_capture_for_key", fake_run_capture_for_key)
-    monkeypatch.setattr(close, "_modal_back_screen_key", lambda repo_root, key: back_key)
-
-    parsed = close.parse_key(modal_key)
-    close._ensure_modal_backdrop_capture(tmp_path, parsed, capture_dir)
-
-    # The modal key must still be resolvable after merging the back-screen capture.
-    manifest_path, png_path, _sidecar = close.locate_capture_artifacts(capture_dir, modal_key)
-    assert manifest_path == capture_dir / "CAPTURE_MANIFEST.json"
-    assert png_path == capture_dir / modal_png
-
-    # The back-screen PNG must land alongside it for the modal backdrop audit.
-    assert (capture_dir / back_png).exists()
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    keys = {r.get("key") for r in manifest["results"]}
-    assert keys == {modal_key, back_key}
-
-
-def test_stable_json_file_sha256_ignores_modal_audit_worktree_paths(tmp_path):
-    """Regression: audit_modal_backdrop_blur.py's AUDIT.json embeds the resolved
-    absolute path of the capture dirs (inputs.actual_dir / inputs.canonical_dir).
-    Every closure/replay run resolves these inside a freshly created, randomly
-    named temp worktree, so two independent runs over identical code/pixels
-    produced two different modal_audit_sha256 values (and thus two different
-    whole-record hashes) purely from path noise, breaking replay --regen for
-    every modal key."""
-    run1 = {
-        "inputs": {
-            "actual_dir": r"C:\Users\x\AppData\Local\Temp\nm_visual_worktree_aaaaaaaa\worktree\qa\_captures_v8",
-            "canonical_dir": r"C:\Users\x\AppData\Local\Temp\nm_visual_worktree_aaaaaaaa\worktree\qa\_mockup_canonical",
-            "keys": ["hub:detalle-resumen-ia-0@dark"],
-        },
-        "summary": {"test_blur_pass": True},
-    }
-    run2 = {
-        "inputs": {
-            "actual_dir": r"C:\Users\x\AppData\Local\Temp\nm_visual_worktree_bbbbbbbb\worktree\qa\_captures_v8",
-            "canonical_dir": r"C:\Users\x\AppData\Local\Temp\nm_visual_worktree_bbbbbbbb\worktree\qa\_mockup_canonical",
-            "keys": ["hub:detalle-resumen-ia-0@dark"],
-        },
-        "summary": {"test_blur_pass": True},
-    }
-    path1 = tmp_path / "audit1.json"
-    path2 = tmp_path / "audit2.json"
-    path1.write_text(json.dumps(run1), encoding="utf-8")
-    path2.write_text(json.dumps(run2), encoding="utf-8")
-
-    assert close.stable_json_file_sha256(path1) == close.stable_json_file_sha256(path2)
-
-
-def test_record_hash_is_deterministic_for_same_logical_inputs():
+def test_record_hash_is_canonical_and_key_parser_is_strict():
     left = {"b": [2, 1], "a": {"z": "same", "n": 1}}
     right = {"a": {"n": 1, "z": "same"}, "b": [2, 1]}
 
     assert close.canonical_record_sha256(left) == close.canonical_record_sha256(right)
+    assert close.parse_key(KEY).view == "home"
+    with pytest.raises(close.PreflightError, match="invalid_key"):
+        close.parse_key("suite:home@sepia")
 
 
-# ─── reopen (sanctioned revocation) ─────────────────────────────────────────
+def test_explicit_target_set_rejects_duplicates_and_unknown_manifest_keys(monkeypatch, tmp_path):
+    monkeypatch.setattr(close, "manifest_keys", lambda _root: (KEY,))
+
+    with pytest.raises(close.PreflightError, match="duplicate_target_key"):
+        close.resolve_target_set(tmp_path, [KEY, KEY])
+    with pytest.raises(close.PreflightError, match="target_key_not_in_manifest"):
+        close.resolve_target_set(tmp_path, ["suite:missing@light"])
 
 
-def _write_closed_fixture(root: Path, key: str = KEY) -> close.EvidenceBuild:
-    """A closed key with real record file + matching evidence note."""
-    build = _build(key)
-    record_path = root / build.record_path
-    record_path.parent.mkdir(parents=True, exist_ok=True)
-    record_path.write_text(
-        json.dumps(build.record, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+def test_vas_summary_requires_capture_contract_and_zero_blocking_findings(tmp_path):
+    sidecar = tmp_path / "introspection.json"
+    sidecar.write_text(
+        json.dumps(
+            [
+                {
+                    "surface_key": KEY,
+                    "fail_count": 0,
+                    "divergences": [],
+                }
+            ]
+        ),
         encoding="utf-8",
     )
-    _write_handoff(
-        root,
-        f"- [x] `{key}` done\n"
-        f"  - evidence: {build.record_sha256}\n"
-        f"  - evidence-record: {build.record_path.as_posix()}\n"
-        f"  - commit: {FIX_COMMIT}\n"
-        "  - closed-by: close_visual_key.py\n",
+    capture = {
+        "success": True,
+        "technical_capture_valid": True,
+        "state_evidence_valid": True,
+        "capture_status": "CAPTURED_VALID",
+    }
+
+    summary, assertion = close.build_vas_summary(KEY, sidecar, capture, True)
+
+    assert summary == {
+        "schema": "nm_suite.vas_summary.v1",
+        "key": KEY,
+        "pass": True,
+        "fail_count": 0,
+        "high_count": 0,
+        "medium_count": 0,
+        "capture_valid": True,
+    }
+    assert assertion is None
+    capture["capture_status"] = "REQUIRES_DATA_STATE"
+    summary, _ = close.build_vas_summary(KEY, sidecar, capture, True)
+    assert summary["pass"] is False
+    assert summary["capture_valid"] is False
+
+
+def _write_capture(capture_dir: Path, key: str, run_id: str, *, commit: str = COMMIT) -> None:
+    capture_dir.mkdir(parents=True, exist_ok=True)
+    png_name = "suite-home-light-4x4.png"
+    Image.new("RGB", (4, 4), (10, 20, 30)).save(capture_dir / png_name)
+    sidecar = capture_dir.parent / "_visual_auditor_spec" / "introspection.json"
+    sidecar.parent.mkdir(parents=True, exist_ok=True)
+    sidecar.write_text(
+        json.dumps([{"surface_key": key, "fail_count": 0, "divergences": []}]),
+        encoding="utf-8",
     )
-    return build
+    (capture_dir / "CAPTURE_MANIFEST.json").write_text(
+        json.dumps(
+            {
+                "results": [
+                    {
+                        "key": key,
+                        "file": png_name,
+                        "success": True,
+                        "technical_capture_valid": True,
+                        "state_evidence_valid": True,
+                        "capture_status": "CAPTURED_VALID",
+                        "provenance": {
+                            "capture_path": str(capture_dir / png_name),
+                            "introspection_sidecar": str(sidecar),
+                            "introspection_entry_id": run_id,
+                            "git_head": commit,
+                        },
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
 
 
-def test_reopen_moves_record_and_rewrites_checkbox(monkeypatch, tmp_path):
-    build = _write_closed_fixture(tmp_path)
-    _patch_clean_git(monkeypatch)
+def _valid_report(path: Path, key: str = KEY) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "schema": "nm_suite.layered_report.v2",
+                "report_evidence_valid": True,
+                "report_scope": "PARTIAL",
+                "thresholds": {"min_ssim": 0.92},
+                "results": [
+                    {
+                        "key": key,
+                        "status": "PASS",
+                        "real_divergence": False,
+                        "suspicious_perfect_match": False,
+                        "near_perfect_match": False,
+                        "state_assertion_required": False,
+                        "findings": [],
+                        "metrics": {},
+                        "layout": {},
+                        "odiff": {"available": True, "diff_percentage": 1.0},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
 
-    result = close.reopen_visual_key(key=KEY, reason="cierre con gaming", repo_root=tmp_path)
 
-    assert result.revoked_evidence == build.record_sha256
-    assert not (tmp_path / build.record_path).exists()
-    revoked = tmp_path / "docs" / "closure_evidence" / "revoked" / f"{close.key_safe(KEY)}.json"
-    assert revoked.exists()
-    assert json.loads(revoked.read_text(encoding="utf-8")) == build.record
+def test_regenerate_builds_complete_v2_record_from_two_independent_captures(
+    monkeypatch, tmp_path
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / close.CANONICAL_MANIFEST).parent.mkdir(parents=True)
+    (repo / close.CANONICAL_MANIFEST).write_text("{}\n", encoding="utf-8")
+    canonical = repo / "canonical.png"
+    Image.new("RGB", (4, 4), (10, 20, 30)).save(canonical)
+    capture_dirs: list[Path] = []
 
-    handoff = (tmp_path / "VISUAL_REPAIR_HANDOFF.md").read_text(encoding="utf-8")
-    assert f"- [ ] `{KEY}` done" in handoff
-    assert "  - reopened: cierre con gaming" in handoff
-    assert f"  - revoked-evidence: {build.record_sha256}" in handoff
-    assert f"  - revoked-record: docs/closure_evidence/revoked/{close.key_safe(KEY)}.json" in handoff
-    assert "  - evidence: " not in handoff
-    assert "  - evidence-record: " not in handoff
-    assert "  - closed-by:" not in handoff
+    def fake_capture(_repo, _parsed, capture_dir):
+        capture_dirs.append(Path(capture_dir))
+        _write_capture(Path(capture_dir), KEY, f"run-{len(capture_dirs)}")
+
+    def fake_comparator(_repo, _parsed, _capture_dir, report_dir):
+        path = Path(report_dir) / "LAYERED_VISUAL_REPORT.json"
+        _valid_report(path)
+        return path
+
+    antifraud = {
+        "schema": "nm_suite.antifraud_summary.v1",
+        "mode": "all",
+        "scope": "default_full",
+        "clean": True,
+        "count": 0,
+        "violations": [],
+    }
+    monkeypatch.setattr(close, "manifest_keys", lambda _root: (KEY,))
+    monkeypatch.setattr(close, "run_anti_fraud", lambda _root, _path: antifraud)
+    monkeypatch.setattr(close, "run_capture", fake_capture)
+    monkeypatch.setattr(close, "is_modal_key", lambda _root, _key: False)
+    monkeypatch.setattr(close, "run_comparator", fake_comparator)
+    monkeypatch.setattr(close, "run_vas", lambda _root, _key, _sidecar: True)
+    monkeypatch.setattr(close, "canonical_png_path", lambda _root, _key: canonical)
+    monkeypatch.setattr(close, "measurement_tool_hashes", lambda _root: {"qa/tool.py": "c" * 64})
+    monkeypatch.setattr(close, "thresholds_sha256", lambda: "d" * 64)
+    monkeypatch.setattr(
+        close,
+        "build_source_scope",
+        lambda key, **_kwargs: {"schema": "nm_suite.source_scope.v1", "key": key},
+    )
+
+    build = close.regenerate_record_for_key(
+        repo_root=repo,
+        key=KEY,
+        commit_head=COMMIT,
+        target_set={KEY, "suite:home@dark"},
+        capture_dir=repo / "qa" / "_captures_v8",
+        report_dir=repo / "reports",
+    )
+
+    assert len(capture_dirs) == 2
+    assert capture_dirs[0].parent != capture_dirs[1].parent
+    record = build.record
+    assert record["schema"] == close.EVIDENCE_SCHEMA
+    assert record["result"] == "PASS"
+    assert record["commit_head"] == COMMIT
+    assert record["canonical_png_sha256"] == close.sha256_binary(canonical)
+    assert record["capture_png_sha256"] == close.sha256_binary(
+        capture_dirs[0] / "suite-home-light-4x4.png"
+    )
+    assert record["manifest_sha256"] == close.sha256_text(repo / close.CANONICAL_MANIFEST)
+    assert record["tool_hashes"] == {"qa/tool.py": "c" * 64}
+    assert record["thresholds_sha256"] == "d" * 64
+    assert record["determinism"]["pass"] is True
+    assert record["determinism"]["first_run_id"] != record["determinism"]["second_run_id"]
+    assert record["target_set"] == ["suite:home@dark", KEY]
+    assert record["policy"] == {"allow": True, "reasons": []}
+    assert build.record_path == close.active_record_path(KEY)
 
 
-def test_reopen_requires_reason(monkeypatch, tmp_path):
-    _write_closed_fixture(tmp_path)
-    _patch_clean_git(monkeypatch)
+def test_close_policy_failure_never_publishes_active_record(monkeypatch, tmp_path):
+    _patch_repo_guards(monkeypatch)
+    handoff = tmp_path / close.HANDOFF
+    handoff.write_text("original\n", encoding="utf-8")
+    candidate = _build()
+    monkeypatch.setattr(
+        close,
+        "regenerate_record_for_key",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            close.PolicyError(["comparator_not_pass"], candidate)
+        ),
+    )
 
+    with pytest.raises(close.PolicyError, match="comparator_not_pass"):
+        close.close_visual_key(
+            key=KEY,
+            repo_root=tmp_path,
+            target_set={KEY},
+            capture_dir=tmp_path / "capture-a",
+            second_capture_dir=tmp_path / "capture-b",
+            report_dir=tmp_path / "reports",
+        )
+
+    assert not (tmp_path / close.active_record_path(KEY)).exists()
+    assert handoff.read_text(encoding="utf-8") == "original\n"
+
+
+def test_close_publishes_record_and_generated_handoff_atomically(monkeypatch, tmp_path):
+    _patch_repo_guards(monkeypatch)
+    (tmp_path / close.HANDOFF).write_text("original\n", encoding="utf-8")
+    build = _build()
+    monkeypatch.setattr(close, "regenerate_record_for_key", lambda **_kwargs: build)
+    monkeypatch.setattr(close, "load_active_records", lambda _root: {})
+    monkeypatch.setattr(
+        close,
+        "render_handoff",
+        lambda _root, active_records: f"generated:{','.join(sorted(active_records))}\n",
+    )
+
+    result = close.close_visual_key(
+        key=KEY,
+        repo_root=tmp_path,
+        target_set={KEY},
+        capture_dir=tmp_path / "capture-a",
+        second_capture_dir=tmp_path / "capture-b",
+        report_dir=tmp_path / "reports",
+    )
+
+    assert result == build
+    assert json.loads((tmp_path / build.record_path).read_text(encoding="utf-8")) == build.record
+    assert (tmp_path / close.HANDOFF).read_text(encoding="utf-8") == f"generated:{KEY}\n"
+
+
+def test_renderer_failure_rolls_back_record_and_handoff(monkeypatch, tmp_path):
+    _patch_repo_guards(monkeypatch)
+    handoff = tmp_path / close.HANDOFF
+    handoff.write_text("original\n", encoding="utf-8")
+    monkeypatch.setattr(close, "regenerate_record_for_key", lambda **_kwargs: _build())
+    monkeypatch.setattr(close, "load_active_records", lambda _root: {})
+    monkeypatch.setattr(
+        close,
+        "render_handoff",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(ValueError("renderer failed")),
+    )
+
+    with pytest.raises(ValueError, match="renderer failed"):
+        close.close_visual_key(
+            key=KEY,
+            repo_root=tmp_path,
+            target_set={KEY},
+            capture_dir=tmp_path / "capture-a",
+            second_capture_dir=tmp_path / "capture-b",
+            report_dir=tmp_path / "reports",
+        )
+
+    assert not (tmp_path / close.active_record_path(KEY)).exists()
+    assert handoff.read_text(encoding="utf-8") == "original\n"
+
+
+def test_near_threshold_creates_pending_candidate_without_closing(monkeypatch, tmp_path):
+    _patch_repo_guards(monkeypatch)
+    handoff = tmp_path / close.HANDOFF
+    handoff.write_text("original\n", encoding="utf-8")
+    candidate = _build()
+    candidate.record["report_sha256"] = "e" * 64
+    monkeypatch.setattr(
+        close,
+        "regenerate_record_for_key",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            close.PolicyError(["near_threshold_requires_verified_approval"], candidate)
+        ),
+    )
+
+    with pytest.raises(close.ApprovalRequired) as raised:
+        close.close_visual_key(
+            key=KEY,
+            repo_root=tmp_path,
+            target_set={KEY},
+            capture_dir=tmp_path / "capture-a",
+            second_capture_dir=tmp_path / "capture-b",
+            report_dir=tmp_path / "reports",
+        )
+
+    pending = raised.value.pending_path
+    assert pending.exists()
+    payload = json.loads(pending.read_text(encoding="utf-8"))
+    assert payload["candidate_sha256"] == close.canonical_record_sha256(payload["candidate"])
+    assert not (tmp_path / close.active_record_path(KEY)).exists()
+    assert handoff.read_text(encoding="utf-8") == "original\n"
+
+
+def test_resume_pending_uses_same_measurement_without_recapture(monkeypatch, tmp_path):
+    _patch_repo_guards(monkeypatch)
+    candidate = _record()
+    candidate.update(
+        {
+            "result": "BLOCKED",
+            "report": {"report_sha256": "b" * 64},
+            "vas_summary": {},
+            "antifraud": {},
+            "determinism": {},
+            "state_assertion": None,
+            "target_set": [KEY],
+            "human_review": {"approval_url": None, "comment_id": None, "author": None},
+            "policy": {"allow": False, "reasons": ["near_threshold_requires_verified_approval"]},
+        }
+    )
+    pending = tmp_path / "pending.json"
+    pending.write_text(
+        json.dumps(
+            {
+                "schema": close.PENDING_SCHEMA,
+                "candidate_sha256": close.canonical_record_sha256(candidate),
+                "candidate": candidate,
+            }
+        ),
+        encoding="utf-8",
+    )
+    approval = {
+        "verified": True,
+        "key": KEY,
+        "report_sha256": "b" * 64,
+        "approval_url": "https://github.com/Rybjuani/nm_suite/issues/1#issuecomment-2",
+        "comment_id": 2,
+        "author": "Rybjuani",
+    }
+    monkeypatch.setattr(close, "is_source_scope_stale", lambda *_args, **_kwargs: False)
+    monkeypatch.setattr(close, "_pending_provenance_is_current", lambda *_args: True)
+    monkeypatch.setattr(close, "decide", lambda *_args: (True, []))
+    monkeypatch.setattr(close, "load_active_records", lambda _root: {})
+    monkeypatch.setattr(close, "render_handoff", lambda *_args, **_kwargs: "closed\n")
+    monkeypatch.setattr(
+        close,
+        "run_capture",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("recaptured")),
+    )
+
+    build = close.resume_pending_closure(
+        pending_path=pending,
+        approval=approval,
+        repo_root=tmp_path,
+    )
+
+    assert build.record["result"] == "PASS"
+    assert build.record["human_review"]["comment_id"] == 2
+    assert json.loads((tmp_path / build.record_path).read_text())["policy"]["allow"] is True
+
+
+def test_resume_pending_rejects_tampered_candidate(monkeypatch, tmp_path):
+    _patch_repo_guards(monkeypatch)
+    candidate = _record()
+    pending = tmp_path / "pending.json"
+    pending.write_text(
+        json.dumps(
+            {
+                "schema": close.PENDING_SCHEMA,
+                "candidate_sha256": "0" * 64,
+                "candidate": candidate,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(close.PreflightError, match="pending_closure_integrity_mismatch"):
+        close.resume_pending_closure(pending_path=pending, approval={}, repo_root=tmp_path)
+
+
+def test_reopen_moves_immutable_record_into_hashed_revocation_receipt(monkeypatch, tmp_path):
+    _patch_repo_guards(monkeypatch)
+    record = _record()
+    active = _write_active(tmp_path, record)
+    (tmp_path / close.HANDOFF).write_text("closed\n", encoding="utf-8")
+    monkeypatch.setattr(close, "render_handoff", lambda *_args, **_kwargs: "open\n")
+
+    result = close.reopen_visual_key(key=KEY, reason="stale_fail", repo_root=tmp_path)
+
+    assert not active.exists()
+    receipt_path = tmp_path / result.revoked_record_path
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    assert receipt["schema"] == close.REVOCATION_SCHEMA
+    assert receipt["reason"] == "stale_fail"
+    assert receipt["revoked_record"] == record
+    assert receipt["revoked_record_sha256"] == close.canonical_record_sha256(record)
+    assert (tmp_path / close.HANDOFF).read_text(encoding="utf-8") == "open\n"
+
+
+def test_reopen_requires_reason_and_active_record(monkeypatch, tmp_path):
+    _patch_repo_guards(monkeypatch)
     with pytest.raises(close.PreflightError, match="missing_reopen_reason"):
-        close.reopen_visual_key(key=KEY, reason="  ", repo_root=tmp_path)
-
-
-def test_reopen_rejects_open_key(monkeypatch, tmp_path):
-    _write_handoff(tmp_path, f"- [ ] `{KEY}` pending\n")
-    _patch_clean_git(monkeypatch)
-
+        close.reopen_visual_key(key=KEY, reason=" ", repo_root=tmp_path)
     with pytest.raises(close.PreflightError, match="key_not_closed"):
-        close.reopen_visual_key(key=KEY, reason="x", repo_root=tmp_path)
+        close.reopen_visual_key(key=KEY, reason="invalid", repo_root=tmp_path)
 
 
-def test_reopen_rejects_legacy_closure(monkeypatch, tmp_path):
-    _write_handoff(
-        tmp_path,
-        f"- [x] `{KEY}` old\n"
-        "  - legacy: true\n"
-        "  - legacy-reason: pre_replay_era\n",
-    )
-    _patch_clean_git(monkeypatch)
+def test_refresh_replaces_pass_and_reopens_policy_fail_only(monkeypatch, tmp_path):
+    dark = "suite:home@dark"
+    _patch_repo_guards(monkeypatch, target_set=(KEY, dark))
+    first = _record(KEY, commit="1" * 40)
+    second = _record(dark, commit="2" * 40)
+    _write_active(tmp_path, first)
+    _write_active(tmp_path, second)
+    (tmp_path / close.HANDOFF).write_text("closed\n", encoding="utf-8")
 
-    with pytest.raises(close.PreflightError, match="legacy_key_reopen_unsupported"):
-        close.reopen_visual_key(key=KEY, reason="x", repo_root=tmp_path)
+    @contextmanager
+    def fake_worktree(_root, _commit):
+        yield tmp_path
 
+    refreshed = _build(KEY, commit=COMMIT)
 
-def test_reopen_rejects_tampered_record(monkeypatch, tmp_path):
-    build = _write_closed_fixture(tmp_path)
-    record_path = tmp_path / build.record_path
-    tampered = dict(build.record)
-    tampered["metrics"] = dict(tampered["metrics"], changed_pixel_ratio=0.0)
-    record_path.write_text(json.dumps(tampered, sort_keys=True), encoding="utf-8")
-    _patch_clean_git(monkeypatch)
+    def regenerate(**kwargs):
+        if kwargs["key"] == KEY:
+            return refreshed
+        raise close.PolicyError(["comparator_not_pass"], _build(dark))
 
-    with pytest.raises(close.PreflightError, match="evidence_integrity_mismatch"):
-        close.reopen_visual_key(key=KEY, reason="x", repo_root=tmp_path)
+    monkeypatch.setattr(close, "temporary_worktree", fake_worktree)
+    monkeypatch.setattr(close, "regenerate_record_for_key", regenerate)
+    monkeypatch.setattr(close, "render_handoff", lambda *_args, **_kwargs: "mixed\n")
 
-    # Nothing moved, nothing rewritten.
-    assert record_path.exists()
-    assert "- [x]" in (tmp_path / "VISUAL_REPAIR_HANDOFF.md").read_text(encoding="utf-8")
+    result = close.refresh_evidence(keys=[KEY, dark], repo_root=tmp_path)
 
-
-# ─── reopen_legacy_all (governance bulk reset) ──────────────────────────────
-
-
-def test_reopen_legacy_all_flips_only_legacy_and_strips_notes(tmp_path):
-    handoff = (
-        "## Checklist\n"
-        "\n"
-        "### Fam\n"
-        "- [x] `suite:legacy-a@light` - severity=high; changed=0.20\n"
-        "  - legacy: true\n"
-        "  - legacy-reason: pre_replay_era\n"
-        "  - Closure evidence (2026): manual panel review, no overlay.\n"
-        "- [x] `suite:evidence-b@light` - severity=high; changed=0.05\n"
-        "  - evidence: " + "d" * 64 + "\n"
-        "  - evidence-record: docs/closure_evidence/suite_evidence-b-light.json\n"
-        "  - commit: " + "a" * 40 + "\n"
-        "- [ ] `suite:open-c@light` - severity=medium; changed=0.09\n"
-        "- [x] `suite:legacy-d@dark` - severity=medium; changed=0.10\n"
-        "  - legacy: true\n"
-    )
-    path = _write_handoff(tmp_path, handoff)
-
-    reopened = close.reopen_legacy_all(repo_root=tmp_path)
-
-    assert reopened == ["suite:legacy-a@light", "suite:legacy-d@dark"]
-    text = path.read_text(encoding="utf-8")
-    # legacy items are now open, with notes stripped
-    assert "- [ ] `suite:legacy-a@light`" in text
-    assert "- [ ] `suite:legacy-d@dark`" in text
-    assert "legacy: true" not in text
-    assert "manual panel review" not in text
-    # evidence-backed closure untouched
-    assert "- [x] `suite:evidence-b@light`" in text
-    assert "evidence: " + "d" * 64 in text
-    # already-open item untouched
-    assert "- [ ] `suite:open-c@light`" in text
-    # inline metadata preserved on reopened line (target_scope tiers on it)
-    assert "severity=high; changed=0.20" in text
+    assert result == close.RefreshResult((KEY,), (dark,))
+    assert json.loads((tmp_path / close.active_record_path(KEY)).read_text())["commit_head"] == COMMIT
+    assert not (tmp_path / close.active_record_path(dark)).exists()
+    receipts = list((tmp_path / close.REVOKED_DIR).glob("*.json"))
+    assert len(receipts) == 1
+    assert json.loads(receipts[0].read_text())["reason"].startswith("stale_fail:")
 
 
-def test_reopen_legacy_all_is_idempotent(tmp_path):
-    handoff = (
-        "## Checklist\n"
-        "- [x] `suite:legacy-a@light` - severity=high\n"
-        "  - legacy: true\n"
-    )
-    _write_handoff(tmp_path, handoff)
-    assert close.reopen_legacy_all(repo_root=tmp_path) == ["suite:legacy-a@light"]
-    # second run finds nothing
-    assert close.reopen_legacy_all(repo_root=tmp_path) == []
+def test_modal_back_screen_merge_preserves_both_manifest_entries(monkeypatch, tmp_path):
+    modal_key = "hub:detalle-resumen-ia-0@light"
+    back_key = "hub:detalle@light"
+    capture_dir = tmp_path / "captures"
+    _write_capture(capture_dir, modal_key, "modal")
+
+    def fake_back_capture(_root, key, out_dir):
+        assert key == back_key
+        _write_capture(out_dir, back_key, "back")
+
+    monkeypatch.setattr(close, "_modal_back_screen_key", lambda _root, _key: back_key)
+    monkeypatch.setattr(close, "run_capture_for_key", fake_back_capture)
+    close._ensure_modal_backdrop_capture(tmp_path, close.parse_key(modal_key), capture_dir)
+
+    manifest = json.loads((capture_dir / "CAPTURE_MANIFEST.json").read_text())
+    assert {_key.get("key") for _key in manifest["results"]} == {modal_key, back_key}
+
+
+def test_stable_json_hash_ignores_random_worktree_paths(tmp_path):
+    left = tmp_path / "left.json"
+    right = tmp_path / "right.json"
+    left.write_text(json.dumps({"actual_dir": "C:/temp/a", "summary": {"pass": True}}))
+    right.write_text(json.dumps({"actual_dir": "C:/temp/b", "summary": {"pass": True}}))
+
+    assert close.stable_json_file_sha256(left) == close.stable_json_file_sha256(right)
+
+
+def test_legacy_bulk_reopen_api_and_cli_are_removed():
+    assert not hasattr(close, "reopen_legacy_all")
+    with pytest.raises(SystemExit) as raised:
+        close.main(["--reopen-legacy-all"])
+    assert raised.value.code == 2
