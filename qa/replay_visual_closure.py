@@ -1,55 +1,136 @@
 #!/usr/bin/env python3
-"""Replay auditor for visual closure evidence records."""
+"""Independent structural and full-regeneration visual-closure replay."""
 
 from __future__ import annotations
 
 import argparse
+import ast
+import hashlib
 import json
+import os
 import re
+import shutil
 import subprocess
 import sys
-from dataclasses import dataclass, field
+import tempfile
+from collections.abc import Callable, Iterable, Mapping
+from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
+
+try:
+    from qa.approval_verifier import verify_approval
+    from qa.closure_policy import (
+        DETERMINISM_CHANGED_RATIO_LIMIT,
+        DETERMINISM_SCHEMA,
+        STATE_ASSERTION_SCHEMA,
+        VAS_SUMMARY_SCHEMA,
+        decide,
+    )
+    from qa.hash_utils import sha256_binary, sha256_canonical_json, sha256_text
+    from qa.render_handoff import render_handoff
+    from qa.surface_scope import (
+        CANONICAL_MANIFEST,
+        ROOT,
+        is_source_scope_stale,
+        manifest_key,
+        manifest_keys,
+        source_scope_matches_revision,
+        unmapped_visual_sources,
+    )
+except ModuleNotFoundError:  # direct ``python qa/replay_visual_closure.py`` execution
+    from approval_verifier import verify_approval  # type: ignore[no-redef]
+    from closure_policy import (  # type: ignore[no-redef]
+        DETERMINISM_CHANGED_RATIO_LIMIT,
+        DETERMINISM_SCHEMA,
+        STATE_ASSERTION_SCHEMA,
+        VAS_SUMMARY_SCHEMA,
+        decide,
+    )
+    from hash_utils import sha256_binary, sha256_canonical_json, sha256_text  # type: ignore[no-redef]
+    from render_handoff import render_handoff  # type: ignore[no-redef]
+    from surface_scope import (  # type: ignore[no-redef]
+        CANONICAL_MANIFEST,
+        ROOT,
+        is_source_scope_stale,
+        manifest_key,
+        manifest_keys,
+        source_scope_matches_revision,
+        unmapped_visual_sources,
+    )
 
 
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-
-from qa import close_visual_key
-
-CHECKBOX_RE = re.compile(r"^(?P<indent>\s*)-\s*\[(?P<state>[xX ])\]\s*(?P<body>.*)$")
-KEY_RE = close_visual_key.KEY_RE
-OPEN_RE = re.compile(r"^\s*-\s*\[\s\]")
-CHECKED_RE = re.compile(r"^\s*-\s*\[[xX]\]")
-NOTE_RE = re.compile(r"^\s*-\s*(?P<name>[A-Za-z0-9_-]+):\s*(?P<value>.*)$")
-R0_KERNEL_PATHS = (
+EVIDENCE_SCHEMA = "nm_suite.evidence_record.v2"
+ACTIVE_DIR = Path("docs") / "closure_evidence" / "active"
+HANDOFF = Path("VISUAL_REPAIR_HANDOFF.md")
+CANONICAL_DIR = Path("qa") / "_mockup_canonical"
+MODAL_AUDIT_TOOL = Path("tools") / "qa" / "audit_modal_backdrop_blur.py"
+EXPECTED_UNIVERSE_SIZE = 116
+KEY_RE = re.compile(r"^(?P<app>suite|hub):(?P<view>[^@\s]+)@(?P<theme>light|dark)$")
+RECORD_NAME_RE = re.compile(r"^(?P<app>suite|hub)_(?P<view>.+)-(?P<theme>light|dark)\.json$")
+CHECKBOX_RE = re.compile(
+    r"^\s*-\s*\[(?P<state>[xX ~])\]\s*`(?P<key>(?:suite|hub):[^`]+@(?:light|dark))`"
+)
+HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
+COMMIT_RE = re.compile(r"^[0-9a-f]{40,64}$")
+KERNEL_PATHS = (
+    "qa/anti_fraud_scan.py",
+    "qa/approval_verifier.py",
     "qa/capture_v8.py",
+    "qa/close_visual_key.py",
+    "qa/closure_policy.py",
+    "qa/hash_utils.py",
     "qa/layered_visual_compare.py",
     "qa/odiff_runner.py",
-    "qa/vas_gate.py",
-    "qa/vas_engine.py",
-    "qa/vas_introspect.py",
-    "qa/anti_fraud_scan.py",
-    "qa/close_visual_key.py",
+    "qa/render_handoff.py",
     "qa/replay_visual_closure.py",
-    "qa/spec_generator.py",
-    "qa/specs/specs.json",
-    "tools/qa/audit_modal_backdrop_blur.py",
-    ".github/workflows/visual-closure-replay.yml",
-    "qa/_mockup_canonical/",
-    "qa/pack canonico/",
+    "qa/state_probes.py",
+    "qa/surface_scope.py",
+    "qa/surface_notes.json",
+    "qa/target_scope.py",
+    "qa/vas_engine.py",
+    "qa/vas_gate.py",
+    "qa/vas_introspect.py",
+    "qa/run_visual.ps1",
+    "tools/qa/",
+    ".github/workflows/",
+    ".github/CODEOWNERS",
 )
+VOLATILE_JSON_KEYS = {
+    "generated_at",
+    "captured_at",
+    "elapsed_seconds",
+    "elapsed_ms",
+    "duration",
+    "duration_seconds",
+    "time",
+    "cwd",
+    "output_dir",
+    "command",
+    "command_args",
+    "argv",
+    "capture_path",
+    "capture_script",
+    "capture_manifest",
+    "introspection_sidecar",
+    "introspection_entry_id",
+    "matrix_paths",
+    "git_branch",
+    "git_tracked_dirty",
+    "tracked_dirty",
+    "tracked_status",
+    "actual_dir",
+    "canonical_dir",
+}
 
 
 @dataclass(frozen=True)
-class HandoffItem:
+class ParsedKey:
     key: str
-    state: str
-    line_no: int
-    line: str
-    notes: list[str] = field(default_factory=list)
+    app: str
+    view: str
+    theme: str
 
 
 @dataclass(frozen=True)
@@ -60,617 +141,870 @@ class ReplayFailure:
 
 @dataclass(frozen=True)
 class ReplayResult:
-    ok: bool
-    base: str
-    head: str
+    mode: str
+    active_records: int
+    checked_keys: int
     replayed_keys: int
-    skipped_legacy: int
-    failed_keys: list[ReplayFailure]
-    regenerated: bool = True
+    failures: tuple[ReplayFailure, ...]
+
+    @property
+    def passed(self) -> bool:
+        return not self.failures
 
 
-def _run_git(repo_root: Path, args: list[str]) -> subprocess.CompletedProcess[str]:
+def _run_text(
+    args: list[str],
+    *,
+    cwd: Path,
+    env: dict[str, str] | None = None,
+    timeout: int | None = None,
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        ["git", *args],
-        cwd=str(repo_root),
+        args,
+        cwd=str(cwd),
+        env=env,
         text=True,
         capture_output=True,
         encoding="utf-8",
         errors="replace",
+        timeout=timeout,
         check=False,
     )
 
 
-def _normalize_path(path: str) -> str:
-    return path.replace("\\", "/")
+def _run_bytes(args: list[str], *, cwd: Path) -> subprocess.CompletedProcess[bytes]:
+    return subprocess.run(args, cwd=str(cwd), capture_output=True, check=False)
 
 
-def _git_path(repo_root: Path, path: Path) -> str:
-    path = path if path.is_absolute() else repo_root / path
-    return _normalize_path(str(path.resolve().relative_to(repo_root.resolve())))
+def _normalize_path(path: str | Path) -> str:
+    return str(path).replace("\\", "/").lstrip("./")
+
+
+def key_safe(key: str) -> str:
+    return key.replace(":", "_").replace("@", "-")
+
+
+def parse_key(key: str) -> ParsedKey:
+    match = KEY_RE.fullmatch(key)
+    if not match:
+        raise ValueError(f"invalid visual key: {key!r}")
+    return ParsedKey(key, match.group("app"), match.group("view"), match.group("theme"))
+
+
+def _key_from_record_name(name: str) -> str:
+    match = RECORD_NAME_RE.fullmatch(name)
+    if not match:
+        return ""
+    return f"{match.group('app')}:{match.group('view')}@{match.group('theme')}"
 
 
 def git_rev_parse(repo_root: Path, revision: str) -> str:
-    proc = _run_git(repo_root, ["rev-parse", "--verify", f"{revision}^{{commit}}"])
+    proc = _run_text(["git", "rev-parse", "--verify", f"{revision}^{{commit}}"], cwd=repo_root)
     if proc.returncode != 0:
-        raise RuntimeError(f"invalid git revision: {revision}")
+        raise ValueError(f"invalid git revision: {revision}")
     return proc.stdout.strip()
 
 
-def git_rev_list(repo_root: Path, base: str, head: str = "HEAD") -> set[str]:
-    proc = _run_git(repo_root, ["rev-list", f"{base}..{head}"])
-    if proc.returncode != 0:
-        raise RuntimeError(proc.stderr.strip() or "git rev-list failed")
-    return {line.strip() for line in proc.stdout.splitlines() if line.strip()}
+def _is_ancestor(repo_root: Path, ancestor: str, descendant: str = "HEAD") -> bool:
+    proc = _run_text(["git", "merge-base", "--is-ancestor", ancestor, descendant], cwd=repo_root)
+    return proc.returncode == 0
 
 
-def git_handoff_diff(repo_root: Path, base: str, handoff: Path) -> str:
-    proc = _run_git(repo_root, ["diff", "--unified=0", base, "--", _git_path(repo_root, handoff)])
-    if proc.returncode != 0:
-        raise RuntimeError(proc.stderr.strip() or "git diff handoff failed")
-    return proc.stdout
-
-
-def git_show_text(repo_root: Path, revision: str, path: Path) -> str:
-    proc = _run_git(repo_root, ["show", f"{revision}:{_git_path(repo_root, path)}"])
-    if proc.returncode != 0:
-        raise RuntimeError(proc.stderr.strip() or f"git show failed: {revision}:{path}")
-    return proc.stdout
-
-
-def git_changed_files(repo_root: Path, base: str, head: str = "HEAD") -> list[str]:
-    # --no-renames: la detección de renames (default de git) pliega un move en
-    # una sola ruta nueva y esconde la desaparición de la ruta vieja — el audit
-    # necesita ver ambas (p.ej. record activo movido a revoked/ en un reopen).
-    proc = _run_git(repo_root, ["diff", "--name-only", "--no-renames", f"{base}..{head}"])
-    if proc.returncode != 0:
-        raise RuntimeError(proc.stderr.strip() or "git diff --name-only failed")
-    return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
-
-
-def _keys(line: str) -> list[str]:
-    return [match.group(0) for match in KEY_RE.finditer(line)]
-
-
-def parse_closed_checkbox_keys(diff_text: str) -> list[str]:
-    removed_open: set[str] = set()
-    closed: set[str] = set()
-    for line in diff_text.splitlines():
-        if line.startswith("---") or line.startswith("+++"):
-            continue
-        if line.startswith("@@"):
-            removed_open.clear()
-            continue
-        body = line[1:] if line[:1] in {"-", "+"} else line
-        if line.startswith("-") and OPEN_RE.search(body):
-            removed_open.update(_keys(body))
-        elif line.startswith("+") and CHECKED_RE.search(body):
-            added = set(_keys(body))
-            if removed_open:
-                closed.update(added & removed_open or added)
-            else:
-                closed.update(added)
-    return sorted(closed)
-
-
-def parse_handoff_items(text: str) -> list[HandoffItem]:
-    items: list[HandoffItem] = []
-    current_index: int | None = None
-    for line_no, line in enumerate(text.splitlines(), start=1):
-        match = CHECKBOX_RE.match(line)
-        if match:
-            keys = _keys(line)
-            if not keys:
-                current_index = None
-                continue
-            state = "closed" if match.group("state").lower() == "x" else "open"
-            items.append(HandoffItem(keys[0], state, line_no, line, []))
-            current_index = len(items) - 1
-            continue
-        if current_index is None:
-            continue
-        if not line.strip():
-            items[current_index].notes.append(line)
-            continue
-        if line.startswith(" ") or line.startswith("\t"):
-            items[current_index].notes.append(line)
-            continue
-        current_index = None
-    return items
-
-
-def first_item(items: list[HandoffItem], key: str, state: str | None = None) -> HandoffItem | None:
-    for item in items:
-        if item.key != key:
-            continue
-        if state is not None and item.state != state:
-            continue
-        return item
-    return None
-
-
-def note_values(item: HandoffItem) -> dict[str, str]:
-    values: dict[str, str] = {}
-    for line in item.notes:
-        match = NOTE_RE.match(line)
-        if match:
-            values[match.group("name")] = match.group("value").strip()
-    return values
-
-
-def find_legacy_migrations(base_items: list[HandoffItem], head_items: list[HandoffItem]) -> list[str]:
-    skipped: list[str] = []
-    for item in head_items:
-        if item.state != "closed":
-            continue
-        base_item = first_item(base_items, item.key, state="closed")
-        if base_item is None:
-            continue
-        notes = note_values(item)
-        if notes.get("legacy") == "true" and "evidence" not in notes:
-            skipped.append(item.key)
-    return sorted(set(skipped))
-
-
-def find_unmigrated_closures(base_items: list[HandoffItem], head_items: list[HandoffItem]) -> list[str]:
-    """Closed items carried over from base with neither evidence nor a legacy marker."""
-    unmigrated: list[str] = []
-    for item in head_items:
-        if item.state != "closed":
-            continue
-        if first_item(base_items, item.key, state="closed") is None:
-            continue
-        notes = note_values(item)
-        if "evidence" not in notes and notes.get("legacy") != "true":
-            unmigrated.append(item.key)
-    return sorted(set(unmigrated))
-
-
-EVIDENCE_NOTE_NAMES = ("evidence", "evidence-record", "commit")
-
-
-def evidence_changed_keys(base_items: list[HandoffItem], head_items: list[HandoffItem]) -> set[str]:
-    """Closed keys whose notes were added or edited relative to base.
-
-    Catches in-place tampering (or legacy re-closure) that never flips the
-    checkbox in the diff, so it would escape parse_closed_checkbox_keys.
-
-    Two detection modes:
-    - Legacy items (``legacy: true``): full-notes-block comparison. Legacy
-      closures were migrated pre-replay-era and carry freeform narrative
-      notes (e.g. "CLOSURE INVALIDATED (...)", "Partial fidelity repair
-      (...)") that don't fit the ``name: value`` shape ``NOTE_RE`` parses —
-      restricting the check to ``EVIDENCE_NOTE_NAMES`` let edits to that
-      narrative (or a fabricated evidence claim slipped into it) go
-      undetected, since most legacy items never carry
-      evidence/evidence-record/commit notes at all. Any line change under a
-      legacy ``[x]`` entry now forces re-validation.
-    - Non-legacy items: unchanged value-level comparison of
-      ``EVIDENCE_NOTE_NAMES`` only, so real evidence-based closures (real
-      ``docs/closure_evidence/*.json`` records) aren't over-flagged by
-      unrelated note churn.
-    """
-    changed: set[str] = set()
-    for item in head_items:
-        if item.state != "closed":
-            continue
-        notes = note_values(item)
-        base_item = first_item(base_items, item.key, state="closed")
-
-        if notes.get("legacy") == "true":
-            if base_item is None:
-                # No closed key at this position in base: either a fresh
-                # checkbox flip (parse_closed_checkbox_keys already covers
-                # that from the diff) or an untracked new closure — not this
-                # function's concern.
-                continue
-            base_notes = note_values(base_item)
-            if base_notes.get("legacy") != "true":
-                # The migration event itself (the retired one-shot
-                # migrate_legacy_closures tool stamping `legacy: true` for the
-                # first time): expected, whitelisted via find_legacy_migrations
-                # + skip_legacy, not tampering.
-                continue
-            if item.notes != base_item.notes:
-                changed.add(item.key)
-            continue
-
-        if not any(name in notes for name in EVIDENCE_NOTE_NAMES):
-            continue
-        if base_item is None:
-            changed.add(item.key)
-            continue
-        base_notes = note_values(base_item)
-        if any(notes.get(name) != base_notes.get(name) for name in EVIDENCE_NOTE_NAMES):
-            changed.add(item.key)
-    return changed
-
-
-EVIDENCE_RECORD_PREFIX = "docs/closure_evidence/"
-REVOKED_RECORD_PREFIX = EVIDENCE_RECORD_PREFIX + "revoked/"
-
-# Structural record-sanity bounds. Every genuine PASS record satisfies these
-# UNIFORM upper bounds (they are the loosest gate bars, applied to all surfaces
-# regardless of density), so checking them costs nothing yet rejects a lazily
-# fabricated record with implausible/out-of-bounds metrics — the CI (--no-regen)
-# path otherwise trusts a record whose canonical hash merely matches its own
-# note. Kept as literals (not imported) so replay stays stdlib-only on the CI
-# runner; a drift-guard test pins them to LayeredThresholds.
-# Sources in qa/layered_visual_compare.py::LayeredThresholds:
-#   RECORD_MAX_CHANGED_PIXEL_RATIO = text_dense_max_changed_pixel_ratio (0.10)
-#   RECORD_MAX_MEAN_ABS_DIFF       = max_mean_abs_diff (0.035)
-#   RECORD_MAX_BBOX_DELTA_PX       = max_bbox_shift_px (18)
-RECORD_MAX_CHANGED_PIXEL_RATIO = 0.10
-RECORD_MAX_MEAN_ABS_DIFF = 0.035
-RECORD_MAX_BBOX_DELTA_PX = 18
-
-
-def _record_sanity_failure(record_path: Path, key: str) -> ReplayFailure | None:
-    """Structural sanity of a closure record (no pixels): PASS + metric bounds.
-
-    Runs in BOTH replay modes. It enforces the invariant that close_visual_key
-    already guarantees when it writes a record (it only writes on a real PASS
-    within the gate bars), so a real record never trips it, while a fabricated
-    record claiming a non-PASS result or out-of-bounds metrics is caught even in
-    structural (--no-regen / CI) mode.
-    """
-    try:
-        payload = json.loads(record_path.read_text(encoding="utf-8"))
-    except Exception:
-        return ReplayFailure(key, "invalid_evidence_record")
-    if payload.get("schema") != close_visual_key.EVIDENCE_SCHEMA:
-        return ReplayFailure(key, "record_unexpected_schema")
-    if payload.get("result") != "PASS":
-        return ReplayFailure(key, "record_not_pass")
-    metrics = payload.get("metrics")
-    if not isinstance(metrics, dict):
-        return ReplayFailure(key, "record_metrics_missing")
-    try:
-        changed = float(metrics["changed_pixel_ratio"])
-        mad = float(metrics["mean_abs_diff"])
-    except (KeyError, TypeError, ValueError):
-        return ReplayFailure(key, "record_metrics_missing")
-    bbox = metrics.get("max_bbox_delta_px")
-    if changed > RECORD_MAX_CHANGED_PIXEL_RATIO or mad > RECORD_MAX_MEAN_ABS_DIFF:
-        return ReplayFailure(key, "record_metrics_out_of_bounds")
-    if bbox is not None:
-        try:
-            if int(bbox) > RECORD_MAX_BBOX_DELTA_PX:
-                return ReplayFailure(key, "record_metrics_out_of_bounds")
-        except (TypeError, ValueError):
-            return ReplayFailure(key, "record_metrics_out_of_bounds")
-    return None
-
-
-def _key_from_record_filename(name: str) -> str:
-    """Reverse of close_visual_key.key_safe: `<app>_<view>-<theme>.json` -> key."""
-    stem = name[:-5] if name.endswith(".json") else name
-    app, sep, rest = stem.partition("_")
-    if not sep or app not in {"suite", "hub"}:
-        return ""
-    view, sep, theme = rest.rpartition("-")
-    if not sep or theme not in {"light", "dark"} or not view:
-        return ""
-    return f"{app}:{view}@{theme}"
-
-
-def keys_for_changed_records(
-    head_items: list[HandoffItem],
-    changed_files: list[str],
-) -> tuple[set[str], list[str]]:
-    """Map changed evidence-record files to their closed keys; report orphans.
-
-    Sanctioned reopens (close_visual_key.py --reopen) are the ONE allowed
-    shape for a record change without a closed item: the active record
-    disappears, an identical file appears under revoked/, and the head
-    handoff has the key OPEN with matching `reopened:`/`revoked-record:`
-    notes. Anything else is an orphan (tampering)."""
-    changed_records = sorted(
-        {
-            _normalize_path(path)
-            for path in changed_files
-            if _normalize_path(path).startswith(EVIDENCE_RECORD_PREFIX)
-            and _normalize_path(path).endswith(".json")
-        }
+def git_changed_paths(repo_root: Path, base: str, head: str = "HEAD") -> list[str]:
+    proc = _run_text(
+        ["git", "diff", "--name-only", "--find-renames", f"{base}..{head}"],
+        cwd=repo_root,
     )
-    revoked_changed = {p for p in changed_records if p.startswith(REVOKED_RECORD_PREFIX)}
-    active_changed = [p for p in changed_records if p not in revoked_changed]
-    referenced: dict[str, str] = {}
-    reopened_notes: dict[str, dict[str, str]] = {}
-    for item in head_items:
-        notes = note_values(item)
-        if item.state == "closed":
-            record = notes.get("evidence-record", "")
-            if record:
-                referenced[_normalize_path(record)] = item.key
-        elif "reopened" in notes:
-            reopened_notes[item.key] = notes
-    keys: set[str] = set()
-    orphans: list[str] = []
-    sanctioned_revoked: set[str] = set()
-    for path in active_changed:
-        key = referenced.get(path)
-        if key:
-            keys.add(key)
-            continue
-        filename = path[len(EVIDENCE_RECORD_PREFIX):]
-        derived = _key_from_record_filename(filename)
-        revoked_path = REVOKED_RECORD_PREFIX + filename
-        notes = reopened_notes.get(derived, {})
-        if (
-            derived
-            and _normalize_path(notes.get("revoked-record", "")) == revoked_path
-            and notes.get("revoked-evidence")
-            and revoked_path in revoked_changed
-        ):
-            sanctioned_revoked.add(revoked_path)
-            continue
-        orphans.append(path)
-    for path in sorted(revoked_changed):
-        if path in sanctioned_revoked:
-            continue
-        # A revoked/ record may only appear as the counterpart of a
-        # sanctioned reopen in the same range.
-        filename = path[len(REVOKED_RECORD_PREFIX):]
-        derived = _key_from_record_filename(filename)
-        notes = reopened_notes.get(derived, {})
-        if (
-            derived
-            and _normalize_path(notes.get("revoked-record", "")) == path
-            and notes.get("revoked-evidence")
-            and (EVIDENCE_RECORD_PREFIX + filename) in changed_records
-        ):
-            continue
-        orphans.append(path)
-    return keys, orphans
+    if proc.returncode != 0:
+        raise ValueError("git changed-path query failed")
+    return sorted({_normalize_path(line) for line in proc.stdout.splitlines() if line.strip()})
 
 
-def kernel_paths_touched(paths: list[str]) -> list[str]:
+def kernel_paths_touched(paths: Iterable[str]) -> list[str]:
     touched: list[str] = []
-    for raw in paths:
-        path = _normalize_path(raw)
-        for marker in R0_KERNEL_PATHS:
-            normalized = marker.rstrip("/")
-            if marker.endswith("/"):
-                if path.startswith(marker):
-                    touched.append(raw)
-                    break
-            elif path == normalized:
-                touched.append(raw)
-                break
-    return touched
+    for value in paths:
+        path = _normalize_path(value)
+        if any(path == rule.rstrip("/") or (rule.endswith("/") and path.startswith(rule)) for rule in KERNEL_PATHS):
+            touched.append(path)
+    return sorted(set(touched))
 
 
-def _record_path(repo_root: Path, value: str) -> Path | None:
-    """Resolve an evidence-record note; only docs/closure_evidence/*.json is authority."""
-    if not value or Path(value).is_absolute():
-        return None
-    resolved = (repo_root / value).resolve()
-    evidence_root = (repo_root / "docs" / "closure_evidence").resolve()
-    if resolved.parent != evidence_root or resolved.suffix != ".json":
-        return None
-    return resolved
+def _changed_active_keys(paths: Iterable[str]) -> set[str]:
+    prefix = ACTIVE_DIR.as_posix() + "/"
+    keys: set[str] = set()
+    for value in paths:
+        path = _normalize_path(value)
+        if not path.startswith(prefix) or "/revoked/" in path or not path.endswith(".json"):
+            continue
+        relative = path[len(prefix) :]
+        if "/" not in relative:
+            key = _key_from_record_name(relative)
+            if key:
+                keys.add(key)
+    return keys
 
 
-def _record_hash(path: Path) -> str:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if payload.get("schema") != close_visual_key.EVIDENCE_SCHEMA:
-        raise ValueError(f"unexpected evidence schema: {payload.get('schema')!r}")
-    return close_visual_key.canonical_record_sha256(payload)
+def _git_show_bytes(repo_root: Path, revision: str, path: str) -> bytes:
+    proc = _run_bytes(["git", "show", f"{revision}:{path}"], cwd=repo_root)
+    if proc.returncode != 0:
+        raise ValueError(f"git show failed: {revision}:{path}")
+    return proc.stdout
 
 
-def regenerate_record_at_commit(repo_root: Path, key: str, commit: str) -> close_visual_key.EvidenceBuild:
-    with close_visual_key.temporary_worktree(repo_root, commit) as worktree:
-        return close_visual_key.regenerate_record_for_key(
-            repo_root=worktree,
-            key=key,
-            commit_head=commit,
+def _sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
+
+
+def _sha256_text_bytes(value: bytes) -> str:
+    normalized = value.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(normalized).hexdigest()
+
+
+def _thresholds_from_source(source: str) -> dict[str, int | float]:
+    tree = ast.parse(source)
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == "LayeredThresholds":
+            values: dict[str, int | float] = {}
+            for child in node.body:
+                if not isinstance(child, ast.AnnAssign) or not isinstance(child.target, ast.Name):
+                    continue
+                try:
+                    value = ast.literal_eval(child.value)
+                except (ValueError, TypeError):
+                    continue
+                if isinstance(value, (int, float)) and not isinstance(value, bool):
+                    values[child.target.id] = value
+            if values:
+                return values
+    raise ValueError("LayeredThresholds not found")
+
+
+def thresholds_sha_from_source(source: str) -> str:
+    return sha256_canonical_json(_thresholds_from_source(source))
+
+
+def _read_active_records(repo_root: Path) -> tuple[dict[str, dict[str, Any]], list[ReplayFailure]]:
+    records: dict[str, dict[str, Any]] = {}
+    failures: list[ReplayFailure] = []
+    root = repo_root / ACTIVE_DIR
+    if not root.exists():
+        return records, failures
+    for path in sorted(root.glob("*.json")):
+        filename_key = _key_from_record_name(path.name)
+        if not filename_key:
+            failures.append(ReplayFailure(path.name, "invalid_active_record_filename"))
+            continue
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            failures.append(ReplayFailure(filename_key, "invalid_active_record_json"))
+            continue
+        if not isinstance(payload, dict):
+            failures.append(ReplayFailure(filename_key, "invalid_active_record_root"))
+            continue
+        record_key = payload.get("key")
+        if record_key != filename_key:
+            failures.append(ReplayFailure(filename_key, "record_filename_key_mismatch"))
+            continue
+        if filename_key in records:
+            failures.append(ReplayFailure(filename_key, "duplicate_active_record"))
+            continue
+        records[filename_key] = payload
+    return records, failures
+
+
+def _record_sanity_reasons(record: Mapping[str, Any], key: str) -> list[str]:
+    reasons: list[str] = []
+    if record.get("schema") != EVIDENCE_SCHEMA:
+        reasons.append("record_schema_invalid")
+    if record.get("key") != key:
+        reasons.append("record_key_mismatch")
+    if record.get("result") != "PASS":
+        reasons.append("record_result_not_pass")
+    if not isinstance(record.get("commit_head"), str) or not COMMIT_RE.fullmatch(record["commit_head"]):
+        reasons.append("record_commit_invalid")
+    for field in (
+        "canonical_png_sha256",
+        "capture_png_sha256",
+        "manifest_sha256",
+        "capture_manifest_sha256",
+        "thresholds_sha256",
+        "report_sha256",
+        "sidecar_sha256",
+    ):
+        if not isinstance(record.get(field), str) or not HEX64_RE.fullmatch(record[field]):
+            reasons.append(f"{field}_invalid")
+    modal_hash = record.get("modal_audit_sha256")
+    if modal_hash is not None and (not isinstance(modal_hash, str) or not HEX64_RE.fullmatch(modal_hash)):
+        reasons.append("modal_audit_sha256_invalid")
+    tools = record.get("tool_hashes")
+    if not isinstance(tools, Mapping) or not tools:
+        reasons.append("tool_hashes_invalid")
+    elif any(
+        not isinstance(path, str)
+        or not isinstance(digest, str)
+        or not HEX64_RE.fullmatch(digest)
+        for path, digest in tools.items()
+    ):
+        reasons.append("tool_hashes_invalid")
+    source_scope = record.get("source_scope")
+    if not isinstance(source_scope, Mapping) or source_scope.get("key") != key:
+        reasons.append("source_scope_invalid")
+    report = record.get("report")
+    if not isinstance(report, Mapping) or report.get("report_sha256") != record.get("report_sha256"):
+        reasons.append("report_identity_mismatch")
+    for field in ("vas_summary", "antifraud", "determinism"):
+        if not isinstance(record.get(field), Mapping):
+            reasons.append(f"{field}_invalid")
+    targets = record.get("target_set")
+    if (
+        not isinstance(targets, list)
+        or not all(isinstance(value, str) for value in targets)
+        or len(targets) != len(set(targets))
+        or key not in targets
+    ):
+        reasons.append("target_set_invalid")
+    review = record.get("human_review")
+    if not isinstance(review, Mapping) or not {
+        "approval_url",
+        "comment_id",
+        "author",
+    }.issubset(review):
+        reasons.append("human_review_invalid")
+    policy = record.get("policy")
+    if not isinstance(policy, Mapping) or policy.get("allow") is not True or policy.get("reasons") != []:
+        reasons.append("stored_policy_invalid")
+    operation = record.get("operation")
+    if not isinstance(operation, Mapping) or operation.get("kind") not in {"close", "refresh"}:
+        reasons.append("operation_invalid")
+    return reasons
+
+
+def _report_near_threshold(record: Mapping[str, Any]) -> bool:
+    report = record.get("report")
+    if not isinstance(report, Mapping):
+        return False
+    results = report.get("results")
+    if not isinstance(results, list):
+        return False
+    return any(
+        isinstance(result, Mapping)
+        and isinstance(result.get("findings"), list)
+        and any(
+            isinstance(finding, str) and finding.startswith("near_threshold:")
+            for finding in result["findings"]
         )
+        for result in results
+    )
 
 
-def _validate_one_closure(
-    *,
+ApprovalChecker = Callable[..., dict[str, object]]
+
+
+def _verified_approval(
+    record: Mapping[str, Any],
     repo_root: Path,
-    item: HandoffItem,
-    audited_commits: set[str],
-    base_commit: str,
-    regenerate: bool = True,
-) -> ReplayFailure | None:
-    notes = note_values(item)
-    evidence = notes.get("evidence", "")
-    record_value = notes.get("evidence-record", "")
-    commit_value = notes.get("commit", "")
-    if not evidence:
-        return ReplayFailure(item.key, "missing_evidence")
-    if not commit_value:
-        return ReplayFailure(item.key, "missing_commit")
-    if not record_value:
-        return ReplayFailure(item.key, "missing_evidence_record")
+    checker: ApprovalChecker,
+) -> tuple[dict[str, object] | None, list[str]]:
+    if not _report_near_threshold(record):
+        return None, []
+    result = checker(
+        record.get("human_review"),
+        key=str(record.get("key", "")),
+        report_sha256=str(record.get("report_sha256", "")),
+        git_cwd=repo_root,
+    )
+    if result.get("verified") is not True:
+        return result, [f"approval_invalid:{result.get('reason', 'unknown')}"]
+    return result, []
 
+
+def _stored_policy_reasons(
+    record: Mapping[str, Any],
+    approval: object,
+) -> list[str]:
+    allow, reasons = decide(
+        record.get("report"),
+        record.get("vas_summary"),
+        record.get("antifraud"),
+        record.get("determinism"),
+        record.get("state_assertion"),
+        approval,
+        record.get("target_set"),
+    )
+    return [] if allow else [f"stored_policy_blocked:{reason}" for reason in reasons]
+
+
+def _historical_manifest_capture(
+    repo_root: Path,
+    commit: str,
+    key: str,
+) -> tuple[dict[str, Any], bytes]:
+    raw = _git_show_bytes(repo_root, commit, CANONICAL_MANIFEST.as_posix())
     try:
-        commit = git_rev_parse(repo_root, commit_value)
-    except RuntimeError:
-        return ReplayFailure(item.key, "commit_outside_range")
-    # ``audited_commits`` is ``git_rev_list(base..HEAD)`` = ``(base, HEAD]`` —
-    # it excludes ``base``. But ``close_visual_key.py`` records
-    # ``commit_head = HEAD`` *before* the worker creates the ``close:`` commit,
-    # so for sequential closures the FIRST record legitimately has
-    # ``commit_head == base``. Excluding it would falsely flag the first closure
-    # of every sequence as ``commit_outside_range`` (off-by-one between how
-    # ``commit_head`` is captured and how the replay range is defined). Accepting
-    # ``base`` only fixes that off-by-one — it does NOT weaken the gate: the
-    # evidence integrity is still verified by the regeneration path
-    # (``regenerate_record_at_commit`` re-captures at this commit and compares
-    # the hash), and ``base`` is still bound by R0 + record-sanity checks.
-    # VALID ONLY when ``base`` is the real commit immediately before the first
-    # ``close:`` of the range — see WORKER_VISUAL_QA_FLOW.md §4b for the guard.
-    if commit != base_commit and commit not in audited_commits:
-        return ReplayFailure(item.key, "commit_outside_range")
+        manifest = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("historical manifest invalid") from exc
+    matches = [
+        item
+        for item in manifest.get("captures", [])
+        if isinstance(item, dict) and manifest_key(item) == key
+    ]
+    if len(matches) != 1:
+        raise ValueError("historical manifest key mismatch")
+    return matches[0], raw
 
-    record_path = _record_path(repo_root, record_value)
-    if record_path is None:
-        return ReplayFailure(item.key, "invalid_evidence_record_path")
-    if not record_path.exists():
-        return ReplayFailure(item.key, "missing_evidence_record")
+
+def _class_a_reasons(record: Mapping[str, Any], repo_root: Path) -> list[str]:
+    reasons: list[str] = []
+    key = str(record.get("key", ""))
+    commit = str(record.get("commit_head", ""))
+    if not _is_ancestor(repo_root, commit):
+        return ["commit_head_not_ancestor"]
     try:
-        stored_hash = _record_hash(record_path)
-    except Exception:
-        return ReplayFailure(item.key, "invalid_evidence_record")
-    if stored_hash != evidence:
-        return ReplayFailure(item.key, "evidence_hash_mismatch")
+        capture, manifest_raw = _historical_manifest_capture(repo_root, commit, key)
+        canonical_rel = (CANONICAL_DIR / str(capture.get("file", ""))).as_posix()
+        canonical_raw = _git_show_bytes(repo_root, commit, canonical_rel)
+        if _sha256_bytes(canonical_raw) != record.get("canonical_png_sha256"):
+            reasons.append("canonical_png_historical_mismatch")
+        if _sha256_text_bytes(manifest_raw) != record.get("manifest_sha256"):
+            reasons.append("manifest_historical_mismatch")
+        tools = record.get("tool_hashes")
+        if isinstance(tools, Mapping):
+            for path, expected in tools.items():
+                if _sha256_text_bytes(_git_show_bytes(repo_root, commit, str(path))) != expected:
+                    reasons.append(f"tool_hash_mismatch:{path}")
+        comparator_source = _git_show_bytes(
+            repo_root, commit, "qa/layered_visual_compare.py"
+        ).decode("utf-8")
+        if thresholds_sha_from_source(comparator_source) != record.get("thresholds_sha256"):
+            reasons.append("thresholds_sha256_mismatch")
+        if not source_scope_matches_revision(
+            record.get("source_scope"), repo_root=repo_root, revision=commit
+        ):
+            reasons.append("source_scope_historical_mismatch")
+        current_canonical = repo_root / canonical_rel
+        if not current_canonical.is_file() or sha256_binary(current_canonical) != record.get(
+            "canonical_png_sha256"
+        ):
+            reasons.append("canonical_png_sha256_mismatch")
+        if sha256_text(repo_root / CANONICAL_MANIFEST) != record.get("manifest_sha256"):
+            reasons.append("manifest_sha256_mismatch")
+    except (OSError, UnicodeDecodeError, ValueError):
+        reasons.append("class_a_reproduction_failed")
+    if is_source_scope_stale(record.get("source_scope"), key, repo_root=repo_root):
+        reasons.append("stale_closure")
+    return reasons
 
-    sanity = _record_sanity_failure(record_path, item.key)
-    if sanity is not None:
-        return sanity
 
-    if not regenerate:
-        return None
-    try:
-        regenerated = regenerate_record_at_commit(repo_root, item.key, commit)
-    except Exception as exc:
-        return ReplayFailure(item.key, f"replay_regeneration_failed:{type(exc).__name__}")
-    if regenerated.record_sha256 != evidence:
-        return ReplayFailure(item.key, "evidence_hash_mismatch")
-    return None
+def _closed_handoff_keys(text: str) -> tuple[set[str], list[str]]:
+    closed: set[str] = set()
+    duplicates: list[str] = []
+    for line in text.splitlines():
+        match = CHECKBOX_RE.match(line)
+        if not match or match.group("state").lower() != "x":
+            continue
+        key = match.group("key")
+        if key in closed:
+            duplicates.append(key)
+        closed.add(key)
+    return closed, duplicates
 
 
-def replay(
+def audit_structure(
     *,
-    base: str,
-    handoff: Path,
-    skip_legacy: bool,
     repo_root: Path = ROOT,
-    regenerate: bool = True,
+    base: str | None = None,
+    approval_checker: ApprovalChecker = verify_approval,
+    render_func: Callable[[Path], str] = render_handoff,
 ) -> ReplayResult:
     repo_root = repo_root.resolve()
-    handoff = handoff if handoff.is_absolute() else repo_root / handoff
-    base_commit = git_rev_parse(repo_root, base)
-    head = git_rev_parse(repo_root, "HEAD")
-    audited_commits = git_rev_list(repo_root, base_commit, "HEAD")
-    diff_text = git_handoff_diff(repo_root, base_commit, handoff)
-    closed_keys = parse_closed_checkbox_keys(diff_text)
-    base_text = git_show_text(repo_root, base_commit, handoff)
-    head_text = handoff.read_text(encoding="utf-8")
-    base_items = parse_handoff_items(base_text)
-    head_items = parse_handoff_items(head_text)
-    changed_files = git_changed_files(repo_root, base_commit, "HEAD")
+    failures: list[ReplayFailure] = []
+    try:
+        universe = set(manifest_keys(repo_root))
+    except Exception as exc:
+        return ReplayResult("structural", 0, 0, 0, (ReplayFailure("<universe>", str(exc)),))
+    if len(universe) != EXPECTED_UNIVERSE_SIZE:
+        failures.append(ReplayFailure("<universe>", f"manifest_universe_not_116:{len(universe)}"))
+    records, record_load_failures = _read_active_records(repo_root)
+    failures.extend(record_load_failures)
+    unknown_records = sorted(set(records) - universe)
+    failures.extend(ReplayFailure(key, "record_outside_manifest") for key in unknown_records)
+
+    try:
+        rendered = render_func(repo_root)
+        actual = (repo_root / HANDOFF).read_text(encoding="utf-8")
+        if actual != rendered:
+            failures.append(ReplayFailure("<handoff>", "handoff_render_drift"))
+        closed, duplicates = _closed_handoff_keys(actual)
+        failures.extend(ReplayFailure(key, "duplicate_closed_handoff_key") for key in duplicates)
+        if closed != set(records):
+            failures.append(ReplayFailure("<handoff>", "handoff_active_cardinality_mismatch"))
+    except Exception as exc:
+        failures.append(ReplayFailure("<handoff>", f"handoff_render_failed:{exc}"))
+
+    for key, record in sorted(records.items()):
+        for reason in _record_sanity_reasons(record, key):
+            failures.append(ReplayFailure(key, reason))
+        for reason in _class_a_reasons(record, repo_root):
+            failures.append(ReplayFailure(key, reason))
+        approval, approval_reasons = _verified_approval(record, repo_root, approval_checker)
+        failures.extend(ReplayFailure(key, reason) for reason in approval_reasons)
+        if not approval_reasons:
+            failures.extend(
+                ReplayFailure(key, reason)
+                for reason in _stored_policy_reasons(record, approval)
+            )
+
+    if base is not None:
+        try:
+            base_commit = git_rev_parse(repo_root, base)
+            paths = git_changed_paths(repo_root, base_commit)
+        except ValueError as exc:
+            failures.append(ReplayFailure("<range>", str(exc)))
+        else:
+            for path in unmapped_visual_sources(paths):
+                failures.append(ReplayFailure(path, "unmapped_visual_source"))
+            active_changed = _changed_active_keys(paths)
+            touched = kernel_paths_touched(paths)
+            if active_changed and touched:
+                for key in sorted(active_changed):
+                    failures.append(ReplayFailure(key, "kernel_changed_with_visual_closure"))
+    return ReplayResult(
+        "structural",
+        len(records),
+        len(records),
+        0,
+        tuple(failures),
+    )
+
+
+def _repo_arg_path(repo_root: Path, path: Path) -> str:
+    try:
+        return path.resolve().relative_to(repo_root.resolve()).as_posix()
+    except ValueError:
+        return str(path.resolve())
+
+
+@contextmanager
+def _temporary_worktree(repo_root: Path, commit: str) -> Iterator[Path]:
+    with tempfile.TemporaryDirectory(prefix="nm_replay_worktree_") as temp:
+        worktree = Path(temp) / "worktree"
+        proc = _run_text(["git", "worktree", "add", "--detach", str(worktree), commit], cwd=repo_root)
+        if proc.returncode != 0:
+            raise RuntimeError("worktree_add_failed")
+        try:
+            yield worktree
+        finally:
+            _run_text(["git", "worktree", "remove", "--force", str(worktree)], cwd=repo_root)
+
+
+def _capture_result(manifest_path: Path, key: str) -> dict[str, Any]:
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    matches = [
+        item
+        for item in payload.get("results", [])
+        if isinstance(item, dict)
+        and (
+            item.get("key") == key
+            or item.get("surface_key") == key
+            or (
+                isinstance(item.get("app"), str)
+                and isinstance(item.get("view"), str)
+                and isinstance(item.get("theme"), str)
+                and f"{item['app']}:{item['view']}@{item['theme']}" == key
+            )
+        )
+    ]
+    if len(matches) != 1:
+        raise RuntimeError("capture_manifest_key_mismatch")
+    return matches[0]
+
+
+def _capture_artifacts(capture_dir: Path, key: str) -> tuple[Path, Path, Path]:
+    manifest = capture_dir / "CAPTURE_MANIFEST.json"
+    result = _capture_result(manifest, key)
+    png = capture_dir / str(result.get("file", ""))
+    provenance = result.get("provenance")
+    if isinstance(provenance, Mapping):
+        candidate = Path(str(provenance.get("capture_path", "")))
+        if candidate.is_file():
+            png = candidate
+        sidecar_value = Path(str(provenance.get("introspection_sidecar", "")))
+        sidecar = (
+            sidecar_value
+            if sidecar_value.is_absolute()
+            else capture_dir.parent / "_visual_auditor_spec" / sidecar_value.name
+        )
+    else:
+        sidecar = capture_dir.parent / "_visual_auditor_spec" / "introspection.json"
+    if not manifest.is_file() or not png.is_file() or not sidecar.is_file():
+        raise RuntimeError("capture_artifact_missing")
+    return manifest, png, sidecar
+
+
+def _run_capture(worktree: Path, parsed: ParsedKey, out_dir: Path) -> None:
+    env = os.environ.copy()
+    env["NM_VAS_INTROSPECT"] = "1"
+    proc = _run_text(
+        [
+            sys.executable,
+            "qa/capture_v8.py",
+            "--app",
+            parsed.app,
+            "--view",
+            parsed.view,
+            "--theme",
+            parsed.theme,
+            "--out-dir",
+            _repo_arg_path(worktree, out_dir),
+            "--no-clean",
+        ],
+        cwd=worktree,
+        env=env,
+        timeout=300,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError("capture_failed")
+
+
+def _canonical_capture(worktree: Path, key: str) -> dict[str, Any]:
+    manifest = json.loads((worktree / CANONICAL_MANIFEST).read_text(encoding="utf-8"))
+    matches = [
+        item
+        for item in manifest.get("captures", [])
+        if isinstance(item, dict) and manifest_key(item) == key
+    ]
+    if len(matches) != 1:
+        raise RuntimeError("canonical_manifest_key_mismatch")
+    return matches[0]
+
+
+def _merge_back_capture(primary: Path, back: Path) -> None:
+    primary_manifest = json.loads((primary / "CAPTURE_MANIFEST.json").read_text(encoding="utf-8"))
+    back_manifest = json.loads((back / "CAPTURE_MANIFEST.json").read_text(encoding="utf-8"))
+    primary_results = primary_manifest.setdefault("results", [])
+    existing = {item.get("key") for item in primary_results if isinstance(item, dict)}
+    for item in back_manifest.get("results", []):
+        if not isinstance(item, dict):
+            continue
+        filename = item.get("file")
+        if filename and (back / str(filename)).is_file():
+            shutil.copy2(back / str(filename), primary / str(filename))
+        if item.get("key") not in existing:
+            primary_results.append(item)
+    (primary / "CAPTURE_MANIFEST.json").write_text(
+        json.dumps(primary_manifest, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+
+
+def _run_antifraud(worktree: Path, report_dir: Path) -> dict[str, Any]:
+    path = report_dir / "ANTIFRAUD.json"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    _run_text(
+        [sys.executable, "qa/anti_fraud_scan.py", "--mode", "all", "--json", str(path)],
+        cwd=worktree,
+        timeout=180,
+    )
+    if not path.is_file():
+        raise RuntimeError("antifraud_output_missing")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _run_comparator(worktree: Path, parsed: ParsedKey, capture_dir: Path, report_dir: Path) -> Path:
+    _run_text(
+        [
+            sys.executable,
+            "qa/layered_visual_compare.py",
+            "--canonical",
+            CANONICAL_DIR.as_posix(),
+            "--actual",
+            _repo_arg_path(worktree, capture_dir),
+            "--out-dir",
+            _repo_arg_path(worktree, report_dir),
+            "--key",
+            parsed.key,
+        ],
+        cwd=worktree,
+        timeout=300,
+    )
+    path = report_dir / "LAYERED_VISUAL_REPORT.json"
+    if not path.is_file():
+        raise RuntimeError("comparator_output_missing")
+    return path
+
+
+def _sidecar_entry(path: Path, key: str) -> dict[str, Any]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    matches = [item for item in payload if isinstance(item, dict) and item.get("surface_key") == key]
+    if len(matches) != 1:
+        raise RuntimeError("vas_sidecar_key_mismatch")
+    return matches[0]
+
+
+def _vas_summary(
+    worktree: Path,
+    key: str,
+    sidecar: Path,
+    capture_result: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    proc = _run_text(
+        [sys.executable, "qa/vas_gate.py", "--sidecar", str(sidecar), "--key", key],
+        cwd=worktree,
+        timeout=120,
+    )
+    entry = _sidecar_entry(sidecar, key)
+    divergences = entry.get("divergences") if isinstance(entry.get("divergences"), list) else []
+    high = sum(1 for item in divergences if isinstance(item, Mapping) and item.get("severity") == "high")
+    medium = sum(
+        1 for item in divergences if isinstance(item, Mapping) and item.get("severity") == "medium"
+    )
+    fail_count = entry.get("fail_count") if isinstance(entry.get("fail_count"), int) else -1
+    capture_valid = (
+        capture_result.get("success") is True
+        and capture_result.get("technical_capture_valid") is True
+        and capture_result.get("state_evidence_valid") is True
+        and capture_result.get("capture_status") == "CAPTURED_VALID"
+    )
+    summary = {
+        "schema": VAS_SUMMARY_SCHEMA,
+        "key": key,
+        "pass": proc.returncode == 0 and fail_count == 0 and high == 0 and medium == 0 and capture_valid,
+        "fail_count": fail_count,
+        "high_count": high,
+        "medium_count": medium,
+        "capture_valid": capture_valid,
+    }
+    assertion = entry.get("state_assertion")
+    if assertion is not None and not isinstance(assertion, dict):
+        assertion = {"schema": STATE_ASSERTION_SCHEMA, "key": key, "pass": False}
+    return summary, assertion
+
+
+def _sanitize_json(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: _sanitize_json(child)
+            for key, child in value.items()
+            if key not in VOLATILE_JSON_KEYS
+        }
+    if isinstance(value, list):
+        return [_sanitize_json(child) for child in value]
+    return value
+
+
+def _stable_json_hash(path: Path) -> str:
+    return sha256_canonical_json(_sanitize_json(json.loads(path.read_text(encoding="utf-8"))))
+
+
+def _run_modal_audit(
+    worktree: Path,
+    parsed: ParsedKey,
+    capture_dir: Path,
+    report_dir: Path,
+) -> dict[str, Any]:
+    out = report_dir / f"modal_audit_{key_safe(parsed.key)}"
+    out.mkdir(parents=True, exist_ok=True)
+    _run_text(
+        [
+            sys.executable,
+            str(MODAL_AUDIT_TOOL),
+            "--key",
+            parsed.key,
+            "--canonical",
+            CANONICAL_DIR.as_posix(),
+            "--actual",
+            _repo_arg_path(worktree, capture_dir),
+            "--out-dir",
+            _repo_arg_path(worktree, out),
+        ],
+        cwd=worktree,
+        timeout=120,
+    )
+    path = out / "AUDIT.json"
+    if not path.is_file():
+        raise RuntimeError("modal_audit_output_missing")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        "pass": payload.get("summary", {}).get("test_blur_pass") is True,
+        "summary": payload.get("summary", {}),
+    }
+
+
+def _determinism(
+    key: str,
+    first_manifest: Path,
+    second_manifest: Path,
+    first_png: Path,
+    second_png: Path,
+) -> dict[str, Any]:
+    try:
+        from qa.layered_visual_compare import determinism_changed_ratio
+    except ModuleNotFoundError:
+        from layered_visual_compare import determinism_changed_ratio
+    first = _capture_result(first_manifest, key).get("provenance")
+    second = _capture_result(second_manifest, key).get("provenance")
+    first = first if isinstance(first, Mapping) else {}
+    second = second if isinstance(second, Mapping) else {}
+    ratio = determinism_changed_ratio(first_png, second_png)
+    return {
+        "schema": DETERMINISM_SCHEMA,
+        "key": key,
+        "pass": ratio < DETERMINISM_CHANGED_RATIO_LIMIT,
+        "changed_ratio": ratio,
+        "limit": DETERMINISM_CHANGED_RATIO_LIMIT,
+        "first_run_id": first.get("introspection_entry_id"),
+        "second_run_id": second.get("introspection_entry_id"),
+        "first_git_head": first.get("git_head"),
+        "second_git_head": second.get("git_head"),
+    }
+
+
+def regenerate_measurement(repo_root: Path, key: str, commit: str) -> dict[str, Any]:
+    parsed = parse_key(key)
+    with _temporary_worktree(repo_root, commit) as worktree:
+        primary = worktree / "qa" / "_captures_v8"
+        report_dir = worktree / "reports" / "qa" / "closure_replay" / key_safe(key)
+        antifraud = _run_antifraud(worktree, report_dir)
+        _run_capture(worktree, parsed, primary)
+        canonical = _canonical_capture(worktree, key)
+        modal_required = canonical.get("is_modal") is True or canonical.get("surface") in {
+            "modal",
+            "window_modal",
+        }
+        if modal_required:
+            back_key = canonical.get("back_screen_key")
+            if not isinstance(back_key, str) or not back_key:
+                raise RuntimeError("modal_back_screen_missing")
+            with tempfile.TemporaryDirectory(prefix="nm_replay_back_") as temp:
+                back = Path(temp) / "captures"
+                _run_capture(worktree, parse_key(back_key), back)
+                _merge_back_capture(primary, back)
+        first_manifest, first_png, first_sidecar = _capture_artifacts(primary, key)
+        first_result = _capture_result(first_manifest, key)
+        with tempfile.TemporaryDirectory(prefix="nm_replay_determinism_") as temp:
+            secondary = Path(temp) / "captures"
+            _run_capture(worktree, parsed, secondary)
+            second_manifest, second_png, _second_sidecar = _capture_artifacts(secondary, key)
+            determinism = _determinism(
+                key, first_manifest, second_manifest, first_png, second_png
+            )
+        report_path = _run_comparator(worktree, parsed, primary, report_dir)
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        report["report_sha256"] = _stable_json_hash(report_path)
+        vas, assertion = _vas_summary(worktree, key, first_sidecar, first_result)
+        modal = _run_modal_audit(worktree, parsed, primary, report_dir) if modal_required else None
+        report["modal_audit_required"] = modal_required
+        report["modal_audit"] = modal
+        return {
+            "report": report,
+            "vas_summary": vas,
+            "antifraud": antifraud,
+            "determinism": determinism,
+            "state_assertion": assertion,
+            "modal_audit": modal,
+        }
+
+
+MeasurementRunner = Callable[[Path, str, str], dict[str, Any]]
+
+
+def replay_full(
+    *,
+    repo_root: Path = ROOT,
+    base: str | None = None,
+    all_closed: bool = False,
+    approval_checker: ApprovalChecker = verify_approval,
+    measurement_runner: MeasurementRunner = regenerate_measurement,
+    render_func: Callable[[Path], str] = render_handoff,
+) -> ReplayResult:
+    structural = audit_structure(
+        repo_root=repo_root,
+        base=base,
+        approval_checker=approval_checker,
+        render_func=render_func,
+    )
+    records, load_failures = _read_active_records(repo_root)
+    if structural.failures or load_failures:
+        return ReplayResult(
+            "full",
+            len(records),
+            structural.checked_keys,
+            0,
+            tuple([*structural.failures, *load_failures]),
+        )
+    if all_closed:
+        candidates = set(records)
+    else:
+        if base is None:
+            return ReplayResult(
+                "full", len(records), len(records), 0, (ReplayFailure("<range>", "base_required"),)
+            )
+        candidates = _changed_active_keys(git_changed_paths(repo_root, git_rev_parse(repo_root, base)))
+        candidates &= set(records)
 
     failures: list[ReplayFailure] = []
-
-    legacy_keys = find_legacy_migrations(base_items, head_items)
-    if skip_legacy:
-        skipped_legacy = len(legacy_keys)
-    else:
-        skipped_legacy = 0
-        failures.extend(
-            ReplayFailure(key, "legacy_closure_without_evidence") for key in legacy_keys
-        )
-
-    failures.extend(
-        ReplayFailure(key, "unmigrated_closure")
-        for key in find_unmigrated_closures(base_items, head_items)
-    )
-
-    validate_keys = set(closed_keys)
-    validate_keys |= evidence_changed_keys(base_items, head_items)
-    record_keys, orphan_records = keys_for_changed_records(head_items, changed_files)
-    validate_keys |= record_keys
-    failures.extend(
-        ReplayFailure(path, "orphan_evidence_record") for path in orphan_records
-    )
-
-    if validate_keys:
-        touched = kernel_paths_touched(changed_files)
-        if touched:
-            failures.extend(
-                ReplayFailure(key, "kernel_changed_with_visual_closure")
-                for key in sorted(validate_keys)
-            )
-            return ReplayResult(
-                False, base_commit, head, 0, skipped_legacy, failures, regenerate
-            )
-
     replayed = 0
-    for key in sorted(validate_keys):
-        item = first_item(head_items, key, state="closed")
-        if item is None:
-            failures.append(ReplayFailure(key, "missing_closed_handoff_item"))
+    for key in sorted(candidates):
+        record = records[key]
+        try:
+            measurement = measurement_runner(repo_root, key, str(record["commit_head"]))
+        except Exception as exc:
+            failures.append(ReplayFailure(key, f"regeneration_failed:{exc}"))
             continue
-        failure = _validate_one_closure(
-            repo_root=repo_root,
-            item=item,
-            audited_commits=audited_commits,
-            base_commit=base_commit,
-            regenerate=regenerate,
+        approval, approval_reasons = _verified_approval(record, repo_root, approval_checker)
+        failures.extend(ReplayFailure(key, reason) for reason in approval_reasons)
+        if approval_reasons:
+            continue
+        if isinstance(approval, dict):
+            approval = dict(approval)
+            approval["key"] = key
+            approval["report_sha256"] = measurement.get("report", {}).get("report_sha256")
+        allow, reasons = decide(
+            measurement.get("report"),
+            measurement.get("vas_summary"),
+            measurement.get("antifraud"),
+            measurement.get("determinism"),
+            measurement.get("state_assertion"),
+            approval,
+            record.get("target_set"),
         )
-        if failure is not None:
-            failures.append(failure)
+        if not allow:
+            failures.extend(ReplayFailure(key, f"regenerated_policy_blocked:{reason}") for reason in reasons)
             continue
         replayed += 1
-
-    return ReplayResult(
-        ok=not failures,
-        base=base_commit,
-        head=head,
-        replayed_keys=replayed,
-        skipped_legacy=skipped_legacy,
-        failed_keys=failures,
-        regenerated=regenerate,
-    )
+    if all_closed and replayed != len(records) and not failures:
+        failures.append(ReplayFailure("<cardinality>", "replayed_active_cardinality_mismatch"))
+    return ReplayResult("full", len(records), len(records), replayed, tuple(failures))
 
 
 def print_result(result: ReplayResult) -> None:
-    print("REPLAY " + ("PASS" if result.ok else "FAIL"))
-    print(f"base: {result.base}")
-    print(f"head: {result.head}")
-    print(f"regeneration: {'full' if result.regenerated else 'structural'}")
+    print("REPLAY PASS" if result.passed else "REPLAY FAIL")
+    print(f"mode: {result.mode}")
+    print(f"active_records: {result.active_records}")
+    print(f"checked_keys: {result.checked_keys}")
     print(f"replayed_keys: {result.replayed_keys}")
-    print(f"skipped_legacy: {result.skipped_legacy}")
-    print("failed_keys:")
-    for failure in result.failed_keys:
-        print(f"  - {failure.key}: {failure.reason}")
+    for failure in result.failures:
+        print(f"- {failure.key}: {failure.reason}")
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Replay visual closure evidence records.")
-    parser.add_argument("--base", required=True, help="Base commit for audited range.")
-    parser.add_argument("--handoff", type=Path, default=Path(close_visual_key.HANDOFF))
-    parser.add_argument("--skip-legacy", action="store_true")
-    parser.add_argument(
-        "--no-regen",
-        action="store_true",
-        help=(
-            "Structural mode: validate notes, ranges, R0 and record hashes without "
-            "re-running capture/compare. Pixel regeneration is platform-bound to the "
-            "closing machine (Windows); CI uses this mode."
-        ),
-    )
+    parser = argparse.ArgumentParser(description="Independently replay v2 visual closures.")
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--structural-precheck", action="store_true")
+    modes.add_argument("--all-closed", action="store_true")
+    parser.add_argument("--base")
     args = parser.parse_args(argv)
-
-    try:
-        result = replay(
-            base=args.base,
-            handoff=args.handoff,
-            skip_legacy=args.skip_legacy,
-            regenerate=not args.no_regen,
-        )
-    except RuntimeError as exc:
-        head = "UNKNOWN"
-        try:
-            head = git_rev_parse(ROOT, "HEAD")
-        except RuntimeError:
-            pass
-        result = ReplayResult(
-            ok=False,
-            base=args.base,
-            head=head,
-            replayed_keys=0,
-            skipped_legacy=0,
-            failed_keys=[ReplayFailure("<preflight>", str(exc))],
-            regenerated=not args.no_regen,
-        )
+    if args.structural_precheck:
+        if not args.base:
+            parser.error("--structural-precheck requires --base")
+        result = audit_structure(base=args.base)
+    else:
+        if not args.all_closed and not args.base:
+            parser.error("full replay requires --all-closed or --base")
+        result = replay_full(base=args.base, all_closed=args.all_closed)
     print_result(result)
-    return 0 if result.ok else 1
+    return 0 if result.passed else 1
 
 
 if __name__ == "__main__":

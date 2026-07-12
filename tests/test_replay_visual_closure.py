@@ -1,780 +1,391 @@
 from __future__ import annotations
 
+import ast
+import copy
+import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
 
-from qa import close_visual_key as close
 from qa import replay_visual_closure as replay
+from qa.closure_policy import (
+    ANTIFRAUD_SUMMARY_SCHEMA,
+    DETERMINISM_SCHEMA,
+    REPORT_SCHEMA,
+    VAS_SUMMARY_SCHEMA,
+)
+from qa.hash_utils import sha256_canonical_json
+from qa.layered_visual_compare import LayeredThresholds
 
 
 KEY = "suite:home@light"
-BASE = "b" * 40
-FIX = "a" * 40
-HEAD = "c" * 40
+COMMIT = "a" * 40
+HASH = "b" * 64
 
 
-def _record(key: str = KEY, commit: str = FIX) -> dict:
+def _valid_report(key: str = KEY, *, report_sha: str = HASH) -> dict:
     return {
-        "schema": close.EVIDENCE_SCHEMA,
-        "key": key,
-        "commit_head": commit,
-        "anti_fraud_sha256": "1" * 64,
-        "capture_v8_sha256": "2" * 64,
-        "layered_compare_sha256": "3" * 64,
-        "vas_gate_sha256": "4" * 64,
-        "capture_png_sha256": "5" * 64,
-        "manifest_sha256": "6" * 64,
-        "report_sha256": "7" * 64,
-        "sidecar_sha256": "8" * 64,
-        "modal_audit_sha256": None,
-        "result": "PASS",
-        "metrics": {
-            "changed_pixel_ratio": 0.01,
-            "mean_abs_diff": 0.02,
-            "windowed_ssim": 0.99,
-            "max_bbox_delta_px": None,
-        },
-        "command_spec": {
-            "capture": {
-                "tool": "qa/capture_v8.py",
-                "app": "suite",
-                "view": "home",
-                "theme": "light",
-                "vas_introspect": True,
-            },
-            "compare": {
-                "tool": "qa/layered_visual_compare.py",
-                "canonical": "qa/_mockup_canonical",
-                "scope": key,
-            },
-        },
+        "schema": REPORT_SCHEMA,
+        "report_evidence_valid": True,
+        "report_scope": "PARTIAL",
+        "report_sha256": report_sha,
+        "thresholds": LayeredThresholds().to_dict(),
+        "modal_audit_required": False,
+        "modal_audit": None,
+        "results": [
+            {
+                "key": key,
+                "status": "PASS",
+                "real_divergence": False,
+                "suspicious_perfect_match": False,
+                "near_perfect_match": False,
+                "state_assertion_required": False,
+                "findings": [],
+                "metrics": {"changed_pixel_ratio": 0.01},
+                "layout": {},
+                "odiff": {"available": True, "diff_percentage": 1.0},
+            }
+        ],
     }
 
 
-def _write_record(root: Path, record: dict) -> tuple[Path, str]:
-    rel = Path("docs/closure_evidence") / f"{close.key_safe(record['key'])}.json"
-    path = root / rel
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(record, indent=2, sort_keys=True), encoding="utf-8")
-    return rel, close.canonical_record_sha256(record)
+def _valid_vas(key: str = KEY) -> dict:
+    return {
+        "schema": VAS_SUMMARY_SCHEMA,
+        "key": key,
+        "pass": True,
+        "fail_count": 0,
+        "high_count": 0,
+        "medium_count": 0,
+        "capture_valid": True,
+    }
 
 
-def _patch_git(
-    monkeypatch: pytest.MonkeyPatch,
-    *,
-    base_text: str,
-    diff_text: str,
-    audited: set[str] | None = None,
-    changed_files: list[str] | None = None,
-) -> None:
-    def rev_parse(_root: Path, revision: str) -> str:
-        if revision in {"base", BASE}:
-            return BASE
-        if revision in {"HEAD", HEAD}:
-            return HEAD
-        if revision in {"fix", FIX}:
-            return FIX
-        raise RuntimeError(f"invalid git revision: {revision}")
-
-    monkeypatch.setattr(replay, "git_rev_parse", rev_parse)
-    monkeypatch.setattr(
-        replay,
-        "git_rev_list",
-        lambda _root, _base, _head="HEAD": {FIX} if audited is None else audited,
-    )
-    monkeypatch.setattr(replay, "git_handoff_diff", lambda _root, _base, _handoff: diff_text)
-    monkeypatch.setattr(replay, "git_show_text", lambda _root, _revision, _path: base_text)
-    monkeypatch.setattr(replay, "git_changed_files", lambda _root, _base, _head="HEAD": changed_files or [])
+def _valid_antifraud() -> dict:
+    return {
+        "schema": ANTIFRAUD_SUMMARY_SCHEMA,
+        "mode": "all",
+        "scope": "default_full",
+        "clean": True,
+        "count": 0,
+        "violations": [],
+    }
 
 
-def _closure_diff(key: str = KEY) -> str:
-    return f"""
-@@ -1 +1,5 @@
-- - [ ] `{key}` pending
-+ - [x] `{key}` pending
-+   - evidence: placeholder
-+   - evidence-record: docs/closure_evidence/{close.key_safe(key)}.json
-+   - commit: {FIX}
-+   - closed-by: close_visual_key.py
-"""
+def _valid_determinism(key: str = KEY) -> dict:
+    return {
+        "schema": DETERMINISM_SCHEMA,
+        "key": key,
+        "pass": True,
+        "changed_ratio": 0.0,
+        "first_run_id": "run-a",
+        "second_run_id": "run-b",
+        "first_git_head": COMMIT,
+        "second_git_head": COMMIT,
+    }
 
 
-def _handoff_closed(key: str, evidence: str, record_path: Path, commit: str = FIX) -> str:
-    return (
-        f"- [x] `{key}` pending\n"
-        f"  - evidence: {evidence}\n"
-        f"  - evidence-record: {record_path.as_posix()}\n"
-        f"  - commit: {commit}\n"
-        "  - closed-by: close_visual_key.py\n"
-    )
+def _valid_record(key: str = KEY) -> dict:
+    return {
+        "schema": replay.EVIDENCE_SCHEMA,
+        "key": key,
+        "commit_head": COMMIT,
+        "result": "PASS",
+        "canonical_png_sha256": "1" * 64,
+        "capture_png_sha256": "2" * 64,
+        "manifest_sha256": "3" * 64,
+        "capture_manifest_sha256": "4" * 64,
+        "tool_hashes": {"qa/tool.py": "5" * 64},
+        "thresholds_sha256": "6" * 64,
+        "source_scope": {"schema": "nm_suite.source_scope.v1", "key": key},
+        "report_sha256": HASH,
+        "sidecar_sha256": "7" * 64,
+        "modal_audit_sha256": None,
+        "report": _valid_report(key),
+        "vas_summary": _valid_vas(key),
+        "antifraud": _valid_antifraud(),
+        "determinism": _valid_determinism(key),
+        "state_assertion": None,
+        "modal_audit": None,
+        "target_set": [key],
+        "human_review": {"approval_url": None, "comment_id": None, "author": None},
+        "policy": {"allow": True, "reasons": []},
+        "operation": {"kind": "close"},
+    }
 
 
-def test_replay_passes_when_evidence_matches(monkeypatch, tmp_path):
-    record = _record()
-    record_rel, evidence = _write_record(tmp_path, record)
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(_handoff_closed(KEY, evidence, record_rel), encoding="utf-8")
-    _patch_git(
-        monkeypatch,
-        base_text=f"- [ ] `{KEY}` pending\n",
-        diff_text=_closure_diff(),
-        changed_files=["VISUAL_REPAIR_HANDOFF.md", record_rel.as_posix()],
-    )
-    monkeypatch.setattr(
-        replay,
-        "regenerate_record_at_commit",
-        lambda _root, _key, _commit: close.EvidenceBuild(record, evidence, record_rel),
-    )
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is True
-    assert result.replayed_keys == 1
-    assert result.failed_keys == []
+def _measurement(record: dict) -> dict:
+    return {
+        "report": copy.deepcopy(record["report"]),
+        "vas_summary": copy.deepcopy(record["vas_summary"]),
+        "antifraud": copy.deepcopy(record["antifraud"]),
+        "determinism": copy.deepcopy(record["determinism"]),
+        "state_assertion": record["state_assertion"],
+        "modal_audit": record["modal_audit"],
+    }
 
 
-def test_replay_fails_with_evidence_hash_mismatch(monkeypatch, tmp_path):
-    record = _record()
-    record_rel, evidence = _write_record(tmp_path, record)
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(_handoff_closed(KEY, evidence, record_rel), encoding="utf-8")
-    _patch_git(monkeypatch, base_text=f"- [ ] `{KEY}` pending\n", diff_text=_closure_diff())
-    monkeypatch.setattr(
-        replay,
-        "regenerate_record_at_commit",
-        lambda _root, _key, _commit: close.EvidenceBuild(record, "0" * 64, record_rel),
-    )
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is False
-    assert result.failed_keys[0].reason == "evidence_hash_mismatch"
+def _universe() -> tuple[str, ...]:
+    return tuple(f"suite:test-{index:03d}@light" for index in range(116))
 
 
-@pytest.mark.parametrize(
-    ("notes", "reason"),
-    [
-        ("  - evidence-record: docs/closure_evidence/suite_home-light.json\n  - commit: " + FIX + "\n", "missing_evidence"),
-        ("  - evidence: " + "d" * 64 + "\n  - evidence-record: docs/closure_evidence/suite_home-light.json\n", "missing_commit"),
-    ],
-)
-def test_replay_fails_if_evidence_or_commit_is_missing(monkeypatch, tmp_path, notes, reason):
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(f"- [x] `{KEY}` pending\n{notes}", encoding="utf-8")
-    _patch_git(monkeypatch, base_text=f"- [ ] `{KEY}` pending\n", diff_text=_closure_diff())
+def test_replay_has_no_import_or_orchestration_dependency_on_closer():
+    source = Path(replay.__file__).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    imported = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            imported.append(node.module or "")
 
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is False
-    assert result.failed_keys[0].reason == reason
+    assert not any(name.endswith("close_visual_key") for name in imported)
+    assert "regenerate_record_for_key" not in source
 
 
-def test_replay_fails_if_commit_is_outside_range(monkeypatch, tmp_path):
-    record = _record()
-    record_rel, evidence = _write_record(tmp_path, record)
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(_handoff_closed(KEY, evidence, record_rel), encoding="utf-8")
-    _patch_git(monkeypatch, base_text=f"- [ ] `{KEY}` pending\n", diff_text=_closure_diff(), audited=set())
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is False
-    assert result.failed_keys[0].reason == "commit_outside_range"
+@pytest.mark.parametrize("flag", ["--no-regen", "--skip-legacy"])
+def test_removed_replay_flags_are_rejected(flag):
+    with pytest.raises(SystemExit) as raised:
+        replay.main(["--structural-precheck", "--base", "HEAD", flag])
+    assert raised.value.code == 2
 
 
-def test_replay_fails_with_kernel_changed_when_new_closure_in_same_range(monkeypatch, tmp_path):
-    record = _record()
-    record_rel, evidence = _write_record(tmp_path, record)
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(_handoff_closed(KEY, evidence, record_rel), encoding="utf-8")
-    _patch_git(
-        monkeypatch,
-        base_text=f"- [ ] `{KEY}` pending\n",
-        diff_text=_closure_diff(),
-        changed_files=["qa/capture_v8.py", "VISUAL_REPAIR_HANDOFF.md"],
+def test_threshold_hash_is_rederived_from_source_without_importing_runtime():
+    source = Path("qa/layered_visual_compare.py").read_text(encoding="utf-8")
+
+    assert replay.thresholds_sha_from_source(source) == sha256_canonical_json(
+        LayeredThresholds().to_dict()
     )
 
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
 
-    assert result.ok is False
-    assert result.failed_keys[0].reason == "kernel_changed_with_visual_closure"
+def test_record_sanity_accepts_complete_v2_and_rejects_tampering():
+    record = _valid_record()
+    assert replay._record_sanity_reasons(record, KEY) == []
+
+    record["target_set"] = []
+    record["report"]["report_sha256"] = "f" * 64
+    reasons = replay._record_sanity_reasons(record, KEY)
+    assert "target_set_invalid" in reasons
+    assert "report_identity_mismatch" in reasons
+
+
+def test_active_record_filename_is_authority_for_key(tmp_path):
+    active = tmp_path / replay.ACTIVE_DIR
+    active.mkdir(parents=True)
+    wrong = _valid_record("suite:home@dark")
+    (active / "suite_home-light.json").write_text(json.dumps(wrong), encoding="utf-8")
+
+    records, failures = replay._read_active_records(tmp_path)
+
+    assert records == {}
+    assert failures == [replay.ReplayFailure(KEY, "record_filename_key_mismatch")]
+
+
+def test_closed_handoff_parser_detects_duplicates():
+    text = f"- [x] `{KEY}`\n- [x] `{KEY}`\n- [ ] `suite:home@dark`\n"
+    closed, duplicates = replay._closed_handoff_keys(text)
+    assert closed == {KEY}
+    assert duplicates == [KEY]
+
+
+def test_structural_precheck_passes_truthfully_with_zero_active_records(
+    monkeypatch, tmp_path
+):
+    handoff = "# generated\n"
+    (tmp_path / replay.HANDOFF).write_text(handoff, encoding="utf-8")
+    monkeypatch.setattr(replay, "manifest_keys", lambda _root: _universe())
+    monkeypatch.setattr(replay, "_read_active_records", lambda _root: ({}, []))
+    monkeypatch.setattr(replay, "git_rev_parse", lambda _root, _base: COMMIT)
+    monkeypatch.setattr(replay, "git_changed_paths", lambda _root, _base: [])
+
+    result = replay.audit_structure(
+        repo_root=tmp_path,
+        base="pre-branch",
+        render_func=lambda _root: handoff,
+    )
+
+    assert result.passed is True
+    assert result.active_records == 0
+    assert result.checked_keys == 0
     assert result.replayed_keys == 0
 
 
-def test_replay_skips_legacy_with_skip_legacy(monkeypatch, tmp_path):
-    base_text = f"- [x] `{KEY}` old closure\n"
-    current = (
-        f"- [x] `{KEY}` old closure\n"
-        "  - legacy: true\n"
-        "  - legacy-reason: pre_replay_era\n"
-        "  - legacy-migrated-by: migrate_legacy_closures.py\n"
-    )
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(current, encoding="utf-8")
-    _patch_git(
-        monkeypatch,
-        base_text=base_text,
-        diff_text="""
-@@ -1,0 +2,3 @@
-+   - legacy: true
-+   - legacy-reason: pre_replay_era
-+   - legacy-migrated-by: migrate_legacy_closures.py
-""",
+def test_structural_precheck_blocks_handoff_drift(monkeypatch, tmp_path):
+    (tmp_path / replay.HANDOFF).write_text("manual edit\n", encoding="utf-8")
+    monkeypatch.setattr(replay, "manifest_keys", lambda _root: _universe())
+    monkeypatch.setattr(replay, "_read_active_records", lambda _root: ({}, []))
+
+    result = replay.audit_structure(
+        repo_root=tmp_path,
+        render_func=lambda _root: "generated\n",
     )
 
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is True
-    assert result.replayed_keys == 0
-    assert result.skipped_legacy == 1
+    assert result.passed is False
+    assert replay.ReplayFailure("<handoff>", "handoff_render_drift") in result.failures
 
 
-def test_manual_bypass_with_fake_record_fails(monkeypatch, tmp_path):
-    fake_hash = "deadbeef" * 8
-    fake_record = Path("docs/closure_evidence/fake.json")
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(_handoff_closed(KEY, fake_hash, fake_record), encoding="utf-8")
-    _patch_git(monkeypatch, base_text=f"- [ ] `{KEY}` pending\n", diff_text=_closure_diff())
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is False
-    assert result.failed_keys[0].reason in {"missing_evidence_record", "evidence_hash_mismatch"}
-
-
-def test_replay_without_skip_legacy_fails_legacy_closures(monkeypatch, tmp_path):
-    base_text = f"- [x] `{KEY}` old closure\n"
-    current = (
-        f"- [x] `{KEY}` old closure\n"
-        "  - legacy: true\n"
-        "  - legacy-reason: pre_replay_era\n"
-        "  - legacy-migrated-by: migrate_legacy_closures.py\n"
-    )
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(current, encoding="utf-8")
-    _patch_git(monkeypatch, base_text=base_text, diff_text="")
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=False, repo_root=tmp_path)
-
-    assert result.ok is False
-    assert result.skipped_legacy == 0
-    assert result.failed_keys[0].reason == "legacy_closure_without_evidence"
-
-
-def test_replay_fails_closed_item_with_neither_evidence_nor_legacy_marker(monkeypatch, tmp_path):
-    base_text = f"- [x] `{KEY}` old closure\n"
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(base_text, encoding="utf-8")
-    _patch_git(monkeypatch, base_text=base_text, diff_text="")
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is False
-    assert result.failed_keys[0].reason == "unmigrated_closure"
-
-
-def test_replay_validates_evidence_tampered_without_checkbox_transition(monkeypatch, tmp_path):
-    record = _record()
-    record_rel, evidence = _write_record(tmp_path, record)
-    base_text = _handoff_closed(KEY, evidence, record_rel)
-    tampered = _handoff_closed(KEY, "0" * 64, record_rel)
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(tampered, encoding="utf-8")
-    # Diff shows only the edited note line: no `[ ] -> [x]` transition.
-    _patch_git(
-        monkeypatch,
-        base_text=base_text,
-        diff_text=f"""
-@@ -2 +2 @@
--   - evidence: {evidence}
-+   - evidence: {'0' * 64}
-""",
-    )
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is False
-    assert result.failed_keys[0].reason == "evidence_hash_mismatch"
-
-
-def test_replay_rejects_record_path_outside_evidence_dir(monkeypatch, tmp_path):
-    record = _record()
-    record_rel = Path("reports/qa/evil.json")
-    path = tmp_path / record_rel
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(record, indent=2, sort_keys=True), encoding="utf-8")
-    evidence = close.canonical_record_sha256(record)
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(_handoff_closed(KEY, evidence, record_rel), encoding="utf-8")
-    _patch_git(monkeypatch, base_text=f"- [ ] `{KEY}` pending\n", diff_text=_closure_diff())
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is False
-    assert result.failed_keys[0].reason == "invalid_evidence_record_path"
-
-
-def test_replay_fails_on_orphan_changed_evidence_record(monkeypatch, tmp_path):
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(f"- [ ] `{KEY}` pending\n", encoding="utf-8")
-    _patch_git(
-        monkeypatch,
-        base_text=f"- [ ] `{KEY}` pending\n",
-        diff_text="",
-        changed_files=["docs/closure_evidence/suite_home-light.json"],
-    )
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is False
-    assert result.failed_keys[0].reason == "orphan_evidence_record"
-
-
-def _handoff_reopened(key: str, evidence: str) -> str:
-    rel = f"docs/closure_evidence/revoked/{close.key_safe(key)}.json"
-    return (
-        f"- [ ] `{key}` pending\n"
-        "  - reopened: cierre dependia de gaming de modal\n"
-        f"  - revoked-evidence: {evidence}\n"
-        f"  - revoked-record: {rel}\n"
-        "  - reopened-by: close_visual_key.py\n"
-    )
-
-
-def test_replay_accepts_sanctioned_reopen(monkeypatch, tmp_path):
-    """close_visual_key --reopen: record moved to revoked/ + open checkbox with
-    reopened notes must NOT be flagged as orphan tampering."""
-    record = _record()
-    evidence = close.canonical_record_sha256(record)
-    record_rel = Path("docs/closure_evidence") / f"{close.key_safe(KEY)}.json"
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(_handoff_reopened(KEY, evidence), encoding="utf-8")
-    _patch_git(
-        monkeypatch,
-        base_text=_handoff_closed(KEY, evidence, record_rel),
-        diff_text=f"""
-@@ -1,5 +1,5 @@
-- - [x] `{KEY}` pending
--   - evidence: {evidence}
-+ - [ ] `{KEY}` pending
-+   - reopened: cierre dependia de gaming de modal
-""",
-        changed_files=[
-            "VISUAL_REPAIR_HANDOFF.md",
-            record_rel.as_posix(),
-            f"docs/closure_evidence/revoked/{close.key_safe(KEY)}.json",
+def test_structural_precheck_blocks_unmapped_source_and_kernel_plus_closure(
+    monkeypatch, tmp_path
+):
+    handoff = "generated\n"
+    (tmp_path / replay.HANDOFF).write_text(handoff, encoding="utf-8")
+    monkeypatch.setattr(replay, "manifest_keys", lambda _root: _universe())
+    monkeypatch.setattr(replay, "_read_active_records", lambda _root: ({}, []))
+    monkeypatch.setattr(replay, "git_rev_parse", lambda _root, _base: COMMIT)
+    monkeypatch.setattr(
+        replay,
+        "git_changed_paths",
+        lambda _root, _base: [
+            "app/new_visual.py",
+            "qa/closure_policy.py",
+            "docs/closure_evidence/active/suite_home-light.json",
         ],
     )
 
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is True, result.failed_keys
-    assert result.replayed_keys == 0
-
-
-def test_replay_fails_record_removal_without_reopen_notes(monkeypatch, tmp_path):
-    """Moving/deleting a record without the sanctioned reopen notes is tampering."""
-    record = _record()
-    evidence = close.canonical_record_sha256(record)
-    record_rel = Path("docs/closure_evidence") / f"{close.key_safe(KEY)}.json"
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(f"- [ ] `{KEY}` pending\n", encoding="utf-8")
-    _patch_git(
-        monkeypatch,
-        base_text=_handoff_closed(KEY, evidence, record_rel),
-        diff_text="",
-        changed_files=[
-            record_rel.as_posix(),
-            f"docs/closure_evidence/revoked/{close.key_safe(KEY)}.json",
-        ],
+    result = replay.audit_structure(
+        repo_root=tmp_path,
+        base="pre-branch",
+        render_func=lambda _root: handoff,
     )
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is False
-    assert {f.reason for f in result.failed_keys} == {"orphan_evidence_record"}
+    reasons = {(failure.key, failure.reason) for failure in result.failures}
+    assert ("app/new_visual.py", "unmapped_visual_source") in reasons
+    assert (KEY, "kernel_changed_with_visual_closure") in reasons
 
 
-def test_replay_fails_revoked_record_without_matching_reopen(monkeypatch, tmp_path):
-    """A file appearing under revoked/ with no reopened item is tampering."""
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(f"- [ ] `{KEY}` pending\n", encoding="utf-8")
-    _patch_git(
-        monkeypatch,
-        base_text=f"- [ ] `{KEY}` pending\n",
-        diff_text="",
-        changed_files=[f"docs/closure_evidence/revoked/{close.key_safe(KEY)}.json"],
+def _git(repo: Path, *args: str) -> str:
+    proc = subprocess.run(
+        ["git", *args], cwd=repo, capture_output=True, text=True, check=True
     )
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is False
-    assert result.failed_keys[0].reason == "orphan_evidence_record"
+    return proc.stdout.strip()
 
 
-def test_replay_no_regen_validates_structurally_without_regeneration(monkeypatch, tmp_path):
-    record = _record()
-    record_rel, evidence = _write_record(tmp_path, record)
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(_handoff_closed(KEY, evidence, record_rel), encoding="utf-8")
-    _patch_git(
-        monkeypatch,
-        base_text=f"- [ ] `{KEY}` pending\n",
-        diff_text=_closure_diff(),
-        changed_files=["VISUAL_REPAIR_HANDOFF.md", record_rel.as_posix()],
+def test_class_a_reproduces_historical_bytes_and_detects_current_canonical_edit(
+    monkeypatch, tmp_path
+):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "Test")
+    canonical_rel = "qa/_mockup_canonical/suite-home-light-4x4.png"
+    (repo / canonical_rel).parent.mkdir(parents=True)
+    canonical_bytes = b"\x89PNG\r\nIDAT\x00\r\n"
+    (repo / canonical_rel).write_bytes(canonical_bytes)
+    manifest = {
+        "captures": [
+            {
+                "view": "suite-home",
+                "theme": "light",
+                "file": Path(canonical_rel).name,
+            }
+        ]
+    }
+    manifest_path = repo / replay.CANONICAL_MANIFEST
+    manifest_path.write_text(json.dumps(manifest) + "\r\n", encoding="utf-8", newline="")
+    tool = repo / "qa" / "tool.py"
+    tool.write_text("first\r\nsecond\r\n", encoding="utf-8", newline="")
+    comparator = repo / "qa" / "layered_visual_compare.py"
+    comparator.write_text(
+        "class LayeredThresholds:\n"
+        "    min_ssim: float = 0.92\n"
+        "    max_changed_pixel_ratio: float = 0.08\n",
+        encoding="utf-8",
     )
-
-    def explode(_root, _key, _commit):
-        raise AssertionError("regeneration must not run with regenerate=False")
-
-    monkeypatch.setattr(replay, "regenerate_record_at_commit", explode)
-
-    result = replay.replay(
-        base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path, regenerate=False
-    )
-
-    assert result.ok is True
-    assert result.replayed_keys == 1
-    assert result.regenerated is False
-
-
-# ─── Structural record-sanity (both modes; hardens the CI --no-regen path) ──
-
-
-def _sanity_case(monkeypatch, tmp_path, mutate) -> replay.ReplayResult:
-    record = _record()
-    mutate(record)
-    record_rel, evidence = _write_record(tmp_path, record)
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(_handoff_closed(KEY, evidence, record_rel), encoding="utf-8")
-    _patch_git(
-        monkeypatch,
-        base_text=f"- [ ] `{KEY}` pending\n",
-        diff_text=_closure_diff(),
-        changed_files=["VISUAL_REPAIR_HANDOFF.md", record_rel.as_posix()],
-    )
-    # regenerate must never run: sanity rejects BEFORE regeneration, and in
-    # --no-regen mode it is the only pixel-independent metric check.
-    monkeypatch.setattr(
-        replay,
-        "regenerate_record_at_commit",
-        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("must not regenerate")),
-    )
-    return replay.replay(
-        base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path, regenerate=False
-    )
-
-
-def test_structural_sanity_rejects_non_pass_record(monkeypatch, tmp_path):
-    def mutate(rec):
-        rec["result"] = "FAIL"
-    result = _sanity_case(monkeypatch, tmp_path, mutate)
-    assert result.ok is False
-    assert result.failed_keys[0].reason == "record_not_pass"
-
-
-def test_structural_sanity_rejects_out_of_bounds_changed(monkeypatch, tmp_path):
-    def mutate(rec):
-        rec["metrics"]["changed_pixel_ratio"] = 0.42  # > 0.10 loosest bar
-    result = _sanity_case(monkeypatch, tmp_path, mutate)
-    assert result.ok is False
-    assert result.failed_keys[0].reason == "record_metrics_out_of_bounds"
-
-
-def test_structural_sanity_rejects_out_of_bounds_bbox(monkeypatch, tmp_path):
-    def mutate(rec):
-        rec["metrics"]["max_bbox_delta_px"] = 99  # > 18
-    result = _sanity_case(monkeypatch, tmp_path, mutate)
-    assert result.ok is False
-    assert result.failed_keys[0].reason == "record_metrics_out_of_bounds"
-
-
-def test_structural_sanity_bounds_track_gate_thresholds():
-    """Drift-guard: the stdlib-only replay literals must equal the real gate
-    bars in qa/layered_visual_compare.py (which pull numpy, so replay can't
-    import them at CI time)."""
-    from qa.layered_visual_compare import LayeredThresholds
-
-    th = LayeredThresholds()
-    assert replay.RECORD_MAX_CHANGED_PIXEL_RATIO == th.text_dense_max_changed_pixel_ratio
-    assert replay.RECORD_MAX_MEAN_ABS_DIFF == th.max_mean_abs_diff
-    assert replay.RECORD_MAX_BBOX_DELTA_PX == th.max_bbox_shift_px
-
-
-# ─── evidence_changed_keys legacy-note hardening ────────────────────────────
-#
-# Legacy [x] closures carry freeform narrative notes ("CLOSURE INVALIDATED
-# (...)", "Partial fidelity repair (...)") that never match the `name: value`
-# shape NOTE_RE parses, and most never carry evidence/evidence-record/commit
-# notes at all. The original evidence_changed_keys() only compared those 3
-# canonical note values, so editing anything else under a legacy [x] entry
-# (or a legacy item with no canonical notes at all) went undetected — no
-# checkbox transition, no tracked note-value change, no failure.
-
-_LEGACY_BASE = (
-    f"- [x] `{KEY}` old closure\n"
-    "  - legacy: true\n"
-    "  - legacy-reason: pre_replay_era\n"
-    "  - legacy-migrated-by: migrate_legacy_closures.py\n"
-    "  - Closure evidence (2026-06-29): manual panel review confirms alignment.\n"
-)
-
-
-def test_replay_flags_legacy_note_edit_without_checkbox_transition(monkeypatch, tmp_path):
-    """(1) Editing a legacy item's narrative note (not evidence/evidence-record/
-    commit) with no checkbox transition must still force re-validation and fail,
-    since legacy items have no real docs/closure_evidence/*.json record."""
-    tampered = (
-        f"- [x] `{KEY}` old closure\n"
-        "  - legacy: true\n"
-        "  - legacy-reason: pre_replay_era\n"
-        "  - legacy-migrated-by: migrate_legacy_closures.py\n"
-        "  - Closure evidence (2026-06-29): FABRICATED — actually never reviewed.\n"
-    )
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(tampered, encoding="utf-8")
-    _patch_git(
-        monkeypatch,
-        base_text=_LEGACY_BASE,
-        diff_text=(
-            "@@ -5 +5 @@\n"
-            "-  - Closure evidence (2026-06-29): manual panel review confirms alignment.\n"
-            "+  - Closure evidence (2026-06-29): FABRICATED — actually never reviewed.\n"
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-m", "fixture")
+    commit = _git(repo, "rev-parse", "HEAD")
+    record = {
+        "key": KEY,
+        "commit_head": commit,
+        "canonical_png_sha256": hashlib.sha256(canonical_bytes).hexdigest(),
+        "manifest_sha256": replay._sha256_text_bytes(manifest_path.read_bytes()),
+        "tool_hashes": {"qa/tool.py": replay._sha256_text_bytes(tool.read_bytes())},
+        "thresholds_sha256": replay.thresholds_sha_from_source(
+            comparator.read_text(encoding="utf-8")
         ),
+        "source_scope": {},
+    }
+    monkeypatch.setattr(replay, "source_scope_matches_revision", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(replay, "is_source_scope_stale", lambda *_args, **_kwargs: False)
+
+    assert replay._class_a_reasons(record, repo) == []
+
+    (repo / canonical_rel).write_bytes(canonical_bytes + b"tamper")
+    assert "canonical_png_sha256_mismatch" in replay._class_a_reasons(record, repo)
+
+
+def test_external_approval_is_reverified_against_original_report():
+    record = _valid_record()
+    record["report"]["results"][0]["findings"] = ["near_threshold:changed_pixel_ratio"]
+    record["human_review"] = {
+        "approval_url": "https://github.com/Rybjuani/nm_suite/issues/1#issuecomment-2",
+        "comment_id": 2,
+        "author": "Rybjuani",
+    }
+    calls = []
+
+    def checker(review, **kwargs):
+        calls.append((review, kwargs))
+        return {
+            "verified": True,
+            "key": kwargs["key"],
+            "report_sha256": kwargs["report_sha256"],
+            **review,
+        }
+
+    approval, reasons = replay._verified_approval(record, Path.cwd(), checker)
+
+    assert reasons == []
+    assert approval["verified"] is True
+    assert calls[0][1]["report_sha256"] == HASH
+
+
+def test_full_replay_accepts_new_metrics_when_new_measurement_allows(monkeypatch, tmp_path):
+    record = _valid_record()
+    measurement = _measurement(record)
+    measurement["report"]["results"][0]["metrics"] = {"changed_pixel_ratio": 0.02}
+    structural = replay.ReplayResult("structural", 1, 1, 0, ())
+    monkeypatch.setattr(replay, "audit_structure", lambda **_kwargs: structural)
+    monkeypatch.setattr(replay, "_read_active_records", lambda _root: ({KEY: record}, []))
+
+    result = replay.replay_full(
+        repo_root=tmp_path,
+        all_closed=True,
+        measurement_runner=lambda _root, _key, _commit: measurement,
     )
 
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is False
-    assert result.failed_keys
-    assert result.failed_keys[0].key == KEY
-    assert result.failed_keys[0].reason == "missing_evidence"
-
-
-def test_replay_legacy_unchanged_notes_still_skipped(monkeypatch, tmp_path):
-    """(2) A legacy item whose notes are byte-for-byte unchanged relative to
-    base must still be skipped (not forced into re-validation)."""
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(_LEGACY_BASE, encoding="utf-8")
-    _patch_git(monkeypatch, base_text=_LEGACY_BASE, diff_text="")
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is True
-    assert result.replayed_keys == 0
-    assert result.skipped_legacy == 1
-    assert result.failed_keys == []
-
-
-def test_replay_unrelated_handoff_edit_does_not_flag_untouched_legacy_key(monkeypatch, tmp_path):
-    """(3) Editing handoff content outside a legacy item's own note block (an
-    unrelated open item's text) must not cause that legacy key to be flagged."""
-    other_key = "suite:animo@light"
-    base_text = _LEGACY_BASE + f"- [ ] `{other_key}` needs polish\n"
-    head_text = _LEGACY_BASE + f"- [ ] `{other_key}` needs a different polish pass\n"
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(head_text, encoding="utf-8")
-    _patch_git(
-        monkeypatch,
-        base_text=base_text,
-        diff_text=(
-            "@@ -6 +6 @@\n"
-            f"- - [ ] `{other_key}` needs polish\n"
-            f"+ - [ ] `{other_key}` needs a different polish pass\n"
-        ),
-    )
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is True
-    assert result.replayed_keys == 0
-    assert result.skipped_legacy == 1
-    assert result.failed_keys == []
-
-
-def test_replay_new_canonical_record_unaffected_by_legacy_hardening(monkeypatch, tmp_path):
-    """(4) A real, non-legacy evidence-based closure with an extra freeform
-    note line (not evidence/evidence-record/commit) added must not be forced
-    into re-validation by the legacy-notes hardening — canonical closures
-    keep working exactly as before."""
-    record = _record()
-    record_rel, evidence = _write_record(tmp_path, record)
-    base_text = _handoff_closed(KEY, evidence, record_rel)
-    head_text = base_text + "  - reviewed-by: qa-team\n"
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(head_text, encoding="utf-8")
-    _patch_git(
-        monkeypatch,
-        base_text=base_text,
-        diff_text="@@ -4,0 +5 @@\n+  - reviewed-by: qa-team\n",
-        changed_files=["VISUAL_REPAIR_HANDOFF.md"],
-    )
-
-    def explode(_root, _key, _commit):
-        raise AssertionError("adding an unrelated note must not force re-validation")
-
-    monkeypatch.setattr(replay, "regenerate_record_at_commit", explode)
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is True
-    assert result.replayed_keys == 0
-    assert result.failed_keys == []
-
-
-# ─── owner-directed batch closure: evidence stays per-key ──────────────────
-
-
-def test_replay_batch_closure_requires_evidence_per_key(monkeypatch, tmp_path):
-    """A batch/all-open-keys commit may close several keys together, but
-    each key still needs its own real docs/closure_evidence/*.json record.
-    One well-evidenced key and one key whose checkbox flipped without a real
-    record (e.g. hand-edited notes, no close_visual_key.py run) in the SAME
-    commit/diff: replay must fail specifically for the unevidenced key while
-    still validating the properly-evidenced one on its own merits."""
-    key_ok = KEY
-    key_bad = "suite:animo@light"
-
-    record = _record(key=key_ok)
-    record_rel_ok, evidence_ok = _write_record(tmp_path, record)
-
-    fake_evidence = "0" * 64
-    fake_record_rel = Path(f"docs/closure_evidence/{close.key_safe(key_bad)}.json")
-    # Deliberately never written to disk: simulates a checkbox flip with
-    # fabricated evidence notes but no real close_visual_key.py record.
-
-    base_text = f"- [ ] `{key_ok}` pending\n- [ ] `{key_bad}` pending\n"
-    head_text = _handoff_closed(key_ok, evidence_ok, record_rel_ok) + _handoff_closed(
-        key_bad, fake_evidence, fake_record_rel
-    )
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(head_text, encoding="utf-8")
-
-    diff_text = _closure_diff(key_ok) + _closure_diff(key_bad)
-    _patch_git(monkeypatch, base_text=base_text, diff_text=diff_text)
-    monkeypatch.setattr(
-        replay,
-        "regenerate_record_at_commit",
-        lambda _root, _key, _commit: close.EvidenceBuild(record, evidence_ok, record_rel_ok),
-    )
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is False
-    failures_by_key = {f.key: f.reason for f in result.failed_keys}
-    assert failures_by_key.get(key_bad) == "missing_evidence_record"
-    assert key_ok not in failures_by_key
+    assert result.passed is True
     assert result.replayed_keys == 1
 
 
-# ─── Sequential closures: commit_head == base off-by-one fix ─────────────────
-#
-# close_visual_key.py records `commit_head = HEAD` BEFORE the worker creates the
-# `close: <key>` commit. For sequential closures with base = "commit immediately
-# before the first close:" (HEAD~1 / <primer-close>^), the FIRST record's
-# commit_head == base. git_rev_list(base..HEAD) = (base, HEAD] excludes base,
-# so the old replay falsely flagged the first closure of every sequence as
-# `commit_outside_range`. The fix accepts commit == base_commit (integrity is
-# still guaranteed by regeneration + R0 + record sanity).
+def test_full_replay_blocks_fresh_measurement_that_fails_policy(monkeypatch, tmp_path):
+    record = _valid_record()
+    measurement = _measurement(record)
+    measurement["report"]["results"][0]["status"] = "FAIL"
+    measurement["report"]["results"][0]["real_divergence"] = True
+    structural = replay.ReplayResult("structural", 1, 1, 0, ())
+    monkeypatch.setattr(replay, "audit_structure", lambda **_kwargs: structural)
+    monkeypatch.setattr(replay, "_read_active_records", lambda _root: ({KEY: record}, []))
 
-
-def test_replay_accepts_first_sequential_closure_commit_equals_base(monkeypatch, tmp_path):
-    """First record of a sequential closure run has commit_head == base (because
-    close_visual_key.py records HEAD before the worker makes the close: commit,
-    and base = parent of the first close:). Must PASS, not commit_outside_range."""
-    record = _record(commit=BASE)
-    record_rel, evidence = _write_record(tmp_path, record)
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(_handoff_closed(KEY, evidence, record_rel, commit=BASE), encoding="utf-8")
-    # audited = git_rev_list(base..HEAD) excludes base; only a later close is in it.
-    _patch_git(
-        monkeypatch,
-        base_text=f"- [ ] `{KEY}` pending\n",
-        diff_text=_closure_diff().replace(FIX, BASE),
-        audited={HEAD},  # base NOT in audited
-        changed_files=["VISUAL_REPAIR_HANDOFF.md", record_rel.as_posix()],
-    )
-    monkeypatch.setattr(
-        replay,
-        "regenerate_record_at_commit",
-        lambda _root, _key, _commit: close.EvidenceBuild(record, evidence, record_rel),
+    result = replay.replay_full(
+        repo_root=tmp_path,
+        all_closed=True,
+        measurement_runner=lambda _root, _key, _commit: measurement,
     )
 
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is True, result.failed_keys
-    assert result.replayed_keys == 1
+    assert result.passed is False
+    assert any("regenerated_policy_blocked" in failure.reason for failure in result.failures)
 
 
-def test_replay_sequential_closures_first_at_base_second_in_range(monkeypatch, tmp_path):
-    """Two sequential closures: first record commit_head == base, second
-    commit_head == first close (in audited range). Both must PASS."""
-    key1 = KEY
-    key2 = "suite:animo@light"
+def test_v1_records_are_quarantined_and_active_authority_starts_empty():
+    root = Path("docs/closure_evidence")
+    invalidated = list((root / "invalidated_v1").glob("*.json"))
+    revoked = list((root / "invalidated_v1" / "revoked").glob("*.json"))
 
-    record1 = _record(key=key1, commit=BASE)
-    rel1, ev1 = _write_record(tmp_path, record1)
-    record2 = _record(key=key2, commit=FIX)
-    rel2, ev2 = _write_record(tmp_path, record2)
-
-    base_text = f"- [ ] `{key1}` pending\n- [ ] `{key2}` pending\n"
-    head_text = (
-        _handoff_closed(key1, ev1, rel1, commit=BASE)
-        + _handoff_closed(key2, ev2, rel2, commit=FIX)
-    )
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(head_text, encoding="utf-8")
-
-    _patch_git(
-        monkeypatch,
-        base_text=base_text,
-        diff_text=_closure_diff(key1).replace(FIX, BASE) + _closure_diff(key2),
-        audited={FIX},  # base excluded, second close in range
-        changed_files=["VISUAL_REPAIR_HANDOFF.md", rel1.as_posix(), rel2.as_posix()],
-    )
-
-    def regen(_root, key, _commit):
-        if key == key1:
-            return close.EvidenceBuild(record1, ev1, rel1)
-        return close.EvidenceBuild(record2, ev2, rel2)
-
-    monkeypatch.setattr(replay, "regenerate_record_at_commit", regen)
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is True, result.failed_keys
-    assert result.replayed_keys == 2
-
-
-def test_replay_still_rejects_commit_outside_base_and_range(monkeypatch, tmp_path):
-    """Guard: accepting base does NOT open the door to arbitrary commits. A
-    commit that is neither base nor in audited must still fail."""
-    outside = "f" * 40  # not BASE, not in audited
-    record = _record(commit=outside)
-    record_rel, evidence = _write_record(tmp_path, record)
-    handoff = tmp_path / "VISUAL_REPAIR_HANDOFF.md"
-    handoff.write_text(_handoff_closed(KEY, evidence, record_rel, commit=outside), encoding="utf-8")
-    _patch_git(
-        monkeypatch,
-        base_text=f"- [ ] `{KEY}` pending\n",
-        diff_text=_closure_diff().replace(FIX, outside),
-        audited={HEAD},
-    )
-
-    def rev_parse(_root: Path, revision: str) -> str:
-        if revision in {"base", BASE}:
-            return BASE
-        if revision in {"HEAD", HEAD}:
-            return HEAD
-        if revision == outside:
-            return outside
-        raise RuntimeError(f"invalid git revision: {revision}")
-
-    monkeypatch.setattr(replay, "git_rev_parse", rev_parse)
-
-    result = replay.replay(base="base", handoff=handoff, skip_legacy=True, repo_root=tmp_path)
-
-    assert result.ok is False
-    assert result.failed_keys[0].reason == "commit_outside_range"
+    assert len(invalidated) == 116
+    assert len(revoked) == 2
+    assert list((root / "active").glob("*.json")) == []
+    assert all(json.loads(path.read_text())["schema"] == "nm_suite.evidence_record.v1" for path in invalidated)
+    assert "forensic-pre-v3.1" in (root / "invalidated_v1" / "README.md").read_text()
