@@ -476,3 +476,134 @@ def test_filter_without_matches_invalidates_evidence(tmp_path, monkeypatch):
     assert payload["report_scope"] == "PARTIAL"
     assert payload["report_evidence_valid"] is False
     assert "empty_results" in payload["report_evidence_reason"]
+
+
+def _dark_sparse_frame(shift_x: int = 0, shift_y: int = 0, noise_seed: int | None = None):
+    """Dark sparse surface with fixed chrome and translatable interior content.
+
+    Mirrors the suite:registro@dark failure mode: the chrome pins the
+    whole-frame content bbox, so an interior translation is invisible to the
+    bbox layer. ``noise_seed`` adds honest sub-floor render noise so the pair
+    stays below the canonical-injection ssim ceiling, as a real Qt capture of
+    a Chromium canonical does.
+    """
+    import numpy as np
+
+    arr = np.zeros((600, 960, 3), dtype=np.uint8)
+    arr[:, :] = (18, 20, 24)
+    arr[0:64, :] = (32, 36, 44)
+    arr[560:600, :] = (28, 30, 36)
+
+    def block(y0, y1, x0, x1, color):
+        arr[y0 + shift_y : y1 + shift_y, x0 + shift_x : x1 + shift_x] = color
+
+    block(120, 180, 80, 400, (44, 48, 58))
+    block(150, 154, 100, 380, (94, 210, 168))
+    block(240, 360, 80, 880, (38, 42, 52))
+    block(260, 268, 110, 500, (120, 130, 150))
+    block(300, 306, 110, 700, (90, 96, 110))
+    block(420, 480, 80, 300, (44, 48, 58))
+    block(440, 452, 100, 280, (94, 210, 168))
+    if noise_seed is not None:
+        # Honest render noise concentrates inside the content area (AA at
+        # edges): frame-wide iid noise would smear the content-bbox mask and
+        # test the bbox layer instead of the shift detector. The sparse
+        # above-floor speckle populates changed_mask so the zero-shift cases
+        # exercise the full correlation path, not the empty-mask early return.
+        rng = np.random.default_rng(noise_seed)
+        interior = arr[100:500, 90:870].astype(np.int16)
+        interior += rng.integers(-6, 7, size=interior.shape, dtype=np.int16)
+        speckle = rng.random(interior.shape[:2]) < 0.01
+        interior[speckle] += rng.integers(18, 25, size=int(speckle.sum()), dtype=np.int16)[:, None]
+        arr[100:500, 90:870] = np.clip(interior, 0, 255).astype(np.uint8)
+    return Image.fromarray(arr)
+
+
+def _save_frame(path: Path, image) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(path)
+
+
+def test_content_shift_detector_fails_interior_translation(tmp_path):
+    canonical = tmp_path / "c" / "suite-shiftprobe-dark-960x600.png"
+    actual = tmp_path / "a" / "suite-shiftprobe-dark-960x600.png"
+    _save_frame(canonical, _dark_sparse_frame())
+    _save_frame(actual, _dark_sparse_frame(shift_y=57, noise_seed=7))
+
+    result = compare_pair(
+        "suite:shiftprobe@dark",
+        parse_capture_name(canonical),
+        parse_capture_name(actual),
+        thresholds=LayeredThresholds(),
+        use_odiff=False,
+    )
+
+    assert result.layout["content_shift_px"] >= 50
+    assert abs(result.layout["content_shift_y"] - 57) <= 3
+    assert result.layout["content_shift_confidence"] >= 0.6
+    assert "layout_drift" in result.findings
+    assert result.status == "FAIL"
+
+
+def test_content_shift_detector_fails_horizontal_translation(tmp_path):
+    canonical = tmp_path / "c" / "suite-shiftprobe-dark-960x600.png"
+    actual = tmp_path / "a" / "suite-shiftprobe-dark-960x600.png"
+    _save_frame(canonical, _dark_sparse_frame())
+    _save_frame(actual, _dark_sparse_frame(shift_x=30, noise_seed=7))
+
+    result = compare_pair(
+        "suite:shiftprobe@dark",
+        parse_capture_name(canonical),
+        parse_capture_name(actual),
+        thresholds=LayeredThresholds(),
+        use_odiff=False,
+    )
+
+    assert abs(result.layout["content_shift_x"] - 30) <= 3
+    assert "layout_drift" in result.findings
+    # The synthetic pair may also trip the (blocking) anti-fraud perfect-match
+    # override; the contract is that the shift blocks, whatever the label.
+    assert result.real_divergence is True
+
+
+def test_content_shift_zero_on_honest_noise(tmp_path):
+    canonical = tmp_path / "c" / "suite-shiftprobe-dark-960x600.png"
+    actual = tmp_path / "a" / "suite-shiftprobe-dark-960x600.png"
+    _save_frame(canonical, _dark_sparse_frame())
+    _save_frame(actual, _dark_sparse_frame(noise_seed=7))
+
+    result = compare_pair(
+        "suite:shiftprobe@dark",
+        parse_capture_name(canonical),
+        parse_capture_name(actual),
+        thresholds=LayeredThresholds(),
+        use_odiff=False,
+    )
+
+    # The anti-fraud perfect-match flags may legitimately fire on a synthetic
+    # near-identical pair; this contract only pins the shift detector.
+    assert result.layout["content_shift_px"] == 0
+    assert "layout_drift" not in result.findings
+
+
+def test_content_shift_zero_on_in_place_edit(tmp_path):
+    import numpy as np
+
+    canonical = tmp_path / "c" / "suite-shiftprobe-dark-960x600.png"
+    actual = tmp_path / "a" / "suite-shiftprobe-dark-960x600.png"
+    _save_frame(canonical, _dark_sparse_frame())
+    edited = _dark_sparse_frame(noise_seed=7)
+    arr = np.asarray(edited).copy()
+    arr[130:170, 90:290] = (80, 86, 100)  # recolor one card in place, no motion
+    _save_frame(actual, Image.fromarray(arr))
+
+    result = compare_pair(
+        "suite:shiftprobe@dark",
+        parse_capture_name(canonical),
+        parse_capture_name(actual),
+        thresholds=LayeredThresholds(),
+        use_odiff=False,
+    )
+
+    assert result.layout["content_shift_px"] == 0
+    assert "layout_drift" not in result.findings

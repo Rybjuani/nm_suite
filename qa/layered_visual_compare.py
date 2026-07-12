@@ -86,6 +86,29 @@ _NEAR_PERFECT_SSIM = 0.995
 _INJECTION_SSIM_CEILING_DENSE = 0.90
 _INJECTION_SSIM_CEILING_SPARSE = 0.985
 _NEAR_THRESHOLD_FRACTION = 0.05
+# Content-shift detector. The whole-frame content bbox is pinned by identical
+# fixed chrome, so a rigid interior translation can hide from the bbox layer
+# while staying under the raw-delta bars on sparse surfaces (measured 2026-07-12
+# on suite:registro@dark: a 57px full-body shift kept bbox delta 0, changed
+# 0.062 < 0.08, odiff 1.42 < 8, mad 0.020 < 0.035, and the low-variance lane
+# never consults global ssim). Restricting 1-D intensity profiles to the
+# changed band isolates exactly the pixels that moved; the lag that best aligns
+# canonical vs actual is the shift. Estimates are confidence-gated and must
+# beat the zero-lag alignment by a clear margin, so noisy or ambiguous bands
+# can never fail on their own — every other layer still applies.
+_CONTENT_SHIFT_SEARCH_PX = 96
+_CONTENT_SHIFT_MIN_BAND_PX = 16
+_CONTENT_SHIFT_MIN_PROFILE_STD = 0.75
+_CONTENT_SHIFT_MIN_CONFIDENCE = 0.6
+_CONTENT_SHIFT_ZERO_MARGIN = 0.05
+# Segmented estimation: a real Qt layout under fixed height does not translate
+# rigidly — a top-margin change redistributes stretch, so different bands move
+# by different amounts (measured 57px-experiment: lags 54/35/66 across thirds
+# while the whole-band correlation stayed anchored at zero). Estimating the lag
+# per segment and taking the largest confident one catches non-uniform drift;
+# honest pairs still align every segment at zero.
+_CONTENT_SHIFT_SEGMENTS = 4
+_CONTENT_SHIFT_MIN_SEGMENT_PX = 48
 
 
 @dataclass(frozen=True)
@@ -445,6 +468,7 @@ def compare_pair(
     largest_region_ratio = regions[0].area_ratio if regions else 0.0
     metrics["largest_region_ratio"] = round(float(largest_region_ratio), 6)
     layout = _layout_metrics(target_img, actual_img)
+    layout.update(_content_shift_metrics(target_img, actual_img, changed_mask))
 
     if size_mismatch:
         findings.append("size_mismatch")
@@ -903,6 +927,112 @@ def _layout_metrics(target: Image.Image, actual: Image.Image) -> dict[str, Any]:
     }
 
 
+def _content_shift_metrics(
+    target: Image.Image,
+    actual: Image.Image,
+    changed_mask: np.ndarray,
+) -> dict[str, Any]:
+    """Estimate a rigid translation of the content that changed between frames.
+
+    See the _CONTENT_SHIFT_* constants for the failure mode this closes. A
+    nonzero shift is reported only when its normalized correlation clears
+    _CONTENT_SHIFT_MIN_CONFIDENCE and beats the zero-lag alignment by
+    _CONTENT_SHIFT_ZERO_MARGIN; otherwise the axis reports 0 with its raw
+    confidence, and the detector never fails a surface on weak evidence.
+    """
+
+    result = {
+        "content_shift_x": 0,
+        "content_shift_y": 0,
+        "content_shift_px": 0,
+        "content_shift_confidence": 0.0,
+    }
+    if not changed_mask.any():
+        return result
+    actual_for_metrics = actual
+    if target.size != actual.size:
+        actual_for_metrics = actual.resize(target.size, Image.Resampling.LANCZOS)
+    t_gray = _to_gray(np.asarray(target))
+    a_gray = _to_gray(np.asarray(actual_for_metrics))
+
+    def profile_lag(profile_t: np.ndarray, profile_a: np.ndarray) -> tuple[int, float]:
+        if (
+            float(profile_t.std()) < _CONTENT_SHIFT_MIN_PROFILE_STD
+            or float(profile_a.std()) < _CONTENT_SHIFT_MIN_PROFILE_STD
+        ):
+            return 0, 0.0
+        n = profile_t.size
+        radius = min(_CONTENT_SHIFT_SEARCH_PX, n - _CONTENT_SHIFT_MIN_BAND_PX)
+        if radius <= 0:
+            return 0, 0.0
+        best_lag, best_score, zero_score = 0, -2.0, -2.0
+        for lag in range(-radius, radius + 1):
+            if lag >= 0:
+                x, y = profile_t[: n - lag], profile_a[lag:]
+            else:
+                x, y = profile_t[-lag:], profile_a[: n + lag]
+            if x.size < _CONTENT_SHIFT_MIN_BAND_PX:
+                continue
+            xm, ym = x - x.mean(), y - y.mean()
+            denom = float(np.linalg.norm(xm) * np.linalg.norm(ym))
+            if denom == 0.0:
+                continue
+            score = float(np.dot(xm, ym) / denom)
+            if lag == 0:
+                zero_score = score
+            if score > best_score:
+                best_score, best_lag = score, lag
+        if (
+            best_lag != 0
+            and best_score >= _CONTENT_SHIFT_MIN_CONFIDENCE
+            and best_score >= zero_score + _CONTENT_SHIFT_ZERO_MARGIN
+        ):
+            return best_lag, best_score
+        return 0, max(0.0, best_score)
+
+    def axis_shift(axis: int) -> tuple[int, float]:
+        band = np.where(changed_mask.any(axis=1 - axis))[0]
+        if band.size < _CONTENT_SHIFT_MIN_BAND_PX:
+            return 0, 0.0
+        lo = max(0, int(band.min()) - 4)
+        hi = min(changed_mask.shape[axis], int(band.max()) + 1 + 4)
+        if axis == 0:
+            profile_t = t_gray[lo:hi, :].mean(axis=1)
+            profile_a = a_gray[lo:hi, :].mean(axis=1)
+        else:
+            profile_t = t_gray[:, lo:hi].mean(axis=0)
+            profile_a = a_gray[:, lo:hi].mean(axis=0)
+        n = profile_t.size
+        segments = (
+            _CONTENT_SHIFT_SEGMENTS
+            if n // _CONTENT_SHIFT_SEGMENTS >= _CONTENT_SHIFT_MIN_SEGMENT_PX
+            else 1
+        )
+        edges = np.linspace(0, n, segments + 1).astype(int)
+        votes: list[tuple[int, float]] = []
+        for s0, s1 in zip(edges[:-1], edges[1:]):
+            lag, score = profile_lag(profile_t[s0:s1], profile_a[s0:s1])
+            if lag != 0 or score >= _CONTENT_SHIFT_MIN_CONFIDENCE:
+                votes.append((lag, score))
+        if not votes:
+            return 0, 0.0
+        # Median over every confident vote, zeros included: well-aligned
+        # segments vote 0, so one aliased segment (text-ink correlating at a
+        # font-metrics offset, a block matching a lookalike far away) cannot
+        # hijack the estimate. Genuine displacement moves the majority of the
+        # changed band, so the median keeps a representative lag.
+        votes.sort(key=lambda item: item[0])
+        return votes[len(votes) // 2]
+
+    shift_y, confidence_y = axis_shift(0)
+    shift_x, confidence_x = axis_shift(1)
+    result["content_shift_x"] = shift_x
+    result["content_shift_y"] = shift_y
+    result["content_shift_px"] = max(abs(shift_x), abs(shift_y))
+    result["content_shift_confidence"] = round(max(confidence_x, confidence_y), 5)
+    return result
+
+
 def _content_bbox(image: Image.Image) -> list[int] | None:
     arr = np.asarray(image)
     h, w = arr.shape[:2]
@@ -1001,6 +1131,7 @@ def _layout_fail(
         (max_delta is not None and int(max_delta) > thresholds.max_bbox_shift_px)
         or size_delta > thresholds.max_bbox_size_delta_px
         or largest_region_ratio > thresholds.max_largest_region_ratio
+        or int(layout.get("content_shift_px") or 0) > thresholds.max_bbox_shift_px
     )
 
 
@@ -1070,6 +1201,11 @@ def _near_threshold_findings(
     )
     if _near_upper(float(bbox_size_delta), float(thresholds.max_bbox_size_delta_px)):
         findings.append("near_threshold:max_bbox_size_delta_px")
+    content_shift = layout.get("content_shift_px")
+    if content_shift is not None and _near_upper(
+        float(content_shift), float(thresholds.max_bbox_shift_px)
+    ):
+        findings.append("near_threshold:content_shift_px")
     if odiff.get("available") is True and _near_upper(
         float(odiff.get("diff_percentage", 0.0)), thresholds.max_odiff_diff_pct
     ):
