@@ -1,0 +1,7 @@
+{
+  "issued_by": "qa/close_visual_key.py",
+  "key": "suite:recuperar-acceso@light",
+  "record_path": "docs/closure_evidence/active/suite_recuperar-acceso-light.json",
+  "record_sha256": "64c309065ced75623bcd50bdef16159315c0f110e5113e854b874e08281d7f6b",
+  "schema": "nm_suite.closure_receipt.v1"
+}
