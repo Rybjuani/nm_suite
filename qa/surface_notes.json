@@ -86,11 +86,6 @@
       "reason": "non_deterministic_capture",
       "note": "non-deterministic capture"
     },
-    "hub:detalle-resumen-ia-0@light": {
-      "status": "blocked",
-      "reason": "near_threshold",
-      "note": "near-threshold; red-team VQA-THRESH-001"
-    },
     "hub:detalle-resumen-ia-0@dark": {
       "status": "blocked",
       "reason": "modal_gaming",

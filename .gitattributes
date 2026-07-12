@@ -1,2 +1,4 @@
 VISUAL_REPAIR_HANDOFF.md text eol=lf
 qa/surface_notes.json text eol=lf
+docs/closure_evidence/active/*.json text eol=lf
+docs/closure_evidence/receipts/*.json text eol=lf

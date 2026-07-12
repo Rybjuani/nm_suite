@@ -44,6 +44,20 @@ def _write_active(root: Path, record: dict) -> Path:
     path = root / close.active_record_path(record["key"])
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(record), encoding="utf-8")
+    receipt = root / close.closure_receipt_path(record["key"])
+    receipt.parent.mkdir(parents=True, exist_ok=True)
+    receipt.write_text(
+        json.dumps(
+            {
+                "schema": close.CLOSURE_RECEIPT_SCHEMA,
+                "key": record["key"],
+                "record_path": close.active_record_path(record["key"]).as_posix(),
+                "record_sha256": close.sha256_file(path),
+                "issued_by": "qa/close_visual_key.py",
+            }
+        ),
+        encoding="utf-8",
+    )
     return path
 
 
@@ -51,7 +65,16 @@ def test_schema_and_scoped_clean_check_cover_new_authority():
     assert close.EVIDENCE_SCHEMA == "nm_suite.evidence_record.v2"
     assert "assets" in close.SCOPED_STATUS_PATHS
     assert "docs/closure_evidence" in close.SCOPED_STATUS_PATHS
+    assert ".gitattributes" in close.SCOPED_STATUS_PATHS
     assert close.ACTIVE_DIR == Path("docs/closure_evidence/active")
+    assert close.RECEIPT_DIR == Path("docs/closure_evidence/receipts")
+    assert close.CLOSURE_RECEIPT_SCHEMA == "nm_suite.closure_receipt.v1"
+
+
+def test_repository_baseline_gitkeep_is_not_an_active_record():
+    records = close._load_validated_active_records(Path.cwd())
+
+    assert isinstance(records, dict)
 
 
 def test_record_hash_is_canonical_and_key_parser_is_strict():
@@ -301,8 +324,105 @@ def test_close_publishes_record_and_generated_handoff_atomically(monkeypatch, tm
     )
 
     assert result == build
-    assert json.loads((tmp_path / build.record_path).read_text(encoding="utf-8")) == build.record
+    stored_path = tmp_path / build.record_path
+    assert json.loads(stored_path.read_text(encoding="utf-8")) == build.record
+    receipt = json.loads(
+        (tmp_path / close.closure_receipt_path(KEY)).read_text(encoding="utf-8")
+    )
+    assert receipt == {
+        "schema": close.CLOSURE_RECEIPT_SCHEMA,
+        "key": KEY,
+        "record_path": build.record_path.as_posix(),
+        "record_sha256": close.sha256_file(stored_path),
+        "issued_by": "qa/close_visual_key.py",
+    }
     assert (tmp_path / close.HANDOFF).read_text(encoding="utf-8") == f"generated:{KEY}\n"
+
+
+@pytest.mark.parametrize("mutation", [b" ", b'X'])
+def test_existing_record_tamper_cannot_be_laundered_by_closer(tmp_path, mutation):
+    record = _record()
+    active = _write_active(tmp_path, record)
+    raw = active.read_bytes()
+    if mutation == b" ":
+        active.write_bytes(raw + mutation)
+    else:
+        active.write_bytes(raw.replace(b'"PASS"', b'"XASS"', 1))
+
+    with pytest.raises(close.PreflightError, match=f"evidence_hash_mismatch: {KEY}"):
+        close._load_validated_active_records(tmp_path)
+
+
+def test_active_and_receipt_filename_sets_must_be_an_exact_bijection(tmp_path):
+    record = _record()
+    _write_active(tmp_path, record)
+    receipt = tmp_path / close.closure_receipt_path(KEY)
+
+    receipt.unlink()
+    with pytest.raises(close.PreflightError, match="closure_receipt_missing"):
+        close._load_validated_active_records(tmp_path)
+
+    _write_active(tmp_path, record)
+    orphan = receipt.with_name("suite_home-dark.json")
+    orphan.write_text("{}", encoding="utf-8")
+    with pytest.raises(close.PreflightError, match="orphan_closure_receipt"):
+        close._load_validated_active_records(tmp_path)
+    orphan.unlink()
+
+    invalid_receipt = receipt.with_name("not-a-visual-key.json")
+    invalid_receipt.write_text("{}", encoding="utf-8")
+    with pytest.raises(close.PreflightError, match="invalid_closure_receipt_filename"):
+        close._load_validated_active_records(tmp_path)
+    invalid_receipt.unlink()
+
+    receipt_gitkeep = receipt.with_name(".gitkeep")
+    receipt_gitkeep.write_text("", encoding="utf-8")
+    with pytest.raises(close.PreflightError, match="invalid_closure_receipt_filename"):
+        close._load_validated_active_records(tmp_path)
+    receipt_gitkeep.unlink()
+
+    invalid_active = (tmp_path / close.ACTIVE_DIR / "ignored-before-hardening.txt")
+    invalid_active.write_text("{}", encoding="utf-8")
+    with pytest.raises(close.PreflightError, match="invalid_active_record_filename"):
+        close._load_validated_active_records(tmp_path)
+
+
+def test_closer_normalizes_invalid_utf8_to_fail_closed_diagnostics(tmp_path):
+    record = _record()
+    active = _write_active(tmp_path, record)
+    active.write_bytes(b"\xff")
+    with pytest.raises(close.PreflightError, match="invalid_active_record_json"):
+        close._load_validated_active_records(tmp_path)
+
+    _write_active(tmp_path, record)
+    (tmp_path / close.closure_receipt_path(KEY)).write_bytes(b"\xff")
+    with pytest.raises(close.PreflightError, match="closure_receipt_invalid"):
+        close._load_validated_active_records(tmp_path)
+
+
+def test_publish_preserves_unchanged_record_and_receipt_bytes(monkeypatch, tmp_path):
+    record = _record()
+    active = _write_active(tmp_path, record)
+    receipt = tmp_path / close.closure_receipt_path(KEY)
+    (tmp_path / close.HANDOFF).write_text("before\n", encoding="utf-8")
+    active_before = active.read_bytes()
+    receipt_before = receipt.read_bytes()
+    json_writes: list[Path] = []
+    real_write_json = close._write_json_atomic
+
+    def spy_write_json(path, payload):
+        json_writes.append(Path(path))
+        real_write_json(path, payload)
+
+    monkeypatch.setattr(close, "_write_json_atomic", spy_write_json)
+    monkeypatch.setattr(close, "render_handoff", lambda *_args, **_kwargs: "after\n")
+
+    close._publish_desired_state(tmp_path, {KEY: dict(record)})
+
+    assert json_writes == []
+    assert active.read_bytes() == active_before
+    assert receipt.read_bytes() == receipt_before
+    assert (tmp_path / close.HANDOFF).read_text(encoding="utf-8") == "after\n"
 
 
 def test_renderer_failure_rolls_back_record_and_handoff(monkeypatch, tmp_path):
@@ -328,6 +448,34 @@ def test_renderer_failure_rolls_back_record_and_handoff(monkeypatch, tmp_path):
         )
 
     assert not (tmp_path / close.active_record_path(KEY)).exists()
+    assert handoff.read_text(encoding="utf-8") == "original\n"
+
+
+def test_handoff_write_failure_rolls_back_record_and_receipt(monkeypatch, tmp_path):
+    _patch_repo_guards(monkeypatch)
+    handoff = tmp_path / close.HANDOFF
+    handoff.write_text("original\n", encoding="utf-8")
+    monkeypatch.setattr(close, "regenerate_record_for_key", lambda **_kwargs: _build())
+    monkeypatch.setattr(close, "load_active_records", lambda _root: {})
+    monkeypatch.setattr(close, "render_handoff", lambda *_args, **_kwargs: "generated\n")
+    monkeypatch.setattr(
+        close,
+        "_write_text_atomic",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("disk full")),
+    )
+
+    with pytest.raises(OSError, match="disk full"):
+        close.close_visual_key(
+            key=KEY,
+            repo_root=tmp_path,
+            target_set={KEY},
+            capture_dir=tmp_path / "capture-a",
+            second_capture_dir=tmp_path / "capture-b",
+            report_dir=tmp_path / "reports",
+        )
+
+    assert not (tmp_path / close.active_record_path(KEY)).exists()
+    assert not (tmp_path / close.closure_receipt_path(KEY)).exists()
     assert handoff.read_text(encoding="utf-8") == "original\n"
 
 
@@ -606,6 +754,7 @@ def test_resume_pending_refresh_replaces_active_record_only_when_source_matches(
 
     # Sin record activo no hay refresh que reanudar.
     (tmp_path / close.active_record_path(KEY)).unlink()
+    (tmp_path / close.closure_receipt_path(KEY)).unlink()
     orphan_pending = _refresh_pending(
         tmp_path, old, source_evidence=close.canonical_record_sha256(old)
     )

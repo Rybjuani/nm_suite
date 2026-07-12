@@ -6,10 +6,12 @@ import hashlib
 import json
 import subprocess
 from pathlib import Path
+from urllib.error import HTTPError
 
 import pytest
 
 from qa import replay_visual_closure as replay
+from qa.approval_verifier import verify_approval
 from qa.closure_policy import (
     ANTIFRAUD_SUMMARY_SCHEMA,
     DETERMINISM_SCHEMA,
@@ -130,6 +132,27 @@ def _universe() -> tuple[str, ...]:
     return tuple(f"suite:test-{index:03d}@light" for index in range(116))
 
 
+def _write_issued_record(root: Path, record: dict) -> Path:
+    active = root / replay.ACTIVE_DIR / f"{replay.key_safe(record['key'])}.json"
+    active.parent.mkdir(parents=True, exist_ok=True)
+    active.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    receipt = root / replay.RECEIPT_DIR / active.name
+    receipt.parent.mkdir(parents=True, exist_ok=True)
+    receipt.write_text(
+        json.dumps(
+            {
+                "schema": replay.CLOSURE_RECEIPT_SCHEMA,
+                "key": record["key"],
+                "record_path": (replay.ACTIVE_DIR / active.name).as_posix(),
+                "record_sha256": hashlib.sha256(active.read_bytes()).hexdigest(),
+                "issued_by": "qa/close_visual_key.py",
+            }
+        ),
+        encoding="utf-8",
+    )
+    return active
+
+
 def test_replay_has_no_import_or_orchestration_dependency_on_closer():
     source = Path(replay.__file__).read_text(encoding="utf-8")
     tree = ast.parse(source)
@@ -169,6 +192,7 @@ def test_kernel_paths_include_inherited_and_v2_governance_roots():
         "qa/surface_scope.py",
         "qa/surface_notes.json",
         ".github/CODEOWNERS",
+        ".gitattributes",
     }
 
     assert expected <= set(replay.KERNEL_PATHS)
@@ -178,9 +202,16 @@ def test_kernel_path_matching_preserves_dot_prefixed_github_paths():
     paths = [
         ".github/workflows/visual-closure-replay.yml",
         ".github/CODEOWNERS",
+        ".gitattributes",
     ]
 
     assert replay.kernel_paths_touched(paths) == sorted(paths)
+
+
+def test_receipt_changes_are_closure_changes_for_the_r0_guard():
+    path = f"{replay.RECEIPT_DIR.as_posix()}/suite_home-light.json"
+
+    assert replay._changed_active_keys([path]) == {KEY}
 
 
 def test_record_sanity_accepts_complete_v2_and_rejects_tampering():
@@ -203,7 +234,92 @@ def test_active_record_filename_is_authority_for_key(tmp_path):
     records, failures = replay._read_active_records(tmp_path)
 
     assert records == {}
-    assert failures == [replay.ReplayFailure(KEY, "record_filename_key_mismatch")]
+    assert failures == [
+        replay.ReplayFailure(KEY, "closure_receipt_missing"),
+        replay.ReplayFailure(KEY, "record_filename_key_mismatch"),
+    ]
+
+
+@pytest.mark.parametrize("semantic", [False, True])
+def test_active_record_byte_or_semantic_tamper_breaks_independent_anchor(
+    tmp_path, semantic
+):
+    active = _write_issued_record(tmp_path, _valid_record())
+    raw = active.read_bytes()
+    active.write_bytes(
+        raw.replace(b'"result": "PASS"', b'"result": "FAIL"', 1)
+        if semantic
+        else raw + b" "
+    )
+
+    records, failures = replay._read_active_records(tmp_path)
+
+    assert records[KEY]["result"] == ("FAIL" if semantic else "PASS")
+    assert replay.ReplayFailure(KEY, "evidence_hash_mismatch") in failures
+
+
+def test_fabricated_active_record_without_closer_receipt_is_rejected(tmp_path):
+    active = tmp_path / replay.ACTIVE_DIR / "suite_home-light.json"
+    active.parent.mkdir(parents=True)
+    active.write_text(json.dumps(_valid_record()), encoding="utf-8")
+
+    records, failures = replay._read_active_records(tmp_path)
+
+    assert records == {KEY: _valid_record()}
+    assert failures == [replay.ReplayFailure(KEY, "closure_receipt_missing")]
+
+
+def test_replay_rejects_invalid_utf8_receipt_and_unrecognized_filenames(tmp_path):
+    active = _write_issued_record(tmp_path, _valid_record())
+    receipt = tmp_path / replay.RECEIPT_DIR / active.name
+    receipt.write_bytes(b"\xff")
+
+    records, failures = replay._read_active_records(tmp_path)
+
+    assert records == {KEY: _valid_record()}
+    assert replay.ReplayFailure(KEY, "closure_receipt_invalid") in failures
+
+    receipt.write_text("{}", encoding="utf-8")
+    (tmp_path / replay.RECEIPT_DIR / "ignored-before-hardening.txt").write_text(
+        "{}", encoding="utf-8"
+    )
+    (tmp_path / replay.ACTIVE_DIR / "ignored-before-hardening.txt").write_text(
+        "{}", encoding="utf-8"
+    )
+
+    _records, failures = replay._read_active_records(tmp_path)
+    assert replay.ReplayFailure(
+        "ignored-before-hardening.txt", "invalid_closure_receipt_filename"
+    ) in failures
+    assert replay.ReplayFailure(
+        "ignored-before-hardening.txt", "invalid_active_record_filename"
+    ) in failures
+
+
+def test_full_replay_never_measures_fabricated_record_without_receipt(
+    monkeypatch, tmp_path
+):
+    record = _valid_record()
+    failure = replay.ReplayFailure(KEY, "closure_receipt_missing")
+    structural = replay.ReplayResult("structural", 1, 1, 0, (failure,))
+    monkeypatch.setattr(replay, "audit_structure", lambda **_kwargs: structural)
+    monkeypatch.setattr(
+        replay,
+        "_read_active_records",
+        lambda _root: ({KEY: record}, [failure]),
+    )
+
+    def must_not_measure(*_args):
+        raise AssertionError("fabricated record reached regeneration")
+
+    result = replay.replay_full(
+        repo_root=tmp_path,
+        all_closed=True,
+        measurement_runner=must_not_measure,
+    )
+
+    assert result.replayed_keys == 0
+    assert result.failures == (failure,)
 
 
 def test_closed_handoff_parser_detects_duplicates():
@@ -565,6 +681,41 @@ def test_full_replay_reuses_stored_approval_without_rebinding_hash(monkeypatch, 
     assert approval["approved_findings"] == ["near_threshold:changed_pixel_ratio"]
 
 
+def test_full_replay_fails_closed_when_approval_comment_returns_404(
+    monkeypatch, tmp_path
+):
+    record = _near_threshold_record_with_approval()
+    structural = replay.ReplayResult("structural", 1, 1, 0, ())
+    monkeypatch.setattr(replay, "audit_structure", lambda **_kwargs: structural)
+    monkeypatch.setattr(replay, "_read_active_records", lambda _root: ({KEY: record}, []))
+
+    def deleted_comment(_url, _headers, _timeout):
+        raise HTTPError("https://api.github.com/comment", 404, "Not Found", None, None)
+
+    def checker(review, **kwargs):
+        return verify_approval(
+            review,
+            **kwargs,
+            issue_number=1,
+            repository="Rybjuani/nm_suite",
+            owner="Rybjuani",
+            token="read-only-test-token",
+            fetcher=deleted_comment,
+        )
+
+    result = replay.replay_full(
+        repo_root=tmp_path,
+        all_closed=True,
+        approval_checker=checker,
+        measurement_runner=lambda _root, _key, _commit: _measurement(record),
+    )
+
+    assert result.replayed_keys == 0
+    assert result.failures == (
+        replay.ReplayFailure(KEY, "approval_invalid:approval_fetch_failed"),
+    )
+
+
 def test_full_replay_blocks_regenerated_near_threshold_beyond_approved_set(monkeypatch, tmp_path):
     record = _near_threshold_record_with_approval()
     measurement = _measurement(record)
@@ -621,3 +772,11 @@ def test_v1_records_are_quarantined_and_active_authority_starts_empty():
     assert list((root / "active").glob("*.json")) == []
     assert all(json.loads(path.read_text())["schema"] == "nm_suite.evidence_record.v1" for path in invalidated)
     assert "forensic-pre-v3.1" in (root / "invalidated_v1" / "README.md").read_text()
+
+
+def test_repository_active_gitkeep_is_not_parsed_as_evidence():
+    _records, failures = replay._read_active_records(Path.cwd())
+
+    assert replay.ReplayFailure(
+        ".gitkeep", "invalid_active_record_filename"
+    ) not in failures

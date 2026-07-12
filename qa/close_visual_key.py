@@ -65,6 +65,8 @@ EVIDENCE_SCHEMA = "nm_suite.evidence_record.v2"
 EVIDENCE_DIR = Path("docs") / "closure_evidence"
 ACTIVE_DIR = EVIDENCE_DIR / "active"
 REVOKED_DIR = ACTIVE_DIR / "revoked"
+RECEIPT_DIR = EVIDENCE_DIR / "receipts"
+CLOSURE_RECEIPT_SCHEMA = "nm_suite.closure_receipt.v1"
 PENDING_DIR = Path("reports") / "qa" / "visual_closure_pending"
 PENDING_SCHEMA = "nm_suite.pending_closure.v1"
 REVOCATION_SCHEMA = "nm_suite.revocation.v1"
@@ -83,6 +85,7 @@ SCOPED_STATUS_PATHS = (
     HANDOFF.as_posix(),
     ".github/workflows",
     ".github/CODEOWNERS",
+    ".gitattributes",
 )
 MEASUREMENT_TOOL_PATHS = (
     "qa/approval_verifier.py",
@@ -100,6 +103,9 @@ MEASUREMENT_TOOL_PATHS = (
     "tools/qa/audit_modal_backdrop_blur.py",
 )
 KEY_RE = re.compile(r"(?P<app>suite|hub):(?P<view>[^@\s`\"'\]\)]+)@(?P<theme>light|dark)")
+RECORD_NAME_RE = re.compile(
+    r"^(?P<app>suite|hub)_(?P<view>[^@\s]+)-(?P<theme>light|dark)\.json$"
+)
 VOLATILE_JSON_KEYS = {
     "generated_at",
     "captured_at",
@@ -279,6 +285,123 @@ def ensure_clean_for_closure(repo_root: Path) -> None:
 
 def active_record_path(key: str) -> Path:
     return ACTIVE_DIR / f"{key_safe(key)}.json"
+
+
+def closure_receipt_path(key: str) -> Path:
+    """Return the byte-exact checksum receipt for an active record.
+
+    This is an unauthenticated checksum, not a signature or proof of writer
+    identity. R0 review protects the record/receipt pair; the receipt detects
+    one-sided byte changes without archiving transient capture artifacts.
+    """
+
+    return RECEIPT_DIR / f"{key_safe(key)}.json"
+
+
+def _key_from_record_name(name: str) -> str:
+    match = RECORD_NAME_RE.fullmatch(name)
+    if not match:
+        return ""
+    return f"{match.group('app')}:{match.group('view')}@{match.group('theme')}"
+
+
+def _direct_entries(
+    path: Path,
+    *,
+    allowed_directory: str | None = None,
+    allow_gitkeep: bool = False,
+) -> tuple[Path, ...]:
+    if not path.exists():
+        return ()
+    return tuple(
+        sorted(
+            (
+                entry
+                for entry in path.iterdir()
+                if not (
+                    allowed_directory is not None
+                    and entry.name == allowed_directory
+                    and entry.is_dir()
+                )
+                and not (allow_gitkeep and entry.name == ".gitkeep" and entry.is_file())
+            ),
+            key=lambda entry: entry.name,
+        )
+    )
+
+
+def _load_validated_active_records(repo_root: Path) -> dict[str, dict[str, Any]]:
+    try:
+        records = load_active_records(repo_root)
+    except UnicodeDecodeError as exc:
+        raise PreflightError("invalid_active_record_json") from exc
+
+    active_entries = _direct_entries(
+        repo_root / ACTIVE_DIR,
+        allowed_directory="revoked",
+        allow_gitkeep=True,
+    )
+    invalid_active = [
+        entry.name
+        for entry in active_entries
+        if not entry.is_file() or not _key_from_record_name(entry.name)
+    ]
+    if invalid_active:
+        raise PreflightError(
+            "invalid_active_record_filename: " + ", ".join(invalid_active)
+        )
+    active_keys = {_key_from_record_name(entry.name) for entry in active_entries}
+    if active_keys != set(records):
+        raise PreflightError("record_filename_key_mismatch")
+
+    receipt_entries = _direct_entries(repo_root / RECEIPT_DIR)
+    invalid_receipts = [
+        entry.name
+        for entry in receipt_entries
+        if not entry.is_file() or not _key_from_record_name(entry.name)
+    ]
+    if invalid_receipts:
+        raise PreflightError(
+            "invalid_closure_receipt_filename: " + ", ".join(invalid_receipts)
+        )
+    receipt_keys = {_key_from_record_name(entry.name) for entry in receipt_entries}
+    orphan_receipts = sorted(receipt_keys - active_keys)
+    if orphan_receipts:
+        raise PreflightError("orphan_closure_receipt: " + ", ".join(orphan_receipts))
+    missing_receipts = sorted(active_keys - receipt_keys)
+    if missing_receipts:
+        raise PreflightError("closure_receipt_missing: " + ", ".join(missing_receipts))
+
+    expected_fields = {
+        "schema",
+        "key",
+        "record_path",
+        "record_sha256",
+        "issued_by",
+    }
+    for key in records:
+        record_path = repo_root / active_record_path(key)
+        receipt_path = repo_root / closure_receipt_path(key)
+        try:
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        except FileNotFoundError as exc:
+            raise PreflightError(f"closure_receipt_missing: {key}") from exc
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise PreflightError(f"closure_receipt_invalid: {key}") from exc
+        if (
+            not isinstance(receipt, dict)
+            or set(receipt) != expected_fields
+            or receipt.get("schema") != CLOSURE_RECEIPT_SCHEMA
+            or receipt.get("key") != key
+            or receipt.get("record_path") != active_record_path(key).as_posix()
+            or receipt.get("issued_by") != "qa/close_visual_key.py"
+            or not isinstance(receipt.get("record_sha256"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", receipt["record_sha256"])
+        ):
+            raise PreflightError(f"closure_receipt_invalid: {key}")
+        if not record_path.is_file() or receipt["record_sha256"] != sha256_binary(record_path):
+            raise PreflightError(f"evidence_hash_mismatch: {key}")
+    return records
 
 
 def resolve_target_set(
@@ -967,22 +1090,52 @@ def _publish_desired_state(
     desired_records: Mapping[str, Mapping[str, Any]],
     revocations: Iterable[tuple[Mapping[str, Any], str]] = (),
 ) -> list[Path]:
+    current = _load_validated_active_records(repo_root)
     rendered = render_handoff(repo_root, active_records=desired_records)
-    current = load_active_records(repo_root)
+    removed_keys = set(current) - set(desired_records)
+    updated_keys = {
+        key
+        for key, record in desired_records.items()
+        if key not in current or dict(current[key]) != dict(record)
+    }
+    changed_state_keys = removed_keys | updated_keys
     active_paths = {
-        repo_root / active_record_path(key) for key in set(current) | set(desired_records)
+        repo_root / active_record_path(key) for key in changed_state_keys
+    }
+    receipt_paths = {
+        repo_root / closure_receipt_path(key) for key in changed_state_keys
     }
     revocation_payloads = [_revocation(record, reason) for record, reason in revocations]
-    changed_paths = [*active_paths, *(repo_root / path for path, _ in revocation_payloads), repo_root / HANDOFF]
+    changed_paths = [
+        *active_paths,
+        *receipt_paths,
+        *(repo_root / path for path, _ in revocation_payloads),
+        repo_root / HANDOFF,
+    ]
     snapshots = {path: path.read_bytes() if path.exists() else None for path in changed_paths}
     written_revocations: list[Path] = []
     try:
-        for key in set(current) - set(desired_records):
+        for key in sorted(removed_keys):
             path = repo_root / active_record_path(key)
             if path.exists():
                 path.unlink()
-        for key, record in desired_records.items():
-            _write_json_atomic(repo_root / active_record_path(key), record)
+            receipt = repo_root / closure_receipt_path(key)
+            if receipt.exists():
+                receipt.unlink()
+        for key in sorted(updated_keys):
+            record = desired_records[key]
+            record_path = repo_root / active_record_path(key)
+            _write_json_atomic(record_path, record)
+            _write_json_atomic(
+                repo_root / closure_receipt_path(key),
+                {
+                    "schema": CLOSURE_RECEIPT_SCHEMA,
+                    "key": key,
+                    "record_path": active_record_path(key).as_posix(),
+                    "record_sha256": sha256_binary(record_path),
+                    "issued_by": "qa/close_visual_key.py",
+                },
+            )
         for rel_path, payload in revocation_payloads:
             path = repo_root / rel_path
             if path.exists():
@@ -1084,7 +1237,7 @@ def close_visual_key(
 
     if dry_run:
         return build
-    desired = load_active_records(repo_root)
+    desired = _load_validated_active_records(repo_root)
     desired[parsed.key] = build.record
     _publish_desired_state(repo_root, desired)
     return build
@@ -1102,7 +1255,7 @@ def reopen_visual_key(
     if not reason:
         raise PreflightError("missing_reopen_reason")
     ensure_clean_for_closure(repo_root)
-    records = load_active_records(repo_root)
+    records = _load_validated_active_records(repo_root)
     record = records.get(parsed.key)
     if record is None:
         raise PreflightError("key_not_closed")
@@ -1126,7 +1279,7 @@ def refresh_evidence(
     if not selected:
         raise PreflightError("empty_refresh_set")
     ensure_clean_for_closure(repo_root)
-    records = load_active_records(repo_root)
+    records = _load_validated_active_records(repo_root)
     missing = [key for key in selected if key not in records]
     if missing:
         raise PreflightError(f"refresh_key_not_closed: {', '.join(missing)}")
@@ -1172,7 +1325,7 @@ def refresh_evidence(
 
 
 def stale_active_keys(repo_root: Path = ROOT) -> tuple[str, ...]:
-    records = load_active_records(repo_root)
+    records = _load_validated_active_records(repo_root)
     return tuple(
         sorted(
             key
@@ -1242,7 +1395,7 @@ def resume_pending_closure(
         record_sha256=canonical_record_sha256(candidate),
         record_path=active_record_path(key),
     )
-    desired = load_active_records(repo_root)
+    desired = _load_validated_active_records(repo_root)
     operation = candidate.get("operation")
     op_kind = operation.get("kind") if isinstance(operation, Mapping) else "close"
     if op_kind == "refresh":
