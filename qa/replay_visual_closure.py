@@ -454,6 +454,44 @@ def _report_near_threshold(record: Mapping[str, Any]) -> bool:
     )
 
 
+def _stored_near_threshold_findings(record: Mapping[str, Any]) -> list[str]:
+    report = record.get("report")
+    if not isinstance(report, Mapping):
+        return []
+    results = report.get("results")
+    if not isinstance(results, list) or not results or not isinstance(results[0], Mapping):
+        return []
+    findings = results[0].get("findings")
+    if not isinstance(findings, list):
+        return []
+    return [
+        finding
+        for finding in findings
+        if isinstance(finding, str) and finding.startswith("near_threshold:")
+    ]
+
+
+def _reuse_annotated_approval(
+    record: Mapping[str, Any],
+    approval: Mapping[str, object],
+) -> dict[str, object]:
+    """Annotate a verified stored approval for explicit replay reuse.
+
+    The approval was externally verified against the stored record's
+    ``report_sha256`` (which the class-A checks pin to this record). Reuse
+    never rewrites that verified hash onto the regenerated report: the
+    policy accepts the ``stored_record_reuse`` binding only while the
+    regenerated near-threshold findings stay within the approved set.
+    """
+
+    return {
+        **approval,
+        "binding": "stored_record_reuse",
+        "approved_report_sha256": approval.get("report_sha256"),
+        "approved_findings": _stored_near_threshold_findings(record),
+    }
+
+
 ApprovalChecker = Callable[..., dict[str, object]]
 
 
@@ -1032,9 +1070,7 @@ def replay_full(
         if approval_reasons:
             continue
         if isinstance(approval, dict):
-            approval = dict(approval)
-            approval["key"] = key
-            approval["report_sha256"] = measurement.get("report", {}).get("report_sha256")
+            approval = _reuse_annotated_approval(record, approval)
         allow, reasons = decide(
             measurement.get("report"),
             measurement.get("vas_summary"),

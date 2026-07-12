@@ -140,6 +140,72 @@ def test_near_threshold_requires_external_approval_tied_to_report():
     assert _decision(inputs) == (True, [])
 
 
+def _reuse_approval(*, approved_findings: list[str], stored_sha: str = "f" * 64) -> dict:
+    return {
+        "verified": True,
+        "key": "suite:home@light",
+        "report_sha256": stored_sha,
+        "binding": "stored_record_reuse",
+        "approved_report_sha256": stored_sha,
+        "approved_findings": approved_findings,
+        "approval_url": "https://github.com/Rybjuani/nm_suite/issues/1#issuecomment-2",
+        "comment_id": 2,
+        "author": "Rybjuani",
+    }
+
+
+def test_stored_record_reuse_binding_never_requires_hash_rebinding():
+    # El reporte regenerado tiene hash "a"*64; la aprobación queda ligada al
+    # hash almacenado "f"*64 que GitHub verificó. El reuso explícito permite
+    # sin reescribir el hash verificado.
+    inputs = _valid_inputs()
+    inputs["report"]["results"][0]["findings"] = ["near_threshold:changed_pixel_ratio"]
+    inputs["approval"] = _reuse_approval(
+        approved_findings=["near_threshold:changed_pixel_ratio"]
+    )
+
+    assert _decision(inputs) == (True, [])
+
+
+def test_stored_record_reuse_blocks_when_regenerated_findings_exceed_approved():
+    inputs = _valid_inputs()
+    inputs["report"]["results"][0]["findings"] = [
+        "near_threshold:changed_pixel_ratio",
+        "near_threshold:mean_abs_diff",
+    ]
+    inputs["approval"] = _reuse_approval(
+        approved_findings=["near_threshold:changed_pixel_ratio"]
+    )
+
+    allowed, reasons = _decision(inputs)
+    assert allowed is False
+    assert "approval_reuse_findings_exceeded" in reasons
+
+
+def test_stored_record_reuse_requires_self_consistent_verified_hash():
+    inputs = _valid_inputs()
+    inputs["report"]["results"][0]["findings"] = ["near_threshold:changed_pixel_ratio"]
+    approval = _reuse_approval(approved_findings=["near_threshold:changed_pixel_ratio"])
+    approval["approved_report_sha256"] = "0" * 64  # distinto del hash verificado
+
+    inputs["approval"] = approval
+    allowed, reasons = _decision(inputs)
+    assert allowed is False
+    assert "approval_evidence_mismatch" in reasons
+
+
+def test_unknown_approval_binding_is_fail_closed():
+    inputs = _valid_inputs()
+    inputs["report"]["results"][0]["findings"] = ["near_threshold:changed_pixel_ratio"]
+    approval = _reuse_approval(approved_findings=["near_threshold:changed_pixel_ratio"])
+    approval["binding"] = "trust_me"
+
+    inputs["approval"] = approval
+    allowed, reasons = _decision(inputs)
+    assert allowed is False
+    assert "approval_binding_invalid" in reasons
+
+
 def test_ambiguous_pair_requires_state_assertion_from_shared_registry():
     inputs = _valid_inputs("suite:timer-running@dark")
 

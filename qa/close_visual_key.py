@@ -181,6 +181,7 @@ class ReopenResult:
 class RefreshResult:
     refreshed: tuple[str, ...]
     reopened: tuple[str, ...]
+    pending: tuple[Path, ...] = ()
 
 
 def _run(
@@ -1118,6 +1119,7 @@ def refresh_evidence(
     keys: Iterable[str],
     repo_root: Path = ROOT,
     approval: object = None,
+    approval_resolver: Callable[[str, str], object] | None = None,
 ) -> RefreshResult:
     repo_root = repo_root.resolve()
     selected = tuple(dict.fromkeys(parse_key(key).key for key in keys))
@@ -1131,6 +1133,7 @@ def refresh_evidence(
     commit_head = git_rev_parse(repo_root)
     refreshed: list[str] = []
     reopened: list[str] = []
+    pending: list[Path] = []
     revocations: list[tuple[Mapping[str, Any], str]] = []
     with temporary_worktree(repo_root, commit_head) as worktree:
         for key in selected:
@@ -1141,14 +1144,22 @@ def refresh_evidence(
                     commit_head=commit_head,
                     target_set=selected,
                     approval=approval,
+                    approval_resolver=approval_resolver,
                     operation={
                         "kind": "refresh",
                         "refreshed_from_commit": records[key].get("commit_head"),
+                        "refreshed_from_evidence": canonical_record_sha256(records[key]),
                     },
                 )
             except PolicyError as exc:
                 if _approval_only(exc.reasons):
-                    raise
+                    # Aprobación externa es el ÚNICO bloqueo: la key no se
+                    # reabre. Queda el record viejo activo (sigue stale) y un
+                    # candidato inmutable esperando el resume con approval.
+                    if exc.candidate is None:
+                        raise
+                    pending.append(_write_pending(repo_root, exc.candidate))
+                    continue
                 old = records.pop(key)
                 reason = "stale_fail:" + ",".join(exc.reasons)
                 revocations.append((old, reason))
@@ -1157,7 +1168,7 @@ def refresh_evidence(
                 records[key] = build.record
                 refreshed.append(key)
     _publish_desired_state(repo_root, records, revocations)
-    return RefreshResult(tuple(refreshed), tuple(reopened))
+    return RefreshResult(tuple(refreshed), tuple(reopened), tuple(pending))
 
 
 def stale_active_keys(repo_root: Path = ROOT) -> tuple[str, ...]:
@@ -1232,7 +1243,15 @@ def resume_pending_closure(
         record_path=active_record_path(key),
     )
     desired = load_active_records(repo_root)
-    if key in desired:
+    operation = candidate.get("operation")
+    op_kind = operation.get("kind") if isinstance(operation, Mapping) else "close"
+    if op_kind == "refresh":
+        existing = desired.get(key)
+        if existing is None:
+            raise PreflightError("pending_refresh_key_not_closed")
+        if canonical_record_sha256(existing) != operation.get("refreshed_from_evidence"):
+            raise PreflightError("pending_refresh_source_mismatch")
+    elif key in desired:
         raise PreflightError("key_already_closed")
     desired[key] = candidate
     _publish_desired_state(repo_root, desired)
@@ -1308,10 +1327,15 @@ def main(argv: list[str] | None = None) -> int:
             if args.stale == bool(args.keys):
                 parser.error("--refresh-evidence requires exactly one of --stale or --keys")
             keys = stale_active_keys() if args.stale else tuple(args.keys or ())
-            result = refresh_evidence(keys=keys)
+            result = refresh_evidence(
+                keys=keys,
+                approval_resolver=_approval_resolver_from_url(args.approval_url, ROOT),
+            )
             print(f"refreshed: {len(result.refreshed)}")
             print(f"reopened-stale-fail: {len(result.reopened)}")
-            return 0
+            for pending_path in result.pending:
+                print(f"pending-approval: {pending_path.as_posix()}", file=sys.stderr)
+            return ApprovalRequired.exit_code if result.pending else 0
         if args.resume_pending:
             if not args.approval_url:
                 parser.error("--resume-pending requires --approval-url")

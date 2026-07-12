@@ -402,6 +402,21 @@ Cada key se vuelve a medir. PASS reemplaza su record con nota de refresh;
 policy FAIL la reabre como `stale_fail`. Un error operativo no autoriza una
 revocación silenciosa.
 
+Si el ÚNICO bloqueo de una key es la aprobación externa (near-threshold), el
+refresh NO la reabre: deja el record viejo activo (sigue stale), escribe un
+candidato inmutable en `reports/qa/visual_closure_pending/` y sale con código 3.
+El owner comenta la key y el prefijo del `report_sha256` NUEVO del candidato en
+el issue fijo, y se reanuda con el mismo carril del cierre:
+
+```powershell
+.\.venv\Scripts\python.exe qa\close_visual_key.py `
+  --resume-pending <pending.json> `
+  --approval-url <https://github.com/...#issuecomment-...>
+```
+
+El resume de un refresh reemplaza el record activo sólo si sigue siendo el
+mismo del que partió la medición (`pending_refresh_source_mismatch` si cambió).
+
 ---
 
 ## 4. Post-cierre
@@ -457,7 +472,12 @@ En hitos de familia y al final, reproducí todos los records activos:
 El replay verifica la clase A de provenance de forma exacta y re-deriva la
 clase B con capturas nuevas. La recaptura y sus métricas pueden variar dentro
 de los bars; lo obligatorio es que la policy vuelva a dar ALLOW. Nunca exijas
-un hash PNG o un reporte nuevo byte-idéntico al almacenado.
+un hash PNG o un reporte nuevo byte-idéntico al almacenado. Para keys
+near-threshold, el replay reutiliza la aprobación almacenada de forma
+EXPLÍCITA (`binding: stored_record_reuse`): el hash verificado por GitHub no
+se reescribe nunca sobre el reporte regenerado, y el reuso sólo vale mientras
+los findings near-threshold regenerados no excedan los aprobados
+(`approval_reuse_findings_exceeded` si aparecen nuevos).
 
 **Cómo resolver `<base-real>`**: el replay audita el rango `base..HEAD`. Tenés
 que elegir `base` como el último commit **anterior** a tus cierres. Opciones:

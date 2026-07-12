@@ -202,13 +202,45 @@ def _validate_approval(
     findings: list[str],
     reasons: list[str],
 ) -> None:
-    if not any(finding.startswith("near_threshold:") for finding in findings):
+    """Validate the external approval for near-threshold evidence.
+
+    Two explicit bindings exist and the verified hash is never rewritten:
+
+    - ``direct`` (default, closure time): the approval was externally
+      verified against the exact report being decided, so
+      ``approval.report_sha256`` must equal the current report hash.
+    - ``stored_record_reuse`` (independent replay of an existing record):
+      the approval stays bound to the stored record's report hash — the one
+      GitHub actually verified and that the replay's class-A checks pin to
+      the record. Reuse is valid only while the regenerated near-threshold
+      findings do not exceed the set the owner approved.
+    """
+
+    near_findings = [finding for finding in findings if finding.startswith("near_threshold:")]
+    if not near_findings:
         return
     if not isinstance(approval, Mapping) or approval.get("verified") is not True:
         _add(reasons, "near_threshold_requires_verified_approval")
         return
-    if approval.get("key") != key or approval.get("report_sha256") != report_sha256:
+    if approval.get("key") != key:
         _add(reasons, "approval_evidence_mismatch")
+    binding = approval.get("binding", "direct")
+    if binding == "direct":
+        if approval.get("report_sha256") != report_sha256:
+            _add(reasons, "approval_evidence_mismatch")
+    elif binding == "stored_record_reuse":
+        if approval.get("report_sha256") != approval.get("approved_report_sha256"):
+            _add(reasons, "approval_evidence_mismatch")
+        approved = approval.get("approved_findings")
+        if not isinstance(approved, list) or not all(
+            isinstance(finding, str) and finding.startswith("near_threshold:")
+            for finding in approved
+        ):
+            _add(reasons, "approval_reuse_findings_invalid")
+        elif not set(near_findings) <= set(approved):
+            _add(reasons, "approval_reuse_findings_exceeded")
+    else:
+        _add(reasons, "approval_binding_invalid")
     for field in ("approval_url", "comment_id", "author"):
         value = approval.get(field)
         if not isinstance(value, (str, int)) or isinstance(value, bool) or str(value).strip() == "":

@@ -504,6 +504,94 @@ def test_full_replay_accepts_new_metrics_when_new_measurement_allows(monkeypatch
     assert result.replayed_keys == 1
 
 
+def _near_threshold_record_with_approval() -> dict:
+    record = _valid_record()
+    record["report"]["results"][0]["findings"] = ["near_threshold:changed_pixel_ratio"]
+    record["human_review"] = {
+        "approval_url": "https://github.com/Rybjuani/nm_suite/issues/1#issuecomment-2",
+        "comment_id": 2,
+        "author": "Rybjuani",
+    }
+    return record
+
+
+def _stored_bound_checker(review, **kwargs):
+    # Simula al verificador externo: la aprobación queda ligada al hash que
+    # GitHub verificó (el report_sha256 ALMACENADO del record), nunca a otro.
+    return {
+        "verified": True,
+        "key": kwargs["key"],
+        "report_sha256": kwargs["report_sha256"],
+        **review,
+    }
+
+
+def test_full_replay_reuses_stored_approval_without_rebinding_hash(monkeypatch, tmp_path):
+    # Hash original A en el record; el reporte regenerado sale con hash B y
+    # sigue near-threshold. El reuso debe ser explícito y el hash verificado
+    # (A) no puede reescribirse como si GitHub hubiera aprobado B.
+    record = _near_threshold_record_with_approval()
+    measurement = _measurement(record)
+    regenerated_sha = "c" * 64
+    measurement["report"]["report_sha256"] = regenerated_sha
+    assert regenerated_sha != record["report_sha256"]
+
+    seen: dict[str, object] = {}
+    real_decide = replay.decide
+
+    def spy_decide(report, vas, antifraud, determinism, state_assertion, approval, target_set):
+        seen["approval"] = approval
+        return real_decide(report, vas, antifraud, determinism, state_assertion, approval, target_set)
+
+    structural = replay.ReplayResult("structural", 1, 1, 0, ())
+    monkeypatch.setattr(replay, "audit_structure", lambda **_kwargs: structural)
+    monkeypatch.setattr(replay, "_read_active_records", lambda _root: ({KEY: record}, []))
+    monkeypatch.setattr(replay, "decide", spy_decide)
+
+    result = replay.replay_full(
+        repo_root=tmp_path,
+        all_closed=True,
+        approval_checker=_stored_bound_checker,
+        measurement_runner=lambda _root, _key, _commit: measurement,
+    )
+
+    assert result.passed is True
+    assert result.replayed_keys == 1
+    approval = seen["approval"]
+    assert approval["report_sha256"] == HASH  # el hash verificado (A) intacto
+    assert approval["report_sha256"] != regenerated_sha
+    assert approval["binding"] == "stored_record_reuse"
+    assert approval["approved_report_sha256"] == HASH
+    assert approval["approved_findings"] == ["near_threshold:changed_pixel_ratio"]
+
+
+def test_full_replay_blocks_regenerated_near_threshold_beyond_approved_set(monkeypatch, tmp_path):
+    record = _near_threshold_record_with_approval()
+    measurement = _measurement(record)
+    measurement["report"]["report_sha256"] = "c" * 64
+    measurement["report"]["results"][0]["findings"] = [
+        "near_threshold:changed_pixel_ratio",
+        "near_threshold:mean_abs_diff",
+    ]
+
+    structural = replay.ReplayResult("structural", 1, 1, 0, ())
+    monkeypatch.setattr(replay, "audit_structure", lambda **_kwargs: structural)
+    monkeypatch.setattr(replay, "_read_active_records", lambda _root: ({KEY: record}, []))
+
+    result = replay.replay_full(
+        repo_root=tmp_path,
+        all_closed=True,
+        approval_checker=_stored_bound_checker,
+        measurement_runner=lambda _root, _key, _commit: measurement,
+    )
+
+    assert result.passed is False
+    assert (
+        replay.ReplayFailure(KEY, "regenerated_policy_blocked:approval_reuse_findings_exceeded")
+        in result.failures
+    )
+
+
 def test_full_replay_blocks_fresh_measurement_that_fails_policy(monkeypatch, tmp_path):
     record = _valid_record()
     measurement = _measurement(record)

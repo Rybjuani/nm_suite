@@ -500,6 +500,153 @@ def test_refresh_replaces_pass_and_reopens_policy_fail_only(monkeypatch, tmp_pat
     assert json.loads(receipts[0].read_text())["reason"].startswith("stale_fail:")
 
 
+def test_refresh_near_threshold_writes_pending_and_keeps_active_record(monkeypatch, tmp_path):
+    _patch_repo_guards(monkeypatch)
+    old = _record()
+    _write_active(tmp_path, old)
+    (tmp_path / close.HANDOFF).write_text("closed\n", encoding="utf-8")
+
+    @contextmanager
+    def fake_worktree(_root, _commit):
+        yield tmp_path
+
+    candidate = _build()
+    candidate.record["report_sha256"] = "e" * 64
+    captured: dict = {}
+
+    def regenerate(**kwargs):
+        captured.update(kwargs)
+        raise close.PolicyError(["near_threshold_requires_verified_approval"], candidate)
+
+    monkeypatch.setattr(close, "temporary_worktree", fake_worktree)
+    monkeypatch.setattr(close, "regenerate_record_for_key", regenerate)
+    monkeypatch.setattr(close, "render_handoff", lambda *_args, **_kwargs: "closed\n")
+
+    result = close.refresh_evidence(keys=[KEY], repo_root=tmp_path)
+
+    assert result.refreshed == () and result.reopened == ()
+    assert len(result.pending) == 1
+    payload = json.loads(result.pending[0].read_text(encoding="utf-8"))
+    assert payload["candidate_sha256"] == close.canonical_record_sha256(payload["candidate"])
+    # La key NO se reabre: el record viejo sigue activo y no hay revocación.
+    assert json.loads((tmp_path / close.active_record_path(KEY)).read_text()) == old
+    assert not list((tmp_path / close.REVOKED_DIR).glob("*.json"))
+    # La operación de refresh ancla la evidencia de origen para el resume.
+    assert captured["operation"]["refreshed_from_evidence"] == close.canonical_record_sha256(old)
+
+
+def _refresh_pending(tmp_path: Path, old: dict, *, source_evidence: str) -> Path:
+    candidate = _record()
+    candidate.update(
+        {
+            "result": "BLOCKED",
+            "report": {"report_sha256": "b" * 64},
+            "vas_summary": {},
+            "antifraud": {},
+            "determinism": {},
+            "state_assertion": None,
+            "target_set": [KEY],
+            "human_review": {"approval_url": None, "comment_id": None, "author": None},
+            "policy": {"allow": False, "reasons": ["near_threshold_requires_verified_approval"]},
+            "operation": {
+                "kind": "refresh",
+                "refreshed_from_commit": old["commit_head"],
+                "refreshed_from_evidence": source_evidence,
+            },
+        }
+    )
+    pending = tmp_path / f"pending-{source_evidence[:8]}.json"
+    pending.write_text(
+        json.dumps(
+            {
+                "schema": close.PENDING_SCHEMA,
+                "candidate_sha256": close.canonical_record_sha256(candidate),
+                "candidate": candidate,
+            }
+        ),
+        encoding="utf-8",
+    )
+    return pending
+
+
+def test_resume_pending_refresh_replaces_active_record_only_when_source_matches(
+    monkeypatch, tmp_path
+):
+    _patch_repo_guards(monkeypatch)
+    old = _record(commit="1" * 40)
+    _write_active(tmp_path, old)
+    approval = {
+        "verified": True,
+        "key": KEY,
+        "report_sha256": "b" * 64,
+        "approval_url": "https://github.com/Rybjuani/nm_suite/issues/1#issuecomment-2",
+        "comment_id": 2,
+        "author": "Rybjuani",
+    }
+    monkeypatch.setattr(close, "is_source_scope_stale", lambda *_args, **_kwargs: False)
+    monkeypatch.setattr(close, "_pending_provenance_is_current", lambda *_args: True)
+    monkeypatch.setattr(close, "decide", lambda *_args: (True, []))
+    monkeypatch.setattr(close, "render_handoff", lambda *_args, **_kwargs: "closed\n")
+
+    # Origen equivocado (el record activo cambió desde el refresh): rechaza.
+    stale_pending = _refresh_pending(tmp_path, old, source_evidence="0" * 64)
+    with pytest.raises(close.PreflightError, match="pending_refresh_source_mismatch"):
+        close.resume_pending_closure(pending_path=stale_pending, approval=approval, repo_root=tmp_path)
+
+    # Origen correcto: reemplaza el record activo con el candidato aprobado.
+    pending = _refresh_pending(
+        tmp_path, old, source_evidence=close.canonical_record_sha256(old)
+    )
+    build = close.resume_pending_closure(pending_path=pending, approval=approval, repo_root=tmp_path)
+
+    stored = json.loads((tmp_path / build.record_path).read_text(encoding="utf-8"))
+    assert stored["result"] == "PASS"
+    assert stored["operation"]["kind"] == "refresh"
+    assert stored["human_review"]["comment_id"] == 2
+
+    # Sin record activo no hay refresh que reanudar.
+    (tmp_path / close.active_record_path(KEY)).unlink()
+    orphan_pending = _refresh_pending(
+        tmp_path, old, source_evidence=close.canonical_record_sha256(old)
+    )
+    with pytest.raises(close.PreflightError, match="pending_refresh_key_not_closed"):
+        close.resume_pending_closure(pending_path=orphan_pending, approval=approval, repo_root=tmp_path)
+
+
+def test_refresh_cli_forwards_approval_resolver_and_reports_pending(monkeypatch, capsys):
+    seen: dict = {}
+
+    def fake_refresh(**kwargs):
+        seen.update(kwargs)
+        return close.RefreshResult((), (), (Path("reports/qa/visual_closure_pending/x.json"),))
+
+    monkeypatch.setattr(close, "refresh_evidence", fake_refresh)
+
+    rc = close.main(
+        [
+            "--refresh-evidence",
+            "--keys",
+            KEY,
+            "--approval-url",
+            "https://github.com/Rybjuani/nm_suite/issues/1#issuecomment-2",
+        ]
+    )
+
+    assert rc == close.ApprovalRequired.exit_code
+    assert callable(seen["approval_resolver"])
+    assert "pending-approval:" in capsys.readouterr().err
+
+    def fake_refresh_no_pending(**kwargs):
+        seen.update(kwargs)
+        return close.RefreshResult((), ())
+
+    monkeypatch.setattr(close, "refresh_evidence", fake_refresh_no_pending)
+    rc = close.main(["--refresh-evidence", "--keys", KEY])
+
+    assert rc == 0
+    assert seen["approval_resolver"] is None
+
+
 def test_modal_back_screen_merge_preserves_both_manifest_entries(monkeypatch, tmp_path):
     modal_key = "hub:detalle-resumen-ia-0@light"
     back_key = "hub:detalle@light"
