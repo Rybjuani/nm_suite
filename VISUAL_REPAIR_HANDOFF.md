@@ -5,7 +5,7 @@
 > de `qa/_mockup_canonical/MANIFEST.json` y los bloqueos de
 > `qa/surface_notes.json`.
 
-Estado: 11 cerradas · 87 abiertas · 18 bloqueadas · 116 total.
+Estado: 12 cerradas · 86 abiertas · 18 bloqueadas · 116 total.
 
 ## Superficies
 
@@ -22,7 +22,7 @@ Estado: 11 cerradas · 87 abiertas · 18 bloqueadas · 116 total.
 
 - [ ] `suite:registro-step1-emotion-otro@dark`
 - [ ] `suite:registro-step1-emotion-otro@light`
-- [ ] `suite:registro-step1-emotion@dark`
+- [x] `suite:registro-step1-emotion@dark`
 - [ ] `suite:registro-step1-emotion@light`
 - [ ] `suite:registro-step2-distortions@dark`
 - [ ] `suite:registro-step2-distortions@light`
