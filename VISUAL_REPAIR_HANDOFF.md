@@ -5,7 +5,7 @@
 > de `qa/_mockup_canonical/MANIFEST.json` y los bloqueos de
 > `qa/surface_notes.json`.
 
-Estado: 0 cerradas · 97 abiertas · 19 bloqueadas · 116 total.
+Estado: 0 cerradas · 98 abiertas · 18 bloqueadas · 116 total.
 
 ## Superficies
 
@@ -139,7 +139,7 @@ Estado: 0 cerradas · 97 abiertas · 19 bloqueadas · 116 total.
 - [ ] `hub:detalle-plan-timer@dark`
 - [ ] `hub:detalle-plan-timer@light`
 - [~] `hub:detalle-resumen-ia-0@dark` (revoked V1 closure; modal gaming)
-- [~] `hub:detalle-resumen-ia-0@light` (near-threshold; red-team VQA-THRESH-001)
+- [ ] `hub:detalle-resumen-ia-0@light`
 - [ ] `hub:detalle@dark`
 - [ ] `hub:detalle@light`
 - [ ] `hub:pacientes-empty@dark`
