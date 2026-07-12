@@ -1,0 +1,7 @@
+{
+  "issued_by": "qa/close_visual_key.py",
+  "key": "suite:recuperar-acceso@dark",
+  "record_path": "docs/closure_evidence/active/suite_recuperar-acceso-dark.json",
+  "record_sha256": "ad3a0e1a846fb767985d2ffc21df72d9330e830aefc1e0c7625699ec546b3899",
+  "schema": "nm_suite.closure_receipt.v1"
+}

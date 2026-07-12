@@ -1,0 +1,7 @@
+{
+  "issued_by": "qa/close_visual_key.py",
+  "key": "suite:onboarding-error@dark",
+  "record_path": "docs/closure_evidence/active/suite_onboarding-error-dark.json",
+  "record_sha256": "0a884794e3d4a029798565987ef451151edc5283e7a4edde65e62c99a817413a",
+  "schema": "nm_suite.closure_receipt.v1"
+}

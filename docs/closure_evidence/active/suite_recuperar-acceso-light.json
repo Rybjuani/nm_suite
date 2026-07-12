@@ -1,0 +1,421 @@
+{
+  "antifraud": {
+    "clean": true,
+    "count": 0,
+    "mode": "all",
+    "roots": [
+      "app",
+      "hub",
+      "shared",
+      "qa/approval_verifier.py",
+      "qa/capture_v8.py",
+      "qa/closure_policy.py",
+      "qa/hash_utils.py",
+      "qa/layered_visual_compare.py",
+      "qa/odiff_runner.py",
+      "qa/render_handoff.py",
+      "qa/replay_visual_closure.py",
+      "qa/state_probes.py",
+      "qa/surface_scope.py",
+      "qa/target_scope.py",
+      "qa/vas_gate.py",
+      "qa/vas_engine.py",
+      "qa/vas_introspect.py",
+      "qa/spec_generator.py",
+      "qa/close_visual_key.py",
+      "tools/qa"
+    ],
+    "schema": "nm_suite.antifraud_summary.v1",
+    "scope": "default_full",
+    "violations": []
+  },
+  "canonical_png_sha256": "e84ae6f697e149fab1a5ec3b4286ebbbe335a5aab5371c3973d08332873ee1ce",
+  "capture_manifest_sha256": "1855f546a49df3e487e6b6851bd019317c318e0aef2e404dfdeff6c455ce2953",
+  "capture_png_sha256": "e7dee750c454e68f31b9663f741c23c4471ccbff751c86a9984291cd078b0d3f",
+  "command_spec": {
+    "capture": {
+      "app": "suite",
+      "runs": 2,
+      "theme": "light",
+      "tool": "qa/capture_v8.py",
+      "vas_introspect": true,
+      "view": "recuperar-acceso"
+    },
+    "compare": {
+      "canonical": "qa/_mockup_canonical",
+      "scope": "suite:recuperar-acceso@light",
+      "tool": "qa/layered_visual_compare.py"
+    }
+  },
+  "commit_head": "3dbd0d26545995a14e1679f175cc58f9e7e585a2",
+  "determinism": {
+    "changed_ratio": 0.0,
+    "first_git_head": "3dbd0d26545995a14e1679f175cc58f9e7e585a2",
+    "first_run_id": "d06a8e9dac83ebf47c6528e3d02b0e3ef81f2e31762cfe0e46c99f23a9c8f4f3",
+    "key": "suite:recuperar-acceso@light",
+    "limit": 0.005,
+    "pass": true,
+    "schema": "nm_suite.determinism.v1",
+    "second_git_head": "3dbd0d26545995a14e1679f175cc58f9e7e585a2",
+    "second_run_id": "82369d7881e17b884d8e32f0ee7a37e9f374a401c2175333655fcb3cb2568d7d"
+  },
+  "human_review": {
+    "approval_url": null,
+    "author": null,
+    "comment_id": null
+  },
+  "key": "suite:recuperar-acceso@light",
+  "manifest_sha256": "6a7e7bc12ff9a39d3de239ab63f3999058dd6659495f0b3664152400d7501232",
+  "modal_audit": null,
+  "modal_audit_sha256": null,
+  "operation": {
+    "kind": "close"
+  },
+  "policy": {
+    "allow": true,
+    "reasons": []
+  },
+  "report": {
+    "authority": "LAYERED_VISUAL_COMPARE",
+    "generated_at": "2026-07-12T10:30:28",
+    "handoff_closure_allowed": false,
+    "handoff_closure_reason": "partial_scope",
+    "modal_audit": null,
+    "modal_audit_required": false,
+    "report_evidence_reason": null,
+    "report_evidence_valid": true,
+    "report_filters": {
+      "app": null,
+      "key": "suite:recuperar-acceso@light",
+      "keys_file": null,
+      "keys_file_keys": [],
+      "theme": null,
+      "view": null
+    },
+    "report_scope": "PARTIAL",
+    "report_sha256": "b3d1106f1227de10b05f37a87e1d26f5012db75ddb227127f05dca95d6168715",
+    "results": [
+      {
+        "actual_file": "qa\\_captures_v8\\suite-recuperar-acceso-light-520x600.png",
+        "actual_size": "520x600",
+        "app": "suite",
+        "canonical_file": "qa\\_mockup_canonical\\suite-recuperar-acceso-light-520x600.png",
+        "canonical_size": "520x600",
+        "findings": [],
+        "key": "suite:recuperar-acceso@light",
+        "layout": {
+          "actual_content_bbox": [
+            0,
+            17,
+            520,
+            583
+          ],
+          "bbox_area_delta_ratio": 0.02321,
+          "bbox_dh": -15,
+          "bbox_dw": 1,
+          "bbox_dx": -1,
+          "bbox_dy": 15,
+          "max_bbox_delta_px": 15,
+          "target_content_bbox": [
+            1,
+            2,
+            519,
+            598
+          ]
+        },
+        "metrics": {
+          "canonical_gray_std": 22.461,
+          "changed_pixel_floor": 14,
+          "changed_pixel_ratio": 0.09172,
+          "changed_pixels": 28617,
+          "largest_region_ratio": 0.004772,
+          "max_abs_diff": 0.80392,
+          "mean_abs_diff": 0.0273,
+          "ssim": 0.57779,
+          "total_pixels": 312000,
+          "windowed_ssim": 0.82014
+        },
+        "near_perfect_match": false,
+        "odiff": {
+          "accepted": true,
+          "available": true,
+          "diff_percentage": 2.18,
+          "diff_pixels": 6803,
+          "diff_png_path": "reports\\qa\\visual_closure\\suite_recuperar-acceso-light\\odiff\\suite-recuperar-acceso-light-520x600-odiff.png",
+          "match": false
+        },
+        "panel_path": "reports\\qa\\visual_closure\\suite_recuperar-acceso-light\\panels\\suite_recuperar-acceso_light.png",
+        "real_divergence": false,
+        "regions": [
+          {
+            "area": 1489,
+            "area_ratio": 0.004772,
+            "h": 16,
+            "hint": "component_region",
+            "w": 161,
+            "x": 64,
+            "y": 77
+          },
+          {
+            "area": 1203,
+            "area_ratio": 0.003856,
+            "h": 14,
+            "hint": "component_region",
+            "w": 184,
+            "x": 169,
+            "y": 416
+          },
+          {
+            "area": 1117,
+            "area_ratio": 0.00358,
+            "h": 38,
+            "hint": "layout_shift_or_spacing",
+            "w": 474,
+            "x": 23,
+            "y": 218
+          },
+          {
+            "area": 904,
+            "area_ratio": 0.002897,
+            "h": 5,
+            "hint": "layout_shift_or_spacing",
+            "w": 456,
+            "x": 35,
+            "y": 256
+          },
+          {
+            "area": 763,
+            "area_ratio": 0.002446,
+            "h": 13,
+            "hint": "text_icon_or_antialiasing",
+            "w": 118,
+            "x": 38,
+            "y": 234
+          },
+          {
+            "area": 763,
+            "area_ratio": 0.002446,
+            "h": 10,
+            "hint": "text_icon_or_antialiasing",
+            "w": 123,
+            "x": 33,
+            "y": 538
+          },
+          {
+            "area": 643,
+            "area_ratio": 0.002061,
+            "h": 11,
+            "hint": "text_icon_or_antialiasing",
+            "w": 78,
+            "x": 43,
+            "y": 19
+          },
+          {
+            "area": 613,
+            "area_ratio": 0.001965,
+            "h": 10,
+            "hint": "text_icon_or_antialiasing",
+            "w": 103,
+            "x": 139,
+            "y": 301
+          }
+        ],
+        "repair_bucket": "NONE",
+        "severity": "none",
+        "state_assertion_required": false,
+        "status": "PASS",
+        "suspicious_perfect_match": false,
+        "theme": "light",
+        "view": "recuperar-acceso"
+      }
+    ],
+    "schema": "nm_suite.layered_report.v2",
+    "source_policy": "Use qa/_mockup_canonical plus a fresh complete qa/_captures_v8 run for operational handoff decisions. Zip inputs are archive/forensics only and must not close VISUAL_REPAIR_HANDOFF.md items.",
+    "sources": {
+      "active_repo_pair": true,
+      "actual_root": "qa\\_captures_v8",
+      "actual_source": "qa\\_captures_v8",
+      "actual_source_kind": "directory",
+      "canonical_root": "qa\\_mockup_canonical",
+      "canonical_source": "qa\\_mockup_canonical",
+      "canonical_source_kind": "directory"
+    },
+    "summary": {
+      "by_repair_bucket": {
+        "NONE": 1
+      },
+      "by_severity": {
+        "none": 1
+      },
+      "by_status": {
+        "PASS": 1
+      },
+      "near_perfect_match": 0,
+      "pass": 1,
+      "qa_missed_raw_or_layout": 0,
+      "real_divergence": 0,
+      "state_or_recipe_suspect": 0,
+      "suspicious_perfect_match": 0,
+      "total": 1
+    },
+    "thresholds": {
+      "changed_pixel_floor": 12,
+      "max_bbox_shift_px": 18,
+      "max_bbox_size_delta_px": 36,
+      "max_changed_pixel_ratio": 0.08,
+      "max_largest_region_ratio": 0.08,
+      "max_mean_abs_diff": 0.035,
+      "max_odiff_diff_pct": 8.0,
+      "min_ssim": 0.92,
+      "odiff_threshold": 0.3,
+      "strong_changed_pixel_ratio": 0.18,
+      "strong_largest_region_ratio": 0.18,
+      "strong_mean_abs_diff": 0.08,
+      "text_dense_canonical_std": 35.0,
+      "text_dense_changed_pixel_floor": 14,
+      "text_dense_max_changed_pixel_ratio": 0.1,
+      "text_dense_min_windowed_ssim": 0.65
+    }
+  },
+  "report_sha256": "b3d1106f1227de10b05f37a87e1d26f5012db75ddb227127f05dca95d6168715",
+  "result": "PASS",
+  "schema": "nm_suite.evidence_record.v2",
+  "sidecar_sha256": "979c94655ea9c02f31993a46b76ee65609e9b954a2125a5801b8141b464426e3",
+  "source_scope": {
+    "global_files": {
+      "app/__init__.py": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "app/main_qt.py": "0602074b9996133000ec7a0c9ad4b7b431d7a7f6",
+      "app/modules/__init__.py": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "hub/__init__.py": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "hub/editors/__init__.py": "8b137891791fe96927ad78e64b0aad7bded08bdc",
+      "hub/main_qt.py": "861a26533a18eba469fabba684d426ed2bd5867a"
+    },
+    "global_trees": {
+      "assets": "2c0d7c80f2584a88a9db28f880345687ad2c7f33",
+      "shared": "5eaf1c58178e3f17fa9423a6f58ebf7521f95d32"
+    },
+    "key": "suite:recuperar-acceso@light",
+    "schema": "nm_suite.source_scope.v1",
+    "surface_files": {
+      "app/onboarding_qt.py": "f77fe496573a069f7a1b4bd3be8af7fda823a54c"
+    }
+  },
+  "state_assertion": null,
+  "target_set": [
+    "hub:detalle-plan-activacion@dark",
+    "hub:detalle-plan-activacion@light",
+    "hub:detalle-plan-rutina@dark",
+    "hub:detalle-plan-rutina@light",
+    "hub:detalle-plan-timer@dark",
+    "hub:detalle-plan-timer@light",
+    "hub:detalle@dark",
+    "hub:detalle@light",
+    "hub:pacientes-empty@dark",
+    "hub:pacientes-empty@light",
+    "hub:pacientes@dark",
+    "hub:pacientes@light",
+    "hub:textos-globales@dark",
+    "hub:textos-globales@light",
+    "suite:actividades-empty@dark",
+    "suite:actividades-empty@light",
+    "suite:animo@dark",
+    "suite:animo@light",
+    "suite:avisos-empty@dark",
+    "suite:avisos-empty@light",
+    "suite:avisos-filter-activos@dark",
+    "suite:avisos-filter-activos@light",
+    "suite:avisos-search@dark",
+    "suite:avisos-search@light",
+    "suite:avisos-today@dark",
+    "suite:avisos-today@light",
+    "suite:avisos@dark",
+    "suite:avisos@light",
+    "suite:dbt-now@dark",
+    "suite:dbt-now@light",
+    "suite:dbt-practice-check-facts@dark",
+    "suite:dbt-practice-check-facts@light",
+    "suite:dbt-practice-dear-man@dark",
+    "suite:dbt-practice-dear-man@light",
+    "suite:dbt-practice-fast@dark",
+    "suite:dbt-practice-fast@light",
+    "suite:dbt-practice-give@dark",
+    "suite:dbt-practice-give@light",
+    "suite:dbt-practice-non-judgmental@dark",
+    "suite:dbt-practice-non-judgmental@light",
+    "suite:dbt-practice-observe-describe@dark",
+    "suite:dbt-practice-observe-describe@light",
+    "suite:dbt-practice-opposite-action@dark",
+    "suite:dbt-practice-opposite-action@light",
+    "suite:dbt-practice-participate@dark",
+    "suite:dbt-practice-participate@light",
+    "suite:dbt-practice-please@dark",
+    "suite:dbt-practice-please@light",
+    "suite:dbt-practice-problem-solving@dark",
+    "suite:dbt-practice-problem-solving@light",
+    "suite:dbt-practice-radical-acceptance@dark",
+    "suite:dbt-practice-radical-acceptance@light",
+    "suite:dbt-practice-self-soothe@dark",
+    "suite:dbt-practice-self-soothe@light",
+    "suite:dbt-practice-stop@dark",
+    "suite:dbt-practice-stop@light",
+    "suite:dbt-practice-tipp@dark",
+    "suite:dbt-practice-tipp@light",
+    "suite:dbt-practice-validation-limits@dark",
+    "suite:dbt-practice-validation-limits@light",
+    "suite:dbt-practice-wise-mind@dark",
+    "suite:dbt-practice-wise-mind@light",
+    "suite:home-no-score@dark",
+    "suite:home-no-score@light",
+    "suite:home@dark",
+    "suite:home@light",
+    "suite:recuperar-acceso@light",
+    "suite:registro-step1-emotion-otro@dark",
+    "suite:registro-step1-emotion-otro@light",
+    "suite:registro-step1-emotion@dark",
+    "suite:registro-step1-emotion@light",
+    "suite:registro-step2-distortions@dark",
+    "suite:registro-step2-distortions@light",
+    "suite:registro-step3-filled@dark",
+    "suite:registro-step3-filled@light",
+    "suite:registro-success@dark",
+    "suite:registro-success@light",
+    "suite:registro@dark",
+    "suite:registro@light",
+    "suite:rutina-add-task@light",
+    "suite:rutina-all-completed@dark",
+    "suite:rutina-all-completed@light",
+    "suite:rutina-empty@dark",
+    "suite:rutina-empty@light",
+    "suite:rutina@dark",
+    "suite:rutina@light",
+    "suite:timer-empty@dark",
+    "suite:timer-empty@light",
+    "suite:timer@dark",
+    "suite:timer@light"
+  ],
+  "thresholds_sha256": "36b5d295d93ccc96cddd2992974fb9895b7b28686dda88a49524189c7268b781",
+  "tool_hashes": {
+    "qa/anti_fraud_scan.py": "11de201e397651eb07612aa052d7569909858f73ac0f06970f7c7f8e3e11bd4f",
+    "qa/approval_verifier.py": "d22750c6b5a174d8c5191518f5a711143314e4889b700c96925be8deeeedff1e",
+    "qa/capture_v8.py": "cb40cd8ef11086ec5e08e940945de4387b39fb09f3c963a29f3c237ed39ce6dd",
+    "qa/closure_policy.py": "c518f5cf89dd47b082ec030102669c62e1e30d16a20e40f40320c5661cc6ee49",
+    "qa/hash_utils.py": "10bdccaed985f5e93b16545c6f7d6cd97afb718ddca59bb00b6c8cb54e325344",
+    "qa/layered_visual_compare.py": "18256ad5cff233196934b1cb8e0dd78d78172774921714809f9503ed1a950fc8",
+    "qa/odiff_runner.py": "89a3736f230583c6d9105d0478ef85e03afda6ce12b9078ec94a62813ae022de",
+    "qa/state_probes.py": "3cf8150b46c5a53d5b7762392d3fcbf952f6c985aba424c2b059d8896c2e4818",
+    "qa/surface_scope.py": "bcc0fb7795a653b555d2ca1eb5ca9455be33fba66163c9d14d12a41d42590cb4",
+    "qa/vas_engine.py": "9b0b1e828398a32a7a2869cc955840036263771b66fa43ce41b412a5e1a29ca4",
+    "qa/vas_gate.py": "379d454848705ad92a9c472b8ad4c29c9855126def81ab08596c79fbf68d97ed",
+    "qa/vas_introspect.py": "9ef7835c3452d4d6cfc8de699f3c1f4ad736ec20fef4e35028d8a324bfba5bb1",
+    "tools/qa/audit_modal_backdrop_blur.py": "158c31361b5332972660c14674503058f8ce9e7841b47da9f6d38a85cb892c3a"
+  },
+  "vas_summary": {
+    "capture_valid": true,
+    "fail_count": 0,
+    "high_count": 0,
+    "key": "suite:recuperar-acceso@light",
+    "medium_count": 0,
+    "pass": true,
+    "schema": "nm_suite.vas_summary.v1"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "issued_by": "qa/close_visual_key.py",
+  "key": "suite:onboarding-error@light",
+  "record_path": "docs/closure_evidence/active/suite_onboarding-error-light.json",
+  "record_sha256": "283d68134c1058814a91ef707a3f4aaf899111745196dc0472201682a3ffa770",
+  "schema": "nm_suite.closure_receipt.v1"
+}
