@@ -1,5 +1,12 @@
 # Owner Decisions Locked — Fase 0D
 
+> **ARCHIVADO 2026-07-12.** El programa VisualParity V3.1 fue SUPERSEDED por el
+> plan "V1 saneado" (raíz: `Plan Harness Fable.md`), aprobado por prompt
+> explícito del owner — el prompt que este documento exige para cambiar
+> decisiones. LOCK-3 y LOCK-4 quedan SUPERSEDED (ver anotaciones en cada una);
+> LOCK-1 (snapshot forense) quedó ejecutada, LOCK-2 y LOCK-5 se cumplen dentro
+> del plan vigente. Este documento ya no es autoridad de gobernanza.
+
 > **Fase 0D — migration planning. No runtime authority. No visual closure.**
 >
 > Este documento registra las decisiones owner cerradas en Fase 0D y las
@@ -59,6 +66,10 @@ en Fase 1A. Los límites aíslan el riesgo.
 
 ### LOCK-3 — Stack VisualParity
 
+> **SUPERSEDED 2026-07-12** — reason: plan "V1 saneado" aprobado (sanear el
+> harness Python existente; no se construye VisualParity Core/CLI .NET);
+> reviewer: owner (prompt explícito de aprobación del plan).
+
 **Decisión:**
 
 - VisualParity Core/CLI = .NET 8.
@@ -78,6 +89,12 @@ porque añade complejidad sin valor en V3.1.
 ---
 
 ### LOCK-4 — Timing migración
+
+> **SUPERSEDED 2026-07-12** — reason: la migración A+ (remoción V1/V2 tras
+> plataforma nueva) fue reemplazada por la Fase 1 del plan "V1 saneado":
+> V2/V3.1 se desconectan en el mismo merge atómico que activa la cadena v2;
+> el snapshot forense `forensic-pre-v3.1` ya está ejecutado y publicado;
+> reviewer: owner (prompt explícito de aprobación del plan).
 
 **Decisión:** Avanzar con migración A+ por fases.
 

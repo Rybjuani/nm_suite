@@ -1,5 +1,11 @@
 # VisualParity V3 — Propuesta Técnica
 
+> **ARCHIVADO 2026-07-12 — propuesta SUPERSEDED.** La plataforma V3 (.NET) no
+> se construye; el plan vigente es "V1 saneado" (`Plan Harness Fable.md`,
+> raíz), que implementa las reglas de este audit en el harness Python
+> existente. El forensic audit (`forensic_audit/FORENSIC_AUDIT_V3.md`) sigue
+> siendo el registro de referencia de la invalidación de los 116 cierres V1.
+
 Esta carpeta contiene la propuesta técnica V3 para resolver el problema estructural de QA visual de `nm_suite`.
 
 ## Tesis central

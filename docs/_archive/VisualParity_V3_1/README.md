@@ -1,5 +1,12 @@
 # VisualParity V3.1 — Gobernanza y arquitectura
 
+> **ARCHIVADO 2026-07-12 — programa SUPERSEDED.** El plan vigente es
+> "V1 saneado" (`Plan Harness Fable.md`, raíz): la cadena de cierre corregida
+> vive en `qa/` (closure_policy, closer v2, replay independiente, CI
+> solo-BLOCK). Los skeletons `harness/`, `harness/v3/` y `tools/visualparity/`
+> fueron eliminados del árbol; ver `OWNER_DECISIONS_LOCKED.md` (LOCK-3/LOCK-4
+> SUPERSEDED) y el tag `forensic-pre-v3.1`.
+
 > **Fase 0A skeleton — no runtime authority.** Este directorio contiene documentación
 > y skeletons de gobernanza. Ningún archivo aquí constituye autoridad operativa de
 > cierre, medición o policy hasta que Fases posteriores implementen runtime real.
