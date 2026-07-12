@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from PIL import Image, ImageDraw
 
 from qa.layered_visual_compare import (
@@ -10,7 +11,9 @@ from qa.layered_visual_compare import (
     ReportFilters,
     compare_pair,
     compare_sources,
+    determinism_changed_ratio,
     load_keys_file,
+    main,
     parse_capture_name,
 )
 
@@ -86,6 +89,61 @@ def test_state_sensitive_delta_is_classified_as_state_or_recipe(tmp_path):
     assert result.status == "FAIL"
     assert result.repair_bucket == "STATE_RECIPE_OR_PRODUCT_FIX"
     assert "state_or_recipe_suspect" in result.findings
+
+
+def test_pass_within_five_percent_of_bar_emits_near_threshold(tmp_path):
+    canonical = tmp_path / "c" / "suite-home-light-100x100.png"
+    actual = tmp_path / "a" / "suite-home-light-100x100.png"
+    _png(canonical, color=(120, 120, 120), size=(100, 100))
+    _png(actual, color=(120, 120, 120), size=(100, 100))
+    image = Image.open(actual).convert("RGB")
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((0, 0, 95, 9), fill=(140, 140, 140))
+    image.save(actual)
+
+    result = compare_pair(
+        "suite:home@light",
+        parse_capture_name(canonical),
+        parse_capture_name(actual),
+        thresholds=LayeredThresholds(
+            text_dense_min_windowed_ssim=-1.0,
+            text_dense_max_changed_pixel_ratio=0.10,
+            max_mean_abs_diff=1.0,
+            max_largest_region_ratio=1.0,
+            max_bbox_shift_px=1_000,
+            max_bbox_size_delta_px=1_000,
+        ),
+        use_odiff=False,
+    )
+
+    assert result.status == "PASS"
+    assert result.real_divergence is False
+    assert "near_threshold:changed_pixel_ratio" in result.findings
+
+
+def test_determinism_changed_ratio_counts_exact_pixels_and_size_mismatch(tmp_path):
+    first = tmp_path / "first.png"
+    second = tmp_path / "second.png"
+    other_size = tmp_path / "other-size.png"
+    _png(first, size=(10, 10))
+    _png(second, size=(10, 10))
+    _png(other_size, size=(11, 10))
+
+    image = Image.open(second).convert("RGB")
+    image.putpixel((0, 0), (0, 0, 0))
+    image.putpixel((9, 9), (0, 0, 0))
+    image.save(second)
+
+    assert determinism_changed_ratio(first, first) == 0.0
+    assert determinism_changed_ratio(first, second) == pytest.approx(0.02)
+    assert determinism_changed_ratio(first, other_size) == 1.0
+
+
+def test_threshold_overrides_are_not_exposed_on_cli():
+    with pytest.raises(SystemExit) as exc:
+        main(["--raw-changed-threshold", "1.0"])
+
+    assert exc.value.code == 2
 
 
 def test_compare_sources_writes_reports(tmp_path):

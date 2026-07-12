@@ -83,6 +83,7 @@ _NEAR_PERFECT_SSIM = 0.995
 # static anti-fraud scan.
 _INJECTION_SSIM_CEILING_DENSE = 0.90
 _INJECTION_SSIM_CEILING_SPARSE = 0.985
+_NEAR_THRESHOLD_FRACTION = 0.05
 
 
 @dataclass(frozen=True)
@@ -466,10 +467,13 @@ def compare_pair(
 
     repair_bucket = _repair_bucket(findings, metrics, layout, thresholds)
     severity = _severity(findings, metrics, layout, thresholds)
-    real_divergence = bool(findings) and findings != ["odiff_unavailable"]
+    real_divergence = any(_is_blocking_finding(finding) for finding in findings)
     status = "FAIL" if real_divergence else "PASS"
     if size_mismatch:
         status = "SIZE_MISMATCH"
+
+    if not real_divergence and not size_mismatch:
+        findings.extend(_near_threshold_findings(metrics, layout, odiff_result, thresholds))
 
     # SUSPICIOUS_PERFECT_MATCH: a pixel-identical capture on a non-trivial
     # surface is the signature of reference-artifact injection. Flag it and
@@ -681,6 +685,25 @@ def _split_key(
 
 def _load_rgb(path: Path) -> Image.Image:
     return Image.open(path).convert("RGB")
+
+
+def determinism_changed_ratio(first: Path, second: Path) -> float:
+    """Return the exact per-pixel change ratio between two fresh captures.
+
+    A size mismatch is maximally non-deterministic. Otherwise a pixel counts as
+    changed when any RGB channel differs; the closure policy supplies the
+    tolerated ratio.
+    """
+
+    first_image = _load_rgb(Path(first))
+    second_image = _load_rgb(Path(second))
+    if first_image.size != second_image.size:
+        return 1.0
+    first_pixels = np.asarray(first_image)
+    second_pixels = np.asarray(second_image)
+    if first_pixels.size == 0:
+        return 0.0
+    return float(np.any(first_pixels != second_pixels, axis=2).mean())
 
 
 def _image_metrics(
@@ -972,6 +995,79 @@ def _layout_fail(
         or size_delta > thresholds.max_bbox_size_delta_px
         or largest_region_ratio > thresholds.max_largest_region_ratio
     )
+
+
+def _is_blocking_finding(finding: str) -> bool:
+    return finding != "odiff_unavailable" and not finding.startswith("near_threshold:")
+
+
+def _near_upper(value: float, limit: float) -> bool:
+    return value <= limit and value >= limit * (1.0 - _NEAR_THRESHOLD_FRACTION)
+
+
+def _near_lower(value: float, limit: float) -> bool:
+    return value >= limit and value <= limit * (1.0 + _NEAR_THRESHOLD_FRACTION)
+
+
+def _near_threshold_findings(
+    metrics: dict[str, Any],
+    layout: dict[str, Any],
+    odiff: dict[str, Any],
+    thresholds: LayeredThresholds,
+) -> list[str]:
+    """Describe passing measurements within five percent of an active bar."""
+
+    findings: list[str] = []
+    canon_std = float(
+        metrics.get("canonical_gray_std", thresholds.text_dense_canonical_std + 1.0)
+    )
+    is_dense = canon_std < thresholds.text_dense_canonical_std
+    if is_dense:
+        ssim_metric = "windowed_ssim"
+        ssim_limit = thresholds.text_dense_min_windowed_ssim
+    else:
+        ssim_metric = "ssim"
+        ssim_limit = thresholds.min_ssim
+    if _near_lower(float(metrics.get(ssim_metric, 1.0)), ssim_limit):
+        findings.append(f"near_threshold:{ssim_metric}")
+
+    changed_limit = (
+        thresholds.text_dense_max_changed_pixel_ratio
+        if is_dense
+        else thresholds.max_changed_pixel_ratio
+    )
+    upper_metrics = (
+        ("mean_abs_diff", float(metrics.get("mean_abs_diff", 0.0)), thresholds.max_mean_abs_diff),
+        (
+            "changed_pixel_ratio",
+            float(metrics.get("changed_pixel_ratio", 0.0)),
+            changed_limit,
+        ),
+        (
+            "largest_region_ratio",
+            float(metrics.get("largest_region_ratio", 0.0)),
+            thresholds.max_largest_region_ratio,
+        ),
+    )
+    for name, value, limit in upper_metrics:
+        if _near_upper(value, float(limit)):
+            findings.append(f"near_threshold:{name}")
+
+    max_bbox_delta = layout.get("max_bbox_delta_px")
+    if max_bbox_delta is not None and _near_upper(
+        float(max_bbox_delta), float(thresholds.max_bbox_shift_px)
+    ):
+        findings.append("near_threshold:max_bbox_delta_px")
+    bbox_size_delta = max(
+        abs(int(layout.get("bbox_dw") or 0)), abs(int(layout.get("bbox_dh") or 0))
+    )
+    if _near_upper(float(bbox_size_delta), float(thresholds.max_bbox_size_delta_px)):
+        findings.append("near_threshold:max_bbox_size_delta_px")
+    if odiff.get("available") is True and _near_upper(
+        float(odiff.get("diff_percentage", 0.0)), thresholds.max_odiff_diff_pct
+    ):
+        findings.append("near_threshold:odiff_diff_percentage")
+    return findings
 
 
 def _is_trivial_surface(canonical_img: Image.Image, view: str) -> bool:
@@ -1368,7 +1464,7 @@ def _markdown_report(
     return "\n".join(lines)
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Layered visual comparator for mockup canonical vs runtime captures")
     parser.add_argument("--canonical", default=str(_DEFAULT_CANONICAL))
     parser.add_argument("--actual", default=str(_DEFAULT_ACTUAL))
@@ -1380,20 +1476,9 @@ def main() -> int:
     parser.add_argument("--keys-file", help="Filter report to exact keys listed one per line")
     parser.add_argument("--no-odiff", action="store_true", help="Disable odiff layer")
     parser.add_argument("--no-panels", action="store_true", help="Do not write side-by-side panels")
-    parser.add_argument("--raw-changed-threshold", type=float, default=LayeredThresholds.max_changed_pixel_ratio)
-    parser.add_argument("--raw-mad-threshold", type=float, default=LayeredThresholds.max_mean_abs_diff)
-    parser.add_argument("--min-ssim", type=float, default=LayeredThresholds.min_ssim)
-    parser.add_argument("--max-odiff-diff-pct", type=float, default=LayeredThresholds.max_odiff_diff_pct)
-    parser.add_argument("--max-bbox-shift-px", type=int, default=LayeredThresholds.max_bbox_shift_px)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
-    thresholds = LayeredThresholds(
-        min_ssim=args.min_ssim,
-        max_mean_abs_diff=args.raw_mad_threshold,
-        max_changed_pixel_ratio=args.raw_changed_threshold,
-        max_odiff_diff_pct=args.max_odiff_diff_pct,
-        max_bbox_shift_px=args.max_bbox_shift_px,
-    )
+    thresholds = LayeredThresholds()
     filters = ReportFilters(
         app=args.app,
         view=args.view,
