@@ -1,0 +1,348 @@
+{
+  "antifraud": {
+    "clean": true,
+    "count": 0,
+    "mode": "all",
+    "roots": [
+      "app",
+      "hub",
+      "shared",
+      "qa/approval_verifier.py",
+      "qa/capture_v8.py",
+      "qa/closure_policy.py",
+      "qa/hash_utils.py",
+      "qa/layered_visual_compare.py",
+      "qa/odiff_runner.py",
+      "qa/render_handoff.py",
+      "qa/replay_visual_closure.py",
+      "qa/state_probes.py",
+      "qa/surface_scope.py",
+      "qa/target_scope.py",
+      "qa/vas_gate.py",
+      "qa/vas_engine.py",
+      "qa/vas_introspect.py",
+      "qa/spec_generator.py",
+      "qa/close_visual_key.py",
+      "tools/qa"
+    ],
+    "schema": "nm_suite.antifraud_summary.v1",
+    "scope": "default_full",
+    "violations": []
+  },
+  "canonical_png_sha256": "7ad42a789e0db1c8284665c4d94c8df01cda1373f86733076fbec9c5621b5f64",
+  "capture_manifest_sha256": "f74a861ef070f1fefaa02f86165bf389ed2ae1a794cb6bcb2a19a38f409875c4",
+  "capture_png_sha256": "8adf2ec672229f3c830800d3cf22176a9ee078b1a4b64175c936b317a6dfc7fd",
+  "command_spec": {
+    "capture": {
+      "app": "suite",
+      "runs": 2,
+      "theme": "dark",
+      "tool": "qa/capture_v8.py",
+      "vas_introspect": true,
+      "view": "registro"
+    },
+    "compare": {
+      "canonical": "qa/_mockup_canonical",
+      "scope": "suite:registro@dark",
+      "tool": "qa/layered_visual_compare.py"
+    }
+  },
+  "commit_head": "246a681e05b3c5e3e3724632637c2835bf8b7371",
+  "determinism": {
+    "changed_ratio": 0.0,
+    "first_git_head": "246a681e05b3c5e3e3724632637c2835bf8b7371",
+    "first_run_id": "c087b7825bb85d64276a33824a1a762ec82fdb7f9801851229cbfc93f3a7fc84",
+    "key": "suite:registro@dark",
+    "limit": 0.005,
+    "pass": true,
+    "schema": "nm_suite.determinism.v1",
+    "second_git_head": "246a681e05b3c5e3e3724632637c2835bf8b7371",
+    "second_run_id": "5141c00cf9917ca55ce675dd2677de2de9595b9959f444021b1a2a20d6e7fbd2"
+  },
+  "human_review": {
+    "approval_url": null,
+    "author": null,
+    "comment_id": null
+  },
+  "key": "suite:registro@dark",
+  "manifest_sha256": "6a7e7bc12ff9a39d3de239ab63f3999058dd6659495f0b3664152400d7501232",
+  "modal_audit": null,
+  "modal_audit_sha256": null,
+  "operation": {
+    "kind": "refresh",
+    "refreshed_from_commit": "f0001b73a72ba5e2fd1354bdb7209ded7c461cd4",
+    "refreshed_from_evidence": "2c95961a7de29fdc7f99de9746d589037afbfa3aff093751bc01a4a4f194df49"
+  },
+  "policy": {
+    "allow": true,
+    "reasons": []
+  },
+  "report": {
+    "authority": "LAYERED_VISUAL_COMPARE",
+    "generated_at": "2026-07-12T20:47:59",
+    "handoff_closure_allowed": false,
+    "handoff_closure_reason": "partial_scope",
+    "modal_audit": null,
+    "modal_audit_required": false,
+    "report_evidence_reason": null,
+    "report_evidence_valid": true,
+    "report_filters": {
+      "app": null,
+      "key": "suite:registro@dark",
+      "keys_file": null,
+      "keys_file_keys": [],
+      "theme": null,
+      "view": null
+    },
+    "report_scope": "PARTIAL",
+    "report_sha256": "2c11472a2eadf2e28259a08cfe9cac5cc5b5e1662bdb88185c2eec36477bb99d",
+    "results": [
+      {
+        "actual_file": "qa\\_captures_v8\\suite-registro-dark-960x600.png",
+        "actual_size": "960x600",
+        "app": "suite",
+        "canonical_file": "qa\\_mockup_canonical\\suite-registro-dark-960x600.png",
+        "canonical_size": "960x600",
+        "findings": [],
+        "key": "suite:registro@dark",
+        "layout": {
+          "actual_content_bbox": [
+            0,
+            0,
+            960,
+            600
+          ],
+          "bbox_area_delta_ratio": 0.0,
+          "bbox_dh": 0,
+          "bbox_dw": 0,
+          "bbox_dx": 0,
+          "bbox_dy": 0,
+          "content_shift_confidence": 0.95647,
+          "content_shift_px": 1,
+          "content_shift_x": 1,
+          "content_shift_y": 0,
+          "max_bbox_delta_px": 0,
+          "target_content_bbox": [
+            0,
+            0,
+            960,
+            600
+          ]
+        },
+        "metrics": {
+          "canonical_gray_std": 17.822,
+          "changed_pixel_floor": 14,
+          "changed_pixel_ratio": 0.05101,
+          "changed_pixels": 29384,
+          "largest_region_ratio": 0.008311,
+          "max_abs_diff": 0.83137,
+          "mean_abs_diff": 0.01858,
+          "ssim": 0.43819,
+          "total_pixels": 576000,
+          "windowed_ssim": 0.87332
+        },
+        "near_perfect_match": false,
+        "odiff": {
+          "accepted": true,
+          "available": true,
+          "diff_percentage": 1.06,
+          "diff_pixels": 6085,
+          "diff_png_path": "reports\\qa\\visual_closure\\suite_registro-dark\\odiff\\suite-registro-dark-960x600-odiff.png",
+          "match": false
+        },
+        "panel_path": "reports\\qa\\visual_closure\\suite_registro-dark\\panels\\suite_registro_dark.png",
+        "real_divergence": false,
+        "regions": [
+          {
+            "area": 4787,
+            "area_ratio": 0.008311,
+            "h": 49,
+            "hint": "component_region",
+            "w": 105,
+            "x": 831,
+            "y": 426
+          },
+          {
+            "area": 1867,
+            "area_ratio": 0.003241,
+            "h": 11,
+            "hint": "layout_shift_or_spacing",
+            "w": 872,
+            "x": 44,
+            "y": 373
+          },
+          {
+            "area": 958,
+            "area_ratio": 0.001663,
+            "h": 1,
+            "hint": "layout_shift_or_spacing",
+            "w": 958,
+            "x": 1,
+            "y": 48
+          },
+          {
+            "area": 927,
+            "area_ratio": 0.001609,
+            "h": 19,
+            "hint": "component_region",
+            "w": 194,
+            "x": 209,
+            "y": 82
+          },
+          {
+            "area": 870,
+            "area_ratio": 0.00151,
+            "h": 5,
+            "hint": "layout_shift_or_spacing",
+            "w": 861,
+            "x": 50,
+            "y": 216
+          },
+          {
+            "area": 868,
+            "area_ratio": 0.001507,
+            "h": 1,
+            "hint": "layout_shift_or_spacing",
+            "w": 868,
+            "x": 46,
+            "y": 405
+          },
+          {
+            "area": 852,
+            "area_ratio": 0.001479,
+            "h": 2,
+            "hint": "layout_shift_or_spacing",
+            "w": 848,
+            "x": 56,
+            "y": 356
+          },
+          {
+            "area": 843,
+            "area_ratio": 0.001464,
+            "h": 1,
+            "hint": "layout_shift_or_spacing",
+            "w": 843,
+            "x": 58,
+            "y": 335
+          }
+        ],
+        "repair_bucket": "NONE",
+        "severity": "none",
+        "state_assertion_required": false,
+        "status": "PASS",
+        "suspicious_perfect_match": false,
+        "theme": "dark",
+        "view": "registro"
+      }
+    ],
+    "schema": "nm_suite.layered_report.v2",
+    "source_policy": "Use qa/_mockup_canonical plus a fresh complete qa/_captures_v8 run for operational handoff decisions. Zip inputs are archive/forensics only and must not close VISUAL_REPAIR_HANDOFF.md items.",
+    "sources": {
+      "active_repo_pair": true,
+      "actual_root": "qa\\_captures_v8",
+      "actual_source": "qa\\_captures_v8",
+      "actual_source_kind": "directory",
+      "canonical_root": "qa\\_mockup_canonical",
+      "canonical_source": "qa\\_mockup_canonical",
+      "canonical_source_kind": "directory"
+    },
+    "summary": {
+      "by_repair_bucket": {
+        "NONE": 1
+      },
+      "by_severity": {
+        "none": 1
+      },
+      "by_status": {
+        "PASS": 1
+      },
+      "near_perfect_match": 0,
+      "pass": 1,
+      "qa_missed_raw_or_layout": 0,
+      "real_divergence": 0,
+      "state_or_recipe_suspect": 0,
+      "suspicious_perfect_match": 0,
+      "total": 1
+    },
+    "thresholds": {
+      "changed_pixel_floor": 12,
+      "max_bbox_shift_px": 18,
+      "max_bbox_size_delta_px": 36,
+      "max_changed_pixel_ratio": 0.08,
+      "max_largest_region_ratio": 0.08,
+      "max_mean_abs_diff": 0.035,
+      "max_odiff_diff_pct": 8.0,
+      "min_ssim": 0.92,
+      "odiff_threshold": 0.3,
+      "strong_changed_pixel_ratio": 0.18,
+      "strong_largest_region_ratio": 0.18,
+      "strong_mean_abs_diff": 0.08,
+      "text_dense_canonical_std": 35.0,
+      "text_dense_changed_pixel_floor": 14,
+      "text_dense_max_changed_pixel_ratio": 0.1,
+      "text_dense_min_windowed_ssim": 0.65
+    }
+  },
+  "report_sha256": "2c11472a2eadf2e28259a08cfe9cac5cc5b5e1662bdb88185c2eec36477bb99d",
+  "result": "PASS",
+  "schema": "nm_suite.evidence_record.v2",
+  "sidecar_sha256": "2af42bbee5e20450d2540682b39f40866b8b16f9cc16c223a079c2d8f70501b6",
+  "source_scope": {
+    "global_files": {
+      "app/__init__.py": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "app/main_qt.py": "0602074b9996133000ec7a0c9ad4b7b431d7a7f6",
+      "app/modules/__init__.py": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "hub/__init__.py": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "hub/editors/__init__.py": "8b137891791fe96927ad78e64b0aad7bded08bdc",
+      "hub/main_qt.py": "861a26533a18eba469fabba684d426ed2bd5867a"
+    },
+    "global_trees": {
+      "assets": "2c0d7c80f2584a88a9db28f880345687ad2c7f33",
+      "shared": "5eaf1c58178e3f17fa9423a6f58ebf7521f95d32"
+    },
+    "key": "suite:registro@dark",
+    "schema": "nm_suite.source_scope.v1",
+    "surface_files": {
+      "app/modules/registro_tcc_qt.py": "155a91b35dfd1657831354a2ce5a35a5b857b8f9"
+    }
+  },
+  "state_assertion": null,
+  "target_set": [
+    "suite:registro-step1-emotion-otro@dark",
+    "suite:registro-step1-emotion-otro@light",
+    "suite:registro-step1-emotion@dark",
+    "suite:registro-step1-emotion@light",
+    "suite:registro-step2-distortions@dark",
+    "suite:registro-step2-distortions@light",
+    "suite:registro-step3-filled@dark",
+    "suite:registro-step3-filled@light",
+    "suite:registro-success@dark",
+    "suite:registro@dark",
+    "suite:registro@light"
+  ],
+  "thresholds_sha256": "36b5d295d93ccc96cddd2992974fb9895b7b28686dda88a49524189c7268b781",
+  "tool_hashes": {
+    "qa/anti_fraud_scan.py": "11de201e397651eb07612aa052d7569909858f73ac0f06970f7c7f8e3e11bd4f",
+    "qa/approval_verifier.py": "d22750c6b5a174d8c5191518f5a711143314e4889b700c96925be8deeeedff1e",
+    "qa/capture_v8.py": "cb40cd8ef11086ec5e08e940945de4387b39fb09f3c963a29f3c237ed39ce6dd",
+    "qa/closure_policy.py": "c518f5cf89dd47b082ec030102669c62e1e30d16a20e40f40320c5661cc6ee49",
+    "qa/hash_utils.py": "10bdccaed985f5e93b16545c6f7d6cd97afb718ddca59bb00b6c8cb54e325344",
+    "qa/layered_visual_compare.py": "1e17412a28d5163c9726c8af59cc6a4413b6c2cdeb8a5bd61fc6e915d9caeadb",
+    "qa/odiff_runner.py": "89a3736f230583c6d9105d0478ef85e03afda6ce12b9078ec94a62813ae022de",
+    "qa/state_probes.py": "3cf8150b46c5a53d5b7762392d3fcbf952f6c985aba424c2b059d8896c2e4818",
+    "qa/surface_scope.py": "bcc0fb7795a653b555d2ca1eb5ca9455be33fba66163c9d14d12a41d42590cb4",
+    "qa/vas_engine.py": "9b0b1e828398a32a7a2869cc955840036263771b66fa43ce41b412a5e1a29ca4",
+    "qa/vas_gate.py": "379d454848705ad92a9c472b8ad4c29c9855126def81ab08596c79fbf68d97ed",
+    "qa/vas_introspect.py": "9ef7835c3452d4d6cfc8de699f3c1f4ad736ec20fef4e35028d8a324bfba5bb1",
+    "tools/qa/audit_modal_backdrop_blur.py": "158c31361b5332972660c14674503058f8ce9e7841b47da9f6d38a85cb892c3a"
+  },
+  "vas_summary": {
+    "capture_valid": true,
+    "fail_count": 0,
+    "high_count": 0,
+    "key": "suite:registro@dark",
+    "medium_count": 0,
+    "pass": true,
+    "schema": "nm_suite.vas_summary.v1"
+  }
+}

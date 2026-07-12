@@ -1,0 +1,7 @@
+{
+  "issued_by": "qa/close_visual_key.py",
+  "key": "suite:registro-step1-emotion-otro@dark",
+  "record_path": "docs/closure_evidence/active/suite_registro-step1-emotion-otro-dark.json",
+  "record_sha256": "040cd1b17f917918631795217a5f45c6742447469abbe04f91a5f5f8a9a123e2",
+  "schema": "nm_suite.closure_receipt.v1"
+}

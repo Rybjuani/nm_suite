@@ -5,7 +5,7 @@
 > de `qa/_mockup_canonical/MANIFEST.json` y los bloqueos de
 > `qa/surface_notes.json`.
 
-Estado: 9 cerradas · 89 abiertas · 18 bloqueadas · 116 total.
+Estado: 19 cerradas · 79 abiertas · 18 bloqueadas · 116 total.
 
 ## Superficies
 
@@ -20,18 +20,18 @@ Estado: 9 cerradas · 89 abiertas · 18 bloqueadas · 116 total.
 
 ### Registro TCC (12)
 
-- [ ] `suite:registro-step1-emotion-otro@dark`
-- [ ] `suite:registro-step1-emotion-otro@light`
-- [ ] `suite:registro-step1-emotion@dark`
-- [ ] `suite:registro-step1-emotion@light`
-- [ ] `suite:registro-step2-distortions@dark`
-- [ ] `suite:registro-step2-distortions@light`
-- [ ] `suite:registro-step3-filled@dark`
-- [ ] `suite:registro-step3-filled@light`
+- [x] `suite:registro-step1-emotion-otro@dark`
+- [x] `suite:registro-step1-emotion-otro@light`
+- [x] `suite:registro-step1-emotion@dark`
+- [x] `suite:registro-step1-emotion@light`
+- [x] `suite:registro-step2-distortions@dark`
+- [x] `suite:registro-step2-distortions@light`
+- [x] `suite:registro-step3-filled@dark`
+- [x] `suite:registro-step3-filled@light`
 - [ ] `suite:registro-success@dark`
 - [ ] `suite:registro-success@light`
-- [ ] `suite:registro@dark`
-- [ ] `suite:registro@light`
+- [x] `suite:registro@dark`
+- [x] `suite:registro@light`
 
 ### DBT (36)
 

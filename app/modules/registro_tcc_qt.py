@@ -1627,12 +1627,14 @@ class ModuloRegistroTCC(NMModule):
             self._stack.removeWidget(old)
             old.deleteLater()
             self._success_page = None
-        success = QWidget()
-        success.setStyleSheet("background: transparent;")
-        layout = QVBoxLayout(success)
+        # Canónico: el estado de éxito vive DENTRO de la misma `.card pad` que
+        # los pasos, con el stepper arriba y la nav abajo intactos; solo cambia
+        # el contenido de la card. La card ocupa el alto completo del slot del
+        # stack (como la card del paso) con el contenido centrado.
+        success, layout = self._make_page()
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(V3_SP["sm"])
+        card = layout.parentWidget()
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         check_icon = _NMSuccessIconChip(
             size=96,
             bg_color=QColor(v3c("successChipBg", self._modo)),
@@ -1663,11 +1665,6 @@ class ModuloRegistroTCC(NMModule):
         self._stack.addWidget(success)
         self._success_page = success
         self._stack.setCurrentWidget(success)
-        # Hide stepper and nav when showing success to match canonical layout
-        self._stepper.hide()
-        self._btn_prev.hide()
-        self._btn_next.hide()
-        self._error_lbl.hide()
         # Anclar el foco (y al lector de pantalla) en la confirmación: sin
         # esto, tras recargar "registros previos" el navegador de
         # accesibilidad podía aterrizar en widgets transitorios y dibujar su
@@ -1675,7 +1672,8 @@ class ModuloRegistroTCC(NMModule):
         success.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         success.setAccessibleName("Registro guardado")
         success.setFocus(Qt.FocusReason.OtherFocusReason)
-        self._btn_prev.setEnabled(False)
+        # Canónico: el CTA guardado queda como "Guardar" deshabilitado.
+        self._btn_next.setText(t("text.module.registro.saved_btn", "Guardar"))
         self._btn_next.setEnabled(False)
 
     def _reset(self):
