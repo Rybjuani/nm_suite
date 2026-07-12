@@ -1,0 +1,7 @@
+{
+  "issued_by": "qa/close_visual_key.py",
+  "key": "hub:detalle-resumen-ia-0@light",
+  "record_path": "docs/closure_evidence/active/hub_detalle-resumen-ia-0-light.json",
+  "record_sha256": "d2d77cf542e373e8d65bcc85b79f8ed565d50f77cd048f4bfed97df0ac9d3307",
+  "schema": "nm_suite.closure_receipt.v1"
+}

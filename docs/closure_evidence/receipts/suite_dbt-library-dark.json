@@ -1,0 +1,7 @@
+{
+  "issued_by": "qa/close_visual_key.py",
+  "key": "suite:dbt-library@dark",
+  "record_path": "docs/closure_evidence/active/suite_dbt-library-dark.json",
+  "record_sha256": "fb012de1f6e0c8fddbc7974456e571db688a97ddb6e6889335afc44e180d839a",
+  "schema": "nm_suite.closure_receipt.v1"
+}

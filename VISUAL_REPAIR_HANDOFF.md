@@ -5,7 +5,7 @@
 > de `qa/_mockup_canonical/MANIFEST.json` y los bloqueos de
 > `qa/surface_notes.json`.
 
-Estado: 0 cerradas · 98 abiertas · 18 bloqueadas · 116 total.
+Estado: 4 cerradas · 94 abiertas · 18 bloqueadas · 116 total.
 
 ## Superficies
 
@@ -14,7 +14,7 @@ Estado: 0 cerradas · 98 abiertas · 18 bloqueadas · 116 total.
 - [ ] `suite:onboarding-error@dark`
 - [ ] `suite:onboarding-error@light`
 - [ ] `suite:onboarding@dark`
-- [ ] `suite:onboarding@light`
+- [x] `suite:onboarding@light`
 - [ ] `suite:recuperar-acceso@dark`
 - [ ] `suite:recuperar-acceso@light`
 
@@ -35,8 +35,8 @@ Estado: 0 cerradas · 98 abiertas · 18 bloqueadas · 116 total.
 
 ### DBT (36)
 
-- [ ] `suite:dbt-library@dark`
-- [ ] `suite:dbt-library@light`
+- [x] `suite:dbt-library@dark`
+- [x] `suite:dbt-library@light`
 - [ ] `suite:dbt-now@dark`
 - [ ] `suite:dbt-now@light`
 - [ ] `suite:dbt-practice-check-facts@dark`
@@ -139,7 +139,7 @@ Estado: 0 cerradas · 98 abiertas · 18 bloqueadas · 116 total.
 - [ ] `hub:detalle-plan-timer@dark`
 - [ ] `hub:detalle-plan-timer@light`
 - [~] `hub:detalle-resumen-ia-0@dark` (revoked V1 closure; modal gaming)
-- [ ] `hub:detalle-resumen-ia-0@light`
+- [x] `hub:detalle-resumen-ia-0@light`
 - [ ] `hub:detalle@dark`
 - [ ] `hub:detalle@light`
 - [ ] `hub:pacientes-empty@dark`
