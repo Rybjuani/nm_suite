@@ -5,7 +5,7 @@
 > de `qa/_mockup_canonical/MANIFEST.json` y los bloqueos de
 > `qa/surface_notes.json`.
 
-Estado: 7 cerradas · 91 abiertas · 18 bloqueadas · 116 total.
+Estado: 8 cerradas · 90 abiertas · 18 bloqueadas · 116 total.
 
 ## Superficies
 
@@ -15,7 +15,7 @@ Estado: 7 cerradas · 91 abiertas · 18 bloqueadas · 116 total.
 - [x] `suite:onboarding-error@light`
 - [x] `suite:onboarding@dark`
 - [x] `suite:onboarding@light`
-- [ ] `suite:recuperar-acceso@dark`
+- [x] `suite:recuperar-acceso@dark`
 - [ ] `suite:recuperar-acceso@light`
 
 ### Registro TCC (12)
